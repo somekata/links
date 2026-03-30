@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rではじめる医学統計・メタ解析</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=Zen+Antique&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf8f4;
+    --paper: #fff9f0;
+    --ink: #2c2416;
+    --ink-light: #5a4e3a;
+    --accent: #8b4513;
+    --accent-light: #c4784a;
+    --code-bg: #1e1a14;
+    --code-fg: #f0e6d0;
+    --code-green: #7ec891;
+    --code-blue: #79b8e0;
+    --code-orange: #e8a87c;
+    --code-comment: #7a7060;
+    --rule: #d4c4a0;
+    --note-bg: #fdf6e8;
+    --warn-bg: #fdf0e8;
+    --sidebar-bg: #f5f0e8;
+    --chapter-num: #c4784a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Serif JP', serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.9;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.1rem;
+    letter-spacing: .06em;
+    color: #e8d8b8;
+  }
+  .header-subtitle {
+    font-size: .75rem;
+    color: #9a8a6a;
+    margin-top: 2px;
+  }
+  .header-nav {
+    display: flex;
+    gap: 6px;
+  }
+  .header-nav a {
+    color: #c4a870;
+    text-decoration: none;
+    font-size: .78rem;
+    padding: 4px 10px;
+    border: 1px solid #4a3e2a;
+    border-radius: 4px;
+    transition: all .2s;
+  }
+  .header-nav a:hover { background: #3a3020; color: #f0d8a0; }
+
+  /* ── LAYOUT ── */
+  .layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 0;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--rule);
+    padding: 32px 20px;
+    position: sticky;
+    top: 53px;
+    height: calc(100vh - 53px);
+    overflow-y: auto;
+  }
+  .sidebar-section {
+    margin-bottom: 28px;
+  }
+  .sidebar-heading {
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    color: #9a8060;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .toc-list {
+    list-style: none;
+  }
+  .toc-list li {
+    margin-bottom: 2px;
+  }
+  .toc-list a {
+    text-decoration: none;
+    color: var(--ink-light);
+    font-size: .82rem;
+    padding: 3px 8px;
+    display: block;
+    border-radius: 4px;
+    transition: all .15s;
+  }
+  .toc-list a:hover { background: #ede4d0; color: var(--accent); }
+  .toc-list a.chapter { font-weight: 600; color: var(--ink); }
+  .toc-list a.section { padding-left: 18px; color: var(--ink-light); }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    padding: 48px 56px 80px;
+    max-width: 820px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    margin-bottom: 56px;
+    padding-bottom: 40px;
+    border-bottom: 2px solid var(--rule);
+  }
+  .hero-eyebrow {
+    font-size: .78rem;
+    letter-spacing: .15em;
+    color: var(--accent-light);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: 'Zen Antique', serif;
+    font-size: 2.4rem;
+    line-height: 1.3;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+  .hero-lead {
+    font-size: 1.05rem;
+    color: var(--ink-light);
+    max-width: 600px;
+    line-height: 1.8;
+  }
+
+  /* ── CHAPTER ── */
+  .chapter {
+    margin-bottom: 72px;
+    scroll-margin-top: 70px;
+  }
+  .chapter-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--rule);
+  }
+  .chapter-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--chapter-num);
+    opacity: .4;
+    min-width: 48px;
+  }
+  .chapter-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.6rem;
+    color: var(--ink);
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 40px;
+    scroll-margin-top: 70px;
+  }
+  .section h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 14px;
+    padding-left: 12px;
+    border-left: 3px solid var(--accent-light);
+  }
+
+  p { margin-bottom: 1.1em; }
+  p + p { text-indent: 1em; }
+
+  /* ── SENSEI VOICE ── */
+  .sensei {
+    background: linear-gradient(135deg, #fdf6e8 0%, #faf2e0 100%);
+    border-left: 4px solid var(--accent-light);
+    border-radius: 0 8px 8px 0;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-style: italic;
+    color: var(--ink-light);
+    position: relative;
+  }
+  .sensei::before {
+    content: '先生より';
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--accent-light);
+    color: white;
+    font-size: .68rem;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: .1em;
+    padding: 2px 10px;
+    border-radius: 12px;
+  }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,.18);
+  }
+  .code-header {
+    background: #2a2418;
+    padding: 8px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .code-dots { display: flex; gap: 6px; }
+  .code-dots span {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    display: block;
+  }
+  .dot-r { background: #ff5f56; }
+  .dot-y { background: #ffbd2e; }
+  .dot-g { background: #27c93f; }
+  .code-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .72rem;
+    color: #7a6a50;
+    letter-spacing: .08em;
+  }
+  pre {
+    padding: 20px 22px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .88rem;
+    line-height: 1.7;
+    color: var(--code-fg);
+  }
+  .kw  { color: var(--code-blue); }
+  .fn  { color: var(--code-orange); }
+  .str { color: var(--code-green); }
+  .cm  { color: var(--code-comment); font-style: italic; }
+  .num { color: #c9a0e8; }
+  .op  { color: #e8c87c; }
+
+  /* ── INLINE CODE ── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .85em;
+    background: #ede4d0;
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* ── CALLOUT BOXES ── */
+  .note, .warn, .tip {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: .93rem;
+  }
+  .note {
+    background: var(--note-bg);
+    border: 1px solid #ddc880;
+  }
+  .note::before { content: '📝 ポイント　'; font-weight: 700; color: #8b6914; }
+  .warn {
+    background: var(--warn-bg);
+    border: 1px solid #dda880;
+  }
+  .warn::before { content: '⚠️ 注意　'; font-weight: 700; color: #8b3a14; }
+  .tip {
+    background: #eef6ee;
+    border: 1px solid #90c890;
+  }
+  .tip::before { content: '💡 ヒント　'; font-weight: 700; color: #2a6e2a; }
+
+  /* ── TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: .9rem;
+  }
+  th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: .83rem;
+    letter-spacing: .04em;
+  }
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f8f4ec; }
+  td code { font-size: .8em; }
+
+  /* ── FOREST PLOT IMAGE ── */
+  .forest-mock {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem;
+    color: #3a3020;
+    overflow-x: auto;
+  }
+  .forest-mock pre { background: transparent; padding: 0; color: #3a3020; font-size: .78rem; box-shadow: none; }
+
+  /* ── DIVIDER ── */
+  hr.chapter-rule {
+    border: none;
+    border-top: 1px dashed var(--rule);
+    margin: 48px 0;
+  }
+
+  /* ── BACK TO TOP ── */
+  .back-top {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: .78rem;
+    color: var(--accent-light);
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+  }
+  .back-top:hover { color: var(--accent); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    color: #7a6a50;
+    text-align: center;
+    padding: 24px;
+    font-size: .8rem;
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 780px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .main { padding: 32px 20px; }
+    .hero h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div>
+      <div class="header-title">Rではじめる医学統計・メタ解析</div>
+      <div class="header-subtitle">プログラミング入門からRmd出力まで　学生向けテキスト</div>
+    </div>
+    <nav class="header-nav">
+      <a href="#ch1">基礎</a>
+      <a href="#ch2">R入門</a>
+      <a href="#ch3">データ操作</a>
+      <a href="#ch4">メタ解析</a>
+      <a href="#ch5">Rmd</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR TOC -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-heading">目次</div>
+      <ul class="toc-list">
+        <li><a href="#intro" class="chapter">はじめに</a></li>
+        <li><a href="#ch1" class="chapter">1. プログラミングとは</a></li>
+        <li><a href="#ch1-1" class="section">変数と代入</a></li>
+        <li><a href="#ch1-2" class="section">関数と引数</a></li>
+        <li><a href="#ch2" class="chapter">2. Rの基礎</a></li>
+        <li><a href="#ch2-1" class="section">ベクトル</a></li>
+        <li><a href="#ch2-2" class="section">データフレーム</a></li>
+        <li><a href="#ch2-3" class="section">データ型</a></li>
+        <li><a href="#ch2-4" class="section">制御構造</a></li>
+        <li><a href="#ch3" class="chapter">3. データ操作</a></li>
+        <li><a href="#ch3-1" class="section">tidyverse入門</a></li>
+        <li><a href="#ch3-2" class="section">dplyrで集計</a></li>
+        <li><a href="#ch3-3" class="section">ggplotで可視化</a></li>
+        <li><a href="#ch4" class="chapter">4. メタ解析</a></li>
+        <li><a href="#ch4-1" class="section">メタ解析とは</a></li>
+        <li><a href="#ch4-2" class="section">metaパッケージ</a></li>
+        <li><a href="#ch4-3" class="section">フォレストプロット</a></li>
+        <li><a href="#ch4-4" class="section">出版バイアス</a></li>
+        <li><a href="#ch5" class="chapter">5. R Markdown</a></li>
+        <li><a href="#ch5-1" class="section">Rmdの基本構造</a></li>
+        <li><a href="#ch5-2" class="section">コードチャンク</a></li>
+        <li><a href="#ch5-3" class="section">レポート出力</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="hero" id="intro">
+      <div class="hero-eyebrow">Medical Statistics · Meta-analysis · R Programming</div>
+      <h1>Rではじめる<br>医学統計・メタ解析</h1>
+      <p class="hero-lead">プログラミング未経験の医学生が、Rの基礎から論文レベルのメタ解析・レポート出力までたどり着くための実践テキスト。</p>
+    </div>
+
+    <div class="sensei">
+      みなさん、プログラミングに興味ありますか？<br>
+      私がプログラミングを始めたのは40代後半、本格的に始めたのは50過ぎです。それでもなんとか学べている。わからないこといっぱいだけど——私でもできる。いわんや学生は。<br><br>
+      英語もプログラミングも早ければ早いほどいい。飲み込みが早いし、高みも望める。まず基本からいきましょう。
+    </div>
+
+    <!-- ════════ CHAPTER 1 ════════ -->
+    <div class="chapter" id="ch1">
+      <div class="chapter-header">
+        <span class="chapter-num">01</span>
+        <h2 class="chapter-title">プログラミングとは何か</h2>
+      </div>
+
+      <div class="section" id="ch1-1">
+        <h3>コンピュータの仕組み</h3>
+        <p>コンピュータは本質的に「0と1しか理解しない」機械です。もっと正確に言えば、電気が流れるか流れないか、それだけです。理解しているわけではなく、0と1の羅列を処理しているにすぎません。</p>
+        <p>あらゆるデータ——文字も画像も音楽も——この0と1の組み合わせで表現できます。しかし、そのまま私たちが扱うのは不可能です。だから私たちにわかる言葉に翻訳したものが<strong>プログラミング言語</strong>です。とくに人間の言語に近いものを「高級言語」と呼びます。Rもその一つです。</p>
+
+        <div class="note">現代の主流は<strong>オブジェクト指向</strong>という設計思想です。変数に「型」や「特徴」を持たせることで複雑な処理が簡潔に書けます。今はそこまで知らなくていい——まずは基本から。</div>
+
+        <h3>変数と代入</h3>
+        <p>数学とプログラミングは似ているようで、決定的に異なる点があります。数学の <code>=</code> は「等しい」という意味ですが、プログラミングの <code>=</code> は「代入」です。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">数学 vs プログラミング</span>
+          </div>
+          <pre><span class="cm"># 数学では「a = a + 1」は矛盾</span>
+<span class="cm"># プログラミングでは「aの現在の値に1を加えて、aに入れ直す」という意味</span>
+
+a <span class="op">=</span> <span class="num">1</span>      <span class="cm"># a に 1 を代入</span>
+a <span class="op">=</span> a <span class="op">+</span> <span class="num">1</span>  <span class="cm"># a を 2 に更新</span></pre>
+        </div>
+
+        <p>Rでは代入演算子として <code>&lt;-</code> を使います（<code>=</code> も使えますが、慣習的に <code>&lt;-</code> が好まれます）。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — 代入演算子</span>
+          </div>
+          <pre>a <span class="op">&lt;-</span> <span class="num">1</span>        <span class="cm"># a に 1 を代入</span>
+a <span class="op">&lt;-</span> a <span class="op">+</span> <span class="num">1</span>   <span class="cm"># a を更新（a は 2 になる）</span>
+<span class="fn">print</span>(a)     <span class="cm"># コンソールに表示 → [1] 2</span></pre>
+        </div>
+
+        <div class="warn">数学では <code>a = a + 1</code> はありえませんが、プログラミングでは「今のaに1を足してaに戻す」という操作です。Rの代入演算子 <code>&lt;-</code> はまさに「右から左へ値を流し込む」イメージです。<code>=</code> を「等号」ではなく「代入」と読む癖をつけましょう。</div>
+      </div>
+
+      <div class="section" id="ch1-2">
+        <h3>関数と引数</h3>
+        <p>関数とは「何かを受け取って何かを返す処理のまとまり」です。数学の関数 <em>f(x)</em> と同じイメージです。<em>x</em> の部分が「引数（ひきすう）」です。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — 関数の基本</span>
+          </div>
+          <pre><span class="cm"># 関数の呼び出し: 関数名(引数)</span>
+<span class="fn">sqrt</span>(<span class="num">16</span>)         <span class="cm"># → 4  （平方根）</span>
+<span class="fn">log</span>(<span class="num">100</span>, base <span class="op">=</span> <span class="num">10</span>)  <span class="cm"># → 2  （対数、底を指定）</span>
+<span class="fn">abs</span>(<span class="op">-</span><span class="num">5</span>)           <span class="cm"># → 5  （絶対値）</span>
+
+<span class="cm"># 自分で関数を定義することもできる</span>
+my_square <span class="op">&lt;-</span> <span class="kw">function</span>(x) {
+  x <span class="op">^</span> <span class="num">2</span>
+}
+my_square(<span class="num">4</span>)  <span class="cm"># → 16</span></pre>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>用語</th><th>意味</th><th>例</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>変数</td><td>値を入れる「箱」</td><td><code>a &lt;- 5</code></td></tr>
+            <tr><td>関数</td><td>処理のまとまり</td><td><code>sqrt(x)</code></td></tr>
+            <tr><td>引数</td><td>関数に渡す値</td><td><code>sqrt(<strong>16</strong>)</code> の 16</td></tr>
+            <tr><td>代入</td><td>変数に値を入れる</td><td><code>a &lt;- 1</code></td></tr>
+            <tr><td>演算子</td><td>計算・比較の記号</td><td><code>+  -  *  /  ^  &lt;-</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <a href="#intro" class="back-top">↑ トップへ</a>
+    </div>
+
+    <hr class="chapter-rule">
+
+    <!-- ════════ CHAPTER 2 ════════ -->
+    <div class="chapter" id="ch2">
+      <div class="chapter-header">
+        <span class="chapter-num">02</span>
+        <h2 class="chapter-title">Rの基礎</h2>
+      </div>
+
+      <div class="section" id="ch2-1">
+        <h3>ベクトル：Rの最小単位</h3>
+        <p>Rの最大の特徴のひとつが「ベクトル」という概念です。Rにおける最小のデータ単位は実はすべてベクトルです。<code>a &lt;- 1</code> と書いても、それは「長さ1のベクトル」にすぎません。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — ベクトルの作成と操作</span>
+          </div>
+          <pre><span class="cm"># c() でベクトルを作る（combine の略）</span>
+a <span class="op">&lt;-</span> <span class="fn">c</span>(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>)   <span class="cm"># 数値ベクトル</span>
+b <span class="op">&lt;-</span> <span class="fn">c</span>(<span class="str">"A"</span>, <span class="str">"B"</span>, <span class="str">"C"</span>) <span class="cm"># 文字列ベクトル</span>
+
+<span class="cm"># 1つだけのときは c() を省略できる</span>
+x <span class="op">&lt;-</span> <span class="num">5</span>          <span class="cm"># x &lt;- c(5) と同じ</span>
+
+<span class="cm"># ベクトルの要素にアクセス（1始まりに注意！）</span>
+a[<span class="num">1</span>]    <span class="cm"># → 1</span>
+a[<span class="num">2</span>]    <span class="cm"># → 2</span>
+a[<span class="num">2</span>:<span class="num">3</span>]  <span class="cm"># → 2 3</span>
+
+<span class="cm"># ベクトル演算（要素ごとに計算される）</span>
+a <span class="op">*</span> <span class="num">2</span>   <span class="cm"># → 2 4 6</span>
+a <span class="op">+</span> a   <span class="cm"># → 2 4 6</span>
+<span class="fn">sum</span>(a)  <span class="cm"># → 6</span>
+<span class="fn">mean</span>(a) <span class="cm"># → 2</span></pre>
+        </div>
+
+        <div class="warn">ベクトルの要素はすべて同じ型でなければなりません。<code>c(1, "a", 3)</code> のように数値と文字列を混ぜると、自動的に全て文字列に変換されてしまいます（型の強制変換）。</div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — 型の強制変換（注意！）</span>
+          </div>
+          <pre>x <span class="op">&lt;-</span> <span class="fn">c</span>(<span class="num">1</span>, <span class="str">"a"</span>, <span class="num">3</span>)
+<span class="fn">class</span>(x)   <span class="cm"># → "character"（全部文字列になった！）</span>
+x          <span class="cm"># → "1" "a" "3"（数値の 1, 3 も文字列に）</span></pre>
+        </div>
+      </div>
+
+      <div class="section" id="ch2-2">
+        <h3>データフレーム：表形式のデータ</h3>
+        <p>統計解析では「表」が基本です。Rの「データフレーム」は列と行を持つテーブルで、Excelのシートに相当します。各列がひとつのベクトルになっています。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — データフレームの作成</span>
+          </div>
+          <pre><span class="cm"># data.frame() で作成</span>
+df <span class="op">&lt;-</span> <span class="fn">data.frame</span>(
+  id    <span class="op">=</span> <span class="fn">c</span>(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>),
+  age   <span class="op">=</span> <span class="fn">c</span>(<span class="num">25</span>, <span class="num">34</span>, <span class="num">28</span>),
+  group <span class="op">=</span> <span class="fn">c</span>(<span class="str">"治療"</span>, <span class="str">"対照"</span>, <span class="str">"治療"</span>)
+)
+
+<span class="cm"># 確認</span>
+<span class="fn">head</span>(df)      <span class="cm"># 最初の数行を表示</span>
+<span class="fn">str</span>(df)       <span class="cm"># 構造を表示</span>
+<span class="fn">nrow</span>(df)      <span class="cm"># 行数 → 3</span>
+<span class="fn">ncol</span>(df)      <span class="cm"># 列数 → 3</span>
+
+<span class="cm"># 列へのアクセス</span>
+df<span class="op">$</span>age         <span class="cm"># → 25 34 28</span>
+df[, <span class="str">"age"</span>]   <span class="cm"># 同じ</span>
+df[<span class="num">1</span>, ]        <span class="cm"># 1行目全体</span></pre>
+        </div>
+      </div>
+
+      <div class="section" id="ch2-3">
+        <h3>主要なデータ型</h3>
+        <table>
+          <thead>
+            <tr><th>型</th><th>英語名</th><th>例</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>数値</td><td>numeric</td><td><code>3.14, 100</code></td><td>身長・体重・検査値</td></tr>
+            <tr><td>整数</td><td>integer</td><td><code>1L, 5L</code></td><td>カウントデータ</td></tr>
+            <tr><td>文字列</td><td>character</td><td><code>"治療群"</code></td><td>グループ名・ID</td></tr>
+            <tr><td>論理値</td><td>logical</td><td><code>TRUE, FALSE</code></td><td>フィルタ条件</td></tr>
+            <tr><td>因子</td><td>factor</td><td><code>factor("A")</code></td><td>カテゴリ変数</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" id="ch2-4">
+        <h3>制御構造：条件分岐とループ</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — if文 と for文</span>
+          </div>
+          <pre><span class="cm"># 条件分岐</span>
+x <span class="op">&lt;-</span> <span class="num">80</span>
+<span class="kw">if</span> (x <span class="op">&gt;=</span> <span class="num">60</span>) {
+  <span class="fn">print</span>(<span class="str">"合格"</span>)
+} <span class="kw">else</span> {
+  <span class="fn">print</span>(<span class="str">"不合格"</span>)
+}
+
+<span class="cm"># for ループ</span>
+<span class="kw">for</span> (i <span class="kw">in</span> <span class="num">1</span>:<span class="num">5</span>) {
+  <span class="fn">cat</span>(<span class="str">"i ="</span>, i, <span class="str">"\n"</span>)
+}
+
+<span class="cm"># Rらしいやり方：ベクトル化で書く方が速くて簡潔</span>
+scores <span class="op">&lt;-</span> <span class="fn">c</span>(<span class="num">55</span>, <span class="num">72</span>, <span class="num">88</span>, <span class="num">40</span>, <span class="num">95</span>)
+<span class="fn">ifelse</span>(scores <span class="op">&gt;=</span> <span class="num">60</span>, <span class="str">"合格"</span>, <span class="str">"不合格"</span>)</pre>
+        </div>
+
+        <div class="tip">Rはベクトル演算が得意です。<code>for</code> ループより <code>ifelse()</code> や <code>apply()</code> 系の関数の方が高速でコードも短くなることが多いです。慣れてきたら意識してみましょう。</div>
+      </div>
+
+      <a href="#intro" class="back-top">↑ トップへ</a>
+    </div>
+
+    <hr class="chapter-rule">
+
+    <!-- ════════ CHAPTER 3 ════════ -->
+    <div class="chapter" id="ch3">
+      <div class="chapter-header">
+        <span class="chapter-num">03</span>
+        <h2 class="chapter-title">データの操作と可視化</h2>
+      </div>
+
+      <div class="section" id="ch3-1">
+        <h3>tidyverse：現代Rの標準ツール群</h3>
+        <p><code>tidyverse</code> はデータ分析に必要なパッケージをまとめたコレクションです。現代のRユーザーの大半がこれを使っています。まず最初にインストールしましょう。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — tidyverse のインストールと読み込み</span>
+          </div>
+          <pre><span class="cm"># インストール（初回のみ）</span>
+<span class="fn">install.packages</span>(<span class="str">"tidyverse"</span>)
+
+<span class="cm"># 毎回の作業開始時に読み込む</span>
+<span class="fn">library</span>(tidyverse)</pre>
+        </div>
+      </div>
+
+      <div class="section" id="ch3-2">
+        <h3>dplyrでデータを集計する</h3>
+        <p><code>dplyr</code> パッケージは「英語の動詞」を使ってデータ操作を書けます。処理を <code>|&gt;</code>（パイプ）でつなぐのが特徴です。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — dplyrの基本動詞</span>
+          </div>
+          <pre><span class="fn">library</span>(dplyr)
+
+<span class="cm"># サンプルデータを作成</span>
+patients <span class="op">&lt;-</span> <span class="fn">data.frame</span>(
+  id      <span class="op">=</span> <span class="num">1</span>:<span class="num">6</span>,
+  age     <span class="op">=</span> <span class="fn">c</span>(<span class="num">45</span>, <span class="num">52</span>, <span class="num">38</span>, <span class="num">61</span>, <span class="num">29</span>, <span class="num">55</span>),
+  group   <span class="op">=</span> <span class="fn">c</span>(<span class="str">"治療"</span>,<span class="str">"対照"</span>,<span class="str">"治療"</span>,<span class="str">"対照"</span>,<span class="str">"治療"</span>,<span class="str">"対照"</span>),
+  outcome <span class="op">=</span> <span class="fn">c</span>(<span class="num">1</span>, <span class="num">0</span>, <span class="num">1</span>, <span class="num">0</span>, <span class="num">1</span>, <span class="num">1</span>)
+)
+
+<span class="cm"># パイプでつなぐ（|> は「そして」と読む）</span>
+patients <span class="op">|&gt;</span>
+  <span class="fn">filter</span>(age <span class="op">&gt;</span> <span class="num">40</span>) <span class="op">|&gt;</span>           <span class="cm"># 40歳超だけ</span>
+  <span class="fn">group_by</span>(group) <span class="op">|&gt;</span>            <span class="cm"># グループで分ける</span>
+  <span class="fn">summarise</span>(
+    n           <span class="op">=</span> <span class="fn">n</span>(),           <span class="cm"># 件数</span>
+    mean_age    <span class="op">=</span> <span class="fn">mean</span>(age),     <span class="cm"># 平均年齢</span>
+    event_rate  <span class="op">=</span> <span class="fn">mean</span>(outcome)  <span class="cm"># イベント率</span>
+  )</pre>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>関数</th><th>意味</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>filter()</code></td><td>条件を満たす行を選ぶ</td></tr>
+            <tr><td><code>select()</code></td><td>列を選ぶ</td></tr>
+            <tr><td><code>mutate()</code></td><td>新しい列を作る</td></tr>
+            <tr><td><code>group_by()</code></td><td>グループに分ける</td></tr>
+            <tr><td><code>summarise()</code></td><td>集計する</td></tr>
+            <tr><td><code>arrange()</code></td><td>並べ替える</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" id="ch3-3">
+        <h3>ggplot2でデータを可視化する</h3>
+        <p><code>ggplot2</code> は「グラフの文法（Grammar of Graphics）」に基づいたグラフ作成パッケージです。層を重ねるように書きます。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — ggplot2 の基本</span>
+          </div>
+          <pre><span class="fn">library</span>(ggplot2)
+
+<span class="cm"># 箱ひげ図 + データ点</span>
+<span class="fn">ggplot</span>(patients, <span class="fn">aes</span>(x <span class="op">=</span> group, y <span class="op">=</span> age, fill <span class="op">=</span> group)) <span class="op">+</span>
+  <span class="fn">geom_boxplot</span>(alpha <span class="op">=</span> <span class="num">0.5</span>) <span class="op">+</span>
+  <span class="fn">geom_jitter</span>(width <span class="op">=</span> <span class="num">0.1</span>, size <span class="op">=</span> <span class="num">2</span>) <span class="op">+</span>
+  <span class="fn">labs</span>(
+    title <span class="op">=</span> <span class="str">"グループ別年齢分布"</span>,
+    x     <span class="op">=</span> <span class="str">"群"</span>,
+    y     <span class="op">=</span> <span class="str">"年齢（歳）"</span>
+  ) <span class="op">+</span>
+  <span class="fn">theme_minimal</span>() <span class="op">+</span>
+  <span class="fn">theme</span>(legend.position <span class="op">=</span> <span class="str">"none"</span>)</pre>
+        </div>
+
+        <div class="tip"><code>ggplot2</code> の書き方は「ggplot(データ) + geom_*(図形の種類) + labs(ラベル) + theme(見た目)」と覚えましょう。<code>+</code> で層を重ねていくイメージです。</div>
+      </div>
+
+      <a href="#intro" class="back-top">↑ トップへ</a>
+    </div>
+
+    <hr class="chapter-rule">
+
+    <!-- ════════ CHAPTER 4 ════════ -->
+    <div class="chapter" id="ch4">
+      <div class="chapter-header">
+        <span class="chapter-num">04</span>
+        <h2 class="chapter-title">メタ解析をRで実施する</h2>
+      </div>
+
+      <div class="section" id="ch4-1">
+        <h3>メタ解析とは</h3>
+        <p>複数の独立した研究をまとめて統合することで、より大きなサンプルサイズ相当のエビデンスを得る手法が<strong>メタ解析</strong>です。系統的レビューの定量的な部分にあたります。</p>
+        <p>個々の研究には「真の効果量」があり、それに研究ごとのランダム変動（sampling error）が加わった値が観察されます。研究間でも真の効果量が異なる（異質性）場合は<strong>ランダム効果モデル</strong>を使います。</p>
+
+        <table>
+          <thead>
+            <tr><th>モデル</th><th>前提</th><th>場面</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>固定効果モデル</td><td>全研究の真の効果量が同一</td><td>非常に均質な研究群</td></tr>
+            <tr><td>ランダム効果モデル</td><td>真の効果量が研究間で分布</td><td>通常の系統的レビュー</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" id="ch4-2">
+        <h3>metaパッケージによる解析</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — meta パッケージのインストールとデータ準備</span>
+          </div>
+          <pre><span class="fn">install.packages</span>(<span class="str">"meta"</span>)
+<span class="fn">library</span>(meta)
+
+<span class="cm"># 二値アウトカムのデータ（イベント数・非イベント数）</span>
+study_data <span class="op">&lt;-</span> <span class="fn">data.frame</span>(
+  study    <span class="op">=</span> <span class="fn">c</span>(<span class="str">"Smith 2018"</span>, <span class="str">"Jones 2019"</span>, <span class="str">"Park 2020"</span>,
+               <span class="str">"Lee 2021"</span>, <span class="str">"Tanaka 2022"</span>),
+  event_t  <span class="op">=</span> <span class="fn">c</span>(<span class="num">15</span>, <span class="num">22</span>, <span class="num">8</span>, <span class="num">30</span>, <span class="num">12</span>),   <span class="cm"># 治療群イベント数</span>
+  n_t      <span class="op">=</span> <span class="fn">c</span>(<span class="num">80</span>, <span class="num">100</span>, <span class="num">60</span>, <span class="num">120</span>, <span class="num">75</span>), <span class="cm"># 治療群総数</span>
+  event_c  <span class="op">=</span> <span class="fn">c</span>(<span class="num">25</span>, <span class="num">35</span>, <span class="num">15</span>, <span class="num">45</span>, <span class="num">20</span>),  <span class="cm"># 対照群イベント数</span>
+  n_c      <span class="op">=</span> <span class="fn">c</span>(<span class="num">80</span>, <span class="num">100</span>, <span class="num">60</span>, <span class="num">120</span>, <span class="num">75</span>)  <span class="cm"># 対照群総数</span>
+)</pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — metabin() でメタ解析を実行</span>
+          </div>
+          <pre><span class="cm"># 二値アウトカムのメタ解析（オッズ比）</span>
+m1 <span class="op">&lt;-</span> <span class="fn">metabin</span>(
+  event.e  <span class="op">=</span> event_t,  <span class="cm"># 治療群イベント数</span>
+  n.e      <span class="op">=</span> n_t,      <span class="cm"># 治療群総数</span>
+  event.c  <span class="op">=</span> event_c,  <span class="cm"># 対照群イベント数</span>
+  n.c      <span class="op">=</span> n_c,      <span class="cm"># 対照群総数</span>
+  studlab  <span class="op">=</span> study,    <span class="cm"># 研究ラベル</span>
+  data     <span class="op">=</span> study_data,
+  sm       <span class="op">=</span> <span class="str">"OR"</span>,     <span class="cm"># 効果量の種類（OR/RR/RD）</span>
+  method   <span class="op">=</span> <span class="str">"MH"</span>,    <span class="cm"># Mantel-Haenszel 法</span>
+  random   <span class="op">=</span> <span class="kw">TRUE</span>     <span class="cm"># ランダム効果モデル</span>
+)
+
+<span class="cm"># 結果サマリー</span>
+<span class="fn">summary</span>(m1)</pre>
+        </div>
+
+        <div class="note">効果量の指定：<code>sm = "OR"</code>（オッズ比）、<code>sm = "RR"</code>（リスク比）、<code>sm = "RD"</code>（リスク差）。連続アウトカムには <code>metacont()</code> を使います。</div>
+      </div>
+
+      <div class="section" id="ch4-3">
+        <h3>フォレストプロットの描画</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — forest() でフォレストプロット</span>
+          </div>
+          <pre><span class="cm"># 基本的なフォレストプロット</span>
+<span class="fn">forest</span>(m1,
+  sortvar   <span class="op">=</span> <span class="fn">TE</span>,         <span class="cm"># 効果量で並べ替え</span>
+  col.square <span class="op">=</span> <span class="str">"steelblue"</span>,
+  col.diamond <span class="op">=</span> <span class="str">"darkred"</span>,
+  leftlabs  <span class="op">=</span> <span class="fn">c</span>(<span class="str">"研究"</span>, <span class="str">"治療群\n(n/N)"</span>, <span class="str">"対照群\n(n/N)"</span>),
+  lab.e     <span class="op">=</span> <span class="str">"治療"</span>,
+  lab.c     <span class="op">=</span> <span class="str">"対照"</span>,
+  print.tau2 <span class="op">=</span> <span class="kw">TRUE</span>,       <span class="cm"># τ² を表示</span>
+  print.I2   <span class="op">=</span> <span class="kw">TRUE</span>        <span class="cm"># I² を表示</span>
+)</pre>
+        </div>
+
+        <div class="forest-mock">
+          <pre>
+  研究               OR    [95% CI]       Weight
+  ─────────────────────────────────────────────────
+  Smith 2018        0.52 [0.26, 1.04]   20.3%    ◆────────●────────
+  Jones 2019        0.55 [0.30, 1.00]   24.1%      ◆──────●──────
+  Park 2020         0.47 [0.20, 1.11]   14.8%    ◆──────────●──────────
+  Lee 2021          0.58 [0.34, 0.99]   26.7%       ◆─────●─────
+  Tanaka 2022       0.52 [0.24, 1.12]   14.1%    ◆───────────●───────────
+  ─────────────────────────────────────────────────
+  Random effects    0.54 [0.40, 0.72]  100.0%        ◆──◆──◆
+                    I² = 0%,  τ² = 0
+          0.25   0.5    1.0    2.0
+               ←治療優 | 対照優→
+          </pre>
+        </div>
+
+        <p>フォレストプロットの見方：各行の四角（■）が各研究の点推定値で、その大きさが重みを表します。横棒が95%信頼区間。一番下のひし形（◆）が統合推定値です。</p>
+      </div>
+
+      <div class="section" id="ch4-4">
+        <h3>異質性と出版バイアスの評価</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — 異質性と出版バイアス</span>
+          </div>
+          <pre><span class="cm"># I² 統計量（出力から確認）</span>
+m1<span class="op">$</span>I2         <span class="cm"># I² の値（%）</span>
+m1<span class="op">$</span>tau2       <span class="cm"># τ²（ランダム効果の分散）</span>
+
+<span class="cm"># ファンネルプロット（出版バイアスの視覚的確認）</span>
+<span class="fn">funnel</span>(m1,
+  xlab    <span class="op">=</span> <span class="str">"log オッズ比"</span>,
+  contour <span class="op">=</span> <span class="fn">c</span>(<span class="num">0.9</span>, <span class="num">0.95</span>, <span class="num">0.99</span>),  <span class="cm"># 有意水準の等高線</span>
+  col.contour <span class="op">=</span> <span class="fn">c</span>(<span class="str">"gray90"</span>, <span class="str">"gray70"</span>, <span class="str">"gray50"</span>)
+)
+<span class="fn">legend</span>(<span class="str">"topright"</span>, <span class="fn">c</span>(<span class="str">"p < 0.1"</span>, <span class="str">"p < 0.05"</span>, <span class="str">"p < 0.01"</span>),
+       bty <span class="op">=</span> <span class="str">"n"</span>, fill <span class="op">=</span> <span class="fn">c</span>(<span class="str">"gray90"</span>, <span class="str">"gray70"</span>, <span class="str">"gray50"</span>))
+
+<span class="cm"># Egger の回帰テスト</span>
+<span class="fn">metabias</span>(m1, method.bias <span class="op">=</span> <span class="str">"Egger"</span>)</pre>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>指標</th><th>意味</th><th>目安</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>I²</td><td>研究間の異質性の割合</td><td>0–25% 低、26–50% 中、51%+ 高</td></tr>
+            <tr><td>τ²</td><td>真の効果量の分散</td><td>0 に近いほど均質</td></tr>
+            <tr><td>Q検定 p値</td><td>異質性の検定</td><td>p &lt; 0.1 で異質性あり</td></tr>
+          </tbody>
+        </table>
+
+        <div class="sensei">
+          I² が高いからといって即「問題あり」ではありません。臨床的文脈や研究デザインの違いを考慮して解釈してください。数字だけでなく「なぜ異質なのか」を考えることが大切です。
+        </div>
+      </div>
+
+      <a href="#intro" class="back-top">↑ トップへ</a>
+    </div>
+
+    <hr class="chapter-rule">
+
+    <!-- ════════ CHAPTER 5 ════════ -->
+    <div class="chapter" id="ch5">
+      <div class="chapter-header">
+        <span class="chapter-num">05</span>
+        <h2 class="chapter-title">R Markdownでレポートを作る</h2>
+      </div>
+
+      <div class="sensei">
+        解析結果はちゃんとした形にしないと意味がありません。R Markdownは「解析コード」と「文章」を一つのファイルにまとめて、ボタン一発でPDFやHTMLに出力できる仕組みです。論文の補足資料やレポートに使えます。
+      </div>
+
+      <div class="section" id="ch5-1">
+        <h3>Rmdファイルの基本構造</h3>
+        <p>R Markdownファイル（.Rmd）は3つのパートで構成されます。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">template.Rmd — ファイルの骨格</span>
+          </div>
+          <pre><span class="cm">---  ← ここからYAMLヘッダー（文書の設定）</span>
+<span class="kw">title</span>: <span class="str">"メタ解析レポート"</span>
+<span class="kw">author</span>: <span class="str">"金子幸弘"</span>
+<span class="kw">date</span>: <span class="str">"`r Sys.Date()`"</span>
+<span class="kw">output</span>:
+  <span class="kw">html_document</span>:
+    <span class="kw">toc</span>: <span class="kw">true</span>
+    <span class="kw">toc_float</span>: <span class="kw">true</span>
+    <span class="kw">theme</span>: <span class="str">"flatly"</span>
+<span class="cm">---  ← ここまでYAMLヘッダー</span>
+
+<span class="cm">## はじめに  ← Markdownで文章を書く</span>
+
+本レポートでは...
+
+<span class="cm">```{r setup, include=FALSE}  ← Rコードチャンク</span>
+<span class="fn">library</span>(meta)
+<span class="fn">library</span>(tidyverse)
+knitr::opts_chunk$set(echo = <span class="kw">FALSE</span>, warning = <span class="kw">FALSE</span>)
+<span class="cm">```</span></pre>
+        </div>
+      </div>
+
+      <div class="section" id="ch5-2">
+        <h3>コードチャンクの書き方</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">Rmd — コードチャンクのオプション</span>
+          </div>
+          <pre><span class="cm"># echo=TRUE でコードを表示、FALSE で非表示</span>
+<span class="cm">```{r forest-plot, fig.width=8, fig.height=5, echo=FALSE}</span>
+<span class="fn">forest</span>(m1)
+<span class="cm">```</span>
+
+<span class="cm"># 本文中に結果を埋め込む（インラインR）</span>
+統合オッズ比は `r round(exp(m1$TE.random), 2)` でした
+（95% CI: `r round(exp(m1$lower.random), 2)`–`r round(exp(m1$upper.random), 2)`）。</pre>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>オプション</th><th>意味</th><th>デフォルト</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>echo</code></td><td>コードを表示するか</td><td>TRUE</td></tr>
+            <tr><td><code>eval</code></td><td>コードを実行するか</td><td>TRUE</td></tr>
+            <tr><td><code>include</code></td><td>出力を含めるか</td><td>TRUE</td></tr>
+            <tr><td><code>message</code></td><td>メッセージを表示するか</td><td>TRUE</td></tr>
+            <tr><td><code>warning</code></td><td>警告を表示するか</td><td>TRUE</td></tr>
+            <tr><td><code>fig.width</code></td><td>図の幅（インチ）</td><td>7</td></tr>
+            <tr><td><code>fig.cap</code></td><td>図のキャプション</td><td>なし</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" id="ch5-3">
+        <h3>レポートの出力</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+            <span class="code-label">R — rmarkdown でコンパイル</span>
+          </div>
+          <pre><span class="cm"># RStudio の "Knit" ボタンを押すか、コードで実行</span>
+<span class="fn">library</span>(rmarkdown)
+
+<span class="cm"># HTML出力</span>
+<span class="fn">render</span>(<span class="str">"report.Rmd"</span>, output_format <span class="op">=</span> <span class="str">"html_document"</span>)
+
+<span class="cm"># PDF出力（LaTeX が必要）</span>
+<span class="fn">render</span>(<span class="str">"report.Rmd"</span>, output_format <span class="op">=</span> <span class="str">"pdf_document"</span>)
+
+<span class="cm"># Word出力（査読者への共有に便利）</span>
+<span class="fn">render</span>(<span class="str">"report.Rmd"</span>, output_format <span class="op">=</span> <span class="str">"word_document"</span>)</pre>
+        </div>
+
+        <div class="tip">PDFに日本語を出力するには追加設定（<code>latex_engine: xelatex</code> など）が必要です。まずはHTMLで慣れてから挑戦しましょう。</div>
+
+        <div class="note">
+          <strong>再現性のあるレポートを作るために</strong><br>
+          乱数を使う場合は <code>set.seed()</code> を最初に呼ぶ、パッケージのバージョンを <code>sessionInfo()</code> で記録する、データのパスを相対パスで書く——これらを意識するだけで、数年後に自分や他者が同じ結果を再現できます。
+        </div>
+      </div>
+
+      <a href="#intro" class="back-top">↑ トップへ</a>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <p>Rではじめる医学統計・メタ解析　―　学生向けテキスト</p>
+  <p style="margin-top:6px;font-size:.72rem;">R · tidyverse · meta · R Markdown</p>
+</footer>
+
+</body>
+</html>
