@@ -361,6 +361,9 @@
         <input type="checkbox" id="optOrcid"> ORCIDを含める
       </label>
       <label>
+        <input type="checkbox" id="optEmail"> emailを含める
+      </label>
+      <label>
         <input type="checkbox" id="optSuperscript" checked> 上付き番号<sup class="superscript-demo">1,2</sup>（HTMLコピー用）
       </label>
       <label>
@@ -532,6 +535,7 @@ function generate() {
   }
 
   const optOrcid = document.getElementById('optOrcid').checked;
+  const optEmail = document.getElementById('optEmail').checked;
   const optSuperscript = document.getElementById('optSuperscript').checked;
   const optAddress = document.getElementById('optAddress').checked;
   const optSorted = document.getElementById('optSorted').checked;
@@ -622,6 +626,18 @@ function generate() {
     });
   }
 
+  if (optEmail) {
+    plainText += '\nCorrespondence:\n';
+    sorted.forEach(author => {
+      const fn = getKey(author, 'first_name').trim();
+      const ln = getKey(author, 'last_name').trim();
+      const email = getKey(author, 'email').trim();
+      if (email && email.toLowerCase() !== 'nan') {
+        plainText += `${fn} ${ln}: ${email}\n`;
+      }
+    });
+  }
+
   // ─ HTML render in output box ──────────────────────────────────────────
   const outputEl = document.getElementById('output');
 
@@ -655,6 +671,19 @@ function generate() {
       const orcid = getKey(author, 'orcid').trim();
       if (orcid && orcid.toLowerCase() !== 'nan') {
         html += `<div style="color:var(--muted);font-size:0.72em">${fn} ${ln}: <a href="https://orcid.org/${orcid}" style="color:var(--accent)">${orcid}</a></div>`;
+      }
+    });
+  }
+
+  if (optEmail) {
+    html += `<span class="sep"></span>`;
+    html += `<div style="color:var(--muted);font-size:0.75em">Correspondence:</div>`;
+    sorted.forEach(author => {
+      const fn = getKey(author, 'first_name').trim();
+      const ln = getKey(author, 'last_name').trim();
+      const email = getKey(author, 'email').trim();
+      if (email && email.toLowerCase() !== 'nan') {
+        html += `<div style="color:var(--muted);font-size:0.72em">${fn} ${ln}: <a href="mailto:${email}" style="color:var(--accent)">${email}</a></div>`;
       }
     });
   }
