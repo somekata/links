@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authors List Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f5f3ee;
+    --surface: #ffffff;
+    --border: #d8d3c8;
+    --text: #1a1814;
+    --muted: #7a7469;
+    --accent: #2c5f8a;
+    --accent-light: #e8f0f7;
+    --highlight: #c8411a;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 32px;
+    border-bottom: 2px solid var(--text);
+    padding-bottom: 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  header span {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    background: var(--text);
+    color: #fff;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-header .badge {
+    background: var(--accent);
+    border-radius: 2px;
+    padding: 1px 6px;
+    font-size: 0.65rem;
+  }
+
+  .panel-body {
+    padding: 16px;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .drop-zone .icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+  }
+
+  .drop-zone p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .drop-zone p strong {
+    display: block;
+    color: var(--text);
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+
+  .file-status {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    background: var(--accent-light);
+    border-radius: 3px;
+    padding: 6px 10px;
+    display: none;
+  }
+
+  .file-status.active { display: block; }
+
+  .preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.73rem;
+    font-family: var(--mono);
+    margin-top: 10px;
+  }
+
+  .preview-table th {
+    background: var(--bg);
+    padding: 5px 8px;
+    text-align: left;
+    font-weight: 500;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .preview-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--bg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+
+  .preview-table tr:hover td { background: var(--accent-light); }
+
+  /* full-width panels */
+  .panel.full {
+    grid-column: 1 / -1;
+  }
+
+  .controls {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 3px;
+    padding: 9px 20px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.12s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #1e4a6e; }
+  .btn-primary:disabled { background: var(--muted); cursor: default; }
+
+  .btn-secondary {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover { background: var(--border); }
+
+  .btn-danger {
+    background: #fff0ed;
+    color: var(--highlight);
+    border: 1px solid #f0c0b0;
+  }
+
+  .btn-danger:hover { background: #ffe0d8; }
+
+  .output-box {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    line-height: 1.8;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 60px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .output-box .author-line {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .output-box .affil-line {
+    color: var(--accent);
+  }
+
+  .output-box .sep {
+    color: var(--border);
+    display: block;
+    margin: 6px 0;
+    border-top: 1px dashed var(--border);
+  }
+
+  .status-bar {
+    grid-column: 1 / -1;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex;
+    gap: 20px;
+  }
+
+  .status-bar span strong { color: var(--text); }
+
+  .msg {
+    grid-column: 1 / -1;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 10px 14px;
+    border-radius: 3px;
+    display: none;
+  }
+
+  .msg.error { background: #fff0ed; color: var(--highlight); border: 1px solid #f0c0b0; display: block; }
+  .msg.success { background: #edf5ed; color: #2a6b2a; border: 1px solid #b0d4b0; display: block; }
+
+  .options-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+  }
+
+  .options-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .options-row input[type="checkbox"] {
+    width: 14px; height: 14px;
+    accent-color: var(--accent);
+  }
+
+  .superscript-demo {
+    font-size: 0.65em;
+    vertical-align: super;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Authors List Generator</h1>
+  <span>v1.0 · CSV → formatted author list</span>
+</header>
+
+<div class="container">
+
+  <!-- Authors CSV -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>01</span> Authors CSV
+      <span class="badge">authorslist</span>
+    </div>
+    <div class="panel-body">
+      <div class="drop-zone" id="dropAuthors">
+        <input type="file" id="fileAuthors" accept=".csv">
+        <div class="icon">📄</div>
+        <p><strong>authorslist.csv をドロップ</strong>クリックして選択</p>
+        <p style="margin-top:6px;font-size:0.68rem;">列: author_order, first_name, last_name, affiliation No, ORCID</p>
+      </div>
+      <div class="file-status" id="statusAuthors"></div>
+      <div id="previewAuthors"></div>
+    </div>
+  </div>
+
+  <!-- Affiliations CSV -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>02</span> Affiliations CSV
+      <span class="badge">affiliationlist</span>
+    </div>
+    <div class="panel-body">
+      <div class="drop-zone" id="dropAffil">
+        <input type="file" id="fileAffil" accept=".csv">
+        <div class="icon">🏛</div>
+        <p><strong>affiliationlist.csv をドロップ</strong>クリックして選択</p>
+        <p style="margin-top:6px;font-size:0.68rem;">列: no, affiliation, address</p>
+      </div>
+      <div class="file-status" id="statusAffil"></div>
+      <div id="previewAffil"></div>
+    </div>
+  </div>
+
+  <!-- Options -->
+  <div class="panel full">
+    <div class="panel-header"><span>03</span> オプション</div>
+    <div class="panel-body options-row">
+      <label>
+        <input type="checkbox" id="optOrcid"> ORCIDを含める
+      </label>
+      <label>
+        <input type="checkbox" id="optSuperscript" checked> 上付き番号<sup class="superscript-demo">1,2</sup>（HTMLコピー用）
+      </label>
+      <label>
+        <input type="checkbox" id="optAddress" checked> 住所を表示
+      </label>
+      <label>
+        <input type="checkbox" id="optSorted" checked> 施設番号順に並べる
+      </label>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn-primary" id="btnGenerate" disabled>▶ Authors List を生成</button>
+    <button class="btn-secondary" id="btnCopyPlain">📋 プレーンテキストをコピー</button>
+    <button class="btn-secondary" id="btnCopyHtml">🔤 HTMLをコピー</button>
+    <button class="btn-danger" id="btnReset">↺ リセット</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <div class="status-bar" id="statusBar" style="display:none">
+    <span>著者数: <strong id="sbAuthors">0</strong></span>
+    <span>施設数: <strong id="sbAffils">0</strong></span>
+    <span>使用施設: <strong id="sbUsed">0</strong></span>
+  </div>
+
+  <!-- Output -->
+  <div class="panel full">
+    <div class="panel-header"><span>04</span> 生成結果</div>
+    <div class="panel-body">
+      <div class="output-box" id="output">← CSVを読み込んで「生成」ボタンを押してください</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────
+let authorsData = null;
+let affiliationsData = null;
+
+// ─── CSV Parser (RFC 4180 compatible) ─────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const rows = [];
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const row = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else { inQ = !inQ; }
+      } else if (ch === ',' && !inQ) {
+        row.push(cur.trim()); cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    row.push(cur.trim());
+    rows.push(row);
+  }
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => h.toLowerCase().replace(/\s+/g, '_'));
+  return rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = r[i] !== undefined ? r[i] : ''; });
+    return obj;
+  });
+}
+
+// ─── File loading ──────────────────────────────────────────────────────────
+function loadFile(file, type) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = parseCSV(e.target.result);
+    if (type === 'authors') {
+      authorsData = data;
+      document.getElementById('statusAuthors').textContent = `✓ ${file.name} — ${data.length} 行`;
+      document.getElementById('statusAuthors').classList.add('active');
+      showPreview('previewAuthors', data, ['author_order','first_name','last_name','affiliation_no']);
+    } else {
+      affiliationsData = data;
+      document.getElementById('statusAffil').textContent = `✓ ${file.name} — ${data.length} 行`;
+      document.getElementById('statusAffil').classList.add('active');
+      showPreview('previewAffil', data, ['no','affiliation']);
+    }
+    checkReady();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function showPreview(id, data, cols) {
+  const el = document.getElementById(id);
+  if (!data.length) { el.innerHTML = ''; return; }
+  const sample = data.slice(0, 5);
+  const actualCols = cols.filter(c => c in data[0] || c === 'affiliation_no');
+
+  // map affiliation No key
+  const getVal = (row, col) => {
+    if (col === 'affiliation_no') {
+      return row['affiliation_no'] || row['affiliation no'] || row['affiliation_no'] || '';
+    }
+    return row[col] || '';
+  };
+
+  let html = '<table class="preview-table"><thead><tr>';
+  actualCols.forEach(c => { html += `<th>${c}</th>`; });
+  html += '</tr></thead><tbody>';
+  sample.forEach(row => {
+    html += '<tr>';
+    actualCols.forEach(c => {
+      const v = getVal(row, c);
+      html += `<td title="${v}">${v || '—'}</td>`;
+    });
+    html += '</tr>';
+  });
+  if (data.length > 5) html += `<tr><td colspan="${actualCols.length}" style="color:var(--muted);padding:4px 8px;">…他 ${data.length-5} 行</td></tr>`;
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function checkReady() {
+  document.getElementById('btnGenerate').disabled = !(authorsData && affiliationsData);
+}
+
+// ─── Drag and drop ────────────────────────────────────────────────────────
+['Authors','Affil'].forEach(t => {
+  const zone = document.getElementById('drop' + t);
+  const input = document.getElementById('file' + t);
+  const type = t === 'Authors' ? 'authors' : 'affil';
+
+  input.addEventListener('change', e => {
+    if (e.target.files[0]) loadFile(e.target.files[0], type);
+  });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0], type);
+  });
+});
+
+// ─── Key lookup helper ────────────────────────────────────────────────────
+function getKey(obj, ...candidates) {
+  for (const k of candidates) {
+    for (const ok of Object.keys(obj)) {
+      if (ok.toLowerCase().replace(/\s+/g,'_') === k.toLowerCase().replace(/\s+/g,'_')) {
+        return obj[ok];
+      }
+    }
+  }
+  return '';
+}
+
+// ─── Generate ─────────────────────────────────────────────────────────────
+document.getElementById('btnGenerate').addEventListener('click', generate);
+
+function generate() {
+  const msg = document.getElementById('msg');
+  msg.className = 'msg';
+  msg.style.display = 'none';
+
+  if (!authorsData || !affiliationsData) {
+    showMsg('error', 'CSVファイルを両方読み込んでください。');
+    return;
+  }
+
+  const optOrcid = document.getElementById('optOrcid').checked;
+  const optSuperscript = document.getElementById('optSuperscript').checked;
+  const optAddress = document.getElementById('optAddress').checked;
+  const optSorted = document.getElementById('optSorted').checked;
+
+  // Build affiliation map: no → {affiliation, address}
+  const affilMap = {};
+  affiliationsData.forEach(row => {
+    const no = getKey(row, 'no').toString().trim();
+    if (no) {
+      affilMap[no] = {
+        name: getKey(row, 'affiliation').trim(),
+        address: getKey(row, 'address').trim()
+      };
+    }
+  });
+
+  // Collect all used affiliation nos in order of first appearance
+  const usedNos = [];
+  const usedSet = new Set();
+
+  // Sort authors by author_order
+  const sorted = [...authorsData].sort((a, b) => {
+    return parseInt(getKey(a,'author_order')) - parseInt(getKey(b,'author_order'));
+  });
+
+  sorted.forEach(author => {
+    const affilStr = getKey(author, 'affiliation_no', 'affiliation no', 'affiliation_no').toString().trim();
+    if (!affilStr) return;
+    const nos = affilStr.split(',').map(n => n.trim()).filter(Boolean);
+    nos.forEach(no => {
+      if (!usedSet.has(no)) {
+        usedSet.add(no);
+        usedNos.push(no);
+      }
+    });
+  });
+
+  if (optSorted) usedNos.sort((a,b) => parseInt(a)-parseInt(b));
+
+  // Create renumber map: original no → display index (1-based)
+  const affilIndex = {};
+  usedNos.forEach((no, i) => { affilIndex[no] = i + 1; });
+
+  // Build author line
+  const authorParts = sorted.map(author => {
+    const fn = getKey(author, 'first_name').trim();
+    const ln = getKey(author, 'last_name').trim();
+    const affilStr = getKey(author, 'affiliation_no', 'affiliation no').toString().trim();
+    const orcid = getKey(author, 'orcid').trim();
+
+    const nos = affilStr ? affilStr.split(',').map(n => n.trim()).filter(Boolean) : [];
+    const indices = nos.map(n => affilIndex[n]).filter(Boolean).sort((a, b) => a - b);
+
+    let namePart = `${fn} ${ln}`;
+    let supStr = indices.join(',');
+
+    return { namePart, supStr, orcid, indices };
+  });
+
+  // ─ Plain text output ──────────────────────────────────────────────────
+  let plainText = authorParts.map(a => {
+    return a.supStr ? `${a.namePart} ${a.supStr}` : a.namePart;
+  }).join(', ');
+
+  if (optOrcid) {
+    // append ORCIDs as separate lines after author list
+  }
+
+  plainText += '\n\n';
+
+  usedNos.forEach(no => {
+    const idx = affilIndex[no];
+    const af = affilMap[no];
+    if (!af) return;
+    const addr = optAddress && af.address ? ` ${af.address}` : '';
+    plainText += `${idx}. ${af.name}.${addr}\n`;
+  });
+
+  if (optOrcid) {
+    plainText += '\nORCID:\n';
+    sorted.forEach(author => {
+      const fn = getKey(author, 'first_name').trim();
+      const ln = getKey(author, 'last_name').trim();
+      const orcid = getKey(author, 'orcid').trim();
+      if (orcid && orcid.toLowerCase() !== 'nan') {
+        plainText += `${fn} ${ln}: https://orcid.org/${orcid}\n`;
+      }
+    });
+  }
+
+  // ─ HTML render in output box ──────────────────────────────────────────
+  const outputEl = document.getElementById('output');
+
+  const authorHtml = authorParts.map(a => {
+    const sup = a.supStr
+      ? (optSuperscript ? `<sup style="color:var(--accent);font-size:0.75em">${a.supStr}</sup>` : ` <span style="color:var(--accent)">[${a.supStr}]</span>`)
+      : '';
+    return `<span style="white-space:nowrap">${a.namePart}${sup}</span>`;
+  }).join(', ');
+
+  let html = `<div class="author-line">${authorHtml}</div>`;
+  html += `<span class="sep"></span>`;
+
+  usedNos.forEach(no => {
+    const idx = affilIndex[no];
+    const af = affilMap[no];
+    if (!af) return;
+    const addr = optAddress && af.address ? ` ${af.address}` : '';
+    const sup = optSuperscript
+      ? `<sup style="color:var(--accent);font-size:0.75em">${idx}</sup>`
+      : `<span style="color:var(--accent)">${idx}.</span>`;
+    html += `<div class="affil-line">${sup} ${af.name}.${addr}</div>`;
+  });
+
+  if (optOrcid) {
+    html += `<span class="sep"></span>`;
+    html += `<div style="color:var(--muted);font-size:0.75em">ORCID:</div>`;
+    sorted.forEach(author => {
+      const fn = getKey(author, 'first_name').trim();
+      const ln = getKey(author, 'last_name').trim();
+      const orcid = getKey(author, 'orcid').trim();
+      if (orcid && orcid.toLowerCase() !== 'nan') {
+        html += `<div style="color:var(--muted);font-size:0.72em">${fn} ${ln}: <a href="https://orcid.org/${orcid}" style="color:var(--accent)">${orcid}</a></div>`;
+      }
+    });
+  }
+
+  outputEl.innerHTML = html;
+  outputEl._plain = plainText;
+  outputEl._htmlFull = html;
+
+  // Status bar
+  document.getElementById('sbAuthors').textContent = sorted.length;
+  document.getElementById('sbAffils').textContent = affiliationsData.length;
+  document.getElementById('sbUsed').textContent = usedNos.length;
+  document.getElementById('statusBar').style.display = 'flex';
+
+  showMsg('success', `✓ 生成完了 — ${sorted.length} 著者 / ${usedNos.length} 施設`);
+}
+
+// ─── Copy buttons ──────────────────────────────────────────────────────────
+document.getElementById('btnCopyPlain').addEventListener('click', () => {
+  const output = document.getElementById('output');
+  const plain = output._plain || output.innerText;
+  navigator.clipboard.writeText(plain).then(() => {
+    showMsg('success', '✓ プレーンテキストをクリップボードにコピーしました');
+  }).catch(() => {
+    showMsg('error', 'コピーに失敗しました。ブラウザの権限を確認してください。');
+  });
+});
+
+document.getElementById('btnCopyHtml').addEventListener('click', () => {
+  const output = document.getElementById('output');
+  const html = output._htmlFull || output.innerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const item = new ClipboardItem({ 'text/html': blob });
+  navigator.clipboard.write([item]).then(() => {
+    showMsg('success', '✓ HTMLをクリップボードにコピーしました');
+  }).catch(() => {
+    // fallback: copy inner text
+    navigator.clipboard.writeText(output.innerText).then(() => {
+      showMsg('success', '✓ テキストをコピーしました（HTML形式非対応ブラウザ）');
+    });
+  });
+});
+
+// ─── Reset ────────────────────────────────────────────────────────────────
+document.getElementById('btnReset').addEventListener('click', () => {
+  authorsData = null;
+  affiliationsData = null;
+  ['Authors','Affil'].forEach(t => {
+    document.getElementById('status' + t).classList.remove('active');
+    document.getElementById('status' + t).textContent = '';
+    document.getElementById('preview' + t).innerHTML = '';
+    document.getElementById('file' + t).value = '';
+  });
+  document.getElementById('output').innerHTML = '← CSVを読み込んで「生成」ボタンを押してください';
+  document.getElementById('output')._plain = '';
+  document.getElementById('statusBar').style.display = 'none';
+  document.getElementById('msg').className = 'msg';
+  document.getElementById('msg').style.display = 'none';
+  checkReady();
+});
+
+function showMsg(type, text) {
+  const el = document.getElementById('msg');
+  el.className = 'msg ' + type;
+  el.style.display = 'block';
+  el.textContent = text;
+}
+</script>
+</body>
+</html>

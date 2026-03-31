@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計学の基礎｜基本編</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --ink-light: #3d3020;
+    --paper: #faf7f2;
+    --paper-warm: #f5f0e8;
+    --paper-card: #fffdf8;
+    --accent: #8b3a12;
+    --accent-light: #c4622d;
+    --accent-muted: #d4956a;
+    --blue: #1a4a6b;
+    --blue-light: #2e6d9e;
+    --green: #2d5a27;
+    --green-light: #4a8c42;
+    --purple: #4a2570;
+    --gold: #b8860b;
+    --gold-light: #d4a017;
+    --border: #d4c9b0;
+    --border-light: #e8e0d0;
+    --shadow: rgba(26,18,8,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Serif JP', 'Crimson Pro', serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.9;
+    font-size: 16px;
+  }
+
+  /* ===== COVER ===== */
+  .cover {
+    min-height: 100vh;
+    background: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 60px 40px;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 60% at 20% 30%, rgba(139,58,18,0.2) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 70%, rgba(26,74,107,0.15) 0%, transparent 60%);
+  }
+
+  .cover-ornament {
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+    margin-bottom: 48px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-ornament::before, .cover-ornament::after {
+    content: '◆';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold-light);
+    font-size: 8px;
+  }
+  .cover-ornament::before { left: -20px; }
+  .cover-ornament::after { right: -20px; }
+
+  .cover-series {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 0.4em;
+    color: var(--accent-muted);
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-title {
+    font-family: 'Noto Serif JP', serif;
+    font-weight: 700;
+    font-size: clamp(36px, 6vw, 64px);
+    color: #faf7f2;
+    text-align: center;
+    line-height: 1.3;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.05em;
+  }
+
+  .cover-subtitle {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    font-size: 18px;
+    color: var(--gold-light);
+    margin-top: 16px;
+    letter-spacing: 0.3em;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-desc {
+    max-width: 500px;
+    text-align: center;
+    color: rgba(250,247,242,0.55);
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    margin-top: 40px;
+    line-height: 2;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-chapters {
+    display: flex;
+    gap: 12px;
+    margin-top: 48px;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-chapter-tag {
+    border: 1px solid rgba(212,160,23,0.3);
+    color: rgba(212,160,23,0.7);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    padding: 6px 14px;
+    letter-spacing: 0.15em;
+  }
+
+  /* ===== LAYOUT ===== */
+  .book {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 80px 40px;
+  }
+
+  /* ===== TABLE OF CONTENTS ===== */
+  .toc {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    padding: 48px 56px;
+    margin-bottom: 80px;
+    position: relative;
+  }
+
+  .toc::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent), var(--gold));
+  }
+
+  .toc-title {
+    font-size: 13px;
+    letter-spacing: 0.4em;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    color: var(--accent);
+    margin-bottom: 28px;
+  }
+
+  .toc-list {
+    list-style: none;
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px dotted var(--border-light);
+    font-size: 15px;
+  }
+
+  .toc-item:last-child { border-bottom: none; }
+
+  .toc-link {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    width: 100%;
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s;
+  }
+
+  .toc-link:hover .toc-name {
+    color: var(--accent);
+  }
+
+  .toc-link:hover .toc-num {
+    color: var(--accent-light);
+  }
+
+  .toc-num {
+    font-family: 'Crimson Pro', serif;
+    font-weight: 300;
+    color: var(--accent-muted);
+    font-size: 13px;
+    min-width: 28px;
+  }
+
+  .toc-name {
+    flex: 1;
+    color: var(--ink-light);
+  }
+
+  /* ===== CHAPTER / SECTION ===== */
+  .chapter {
+    margin-bottom: 80px;
+  }
+
+  .chapter-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chapter-num-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .chapter-num {
+    font-family: 'Crimson Pro', serif;
+    font-weight: 300;
+    font-size: 56px;
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -2px;
+  }
+
+  .chapter-num-label {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--accent-muted);
+    font-weight: 300;
+  }
+
+  .chapter-title-block {}
+
+  .chapter-label {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: var(--accent-muted);
+    font-weight: 300;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .chapter-title {
+    font-size: clamp(22px, 4vw, 30px);
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+
+  .section {
+    margin-bottom: 52px;
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 20px;
+    padding-left: 16px;
+    border-left: 3px solid var(--accent-light);
+    line-height: 1.4;
+  }
+
+  .subsection-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--blue);
+    margin: 28px 0 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+
+  p {
+    margin-bottom: 16px;
+    font-size: 15.5px;
+    line-height: 1.95;
+    color: var(--ink-light);
+  }
+
+  /* ===== FORMULA BOX ===== */
+  .formula-box {
+    background: var(--ink);
+    border-radius: 2px;
+    padding: 32px 40px;
+    margin: 28px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .formula-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--gold-light));
+  }
+
+  .formula-label {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--accent-muted);
+    font-weight: 300;
+    margin-bottom: 16px;
+  }
+
+  .formula {
+    font-family: 'Crimson Pro', serif;
+    font-size: 26px;
+    font-weight: 300;
+    color: #faf7f2;
+    letter-spacing: 0.05em;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .formula-note {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    color: rgba(250,247,242,0.5);
+    margin-top: 16px;
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  /* ===== CALLOUT BOXES ===== */
+  .callout {
+    padding: 24px 28px;
+    margin: 24px 0;
+    border-radius: 1px;
+    position: relative;
+  }
+
+  .callout-key {
+    background: #fff8f4;
+    border: 1px solid #f0d4c4;
+    border-left: 4px solid var(--accent);
+  }
+
+  .callout-note {
+    background: #f4f8ff;
+    border: 1px solid #c4d8f0;
+    border-left: 4px solid var(--blue);
+  }
+
+  .callout-example {
+    background: #f4faf4;
+    border: 1px solid #c4dfc4;
+    border-left: 4px solid var(--green);
+  }
+
+  .callout-caution {
+    background: #fffbf0;
+    border: 1px solid #e8d898;
+    border-left: 4px solid var(--gold);
+  }
+
+  .callout-header {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .callout-key .callout-header { color: var(--accent); }
+  .callout-note .callout-header { color: var(--blue); }
+  .callout-example .callout-header { color: var(--green); }
+  .callout-caution .callout-header { color: var(--gold); }
+
+  .callout p {
+    font-size: 14.5px;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* ===== COMPARISON TABLE ===== */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+    background: var(--paper-card);
+    box-shadow: 0 1px 8px var(--shadow);
+  }
+
+  .compare-table th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 18px;
+    text-align: left;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .compare-table td {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-light);
+    line-height: 1.6;
+    vertical-align: top;
+    color: var(--ink-light);
+  }
+
+  .compare-table tr:last-child td { border-bottom: none; }
+
+  .compare-table tr:nth-child(even) td {
+    background: var(--paper-warm);
+  }
+
+  .compare-table .highlight-cell {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ===== VISUAL DIAGRAM ===== */
+  .diagram {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    padding: 32px;
+    margin: 24px 0;
+    text-align: center;
+  }
+
+  .diagram-title {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: var(--accent-muted);
+    margin-bottom: 24px;
+    font-weight: 300;
+  }
+
+  /* Normal Distribution SVG */
+  .norm-dist-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* ===== EXAMPLE BOX ===== */
+  .example-box {
+    background: var(--paper-warm);
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+    margin: 24px 0;
+    position: relative;
+  }
+
+  .example-box::before {
+    content: '例';
+    position: absolute;
+    top: -14px;
+    left: 24px;
+    background: var(--green);
+    color: white;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 12px;
+    padding: 2px 14px;
+    letter-spacing: 0.1em;
+  }
+
+  .example-box p {
+    font-size: 14.5px;
+  }
+
+  /* ===== BADGE ===== */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    border-radius: 1px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+
+  .badge-bio { background: #e8f4e8; color: var(--green); border: 1px solid #c4dfc4; }
+  .badge-epi { background: #e8f0f8; color: var(--blue); border: 1px solid #c4d0e4; }
+  .badge-key { background: #fdeee6; color: var(--accent); border: 1px solid #f0d0bc; }
+
+  /* ===== DIVIDER ===== */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 56px 0;
+  }
+
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+  }
+
+  .divider-mark {
+    color: var(--accent-muted);
+    font-size: 8px;
+    letter-spacing: 4px;
+  }
+
+  /* ===== HIGHLIGHT TEXT ===== */
+  .hl { 
+    color: var(--accent); 
+    font-weight: 600; 
+  }
+  
+  .hl-blue { color: var(--blue); font-weight: 600; }
+  .hl-green { color: var(--green); font-weight: 600; }
+  .hl-gold { color: var(--gold); font-weight: 600; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 640px) {
+    .book { padding: 40px 20px; }
+    .chapter-header { flex-direction: column; gap: 12px; }
+    .toc { padding: 32px 24px; }
+    .formula-box { padding: 24px 20px; }
+    .formula { font-size: 20px; }
+  }
+
+  /* ===== PRINT ===== */
+  @media print {
+    .cover { page-break-after: always; }
+    .chapter { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== COVER ===== -->
+<div class="cover">
+  <div class="cover-ornament"></div>
+  <div class="cover-series">STATISTICS FOR LIFE SCIENCES ── 基本編 / VOLUME I</div>
+  <div class="cover-title">統計学の基礎</div>
+  <div class="cover-subtitle">基本編</div>
+  <p class="cover-desc">
+    生物学・疫学・医学研究のための統計入門<br>
+    平均・標準偏差・標準誤差から検定の基礎まで
+  </p>
+  <div class="cover-chapters">
+    <span class="cover-chapter-tag">記述統計</span>
+    <span class="cover-chapter-tag">SD と SE の違い</span>
+    <span class="cover-chapter-tag">正規分布</span>
+    <span class="cover-chapter-tag">生物統計</span>
+    <span class="cover-chapter-tag">疫学統計</span>
+    <span class="cover-chapter-tag">検定入門</span>
+  </div>
+</div>
+
+<!-- ===== BOOK BODY ===== -->
+<div class="book">
+
+  <!-- Table of Contents -->
+  <div class="toc">
+    <div class="toc-title">目　次　/ CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#ch1" class="toc-link"><span class="toc-num">Ch.1</span><span class="toc-name">統計学とは何か ── なぜ必要か</span></a></li>
+      <li class="toc-item"><a href="#ch2" class="toc-link"><span class="toc-num">Ch.2</span><span class="toc-name">データの種類と分布</span></a></li>
+      <li class="toc-item"><a href="#ch3" class="toc-link"><span class="toc-num">Ch.3</span><span class="toc-name">記述統計 ── 平均・中央値・最頻値</span></a></li>
+      <li class="toc-item"><a href="#ch4" class="toc-link"><span class="toc-num">Ch.4</span><span class="toc-name">ばらつきの指標 ── 分散・SD・四分位範囲</span></a></li>
+      <li class="toc-item"><a href="#ch5" class="toc-link"><span class="toc-num">Ch.5</span><span class="toc-name">SD と SE の違い ── 最重要ポイント</span></a></li>
+      <li class="toc-item"><a href="#ch6" class="toc-link"><span class="toc-num">Ch.6</span><span class="toc-name">正規分布と標準化</span></a></li>
+      <li class="toc-item"><a href="#ch7" class="toc-link"><span class="toc-num">Ch.7</span><span class="toc-name">生物統計の基礎</span></a></li>
+      <li class="toc-item"><a href="#ch8" class="toc-link"><span class="toc-num">Ch.8</span><span class="toc-name">疫学統計の基礎</span></a></li>
+      <li class="toc-item"><a href="#ch9" class="toc-link"><span class="toc-num">Ch.9</span><span class="toc-name">統計的検定の入口</span></a></li>
+    </ul>
+  </div>
+
+  <!-- ===== CHAPTER 1 ===== -->
+  <div class="chapter" id="ch1">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">1</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">INTRODUCTION</span>
+        <h2 class="chapter-title">統計学とは何か<br>── なぜ必要か</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">統計学の目的</h3>
+      <p>統計学とは、<span class="hl">データから情報を引き出し、不確実性を定量的に扱う学問</span>です。現実の世界では、どれだけ注意深く実験や調査を行っても「ばらつき」が存在します。統計学は、このばらつきを無視するのではなく、正面から数値として扱うための道具立てを提供します。</p>
+      <p>生物学・医学・疫学の研究では、統計学は「実験結果が偶然によるものか、それとも本当の効果があるのか」を判断するための共通言語です。論文を読む際にも、自分で研究を行う際にも、統計の基礎知識は不可欠です。</p>
+
+      <div class="callout callout-key">
+        <div class="callout-header">📌 統計学の二大目的</div>
+        <p><strong>記述統計（Descriptive Statistics）</strong>：データの特徴を要約・整理する。平均、標準偏差、グラフなど。</p>
+        <p><strong>推測統計（Inferential Statistics）</strong>：標本（手元のデータ）から母集団（全体）について推論する。検定、信頼区間など。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">母集団と標本</h3>
+      <p><span class="hl">母集団（Population）</span>とは、興味の対象となるすべての個体・測定値の集合です。たとえば「日本人成人男性の血圧」を研究したい場合、母集団は日本人成人男性全員の血圧値です。</p>
+      <p>実際には母集団全員を測定することは不可能なので、<span class="hl">標本（Sample）</span>と呼ばれる一部のデータを取得し、そこから母集団の性質を推定します。</p>
+
+      <div class="diagram">
+        <div class="diagram-title">母集団と標本の関係</div>
+        <svg width="480" height="160" viewBox="0 0 480 160" style="max-width:100%">
+          <!-- Population circle -->
+          <ellipse cx="120" cy="80" rx="110" ry="65" fill="#faf7f2" stroke="#8b3a12" stroke-width="2"/>
+          <text x="120" y="48" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="12" fill="#8b3a12" font-weight="500">母集団</text>
+          <text x="120" y="65" text-anchor="middle" font-family="Crimson Pro, serif" font-size="11" fill="#8b3a12">Population</text>
+          <!-- dots -->
+          <circle cx="90" cy="85" r="3" fill="#d4956a" opacity="0.5"/>
+          <circle cx="110" cy="95" r="3" fill="#d4956a" opacity="0.5"/>
+          <circle cx="130" cy="78" r="3" fill="#d4956a" opacity="0.5"/>
+          <circle cx="105" cy="108" r="3" fill="#d4956a" opacity="0.5"/>
+          <circle cx="145" cy="100" r="3" fill="#d4956a" opacity="0.5"/>
+          <circle cx="80" cy="100" r="3" fill="#d4956a" opacity="0.5"/>
+          <circle cx="155" cy="82" r="3" fill="#d4956a" opacity="0.5"/>
+          <circle cx="95" cy="72" r="3" fill="#8b3a12" opacity="0.9"/>
+          <circle cx="120" cy="90" r="3" fill="#8b3a12" opacity="0.9"/>
+          <circle cx="140" cy="70" r="3" fill="#8b3a12" opacity="0.9"/>
+          <circle cx="115" cy="110" r="3" fill="#8b3a12" opacity="0.9"/>
+          <!-- Arrow -->
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#1a4a6b"/>
+            </marker>
+          </defs>
+          <line x1="240" y1="80" x2="320" y2="80" stroke="#1a4a6b" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <text x="280" y="68" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="11" fill="#1a4a6b">無作為抽出</text>
+          <!-- back arrow -->
+          <line x1="320" y1="92" x2="240" y2="92" stroke="#2d5a27" stroke-width="1.5" marker-end="url(#arrowhead-back)"/>
+          <defs>
+            <marker id="arrowhead-back" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto">
+              <polygon points="8 0, 0 3, 8 6" fill="#2d5a27"/>
+            </marker>
+          </defs>
+          <text x="280" y="108" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="11" fill="#2d5a27">推　論</text>
+          <!-- Sample box -->
+          <rect x="330" y="35" width="130" height="90" rx="1" fill="#f4f8ff" stroke="#1a4a6b" stroke-width="1.5"/>
+          <text x="395" y="56" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="12" fill="#1a4a6b" font-weight="500">標本</text>
+          <text x="395" y="70" text-anchor="middle" font-family="Crimson Pro, serif" font-size="11" fill="#1a4a6b">Sample</text>
+          <circle cx="375" cy="92" r="3" fill="#1a4a6b" opacity="0.8"/>
+          <circle cx="393" cy="100" r="3" fill="#1a4a6b" opacity="0.8"/>
+          <circle cx="412" cy="86" r="3" fill="#1a4a6b" opacity="0.8"/>
+          <circle cx="385" cy="108" r="3" fill="#1a4a6b" opacity="0.8"/>
+        </svg>
+      </div>
+
+      <div class="callout callout-note">
+        <div class="callout-header">📖 用語整理</div>
+        <p>母集団の平均を <strong>μ（ミュー）</strong>、標準偏差を <strong>σ（シグマ）</strong> と表記します（ギリシャ文字＝真の値）。</p>
+        <p>標本の平均を <strong>x̄（エックスバー）</strong>、標準偏差を <strong>s</strong> と表記します（ローマ字＝推定値）。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== CHAPTER 2 ===== -->
+  <div class="chapter" id="ch2">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">2</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">DATA TYPES</span>
+        <h2 class="chapter-title">データの種類と分布</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">データの測定尺度</h3>
+      <p>統計解析の第一歩は、手元のデータがどの種類に属するかを見極めることです。データの種類によって、使用できる統計手法が決まります。</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>尺度</th>
+          <th>特徴</th>
+          <th>例（生物・医学）</th>
+          <th>使える統計</th>
+        </tr>
+        <tr>
+          <td class="highlight-cell">名義尺度<br><small>Nominal</small></td>
+          <td>分類のみ。順序なし</td>
+          <td>血液型、遺伝子型、性別、疾患の有無</td>
+          <td>頻度、χ²検定</td>
+        </tr>
+        <tr>
+          <td class="highlight-cell">順序尺度<br><small>Ordinal</small></td>
+          <td>順序あり。間隔は不均等</td>
+          <td>病期（Stage I〜IV）、重症度スコア、Likert尺度</td>
+          <td>中央値、Mann-Whitney検定</td>
+        </tr>
+        <tr>
+          <td class="highlight-cell">間隔尺度<br><small>Interval</small></td>
+          <td>等間隔。絶対ゼロなし</td>
+          <td>体温（℃）、暦年、pH</td>
+          <td>平均、t検定</td>
+        </tr>
+        <tr>
+          <td class="highlight-cell">比率尺度<br><small>Ratio</small></td>
+          <td>等間隔＋絶対ゼロあり</td>
+          <td>体重、身長、血圧、細胞数、濃度</td>
+          <td>平均、SD、全パラメトリック検定</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">量的変数 vs 質的変数</h3>
+      <p>実務上は、<span class="hl">量的変数（連続・離散）</span>と<span class="hl">質的変数（カテゴリカル）</span>に大別して考えると便利です。</p>
+
+      <div class="callout callout-example">
+        <div class="callout-header">🔬 生物学・医学での例</div>
+        <p><strong>量的連続変数</strong>：血糖値（mg/dL）、腫瘍サイズ（mm）、タンパク質発現量（相対値）</p>
+        <p><strong>量的離散変数</strong>：コロニー数、変異数、転移個数</p>
+        <p><strong>質的変数</strong>：喫煙の有無（Yes/No）、投薬群 vs 対照群、がんの組織型</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== CHAPTER 3 ===== -->
+  <div class="chapter" id="ch3">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">3</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">DESCRIPTIVE STATISTICS</span>
+        <h2 class="chapter-title">記述統計<br>── 平均・中央値・最頻値</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">代表値（中心傾向の指標）</h3>
+      <p>データの「中心」を一つの数値で表すものを<span class="hl">代表値</span>と言います。最もよく使われる三種類を理解しましょう。</p>
+
+      <h4 class="subsection-title">① 算術平均（Mean）</h4>
+      <p>すべての値を足して個数で割った値。最もポピュラーですが、<span class="hl">外れ値（outlier）に敏感</span>という弱点があります。</p>
+
+      <div class="formula-box">
+        <div class="formula-label">FORMULA ── 算術平均</div>
+        <div class="formula">x̄ = (x₁ + x₂ + ⋯ + xₙ) / n = Σxᵢ / n</div>
+        <div class="formula-note">x₁, x₂, …, xₙ：各データ値　　n：データ数</div>
+      </div>
+
+      <h4 class="subsection-title">② 中央値（Median）</h4>
+      <p>データを小さい順に並べたときの中央の値。外れ値の影響を受けにくいため、<span class="hl">分布が歪んでいるデータ</span>（生存期間、収入、サイトカイン濃度など）に適しています。</p>
+
+      <h4 class="subsection-title">③ 最頻値（Mode）</h4>
+      <p>最も頻繁に出現する値。カテゴリカルデータに有用です。</p>
+
+      <div class="callout callout-caution">
+        <div class="callout-header">⚠️ 平均だけに頼らない</div>
+        <p>右に裾が長い分布（例：血清CRP値、生存期間）では、平均が中央値より大きく上振れします。このようなデータでは中央値と四分位範囲（IQR）を使うか、対数変換を検討します。</p>
+      </div>
+
+      <div class="example-box">
+        <p>5人の患者の血清IL-6値（pg/mL）：<strong>3, 5, 6, 7, 120</strong></p>
+        <p>平均 = (3+5+6+7+120) / 5 = <span class="hl">28.2</span>　（120の影響で高い）</p>
+        <p>中央値 = <span class="hl-green">6</span>　（外れ値120に左右されない）</p>
+        <p>→ この分布では中央値の方がデータの典型例をよく表す。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== CHAPTER 4 ===== -->
+  <div class="chapter" id="ch4">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">4</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">DISPERSION</span>
+        <h2 class="chapter-title">ばらつきの指標<br>── 分散・SD・四分位範囲</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">なぜばらつきを測るか</h3>
+      <p>代表値だけでは不十分です。平均が同じでも、データが密集している場合と広く散らばっている場合では、まったく異なる意味を持ちます。<span class="hl">ばらつき（分散）の指標</span>は、データの信頼性・精度・個人差を表す重要な情報です。</p>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">分散と標準偏差（SD）</h3>
+
+      <div class="formula-box">
+        <div class="formula-label">FORMULA ── 標本分散（s²）と標準偏差（s）</div>
+        <div class="formula">s² = Σ(xᵢ − x̄)² / (n − 1)</div>
+        <div class="formula" style="font-size:22px; margin-top:12px;">SD = s = √[ Σ(xᵢ − x̄)² / (n − 1) ]</div>
+        <div class="formula-note">分母が n ではなく (n−1) なのは、標本から母分散を不偏推定するためです（ベッセルの補正）。</div>
+      </div>
+
+      <p><span class="hl">標準偏差（SD：Standard Deviation）</span>は、「典型的な1個のデータ値が平均からどれくらい離れているか」を表します。単位は元のデータと同じなので直感的に解釈できます。</p>
+
+      <div class="callout callout-key">
+        <div class="callout-header">📌 SD の直感的意味</div>
+        <p>成人男性の身長：平均 170 cm、SD = 6 cm とすると、多くの人（約68%）は 164〜176 cm の範囲に収まることを意味します。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">四分位範囲（IQR）</h3>
+      <p>データを4等分したときの第1四分位数（Q1, 下位25%点）と第3四分位数（Q3, 上位25%点）の差。<span class="hl">IQR = Q3 − Q1</span></p>
+      <p>中央値と組み合わせて使用し、外れ値の影響を受けません。歪んだ分布に適しています。</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>指標</th>
+          <th>使う場面</th>
+          <th>表記例（論文）</th>
+        </tr>
+        <tr>
+          <td>平均 ± SD</td>
+          <td>正規分布に近いデータ（体重、身長、血圧）</td>
+          <td>170.2 ± 6.1 cm</td>
+        </tr>
+        <tr>
+          <td>中央値 [IQR]</td>
+          <td>歪んだ分布（生存期間、サイトカイン、細菌数）</td>
+          <td>6.0 [3.5–18.2] pg/mL</td>
+        </tr>
+        <tr>
+          <td>中央値 (範囲)</td>
+          <td>小標本・外れ値がある場合</td>
+          <td>6.0 (3–120) pg/mL</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== CHAPTER 5: SD vs SE ===== -->
+  <div class="chapter" id="ch5">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">5</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">MOST IMPORTANT CONCEPT</span>
+        <h2 class="chapter-title">SD と SE の違い<br>── 最重要ポイント</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">概念の違い：何のばらつきか</h3>
+
+      <div class="callout callout-key">
+        <div class="callout-header">📌 一行で言えば</div>
+        <p><strong>SD（標準偏差）</strong>：個々のデータが平均からどれだけばらついているか → <span class="hl">データのばらつき</span></p>
+        <p><strong>SE（標準誤差）</strong>：標本平均が母平均からどれだけずれうるか → <span class="hl">推定値（平均）の精度</span></p>
+      </div>
+
+      <p>同じ実験を何度も繰り返し、毎回標本平均 x̄ を計算したとします。その x̄ 自身にもばらつきがあります。SE はこの「平均のばらつき」を表します。</p>
+
+      <div class="formula-box">
+        <div class="formula-label">FORMULA ── 標準誤差（SE / SEM）</div>
+        <div class="formula">SE = SD / √n</div>
+        <div class="formula-note">SD：標本標準偏差　　n：標本サイズ<br>標本数が増えると SE は小さくなる（推定が精確になる）。SD は変わらない。</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">数値例で理解する</h3>
+
+      <div class="example-box">
+        <p>10人の患者の収縮期血圧を測定：</p>
+        <p>値（mmHg）：128, 135, 122, 140, 118, 132, 129, 125, 138, 133</p>
+        <p style="margin-top:12px;"><strong>x̄（平均）</strong> = 130.0 mmHg</p>
+        <p><strong>SD</strong> = 6.7 mmHg　→「患者個人の血圧は平均から約6.7 mmHgばらつく」</p>
+        <p><strong>SE</strong> = 6.7 / √10 = <span class="hl">2.1 mmHg</span>　→「この平均130 mmHgという推定値自体の精度は±2.1 mmHg程度」</p>
+      </div>
+
+      <div class="diagram">
+        <div class="diagram-title">SD と SE の視覚的比較（n を増やすと）</div>
+        <svg width="460" height="130" viewBox="0 0 460 130" style="max-width:100%">
+          <!-- n=10 -->
+          <text x="80" y="20" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="11" fill="#3d3020">n = 10</text>
+          <line x1="80" y1="55" x2="80" y2="95" stroke="#8b3a12" stroke-width="2"/>
+          <line x1="30" y1="75" x2="130" y2="75" stroke="#8b3a12" stroke-width="2"/>
+          <rect x="55" y="60" width="50" height="30" fill="rgba(139,58,18,0.08)" stroke="#8b3a12" stroke-width="1"/>
+          <text x="80" y="115" text-anchor="middle" font-family="Crimson Pro, serif" font-size="13" fill="#8b3a12">SD = 6.7</text>
+
+          <line x1="80" y1="30" x2="80" y2="50" stroke="#1a4a6b" stroke-width="2.5"/>
+          <line x1="68" y1="40" x2="92" y2="40" stroke="#1a4a6b" stroke-width="2.5"/>
+          <text x="100" y="44" font-family="Crimson Pro, serif" font-size="12" fill="#1a4a6b">SE = 2.1</text>
+
+          <!-- n=40 -->
+          <text x="280" y="20" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="11" fill="#3d3020">n = 40</text>
+          <line x1="280" y1="55" x2="280" y2="95" stroke="#8b3a12" stroke-width="2"/>
+          <line x1="230" y1="75" x2="330" y2="75" stroke="#8b3a12" stroke-width="2"/>
+          <rect x="255" y="60" width="50" height="30" fill="rgba(139,58,18,0.08)" stroke="#8b3a12" stroke-width="1"/>
+          <text x="280" y="115" text-anchor="middle" font-family="Crimson Pro, serif" font-size="13" fill="#8b3a12">SD ≈ 6.7（変わらず）</text>
+
+          <line x1="280" y1="35" x2="280" y2="45" stroke="#1a4a6b" stroke-width="2.5"/>
+          <line x1="274" y1="40" x2="286" y2="40" stroke="#1a4a6b" stroke-width="2.5"/>
+          <text x="296" y="44" font-family="Crimson Pro, serif" font-size="12" fill="#1a4a6b">SE = 1.1（小さくなる）</text>
+
+          <!-- Arrow between -->
+          <defs>
+            <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#2d5a27"/>
+            </marker>
+          </defs>
+          <line x1="155" y1="75" x2="205" y2="75" stroke="#2d5a27" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr2)"/>
+          <text x="180" y="67" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="10" fill="#2d5a27">n を増加</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">どちらを使うべきか</h3>
+
+      <table class="compare-table">
+        <tr>
+          <th>使う場面</th>
+          <th>適切な指標</th>
+          <th>理由</th>
+        </tr>
+        <tr>
+          <td>データのばらつき・個人差を示したい</td>
+          <td class="highlight-cell">SD</td>
+          <td>集団内の変動を表すため</td>
+        </tr>
+        <tr>
+          <td>平均値の推定精度を示したい</td>
+          <td class="highlight-cell">SE</td>
+          <td>「この平均はどれくらい信頼できるか」を示すため</td>
+        </tr>
+        <tr>
+          <td>臨床的基準値・正常範囲を示したい</td>
+          <td class="highlight-cell">SD（平均±2SD）</td>
+          <td>個人の測定値が正常範囲内かを判断するため</td>
+        </tr>
+        <tr>
+          <td>グラフのエラーバー（比較目的）</td>
+          <td class="highlight-cell">SE または 95%CI</td>
+          <td>群間比較の精度を視覚化するため</td>
+        </tr>
+        <tr>
+          <td>論文の基本集計表</td>
+          <td class="highlight-cell">正規分布→SD、非正規→IQR</td>
+          <td>分布の形に応じて使い分ける</td>
+        </tr>
+      </table>
+
+      <div class="callout callout-caution">
+        <div class="callout-header">⚠️ よくある誤用</div>
+        <p>SE は SD より必ず小さい（n > 1 の場合）ため、グラフを「小さく見せたい」目的で SE を使う誤用が存在します。<strong>SE を使う場合は、それが「平均の精度」を示しているものであることを明示</strong>してください。</p>
+        <p>信頼区間（95% CI）は SE の約2倍として計算でき、SE よりも解釈しやすいため、現代の論文では CI を好む傾向があります。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== CHAPTER 6 ===== -->
+  <div class="chapter" id="ch6">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">6</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">NORMAL DISTRIBUTION</span>
+        <h2 class="chapter-title">正規分布と標準化</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">正規分布（ガウス分布）</h3>
+      <p>多くの自然現象・生物学的測定値は、平均を中心に左右対称の釣り鐘型をした<span class="hl">正規分布（Normal Distribution）</span>に従います。統計検定の多くが正規分布を前提とするため、基礎として必須の概念です。</p>
+
+      <div class="diagram">
+        <div class="diagram-title">正規分布と SD の関係</div>
+        <svg width="480" height="200" viewBox="0 0 480 200" style="max-width:100%">
+          <defs>
+            <linearGradient id="normGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8b3a12" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#8b3a12" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <!-- Axes -->
+          <line x1="40" y1="160" x2="440" y2="160" stroke="#d4c9b0" stroke-width="1"/>
+          <!-- Normal curve path (approximated) -->
+          <path d="M 60,158 Q 100,155 120,145 Q 150,120 180,80 Q 210,40 240,28 Q 270,40 300,80 Q 330,120 360,145 Q 380,155 420,158" 
+                fill="url(#normGrad)" stroke="#8b3a12" stroke-width="2.5"/>
+          <!-- μ line -->
+          <line x1="240" y1="28" x2="240" y2="160" stroke="#1a1208" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="240" y="175" text-anchor="middle" font-family="Crimson Pro, serif" font-size="14" fill="#1a1208">μ (平均)</text>
+          <!-- ±1SD -->
+          <line x1="174" y1="100" x2="174" y2="160" stroke="#8b3a12" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+          <line x1="306" y1="100" x2="306" y2="160" stroke="#8b3a12" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+          <text x="174" y="175" text-anchor="middle" font-family="Crimson Pro, serif" font-size="12" fill="#8b3a12">−1σ</text>
+          <text x="306" y="175" text-anchor="middle" font-family="Crimson Pro, serif" font-size="12" fill="#8b3a12">+1σ</text>
+          <!-- ±2SD -->
+          <line x1="108" y1="150" x2="108" y2="160" stroke="#d4956a" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+          <line x1="372" y1="150" x2="372" y2="160" stroke="#d4956a" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+          <text x="108" y="175" text-anchor="middle" font-family="Crimson Pro, serif" font-size="12" fill="#d4956a">−2σ</text>
+          <text x="372" y="175" text-anchor="middle" font-family="Crimson Pro, serif" font-size="12" fill="#d4956a">+2σ</text>
+          <!-- Percentage labels -->
+          <text x="240" y="80" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="11" fill="#1a4a6b" font-weight="500">68.3%</text>
+          <rect x="175" y="56" width="130" height="1" fill="#1a4a6b" opacity="0.4"/>
+          <text x="240" y="50" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="10" fill="#2d5a27">95.4%（±2σ）</text>
+          <rect x="109" y="46" width="262" height="1" fill="#2d5a27" opacity="0.4"/>
+          <text x="240" y="20" text-anchor="middle" font-family="Noto Sans JP, sans-serif" font-size="10" fill="#4a2570">99.7%（±3σ）</text>
+        </svg>
+      </div>
+
+      <div class="callout callout-key">
+        <div class="callout-header">📌 正規分布の 68–95–99.7 ルール</div>
+        <p>平均 ± 1SD の範囲に <strong>約68%</strong>、± 2SD に <strong>約95%</strong>、± 3SD に <strong>約99.7%</strong> のデータが含まれます。</p>
+        <p>これを利用して「平均 ± 2SD」を正常範囲の目安とすることが多いです（外れる約5%が「異常値」）。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">標準化と Z スコア</h3>
+      <p>異なる単位・異なるスケールのデータを比較するために、<span class="hl">Z スコア（標準スコア）</span>に変換します。</p>
+
+      <div class="formula-box">
+        <div class="formula-label">FORMULA ── Z スコア</div>
+        <div class="formula">z = (x − μ) / σ</div>
+        <div class="formula-note">z スコアは「平均から何 SD 分離れているか」を表す無次元の数値。平均=0、SD=1 の標準正規分布に従う。</div>
+      </div>
+
+      <div class="example-box">
+        <p>患者A：BMI = 28（集団平均 = 23, SD = 4）　→　z = (28−23)/4 = <strong>1.25</strong></p>
+        <p>患者B：収縮期血圧 = 145 mmHg（平均 = 120, SD = 15）　→　z = (145−120)/15 = <strong>1.67</strong></p>
+        <p>→ BMI より血圧の方が「平均からの乖離」が大きいことが一目でわかる。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== CHAPTER 7: BIOLOGY ===== -->
+  <div class="chapter" id="ch7">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">7</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">BIOLOGICAL STATISTICS <span class="badge badge-bio">生物統計</span></span>
+        <h2 class="chapter-title">生物統計の基礎</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">生物学データの特徴</h3>
+      <p>生物学実験データは統計的に扱いにくい性質を持つことが多くあります。これを理解することが適切な解析の第一歩です。</p>
+
+      <div class="callout callout-note">
+        <div class="callout-header">📖 生物学データの典型的な特徴</div>
+        <p><strong>小標本</strong>：n = 3〜10 程度が多い。統計的検出力が低い。</p>
+        <p><strong>非正規分布</strong>：遺伝子発現量、細菌コロニー数、IC50値などは対数正規分布に従うことが多い。</p>
+        <p><strong>外れ値</strong>：生物学的変動が大きく、個体差が顕著。</p>
+        <p><strong>技術的反復 vs 生物学的反復</strong>：重要な区別（後述）。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">生物学的反復 vs 技術的反復</h3>
+      <p>生物学実験における最重要概念の一つです。</p>
+
+      <table class="compare-table">
+        <tr>
+          <th></th>
+          <th>生物学的反復（Biological Replicate）</th>
+          <th>技術的反復（Technical Replicate）</th>
+        </tr>
+        <tr>
+          <td><strong>定義</strong></td>
+          <td>独立した生物学的サンプル（異なる個体・細胞継代・マウス）</td>
+          <td>同一サンプルを複数回測定</td>
+        </tr>
+        <tr>
+          <td><strong>目的</strong></td>
+          <td>生物学的変動を捉える。<strong>統計的推論に使う</strong></td>
+          <td>測定誤差を評価・低減する</td>
+        </tr>
+        <tr>
+          <td><strong>n として計上</strong></td>
+          <td>✅ YES</td>
+          <td>❌ NO（平均して1点に）</td>
+        </tr>
+        <tr>
+          <td><strong>例</strong></td>
+          <td>3匹の異なるマウスから採取した肝臓サンプル（n=3）</td>
+          <td>同一マウスの肝臓から3ウェルで測定した吸光度</td>
+        </tr>
+      </table>
+
+      <div class="callout callout-caution">
+        <div class="callout-header">⚠️ 擬似反復（Pseudoreplication）</div>
+        <p>技術的反復を生物学的反復として n に計上する誤りを<strong>擬似反復（pseudoreplication）</strong>と言います。これは標本サイズを水増しし、p 値を不当に小さくするため、論文で非常に問題になります。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">対数変換と対数正規分布</h3>
+      <p>遺伝子発現量（RPKM、TPM）、抗体希釈系列、EC50・IC50、細菌増殖などは、<span class="hl">対数正規分布（log-normal distribution）</span>に従うことが多く、<strong>対数変換後に正規分布の統計手法</strong>を適用します。</p>
+
+      <div class="formula-box">
+        <div class="formula-label">APPROACH ── 対数変換の手順</div>
+        <div class="formula" style="font-size:18px; text-align:left; line-height:2;">
+          1. 元データ x に対して log₁₀(x) または ln(x) を計算<br>
+          2. 変換後データの正規性を確認（Shapiro-Wilk 検定など）<br>
+          3. 変換後データで t 検定・ANOVA を実施<br>
+          4. 結果は幾何平均（Geometric Mean）で報告
+        </div>
+        <div class="formula-note">幾何平均 = 10^（対数変換後の算術平均）</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">生物学でよく使う基本的な検定</h3>
+
+      <table class="compare-table">
+        <tr>
+          <th>場面</th>
+          <th>正規分布が仮定できる場合</th>
+          <th>できない場合（ノンパラメトリック）</th>
+        </tr>
+        <tr>
+          <td>2群の比較</td>
+          <td>対応なし t 検定<br>対応あり t 検定（paired）</td>
+          <td>Mann-Whitney U 検定<br>Wilcoxon 符号順位検定</td>
+        </tr>
+        <tr>
+          <td>3群以上の比較</td>
+          <td>一元配置 ANOVA</td>
+          <td>Kruskal-Wallis 検定</td>
+        </tr>
+        <tr>
+          <td>カテゴリカルデータ</td>
+          <td colspan="2">χ²（カイ二乗）検定、Fisher の正確検定</td>
+        </tr>
+        <tr>
+          <td>2変数の関連</td>
+          <td>Pearson 相関</td>
+          <td>Spearman 順位相関</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== CHAPTER 8: EPIDEMIOLOGY ===== -->
+  <div class="chapter" id="ch8">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">8</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">EPIDEMIOLOGICAL STATISTICS <span class="badge badge-epi">疫学統計</span></span>
+        <h2 class="chapter-title">疫学統計の基礎</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">疫学の基本指標</h3>
+      <p>疫学（Epidemiology）は、集団における疾患の頻度・分布・決定要因を研究する学問です。統計指標が臨床意思決定や公衆衛生政策の根拠となります。</p>
+
+      <h4 class="subsection-title">罹患率・有病率</h4>
+
+      <div class="formula-box">
+        <div class="formula-label">FORMULA ── 疾病頻度の基本指標</div>
+        <div class="formula" style="font-size:17px; text-align:left; line-height:2.2;">
+          有病率（Prevalence） = 疾患あり人数 / 総人口<br>
+          罹患率（Incidence Rate） = 新規発症数 / 観察人時
+        </div>
+        <div class="formula-note">有病率：ある時点での疾患保有割合（断面）<br>罹患率：一定期間に新たに発症する速度（縦断）</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">リスク比・オッズ比・ハザード比</h3>
+      <p>疫学では「曝露によってどれだけ疾患リスクが変わるか」を定量化します。</p>
+
+      <div class="formula-box">
+        <div class="formula-label">FORMULA ── 疫学の主要効果指標</div>
+        <div class="formula" style="font-size:17px; text-align:left; line-height:2.2;">
+          リスク比（RR） = 曝露群のリスク / 非曝露群のリスク<br>
+          オッズ比（OR） = (a/b) / (c/d) = ad / bc<br>
+          ハザード比（HR） = 曝露群のハザード / 非曝露群のハザード
+        </div>
+        <div class="formula-note">2×2分割表：a=曝露＋疾患あり、b=曝露＋疾患なし、c=非曝露＋疾患あり、d=非曝露＋疾患なし</div>
+      </div>
+
+      <table class="compare-table">
+        <tr>
+          <th>指標</th>
+          <th>主な用途</th>
+          <th>RR=1との関係</th>
+          <th>使われる研究デザイン</th>
+        </tr>
+        <tr>
+          <td class="highlight-cell">リスク比（RR）</td>
+          <td>コホート研究・RCT</td>
+          <td>RR=1：関連なし<br>RR&gt;1：リスク増加</td>
+          <td>前向きコホート、RCT</td>
+        </tr>
+        <tr>
+          <td class="highlight-cell">オッズ比（OR）</td>
+          <td>稀な疾患・後ろ向き研究</td>
+          <td>OR=1：関連なし<br>疾患が稀なときRR≒OR</td>
+          <td>症例対照研究、ロジスティック回帰</td>
+        </tr>
+        <tr>
+          <td class="highlight-cell">ハザード比（HR）</td>
+          <td>時間依存的アウトカム</td>
+          <td>HR=1：差なし</td>
+          <td>生存分析（Cox回帰）</td>
+        </tr>
+      </table>
+
+      <div class="example-box">
+        <p><strong>読み方の例</strong>：「喫煙者の肺がんリスク比 RR = 15.0（95%CI: 12.0–18.5）」</p>
+        <p>→ 喫煙者は非喫煙者に比べ肺がんになるリスクが<strong>15倍</strong>。信頼区間が1をまたがないため統計的に有意。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">感度・特異度・陽性的中率</h3>
+      <p>診断検査や検診の性能評価に使われる指標群です。</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>指標</th>
+          <th>定義</th>
+          <th>意味</th>
+        </tr>
+        <tr>
+          <td class="highlight-cell">感度（Sensitivity）</td>
+          <td>TP / (TP + FN)</td>
+          <td>本当に病気の人を正しく陽性と判定できる割合</td>
+        </tr>
+        <tr>
+          <td class="highlight-cell">特異度（Specificity）</td>
+          <td>TN / (TN + FP)</td>
+          <td>本当に健康な人を正しく陰性と判定できる割合</td>
+        </tr>
+        <tr>
+          <td class="highlight-cell">陽性的中率（PPV）</td>
+          <td>TP / (TP + FP)</td>
+          <td>陽性と出た中で本当に病気の人の割合（有病率に依存）</td>
+        </tr>
+        <tr>
+          <td class="highlight-cell">陰性的中率（NPV）</td>
+          <td>TN / (TN + FN)</td>
+          <td>陰性と出た中で本当に健康な人の割合</td>
+        </tr>
+      </table>
+
+      <div class="callout callout-caution">
+        <div class="callout-header">⚠️ 有病率の罠（ベイズの定理）</div>
+        <p>感度 99%・特異度 99% の検査でも、疾患有病率が 0.1% の場合、陽性的中率は約<strong>9%</strong>にすぎません。稀な疾患のスクリーニングでは偽陽性が多く出るため、有病率を考慮した解釈が重要です。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">交絡因子とバイアス</h3>
+      <p>疫学研究では、因果関係の推論を歪める要因を理解することが重要です。</p>
+
+      <div class="callout callout-note">
+        <div class="callout-header">📖 主要な概念</div>
+        <p><strong>交絡因子（Confounding factor）</strong>：曝露とアウトカムの両方に関連し、見かけ上の関連を生む第三の変数。例：コーヒー飲用と肺がん（喫煙が交絡）。</p>
+        <p><strong>選択バイアス（Selection bias）</strong>：研究参加者が母集団を代表していないことによる歪み。</p>
+        <p><strong>情報バイアス（Information bias）</strong>：測定・記録・想起の誤りによる歪み。想起バイアス、検査者バイアスなど。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== CHAPTER 9 ===== -->
+  <div class="chapter" id="ch9">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num">9</div>
+        <div class="chapter-num-label">CHAPTER</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">HYPOTHESIS TESTING</span>
+        <h2 class="chapter-title">統計的検定の入口</h2>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">仮説検定の論理</h3>
+      <p>統計的仮説検定は、「偶然でこのような結果が得られる確率はどれくらいか」を定量化することで、研究の発見を評価します。</p>
+
+      <div class="callout callout-key">
+        <div class="callout-header">📌 検定の基本フロー</div>
+        <p><strong>① 帰無仮説（H₀）を立てる</strong>：「差はない」「効果はない」（反証したい仮説）</p>
+        <p><strong>② 対立仮説（H₁）を立てる</strong>：「差がある」（証明したい仮説）</p>
+        <p><strong>③ 検定統計量を計算する</strong>：t 値、χ²値など</p>
+        <p><strong>④ p 値を求める</strong>：H₀ が真のときこのデータが得られる確率</p>
+        <p><strong>⑤ 有意水準 α と比較して判断する</strong>：慣例的に α = 0.05</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">p 値の正しい解釈</h3>
+      <p>p 値は最も誤解されやすい統計概念の一つです。</p>
+
+      <div class="callout callout-caution">
+        <div class="callout-header">⚠️ p 値に関する誤解</div>
+        <p>❌「p &lt; 0.05 は効果が大きいことを意味する」→ 誤り。効果の大きさ（効果量）とは別の概念です。</p>
+        <p>❌「p = 0.03 は帰無仮説が真である確率が3%」→ 誤り。p 値は帰無仮説の下でデータが得られる確率です。</p>
+        <p>✅ p 値は「帰無仮説が正しいとした場合に、観察された（またはそれ以上の）差が生じる確率」です。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">第一種・第二種の過誤と検出力</h3>
+
+      <table class="compare-table">
+        <tr>
+          <th></th>
+          <th>H₀ が真（差なし）</th>
+          <th>H₀ が偽（差あり）</th>
+        </tr>
+        <tr>
+          <td><strong>H₀ を棄却（p &lt; 0.05）</strong></td>
+          <td style="background:#fff0f0; color:#8b3a12;"><strong>第一種の過誤（α）</strong><br>偽陽性。慣例 α = 0.05</td>
+          <td style="background:#f0fff0; color:#2d5a27;">正しい判断 ✅<br>検出力（Power） = 1−β</td>
+        </tr>
+        <tr>
+          <td><strong>H₀ を保留（p ≥ 0.05）</strong></td>
+          <td>正しい判断 ✅</td>
+          <td style="background:#fff0f0; color:#8b3a12;"><strong>第二種の過誤（β）</strong><br>偽陰性。慣例 β = 0.20</td>
+        </tr>
+      </table>
+
+      <p style="margin-top:20px;"><span class="hl">検出力（Power）= 1 − β</span>は「真に差があるときに、正しくそれを検出できる確率」です。サンプルサイズが大きいほど検出力は上がります。研究計画の段階で<strong>サンプルサイズ計算（検出力計算）</strong>を行うことが必須です。</p>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">信頼区間（Confidence Interval）</h3>
+      <p>95% 信頼区間とは、「同じ手順で実験を繰り返した場合、95%の確率でこの区間が真の値を含む」という意味です（「真の値が95%の確率でこの区間にある」という意味ではありません）。</p>
+
+      <div class="formula-box">
+        <div class="formula-label">FORMULA ── 95% 信頼区間（正規近似）</div>
+        <div class="formula">95% CI = x̄ ± 1.96 × SE = x̄ ± 1.96 × (SD / √n)</div>
+        <div class="formula-note">1.96 は標準正規分布の 97.5 パーセンタイル値</div>
+      </div>
+
+      <div class="callout callout-key">
+        <div class="callout-header">📌 CI と p 値の対応</div>
+        <p>2群の比較で、差の 95% CI がゼロをまたがない ⟺ p &lt; 0.05 で有意差あり（と対応します）。</p>
+        <p>現代の統計報告では、p 値単独より <strong>効果量 + 信頼区間</strong> の報告が推奨されています。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-mark">◆ ◆ ◆</span></div>
+
+  <!-- ===== SUMMARY ===== -->
+  <div class="chapter">
+    <div class="chapter-header">
+      <div class="chapter-num-block">
+        <div class="chapter-num" style="font-size:36px; padding-top:8px;">まと</div>
+        <div class="chapter-num-label">SUMMARY</div>
+      </div>
+      <div class="chapter-title-block">
+        <span class="chapter-label">KEY TAKEAWAYS</span>
+        <h2 class="chapter-title">基本編 総まとめ</h2>
+      </div>
+    </div>
+
+    <div class="callout callout-key" style="padding:32px 36px;">
+      <div class="callout-header" style="font-size:13px; margin-bottom:20px;">✅ 基本編で押さえるべき10のポイント</div>
+      <ol style="list-style:decimal; padding-left:24px; line-height:2.2; font-size:14.5px; color:var(--ink);">
+        <li>統計学は「不確実性を定量的に扱う」道具である</li>
+        <li>データには名義・順序・間隔・比率の4種の尺度がある</li>
+        <li>代表値（平均・中央値）は分布の形に応じて使い分ける</li>
+        <li><strong>SD = データのばらつき</strong>、<strong>SE = 平均値の精度</strong>（最重要！）</li>
+        <li>SE は SD を √n で割ったもの。n が増えると SE は小さくなるが SD は変わらない</li>
+        <li>正規分布では平均±2SD に約95%のデータが含まれる</li>
+        <li>生物学では生物学的反復のみが統計的 n として有効（擬似反復に注意）</li>
+        <li>疫学の効果指標：RR（コホート）、OR（症例対照）、HR（生存分析）</li>
+        <li>p &lt; 0.05 は「偶然でないことの証拠」であり、効果の大きさではない</li>
+        <li>効果量と信頼区間を p 値とセットで報告するのが現代の標準</li>
+      </ol>
+    </div>
+
+    <div style="margin-top:48px; padding:32px; background:var(--ink); color:var(--paper); text-align:center; position:relative;">
+      <div style="font-family:'Noto Sans JP', sans-serif; font-size:11px; letter-spacing:0.3em; color:var(--accent-muted); margin-bottom:16px;">NEXT VOLUME</div>
+      <div style="font-size:22px; font-weight:700; letter-spacing:0.05em;">統計学の基礎　応用編</div>
+      <div style="font-family:'Noto Sans JP', sans-serif; font-size:13px; color:rgba(250,247,242,0.55); margin-top:12px; font-weight:300;">
+        多変量解析・回帰分析・生存分析・サンプルサイズ計算<br>など、実際の研究で使う手法へ
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .book -->
+
+</body>
+</html>
