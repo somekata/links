@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JavaScript 応用 詳解 — 非同期・クラス・エラー処理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══ リセット & 変数 ═══ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:          #f5f1e8;
+  --paper:       #fdfaf3;
+  --ink:         #1c1710;
+  --ink-mid:     #4a3f30;
+  --ink-light:   #8a7a68;
+  --border:      #d8cebc;
+  --tag-bg:      #ede8de;
+  --code-bg:     #1a1612;
+  --code-fg:     #c8b99a;
+
+  --js:     #3a6b4a;
+  --async:  #1e4a7a;
+  --class:  #7a3a1e;
+  --err:    #6b3a7a;
+  --mod:    #3a5a1e;
+
+  --sidebar-w: 224px;
+}
+html { scroll-behavior: smooth; font-size: 15px; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.85; }
+
+/* ═══ レイアウト ═══ */
+.layout { display: flex; min-height: 100vh; }
+
+aside {
+  width: var(--sidebar-w);
+  background: var(--ink);
+  color: #f5f1e8;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  overflow-y: auto; z-index: 200;
+  display: flex; flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+aside::-webkit-scrollbar { width: 4px; }
+aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+.sb-brand { padding: 26px 18px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.sb-series { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: 6px; }
+.sb-title  { font-family: 'Zen Antique', serif; font-size: 15.5px; font-weight: 400; line-height: 1.45; letter-spacing: 0.04em; }
+.sb-title em { font-style: normal; color: #90c8a8; }
+
+.chapter-tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.ch-tab {
+  flex: 1; min-width: 50%;
+  padding: 8px 4px; text-align: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.04em; cursor: pointer; color: rgba(255,255,255,0.35);
+  border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+.ch-tab:hover { color: rgba(255,255,255,0.65); }
+.ch-tab.a-async  { color: #90b8e8; border-bottom-color: var(--async);  }
+.ch-tab.a-class  { color: #e8b090; border-bottom-color: var(--class);  }
+.ch-tab.a-err    { color: #c8a8e8; border-bottom-color: var(--err);    }
+.ch-tab.a-mod    { color: #a8c890; border-bottom-color: var(--mod);    }
+
+.sb-toc { padding: 10px 0 28px; flex: 1; }
+.toc-ch { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; padding: 10px 18px 3px; }
+.toc-ch.l-async { color: #90b8e870; }
+.toc-ch.l-class { color: #e8b09070; }
+.toc-ch.l-err   { color: #c8a8e870; }
+.toc-ch.l-mod   { color: #a8c89070; }
+
+.toc-a {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 18px; font-size: 12px; text-decoration: none;
+  color: rgba(255,255,255,0.45); border-left: 2px solid transparent;
+  transition: color 0.12s, background 0.12s; margin: 1px 0;
+}
+.toc-a:hover { color: rgba(255,255,255,0.82); background: rgba(255,255,255,0.04); }
+.toc-a.active { color: #fff; background: rgba(255,255,255,0.05); }
+.toc-a.active.as { border-left-color: var(--async); }
+.toc-a.active.cl { border-left-color: var(--class); }
+.toc-a.active.er { border-left-color: var(--err);   }
+.toc-a.active.mo { border-left-color: var(--mod);   }
+.toc-n { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.22); }
+
+#menuBtn { display: none; position: fixed; top: 12px; left: 12px; z-index: 300; background: var(--ink); color: #fff; border: none; border-radius: 4px; padding: 8px 10px; font-size: 18px; cursor: pointer; }
+.ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 190; }
+
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 800px; padding: 0 36px 80px; }
+
+/* ═══ ページヘッダー ═══ */
+.page-header { background: var(--ink); margin: 0 -36px; padding: 54px 36px 46px; color: #f5f1e8; position: relative; overflow: hidden; margin-bottom: 48px; }
+.page-header::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(45deg,transparent,transparent 28px,rgba(255,255,255,0.014) 28px,rgba(255,255,255,0.014) 29px); }
+.ph-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.32); text-transform: uppercase; margin-bottom: 10px; position: relative; }
+.page-header h1 { font-family: 'Zen Antique', serif; font-size: clamp(22px,4vw,33px); font-weight: 400; letter-spacing: 0.05em; line-height: 1.35; position: relative; }
+.page-header h1 .hl { color: #90c8a8; }
+.ph-desc { margin-top: 14px; font-size: 13px; color: rgba(255,255,255,0.42); position: relative; line-height: 1.75; }
+
+/* 前提カード */
+.prereq-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(170px,1fr)); gap: 10px; margin-bottom: 52px; }
+.prereq-card { background: var(--paper); border: 1px solid var(--border); border-radius: 7px; padding: 13px 15px; border-top: 3px solid var(--js); text-align: center; }
+.prereq-icon { font-size: 20px; margin-bottom: 6px; }
+.prereq-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: var(--js); margin-bottom: 3px; }
+.prereq-desc { font-size: 11.5px; color: var(--ink-light); }
+
+/* ═══ チャプター ═══ */
+.chapter { margin-bottom: 80px; }
+.ch-header { display: flex; align-items: center; gap: 14px; padding: 18px 0 16px; border-bottom: 2px solid var(--async); margin-bottom: 32px; scroll-margin-top: 24px; }
+.ch-header.h-class { border-bottom-color: var(--class); }
+.ch-header.h-err   { border-bottom-color: var(--err);   }
+.ch-header.h-mod   { border-bottom-color: var(--mod);   }
+.ch-badge { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; padding: 4px 12px; border-radius: 20px; background: var(--async); color: #fff; flex-shrink: 0; }
+.ch-header.h-class .ch-badge { background: var(--class); }
+.ch-header.h-err   .ch-badge { background: var(--err);   }
+.ch-header.h-mod   .ch-badge { background: var(--mod);   }
+.ch-title { font-family: 'Zen Antique', serif; font-size: 24px; font-weight: 400; letter-spacing: 0.04em; }
+.ch-sub { font-size: 12px; color: var(--ink-light); margin-left: auto; white-space: nowrap; }
+
+/* ═══ セクション ═══ */
+.sec { margin-bottom: 50px; scroll-margin-top: 24px; animation: fadeUp 0.45s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(13px)} to{opacity:1;transform:translateY(0)} }
+.sec-hd { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+.sec-n { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-light); background: var(--tag-bg); padding: 1px 7px; border-radius: 3px; flex-shrink: 0; }
+.sec-hd h2 { font-family: 'Zen Antique', serif; font-size: 19px; font-weight: 400; letter-spacing: 0.04em; }
+h3.sub { font-family: 'Zen Antique', serif; font-size: 15.5px; font-weight: 400; margin: 24px 0 10px; padding-left: 10px; border-left: 3px solid var(--border); }
+p { margin-bottom: 11px; color: var(--ink-mid); font-size: 14px; }
+strong { color: var(--ink); }
+
+/* ═══ コード ═══ */
+.cl { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--ink-light); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 3px; margin-top: 16px; }
+pre { background: var(--code-bg); border-radius: 6px; padding: 16px 18px; overflow-x: auto; margin: 3px 0 12px; }
+pre code { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--code-fg); line-height: 1.8; }
+code { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: var(--tag-bg); color: var(--class); padding: 1px 5px; border-radius: 3px; }
+pre code { background: none; padding: 0; color: var(--code-fg); }
+
+/* シンタックス */
+.kw { color: #c8a06a; }
+.fn { color: #8ab4d4; }
+.st { color: #98d498; }
+.nm { color: #d4a8d4; }
+.cm { color: #6a7a6a; font-style: italic; }
+.op { color: #e0c87a; }
+.cls{ color: #e8c090; }
+
+/* ═══ ボックス ═══ */
+.box { border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 14px 0; font-size: 13.5px; color: var(--ink-mid); line-height: 1.75; }
+.bx-info  { background: #edf2fa; border-left: 3px solid var(--async); }
+.bx-info strong { color: var(--async); }
+.bx-tip   { background: #edf5f0; border-left: 3px solid var(--js); }
+.bx-tip strong  { color: var(--js); }
+.bx-warn  { background: #fdf3e7; border-left: 3px solid #c8841a; }
+.bx-warn strong { color: #c8841a; }
+.bx-err   { background: #f5edf5; border-left: 3px solid var(--err); }
+.bx-err strong  { color: var(--err); }
+
+/* ═══ 比較 ═══ */
+.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+@media(max-width:520px){.cmp{grid-template-columns:1fr;}}
+.cmp-card { border-radius: 6px; overflow: hidden; }
+.cmp-hd { padding: 6px 13px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; }
+.cmp-old .cmp-hd { background: #5a3a1a; color: #fdd; }
+.cmp-new .cmp-hd { background: #1e4a7a; color: #cdf; }
+.cmp-bd { background: var(--code-bg); padding: 12px; }
+.cmp-bd pre { margin: 0; padding: 0; background: none; font-size: 11.5px; }
+
+/* ═══ テーブル ═══ */
+.tbl { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13.5px; }
+.tbl th { background: var(--ink); color: rgba(255,255,255,0.82); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; padding: 9px 13px; text-align: left; }
+.tbl td { padding: 9px 13px; border-bottom: 1px solid var(--border); color: var(--ink-mid); vertical-align: top; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: var(--tag-bg); }
+.tbl td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--async); white-space: nowrap; }
+
+/* ═══ デモ ═══ */
+.demo-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 18px 0; }
+.demo-bar { background: var(--ink); padding: 6px 14px; display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase; }
+.demo-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+.demo-area { background: #f0ece0; padding: 18px 20px; }
+
+.live { background: var(--paper); border: 1px solid var(--border); border-radius: 7px; padding: 15px 17px; margin: 10px 0; }
+.live-t { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 11px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.row label { font-size: 13px; color: var(--ink-mid); min-width: 64px; }
+.row input, .row select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: var(--ink); outline: none; transition: border-color 0.15s; }
+.row input:focus, .row select:focus { border-color: var(--async); }
+.row input[type=number] { width: 80px; font-family: 'JetBrains Mono', monospace; }
+
+.run { padding: 7px 18px; color: #fff; border: none; border-radius: 4px; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; cursor: pointer; transition: opacity 0.15s, transform 0.1s; background: var(--async); }
+.run:hover { opacity: 0.85; } .run:active { transform: scale(0.97); }
+.run.g { background: var(--js);   }
+.run.r { background: var(--class);}
+.run.p { background: var(--err);  }
+
+.out { background: var(--code-bg); border-radius: 4px; padding: 10px 14px; margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--code-fg); min-height: 34px; line-height: 1.8; white-space: pre-wrap; }
+.out .ok   { color: #90c8a8; }
+.out .fail { color: #e8a090; }
+.out .info-c { color: #90b8e8; }
+.out .warn-c { color: #e8c890; }
+
+/* Promise状態バッジ */
+.promise-vis { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+.p-badge { padding: 5px 12px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; transition: all 0.4s; }
+.p-pending  { background: #e8c89022; color: #e8c890; border: 1px solid #e8c89066; }
+.p-resolved { background: #90c8a822; color: #90c8a8; border: 1px solid #90c8a866; }
+.p-rejected { background: #e8a09022; color: #e8a090; border: 1px solid #e8a09066; }
+
+/* クラス図 */
+.class-diagram { background: var(--code-bg); border-radius: 8px; padding: 20px; margin: 16px 0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.9; }
+.cd-class { color: #e8c090; font-weight: 600; }
+.cd-extends { color: #c8a06a; }
+.cd-prop  { color: #8ab4d4; }
+.cd-method{ color: #98d498; }
+.cd-arrow { color: rgba(255,255,255,0.3); }
+
+/* エラー種別カード */
+.err-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(190px,1fr)); gap: 10px; margin: 14px 0; }
+.err-card { background: var(--paper); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+.err-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: var(--err); margin-bottom: 4px; }
+.err-desc { font-size: 12px; color: var(--ink-mid); line-height: 1.7; }
+
+/* チェックリスト */
+.checklist { background: #edf2fa; border: 1px solid #8ab4d460; border-radius: 8px; padding: 18px 20px; margin-bottom: 20px; }
+.cl-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--async); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+.chk { display: flex; align-items: flex-start; gap: 9px; padding: 5px 0; font-size: 13.5px; color: var(--ink-mid); border-bottom: 1px dashed rgba(0,0,0,0.07); cursor: pointer; user-select: none; }
+.chk:last-child { border-bottom: none; }
+.chk.done { color: var(--ink-light); text-decoration: line-through; }
+.cb { width: 17px; height: 17px; border: 2px solid var(--async); border-radius: 3px; flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--async); }
+.chk.done .cb { background: var(--async); color: #fff; }
+
+footer { text-align: center; padding: 28px 24px; font-size: 11.5px; color: var(--ink-light); border-top: 1px solid var(--border); margin: 0 -36px; }
+
+@media(max-width:700px){
+  :root{--sidebar-w:0px;}
+  aside{transform:translateX(-240px);width:240px;transition:transform 0.25s;}
+  aside.open{transform:translateX(0);}
+  #menuBtn{display:block;}
+  .ov.open{display:block;}
+  main{margin-left:0;padding:0 18px 60px;}
+  .page-header{margin:0 -18px;padding:46px 18px 34px;}
+  footer{margin:0 -18px;}
+  .ch-sub{display:none;}
+}
+</style>
+</head>
+<body>
+
+<button id="menuBtn" onclick="toggleMenu()" aria-label="メニュー">☰</button>
+<div class="ov" id="ov" onclick="toggleMenu()"></div>
+
+<div class="layout">
+
+<!-- ════ サイドバー ════ -->
+<aside id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-series">JS 入門コース / 応用編</div>
+    <div class="sb-title">JavaScript<br><em>応用 詳解</em></div>
+  </div>
+
+  <div class="chapter-tabs">
+    <div class="ch-tab" id="tab-async" onclick="goTo('ch-async')">非同期</div>
+    <div class="ch-tab" id="tab-class" onclick="goTo('ch-class')">クラス</div>
+    <div class="ch-tab" id="tab-err"   onclick="goTo('ch-err')">エラー</div>
+    <div class="ch-tab" id="tab-mod"   onclick="goTo('ch-mod')">その他</div>
+  </div>
+
+  <div class="sb-toc">
+    <div class="toc-ch l-async">── 非同期処理 ──</div>
+    <a class="toc-a as" href="#a1"><span class="toc-n">A-1</span>コールバック</a>
+    <a class="toc-a as" href="#a2"><span class="toc-n">A-2</span>Promise</a>
+    <a class="toc-a as" href="#a3"><span class="toc-n">A-3</span>async / await</a>
+    <a class="toc-a as" href="#a4"><span class="toc-n">A-4</span>fetch API</a>
+
+    <div class="toc-ch l-class">── クラス ──</div>
+    <a class="toc-a cl" href="#c1"><span class="toc-n">C-1</span>クラスの基本</a>
+    <a class="toc-a cl" href="#c2"><span class="toc-n">C-2</span>継承</a>
+    <a class="toc-a cl" href="#c3"><span class="toc-n">C-3</span>this の注意点</a>
+
+    <div class="toc-ch l-err">── エラー処理 ──</div>
+    <a class="toc-a er" href="#e1"><span class="toc-n">E-1</span>try / catch</a>
+    <a class="toc-a er" href="#e2"><span class="toc-n">E-2</span>エラーの種類</a>
+    <a class="toc-a er" href="#e3"><span class="toc-n">E-3</span>非同期エラー</a>
+
+    <div class="toc-ch l-mod">── 便利な構文 ──</div>
+    <a class="toc-a mo" href="#m1"><span class="toc-n">M-1</span>分割代入</a>
+    <a class="toc-a mo" href="#m2"><span class="toc-n">M-2</span>スプレッド構文</a>
+    <a class="toc-a mo" href="#m3"><span class="toc-n">M-3</span>Optional Chaining</a>
+    <a class="toc-a mo" href="#m4"><span class="toc-n">M-4</span>確認</a>
+  </div>
+</aside>
+
+<!-- ════ メイン ════ -->
+<main>
+
+<div class="page-header">
+  <div class="ph-label">JavaScript 入門コース / 応用編</div>
+  <h1>JavaScript<br><span class="hl">応用 詳解</span></h1>
+  <p class="ph-desc">
+    基礎編（変数・関数・配列・DOM・イベント）を学んだ次のステップ。<br>
+    非同期処理・クラス・エラー処理など、実務で必須の知識を解説します。
+  </p>
+</div>
+
+<!-- 前提知識 -->
+<div class="prereq-grid">
+  <div class="prereq-card">
+    <div class="prereq-icon">📦</div>
+    <div class="prereq-name">変数・型</div>
+    <div class="prereq-desc">const / let / データ型</div>
+  </div>
+  <div class="prereq-card">
+    <div class="prereq-icon">⚙️</div>
+    <div class="prereq-name">関数</div>
+    <div class="prereq-desc">function / アロー関数</div>
+  </div>
+  <div class="prereq-card">
+    <div class="prereq-icon">📋</div>
+    <div class="prereq-name">配列・オブジェクト</div>
+    <div class="prereq-desc">map / filter / { key: val }</div>
+  </div>
+  <div class="prereq-card">
+    <div class="prereq-icon">🖥</div>
+    <div class="prereq-name">DOM・イベント</div>
+    <div class="prereq-desc">querySelector / addEventListener</div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     CHAPTER A: 非同期処理
+══════════════════════════════════ -->
+<div class="chapter" id="ch-async">
+  <div class="ch-header">
+    <span class="ch-badge">非同期処理</span>
+    <span class="ch-title">Asynchronous JavaScript</span>
+    <span class="ch-sub">Promise · async/await · fetch</span>
+  </div>
+
+  <!-- A-1 コールバック -->
+  <div class="sec" id="a1">
+    <div class="sec-hd"><span class="sec-n">A-1</span><h2>なぜ「非同期」が必要か — コールバック</h2></div>
+    <p>JavaScriptは基本的に<strong>1行ずつ順番に実行</strong>されます（同期処理）。しかしサーバーへのデータ取得や大きなファイルの読み込みは時間がかかるため、待っている間も他の処理ができるよう<strong>非同期処理</strong>の仕組みがあります。</p>
+    <p>昔は「処理が終わったらこれを呼んで」という<strong>コールバック関数</strong>を使っていました。</p>
+
+    <div class="cl">コールバックの例（setTimeout）</div>
+    <pre><code><span class="cm">// setTimeout(コールバック, ミリ秒) — 時間が経ったら実行</span>
+console.<span class="fn">log</span>(<span class="st">'① 開始'</span>);
+
+<span class="fn">setTimeout</span>(() => {
+  console.<span class="fn">log</span>(<span class="st">'③ 2秒後に実行（非同期）'</span>);
+}, <span class="nm">2000</span>);
+
+console.<span class="fn">log</span>(<span class="st">'② すぐに実行（③ より先！）'</span>);
+<span class="cm">// 出力順: ① → ② → ③</span></code></pre>
+
+    <div class="box bx-warn">
+      <strong>⚠ コールバック地獄（Callback Hell）：</strong><br>
+      複数の非同期処理を順番に行うと、コールバックがネストされてコードが読みにくくなります。これを解決するために <strong>Promise</strong> が生まれました。
+      <pre style="margin-top:10px;padding:10px 12px;"><code style="font-size:11.5px;"><span class="cm">// コールバック地獄の例（読みにくい！）</span>
+<span class="fn">getUser</span>(id, (user) => {
+  <span class="fn">getRecords</span>(user, (records) => {
+    <span class="fn">analyzeData</span>(records, (result) => {
+      <span class="fn">saveResult</span>(result, () => {
+        console.<span class="fn">log</span>(<span class="st">'完了'</span>); <span class="cm">// 深すぎる…</span>
+      });
+    });
+  });
+});</code></pre>
+    </div>
+  </div>
+
+  <!-- A-2 Promise -->
+  <div class="sec" id="a2">
+    <div class="sec-hd"><span class="sec-n">A-2</span><h2>Promise — 「約束」オブジェクト</h2></div>
+    <p>Promise は「非同期処理の結果を将来受け取る約束」を表すオブジェクトです。3つの状態を持ちます。</p>
+
+    <div class="demo-wrap">
+      <div class="demo-bar"><div class="demo-dot"></div>Promise の3つの状態</div>
+      <div class="demo-area">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <div class="p-badge p-pending">pending（待機中）</div>
+          <div class="p-badge p-resolved">fulfilled（成功）</div>
+          <div class="p-badge p-rejected">rejected（失敗）</div>
+        </div>
+        <p style="font-size:13px;color:var(--ink-mid);margin:0;">pending → fulfilled（resolve）または rejected（reject）に遷移します。一度遷移したら変わりません。</p>
+      </div>
+    </div>
+
+    <div class="cl">Promise の作り方と使い方</div>
+    <pre><code><span class="cm">// Promise を作る</span>
+<span class="kw">const</span> myPromise = <span class="kw">new</span> Promise((resolve, reject) => {
+  <span class="cm">// 非同期処理（例：1秒後に結果を返す）</span>
+  <span class="fn">setTimeout</span>(() => {
+    <span class="kw">const</span> success = <span class="kw">true</span>;
+    <span class="kw">if</span> (success) {
+      <span class="fn">resolve</span>(<span class="st">'取得成功: 田中太郎'</span>);  <span class="cm">// 成功</span>
+    } <span class="kw">else</span> {
+      <span class="fn">reject</span>(<span class="kw">new</span> Error(<span class="st">'患者が見つかりません'</span>)); <span class="cm">// 失敗</span>
+    }
+  }, <span class="nm">1000</span>);
+});
+
+<span class="cm">// Promise を使う（.then / .catch / .finally）</span>
+myPromise
+  .<span class="fn">then</span>(result => console.<span class="fn">log</span>(result))   <span class="cm">// 成功したら</span>
+  .<span class="fn">catch</span>(err  => console.<span class="fn">log</span>(err.message)) <span class="cm">// 失敗したら</span>
+  .<span class="fn">finally</span>(() => console.<span class="fn">log</span>(<span class="st">'必ず実行'</span>));  <span class="cm">// 常に実行</span></code></pre>
+
+    <div class="cl">複数の Promise を扱う</div>
+    <pre><code><span class="cm">// Promise.all — 全部成功したら次へ（1つでも失敗したら catch へ）</span>
+<span class="kw">const</span> [user, records] = <span class="kw">await</span> Promise.<span class="fn">all</span>([
+  <span class="fn">fetchUser</span>(id),
+  <span class="fn">fetchRecords</span>(id),
+]);
+
+<span class="cm">// Promise.allSettled — 成功・失敗に関わらず全部待つ</span>
+<span class="kw">const</span> results = <span class="kw">await</span> Promise.<span class="fn">allSettled</span>([p1, p2, p3]);
+results.<span class="fn">forEach</span>(r => {
+  <span class="kw">if</span> (r.status === <span class="st">'fulfilled'</span>) console.<span class="fn">log</span>(r.value);
+  <span class="kw">else</span>                            console.<span class="fn">log</span>(r.reason);
+});
+
+<span class="cm">// Promise.race — 最初に完了したものの結果を使う</span>
+<span class="kw">const</span> fastest = <span class="kw">await</span> Promise.<span class="fn">race</span>([server1, server2]);</code></pre>
+
+    <div class="demo-wrap">
+      <div class="demo-bar"><div class="demo-dot"></div>Promise デモ</div>
+      <div class="demo-area">
+        <div class="live">
+          <div class="live-t">Promise の成功・失敗を試す</div>
+          <div class="row">
+            <label>結果：</label>
+            <select id="pResult">
+              <option value="ok">成功（resolve）</option>
+              <option value="ng">失敗（reject）</option>
+            </select>
+            <label>待機：</label>
+            <input type="number" id="pDelay" value="1000" style="width:75px;"> ms
+            <button class="run" onclick="runPromiseDemo()">実行</button>
+          </div>
+          <div class="out" id="promiseOut">— ボタンを押すと Promise が実行されます —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A-3 async/await -->
+  <div class="sec" id="a3">
+    <div class="sec-hd"><span class="sec-n">A-3</span><h2>async / await — Promise をもっと読みやすく</h2></div>
+    <p><code>async/await</code> は Promise をまるで同期処理のように書ける構文です。内部では Promise のまま動いています。</p>
+
+    <div class="cmp">
+      <div class="cmp-card cmp-old">
+        <div class="cmp-hd">Promise チェーン（読みにくい）</div>
+        <div class="cmp-bd"><pre><code style="font-size:11.5px;"><span class="fn">fetchPatient</span>(id)
+  .<span class="fn">then</span>(p => <span class="fn">fetchRecords</span>(p.id))
+  .<span class="fn">then</span>(r => <span class="fn">analyzeData</span>(r))
+  .<span class="fn">then</span>(a => <span class="fn">saveResult</span>(a))
+  .<span class="fn">catch</span>(e => console.<span class="fn">log</span>(e));</code></pre></div>
+      </div>
+      <div class="cmp-card cmp-new">
+        <div class="cmp-hd">async/await（読みやすい）</div>
+        <div class="cmp-bd"><pre><code style="font-size:11.5px;"><span class="kw">async function</span> <span class="fn">process</span>(id) {
+  <span class="kw">const</span> p = <span class="kw">await</span> <span class="fn">fetchPatient</span>(id);
+  <span class="kw">const</span> r = <span class="kw">await</span> <span class="fn">fetchRecords</span>(p.id);
+  <span class="kw">const</span> a = <span class="kw">await</span> <span class="fn">analyzeData</span>(r);
+  <span class="kw">await</span> <span class="fn">saveResult</span>(a);
+}</code></pre></div>
+      </div>
+    </div>
+
+    <div class="cl">async / await の書き方ルール</div>
+    <pre><code><span class="cm">// async をつけた関数は必ず Promise を返す</span>
+<span class="kw">async function</span> <span class="fn">getPatientData</span>(patientId) {
+
+  <span class="cm">// await は async 関数の中だけで使える</span>
+  <span class="cm">// → Promise が解決するまでここで「待つ」</span>
+  <span class="kw">const</span> patient = <span class="kw">await</span> <span class="fn">fetchPatient</span>(patientId);
+
+  <span class="cm">// 通常の処理と混ぜて書ける</span>
+  <span class="kw">const</span> bmi = patient.weight / (patient.height / <span class="nm">100</span>) <span class="op">**</span> <span class="nm">2</span>;
+  console.<span class="fn">log</span>(<span class="st">`${patient.name}: BMI = ${bmi.toFixed(1)}`</span>);
+
+  <span class="kw">return</span> { patient, bmi }; <span class="cm">// return した値が Promise の resolve 値になる</span>
+}
+
+<span class="cm">// 呼び出し方（トップレベルでも await が使える環境では）</span>
+<span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">getPatientData</span>(<span class="st">'P001'</span>);
+
+<span class="cm">// または .then() で受け取る</span>
+<span class="fn">getPatientData</span>(<span class="st">'P001'</span>).<span class="fn">then</span>(result => console.<span class="fn">log</span>(result));</code></pre>
+
+    <div class="demo-wrap">
+      <div class="demo-bar"><div class="demo-dot"></div>async/await デモ — 患者データ取得シミュレーション</div>
+      <div class="demo-area">
+        <div class="live">
+          <div class="live-t">段階的なデータ取得をシミュレート</div>
+          <div class="row">
+            <label>患者ID：</label>
+            <input type="text" id="asyncPid" value="P001" style="width:80px;">
+            <button class="run" onclick="runAsyncDemo()">▶ 取得開始</button>
+          </div>
+          <div class="out" id="asyncOut">— 患者IDを入力して取得開始を押してください —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A-4 fetch -->
+  <div class="sec" id="a4">
+    <div class="sec-hd"><span class="sec-n">A-4</span><h2>fetch API — サーバーからデータを取得する</h2></div>
+    <p><code>fetch()</code> はブラウザ標準のHTTP通信関数です。Promise を返します。実際のWeb開発でよく使う「外部APIからデータを取得する」パターンを学びます。</p>
+
+    <div class="cl">fetch の基本パターン</div>
+    <pre><code><span class="cm">// fetch は Promise を返す → async/await と組み合わせるのが定番</span>
+<span class="kw">async function</span> <span class="fn">loadData</span>(url) {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> response = <span class="kw">await</span> <span class="fn">fetch</span>(url);
+
+    <span class="cm">// ① HTTP エラーチェック（fetch は 404 でも reject しない！）</span>
+    <span class="kw">if</span> (!response.ok) {
+      <span class="kw">throw new</span> Error(<span class="st">`HTTP error: ${response.status}`</span>);
+    }
+
+    <span class="cm">// ② レスポンスを JSON として解析</span>
+    <span class="kw">const</span> data = <span class="kw">await</span> response.<span class="fn">json</span>();
+    <span class="kw">return</span> data;
+
+  } <span class="kw">catch</span> (err) {
+    console.<span class="fn">error</span>(<span class="st">'取得エラー:'</span>, err.message);
+    <span class="kw">throw</span> err;  <span class="cm">// 呼び出し元にも伝える</span>
+  }
+}
+
+<span class="cm">// 使い方</span>
+<span class="kw">const</span> patients = <span class="kw">await</span> <span class="fn">loadData</span>(<span class="st">'https://api.example.com/patients'</span>);</code></pre>
+
+    <div class="cl">POST でデータを送信する場合</div>
+    <pre><code><span class="kw">const</span> response = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="st">'/api/patients'</span>, {
+  method: <span class="st">'POST'</span>,
+  headers: {
+    <span class="st">'Content-Type'</span>: <span class="st">'application/json'</span>,
+  },
+  body: <span class="fn">JSON.stringify</span>({    <span class="cm">// オブジェクトを JSON 文字列に変換</span>
+    name:   <span class="st">'田中 太郎'</span>,
+    age:    <span class="nm">45</span>,
+    hba1c:  <span class="nm">7.2</span>,
+  }),
+});
+
+<span class="kw">const</span> result = <span class="kw">await</span> response.<span class="fn">json</span>();
+console.<span class="fn">log</span>(<span class="st">`患者登録: ID=${result.id}`</span>);</code></pre>
+
+    <div class="demo-wrap">
+      <div class="demo-bar"><div class="demo-dot"></div>fetch デモ — パブリック API からデータ取得</div>
+      <div class="demo-area">
+        <div class="live">
+          <div class="live-t">JSONPlaceholder（テスト用API）からデータを取得</div>
+          <div class="row">
+            <label>ユーザーID：</label>
+            <input type="number" id="fetchId" value="1" min="1" max="10" style="width:60px;">
+            <button class="run" onclick="runFetchDemo()">▶ fetch 実行</button>
+          </div>
+          <div class="out" id="fetchOut">— ボタンを押すと実際にAPIにアクセスします —</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box bx-warn">
+      <strong>⚠ fetch の注意点：</strong><br>
+      fetch は 404・500 などのHTTPエラーでも <code>reject</code>（例外）を投げません。<code>response.ok</code>（200〜299ならtrue）を必ずチェックしましょう。ネットワーク断絶のときだけ reject されます。
+    </div>
+  </div>
+
+</div><!-- /ch-async -->
+
+
+<!-- ══════════════════════════════════
+     CHAPTER C: クラス
+══════════════════════════════════ -->
+<div class="chapter" id="ch-class">
+  <div class="ch-header h-class">
+    <span class="ch-badge">クラス</span>
+    <span class="ch-title">Class・継承・this</span>
+    <span class="ch-sub">Object Oriented Programming</span>
+  </div>
+
+  <!-- C-1 クラスの基本 -->
+  <div class="sec" id="c1">
+    <div class="sec-hd"><span class="sec-n">C-1</span><h2>クラスの基本</h2></div>
+    <p>クラスはオブジェクトの「設計図」です。同じ構造を持つオブジェクトを何度も作りたいときに使います。</p>
+
+    <div class="cl">クラスの書き方</div>
+    <pre><code><span class="kw">class</span> <span class="cls">Patient</span> {
+
+  <span class="cm">// constructor — new したときに自動で呼ばれる初期化処理</span>
+  <span class="fn">constructor</span>(id, name, age, hba1c) {
+    <span class="kw">this</span>.id    = id;      <span class="cm">// this.プロパティ名 で値を保存</span>
+    <span class="kw">this</span>.name  = name;
+    <span class="kw">this</span>.age   = age;
+    <span class="kw">this</span>.hba1c = hba1c;
+  }
+
+  <span class="cm">// メソッド（クラスに属する関数）</span>
+  <span class="fn">diagnose</span>() {
+    <span class="kw">if</span> (<span class="kw">this</span>.hba1c <span class="op">&lt;</span> <span class="nm">5.7</span>)  <span class="kw">return</span> <span class="st">'正常'</span>;
+    <span class="kw">if</span> (<span class="kw">this</span>.hba1c <span class="op">&lt;</span> <span class="nm">6.5</span>)  <span class="kw">return</span> <span class="st">'糖尿病前症'</span>;
+    <span class="kw">return</span> <span class="st">'糖尿病'</span>;
+  }
+
+  <span class="fn">summary</span>() {
+    <span class="kw">return</span> <span class="st">`[${this.id}] ${this.name}（${this.age}歳）: ${this.diagnose()}`</span>;
+  }
+
+  <span class="cm">// static メソッド — インスタンスを作らずに使える</span>
+  <span class="kw">static</span> <span class="fn">calcBMI</span>(weight, height) {
+    <span class="kw">return</span> (weight / (height / <span class="nm">100</span>) <span class="op">**</span> <span class="nm">2</span>).<span class="fn">toFixed</span>(<span class="nm">1</span>);
+  }
+}
+
+<span class="cm">// インスタンスを作る（new キーワード）</span>
+<span class="kw">const</span> p1 = <span class="kw">new</span> <span class="cls">Patient</span>(<span class="st">'P001'</span>, <span class="st">'田中 太郎'</span>, <span class="nm">45</span>, <span class="nm">7.2</span>);
+<span class="kw">const</span> p2 = <span class="kw">new</span> <span class="cls">Patient</span>(<span class="st">'P002'</span>, <span class="st">'山田 花子'</span>, <span class="nm">62</span>, <span class="nm">5.4</span>);
+
+console.<span class="fn">log</span>(p1.<span class="fn">summary</span>()); <span class="cm">// → [P001] 田中 太郎（45歳）: 糖尿病</span>
+console.<span class="fn">log</span>(p2.<span class="fn">summary</span>()); <span class="cm">// → [P002] 山田 花子（62歳）: 正常</span>
+
+<span class="cm">// static メソッドの呼び方（インスタンス不要）</span>
+console.<span class="fn">log</span>(Patient.<span class="fn">calcBMI</span>(<span class="nm">65</span>, <span class="nm">170</span>)); <span class="cm">// → "22.5"</span></code></pre>
+
+    <div class="demo-wrap">
+      <div class="demo-bar"><div class="demo-dot"></div>クラス デモ — 患者インスタンスを作る</div>
+      <div class="demo-area">
+        <div class="live">
+          <div class="live-t">Patient クラスのインスタンスを作成</div>
+          <div class="row"><label>ID：</label><input type="text" id="cId" value="P003" style="width:70px;"><label>氏名：</label><input type="text" id="cName" value="佐藤 次郎" style="width:120px;"></div>
+          <div class="row"><label>年齢：</label><input type="number" id="cAge" value="38" style="width:60px;"><label>HbA1c：</label><input type="number" id="cHba" value="6.1" step="0.1" min="4" max="15" style="width:65px;"> %</div>
+          <div class="row"><label>体重kg：</label><input type="number" id="cWt" value="72" style="width:65px;"><label>身長cm：</label><input type="number" id="cHt" value="168" style="width:65px;"></div>
+          <button class="run r" onclick="runClassDemo()">new Patient(…) を実行</button>
+          <div class="out" id="classOut">— 入力してボタンを押すと Patient インスタンスを作成します —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C-2 継承 -->
+  <div class="sec" id="c2">
+    <div class="sec-hd"><span class="sec-n">C-2</span><h2>継承 — クラスを拡張する</h2></div>
+    <p><code>extends</code> で既存のクラスを継承し、機能を追加・変更できます。共通部分を親クラスにまとめることで重複を避けられます。</p>
+
+    <div class="class-diagram">
+      <span class="cd-class">Patient</span>（親クラス）<br>
+      <span style="padding-left:16px;color:rgba(255,255,255,0.3);">├ </span><span class="cd-prop">id, name, age, hba1c</span><br>
+      <span style="padding-left:16px;color:rgba(255,255,255,0.3);">└ </span><span class="cd-method">diagnose(), summary()</span><br>
+      <br>
+      <span class="cd-arrow">↑ extends</span><br>
+      <br>
+      <span class="cd-class">InpatientPatient</span>（子クラス）<span style="color:rgba(255,255,255,0.35);font-size:11px;"> — Patientを継承</span><br>
+      <span style="padding-left:16px;color:rgba(255,255,255,0.3);">├ </span><span class="cd-prop">ward（病棟）, admitDate（入院日）</span><br>
+      <span style="padding-left:16px;color:rgba(255,255,255,0.3);">└ </span><span class="cd-method">summary()（オーバーライド）, daysAdmitted()</span>
+    </div>
+
+    <div class="cl">extends と super の使い方</div>
+    <pre><code><span class="kw">class</span> <span class="cls">InpatientPatient</span> <span class="kw">extends</span> <span class="cls">Patient</span> {
+
+  <span class="fn">constructor</span>(id, name, age, hba1c, ward, admitDate) {
+    <span class="cm">// super() — 親クラスの constructor を呼ぶ（必須）</span>
+    <span class="fn">super</span>(id, name, age, hba1c);
+    <span class="kw">this</span>.ward      = ward;
+    <span class="kw">this</span>.admitDate = <span class="kw">new</span> <span class="cls">Date</span>(admitDate);
+  }
+
+  <span class="cm">// メソッドのオーバーライド（親の summary を上書き）</span>
+  <span class="fn">summary</span>() {
+    <span class="kw">const</span> base = <span class="kw">super</span>.<span class="fn">summary</span>();  <span class="cm">// 親の summary を使いつつ</span>
+    <span class="kw">return</span> <span class="st">`${base}【入院中：${this.ward}病棟】`</span>;
+  }
+
+  <span class="cm">// 入院日数を計算</span>
+  <span class="fn">daysAdmitted</span>() {
+    <span class="kw">const</span> diff = Date.<span class="fn">now</span>() <span class="op">-</span> <span class="kw">this</span>.admitDate.<span class="fn">getTime</span>();
+    <span class="kw">return</span> Math.<span class="fn">floor</span>(diff / (<span class="nm">1000</span> <span class="op">*</span> <span class="nm">60</span> <span class="op">*</span> <span class="nm">60</span> <span class="op">*</span> <span class="nm">24</span>));
+  }
+}
+
+<span class="kw">const</span> ip = <span class="kw">new</span> <span class="cls">InpatientPatient</span>(<span class="st">'P010'</span>, <span class="st">'木村 三郎'</span>, <span class="nm">70</span>, <span class="nm">8.2</span>, <span class="st">'3A'</span>, <span class="st">'2025-03-01'</span>);
+console.<span class="fn">log</span>(ip.<span class="fn">summary</span>());         <span class="cm">// 親＋子の情報が表示される</span>
+console.<span class="fn">log</span>(ip.<span class="fn">daysAdmitted</span>());    <span class="cm">// 入院日数</span>
+console.<span class="fn">log</span>(ip <span class="kw">instanceof</span> <span class="cls">Patient</span>); <span class="cm">// → true（Patient の一種）</span></code></pre>
+  </div>
+
+  <!-- C-3 this -->
+  <div class="sec" id="c3">
+    <div class="sec-hd"><span class="sec-n">C-3</span><h2>this の注意点</h2></div>
+    <p><code>this</code> は「このオブジェクト自身」を指しますが、<strong>呼ばれ方によって値が変わる</strong>という落とし穴があります。</p>
+
+    <div class="cl">this が変わる問題と対処法</div>
+    <pre><code><span class="kw">class</span> <span class="cls">Counter</span> {
+  <span class="fn">constructor</span>() {
+    <span class="kw">this</span>.count = <span class="nm">0</span>;
+  }
+  <span class="fn">increment</span>() {
+    <span class="kw">this</span>.count<span class="op">++</span>;
+    console.<span class="fn">log</span>(<span class="kw">this</span>.count);
+  }
+}
+
+<span class="kw">const</span> c = <span class="kw">new</span> <span class="cls">Counter</span>();
+c.<span class="fn">increment</span>();   <span class="cm">// → 1 ✅ 正常</span>
+
+<span class="cm">// ❌ メソッドを変数に代入すると this が失われる</span>
+<span class="kw">const</span> inc = c.increment;
+<span class="fn">inc</span>();           <span class="cm">// → エラー（this が undefined）</span>
+
+<span class="cm">// ❌ setTimeout のコールバックでも this が失われる</span>
+<span class="fn">setTimeout</span>(c.increment, <span class="nm">1000</span>); <span class="cm">// エラー</span>
+
+<span class="cm">// ✅ 解決策1: アロー関数でラップする</span>
+<span class="fn">setTimeout</span>(() => c.<span class="fn">increment</span>(), <span class="nm">1000</span>);
+
+<span class="cm">// ✅ 解決策2: bind() で this を固定する</span>
+<span class="kw">const</span> boundInc = c.increment.<span class="fn">bind</span>(c);
+<span class="fn">boundInc</span>();      <span class="cm">// → 2 ✅</span>
+
+<span class="cm">// ✅ 解決策3: クラスフィールドでアロー関数として定義</span>
+<span class="kw">class</span> <span class="cls">Counter2</span> {
+  count = <span class="nm">0</span>;
+  increment = () => {   <span class="cm">// アロー関数はthisを外側から受け継ぐ</span>
+    <span class="kw">this</span>.count<span class="op">++</span>;
+    console.<span class="fn">log</span>(<span class="kw">this</span>.count);
+  };
+}</code></pre>
+
+    <div class="box bx-info">
+      <strong>💡 アロー関数と this：</strong><br>
+      アロー関数は自分自身の <code>this</code> を持ちません。代わりに<strong>定義された時点の外側の this</strong> を使います。クラスのメソッドをコールバックとして渡す場合はアロー関数でラップするか、クラスフィールドで定義するのが現代のベストプラクティスです。
+    </div>
+  </div>
+
+</div><!-- /ch-class -->
+
+
+<!-- ══════════════════════════════════
+     CHAPTER E: エラー処理
+══════════════════════════════════ -->
+<div class="chapter" id="ch-err">
+  <div class="ch-header h-err">
+    <span class="ch-badge">エラー処理</span>
+    <span class="ch-title">try / catch / throw</span>
+    <span class="ch-sub">Robust Error Handling</span>
+  </div>
+
+  <!-- E-1 try/catch -->
+  <div class="sec" id="e1">
+    <div class="sec-hd"><span class="sec-n">E-1</span><h2>try / catch / finally</h2></div>
+    <p>エラーが発生しても<strong>プログラムが止まらない</strong>ようにするのが try/catch です。「試してみて、ダメだったら対処する」という構造です。</p>
+
+    <div class="cl">基本構文</div>
+    <pre><code><span class="kw">try</span> {
+  <span class="cm">// エラーが起きるかもしれない処理</span>
+  <span class="kw">const</span> data = <span class="fn">JSON.parse</span>(userInput);   <span class="cm">// 不正なJSONならエラー</span>
+  console.<span class="fn">log</span>(data.name);
+
+} <span class="kw">catch</span> (err) {
+  <span class="cm">// エラーが起きたら実行される</span>
+  console.<span class="fn">error</span>(<span class="st">'エラーの種類:'</span>, err.name);     <span class="cm">// → "SyntaxError"</span>
+  console.<span class="fn">error</span>(<span class="st">'エラーのメッセージ:'</span>, err.message);
+  console.<span class="fn">error</span>(<span class="st">'スタックトレース:'</span>, err.stack);
+
+} <span class="kw">finally</span> {
+  <span class="cm">// エラーがあってもなくても必ず実行</span>
+  console.<span class="fn">log</span>(<span class="st">'処理終了（リソース解放など）'</span>);
+}</code></pre>
+
+    <div class="cl">throw — 自分でエラーを投げる</div>
+    <pre><code><span class="cm">// throw でエラーを意図的に発生させる</span>
+<span class="kw">function</span> <span class="fn">validateHbA1c</span>(value) {
+  <span class="kw">if</span> (<span class="kw">typeof</span> value <span class="op">!==</span> <span class="st">'number'</span>) {
+    <span class="kw">throw new</span> TypeError(<span class="st">'HbA1c は数値で入力してください'</span>);
+  }
+  <span class="kw">if</span> (value <span class="op">&lt;</span> <span class="nm">0</span> <span class="op">||</span> value <span class="op">&gt;</span> <span class="nm">20</span>) {
+    <span class="kw">throw new</span> RangeError(<span class="st">`HbA1c の値 ${value} は範囲外です（0〜20）`</span>);
+  }
+  <span class="kw">return</span> <span class="kw">true</span>;
+}
+
+<span class="kw">try</span> {
+  <span class="fn">validateHbA1c</span>(<span class="st">'高め'</span>);   <span class="cm">// → TypeError が投げられる</span>
+} <span class="kw">catch</span> (err) {
+  <span class="cm">// エラーの種類によって処理を分岐</span>
+  <span class="kw">if</span> (err <span class="kw">instanceof</span> TypeError)  console.<span class="fn">log</span>(<span class="st">'型エラー:'</span>, err.message);
+  <span class="kw">if</span> (err <span class="kw">instanceof</span> RangeError) console.<span class="fn">log</span>(<span class="st">'範囲エラー:'</span>, err.message);
+}</code></pre>
+
+    <div class="demo-wrap">
+      <div class="demo-bar"><div class="demo-dot"></div>try/catch デモ — バリデーション</div>
+      <div class="demo-area">
+        <div class="live">
+          <div class="live-t">HbA1c 値を入力（わざとエラーも試せます）</div>
+          <div class="row">
+            <label>入力値：</label>
+            <input type="text" id="errInput" value="7.2" style="width:100px;" placeholder="文字列も試す">
+            <button class="run p" onclick="runTryCatchDemo()">バリデーション実行</button>
+          </div>
+          <div class="out" id="errOut">— 値を入力してボタンを押してください —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E-2 エラーの種類 -->
+  <div class="sec" id="e2">
+    <div class="sec-hd"><span class="sec-n">E-2</span><h2>エラーの種類</h2></div>
+    <div class="err-grid">
+      <div class="err-card"><div class="err-type">SyntaxError</div><div class="err-desc">構文エラー。JSON.parse に不正な文字列を渡したときなど。</div></div>
+      <div class="err-card"><div class="err-type">TypeError</div><div class="err-desc">型エラー。null のプロパティにアクセスしようとしたときなど最頻出。</div></div>
+      <div class="err-card"><div class="err-type">ReferenceError</div><div class="err-desc">未定義の変数を参照したとき。スペルミスで起きやすい。</div></div>
+      <div class="err-card"><div class="err-type">RangeError</div><div class="err-desc">配列の長さに負の数を指定するなど、範囲外の値のとき。</div></div>
+      <div class="err-card"><div class="err-type">URIError</div><div class="err-desc">encodeURI / decodeURI に不正な文字列を渡したとき。</div></div>
+      <div class="err-card"><div class="err-type">Error（カスタム）</div><div class="err-desc"><code>class AppError extends Error</code> で自分専用のエラークラスを作れる。</div></div>
+    </div>
+
+    <div class="cl">カスタムエラークラスの作り方</div>
+    <pre><code><span class="cm">// 独自のエラークラス（クラスの継承を使う）</span>
+<span class="kw">class</span> <span class="cls">ValidationError</span> <span class="kw">extends</span> <span class="cls">Error</span> {
+  <span class="fn">constructor</span>(field, message) {
+    <span class="fn">super</span>(message);
+    <span class="kw">this</span>.name  = <span class="st">'ValidationError'</span>;
+    <span class="kw">this</span>.field = field;  <span class="cm">// どのフィールドでエラーが起きたか</span>
+  }
+}
+
+<span class="kw">class</span> <span class="cls">NetworkError</span> <span class="kw">extends</span> <span class="cls">Error</span> {
+  <span class="fn">constructor</span>(statusCode, message) {
+    <span class="fn">super</span>(message);
+    <span class="kw">this</span>.name       = <span class="st">'NetworkError'</span>;
+    <span class="kw">this</span>.statusCode = statusCode;
+  }
+}
+
+<span class="cm">// 使い方</span>
+<span class="kw">try</span> {
+  <span class="kw">throw new</span> <span class="cls">ValidationError</span>(<span class="st">'hba1c'</span>, <span class="st">'値が範囲外です'</span>);
+} <span class="kw">catch</span> (err) {
+  <span class="kw">if</span> (err <span class="kw">instanceof</span> <span class="cls">ValidationError</span>) {
+    console.<span class="fn">log</span>(<span class="st">`${err.field}: ${err.message}`</span>); <span class="cm">// → hba1c: 値が範囲外です</span>
+  }
+}</code></pre>
+  </div>
+
+  <!-- E-3 非同期エラー -->
+  <div class="sec" id="e3">
+    <div class="sec-hd"><span class="sec-n">E-3</span><h2>非同期処理のエラーを捕まえる</h2></div>
+    <p>非同期処理（async/await）のエラーも try/catch で捕まえられます。<strong>非同期関数の中で発生した例外は、await した側に伝わります。</strong></p>
+
+    <div class="cl">async/await + try/catch の組み合わせ</div>
+    <pre><code><span class="kw">async function</span> <span class="fn">fetchPatient</span>(id) {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="st">`/api/patients/${id}`</span>);
+    <span class="kw">if</span> (!res.ok) <span class="kw">throw new</span> <span class="cls">NetworkError</span>(res.status, <span class="st">'患者データの取得に失敗'</span>);
+    <span class="kw">return</span> <span class="kw">await</span> res.<span class="fn">json</span>();
+
+  } <span class="kw">catch</span> (err) {
+    <span class="kw">if</span> (err <span class="kw">instanceof</span> <span class="cls">NetworkError</span>) {
+      console.<span class="fn">error</span>(<span class="st">`通信エラー (${err.statusCode}): ${err.message}`</span>);
+      <span class="kw">return null</span>;   <span class="cm">// エラー時は null を返して呼び出し元に委ねる</span>
+    }
+    <span class="kw">throw</span> err;       <span class="cm">// 想定外のエラーは再スロー</span>
+  }
+}
+
+<span class="cm">// Promise.allSettled と組み合わせて「一部失敗を許容する」</span>
+<span class="kw">const</span> ids = [<span class="st">'P001'</span>, <span class="st">'P002'</span>, <span class="st">'INVALID'</span>];
+<span class="kw">const</span> results = <span class="kw">await</span> Promise.<span class="fn">allSettled</span>(ids.<span class="fn">map</span>(id => <span class="fn">fetchPatient</span>(id)));
+
+results.<span class="fn">forEach</span>((r, i) => {
+  <span class="kw">if</span> (r.status === <span class="st">'fulfilled'</span>) console.<span class="fn">log</span>(<span class="st">`${ids[i]}: 取得成功`</span>);
+  <span class="kw">else</span>                            console.<span class="fn">log</span>(<span class="st">`${ids[i]}: 取得失敗`</span>);
+});</code></pre>
+
+    <div class="box bx-err">
+      <strong>🚨 よくある間違い — catch し忘れ：</strong><br>
+      <code>async</code> 関数の中で <code>await</code> するとき、try/catch がないと エラーが「未処理のPromise rejection」となり、本番環境ではクラッシュの原因になります。<br>
+      呼び出しチェーンのどこかで必ずエラーを捕まえましょう。
+    </div>
+  </div>
+
+</div><!-- /ch-err -->
+
+
+<!-- ══════════════════════════════════
+     CHAPTER M: 便利な構文
+══════════════════════════════════ -->
+<div class="chapter" id="ch-mod">
+  <div class="ch-header h-mod">
+    <span class="ch-badge">便利な構文</span>
+    <span class="ch-title">Modern JavaScript Syntax</span>
+    <span class="ch-sub">ES2015+</span>
+  </div>
+
+  <!-- M-1 分割代入 -->
+  <div class="sec" id="m1">
+    <div class="sec-hd"><span class="sec-n">M-1</span><h2>分割代入（Destructuring）</h2></div>
+    <p>配列やオブジェクトの値を、すっきりした書き方で変数に取り出す構文です。</p>
+
+    <div class="cl">オブジェクトの分割代入</div>
+    <pre><code><span class="kw">const</span> patient = { id: <span class="st">'P001'</span>, name: <span class="st">'田中 太郎'</span>, age: <span class="nm">45</span>, hba1c: <span class="nm">7.2</span> };
+
+<span class="cm">// 従来の書き方</span>
+<span class="kw">const</span> id    = patient.id;
+<span class="kw">const</span> name  = patient.name;
+
+<span class="cm">// 分割代入（すっきり！）</span>
+<span class="kw">const</span> { id, name, age } = patient;
+
+<span class="cm">// 別名で受け取る</span>
+<span class="kw">const</span> { name: patientName, hba1c: glycated } = patient;
+console.<span class="fn">log</span>(patientName);   <span class="cm">// → '田中 太郎'</span>
+
+<span class="cm">// デフォルト値付き</span>
+<span class="kw">const</span> { bloodType = <span class="st">'不明'</span> } = patient;
+
+<span class="cm">// 関数の引数でも使える（よく見るパターン）</span>
+<span class="kw">function</span> <span class="fn">showPatient</span>({ name, age, hba1c }) {
+  console.<span class="fn">log</span>(<span class="st">`${name}（${age}歳）HbA1c: ${hba1c}%`</span>);
+}
+<span class="fn">showPatient</span>(patient);</code></pre>
+
+    <div class="cl">配列の分割代入</div>
+    <pre><code><span class="kw">const</span> scores = [<span class="nm">85</span>, <span class="nm">92</span>, <span class="nm">78</span>, <span class="nm">95</span>];
+
+<span class="cm">// 配列分割代入</span>
+<span class="kw">const</span> [first, second, , fourth] = scores; <span class="cm">// 3番目をスキップ</span>
+
+<span class="cm">// 残り要素をまとめる（残余要素）</span>
+<span class="kw">const</span> [top, ...rest] = scores;
+console.<span class="fn">log</span>(top);   <span class="cm">// → 85</span>
+console.<span class="fn">log</span>(rest);  <span class="cm">// → [92, 78, 95]</span>
+
+<span class="cm">// 変数の値を交換</span>
+<span class="kw">let</span> a = <span class="nm">1</span>, b = <span class="nm">2</span>;
+[a, b] = [b, a];   <span class="cm">// → a=2, b=1</span>
+
+<span class="cm">// fetch の結果を受け取るパターン</span>
+<span class="kw">const</span> [patient, records] = <span class="kw">await</span> Promise.<span class="fn">all</span>([
+  <span class="fn">fetchPatient</span>(id),
+  <span class="fn">fetchRecords</span>(id),
+]);</code></pre>
+  </div>
+
+  <!-- M-2 スプレッド構文 -->
+  <div class="sec" id="m2">
+    <div class="sec-hd"><span class="sec-n">M-2</span><h2>スプレッド構文 &amp; 残余引数</h2></div>
+    <p><code>...</code> は「展開する」演算子です。配列・オブジェクトの複製・結合に使います。</p>
+
+    <div class="cl">スプレッド構文の活用</div>
+    <pre><code><span class="cm">// 配列のコピー・結合</span>
+<span class="kw">const</span> a = [<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>];
+<span class="kw">const</span> b = [<span class="nm">4</span>, <span class="nm">5</span>];
+<span class="kw">const</span> merged = [...a, ...b];         <span class="cm">// → [1, 2, 3, 4, 5]</span>
+<span class="kw">const</span> copy   = [...a];               <span class="cm">// コピー（元の配列を変更しない）</span>
+
+<span class="cm">// オブジェクトのコピー・マージ</span>
+<span class="kw">const</span> base    = { id: <span class="st">'P001'</span>, name: <span class="st">'田中'</span> };
+<span class="kw">const</span> updated = { ...base, hba1c: <span class="nm">6.8</span>, age: <span class="nm">46</span> }; <span class="cm">// 上書き可</span>
+<span class="cm">// → { id: 'P001', name: '田中', hba1c: 6.8, age: 46 }</span>
+
+<span class="cm">// 関数の引数に配列を展開</span>
+<span class="kw">const</span> nums = [<span class="nm">3</span>, <span class="nm">1</span>, <span class="nm">4</span>, <span class="nm">1</span>, <span class="nm">5</span>];
+console.<span class="fn">log</span>(Math.<span class="fn">max</span>(...nums));     <span class="cm">// → 5</span>
+
+<span class="cm">// 残余引数（関数の可変引数）</span>
+<span class="kw">function</span> <span class="fn">average</span>(...scores) {       <span class="cm">// 任意の数の引数を配列で受け取る</span>
+  <span class="kw">return</span> scores.<span class="fn">reduce</span>((s, v) => s <span class="op">+</span> v, <span class="nm">0</span>) / scores.length;
+}
+console.<span class="fn">log</span>(<span class="fn">average</span>(<span class="nm">80</span>, <span class="nm">92</span>, <span class="nm">75</span>, <span class="nm">88</span>)); <span class="cm">// → 83.75</span></code></pre>
+  </div>
+
+  <!-- M-3 Optional Chaining -->
+  <div class="sec" id="m3">
+    <div class="sec-hd"><span class="sec-n">M-3</span><h2>Optional Chaining &amp; Nullish Coalescing</h2></div>
+    <p>ネストされたオブジェクトへの安全なアクセスや、null/undefined の扱いを簡潔に書けます。</p>
+
+    <div class="cl">Optional Chaining（?. ）</div>
+    <pre><code><span class="kw">const</span> patient = {
+  id: <span class="st">'P001'</span>,
+  contact: {
+    email: <span class="st">'tanaka@example.com'</span>
+  }
+};
+
+<span class="cm">// 従来：null チェックが必要</span>
+<span class="kw">const</span> phone = patient.contact && patient.contact.phone
+                && patient.contact.phone.mobile;
+
+<span class="cm">// Optional Chaining（?.）：存在しないなら undefined を返す</span>
+<span class="kw">const</span> phone = patient.contact?.phone?.mobile;  <span class="cm">// → undefined（エラーにならない）</span>
+<span class="kw">const</span> email = patient.contact?.email;           <span class="cm">// → 'tanaka@example.com'</span>
+
+<span class="cm">// メソッド呼び出しにも使える</span>
+patient.notify?.();   <span class="cm">// notify メソッドがあれば呼ぶ、なければ無視</span>
+
+<span class="cm">// 配列要素への安全なアクセス</span>
+<span class="kw">const</span> first = patients?.[<span class="nm">0</span>]?.name;</code></pre>
+
+    <div class="cl">Nullish Coalescing（??）</div>
+    <pre><code><span class="cm">// ?? — null または undefined のときだけデフォルト値を使う</span>
+<span class="kw">const</span> hba1c = patient.hba1c ?? <span class="st">'未測定'</span>;
+
+<span class="cm">// || との違い</span>
+<span class="nm">0</span>     <span class="op">||</span>  <span class="st">'デフォルト'</span>  <span class="cm">// → 'デフォルト'（0 は falsy なので）</span>
+<span class="nm">0</span>     <span class="op">??</span>  <span class="st">'デフォルト'</span>  <span class="cm">// → 0（null/undefined でないから）</span>
+<span class="kw">null</span>  <span class="op">??</span>  <span class="st">'デフォルト'</span>  <span class="cm">// → 'デフォルト'</span>
+
+<span class="cm">// ??= — 代入演算子と組み合わせ</span>
+patient.bloodType <span class="op">??=</span> <span class="st">'不明'</span>;  <span class="cm">// null/undefined のときだけ代入</span>
+
+<span class="cm">// 実用例：設定値の取得</span>
+<span class="kw">function</span> <span class="fn">getConfig</span>(userConfig) {
+  <span class="kw">return</span> {
+    timeout:  userConfig?.timeout  ?? <span class="nm">5000</span>,
+    retries:  userConfig?.retries  ?? <span class="nm">3</span>,
+    endpoint: userConfig?.endpoint ?? <span class="st">'https://api.example.com'</span>,
+  };
+}</code></pre>
+
+    <div class="demo-wrap">
+      <div class="demo-bar"><div class="demo-dot"></div>モダン構文デモ</div>
+      <div class="demo-area">
+        <div class="live">
+          <div class="live-t">分割代入・スプレッド・Optional Chaining を体験</div>
+          <div class="row">
+            <button class="run g" onclick="runModernDemo('destruct')">分割代入</button>
+            <button class="run g" onclick="runModernDemo('spread')">スプレッド</button>
+            <button class="run g" onclick="runModernDemo('optional')">Optional ?.</button>
+            <button class="run g" onclick="runModernDemo('nullish')">Nullish ??</button>
+          </div>
+          <div class="out" id="modernOut">— ボタンを押して各構文の動作を確認 —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- M-4 チェックリスト -->
+  <div class="sec" id="m4">
+    <div class="sec-hd"><span class="sec-n">確認</span><h2>応用編 理解度チェック</h2></div>
+    <div class="checklist">
+      <div class="cl-title">✓ 非同期処理</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>同期処理と非同期処理の違いを説明できる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>Promise の3つの状態（pending・fulfilled・rejected）を説明できる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>async/await を使って非同期処理を書ける</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>fetch で外部 API からデータを取得できる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>fetch の response.ok チェックが必要な理由を説明できる</div>
+    </div>
+    <div class="checklist">
+      <div class="cl-title">✓ クラス</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>class と constructor の役割を説明できる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>extends と super を使って継承を書ける</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>this が変わる問題と対処法（アロー関数/bind）を説明できる</div>
+    </div>
+    <div class="checklist">
+      <div class="cl-title">✓ エラー処理・モダン構文</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>try/catch/finally を使ってエラーを処理できる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>async/await 内のエラーを try/catch で捕まえられる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>分割代入でオブジェクトから値を取り出せる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>Optional Chaining（?.）と Nullish Coalescing（??）の違いを説明できる</div>
+    </div>
+  </div>
+
+</div><!-- /ch-mod -->
+
+<footer>JavaScript 応用 詳解 — JavaScript 入門コース</footer>
+
+</main>
+</div><!-- /layout -->
+
+<script>
+/* ── メニュー ── */
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('ov').classList.toggle('open');
+}
+function goTo(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+  if (window.innerWidth <= 700) toggleMenu();
+}
+
+/* ── 目次ハイライト ── */
+const allLinks = document.querySelectorAll('.toc-a');
+const allSecs  = document.querySelectorAll('.sec[id], .chapter[id]');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      allLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+    }
+  });
+}, { rootMargin: '-10% 0px -70% 0px' });
+allSecs.forEach(s => obs.observe(s));
+
+/* ── タブハイライト ── */
+const chaps = document.querySelectorAll('.chapter');
+const tabMap = {
+  'ch-async': document.getElementById('tab-async'),
+  'ch-class': document.getElementById('tab-class'),
+  'ch-err':   document.getElementById('tab-err'),
+  'ch-mod':   document.getElementById('tab-mod'),
+};
+const chapObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    Object.values(tabMap).forEach(t => t.className = 'ch-tab');
+    const t = tabMap[e.target.id];
+    if (t) {
+      const cls = { 'ch-async':'a-async','ch-class':'a-class','ch-err':'a-err','ch-mod':'a-mod' };
+      t.classList.add(cls[e.target.id]);
+    }
+  });
+}, { rootMargin: '-10% 0px -50% 0px' });
+chaps.forEach(c => chapObs.observe(c));
+
+/* ════════════════════════════════
+   デモ関数
+════════════════════════════════ */
+function log(id, lines) {
+  document.getElementById(id).innerHTML = lines.join('\n');
+}
+function addLine(id, html) {
+  const el = document.getElementById(id);
+  el.innerHTML += (el.innerHTML ? '\n' : '') + html;
+}
+
+/* A-2 Promise デモ */
+function runPromiseDemo() {
+  const success = document.getElementById('pResult').value === 'ok';
+  const delay   = parseInt(document.getElementById('pDelay').value) || 1000;
+  const out = document.getElementById('promiseOut');
+  out.innerHTML = '<span class="warn-c">pending… 待機中</span>';
+
+  new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (success) resolve({ id: 'P001', name: '田中 太郎', hba1c: 7.2 });
+      else reject(new Error('患者データが見つかりません（ID不正）'));
+    }, delay);
+  })
+  .then(data => {
+    out.innerHTML =
+      `<span class="ok">✅ fulfilled（成功）</span>\n` +
+      `resolve 値: ${JSON.stringify(data, null, 2)}`;
+  })
+  .catch(err => {
+    out.innerHTML =
+      `<span class="fail">❌ rejected（失敗）</span>\n` +
+      `エラー: ${err.message}`;
+  })
+  .finally(() => {
+    out.innerHTML += '\n<span class="info-c">finally: 処理完了</span>';
+  });
+}
+
+/* A-3 async/await デモ */
+function fakeWait(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function runAsyncDemo() {
+  const pid = document.getElementById('asyncPid').value || 'P001';
+  const out = document.getElementById('asyncOut');
+  out.innerHTML = '';
+
+  const db = {
+    'P001': { name: '田中 太郎', age: 45, hba1c: 7.2, weight: 68, height: 170 },
+    'P002': { name: '山田 花子', age: 62, hba1c: 5.4, weight: 55, height: 158 },
+    'P003': { name: '佐藤 次郎', age: 38, hba1c: 6.1, weight: 72, height: 168 },
+  };
+
+  async function fetchPatient(id) {
+    await fakeWait(600);
+    if (!db[id]) throw new Error(`患者 ${id} は存在しません`);
+    return db[id];
+  }
+  async function fetchMedications(name) {
+    await fakeWait(400);
+    return ['メトホルミン 500mg', 'アムロジピン 5mg'];
+  }
+
+  try {
+    out.innerHTML = '<span class="warn-c">① fetchPatient() を await 中…</span>';
+    const patient = await fetchPatient(pid);
+    const bmi = (patient.weight / (patient.height / 100) ** 2).toFixed(1);
+
+    out.innerHTML += `\n<span class="ok">② 患者取得成功: ${patient.name}（${patient.age}歳）BMI=${bmi}</span>`;
+    out.innerHTML += '\n<span class="warn-c">③ fetchMedications() を await 中…</span>';
+
+    const meds = await fetchMedications(patient.name);
+    out.innerHTML += `\n<span class="ok">④ 投薬情報: ${meds.join(' / ')}</span>`;
+    out.innerHTML += `\n<span class="info-c">✅ 全処理完了（async/await で順番に実行）</span>`;
+
+  } catch (err) {
+    out.innerHTML += `\n<span class="fail">❌ catch: ${err.message}</span>`;
+  }
+}
+
+/* A-4 fetch デモ */
+async function runFetchDemo() {
+  const id = document.getElementById('fetchId').value || 1;
+  const out = document.getElementById('fetchOut');
+  out.innerHTML = '<span class="warn-c">fetch 実行中…</span>';
+
+  try {
+    const res = await fetch(`https://jsonplaceholder.typicode.com/users/${id}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const user = await res.json();
+    out.innerHTML =
+      `<span class="ok">✅ 取得成功 (HTTP 200)</span>\n` +
+      `name:     ${user.name}\n` +
+      `email:    ${user.email}\n` +
+      `company:  ${user.company?.name}\n` +
+      `website:  ${user.website}`;
+  } catch (err) {
+    out.innerHTML = `<span class="fail">❌ エラー: ${err.message}</span>`;
+  }
+}
+
+/* C-1 クラスデモ */
+class PatientDemo {
+  constructor(id, name, age, hba1c) {
+    this.id = id; this.name = name; this.age = age; this.hba1c = hba1c;
+  }
+  diagnose() {
+    if (this.hba1c < 5.7) return '正常';
+    if (this.hba1c < 6.5) return '糖尿病前症';
+    return '糖尿病';
+  }
+  summary() {
+    return `[${this.id}] ${this.name}（${this.age}歳）: ${this.diagnose()}`;
+  }
+  static calcBMI(w, h) { return (w / (h / 100) ** 2).toFixed(1); }
+}
+
+function runClassDemo() {
+  const id   = document.getElementById('cId').value;
+  const name = document.getElementById('cName').value;
+  const age  = parseInt(document.getElementById('cAge').value);
+  const hba  = parseFloat(document.getElementById('cHba').value);
+  const wt   = parseFloat(document.getElementById('cWt').value);
+  const ht   = parseFloat(document.getElementById('cHt').value);
+
+  const p = new PatientDemo(id, name, age, hba);
+  const bmi = PatientDemo.calcBMI(wt, ht);
+
+  document.getElementById('classOut').innerHTML =
+    `<span class="ok">✅ new Patient(…) が完了</span>\n\n` +
+    `インスタンスのプロパティ:\n` +
+    `  p.id    = "${p.id}"\n` +
+    `  p.name  = "${p.name}"\n` +
+    `  p.age   = ${p.age}\n` +
+    `  p.hba1c = ${p.hba1c}\n\n` +
+    `メソッド呼び出し:\n` +
+    `  p.diagnose() → "${p.diagnose()}"\n` +
+    `  p.summary()  → "${p.summary()}"\n\n` +
+    `static メソッド:\n` +
+    `  Patient.calcBMI(${wt}, ${ht}) → ${bmi}`;
+}
+
+/* E-1 try/catch デモ */
+function runTryCatchDemo() {
+  const raw = document.getElementById('errInput').value;
+  let result = '';
+
+  function validateHbA1c(value) {
+    if (typeof value !== 'number' || isNaN(value))
+      throw new TypeError('HbA1c は数値で入力してください');
+    if (value < 0 || value > 20)
+      throw new RangeError(`値 ${value} は範囲外です（0〜20）`);
+    return true;
+  }
+
+  try {
+    const val = Number(raw);
+    validateHbA1c(isNaN(val) ? raw : val);
+    let judge = val < 5.7 ? '正常' : val < 6.5 ? '糖尿病前症' : '糖尿病';
+    result = `<span class="ok">✅ try ブロック: バリデーション通過</span>\n判定: ${judge}（HbA1c = ${val}%）`;
+  } catch (err) {
+    result = `<span class="fail">❌ catch ブロック: エラーを捕捉</span>\n` +
+             `err.name:    ${err.name}\n` +
+             `err.message: ${err.message}`;
+  } finally {
+    result += `\n<span class="info-c">finally: 常に実行されます</span>`;
+  }
+
+  document.getElementById('errOut').innerHTML = result;
+}
+
+/* M-3 モダン構文デモ */
+function runModernDemo(type) {
+  const patient = {
+    id: 'P001', name: '田中 太郎', age: 45, hba1c: 7.2,
+    contact: { email: 'tanaka@example.com' }
+  };
+  let out = '';
+
+  if (type === 'destruct') {
+    const { id, name, age, hba1c } = patient;
+    const { name: pName, contact: { email } } = patient;
+    const { bloodType = '不明' } = patient;
+    out = `<span class="ok">分割代入の結果:</span>\n` +
+          `const { id, name, age, hba1c } = patient\n` +
+          `  → id="${id}", name="${name}", age=${age}, hba1c=${hba1c}\n\n` +
+          `別名で受け取る:\n  pName="${pName}", email="${email}"\n\n` +
+          `デフォルト値:\n  bloodType="${bloodType}"（プロパティなし）`;
+
+  } else if (type === 'spread') {
+    const base = { id: 'P001', name: '田中' };
+    const updated = { ...base, hba1c: 6.8, age: 46 };
+    const a = [1, 2, 3], b = [4, 5];
+    const merged = [...a, ...b];
+    out = `<span class="ok">スプレッド構文の結果:</span>\n` +
+          `オブジェクトのマージ:\n` +
+          `  base    = ${JSON.stringify(base)}\n` +
+          `  updated = ${JSON.stringify(updated)}\n\n` +
+          `配列のマージ:\n` +
+          `  ${JSON.stringify(a)} + ${JSON.stringify(b)}\n` +
+          `  → ${JSON.stringify(merged)}\n\n` +
+          `Math.max(...[3,1,4,1,5]) → ${Math.max(...[3,1,4,1,5])}`;
+
+  } else if (type === 'optional') {
+    const phone = patient.contact?.phone?.mobile;
+    const email = patient.contact?.email;
+    const deep  = patient?.emergency?.contact?.phone;
+    out = `<span class="ok">Optional Chaining (?.) の結果:</span>\n` +
+          `patient.contact?.phone?.mobile\n  → ${phone}（undefined、エラーなし）\n\n` +
+          `patient.contact?.email\n  → "${email}"\n\n` +
+          `patient?.emergency?.contact?.phone\n  → ${deep}（存在しない深いパス）`;
+
+  } else if (type === 'nullish') {
+    const v1 = patient.hba1c   ?? '未測定';
+    const v2 = patient.missing ?? 'デフォルト';
+    const v3 = 0               ?? 'デフォルト';
+    const v4 = 0               || 'デフォルト';
+    out = `<span class="ok">Nullish Coalescing (??) の結果:</span>\n` +
+          `patient.hba1c   ?? '未測定'   → ${v1}（値があるのでそのまま）\n` +
+          `patient.missing ?? 'デフォルト'→ "${v2}"（undefinedなのでデフォルト値）\n\n` +
+          `<span class="warn-c">|| との違い:</span>\n` +
+          `0 ?? 'デフォルト'  → ${v3}（0は null/undefined でない）\n` +
+          `0 || 'デフォルト'  → "${v4}"（0は falsy なのでデフォルト値）`;
+  }
+
+  document.getElementById('modernOut').innerHTML = out;
+}
+
+/* チェックリスト */
+function doCheck(el) {
+  el.classList.toggle('done');
+  el.querySelector('.cb').textContent = el.classList.contains('done') ? '✓' : '';
+}
+</script>
+</body>
+</html>
