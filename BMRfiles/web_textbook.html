@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web 三言語 詳解 — HTML・CSS・JavaScript</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   リセット & CSS変数
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:          #f5f1e8;
+  --paper:       #fdfaf3;
+  --ink:         #1c1710;
+  --ink-mid:     #4a3f30;
+  --ink-light:   #8a7a68;
+  --border:      #d8cebc;
+  --tag-bg:      #ede8de;
+  --code-bg:     #1a1612;
+  --code-fg:     #c8b99a;
+
+  /* 章ごとのアクセント */
+  --html:  #a33a20;
+  --css:   #1e4a7a;
+  --js:    #3a6b4a;
+
+  --warn-bg:    #fdf3e7;
+  --warn-bd:    #c8841a;
+  --info-bg:    #edf5f0;
+  --info-bd:    #3a6b4a;
+  --check-bg:   #edf2fa;
+  --check-bd:   #1e4a7a;
+
+  --sidebar-w: 220px;
+  --toc-h:     48px;
+}
+html { scroll-behavior: smooth; font-size: 15px; }
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.85;
+}
+
+/* ═══════════════════════════════════════════
+   サイドバーレイアウト
+═══════════════════════════════════════════ */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* サイドバー */
+aside#sidebar {
+  width: var(--sidebar-w);
+  background: var(--ink);
+  color: #f5f1e8;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  overflow-y: auto;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+aside#sidebar::-webkit-scrollbar { width: 4px; }
+aside#sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+.sidebar-brand {
+  padding: 28px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-brand-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.sidebar-brand-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+/* 章タブ */
+.chapter-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.chapter-tab {
+  flex: 1;
+  padding: 10px 4px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  color: rgba(255,255,255,0.4);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.chapter-tab:hover { color: rgba(255,255,255,0.7); }
+.chapter-tab.active-html { color: #e8a090; border-bottom-color: var(--html); }
+.chapter-tab.active-css  { color: #90b8e8; border-bottom-color: var(--css);  }
+.chapter-tab.active-js   { color: #90c8a8; border-bottom-color: var(--js);   }
+
+/* サイドバー内目次 */
+.sidebar-toc { padding: 12px 0 24px; flex: 1; }
+.toc-group { margin-bottom: 4px; }
+.toc-chapter-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 10px 20px 4px;
+  color: rgba(255,255,255,0.25);
+}
+.toc-chapter-label.html-label { color: #e8908090; }
+.toc-chapter-label.css-label  { color: #90b8e890; }
+.toc-chapter-label.js-label   { color: #90c8a890; }
+
+.toc-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 20px;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  transition: color 0.12s, background 0.12s;
+  border-left: 2px solid transparent;
+  margin: 1px 0;
+}
+.toc-link:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.04); }
+.toc-link.active { color: #fff; background: rgba(255,255,255,0.06); }
+.toc-link.active.html-sec { border-left-color: var(--html); }
+.toc-link.active.css-sec  { border-left-color: var(--css);  }
+.toc-link.active.js-sec   { border-left-color: var(--js);   }
+.toc-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: rgba(255,255,255,0.25);
+  flex-shrink: 0;
+}
+
+/* ハンバーガー（モバイル） */
+#menuToggle {
+  display: none;
+  position: fixed;
+  top: 12px; left: 12px;
+  z-index: 300;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 18px;
+  cursor: pointer;
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 190;
+}
+
+/* メインコンテンツ */
+main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  max-width: 800px;
+  padding: 0 36px 80px;
+}
+
+/* ═══════════════════════════════════════════
+   ページヘッダー
+═══════════════════════════════════════════ */
+.page-header {
+  background: var(--ink);
+  margin: 0 -36px;
+  padding: 56px 36px 48px;
+  color: #f5f1e8;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 48px;
+}
+.page-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg, transparent, transparent 28px,
+    rgba(255,255,255,0.015) 28px, rgba(255,255,255,0.015) 29px
+  );
+}
+.page-header-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  position: relative;
+}
+.page-header h1 {
+  font-family: 'Zen Antique', serif;
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  position: relative;
+}
+.page-header h1 .hl-html { color: #e8a090; }
+.page-header h1 .hl-css  { color: #90b8e8; }
+.page-header h1 .hl-js   { color: #90c8a8; }
+.page-header-desc {
+  margin-top: 14px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  position: relative;
+  line-height: 1.7;
+}
+
+/* 三言語サマリーカード */
+.lang-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 56px;
+}
+.lang-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 16px;
+  border-top: 3px solid var(--html);
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--ink);
+  display: block;
+}
+.lang-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.lang-card.css-card  { border-top-color: var(--css);  }
+.lang-card.js-card   { border-top-color: var(--js);   }
+.lang-card-icon { font-size: 26px; margin-bottom: 8px; }
+.lang-card-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--html);
+  margin-bottom: 4px;
+}
+.lang-card.css-card .lang-card-name { color: var(--css); }
+.lang-card.js-card  .lang-card-name { color: var(--js);  }
+.lang-card-role { font-size: 12px; color: var(--ink-light); }
+
+/* ═══════════════════════════════════════════
+   章ヘッダー
+═══════════════════════════════════════════ */
+.chapter {
+  margin-bottom: 80px;
+}
+.chapter-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0 18px;
+  border-bottom: 2px solid var(--html);
+  margin-bottom: 36px;
+  scroll-margin-top: 24px;
+}
+.chapter-header.css-chapter  { border-bottom-color: var(--css);  }
+.chapter-header.js-chapter   { border-bottom-color: var(--js);   }
+.chapter-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--html);
+  color: #fff;
+  flex-shrink: 0;
+}
+.chapter-header.css-chapter .chapter-badge { background: var(--css); }
+.chapter-header.js-chapter  .chapter-badge { background: var(--js);  }
+.chapter-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+.chapter-subtitle { font-size: 12.5px; color: var(--ink-light); margin-left: auto; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════
+   セクション
+═══════════════════════════════════════════ */
+.sec {
+  margin-bottom: 52px;
+  scroll-margin-top: 24px;
+  animation: fadeUp 0.45s ease both;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+.sec-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.sec-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+  background: var(--tag-bg);
+  padding: 1px 7px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.sec-header h2 {
+  font-family: 'Zen Antique', serif;
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+h3.sub {
+  font-family: 'Zen Antique', serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 22px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--border);
+}
+
+/* 本文 */
+p { margin-bottom: 11px; color: var(--ink-mid); font-size: 14px; }
+p:last-child { margin-bottom: 0; }
+strong { color: var(--ink); }
+
+/* ═══════════════════════════════════════════
+   コード
+═══════════════════════════════════════════ */
+.code-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: var(--ink-light);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  margin-top: 14px;
+}
+pre {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 3px 0 12px;
+}
+pre code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--code-fg);
+  line-height: 1.75;
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  background: var(--tag-bg);
+  color: var(--html);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+pre code { background: none; padding: 0; color: var(--code-fg); }
+
+/* シンタックスハイライト */
+.kw  { color: #c8a06a; }   /* キーワード・タグ */
+.at  { color: #8ab4d4; }   /* 属性・プロパティ */
+.vl  { color: #98d498; }   /* 値・文字列 */
+.nm  { color: #d4a8d4; }   /* 数値 */
+.cm  { color: #6a7a6a; font-style: italic; } /* コメント */
+.fn  { color: #8ab4d4; }   /* 関数名 */
+.op  { color: #e0c87a; }   /* 演算子 */
+
+/* ═══════════════════════════════════════════
+   カードグリッド・ターム
+═══════════════════════════════════════════ */
+.term-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(192px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+.term-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.term-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.07); transform: translateY(-2px); }
+.term-word {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--html);
+  margin-bottom: 4px;
+}
+.term-word.css-w { color: var(--css); }
+.term-word.js-w  { color: var(--js);  }
+.term-desc { font-size: 12px; color: var(--ink-mid); line-height: 1.7; }
+
+/* ═══════════════════════════════════════════
+   インフォボックス
+═══════════════════════════════════════════ */
+.info-box, .warn-box, .tip-box {
+  border-radius: 0 6px 6px 0;
+  padding: 12px 16px;
+  margin: 14px 0;
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.7;
+}
+.info-box { background: var(--info-bg); border-left: 3px solid var(--info-bd); }
+.info-box strong { color: var(--info-bd); }
+.warn-box { background: var(--warn-bg); border-left: 3px solid var(--warn-bd); }
+.warn-box strong { color: var(--warn-bd); }
+.tip-box  { background: var(--check-bg); border-left: 3px solid var(--check-bd); }
+.tip-box strong { color: var(--check-bd); }
+
+/* ═══════════════════════════════════════════
+   テーブル
+═══════════════════════════════════════════ */
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 13px;
+}
+.ref-table th {
+  background: var(--ink);
+  color: rgba(255,255,255,0.82);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 9px 13px;
+  text-align: left;
+}
+.ref-table td {
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-mid);
+  vertical-align: top;
+}
+.ref-table tr:last-child td { border-bottom: none; }
+.ref-table tr:hover td { background: var(--tag-bg); }
+.ref-table td:first-child {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--html);
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   デモエリア
+═══════════════════════════════════════════ */
+.demo-wrap {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 18px 0;
+}
+.demo-bar {
+  background: var(--ink);
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.demo-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+.demo-area { background: #f0ece0; padding: 18px 20px; }
+
+/* ライブパネル */
+.live-panel {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 16px 18px;
+  margin: 10px 0;
+}
+.live-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 12px;
+}
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 7px 0; }
+.row label { font-size: 13px; color: var(--ink-mid); min-width: 72px; }
+.row input, .row select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.row input:focus, .row select:focus { border-color: var(--js); }
+.row input[type=number] { width: 80px; font-family: 'JetBrains Mono', monospace; }
+
+/* ボタン */
+.run-btn {
+  padding: 7px 18px;
+  background: var(--js);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.run-btn:hover { opacity: 0.85; }
+.run-btn:active { transform: scale(0.97); }
+.run-btn.red { background: var(--html); }
+.run-btn.blue { background: var(--css); }
+
+/* アウトプット */
+.output-box {
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--code-fg);
+  min-height: 34px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+/* ═══════════════════════════════════════════
+   比較グリッド
+═══════════════════════════════════════════ */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+@media(max-width:520px) { .compare-grid { grid-template-columns: 1fr; } }
+.compare-card { border-radius: 6px; overflow: hidden; }
+.compare-head { padding: 7px 13px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; }
+.bad  .compare-head { background: #7a2e1e; color: #fdd; }
+.good .compare-head { background: #3a6b4a; color: #cfe; }
+.compare-body { background: var(--code-bg); padding: 12px; }
+.compare-body pre { margin: 0; padding: 0; background: none; font-size: 11.5px; }
+
+/* ═══════════════════════════════════════════
+   チェックリスト
+═══════════════════════════════════════════ */
+.checklist {
+  background: var(--check-bg);
+  border: 1px solid var(--check-bd);
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.checklist-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--check-bd);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 5px 0;
+  font-size: 13.5px;
+  color: var(--ink-mid);
+  border-bottom: 1px dashed rgba(0,0,0,0.07);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+.check-item:last-child { border-bottom: none; }
+.check-item.done { color: var(--ink-light); text-decoration: line-through; }
+.cb {
+  width: 17px; height: 17px;
+  border: 2px solid var(--check-bd);
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--check-bd);
+  transition: background 0.15s;
+}
+.check-item.done .cb { background: var(--check-bd); color: #fff; }
+
+/* ═══════════════════════════════════════════
+   CSS固有デモ
+═══════════════════════════════════════════ */
+/* ボックスモデル図 */
+.bm-fig { display: flex; justify-content: center; margin: 16px 0; }
+.bm-margin  { background:#3a6b4a18; border: 2px solid #3a6b4a; border-radius: 5px; padding: 14px; position: relative; }
+.bm-border  { background:#1e4a7a18; border: 2px solid #1e4a7a; border-radius: 4px; padding: 12px; position: relative; }
+.bm-padding { background:#c8841a18; border: 2px solid #c8841a; border-radius: 4px; padding: 10px; position: relative; }
+.bm-content { background:#a33a2030; border: 2px solid #a33a20; border-radius: 3px; padding: 10px 18px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #a33a20; text-align: center; }
+.bm-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; position: absolute; top: 3px; left: 6px; }
+.bm-margin  .bm-lbl { color: #3a6b4a; }
+.bm-border  .bm-lbl { color: #1e4a7a; }
+.bm-padding .bm-lbl { color: #c8841a; }
+
+/* カラーチップ */
+.color-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.chip { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.swatch { width: 48px; height: 32px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
+.chip-name { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-light); }
+
+/* Flexboxデモ */
+.flex-ctrl { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+.flex-ctrl label { font-size: 12px; color: var(--ink-mid); }
+.flex-ctrl select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; background: var(--paper); color: var(--ink); }
+.flex-preview {
+  display: flex;
+  gap: 8px;
+  padding: 14px;
+  background: #f0ece0;
+  border-radius: 6px;
+  min-height: 80px;
+  transition: all 0.3s;
+}
+.fi { width: 44px; height: 44px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: #fff; }
+.fi1{background:var(--html);} .fi2{background:var(--css);} .fi3{background:var(--js);} .fi4{background:#8a6a20;}
+
+/* アニメーション */
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes bounce  { 0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)} }
+@keyframes pulse   { 0%,100%{opacity:1}50%{opacity:0.25} }
+@keyframes scaleAn { 0%,100%{transform:scale(1)}50%{transform:scale(1.3)} }
+@keyframes shake   { 0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)} }
+@keyframes slideIn { from{transform:translateX(-18px);opacity:0}to{transform:translateX(0);opacity:1} }
+
+.d-spin   { animation: spin    1.2s linear infinite; border-radius: 50%; }
+.d-bounce { animation: bounce  0.8s ease-in-out infinite; border-radius: 50%; }
+.d-pulse  { animation: pulse   1.4s ease-in-out infinite; }
+.d-scale  { animation: scaleAn 1s ease-in-out infinite; border-radius: 4px; }
+.d-shake  { animation: shake   0.6s ease-in-out infinite; }
+
+.anim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin: 14px 0; }
+.anim-card { background: var(--paper); border: 1px solid var(--border); border-radius: 6px; padding: 12px 8px; text-align: center; }
+.anim-card-t { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-light); margin-bottom: 10px; }
+.anim-box { width: 40px; height: 40px; margin: 0 auto 6px; }
+.anim-desc { font-size: 11px; color: var(--ink-light); }
+
+/* hover カード */
+.hover-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.hc { background: var(--paper); border: 1px solid var(--border); border-radius: 5px; padding: 12px 16px; font-size: 12.5px; color: var(--ink-mid); cursor: pointer; }
+.hc.t1 { transition: background 0.3s; }           .hc.t1:hover { background: #1e4a7a22; }
+.hc.t2 { transition: transform 0.2s,box-shadow 0.2s; } .hc.t2:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.09); }
+.hc.t3 { transition: border-color 0.2s,color 0.2s; }   .hc.t3:hover { border-color: var(--html); color: var(--html); }
+.hc.t4 { transition: all 0.3s; }                  .hc.t4:hover { background: var(--js); color: #fff; border-color: var(--js); border-radius: 20px; }
+
+/* ═══════════════════════════════════════════
+   JS固有デモ
+═══════════════════════════════════════════ */
+/* 電卓 */
+.calc-wrap { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; max-width: 220px; margin: 0 auto; }
+.calc-disp { grid-column: 1/-1; background: var(--code-bg); color: var(--code-fg); font-family: 'JetBrains Mono', monospace; font-size: 20px; padding: 10px 14px; border-radius: 4px; text-align: right; min-height: 46px; }
+.cb2 { padding: 10px; background: var(--paper); border: 1px solid var(--border); border-radius: 4px; font-size: 14px; cursor: pointer; text-align: center; transition: background 0.12s; font-family: 'JetBrains Mono', monospace; }
+.cb2:hover { background: var(--tag-bg); }
+.cb2.op  { background: #1e4a7a14; color: var(--css); border-color: #1e4a7a44; }
+.cb2.eq  { background: var(--js); color: #fff; border-color: var(--js); }
+.cb2.cl  { background: #a33a2014; color: var(--html); border-color: #a33a2044; }
+
+/* DOMリスト */
+.dom-list-area { background: var(--paper); border: 1px solid var(--border); border-radius: 5px; padding: 10px; min-height: 60px; }
+.di { padding: 7px 10px; border-radius: 4px; margin: 3px 0; background: var(--tag-bg); font-size: 13.5px; color: var(--ink-mid); display: flex; justify-content: space-between; align-items: center; }
+.di-del { background: none; border: none; color: var(--html); cursor: pointer; font-size: 15px; padding: 0 3px; }
+
+/* イベントデモ */
+.event-box {
+  width: 100%; height: 80px; background: var(--paper); border: 2px dashed var(--border);
+  border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--ink-light); cursor: pointer; user-select: none;
+  transition: background 0.1s;
+}
+.event-log { background: var(--code-bg); border-radius: 4px; padding: 9px 13px; margin-top: 7px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--code-fg); max-height: 110px; overflow-y: auto; white-space: pre-wrap; }
+
+/* タイマー */
+.timer-display { font-family: 'JetBrains Mono', monospace; font-size: 38px; text-align: center; letter-spacing: 0.08em; color: var(--ink); margin: 10px 0; }
+.timer-btns { display: flex; gap: 8px; justify-content: center; }
+
+/* フォームデモ */
+.form-demo label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink); margin-bottom: 3px; margin-top: 12px; }
+.form-demo label:first-child { margin-top: 0; }
+.form-demo input, .form-demo select, .form-demo textarea {
+  width: 100%; padding: 7px 11px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); font-family: 'Noto Sans JP', sans-serif; font-size: 13.5px; color: var(--ink);
+  outline: none; transition: border-color 0.2s;
+}
+.form-demo input:focus, .form-demo select:focus, .form-demo textarea:focus { border-color: var(--css); }
+.form-demo textarea { height: 70px; resize: vertical; }
+
+/* ═══════════════════════════════════════════
+   フッター
+═══════════════════════════════════════════ */
+footer {
+  text-align: center; padding: 28px 24px;
+  font-size: 11.5px; color: var(--ink-light);
+  border-top: 1px solid var(--border);
+  margin: 0 -36px;
+}
+
+/* ═══════════════════════════════════════════
+   レスポンシブ
+═══════════════════════════════════════════ */
+@media (max-width: 700px) {
+  :root { --sidebar-w: 0px; }
+  aside#sidebar { transform: translateX(-240px); width: 240px; transition: transform 0.25s; }
+  aside#sidebar.open { transform: translateX(0); }
+  #menuToggle { display: block; }
+  .sidebar-overlay.open { display: block; }
+  main { margin-left: 0; padding: 0 18px 60px; }
+  .page-header { margin: 0 -18px; padding: 48px 18px 36px; }
+  footer { margin: 0 -18px; }
+  .lang-cards { grid-template-columns: 1fr; }
+  .chapter-subtitle { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ハンバーガーボタン（モバイル） -->
+<button id="menuToggle" onclick="toggleMenu()" aria-label="メニュー">☰</button>
+<div class="sidebar-overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<div class="layout">
+
+<!-- ════════════ サイドバー ════════════ -->
+<aside id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-sub">JavaScript 入門コース</div>
+    <div class="sidebar-brand-title">Web 三言語<br>詳解</div>
+  </div>
+
+  <div class="chapter-tabs">
+    <div class="chapter-tab" id="tab-html" onclick="scrollToChapter('ch-html')">HTML</div>
+    <div class="chapter-tab" id="tab-css"  onclick="scrollToChapter('ch-css')">CSS</div>
+    <div class="chapter-tab" id="tab-js"   onclick="scrollToChapter('ch-js')">JS</div>
+  </div>
+
+  <nav class="sidebar-toc">
+    <!-- HTML -->
+    <div class="toc-group">
+      <div class="toc-chapter-label html-label">── HTML ──</div>
+      <a class="toc-link html-sec" href="#h-structure"><span class="toc-num">01</span>文書構造</a>
+      <a class="toc-link html-sec" href="#h-tags"><span class="toc-num">02</span>主要タグ</a>
+      <a class="toc-link html-sec" href="#h-attrs"><span class="toc-num">03</span>属性</a>
+      <a class="toc-link html-sec" href="#h-semantic"><span class="toc-num">04</span>セマンティクス</a>
+      <a class="toc-link html-sec" href="#h-links"><span class="toc-num">05</span>リンクと画像</a>
+      <a class="toc-link html-sec" href="#h-form"><span class="toc-num">06</span>フォーム</a>
+    </div>
+    <!-- CSS -->
+    <div class="toc-group">
+      <div class="toc-chapter-label css-label">── CSS ──</div>
+      <a class="toc-link css-sec" href="#c-syntax"><span class="toc-num">01</span>書き方の基本</a>
+      <a class="toc-link css-sec" href="#c-selector"><span class="toc-num">02</span>セレクタ</a>
+      <a class="toc-link css-sec" href="#c-box"><span class="toc-num">03</span>ボックスモデル</a>
+      <a class="toc-link css-sec" href="#c-color"><span class="toc-num">04</span>色と文字</a>
+      <a class="toc-link css-sec" href="#c-flex"><span class="toc-num">05</span>Flexbox</a>
+      <a class="toc-link css-sec" href="#c-anim"><span class="toc-num">06</span>アニメーション</a>
+    </div>
+    <!-- JS -->
+    <div class="toc-group">
+      <div class="toc-chapter-label js-label">── JavaScript ──</div>
+      <a class="toc-link js-sec" href="#j-vars"><span class="toc-num">01</span>変数とデータ型</a>
+      <a class="toc-link js-sec" href="#j-ops"><span class="toc-num">02</span>演算と条件分岐</a>
+      <a class="toc-link js-sec" href="#j-loop"><span class="toc-num">03</span>繰り返し</a>
+      <a class="toc-link js-sec" href="#j-func"><span class="toc-num">04</span>関数</a>
+      <a class="toc-link js-sec" href="#j-array"><span class="toc-num">05</span>配列とオブジェクト</a>
+      <a class="toc-link js-sec" href="#j-dom"><span class="toc-num">06</span>DOM操作</a>
+      <a class="toc-link js-sec" href="#j-event"><span class="toc-num">07</span>イベント</a>
+    </div>
+  </nav>
+</aside>
+
+<!-- ════════════ メインコンテンツ ════════════ -->
+<main>
+
+  <!-- ページヘッダー -->
+  <div class="page-header">
+    <div class="page-header-sub">医学部 JavaScript 入門コース</div>
+    <h1>
+      <span class="hl-html">HTML</span> ·
+      <span class="hl-css">CSS</span> ·
+      <span class="hl-js">JavaScript</span><br>
+      三言語 詳解
+    </h1>
+    <p class="page-header-desc">
+      Web ページを作る3つの言語を、初学者でも理解できるよう解説します。<br>
+      各セクションには動くデモが付いています。実際に触れながら学んでください。
+    </p>
+  </div>
+
+  <!-- 三言語カード -->
+  <div class="lang-cards">
+    <a class="lang-card" href="#ch-html">
+      <div class="lang-card-icon">🦴</div>
+      <div class="lang-card-name">HTML</div>
+      <div class="lang-card-role">骨格・構造を作る</div>
+    </a>
+    <a class="lang-card css-card" href="#ch-css">
+      <div class="lang-card-icon">🎨</div>
+      <div class="lang-card-name">CSS</div>
+      <div class="lang-card-role">見た目・デザインを作る</div>
+    </a>
+    <a class="lang-card js-card" href="#ch-js">
+      <div class="lang-card-icon">⚡</div>
+      <div class="lang-card-name">JavaScript</div>
+      <div class="lang-card-role">動き・機能を作る</div>
+    </a>
+  </div>
+
+  <!-- ══════════════════════════════
+       CHAPTER 1: HTML
+  ══════════════════════════════ -->
+  <div class="chapter" id="ch-html">
+    <div class="chapter-header">
+      <span class="chapter-badge">HTML</span>
+      <span class="chapter-title">骨格を作る</span>
+      <span class="chapter-subtitle">HyperText Markup Language</span>
+    </div>
+
+    <!-- H-01 文書構造 -->
+    <div class="sec" id="h-structure">
+      <div class="sec-header">
+        <span class="sec-num">H-01</span>
+        <h2>HTML 文書の全体構造</h2>
+      </div>
+      <p>HTMLファイルは「決まった骨格」から始まります。毎回必ず書くテンプレートとして覚えましょう。</p>
+
+      <div class="code-label">基本テンプレート</div>
+      <pre><code><span class="cm">&lt;!-- DOCTYPE 宣言：これは HTML5 です、とブラウザに伝える --&gt;</span>
+<span class="kw">&lt;!DOCTYPE html&gt;</span>
+<span class="kw">&lt;html</span> <span class="at">lang</span>=<span class="vl">"ja"</span><span class="kw">&gt;</span>
+
+<span class="kw">&lt;head&gt;</span>                              <span class="cm">&lt;!-- ブラウザに表示されない設定情報 --&gt;</span>
+  <span class="kw">&lt;meta</span> <span class="at">charset</span>=<span class="vl">"UTF-8"</span><span class="kw">&gt;</span>          <span class="cm">&lt;!-- 文字コード（日本語を使うなら必須）--&gt;</span>
+  <span class="kw">&lt;meta</span> <span class="at">name</span>=<span class="vl">"viewport"</span> <span class="at">content</span>=<span class="vl">"width=device-width, initial-scale=1.0"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;title&gt;</span>ページタイトル<span class="kw">&lt;/title&gt;</span>
+  <span class="kw">&lt;link</span> <span class="at">rel</span>=<span class="vl">"stylesheet"</span> <span class="at">href</span>=<span class="vl">"style.css"</span><span class="kw">&gt;</span>
+<span class="kw">&lt;/head&gt;</span>
+
+<span class="kw">&lt;body&gt;</span>                              <span class="cm">&lt;!-- ここに表示したいコンテンツを書く --&gt;</span>
+  <span class="kw">&lt;h1&gt;</span>見出し<span class="kw">&lt;/h1&gt;</span>
+  <span class="kw">&lt;p&gt;</span>段落のテキスト<span class="kw">&lt;/p&gt;</span>
+  <span class="kw">&lt;script</span> <span class="at">src</span>=<span class="vl">"script.js"</span><span class="kw">&gt;&lt;/script&gt;</span>  <span class="cm">&lt;!-- JS は body の末尾に --&gt;</span>
+<span class="kw">&lt;/body&gt;</span>
+
+<span class="kw">&lt;/html&gt;</span></code></pre>
+
+      <div class="term-grid">
+        <div class="term-card"><div class="term-word">&lt;head&gt;</div><div class="term-desc">ブラウザに表示されない「設定情報」。文字コード・タイトル・CSS読み込みなど。</div></div>
+        <div class="term-card"><div class="term-word">&lt;body&gt;</div><div class="term-desc">ブラウザに表示されるすべてのコンテンツを書く場所。</div></div>
+        <div class="term-card"><div class="term-word">lang="ja"</div><div class="term-desc">日本語ページと宣言。スクリーンリーダーや検索エンジンに影響する。</div></div>
+        <div class="term-card"><div class="term-word">meta viewport</div><div class="term-desc">スマートフォン表示を適切にするための設定。モバイル対応に必須。</div></div>
+      </div>
+    </div>
+
+    <!-- H-02 主要タグ -->
+    <div class="sec" id="h-tags">
+      <div class="sec-header">
+        <span class="sec-num">H-02</span>
+        <h2>よく使うタグ一覧</h2>
+      </div>
+      <div class="term-grid">
+        <div class="term-card"><div class="term-word">&lt;h1&gt;〜&lt;h6&gt;</div><div class="term-desc">見出し。h1が最大、h6が最小。<strong>1ページにh1は1つ</strong>が原則。</div></div>
+        <div class="term-card"><div class="term-word">&lt;p&gt;</div><div class="term-desc">段落（paragraph）。本文テキストはこの中に書く。</div></div>
+        <div class="term-card"><div class="term-word">&lt;strong&gt;</div><div class="term-desc">重要な語を太字にする。</div></div>
+        <div class="term-card"><div class="term-word">&lt;div&gt;</div><div class="term-desc">ブロックの汎用コンテナ。意味を持たない「箱」。</div></div>
+        <div class="term-card"><div class="term-word">&lt;span&gt;</div><div class="term-desc">インライン（行内）の箱。一部分だけCSSやJSで操作したいときに使う。</div></div>
+        <div class="term-card"><div class="term-word">&lt;ul&gt; / &lt;ol&gt;</div><div class="term-desc">リスト。ul=順不同（●）、ol=順序つき（番号）。子要素は&lt;li&gt;。</div></div>
+        <div class="term-card"><div class="term-word">&lt;br&gt;</div><div class="term-desc">改行。閉じタグ不要の「空要素」。乱用禁物。</div></div>
+        <div class="term-card"><div class="term-word">&lt;img&gt;</div><div class="term-desc">画像。src属性でパス指定、alt属性で代替テキスト（必須）。</div></div>
+      </div>
+
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>タグ組み立てデモ</div>
+        <div class="demo-area">
+          <div class="live-panel">
+            <div class="live-title">タグを選んでテキストを入力 → プレビューで確認</div>
+            <div class="row">
+              <select id="tagSel">
+                <option value="h1">h1 — 大見出し</option>
+                <option value="h2">h2 — 中見出し</option>
+                <option value="p" selected>p — 段落</option>
+                <option value="strong">strong — 太字</option>
+                <option value="em">em — 強調</option>
+                <option value="li">li — リスト項目</option>
+              </select>
+              <input type="text" id="tagText" value="サンプルテキスト" style="flex:1;min-width:100px;">
+              <button class="run-btn" onclick="renderTag()">プレビュー</button>
+            </div>
+            <div class="code-label">生成HTML</div>
+            <pre style="padding:8px 12px;margin-bottom:8px;"><code id="tagCode">&lt;p&gt;サンプルテキスト&lt;/p&gt;</code></pre>
+            <div class="code-label">表示結果</div>
+            <div id="tagPreview" style="border:1px dashed var(--border);border-radius:4px;padding:10px 14px;background:var(--paper);min-height:36px;font-size:14px;"><p>サンプルテキスト</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- H-03 属性 -->
+    <div class="sec" id="h-attrs">
+      <div class="sec-header">
+        <span class="sec-num">H-03</span>
+        <h2>属性（Attribute）</h2>
+      </div>
+      <p>属性はタグに追加情報を付ける仕組みです。<code>&lt;タグ名 属性名="値"&gt;</code> の形で書きます。</p>
+
+      <div class="code-label">属性の書き方例</div>
+      <pre><code><span class="cm">&lt;!-- href で行き先を指定するリンク --&gt;</span>
+<span class="kw">&lt;a</span> <span class="at">href</span>=<span class="vl">"https://pubmed.ncbi.nlm.nih.gov/"</span> <span class="at">target</span>=<span class="vl">"_blank"</span><span class="kw">&gt;</span>PubMed<span class="kw">&lt;/a&gt;</span>
+
+<span class="cm">&lt;!-- id と class で CSS・JS から操作 --&gt;</span>
+<span class="kw">&lt;div</span> <span class="at">id</span>=<span class="vl">"main-box"</span> <span class="at">class</span>=<span class="vl">"card highlight"</span><span class="kw">&gt;</span>コンテンツ<span class="kw">&lt;/div&gt;</span>
+
+<span class="cm">&lt;!-- src と alt で画像表示 --&gt;</span>
+<span class="kw">&lt;img</span> <span class="at">src</span>=<span class="vl">"cell.jpg"</span> <span class="at">alt</span>=<span class="vl">"好中球の顕微鏡写真"</span> <span class="at">width</span>=<span class="vl">"400"</span><span class="kw">&gt;</span></code></pre>
+
+      <table class="ref-table">
+        <thead><tr><th>属性</th><th>使うタグ</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td>href</td><td>&lt;a&gt;</td><td>リンク先のURL</td></tr>
+          <tr><td>src</td><td>&lt;img&gt;&lt;script&gt;</td><td>画像・スクリプトのパス</td></tr>
+          <tr><td>alt</td><td>&lt;img&gt;</td><td>代替テキスト。アクセシビリティ必須</td></tr>
+          <tr><td>id</td><td>すべて</td><td>一意な名前。1ページで重複不可</td></tr>
+          <tr><td>class</td><td>すべて</td><td>グループ名。複数指定可</td></tr>
+          <tr><td>target="_blank"</td><td>&lt;a&gt;</td><td>新しいタブで開く</td></tr>
+          <tr><td>type</td><td>&lt;input&gt;</td><td>入力欄の種類（text/email/number等）</td></tr>
+          <tr><td>placeholder</td><td>&lt;input&gt;</td><td>薄く表示されるヒントテキスト</td></tr>
+        </tbody>
+      </table>
+      <div class="warn-box"><strong>⚠ id と class の違い：</strong> id は1ページに1つだけ（固有名）。class は何個でも同じものを使える（グループ名）。CSSでは <code>#id名</code>、<code>.class名</code> で区別します。</div>
+    </div>
+
+    <!-- H-04 セマンティクス -->
+    <div class="sec" id="h-semantic">
+      <div class="sec-header">
+        <span class="sec-num">H-04</span>
+        <h2>セマンティック HTML</h2>
+      </div>
+      <p>「意味のある」タグを使うことで、検索エンジンやスクリーンリーダーが文書構造を正しく理解できます。</p>
+      <div class="compare-grid">
+        <div class="compare-card bad">
+          <div class="compare-head">✗ div だらけ（意味なし）</div>
+          <div class="compare-body"><pre><code style="font-size:11.5px;"><span class="kw">&lt;div</span> <span class="at">class</span>=<span class="vl">"header"</span><span class="kw">&gt;</span>…<span class="kw">&lt;/div&gt;</span>
+<span class="kw">&lt;div</span> <span class="at">class</span>=<span class="vl">"nav"</span><span class="kw">&gt;</span>…<span class="kw">&lt;/div&gt;</span>
+<span class="kw">&lt;div</span> <span class="at">class</span>=<span class="vl">"main"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;div</span> <span class="at">class</span>=<span class="vl">"article"</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;div</span> <span class="at">class</span>=<span class="vl">"title"</span><span class="kw">&gt;</span>…<span class="kw">&lt;/div&gt;</span>
+  <span class="kw">&lt;/div&gt;</span>
+<span class="kw">&lt;/div&gt;</span>
+<span class="kw">&lt;div</span> <span class="at">class</span>=<span class="vl">"footer"</span><span class="kw">&gt;</span>…<span class="kw">&lt;/div&gt;</span></code></pre></div>
+        </div>
+        <div class="compare-card good">
+          <div class="compare-head">✓ セマンティックタグを使う</div>
+          <div class="compare-body"><pre><code style="font-size:11.5px;"><span class="kw">&lt;header&gt;</span>…<span class="kw">&lt;/header&gt;</span>
+<span class="kw">&lt;nav&gt;</span>…<span class="kw">&lt;/nav&gt;</span>
+<span class="kw">&lt;main&gt;</span>
+  <span class="kw">&lt;article&gt;</span>
+    <span class="kw">&lt;h1&gt;</span>…<span class="kw">&lt;/h1&gt;</span>
+    <span class="kw">&lt;p&gt;</span>…<span class="kw">&lt;/p&gt;</span>
+  <span class="kw">&lt;/article&gt;</span>
+<span class="kw">&lt;/main&gt;</span>
+<span class="kw">&lt;footer&gt;</span>…<span class="kw">&lt;/footer&gt;</span></code></pre></div>
+        </div>
+      </div>
+      <div class="term-grid">
+        <div class="term-card"><div class="term-word">&lt;header&gt;</div><div class="term-desc">ページ・記事のヘッダー（ロゴ・タイトル・ナビ）。</div></div>
+        <div class="term-card"><div class="term-word">&lt;nav&gt;</div><div class="term-desc">ナビゲーションリンク集。サイトメニューに使う。</div></div>
+        <div class="term-card"><div class="term-word">&lt;main&gt;</div><div class="term-desc">ページの主要コンテンツ。1ページに1つ。</div></div>
+        <div class="term-card"><div class="term-word">&lt;article&gt;</div><div class="term-desc">単体で意味が完結する内容（ブログ記事・論文要旨）。</div></div>
+        <div class="term-card"><div class="term-word">&lt;section&gt;</div><div class="term-desc">ひとまとまりの内容のセクション。</div></div>
+        <div class="term-card"><div class="term-word">&lt;footer&gt;</div><div class="term-desc">フッター（著作権・連絡先など）。</div></div>
+      </div>
+    </div>
+
+    <!-- H-05 リンクと画像 -->
+    <div class="sec" id="h-links">
+      <div class="sec-header">
+        <span class="sec-num">H-05</span>
+        <h2>リンクと画像</h2>
+      </div>
+      <div class="code-label">リンクのパターン</div>
+      <pre><code><span class="cm">&lt;!-- 外部サイト（新タブで開く）--&gt;</span>
+<span class="kw">&lt;a</span> <span class="at">href</span>=<span class="vl">"https://pubmed.ncbi.nlm.nih.gov/"</span>
+   <span class="at">target</span>=<span class="vl">"_blank"</span> <span class="at">rel</span>=<span class="vl">"noopener noreferrer"</span><span class="kw">&gt;</span>PubMed<span class="kw">&lt;/a&gt;</span>
+
+<span class="cm">&lt;!-- 同じページ内のジャンプ --&gt;</span>
+<span class="kw">&lt;a</span> <span class="at">href</span>=<span class="vl">"#h-form"</span><span class="kw">&gt;</span>フォームセクションへ<span class="kw">&lt;/a&gt;</span>
+
+<span class="cm">&lt;!-- メール送信 --&gt;</span>
+<span class="kw">&lt;a</span> <span class="at">href</span>=<span class="vl">"mailto:example@osaka-u.ac.jp"</span><span class="kw">&gt;</span>メールを送る<span class="kw">&lt;/a&gt;</span>
+
+<span class="cm">&lt;!-- figure / figcaption でキャプション付き画像 --&gt;</span>
+<span class="kw">&lt;figure&gt;</span>
+  <span class="kw">&lt;img</span> <span class="at">src</span>=<span class="vl">"cell.jpg"</span> <span class="at">alt</span>=<span class="vl">"好中球の顕微鏡写真"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;figcaption&gt;</span>図1：好中球（×1000倍）<span class="kw">&lt;/figcaption&gt;</span>
+<span class="kw">&lt;/figure&gt;</span></code></pre>
+      <div class="info-box"><strong>💡 alt 属性は省略しない：</strong> 画像が表示できない状況（低速回線・スクリーンリーダー）でも意味が伝わるよう、必ず画像の内容を説明するテキストを書きましょう。装飾目的の画像のみ <code>alt=""</code>（空）でOK。</div>
+    </div>
+
+    <!-- H-06 フォーム -->
+    <div class="sec" id="h-form">
+      <div class="sec-header">
+        <span class="sec-num">H-06</span>
+        <h2>フォーム — ユーザー入力を受け取る</h2>
+      </div>
+      <div class="code-label">フォームの基本構造</div>
+      <pre><code><span class="kw">&lt;form&gt;</span>
+  <span class="kw">&lt;label</span> <span class="at">for</span>=<span class="vl">"name"</span><span class="kw">&gt;</span>氏名<span class="kw">&lt;/label&gt;</span>
+  <span class="kw">&lt;input</span> <span class="at">type</span>=<span class="vl">"text"</span>   <span class="at">id</span>=<span class="vl">"name"</span>  <span class="at">placeholder</span>=<span class="vl">"山田 太郎"</span><span class="kw">&gt;</span>
+
+  <span class="kw">&lt;label</span> <span class="at">for</span>=<span class="vl">"email"</span><span class="kw">&gt;</span>メール<span class="kw">&lt;/label&gt;</span>
+  <span class="kw">&lt;input</span> <span class="at">type</span>=<span class="vl">"email"</span>  <span class="at">id</span>=<span class="vl">"email"</span><span class="kw">&gt;</span>  <span class="cm">&lt;!-- @の有無を自動チェック --&gt;</span>
+
+  <span class="kw">&lt;label</span> <span class="at">for</span>=<span class="vl">"grade"</span><span class="kw">&gt;</span>学年<span class="kw">&lt;/label&gt;</span>
+  <span class="kw">&lt;select</span> <span class="at">id</span>=<span class="vl">"grade"</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;option</span> <span class="at">value</span>=<span class="vl">"m1"</span><span class="kw">&gt;</span>M1<span class="kw">&lt;/option&gt;</span>
+    <span class="kw">&lt;option</span> <span class="at">value</span>=<span class="vl">"m2"</span><span class="kw">&gt;</span>M2<span class="kw">&lt;/option&gt;</span>
+  <span class="kw">&lt;/select&gt;</span>
+
+  <span class="kw">&lt;label</span> <span class="at">for</span>=<span class="vl">"msg"</span><span class="kw">&gt;</span>コメント<span class="kw">&lt;/label&gt;</span>
+  <span class="kw">&lt;textarea</span> <span class="at">id</span>=<span class="vl">"msg"</span> <span class="at">rows</span>=<span class="vl">"4"</span><span class="kw">&gt;&lt;/textarea&gt;</span>
+
+  <span class="kw">&lt;button</span> <span class="at">type</span>=<span class="vl">"button"</span><span class="kw">&gt;</span>送信<span class="kw">&lt;/button&gt;</span>
+<span class="kw">&lt;/form&gt;</span></code></pre>
+
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>フォームデモ</div>
+        <div class="demo-area">
+          <div class="form-demo">
+            <label for="fd-name">氏名</label>
+            <input type="text" id="fd-name" placeholder="山田 太郎">
+            <label for="fd-email">メールアドレス</label>
+            <input type="email" id="fd-email" placeholder="taro@example.com">
+            <label for="fd-grade">学年</label>
+            <select id="fd-grade">
+              <option value="">選択</option>
+              <option>M1</option><option>M2</option><option>M3</option><option>M4</option>
+            </select>
+            <label for="fd-msg">コメント</label>
+            <textarea id="fd-msg" placeholder="自由に記入"></textarea>
+            <button class="run-btn" style="margin-top:12px;" onclick="handleFormDemo()">送信する</button>
+            <div id="form-result" style="display:none;margin-top:10px;padding:10px 14px;background:var(--info-bg);border-radius:4px;font-size:13px;color:var(--info-bd);"></div>
+          </div>
+        </div>
+      </div>
+
+      <table class="ref-table" style="margin-top:14px;">
+        <thead><tr><th>input type</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td>text</td><td>普通の1行テキスト</td></tr>
+          <tr><td>email</td><td>メール形式チェックあり</td></tr>
+          <tr><td>number</td><td>数値のみ。min/max/step で範囲指定可</td></tr>
+          <tr><td>password</td><td>文字が●で隠れる</td></tr>
+          <tr><td>checkbox</td><td>チェックボックス（複数選択）</td></tr>
+          <tr><td>radio</td><td>ラジオボタン（1つだけ選択）</td></tr>
+          <tr><td>date</td><td>日付ピッカー</td></tr>
+          <tr><td>range</td><td>スライダー</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /ch-html -->
+
+
+  <!-- ══════════════════════════════
+       CHAPTER 2: CSS
+  ══════════════════════════════ -->
+  <div class="chapter" id="ch-css">
+    <div class="chapter-header css-chapter">
+      <span class="chapter-badge">CSS</span>
+      <span class="chapter-title">見た目を作る</span>
+      <span class="chapter-subtitle">Cascading Style Sheets</span>
+    </div>
+
+    <!-- C-01 書き方 -->
+    <div class="sec" id="c-syntax">
+      <div class="sec-header">
+        <span class="sec-num">C-01</span>
+        <h2>CSS の書き方と読み込み方</h2>
+      </div>
+      <p>CSSは「<strong>何に（セレクタ）・何を（プロパティ）・どうする（値）</strong>」の3要素で構成されます。</p>
+      <div class="code-label">CSS の基本構文</div>
+      <pre><code><span class="cm">/* セレクタ { プロパティ: 値; } の形が基本 */</span>
+
+<span class="kw">p</span> {
+  <span class="at">color</span>: <span class="vl">navy</span>;
+  <span class="at">font-size</span>: <span class="vl">16px</span>;
+  <span class="at">line-height</span>: <span class="vl">1.8</span>;
+}
+
+<span class="kw">.card</span> {
+  <span class="at">background-color</span>: <span class="vl">#fff</span>;
+  <span class="at">border</span>: <span class="vl">1px solid #ccc</span>;
+  <span class="at">border-radius</span>: <span class="vl">8px</span>;
+  <span class="at">padding</span>: <span class="vl">16px</span>;
+}</code></pre>
+
+      <div class="term-grid">
+        <div class="term-card"><div class="term-word css-w">外部CSS（推奨）</div><div class="term-desc">.cssファイルを別に作り、&lt;link&gt;タグで読み込む。複数のHTMLで共有できる。</div></div>
+        <div class="term-card"><div class="term-word css-w">&lt;style&gt;タグ</div><div class="term-desc">&lt;head&gt;内に書く。そのHTMLファイルだけに適用される。</div></div>
+        <div class="term-card"><div class="term-word css-w">インラインstyle</div><div class="term-desc">タグに直接 <code>style="..."</code>。優先度が最も高いが、緊急時以外は使わない。</div></div>
+        <div class="term-card"><div class="term-word css-w">CSS変数</div><div class="term-desc"><code>:root{--color:#fff}</code> で定義し、<code>var(--color)</code> で使う。色やサイズを一元管理できる。</div></div>
+      </div>
+    </div>
+
+    <!-- C-02 セレクタ -->
+    <div class="sec" id="c-selector">
+      <div class="sec-header">
+        <span class="sec-num">C-02</span>
+        <h2>セレクタ — 「どこに」当てるか</h2>
+      </div>
+      <table class="ref-table">
+        <thead><tr><th>セレクタ</th><th>例</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td>タグ名</td><td><code>p { }</code></td><td>すべての &lt;p&gt; に適用</td></tr>
+          <tr><td>.クラス名</td><td><code>.card { }</code></td><td>class="card" を持つすべての要素</td></tr>
+          <tr><td>#id名</td><td><code>#header { }</code></td><td>id="header" を持つ要素（1つだけ）</td></tr>
+          <tr><td>A B</td><td><code>div p { }</code></td><td>div の中の p（子孫セレクタ）</td></tr>
+          <tr><td>:hover</td><td><code>a:hover { }</code></td><td>マウスが乗ったとき</td></tr>
+          <tr><td>:nth-child(n)</td><td><code>tr:nth-child(2n) { }</code></td><td>偶数行（ゼブラストライプ）</td></tr>
+          <tr><td>[属性名]</td><td><code>input[type="text"] { }</code></td><td>属性値を持つ要素</td></tr>
+        </tbody>
+      </table>
+      <div class="tip-box"><strong>詳細度のルール（強い順）：</strong><br><code>!important</code> &gt; インラインstyle &gt; <code>#id</code> &gt; <code>.class</code> &gt; タグ名。同じ詳細度なら後から書いたものが優先されます。</div>
+    </div>
+
+    <!-- C-03 ボックスモデル -->
+    <div class="sec" id="c-box">
+      <div class="sec-header">
+        <span class="sec-num">C-03</span>
+        <h2>ボックスモデル — すべての要素は「箱」</h2>
+      </div>
+      <p>HTMLのすべての要素は、見えない「箱」として扱われます。この箱は4つの層で構成されています。</p>
+      <div class="bm-fig">
+        <div class="bm-margin"><div class="bm-lbl">margin（外側の余白）</div>
+          <div class="bm-border"><div class="bm-lbl">border（枠線）</div>
+            <div class="bm-padding"><div class="bm-lbl">padding（内側の余白）</div>
+              <div class="bm-content">content（内容）</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="code-label">ボックスモデルのプロパティ</div>
+      <pre><code><span class="kw">.box</span> {
+  <span class="at">width</span>: <span class="vl">300px</span>;
+  <span class="at">padding</span>: <span class="vl">16px</span>;              <span class="cm">/* 内側の余白 */</span>
+  <span class="at">border</span>: <span class="vl">1px solid #ccc</span>;    <span class="cm">/* 枠線 */</span>
+  <span class="at">margin</span>: <span class="vl">0 auto</span>;             <span class="cm">/* 上下0、左右auto → 中央揃え */</span>
+  <span class="at">border-radius</span>: <span class="vl">8px</span>;         <span class="cm">/* 角丸 */</span>
+  <span class="at">box-shadow</span>: <span class="vl">0 4px 16px rgba(0,0,0,0.1)</span>;
+
+  <span class="cm">/* ★重要：常に指定する */</span>
+  <span class="at">box-sizing</span>: <span class="vl">border-box</span>;     <span class="cm">/* widthにpadding・borderを含める */</span>
+}</code></pre>
+      <div class="warn-box"><strong>⚠ box-sizing: border-box を必ず指定しよう：</strong> デフォルトでは padding・border の分だけ実際の幅が広がります。<code>*, *::before, *::after { box-sizing: border-box; }</code> を先頭に書くのが現代のベストプラクティスです。</div>
+    </div>
+
+    <!-- C-04 色と文字 -->
+    <div class="sec" id="c-color">
+      <div class="sec-header">
+        <span class="sec-num">C-04</span>
+        <h2>色・文字・背景</h2>
+      </div>
+      <div class="code-label">色の指定方法（4種類）</div>
+      <pre><code><span class="kw">p</span> {
+  <span class="at">color</span>: <span class="vl">red</span>;                    <span class="cm">/* ① キーワード */</span>
+  <span class="at">color</span>: <span class="vl">#1e4a7a</span>;               <span class="cm">/* ② 16進数（HEX）— 最もよく使う */</span>
+  <span class="at">color</span>: <span class="vl">rgb(30, 74, 122)</span>;       <span class="cm">/* ③ RGB */</span>
+  <span class="at">color</span>: <span class="vl">rgba(30, 74, 122, 0.5)</span>; <span class="cm">/* ④ RGBA（透明度付き）*/</span>
+}
+
+<span class="cm">/* フォント */</span>
+<span class="kw">body</span> {
+  <span class="at">font-family</span>: <span class="vl">'Noto Sans JP', sans-serif</span>;
+  <span class="at">font-size</span>: <span class="vl">16px</span>;
+  <span class="at">font-weight</span>: <span class="vl">400</span>;   <span class="cm">/* 400=標準、700=太字 */</span>
+  <span class="at">line-height</span>: <span class="vl">1.8</span>;
+  <span class="at">letter-spacing</span>: <span class="vl">0.05em</span>;
+}</code></pre>
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>よく使う色見本</div>
+        <div class="demo-area">
+          <div class="color-row">
+            <div class="chip"><div class="swatch" style="background:#1a1612"></div><div class="chip-name">#1a1612</div></div>
+            <div class="chip"><div class="swatch" style="background:#a33a20"></div><div class="chip-name">#a33a20</div></div>
+            <div class="chip"><div class="swatch" style="background:#1e4a7a"></div><div class="chip-name">#1e4a7a</div></div>
+            <div class="chip"><div class="swatch" style="background:#3a6b4a"></div><div class="chip-name">#3a6b4a</div></div>
+            <div class="chip"><div class="swatch" style="background:#c8841a"></div><div class="chip-name">#c8841a</div></div>
+            <div class="chip"><div class="swatch" style="background:#f5f1e8"></div><div class="chip-name">#f5f1e8</div></div>
+            <div class="chip"><div class="swatch" style="background:#d8cebc"></div><div class="chip-name">#d8cebc</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C-05 Flexbox -->
+    <div class="sec" id="c-flex">
+      <div class="sec-header">
+        <span class="sec-num">C-05</span>
+        <h2>Flexbox — 横並びレイアウト</h2>
+      </div>
+      <p>親要素に <code>display: flex</code> を指定するだけで、子要素が横に並びます。ナビゲーション・カード並び・ボタン配置など、あらゆる「横並び」に使います。</p>
+      <div class="code-label">Flexbox の主なプロパティ</div>
+      <pre><code><span class="kw">.container</span> {
+  <span class="at">display</span>: <span class="vl">flex</span>;
+  <span class="at">flex-direction</span>: <span class="vl">row</span>;          <span class="cm">/* 方向（row=横、column=縦）*/</span>
+  <span class="at">justify-content</span>: <span class="vl">space-between</span>; <span class="cm">/* 主軸の揃え */</span>
+  <span class="at">align-items</span>: <span class="vl">center</span>;          <span class="cm">/* 交差軸の揃え */</span>
+  <span class="at">gap</span>: <span class="vl">16px</span>;                     <span class="cm">/* 要素間の余白 */</span>
+  <span class="at">flex-wrap</span>: <span class="vl">wrap</span>;              <span class="cm">/* 折り返す */</span>
+}</code></pre>
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>Flexbox インタラクティブデモ</div>
+        <div class="demo-area">
+          <div class="flex-ctrl">
+            <label>justify-content:</label>
+            <select id="jc" onchange="updateFlex()">
+              <option>flex-start</option><option>center</option><option>flex-end</option>
+              <option>space-between</option><option>space-around</option><option>space-evenly</option>
+            </select>
+            <label>align-items:</label>
+            <select id="ai" onchange="updateFlex()">
+              <option>flex-start</option><option>center</option><option>flex-end</option><option>stretch</option>
+            </select>
+            <label>direction:</label>
+            <select id="fd" onchange="updateFlex()">
+              <option>row</option><option>column</option>
+            </select>
+          </div>
+          <div class="flex-preview" id="flexPrev" style="height:100px;">
+            <div class="fi fi1">A</div>
+            <div class="fi fi2">B</div>
+            <div class="fi fi3">C</div>
+            <div class="fi fi4">D</div>
+          </div>
+          <div class="code-label" style="margin-top:8px;">現在の CSS</div>
+          <pre style="margin:3px 0;padding:9px 13px;font-size:11.5px;"><code id="flexCode">.container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: row;
+}</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- C-06 アニメーション -->
+    <div class="sec" id="c-anim">
+      <div class="sec-header">
+        <span class="sec-num">C-06</span>
+        <h2>transition & animation</h2>
+      </div>
+      <h3 class="sub">transition — 変化を滑らかに</h3>
+      <div class="code-label">transition の書き方</div>
+      <pre><code><span class="kw">.btn</span> {
+  <span class="at">background</span>: <span class="vl">#1e4a7a</span>;
+  <span class="cm">/* プロパティ名  時間  イージング */</span>
+  <span class="at">transition</span>: <span class="vl">background 0.3s ease, transform 0.2s ease</span>;
+}
+<span class="kw">.btn:hover</span> {
+  <span class="at">background</span>: <span class="vl">#3a6b4a</span>;
+  <span class="at">transform</span>: <span class="vl">translateY(-2px)</span>;
+}</code></pre>
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>ホバーしてみてください</div>
+        <div class="demo-area">
+          <div class="hover-row">
+            <div class="hc t1">背景色が変わる<br><small style="font-size:10px;">background 0.3s</small></div>
+            <div class="hc t2">浮き上がる<br><small style="font-size:10px;">transform + shadow</small></div>
+            <div class="hc t3">枠線・色が変わる<br><small style="font-size:10px;">border + color</small></div>
+            <div class="hc t4">全部変わる<br><small style="font-size:10px;">all 0.3s</small></div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">@keyframes — 繰り返すアニメーション</h3>
+      <div class="code-label">keyframes の書き方</div>
+      <pre><code><span class="cm">/* ① アニメーション定義 */</span>
+@keyframes bounce {
+  0%, 100% { <span class="at">transform</span>: <span class="vl">translateY(0)</span>; }
+  50%       { <span class="at">transform</span>: <span class="vl">translateY(-20px)</span>; }
+}
+<span class="cm">/* ② 要素に適用 */</span>
+<span class="kw">.ball</span> {
+  <span class="at">animation</span>: <span class="vl">bounce 0.8s ease-in-out infinite</span>;
+}
+<span class="cm">/*          名前   時間   イージング  繰り返し */</span></code></pre>
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>アニメーションの種類</div>
+        <div class="demo-area">
+          <div class="anim-grid">
+            <div class="anim-card"><div class="anim-card-t">spin</div><div class="anim-box d-spin" style="background:var(--html);"></div><div class="anim-desc">rotate(360deg)</div></div>
+            <div class="anim-card"><div class="anim-card-t">bounce</div><div class="anim-box d-bounce" style="background:var(--css);"></div><div class="anim-desc">translateY</div></div>
+            <div class="anim-card"><div class="anim-card-t">pulse</div><div class="anim-box d-pulse" style="background:var(--js);border-radius:4px;"></div><div class="anim-desc">opacity</div></div>
+            <div class="anim-card"><div class="anim-card-t">scale</div><div class="anim-box d-scale" style="background:#8a6a20;"></div><div class="anim-desc">scale()</div></div>
+            <div class="anim-card"><div class="anim-card-t">shake</div><div class="anim-box d-shake" style="background:#5a3a6a;border-radius:4px;"></div><div class="anim-desc">translateX</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /ch-css -->
+
+
+  <!-- ══════════════════════════════
+       CHAPTER 3: JavaScript
+  ══════════════════════════════ -->
+  <div class="chapter" id="ch-js">
+    <div class="chapter-header js-chapter">
+      <span class="chapter-badge">JavaScript</span>
+      <span class="chapter-title">動きを作る</span>
+      <span class="chapter-subtitle">ECMAScript 2015+</span>
+    </div>
+
+    <!-- J-01 変数 -->
+    <div class="sec" id="j-vars">
+      <div class="sec-header">
+        <span class="sec-num">J-01</span>
+        <h2>変数とデータ型</h2>
+      </div>
+      <div class="code-label">変数の3種類</div>
+      <pre><code><span class="cm">// const — 再代入不可（推奨。変える必要がないなら const）</span>
+<span class="kw">const</span> patientId <span class="op">=</span> <span class="vl">'P001'</span>;
+
+<span class="cm">// let — 再代入できる</span>
+<span class="kw">let</span> score <span class="op">=</span> <span class="nm">0</span>;
+score <span class="op">=</span> <span class="nm">85</span>;          <span class="cm">// OK</span>
+score <span class="op">+=</span> <span class="nm">10</span>;          <span class="cm">// score = score + 10</span>
+
+<span class="cm">// var — 古い書き方。現代では使わない</span>
+<span class="kw">var</span> old <span class="op">=</span> <span class="vl">'avoid'</span>;
+
+<span class="cm">// テンプレートリテラル（バッククォートで変数を埋め込む）</span>
+<span class="kw">const</span> name <span class="op">=</span> <span class="vl">'太郎'</span>;
+<span class="kw">const</span> msg  <span class="op">=</span> <span class="vl">`こんにちは、${name}さん`</span>;   <span class="cm">// → "こんにちは、太郎さん"</span></code></pre>
+
+      <div class="term-grid">
+        <div class="term-card"><div class="term-word js-w">string</div><div class="term-desc">'テキスト' または "テキスト"。テンプレートリテラルで変数埋め込み可。</div></div>
+        <div class="term-card"><div class="term-word js-w">number</div><div class="term-desc">整数・小数を区別しない。NaN（非数）・Infinityも含む。</div></div>
+        <div class="term-card"><div class="term-word js-w">boolean</div><div class="term-desc">true か false の2値。条件分岐に使う。</div></div>
+        <div class="term-card"><div class="term-word js-w">null / undefined</div><div class="term-desc">null=意図的に「値なし」。undefined=値が代入されていない。</div></div>
+      </div>
+
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>変数と型のデモ</div>
+        <div class="demo-area">
+          <div class="live-panel">
+            <div class="live-title">変数を入力して演算を確認</div>
+            <div class="row">
+              <label>変数 a：</label>
+              <input type="text" id="vA" value="10" style="width:80px;">
+              <label>変数 b：</label>
+              <input type="text" id="vB" value="5"  style="width:80px;">
+              <button class="run-btn" onclick="runVarDemo()">確認</button>
+            </div>
+            <div class="output-box" id="varOut">ボタンを押すと結果が表示されます</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- J-02 演算と条件 -->
+    <div class="sec" id="j-ops">
+      <div class="sec-header">
+        <span class="sec-num">J-02</span>
+        <h2>演算子と条件分岐</h2>
+      </div>
+      <div class="code-label">== vs ===（型も比較する方を使う）</div>
+      <pre><code><span class="nm">0</span> <span class="op">==</span>  <span class="vl">'0'</span>    <span class="cm">// → true  （型変換してから比較。使わない）</span>
+<span class="nm">0</span> <span class="op">===</span> <span class="vl">'0'</span>    <span class="cm">// → false （型も値も同じ時だけ true。こちらを使う）</span></code></pre>
+
+      <div class="code-label">if / else if / else</div>
+      <pre><code><span class="kw">const</span> hba1c <span class="op">=</span> <span class="nm">7.2</span>;
+
+<span class="kw">if</span> (hba1c <span class="op">&lt;</span> <span class="nm">5.7</span>) {
+  console.<span class="fn">log</span>(<span class="vl">'正常'</span>);
+} <span class="kw">else if</span> (hba1c <span class="op">&lt;</span> <span class="nm">6.5</span>) {
+  console.<span class="fn">log</span>(<span class="vl">'糖尿病前症'</span>);
+} <span class="kw">else</span> {
+  console.<span class="fn">log</span>(<span class="vl">'糖尿病'</span>);         <span class="cm">// → これが実行される</span>
+}
+
+<span class="cm">// 三項演算子（1行で if-else）</span>
+<span class="kw">const</span> label <span class="op">=</span> score <span class="op">&gt;=</span> <span class="nm">60</span> <span class="op">?</span> <span class="vl">'合格'</span> <span class="op">:</span> <span class="vl">'不合格'</span>;</code></pre>
+
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>HbA1c 判定ツール</div>
+        <div class="demo-area">
+          <div class="live-panel">
+            <div class="row">
+              <label>HbA1c：</label>
+              <input type="number" id="hba1c" value="6.2" step="0.1" min="4" max="15">
+              <span style="font-size:13px;color:var(--ink-light);">%</span>
+              <button class="run-btn" onclick="judgeHba1c()">判定</button>
+            </div>
+            <div class="output-box" id="hba1cOut">— HbA1c 値を入力して判定 —</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- J-03 繰り返し -->
+    <div class="sec" id="j-loop">
+      <div class="sec-header">
+        <span class="sec-num">J-03</span>
+        <h2>繰り返し（ループ）</h2>
+      </div>
+      <div class="code-label">for / while / for...of</div>
+      <pre><code><span class="cm">// for（回数が決まっているとき）</span>
+<span class="kw">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> <span class="nm">5</span>; i<span class="op">++</span>) {
+  console.<span class="fn">log</span>(<span class="vl">`i = ${i}`</span>);
+}
+
+<span class="cm">// while（条件が変わるまで）</span>
+<span class="kw">let</span> count <span class="op">=</span> <span class="nm">0</span>;
+<span class="kw">while</span> (count <span class="op">&lt;</span> <span class="nm">3</span>) {
+  console.<span class="fn">log</span>(count<span class="op">++</span>);
+}
+
+<span class="cm">// for...of（配列の全要素を処理）</span>
+<span class="kw">const</span> patients <span class="op">=</span> [<span class="vl">'田中'</span>, <span class="vl">'山田'</span>, <span class="vl">'佐藤'</span>];
+<span class="kw">for</span> (<span class="kw">const</span> name <span class="kw">of</span> patients) {
+  console.<span class="fn">log</span>(<span class="vl">`${name}さん、診察室へどうぞ`</span>);
+}</code></pre>
+
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>ループ可視化デモ</div>
+        <div class="demo-area">
+          <div class="live-panel">
+            <div class="row">
+              <label>繰り返し回数：</label>
+              <input type="number" id="loopN" value="5" min="1" max="20">
+              <button class="run-btn" onclick="runLoop()">実行</button>
+            </div>
+            <div class="output-box" id="loopOut">— ループの結果がここに表示されます —</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- J-04 関数 -->
+    <div class="sec" id="j-func">
+      <div class="sec-header">
+        <span class="sec-num">J-04</span>
+        <h2>関数 — 処理をまとめて名前をつける</h2>
+      </div>
+      <div class="code-label">3種類の書き方</div>
+      <pre><code><span class="cm">// ① function 宣言</span>
+<span class="kw">function</span> <span class="fn">greet</span>(name) {
+  <span class="kw">return</span> <span class="vl">`こんにちは、${name}さん`</span>;
+}
+
+<span class="cm">// ② 関数式</span>
+<span class="kw">const</span> <span class="fn">add</span> <span class="op">=</span> <span class="kw">function</span>(a, b) { <span class="kw">return</span> a <span class="op">+</span> b; };
+
+<span class="cm">// ③ アロー関数（最もよく使う）</span>
+<span class="kw">const</span> <span class="fn">multiply</span> <span class="op">=</span> (a, b) <span class="op">=&gt;</span> a <span class="op">*</span> b;
+<span class="kw">const</span> <span class="fn">square</span>   <span class="op">=</span> n <span class="op">=&gt;</span> n <span class="op">*</span> n;    <span class="cm">// 引数1つなら括弧省略可</span>
+
+<span class="cm">// デフォルト引数</span>
+<span class="kw">function</span> <span class="fn">hello</span>(name <span class="op">=</span> <span class="vl">'患者'</span>) {
+  <span class="kw">return</span> <span class="vl">`${name}さん、こんにちは`</span>;
+}
+<span class="fn">hello</span>();          <span class="cm">// → "患者さん、こんにちは"</span>
+<span class="fn">hello</span>(<span class="vl">'山田'</span>);    <span class="cm">// → "山田さん、こんにちは"</span></code></pre>
+
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>BMI 計算ツール + 電卓</div>
+        <div class="demo-area" style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;">
+          <div class="live-panel">
+            <div class="live-title">BMI 計算（関数の活用）</div>
+            <div class="row"><label>体重(kg)：</label><input type="number" id="wt" value="65"><label>身長(cm)：</label><input type="number" id="ht" value="170"></div>
+            <button class="run-btn" onclick="calcBMI()">計算</button>
+            <div class="output-box" id="bmiOut">— 計算ボタンを押してください —</div>
+          </div>
+          <div>
+            <div class="calc-wrap">
+              <div class="calc-disp" id="calcD">0</div>
+              <div class="cb2 cl" onclick="ck('C')">C</div>
+              <div class="cb2 op" onclick="ck('±')">±</div>
+              <div class="cb2 op" onclick="ck('%')">%</div>
+              <div class="cb2 op" onclick="ck('/')">÷</div>
+              <div class="cb2" onclick="ck('7')">7</div><div class="cb2" onclick="ck('8')">8</div><div class="cb2" onclick="ck('9')">9</div>
+              <div class="cb2 op" onclick="ck('*')">×</div>
+              <div class="cb2" onclick="ck('4')">4</div><div class="cb2" onclick="ck('5')">5</div><div class="cb2" onclick="ck('6')">6</div>
+              <div class="cb2 op" onclick="ck('-')">−</div>
+              <div class="cb2" onclick="ck('1')">1</div><div class="cb2" onclick="ck('2')">2</div><div class="cb2" onclick="ck('3')">3</div>
+              <div class="cb2 op" onclick="ck('+')">+</div>
+              <div class="cb2" onclick="ck('0')" style="grid-column:span 2;">0</div>
+              <div class="cb2" onclick="ck('.')">.</div>
+              <div class="cb2 eq" onclick="ck('=')">=</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- J-05 配列とオブジェクト -->
+    <div class="sec" id="j-array">
+      <div class="sec-header">
+        <span class="sec-num">J-05</span>
+        <h2>配列とオブジェクト</h2>
+      </div>
+      <div class="code-label">配列（Array）</div>
+      <pre><code><span class="kw">const</span> symptoms <span class="op">=</span> [<span class="vl">'発熱'</span>, <span class="vl">'頭痛'</span>, <span class="vl">'倦怠感'</span>];
+
+symptoms[<span class="nm">0</span>]               <span class="cm">// → '発熱'（0始まり）</span>
+symptoms.<span class="fn">length</span>           <span class="cm">// → 3</span>
+symptoms.<span class="fn">push</span>(<span class="vl">'咳嗽'</span>)     <span class="cm">// → 末尾に追加</span>
+symptoms.<span class="fn">pop</span>()            <span class="cm">// → 末尾から削除</span>
+symptoms.<span class="fn">includes</span>(<span class="vl">'頭痛'</span>) <span class="cm">// → true</span>
+
+<span class="cm">// map — 各要素を変換して新配列</span>
+<span class="kw">const</span> scores <span class="op">=</span> [<span class="nm">72</span>, <span class="nm">85</span>, <span class="nm">64</span>, <span class="nm">90</span>, <span class="nm">58</span>];
+<span class="kw">const</span> labels <span class="op">=</span> scores.<span class="fn">map</span>(s <span class="op">=&gt;</span> s <span class="op">&gt;=</span> <span class="nm">60</span> <span class="op">?</span> <span class="vl">'合格'</span> <span class="op">:</span> <span class="vl">'不合格'</span>);
+
+<span class="cm">// filter — 条件を満たすものだけ取り出す</span>
+<span class="kw">const</span> passed <span class="op">=</span> scores.<span class="fn">filter</span>(s <span class="op">=&gt;</span> s <span class="op">&gt;=</span> <span class="nm">60</span>);
+
+<span class="cm">// reduce — 1つの値にまとめる</span>
+<span class="kw">const</span> total <span class="op">=</span> scores.<span class="fn">reduce</span>((acc, s) <span class="op">=&gt;</span> acc <span class="op">+</span> s, <span class="nm">0</span>);</code></pre>
+
+      <div class="code-label">オブジェクト（Object）</div>
+      <pre><code><span class="kw">const</span> patient <span class="op">=</span> {
+  id:    <span class="vl">'P001'</span>,
+  name:  <span class="vl">'田中 太郎'</span>,
+  age:   <span class="nm">45</span>,
+  hba1c: <span class="nm">7.2</span>
+};
+
+patient.name        <span class="cm">// → '田中 太郎'（ドット記法）</span>
+patient[<span class="vl">'age'</span>]      <span class="cm">// → 45（ブラケット記法）</span>
+patient.blood <span class="op">=</span> <span class="vl">'A'</span>; <span class="cm">// プロパティを追加</span>
+
+<span class="cm">// オブジェクトの配列（最もよく使うパターン）</span>
+<span class="kw">const</span> patients <span class="op">=</span> [
+  { id: <span class="vl">'P001'</span>, name: <span class="vl">'田中'</span>, age: <span class="nm">45</span> },
+  { id: <span class="vl">'P002'</span>, name: <span class="vl">'山田'</span>, age: <span class="nm">62</span> },
+];</code></pre>
+    </div>
+
+    <!-- J-06 DOM操作 -->
+    <div class="sec" id="j-dom">
+      <div class="sec-header">
+        <span class="sec-num">J-06</span>
+        <h2>DOM 操作 — HTML を JS から変える</h2>
+      </div>
+      <div class="code-label">要素の取得と変更</div>
+      <pre><code><span class="cm">// 要素の取得</span>
+<span class="kw">const</span> el <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="vl">'myId'</span>);
+<span class="kw">const</span> btn <span class="op">=</span> document.<span class="fn">querySelector</span>(<span class="vl">'.btn'</span>);          <span class="cm">// 最初の1つ</span>
+<span class="kw">const</span> all <span class="op">=</span> document.<span class="fn">querySelectorAll</span>(<span class="vl">'.item'</span>);      <span class="cm">// すべて</span>
+
+<span class="cm">// テキスト・HTML の変更</span>
+el.textContent <span class="op">=</span> <span class="vl">'新しいテキスト'</span>;
+el.innerHTML   <span class="op">=</span> <span class="vl">'&lt;strong&gt;太字&lt;/strong&gt;'</span>;
+
+<span class="cm">// スタイルの変更</span>
+el.style.color   <span class="op">=</span> <span class="vl">'red'</span>;
+el.style.display <span class="op">=</span> <span class="vl">'none'</span>;  <span class="cm">// 非表示に</span>
+
+<span class="cm">// クラスの操作</span>
+el.classList.<span class="fn">add</span>(<span class="vl">'highlight'</span>);
+el.classList.<span class="fn">remove</span>(<span class="vl">'highlight'</span>);
+el.classList.<span class="fn">toggle</span>(<span class="vl">'active'</span>);
+
+<span class="cm">// 要素を作って追加</span>
+<span class="kw">const</span> li <span class="op">=</span> document.<span class="fn">createElement</span>(<span class="vl">'li'</span>);
+li.textContent <span class="op">=</span> <span class="vl">'新しい項目'</span>;
+document.<span class="fn">getElementById</span>(<span class="vl">'list'</span>).<span class="fn">appendChild</span>(li);</code></pre>
+
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>DOM 操作 — 症状リスト</div>
+        <div class="demo-area">
+          <div class="live-panel">
+            <div class="row">
+              <input type="text" id="domInp" placeholder="症状を入力（例：発熱）" style="flex:1;min-width:100px;">
+              <button class="run-btn" onclick="addItem()">追加</button>
+              <button class="run-btn red" onclick="clearList()">全削除</button>
+            </div>
+            <div style="margin-top:10px;" class="dom-list-area" id="domList">
+              <div class="di">発熱 <button class="di-del" onclick="delItem(this)">✕</button></div>
+              <div class="di">頭痛 <button class="di-del" onclick="delItem(this)">✕</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- J-07 イベント -->
+    <div class="sec" id="j-event">
+      <div class="sec-header">
+        <span class="sec-num">J-07</span>
+        <h2>イベント — ユーザー操作を捉える</h2>
+      </div>
+      <div class="code-label">addEventListener の基本形</div>
+      <pre><code><span class="kw">const</span> btn <span class="op">=</span> document.<span class="fn">querySelector</span>(<span class="vl">'#myBtn'</span>);
+
+<span class="cm">// addEventListener(イベント名, コールバック関数)</span>
+btn.<span class="fn">addEventListener</span>(<span class="vl">'click'</span>, () <span class="op">=&gt;</span> {
+  console.<span class="fn">log</span>(<span class="vl">'クリックされました'</span>);
+});
+
+<span class="cm">// タイマー</span>
+<span class="fn">setTimeout</span>(() <span class="op">=&gt;</span> { console.<span class="fn">log</span>(<span class="vl">'2秒後'</span>); }, <span class="nm">2000</span>);
+
+<span class="kw">const</span> id <span class="op">=</span> <span class="fn">setInterval</span>(() <span class="op">=&gt;</span> { console.<span class="fn">log</span>(<span class="vl">'1秒ごと'</span>); }, <span class="nm">1000</span>);
+<span class="fn">clearInterval</span>(id);   <span class="cm">// 停止</span></code></pre>
+
+      <div class="demo-wrap">
+        <div class="demo-bar"><div class="demo-dot"></div>イベントログ + ストップウォッチ</div>
+        <div class="demo-area" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="live-panel">
+            <div class="live-title">イベントを体験</div>
+            <div class="event-box" id="evBox"
+              onclick="logEv('click')"
+              ondblclick="logEv('dblclick')"
+              onmouseenter="logEv('mouseenter')"
+              onmouseleave="logEv('mouseleave')">
+              クリック / ダブル / ホバー
+            </div>
+            <input type="text" id="evInp" placeholder="キー入力を試す" style="width:100%;margin-top:8px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg);font-size:13px;color:var(--ink);" oninput="logEv('input')" onkeydown="logEv('keydown:'+event.key)">
+            <div class="event-log" id="evLog">— ここにログが流れます —</div>
+          </div>
+          <div class="live-panel">
+            <div class="live-title">ストップウォッチ (setInterval)</div>
+            <div class="timer-display" id="timerD">00:00.0</div>
+            <div class="timer-btns">
+              <button class="run-btn" onclick="timerStart()">▶</button>
+              <button class="run-btn blue" onclick="timerStop()">⏸</button>
+              <button class="run-btn red" onclick="timerReset()">↺</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- チェックリスト -->
+    <div class="sec" id="j-check" style="scroll-margin-top:24px;">
+      <div class="sec-header">
+        <span class="sec-num">まとめ</span>
+        <h2>三言語 理解度チェック</h2>
+      </div>
+      <div class="checklist">
+        <div class="checklist-title">✓ HTML（クリックでチェック）</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>&lt;head&gt; と &lt;body&gt; の違いを説明できる</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>id と class の違いを説明できる</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>セマンティックタグを使う理由を言える</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>&lt;img&gt; に alt 属性を書く理由を説明できる</div>
+      </div>
+      <div class="checklist">
+        <div class="checklist-title">✓ CSS</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>ボックスモデル（margin/border/padding/content）を図で説明できる</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>display:flex で横並びレイアウトを作れる</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>transition でホバー時の変化を滑らかにできる</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>@keyframes でアニメーションを定義できる</div>
+      </div>
+      <div class="checklist">
+        <div class="checklist-title">✓ JavaScript</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>const と let の違いを説明できる</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>=== と == の違いを説明できる</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>配列の map / filter を使える</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>document.querySelector() で要素を取得してテキストを変更できる</div>
+        <div class="check-item" onclick="toggleChk(this)"><div class="cb"></div>addEventListener でクリックイベントを登録できる</div>
+      </div>
+    </div>
+
+  </div><!-- /ch-js -->
+
+  <footer>Web 三言語 詳解 — JavaScript 入門コース</footer>
+
+</main>
+</div><!-- /layout -->
+
+<script>
+/* ── メニュートグル ── */
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+function scrollToChapter(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+  if (window.innerWidth <= 700) toggleMenu();
+}
+
+/* ── 目次ハイライト ── */
+const allLinks = document.querySelectorAll('.toc-link');
+const allSecs  = document.querySelectorAll('.sec[id], .chapter[id]');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      allLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+    }
+  });
+}, { rootMargin: '-15% 0px -70% 0px' });
+allSecs.forEach(s => obs.observe(s));
+
+/* ── チャプタータブハイライト ── */
+const chapters = document.querySelectorAll('.chapter');
+const tabs = { html: document.getElementById('tab-html'), css: document.getElementById('tab-css'), js: document.getElementById('tab-js') };
+const chapObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      Object.values(tabs).forEach(t => t.className = 'chapter-tab');
+      if (id === 'ch-html') tabs.html.classList.add('active-html');
+      else if (id === 'ch-css') tabs.css.classList.add('active-css');
+      else if (id === 'ch-js')  tabs.js.classList.add('active-js');
+    }
+  });
+}, { rootMargin: '-10% 0px -50% 0px' });
+chapters.forEach(c => chapObs.observe(c));
+
+/* ══ HTML デモ ══ */
+function renderTag() {
+  const tag  = document.getElementById('tagSel').value;
+  const text = document.getElementById('tagText').value || 'サンプル';
+  document.getElementById('tagCode').textContent = `<${tag}>${text}</${tag}>`;
+  document.getElementById('tagPreview').innerHTML = `<${tag}>${text}</${tag}>`;
+}
+
+function handleFormDemo() {
+  const n = document.getElementById('fd-name').value || '（未入力）';
+  const e = document.getElementById('fd-email').value || '（未入力）';
+  const g = document.getElementById('fd-grade').value || '（未選択）';
+  const r = document.getElementById('form-result');
+  r.style.display = 'block';
+  r.textContent = `✅ 受け取りました：氏名=${n}　メール=${e}　学年=${g}`;
+}
+
+/* ══ CSS デモ ══ */
+function updateFlex() {
+  const jc = document.getElementById('jc').value;
+  const ai = document.getElementById('ai').value;
+  const fd = document.getElementById('fd').value;
+  const fp = document.getElementById('flexPrev');
+  fp.style.justifyContent = jc;
+  fp.style.alignItems = ai;
+  fp.style.flexDirection = fd;
+  fp.style.height = fd === 'column' ? '200px' : '100px';
+  document.getElementById('flexCode').textContent =
+`.container {\n  display: flex;\n  justify-content: ${jc};\n  align-items: ${ai};\n  flex-direction: ${fd};\n}`;
+}
+
+/* ══ JS デモ ══ */
+function runVarDemo() {
+  const a = document.getElementById('vA').value;
+  const b = document.getElementById('vB').value;
+  const na = Number(a), nb = Number(b);
+  document.getElementById('varOut').textContent =
+    `typeof a → "${typeof a}" （入力は常に文字列）\n`+
+    `Number(a) = ${na}、Number(b) = ${nb}\n`+
+    `a + b（文字連結）= "${a + b}"\n`+
+    `Number(a) + Number(b)（数値加算）= ${na + nb}\n`+
+    `Number(a) * Number(b) = ${na * nb}`;
+}
+
+function judgeHba1c() {
+  const v = parseFloat(document.getElementById('hba1c').value);
+  let result;
+  if (isNaN(v)) result = 'エラー：数値を入力してください';
+  else if (v < 5.7) result = `✅ 正常（< 5.7%）: ${v}%`;
+  else if (v < 6.5) result = `⚠️ 糖尿病前症（5.7〜6.4%）: ${v}%`;
+  else              result = `🚨 糖尿病の基準値（≥ 6.5%）: ${v}%`;
+  document.getElementById('hba1cOut').textContent = result;
+}
+
+function runLoop() {
+  const n = Math.min(parseInt(document.getElementById('loopN').value) || 5, 20);
+  const lines = [];
+  for (let i = 0; i < n; i++) lines.push(`i = ${String(i).padStart(2)} | ${'█'.repeat(i+1)}`);
+  lines.push(`\n合計 ${n} 回繰り返しました`);
+  document.getElementById('loopOut').textContent = lines.join('\n');
+}
+
+function calcBMI() {
+  const w = parseFloat(document.getElementById('wt').value);
+  const h = parseFloat(document.getElementById('ht').value);
+  if (!w || !h) return;
+  const hm = h / 100;
+  const bmi = (w / (hm * hm)).toFixed(1);
+  let cat = bmi < 18.5 ? '低体重（やせ）' : bmi < 25 ? '普通体重' : bmi < 30 ? '肥満（1度）' : '肥満（2度以上）';
+  document.getElementById('bmiOut').textContent = `BMI = ${bmi}\n判定：${cat}`;
+}
+
+/* 電卓 */
+let cV='0', cOp=null, cPrev=null, cRst=false;
+function ck(k) {
+  const d = document.getElementById('calcD');
+  if (k==='C') { cV='0'; cOp=null; cPrev=null; cRst=false; }
+  else if (k==='±') { cV = String(-parseFloat(cV)); }
+  else if (k==='%') { cV = String(parseFloat(cV)/100); }
+  else if (['+','-','*','/'].includes(k)) { cPrev=parseFloat(cV); cOp=k; cRst=true; }
+  else if (k==='=') {
+    if (cOp && cPrev!==null) {
+      const c=parseFloat(cV);
+      let r = cOp==='+'?cPrev+c:cOp==='-'?cPrev-c:cOp==='*'?cPrev*c:c===0?'Error':cPrev/c;
+      cV = String(Number.isFinite(r)?parseFloat(r.toFixed(10)):r);
+      cOp=null; cPrev=null; cRst=true;
+    }
+  } else if (k==='.') {
+    if (cRst){cV='0.';cRst=false;} else if(!cV.includes('.')) cV+='.';
+  } else {
+    cV = (cRst||cV==='0') ? k : cV+k; cRst=false;
+  }
+  d.textContent = cV.length>10 ? parseFloat(parseFloat(cV).toPrecision(8)) : cV;
+}
+
+/* DOM リスト */
+function addItem() {
+  const inp=document.getElementById('domInp');
+  const t=inp.value.trim(); if(!t) return;
+  const el=document.createElement('div');
+  el.className='di';
+  el.innerHTML=`${t} <button class="di-del" onclick="delItem(this)">✕</button>`;
+  document.getElementById('domList').appendChild(el);
+  inp.value='';
+}
+function delItem(btn) { btn.parentElement.remove(); }
+function clearList()  { document.getElementById('domList').innerHTML=''; }
+
+/* イベントログ */
+let evCnt=0;
+function logEv(name) {
+  const log=document.getElementById('evLog');
+  log.textContent = `[${++evCnt}] ${new Date().toLocaleTimeString()} — ${name}\n` + log.textContent;
+  const lines=log.textContent.split('\n');
+  if(lines.length>10) log.textContent=lines.slice(0,10).join('\n');
+}
+
+/* ストップウォッチ */
+let tmrId=null, tmrMs=0;
+function timerStart() {
+  if(tmrId) return;
+  tmrId=setInterval(()=>{
+    tmrMs+=100;
+    const m=Math.floor(tmrMs/60000), s=Math.floor((tmrMs%60000)/1000), d=Math.floor((tmrMs%1000)/100);
+    document.getElementById('timerD').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`;
+  },100);
+}
+function timerStop()  { clearInterval(tmrId); tmrId=null; }
+function timerReset() { timerStop(); tmrMs=0; document.getElementById('timerD').textContent='00:00.0'; }
+
+/* チェックリスト */
+function toggleChk(el) {
+  el.classList.toggle('done');
+  el.querySelector('.cb').textContent = el.classList.contains('done') ? '✓' : '';
+}
+</script>
+</body>
+</html>
