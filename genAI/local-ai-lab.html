@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Local AI Lab — Ollamaで作る自分専用AIワークフロー</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #080b10;
+    --surface: #0d1117;
+    --surface2: #131920;
+    --surface3: #1a2230;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --green: #00ff87;
+    --green-dim: rgba(0,255,135,0.12);
+    --blue: #38bdf8;
+    --blue-dim: rgba(56,189,248,0.1);
+    --orange: #fb923c;
+    --orange-dim: rgba(251,146,60,0.1);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.1);
+    --yellow: #fde047;
+    --yellow-dim: rgba(253,224,71,0.1);
+    --pink: #f472b6;
+    --pink-dim: rgba(244,114,182,0.1);
+    --text: #cdd9e5;
+    --text-muted: #5a6a7a;
+    --text-dim: #8899aa;
+    --code-bg: #0d1117;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  .grid-bg {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,135,0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,135,0.022) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 5rem 2rem 4rem;
+    position: relative; overflow: hidden;
+  }
+  .hero-glow {
+    position: absolute; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(0,255,135,0.07) 0%, transparent 65%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .hero-inner { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+
+  .terminal-bar {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 10px 10px 0 0; padding: 0.6rem 1rem; width: fit-content;
+  }
+  .terminal-dots { display: flex; gap: 6px; }
+  .terminal-dots span { width: 12px; height: 12px; border-radius: 50%; }
+  .terminal-dots span:nth-child(1) { background: #ff5f57; }
+  .terminal-dots span:nth-child(2) { background: #febc2e; }
+  .terminal-dots span:nth-child(3) { background: #28c840; }
+  .terminal-title { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em; }
+
+  .terminal-hero {
+    background: var(--surface); border: 1px solid var(--border2); border-top: none;
+    padding: 2rem 2.5rem 1.5rem;
+  }
+  .prompt-line {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted);
+    margin-bottom: 0.5rem; opacity: 0; animation: typeIn 0.5s ease forwards;
+  }
+  .prompt-line:nth-child(1) { animation-delay: 0.3s; }
+  .prompt-line:nth-child(2) { animation-delay: 0.8s; }
+  .prompt-line span.g { color: var(--green); }
+  .prompt-line span.b { color: var(--blue); }
+  @keyframes typeIn { from { opacity:0; transform: translateX(-8px); } to { opacity:1; transform: translateX(0); } }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif; font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 800; letter-spacing: -0.04em; line-height: 1.05;
+    padding: 1.5rem 0 0.5rem; opacity: 0; animation: fadeUp 0.8s 1.2s ease forwards;
+  }
+  .hero-title .accent { color: var(--green); }
+
+  .hero-bottom {
+    background: var(--surface); border: 1px solid var(--border2); border-top: 1px solid rgba(0,255,135,0.15);
+    border-radius: 0 0 12px 12px; padding: 1.25rem 2.5rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    opacity: 0; animation: fadeUp 0.6s 1.8s ease forwards;
+  }
+  .hero-desc { font-size: 0.9rem; color: var(--text-dim); max-width: 600px; }
+  .hero-stats { display: flex; gap: 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--text-muted); white-space: nowrap; }
+  .hero-stat-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .hero-stat-num { color: var(--green); font-size: 1rem; font-weight: 600; }
+
+  @keyframes fadeUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 2rem; }
+  section { padding: 5rem 0; position: relative; z-index: 1; }
+  .sec-divider { border: none; height: 1px; background: linear-gradient(to right, transparent, var(--border2), transparent); margin: 0; }
+  .sec-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+  .sec-title { font-family: 'Syne', sans-serif; font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+  .sec-desc { color: var(--text-dim); font-size: 0.9rem; max-width: 700px; margin-bottom: 2.5rem; }
+
+  /* ── CONCEPT BOXES ── */
+  .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+
+  .concept-card {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 2rem;
+    position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s;
+  }
+  .concept-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.2); }
+  .concept-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .concept-card.ollama::before { background: linear-gradient(to right, var(--green), var(--blue)); }
+  .concept-card.llm::before   { background: linear-gradient(to right, var(--purple), var(--pink)); }
+  .concept-card.llama::before { background: linear-gradient(to right, var(--orange), var(--yellow)); }
+
+  .concept-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
+  .concept-name { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text); }
+  .concept-subtitle { font-family: 'Syne', sans-serif; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
+  .concept-desc { font-size: 0.88rem; color: var(--text-dim); line-height: 1.7; }
+  .concept-desc strong { color: var(--text); font-weight: 500; }
+
+  .analogy-box {
+    margin-top: 1rem; padding: 0.85rem 1rem;
+    background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid;
+    font-size: 0.82rem; color: var(--text-dim); line-height: 1.6;
+  }
+  .concept-card.ollama .analogy-box { border-color: var(--green); }
+  .concept-card.llm .analogy-box   { border-color: var(--purple); }
+  .concept-card.llama .analogy-box { border-color: var(--orange); }
+  .analogy-box span { font-weight: 500; color: var(--text); }
+
+  /* ── RELATION DIAGRAM ── */
+  .relation-box {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 16px;
+    padding: 2rem; margin-top: 0.5rem;
+  }
+  .relation-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .rel-node {
+    background: var(--surface3); border-radius: 10px; padding: 0.75rem 1.25rem; text-align: center;
+  }
+  .rel-node-name { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+  .rel-node-desc { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+  .rel-arrow { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
+
+  /* ── STEP SECTIONS ── */
+  .step-section { margin-bottom: 4rem; }
+  .step-header { display: grid; grid-template-columns: auto 1fr; gap: 1.5rem; align-items: start; margin-bottom: 2rem; }
+  .step-badge {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 600;
+    letter-spacing: 0.15em; padding: 0.4rem 0.8rem; border-radius: 6px; white-space: nowrap; margin-top: 0.3rem;
+  }
+  .step-badge.green  { background: rgba(0,255,135,0.12); color: var(--green);  border: 1px solid rgba(0,255,135,0.25); }
+  .step-badge.blue   { background: rgba(56,189,248,0.1);  color: var(--blue);   border: 1px solid rgba(56,189,248,0.2); }
+  .step-badge.orange { background: rgba(251,146,60,0.1);  color: var(--orange); border: 1px solid rgba(251,146,60,0.2); }
+  .step-badge.purple { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.12em; margin-bottom: 0.3rem; }
+  .step-title { font-family: 'Syne', sans-serif; font-size: clamp(1.4rem, 2.8vw, 2rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 0.4rem; }
+  .step-desc { color: var(--text-dim); font-size: 0.88rem; }
+
+  /* ── CODE BLOCKS ── */
+  .code-window { border-radius: 12px; overflow: hidden; border: 1px solid var(--border2); margin: 1.5rem 0; }
+  .code-titlebar { background: var(--surface2); padding: 0.6rem 1rem; display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border); }
+  .code-dots { display: flex; gap: 5px; }
+  .code-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dots span:nth-child(1) { background: rgba(255,95,87,0.5); }
+  .code-dots span:nth-child(2) { background: rgba(254,188,46,0.5); }
+  .code-dots span:nth-child(3) { background: rgba(40,200,64,0.5); }
+  .code-filename { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.05em; }
+  .code-lang { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text-muted); background: var(--border); padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.08em; }
+  .code-body { background: var(--code-bg); padding: 1.5rem; overflow-x: auto; }
+  pre { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.7; color: var(--text); white-space: pre; }
+  .kw  { color: #ff79c6; } .fn  { color: #50fa7b; } .str { color: #f1fa8c; }
+  .cm  { color: #6272a4; font-style: italic; } .var { color: #8be9fd; } .pun { color: #cdd9e5; }
+
+  /* ── INSTRUCTION CARDS ── */
+  .instruction-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 1.5rem 0; }
+  .instruction-item {
+    display: grid; grid-template-columns: 28px 1fr; gap: 1rem; align-items: start;
+    padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; transition: border-color 0.2s, background 0.2s;
+  }
+  .instruction-item:hover { background: var(--surface2); border-color: var(--border2); }
+  .instr-num { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 600; color: var(--green); background: var(--green-dim); width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; }
+  .instr-text { font-size: 0.9rem; color: var(--text-dim); padding-top: 1px; }
+  .instr-text strong { color: var(--text); font-weight: 500; }
+  .instr-text a { color: var(--blue); text-decoration: none; }
+  .instr-text code { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; background: var(--surface3); color: var(--green); padding: 0.1rem 0.45rem; border-radius: 4px; border: 1px solid rgba(0,255,135,0.15); }
+
+  /* ── MODEL TABLE ── */
+  .model-filter { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .filter-btn {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em;
+    padding: 0.3rem 0.85rem; border-radius: 100px; border: 1px solid var(--border2);
+    background: transparent; color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+  }
+  .filter-btn:hover, .filter-btn.active { background: var(--green-dim); color: var(--green); border-color: rgba(0,255,135,0.3); }
+
+  .model-table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border2); }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--surface2); }
+  th { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.12em; color: var(--text-muted); text-align: left; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border2); white-space: nowrap; }
+  td { padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { background: var(--surface); transition: background 0.15s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:nth-child(even) { background: rgba(13,17,23,0.8); }
+  tbody tr:nth-child(even):hover { background: var(--surface2); }
+
+  .model-name-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text); font-weight: 500; }
+  .model-cmd { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--green); background: var(--green-dim); padding: 0.15rem 0.55rem; border-radius: 4px; white-space: nowrap; }
+
+  .tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; padding: 0.15rem 0.55rem; border-radius: 4px; white-space: nowrap; margin: 1px; }
+  .tag.general  { background: rgba(56,189,248,0.12);  color: var(--blue);   border: 1px solid rgba(56,189,248,0.2); }
+  .tag.medical  { background: rgba(0,255,135,0.1);    color: var(--green);  border: 1px solid rgba(0,255,135,0.2); }
+  .tag.code     { background: rgba(167,139,250,0.12); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+  .tag.vision   { background: rgba(251,146,60,0.12);  color: var(--orange); border: 1px solid rgba(251,146,60,0.2); }
+  .tag.light    { background: rgba(253,224,71,0.1);   color: var(--yellow); border: 1px solid rgba(253,224,71,0.2); }
+  .tag.reason   { background: rgba(244,114,182,0.1);  color: var(--pink);   border: 1px solid rgba(244,114,182,0.2); }
+  .tag.japan    { background: rgba(255,100,100,0.1);  color: #ff9999;       border: 1px solid rgba(255,100,100,0.2); }
+
+  .ram-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-muted); }
+  .rec-star { color: var(--yellow); font-size: 0.9rem; }
+
+  .recommend-note {
+    margin-top: 1rem; padding: 0.85rem 1.25rem;
+    background: rgba(253,224,71,0.05); border: 1px solid rgba(253,224,71,0.2); border-radius: 10px;
+    font-size: 0.82rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.75rem;
+  }
+
+  /* ── TIP BOX ── */
+  .tip-box {
+    background: rgba(0,255,135,0.05); border: 1px solid rgba(0,255,135,0.2); border-radius: 12px;
+    padding: 1.25rem 1.5rem; margin: 1.5rem 0;
+    display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: start;
+  }
+  .tip-icon { font-size: 1.1rem; margin-top: 1px; }
+  .tip-text { font-size: 0.87rem; color: var(--text-dim); line-height: 1.6; }
+  .tip-text strong { color: var(--green); font-weight: 500; }
+
+  /* ── PROGRESSION ── */
+  .progression { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+  .prog-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.5rem; position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s;
+  }
+  .prog-card:hover { transform: translateY(-4px); border-color: var(--border2); }
+  .prog-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .prog-card:nth-child(1)::before { background: linear-gradient(to right, var(--green), transparent); }
+  .prog-card:nth-child(2)::before { background: linear-gradient(to right, var(--blue), transparent); }
+  .prog-card:nth-child(3)::before { background: linear-gradient(to right, var(--orange), transparent); }
+  .prog-step { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.15em; color: var(--text-muted); margin-bottom: 0.75rem; }
+  .prog-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+  .prog-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .prog-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.5; }
+  .prog-desc code { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: var(--surface3); color: var(--green); padding: 0.1rem 0.4rem; border-radius: 3px; }
+
+  /* ── USE CASES ── */
+  .usecase-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin: 1.5rem 0; }
+  .usecase-card { background: var(--surface); padding: 1.5rem; transition: background 0.2s; }
+  .usecase-card:hover { background: var(--surface2); }
+  .usecase-type { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.12em; padding: 0.2rem 0.6rem; border-radius: 4px; margin-bottom: 0.75rem; display: inline-block; }
+  .usecase-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .usecase-model { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--green); background: var(--green-dim); padding: 0.15rem 0.55rem; border-radius: 4px; display: inline-block; margin-bottom: 0.5rem; }
+  .usecase-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.5; }
+
+  /* ── FOOTER ── */
+  footer { border-top: 1px solid var(--border); padding: 2.5rem 2rem; text-align: center; position: relative; z-index: 1; }
+  .footer-inner { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em; line-height: 2; }
+  .footer-inner a { color: var(--green); text-decoration: none; }
+  .footer-inner a:hover { color: var(--blue); }
+
+  @media (max-width: 640px) {
+    .hero-bottom { flex-direction: column; }
+    .step-header { grid-template-columns: 1fr; }
+    .hero-title { font-size: 2.2rem; }
+    .concept-grid { grid-template-columns: 1fr; }
+    .relation-row { gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- ═══ HERO ═══ -->
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="container">
+    <div class="hero-inner">
+      <div class="terminal-bar">
+        <div class="terminal-dots"><span></span><span></span><span></span></div>
+        <div class="terminal-title">local-ai-lab — bash</div>
+      </div>
+      <div class="terminal-hero">
+        <div class="prompt-line"><span class="g">➜</span>&nbsp; <span class="b">~/local-ai</span>&nbsp; ollama pull gemma3</div>
+        <div class="prompt-line"><span class="g">✔</span>&nbsp; pulling manifest... <span class="g">done</span></div>
+        <div class="hero-title">Local AI <span class="accent">Lab</span></div>
+      </div>
+      <div class="hero-bottom">
+        <p class="hero-desc">Ollamaで作る自分専用AIワークフロー。料金ゼロ、完全オフライン、医学研究に特化したローカルAI環境の構築ガイド。</p>
+        <div class="hero-stats">
+          <div class="hero-stat-item"><span class="hero-stat-num">¥0</span><span>利用料金</span></div>
+          <div class="hero-stat-item"><span class="hero-stat-num">100%</span><span>オフライン</span></div>
+          <div class="hero-stat-item"><span class="hero-stat-num">14+</span><span>MODELS</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<hr class="sec-divider">
+
+<!-- ═══ CONCEPT EXPLANATION ═══ -->
+<section>
+  <div class="container">
+    <div class="sec-label">00 / BASICS — まず言葉を理解しよう</div>
+    <div class="sec-title">OllamaってなんでLlamaと関係あるの？</div>
+    <p class="sec-desc">「AI」「LLM」「Llama」「Ollama」……似たような言葉が並んで混乱しますよね。3つを分けて考えると一気にクリアになります。</p>
+
+    <div class="concept-grid">
+      <div class="concept-card llm">
+        <span class="concept-icon">🧠</span>
+        <div class="concept-name">LLM</div>
+        <div class="concept-subtitle">Large Language Model（大規模言語モデル）</div>
+        <div class="concept-desc">
+          ChatGPTやClaudeの「頭脳」部分のことです。<strong>膨大な文章を学習して、次に来る言葉を予測する</strong>AIの仕組みです。<br><br>
+          「7B」「13B」などの数字は<strong>パラメータ数（Billion＝10億）</strong>を意味します。数が大きいほど賢いですが、その分重くなります。
+        </div>
+        <div class="analogy-box">💡 例え：LLMは<span>「すごく頭のいい脳みそ」</span>。それ単体では動けないので、動かすための「体」が必要です。</div>
+      </div>
+
+      <div class="concept-card llama">
+        <span class="concept-icon">🦙</span>
+        <div class="concept-name">Llama（ラマ）</div>
+        <div class="concept-subtitle">Meta社が開発した無料公開のAIモデル</div>
+        <div class="concept-desc">
+          Facebook・Instagramを作った<strong>Meta社（旧Facebook）が開発・無料公開した高性能なAIモデル</strong>です。名前の由来は南米の動物のラマ（🦙）。<br><br>
+          通常AIは有料サービスとして提供されますが、Llamaは<strong>設計図ごと無料公開（オープンソース）</strong>されたため、世界中の開発者が自由に使えます。
+        </div>
+        <div class="analogy-box">💡 例え：Llamaは<span>「無料で配布されている高性能エンジン」</span>。このエンジンを使えば誰でも車（アプリ）を作れます。</div>
+      </div>
+
+      <div class="concept-card ollama">
+        <span class="concept-icon">⚙️</span>
+        <div class="concept-name">Ollama（オラマ）</div>
+        <div class="concept-subtitle">ローカルAIを動かすための管理ソフト</div>
+        <div class="concept-desc">
+          LlamaなどのAIモデルを<strong>自分のPCで簡単に動かすためのソフトウェア</strong>です。名前は「Ol（古い）」＋「Llama」から来ています。<br><br>
+          本来、AIを動かすには複雑な設定が必要でした。Ollamaはその面倒な部分をすべて引き受けてくれます。<strong>コマンド1行でAIをダウンロード・起動</strong>できます。
+        </div>
+        <div class="analogy-box">💡 例え：OllamaはAIモデルの<span>「DVDプレイヤー」</span>。Llama（DVD）をセットして再生ボタン（コマンド）を押すだけで動きます。</div>
+      </div>
+    </div>
+
+    <!-- 関係図 -->
+    <div class="relation-box">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-muted);letter-spacing:0.15em;margin-bottom:1.25rem;">// 3つの関係図</div>
+      <div class="relation-row">
+        <div class="rel-node" style="border:1px solid rgba(167,139,250,0.3);">
+          <div class="rel-node-name" style="color:var(--purple);">LLM</div>
+          <div class="rel-node-desc">AIの頭脳（技術）</div>
+        </div>
+        <div class="rel-arrow">←の実例が</div>
+        <div class="rel-node" style="border:1px solid rgba(251,146,60,0.3);">
+          <div class="rel-node-name" style="color:var(--orange);">Llama 3 / Gemma 3 / など</div>
+          <div class="rel-node-desc">LLMの種類（モデル）</div>
+        </div>
+        <div class="rel-arrow">←を動かす</div>
+        <div class="rel-node" style="border:1px solid rgba(0,255,135,0.3);">
+          <div class="rel-node-name" style="color:var(--green);">Ollama</div>
+          <div class="rel-node-desc">管理・実行ソフト</div>
+        </div>
+        <div class="rel-arrow">←使うのが</div>
+        <div class="rel-node" style="border:1px solid rgba(56,189,248,0.3);">
+          <div class="rel-node-name" style="color:var(--blue);">あなたのPC</div>
+          <div class="rel-node-desc">完全ローカル・無料</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- ═══ MODEL LIST ═══ -->
+<section>
+  <div class="container">
+    <div class="sec-label">01 / MODELS — 使えるモデル一覧</div>
+    <div class="sec-title">どのモデルを選べばいい？</div>
+    <p class="sec-desc">Ollamaで動く主要モデルの比較です。PCのRAM（メモリ）容量と目的に合わせて選びましょう。⭐は特におすすめです。</p>
+
+    <div class="model-filter">
+      <button class="filter-btn active" onclick="filterModels('all', this)">すべて表示</button>
+      <button class="filter-btn" onclick="filterModels('general', this)">汎用</button>
+      <button class="filter-btn" onclick="filterModels('medical', this)">医療・研究</button>
+      <button class="filter-btn" onclick="filterModels('code', this)">コーディング</button>
+      <button class="filter-btn" onclick="filterModels('vision', this)">画像認識</button>
+      <button class="filter-btn" onclick="filterModels('light', this)">軽量（低スペックPC）</button>
+      <button class="filter-btn" onclick="filterModels('reason', this)">推論・思考型</button>
+      <button class="filter-btn" onclick="filterModels('japan', this)">日本語が得意</button>
+    </div>
+
+    <div class="model-table-wrap">
+      <table id="model-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>モデル名</th>
+            <th>コマンド（貼り付けるだけ）</th>
+            <th>作った会社</th>
+            <th>得意なこと・特徴</th>
+            <th>必要RAM</th>
+            <th>カテゴリ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-cat="general medical reason japan">
+            <td class="rec-star">⭐</td>
+            <td><div class="model-name-cell">Gemma 3<br><span style="font-size:0.72rem;color:var(--text-muted);">Google / 2025年</span></div></td>
+            <td><span class="model-cmd">ollama pull gemma3</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Google DeepMind</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">日本語・英語ともに高精度。医療文書の読解・推論に特に強い。画像も扱える最新モデル</td>
+            <td><span class="ram-badge">8GB〜</span></td>
+            <td><span class="tag general">汎用</span><span class="tag medical">医療</span><span class="tag vision">画像</span><span class="tag japan">日本語◎</span></td>
+          </tr>
+          <tr data-cat="general medical reason">
+            <td class="rec-star">⭐</td>
+            <td><div class="model-name-cell">Llama 3.2<br><span style="font-size:0.72rem;color:var(--text-muted);">Meta / 2024年</span></div></td>
+            <td><span class="model-cmd">ollama pull llama3.2</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Meta（Facebook親会社）</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">万能型の定番。論文読解・要約・翻訳・会話なんでもこなせる。世界で最も使われているモデル</td>
+            <td><span class="ram-badge">8GB〜</span></td>
+            <td><span class="tag general">汎用</span><span class="tag medical">医療</span></td>
+          </tr>
+          <tr data-cat="general medical reason">
+            <td></td>
+            <td><div class="model-name-cell">Llama 3.3 70B<br><span style="font-size:0.72rem;color:var(--text-muted);">Meta / 2024年</span></div></td>
+            <td><span class="model-cmd">ollama pull llama3.3</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Meta</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">Llamaの最大・最高精度版。科学論文の深い解析や査読コメント生成に最適。ハイスペックPC向け</td>
+            <td><span class="ram-badge">64GB〜</span></td>
+            <td><span class="tag general">汎用</span><span class="tag medical">医療</span><span class="tag reason">推論</span></td>
+          </tr>
+          <tr data-cat="general medical reason japan">
+            <td></td>
+            <td><div class="model-name-cell">Gemma 2 27B<br><span style="font-size:0.72rem;color:var(--text-muted);">Google / 2024年</span></div></td>
+            <td><span class="model-cmd">ollama pull gemma2:27b</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Google DeepMind</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">Gemmaの大型版。長い医学文書の要約・分析に向いている。日本語精度も高い</td>
+            <td><span class="ram-badge">32GB〜</span></td>
+            <td><span class="tag general">汎用</span><span class="tag medical">医療</span><span class="tag japan">日本語◎</span></td>
+          </tr>
+          <tr data-cat="general medical reason">
+            <td class="rec-star">⭐</td>
+            <td><div class="model-name-cell">Mistral 7B<br><span style="font-size:0.72rem;color:var(--text-muted);">Mistral AI / 2023年</span></div></td>
+            <td><span class="model-cmd">ollama pull mistral</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Mistral AI（フランス）</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">欧州製でプライバシー意識が高い。医療・法律文書の処理に実績あり。速くて軽い</td>
+            <td><span class="ram-badge">8GB〜</span></td>
+            <td><span class="tag general">汎用</span><span class="tag medical">医療</span></td>
+          </tr>
+          <tr data-cat="general light">
+            <td class="rec-star">⭐</td>
+            <td><div class="model-name-cell">Phi-4 mini<br><span style="font-size:0.72rem;color:var(--text-muted);">Microsoft / 2025年</span></div></td>
+            <td><span class="model-cmd">ollama pull phi4-mini</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Microsoft</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">小さいのにとても賢い。RAMが少ない古いPCでも動く。数学・推論が得意。コスパ最強</td>
+            <td><span class="ram-badge">4GB〜</span></td>
+            <td><span class="tag light">軽量</span><span class="tag general">汎用</span></td>
+          </tr>
+          <tr data-cat="general light">
+            <td></td>
+            <td><div class="model-name-cell">TinyLlama 1.1B<br><span style="font-size:0.72rem;color:var(--text-muted);">オープンソース / 2023年</span></div></td>
+            <td><span class="model-cmd">ollama pull tinyllama</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">コミュニティ</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">古いPCでも数秒で動く超軽量モデル。簡単なQ&Aや動作確認・テスト用途に</td>
+            <td><span class="ram-badge">4GB〜</span></td>
+            <td><span class="tag light">軽量</span></td>
+          </tr>
+          <tr data-cat="code">
+            <td></td>
+            <td><div class="model-name-cell">CodeLlama<br><span style="font-size:0.72rem;color:var(--text-muted);">Meta / 2023年</span></div></td>
+            <td><span class="model-cmd">ollama pull codellama</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Meta</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">20以上のプログラミング言語に対応したコード特化モデル。スクリプト生成・デバッグに</td>
+            <td><span class="ram-badge">8GB〜</span></td>
+            <td><span class="tag code">コード</span></td>
+          </tr>
+          <tr data-cat="code reason">
+            <td class="rec-star">⭐</td>
+            <td><div class="model-name-cell">DeepSeek Coder V2<br><span style="font-size:0.72rem;color:var(--text-muted);">DeepSeek / 2024年</span></div></td>
+            <td><span class="model-cmd">ollama pull deepseek-coder-v2</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">DeepSeek（中国）</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">87言語対応のコーディング特化版。R・Python・統計解析スクリプトの作成に最適</td>
+            <td><span class="ram-badge">16GB〜</span></td>
+            <td><span class="tag code">コード</span><span class="tag reason">推論</span></td>
+          </tr>
+          <tr data-cat="reason general medical">
+            <td class="rec-star">⭐</td>
+            <td><div class="model-name-cell">DeepSeek R1<br><span style="font-size:0.72rem;color:var(--text-muted);">DeepSeek / 2025年</span></div></td>
+            <td><span class="model-cmd">ollama pull deepseek-r1</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">DeepSeek（中国）</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">「考えてから答える」推論特化型。複雑な医学的判断や多段階の論理思考が必要な問いに</td>
+            <td><span class="ram-badge">8GB〜</span></td>
+            <td><span class="tag reason">推論</span><span class="tag medical">医療</span></td>
+          </tr>
+          <tr data-cat="vision general">
+            <td class="rec-star">⭐</td>
+            <td><div class="model-name-cell">LLaVA<br><span style="font-size:0.72rem;color:var(--text-muted);">UWマジソン大 + Microsoft</span></div></td>
+            <td><span class="model-cmd">ollama pull llava</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">ウィスコンシン大 + Microsoft</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">画像を「見て理解」できる特殊なモデル。レントゲン・図表・手書きメモの読み取りに</td>
+            <td><span class="ram-badge">8GB〜</span></td>
+            <td><span class="tag vision">画像認識</span></td>
+          </tr>
+          <tr data-cat="vision general reason">
+            <td></td>
+            <td><div class="model-name-cell">Llama 3.2 Vision<br><span style="font-size:0.72rem;color:var(--text-muted);">Meta / 2024年</span></div></td>
+            <td><span class="model-cmd">ollama pull llama3.2-vision</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Meta</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">テキスト＋画像の両方を扱えるマルチモーダルモデル。LLaVAより新しく高精度</td>
+            <td><span class="ram-badge">16GB〜</span></td>
+            <td><span class="tag vision">画像認識</span><span class="tag general">汎用</span></td>
+          </tr>
+          <tr data-cat="general japan">
+            <td></td>
+            <td><div class="model-name-cell">Qwen 2.5<br><span style="font-size:0.72rem;color:var(--text-muted);">Alibaba / 2024年</span></div></td>
+            <td><span class="model-cmd">ollama pull qwen2.5</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Alibaba Cloud（中国）</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">中国語・日本語・英語に特に強い多言語モデル。アジア語圏の文書処理やコードも得意</td>
+            <td><span class="ram-badge">8GB〜</span></td>
+            <td><span class="tag general">汎用</span><span class="tag japan">日本語◎</span><span class="tag code">コード</span></td>
+          </tr>
+          <tr data-cat="general japan">
+            <td></td>
+            <td><div class="model-name-cell">Aya 35B<br><span style="font-size:0.72rem;color:var(--text-muted);">Cohere / 2024年</span></div></td>
+            <td><span class="model-cmd">ollama pull aya</span></td>
+            <td style="font-size:0.82rem;color:var(--text-dim);">Cohere（カナダ）</td>
+            <td style="font-size:0.83rem;color:var(--text-dim);">100以上の言語に対応。日本語・英語間の医学翻訳に特化した使い方が可能</td>
+            <td><span class="ram-badge">32GB〜</span></td>
+            <td><span class="tag japan">多言語</span><span class="tag general">汎用</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="recommend-note">
+      <span>⭐</span>
+      <span><strong style="color:var(--yellow);">初めての方へ：</strong>まず <strong style="color:var(--text);">Gemma 3</strong> か <strong style="color:var(--text);">Llama 3.2</strong> から始めるのがおすすめです（どちらも8GBのRAMで動きます）。RAMが4〜8GBしかない場合は <strong style="color:var(--text);">Phi-4 mini</strong> が最適です。</span>
+    </div>
+
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- ═══ STEPS ═══ -->
+<section>
+  <div class="container">
+    <div class="sec-label">02 / SETUP — セットアップ手順</div>
+    <div class="sec-title">インストールから動かすまで</div>
+    <p class="sec-desc">4ステップで完了します。コマンドはコピー＆ペーストするだけでOKです。</p>
+
+    <!-- STEP 1 -->
+    <div class="step-section">
+      <div class="step-header">
+        <div class="step-badge green">STEP 01</div>
+        <div class="step-title-group">
+          <div class="step-num">// INSTALL OLLAMA</div>
+          <div class="step-title">Ollamaをインストールする</div>
+          <div class="step-desc">AIの「DVDプレイヤー」となるソフトウェアを導入します。難しい設定は一切ありません。</div>
+        </div>
+      </div>
+      <div class="instruction-list">
+        <div class="instruction-item">
+          <div class="instr-num">1</div>
+          <div class="instr-text"><strong><a href="https://ollama.com/">ollama.com</a></strong> からWindows版をダウンロードして実行します。インストーラーが全部やってくれます。</div>
+        </div>
+        <div class="instruction-item">
+          <div class="instr-num">2</div>
+          <div class="instr-text">スタートメニューで <code>powershell</code> と検索して、PowerShell（黒い画面）を起動します。</div>
+        </div>
+        <div class="instruction-item">
+          <div class="instr-num">3</div>
+          <div class="instr-text">下のコマンドを貼り付けてEnterキーを押します。バージョン番号が表示されれば成功です。</div>
+        </div>
+      </div>
+      <div class="code-window">
+        <div class="code-titlebar">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <div class="code-filename">PowerShell</div>
+          <div class="code-lang">SHELL</div>
+        </div>
+        <div class="code-body">
+<pre><span class="fn">ollama</span> <span class="var">--version</span>
+<span class="cm"># → ollama version 0.x.x  と表示されれば成功！</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-section" style="padding-top:3rem;">
+      <div class="step-header">
+        <div class="step-badge blue">STEP 02</div>
+        <div class="step-title-group">
+          <div class="step-num">// DOWNLOAD MODEL</div>
+          <div class="step-title">AIモデルをダウンロードする</div>
+          <div class="step-desc">AIの「脳」を取得します。最初は <strong>gemma3</strong> がおすすめです（日本語が得意）。</div>
+        </div>
+      </div>
+      <div class="code-window">
+        <div class="code-titlebar">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <div class="code-filename">PowerShell</div>
+          <div class="code-lang">SHELL</div>
+        </div>
+        <div class="code-body">
+<pre><span class="cm"># ① モデルをダウンロード（2〜5GB。Wi-Fiで数分かかります）</span>
+<span class="fn">ollama</span> <span class="kw">pull</span> gemma3
+
+<span class="cm"># ② ダウンロード完了後、チャットで動作確認</span>
+<span class="fn">ollama</span> <span class="kw">run</span> gemma3
+
+<span class="cm"># ③ 画像認識もやりたい場合はこちらも追加</span>
+<span class="fn">ollama</span> <span class="kw">pull</span> llava</pre>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-icon">💡</div>
+        <div class="tip-text"><strong>ダウンロードに時間がかかるのは正常です。</strong>一度ダウンロードすれば次回からは即座に起動します。データはすべて自分のPC内に保存され、外部には一切送信されません。</div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-section" style="padding-top:3rem;">
+      <div class="step-header">
+        <div class="step-badge orange">STEP 03</div>
+        <div class="step-title-group">
+          <div class="step-num">// BUILD YOUR APP</div>
+          <div class="step-title">Node.jsで専用AIアプリを作る</div>
+          <div class="step-desc">プログラムからAIを操作し、「論文査読専用AI」など特定業務に特化した自分専用ツールに変えます。</div>
+        </div>
+      </div>
+      <div class="instruction-list">
+        <div class="instruction-item">
+          <div class="instr-num">1</div>
+          <div class="instr-text"><strong><a href="https://nodejs.org/">nodejs.org</a></strong> から推奨版（LTS）をインストールします。これもインストーラーが自動でやります。</div>
+        </div>
+        <div class="instruction-item">
+          <div class="instr-num">2</div>
+          <div class="instr-text">デスクトップに <code>my-ai</code> フォルダを作り、PowerShellで <code>cd ~/Desktop/my-ai</code> と入力して移動します。</div>
+        </div>
+        <div class="instruction-item">
+          <div class="instr-num">3</div>
+          <div class="instr-text"><code>npm install ollama</code> を実行してライブラリをインストールします。</div>
+        </div>
+        <div class="instruction-item">
+          <div class="instr-num">4</div>
+          <div class="instr-text">下のコードをメモ帳に貼り付けて <code>app.js</code> として保存し、<code>node app.js</code> で実行します。</div>
+        </div>
+      </div>
+      <div class="code-window">
+        <div class="code-titlebar">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <div class="code-filename">app.js — 論文査読AI（Gemma 3版）</div>
+          <div class="code-lang">JAVASCRIPT</div>
+        </div>
+        <div class="code-body">
+<pre><span class="kw">const</span> <span class="var">ollama</span> <span class="pun">=</span> <span class="fn">require</span><span class="pun">(</span><span class="str">'ollama'</span><span class="pun">);</span>
+
+<span class="kw">async function</span> <span class="fn">reviewPaper</span><span class="pun">() {</span>
+  <span class="kw">const</span> <span class="var">response</span> <span class="pun">=</span> <span class="kw">await</span> <span class="var">ollama</span><span class="pun">.</span><span class="fn">default</span><span class="pun">.</span><span class="fn">chat</span><span class="pun">({</span>
+    <span class="var">model</span><span class="pun">:</span> <span class="str">'gemma3'</span><span class="pun">,</span>   <span class="cm">// ← ここのモデル名を変えるだけでAIの「脳」が切り替わります</span>
+    <span class="var">messages</span><span class="pun">: [</span>
+      <span class="pun">{</span>
+        <span class="var">role</span><span class="pun">:</span> <span class="str">'system'</span><span class="pun">,</span>   <span class="cm">// ← AIへの「役割」の指示（毎回自動で送られる）</span>
+        <span class="var">content</span><span class="pun">:</span> <span class="str">'あなたは優秀な医学論文の査読者です。'</span>
+                <span class="pun">+</span> <span class="str">'客観的かつ建設的な英語コメントを生成してください。'</span>
+      <span class="pun">},</span>
+      <span class="pun">{</span>
+        <span class="var">role</span><span class="pun">:</span> <span class="str">'user'</span><span class="pun">,</span>
+        <span class="var">content</span><span class="pun">:</span> <span class="str">'以下のアブストラクトを査読してください：\n[ここに論文を貼る]'</span>
+      <span class="pun">}</span>
+    <span class="pun">],</span>
+  <span class="pun">});</span>
+
+  <span class="var">console</span><span class="pun">.</span><span class="fn">log</span><span class="pun">(</span><span class="var">response</span><span class="pun">.</span><span class="var">message</span><span class="pun">.</span><span class="var">content</span><span class="pun">);</span>
+<span class="pun">}</span>
+
+<span class="fn">reviewPaper</span><span class="pun">();</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 USE CASES -->
+    <div class="step-section" style="padding-top:3rem;">
+      <div class="step-header">
+        <div class="step-badge purple">STEP 04</div>
+        <div class="step-title-group">
+          <div class="step-num">// APPLY TO RESEARCH</div>
+          <div class="step-title">研究・医療業務への活用例</div>
+          <div class="step-desc">コードの <code style="font-family:JetBrains Mono,monospace;font-size:0.82rem;background:var(--surface3);color:var(--purple);padding:0.1rem 0.5rem;border-radius:4px;">model: 'gemma3'</code> の部分を変えるだけで、用途に最適な「脳」に切り替えられます。</div>
+        </div>
+      </div>
+      <div class="usecase-grid">
+        <div class="usecase-card">
+          <div class="usecase-type" style="background:rgba(0,255,135,0.1);color:var(--green);border:1px solid rgba(0,255,135,0.2);">REVIEW</div>
+          <div class="usecase-title">論文査読コメント生成</div>
+          <div class="usecase-model">model: 'gemma3'</div>
+          <div class="usecase-desc">システムプロンプトで「査読者」として振る舞わせる。英語コメントの自動生成が可能。</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-type" style="background:rgba(56,189,248,0.1);color:var(--blue);border:1px solid rgba(56,189,248,0.2);">TRANSLATE</div>
+          <div class="usecase-title">医学論文 日英翻訳</div>
+          <div class="usecase-model">model: 'gemma3'</div>
+          <div class="usecase-desc">「論文特有の硬い表現を使って翻訳して」と固定指示することで専用翻訳AIに。</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-type" style="background:rgba(244,114,182,0.1);color:var(--pink);border:1px solid rgba(244,114,182,0.2);">REASON</div>
+          <div class="usecase-title">複雑な医学的推論</div>
+          <div class="usecase-model">model: 'deepseek-r1'</div>
+          <div class="usecase-desc">「考えてから答える」推論特化型。鑑別診断の整理や多段階の判断プロセスに。</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-type" style="background:rgba(251,146,60,0.1);color:var(--orange);border:1px solid rgba(251,146,60,0.2);">VISION</div>
+          <div class="usecase-title">図表・画像の読み取り</div>
+          <div class="usecase-model">model: 'llava'</div>
+          <div class="usecase-desc">レントゲン・論文の図・手書きメモをAIに説明させることができる特殊モデル。</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-type" style="background:rgba(167,139,250,0.1);color:var(--purple);border:1px solid rgba(167,139,250,0.2);">CODE</div>
+          <div class="usecase-title">統計解析スクリプト生成</div>
+          <div class="usecase-model">model: 'deepseek-coder-v2'</div>
+          <div class="usecase-desc">「このデータをR言語で多変量解析して」と頼むだけでコードを書いてくれます。</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-type" style="background:rgba(253,224,71,0.1);color:var(--yellow);border:1px solid rgba(253,224,71,0.2);">LIGHT</div>
+          <div class="usecase-title">古いPC・出張先での利用</div>
+          <div class="usecase-model">model: 'phi4-mini'</div>
+          <div class="usecase-desc">RAMが少ない古いPCでも動く超軽量モデル。オフライン環境でも完全に動作します。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- ═══ PROGRESSION ═══ -->
+<section>
+  <div class="container">
+    <div class="sec-label">03 / ROADMAP — ステップアップ</div>
+    <div class="sec-title">段階的な習熟ロードマップ</div>
+    <p class="sec-desc">焦らず段階を踏んで進めることで、研究業務の自動化を無理なく実現できます。</p>
+
+    <div class="progression">
+      <div class="prog-card">
+        <div class="prog-step">PHASE 01 · BEGINNER</div>
+        <div class="prog-icon">💬</div>
+        <div class="prog-title">チャットで感触をつかむ</div>
+        <div class="prog-desc"><code>ollama run gemma3</code> で普通にチャット。ローカルAIの速さと、データが外に出ない安心感を体験しましょう。</div>
+      </div>
+      <div class="prog-card">
+        <div class="prog-step">PHASE 02 · INTERMEDIATE</div>
+        <div class="prog-icon">⚙️</div>
+        <div class="prog-title">定型作業を自動化する</div>
+        <div class="prog-desc">Node.jsで「査読モード」を自動起動するスクリプトを作成。毎回プロンプトを打つ手間をゼロにします。</div>
+      </div>
+      <div class="prog-card">
+        <div class="prog-step">PHASE 03 · ADVANCED</div>
+        <div class="prog-icon">👁️</div>
+        <div class="prog-title">画像認識に挑戦する</div>
+        <div class="prog-desc"><code>ollama run llava</code> で画像認識を体験。手書き図→テキスト説明→画像生成という連携も可能です。</div>
+      </div>
+    </div>
+
+    <div class="tip-box" style="background:rgba(56,189,248,0.05);border-color:rgba(56,189,248,0.2);">
+      <div class="tip-icon">🔗</div>
+      <div class="tip-text" style="color:var(--text-dim)"><strong style="color:var(--blue);">手書きイラスト修正ワークフロー（上級）：</strong>手書きラフをLLaVAで「これはAの図でBを示している」と言語化 → その説明をStable Diffusionに渡して高品質な画像を自動生成、という連携アプリを自作することが可能です。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div>LOCAL AI LAB &nbsp;·&nbsp; Powered by <a href="https://ollama.com/">Ollama</a> + <a href="https://nodejs.org/">Node.js</a></div>
+      <div style="margin-top:0.3rem;opacity:0.5;">完全オフライン · ゼロコスト · 医学研究特化 · モデルは随時更新されます</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+function filterModels(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#model-table tbody tr').forEach(row => {
+    if (cat === 'all') {
+      row.style.display = '';
+    } else {
+      const cats = row.getAttribute('data-cat') || '';
+      row.style.display = cats.includes(cat) ? '' : 'none';
+    }
+  });
+}
+</script>
+</body>
+</html>
