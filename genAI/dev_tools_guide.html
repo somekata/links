@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>言語・環境・IDE の関係</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --bg2: #fdfaf3;
+    --ink: #1c1710;
+    --ink-soft: #5a5040;
+    --accent: #7a4f2d;
+    --accent2: #3d6b52;
+    --accent3: #4a5c7a;
+    --accent4: #7a3d5c;
+    --border: #c8bfa8;
+    --shadow: rgba(28,23,16,0.10);
+    --py: #3d6b52;
+    --r:  #4a5c7a;
+    --js: #7a6a2d;
+    --tool: #7a4f2d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    min-height: 100vh;
+  }
+
+  /* 和紙テクスチャ風背景 */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(180,160,120,0.04) 28px, rgba(180,160,120,0.04) 29px),
+      repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(180,160,120,0.03) 28px, rgba(180,160,120,0.03) 29px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 3rem 2rem 5rem;
+  }
+
+  /* ヘッダー */
+  header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  header h1 {
+    font-family: 'Zen Antique', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+    margin-bottom: 0.6rem;
+  }
+
+  header p {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+  }
+
+  /* セクションタイトル */
+  .section-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.2rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin: 2.8rem 0 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ==============================
+     たとえ話カード
+  ============================== */
+  .analogy-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.8rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 4px 4px 0 var(--border);
+  }
+
+  .analogy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .analogy-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.2rem 1rem;
+    text-align: center;
+  }
+
+  .analogy-card .emoji {
+    font-size: 2rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .analogy-card .label {
+    font-family: 'Zen Antique', serif;
+    font-size: 0.95rem;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+  }
+
+  .analogy-card .desc {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+  }
+
+  .analogy-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--border);
+    padding: 0 0.2rem;
+  }
+
+  /* ==============================
+     言語比較テーブル
+  ============================== */
+  .lang-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 var(--border);
+    font-size: 0.9rem;
+  }
+
+  .lang-table th {
+    background: var(--ink);
+    color: var(--bg);
+    font-family: 'Zen Antique', serif;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    padding: 0.8rem 1rem;
+    text-align: center;
+  }
+
+  .lang-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1.5;
+  }
+
+  .lang-table tr:last-child td { border-bottom: none; }
+
+  .lang-table td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-align: left;
+  }
+
+  .td-js   { color: var(--js); }
+  .td-py   { color: var(--py); }
+  .td-r    { color: var(--r);  }
+
+  .check { color: var(--accent2); font-size: 1.1rem; }
+  .cross { color: var(--border); font-size: 1.1rem; }
+  .note  { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.2rem; }
+
+  /* ==============================
+     ツールカード群
+  ============================== */
+  .layer {
+    margin-bottom: 2.5rem;
+  }
+
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .layer-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    padding: 0.25rem 0.7rem;
+    border-radius: 2px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .badge-lang  { background: var(--ink); color: var(--bg); }
+  .badge-dist  { background: var(--accent); color: var(--bg2); }
+  .badge-exec  { background: var(--accent2); color: var(--bg2); }
+  .badge-ide   { background: var(--accent3); color: var(--bg2); }
+
+  .layer-desc {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .tool-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.1rem 1.2rem;
+    position: relative;
+    transition: box-shadow 0.2s, transform 0.2s;
+    cursor: default;
+  }
+
+  .tool-card:hover {
+    box-shadow: 4px 4px 0 var(--border);
+    transform: translate(-2px, -2px);
+  }
+
+  .tool-card .tool-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .tool-card .tool-tagline {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.6rem;
+  }
+
+  .tool-card .tool-body {
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  .lang-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.1rem 0.45rem;
+    border-radius: 2px;
+    margin-right: 0.2rem;
+    margin-top: 0.5rem;
+  }
+
+  .tag-py { background: #e6f2ec; color: var(--py); }
+  .tag-r  { background: #e6ebf2; color: var(--r);  }
+  .tag-js { background: #f2ede6; color: var(--js); }
+
+  /* ==============================
+     関係図 (ASCII → styled)
+  ============================== */
+  .diagram {
+    background: var(--ink);
+    color: #e8e0cc;
+    border-radius: 8px;
+    padding: 1.8rem 2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 2;
+    overflow-x: auto;
+    box-shadow: 4px 4px 0 var(--border);
+  }
+
+  .diagram .c-py  { color: #7ec99a; }
+  .diagram .c-r   { color: #88aae0; }
+  .diagram .c-js  { color: #e0c888; }
+  .diagram .c-dim { color: #666055; }
+  .diagram .c-tool{ color: #e0a888; }
+  .diagram .c-cloud{ color: #88d0e0; }
+
+  /* ==============================
+     一言まとめ
+  ============================== */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 var(--border);
+  }
+
+  .summary-table th {
+    background: var(--ink);
+    color: var(--bg);
+    font-family: 'Zen Antique', serif;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    padding: 0.7rem 1.2rem;
+    text-align: left;
+  }
+
+  .summary-table td {
+    padding: 0.7rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .summary-table tr:last-child td { border-bottom: none; }
+
+  .summary-table td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    width: 36%;
+  }
+
+  .summary-table tr:hover td {
+    background: rgba(200,185,165,0.15);
+  }
+
+  /* フッター */
+  footer {
+    text-align: center;
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--border);
+    letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>言語・環境・IDE の関係</h1>
+    <p>JavaScript / Python / R と周辺ツールを整理する</p>
+  </header>
+
+  <!-- ==============================
+       たとえ話
+  ============================== -->
+  <div class="section-title">🍳 たとえ話で整理する</div>
+
+  <div class="analogy-box">
+    <p style="font-size:0.9rem; color:var(--ink-soft); margin-bottom:1rem;">
+      プログラミング環境は「料理」に例えると直感的に理解できます。
+    </p>
+    <div class="analogy-grid">
+      <div class="analogy-card">
+        <div class="emoji">🥩</div>
+        <div class="label">言語（素材）</div>
+        <div class="desc">Python・R・JS<br>料理の「食材」。何を使うか。</div>
+      </div>
+      <div class="analogy-card">
+        <div class="emoji">🍳</div>
+        <div class="label">実行環境（調理台）</div>
+        <div class="desc">Jupyter・Colab・ブラウザ<br>どこで・どうやって調理するか。</div>
+      </div>
+      <div class="analogy-card">
+        <div class="emoji">🏠</div>
+        <div class="label">IDE（厨房全体）</div>
+        <div class="desc">VSCode・RStudio<br>道具が揃った作業空間全体。</div>
+      </div>
+    </div>
+    <p style="font-size:0.82rem; color:var(--ink-soft); margin-top:1.2rem; padding-top:1rem; border-top:1px solid var(--border);">
+      　Anaconda は「食材 + 調味料 + 道具をまとめて届けてくれる食材宅配セット」。<br>
+      　Bioconda はそのオプション追加「バイオ研究者向けの特別食材追加サービス」。
+    </p>
+  </div>
+
+  <!-- ==============================
+       言語の二重性
+  ============================== -->
+  <div class="section-title">🔤 「言語」と「環境」の二重性</div>
+
+  <table class="lang-table">
+    <thead>
+      <tr>
+        <th>言語</th>
+        <th>「言語」の意味</th>
+        <th>「処理系・環境」の意味</th>
+        <th>備考</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="td-js">JavaScript</td>
+        <td><span class="check">✔</span><div class="note">よく使う</div></td>
+        <td><span class="cross">—</span><div class="note">ほぼ使わない</div></td>
+        <td style="text-align:left; font-size:0.82rem;">環境はブラウザ・Node.js と別名で呼ぶ</td>
+      </tr>
+      <tr>
+        <td class="td-py">Python</td>
+        <td><span class="check">✔</span></td>
+        <td><span class="check">✔</span><div class="note">両方で使う</div></td>
+        <td style="text-align:left; font-size:0.82rem;">「Pythonをインストール」＝インタープリタ本体を入れる意味</td>
+      </tr>
+      <tr>
+        <td class="td-r">R</td>
+        <td><span class="check">✔</span></td>
+        <td><span class="check">✔</span><div class="note">両方で使う</div></td>
+        <td style="text-align:left; font-size:0.82rem;">「Rを起動する」＝R処理系を立ち上げる意味</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ==============================
+       各ツールの詳細
+  ============================== -->
+  <div class="section-title">🛠 各ツールの位置づけ</div>
+
+  <!-- 言語・処理系 -->
+  <div class="layer">
+    <div class="layer-header">
+      <span class="layer-badge badge-lang">Layer 1 — 言語・処理系</span>
+      <span class="layer-desc">何語で書くか・誰が実行するか</span>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name td-js">JavaScript</div>
+        <div class="tool-tagline">ブラウザの母国語</div>
+        <div class="tool-body">ブラウザに最初から組み込まれているため「インストール」の概念が薄い。Node.jsを使えばサーバー側でも動く。</div>
+        <span class="lang-tag tag-js">JS</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name td-py">Python</div>
+        <div class="tool-tagline">汎用の万能選手</div>
+        <div class="tool-body">AI・データ分析・Web・自動化など用途が広い。言語名がそのままインタープリタ名でもある（二重性あり）。</div>
+        <span class="lang-tag tag-py">Python</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name td-r">R</div>
+        <div class="tool-tagline">統計解析の専門家</div>
+        <div class="tool-body">統計・生命科学分野の標準。言語名がそのまま処理系名でもある。CRAN・Bioconductorに豊富なパッケージ。</div>
+        <span class="lang-tag tag-r">R</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- パッケージ管理 -->
+  <div class="layer">
+    <div class="layer-header">
+      <span class="layer-badge badge-dist">Layer 2 — パッケージ管理・配布</span>
+      <span class="layer-desc">必要なライブラリをまとめて管理する</span>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name" style="color:var(--accent)">Anaconda</div>
+        <div class="tool-tagline">全部入りセット</div>
+        <div class="tool-body">Python本体 + conda（パッケージ管理）+ NumPy・pandas などよく使うライブラリを一括配布。科学計算の入門に最適。</div>
+        <span class="lang-tag tag-py">Python</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name" style="color:var(--accent)">Bioconda</div>
+        <div class="tool-tagline">バイオ系特化チャンネル</div>
+        <div class="tool-body">Anacondaのcondaを使ってバイオインフォマティクス系パッケージを追加できる「拡張サービス」。Anacondaの上乗せとして使う。</div>
+        <span class="lang-tag tag-py">Python</span>
+        <span class="lang-tag tag-r">R</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 実行環境 -->
+  <div class="layer">
+    <div class="layer-header">
+      <span class="layer-badge badge-exec">Layer 3 — 実行環境</span>
+      <span class="layer-desc">どこでコードを書いて動かすか</span>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name" style="color:var(--accent2)">Jupyter Notebook</div>
+        <div class="tool-tagline">ブラウザ上の実験ノート</div>
+        <div class="tool-body">コード・実行結果・説明文を一つのノートにまとめられる。セル単位で逐次実行できるため、試行錯誤に向く。</div>
+        <span class="lang-tag tag-py">Python</span>
+        <span class="lang-tag tag-r">R</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name" style="color:var(--accent2)">Google Colab</div>
+        <div class="tool-tagline">クラウド版 Jupyter</div>
+        <div class="tool-body">Jupyter Notebookをクラウド化したGoogleのサービス。インストール不要・無料GPU利用可能。中身の仕組みはほぼJupyterと同じ。</div>
+        <span class="lang-tag tag-py">Python</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name" style="color:var(--accent2)">ブラウザ</div>
+        <div class="tool-tagline">JSの実行環境</div>
+        <div class="tool-body">Chrome・Firefox・Safari など。JavaScriptはここで動く。開発者ツールのコンソールで即座に実行できる。</div>
+        <span class="lang-tag tag-js">JS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- IDE -->
+  <div class="layer">
+    <div class="layer-header">
+      <span class="layer-badge badge-ide">Layer 4 — IDE / エディタ</span>
+      <span class="layer-desc">快適に書くための作業空間</span>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name" style="color:var(--accent3)">RStudio</div>
+        <div class="tool-tagline">R専用の快適な厨房</div>
+        <div class="tool-body">コード編集・実行・グラフ表示・変数確認が一画面に集約。R使いの事実上の標準。最近はPosit IDEとも呼ばれる。</div>
+        <span class="lang-tag tag-r">R</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name" style="color:var(--accent3)">VSCode</div>
+        <div class="tool-tagline">万能エディタ</div>
+        <div class="tool-body">特定言語に縛られない汎用エディタ。拡張機能でPython・R・JS・HTMLなど何でも対応。現在最も広く使われているエディタ。</div>
+        <span class="lang-tag tag-py">Python</span>
+        <span class="lang-tag tag-r">R</span>
+        <span class="lang-tag tag-js">JS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================
+       関係図
+  ============================== -->
+  <div class="section-title">🗺 実際の関係図</div>
+
+  <div class="diagram">
+<span class="c-py">Python</span> <span class="c-dim">────</span> <span class="c-tool">Anaconda</span>（まとめて配布）
+   <span class="c-dim">│              └──</span> <span class="c-tool">Bioconda</span>（バイオ系パッケージ追加）
+   <span class="c-dim">│</span>
+   <span class="c-dim">├──</span> <span class="c-tool">Jupyter Notebook</span>（ブラウザで書いて逐次実行）
+   <span class="c-dim">│        └──</span> <span class="c-cloud">Google Colab</span>（クラウド版 Jupyter、GPU無料）
+   <span class="c-dim">│</span>
+   <span class="c-dim">└──</span> <span class="c-tool">VSCode</span>（拡張機能でPythonを使う）
+
+<span class="c-r">R</span> <span class="c-dim">────────</span> <span class="c-tool">RStudio</span>（R専用IDE、最もよく使われる）
+   <span class="c-dim">│        └──</span> Quarto / R Markdown（文書+コードの一体化）
+   <span class="c-dim">└──</span> <span class="c-tool">VSCode</span>（拡張機能でRも使える）
+
+<span class="c-js">JavaScript</span> <span class="c-dim">──</span> <span class="c-tool">ブラウザ</span>（Chrome・Firefox など）
+   <span class="c-dim">│        └──</span> 開発者ツール コンソール
+   <span class="c-dim">└──</span> Node.js（サーバー側でJSを動かす処理系）
+            <span class="c-dim">└──</span> <span class="c-tool">VSCode</span>（JS開発にも対応）
+  </div>
+
+  <!-- ==============================
+       一言まとめ
+  ============================== -->
+  <div class="section-title">📋 一言まとめ</div>
+
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th>ツール名</th>
+        <th>一言で言うと</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--js)">JavaScript</td>
+        <td>ブラウザで動く言語の代名詞。環境の意味では使われない</td>
+      </tr>
+      <tr>
+        <td style="color:var(--py)">Python</td>
+        <td>「言語」と「処理系」の両方の意味で使われる万能選手</td>
+      </tr>
+      <tr>
+        <td style="color:var(--r)">R</td>
+        <td>「言語」と「処理系」の両方。統計・生命科学の標準</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Anaconda</td>
+        <td>Pythonの「全部入り食材宅配セット」</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Bioconda</td>
+        <td>Anacondaへのバイオ系オプション追加サービス</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent2)">Jupyter Notebook</td>
+        <td>ブラウザで動くPython実行環境。ノート形式で試行錯誤できる</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent2)">Google Colab</td>
+        <td>クラウド版Jupyter。インストール不要・無料GPU付き</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent3)">RStudio</td>
+        <td>R専用の快適な作業空間（IDE）</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent3)">VSCode</td>
+        <td>何でもできる万能エディタ。拡張機能でほぼ全言語に対応</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <footer>
+    言語・環境・IDE の関係 — 医学部プログラミング教育資料
+  </footer>
+
+</div>
+</body>
+</html>
