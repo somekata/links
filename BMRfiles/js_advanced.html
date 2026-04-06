@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JavaScript 応用 詳解 — 非同期・クラス・エラー処理</title>
+<title>JavaScript 応用 詳解 — 非同期・クラス・エラー・モジュール</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -265,7 +265,7 @@ footer { text-align: center; padding: 28px 24px; font-size: 11.5px; color: var(-
     <div class="ch-tab" id="tab-async" onclick="goTo('ch-async')">非同期</div>
     <div class="ch-tab" id="tab-class" onclick="goTo('ch-class')">クラス</div>
     <div class="ch-tab" id="tab-err"   onclick="goTo('ch-err')">エラー</div>
-    <div class="ch-tab" id="tab-mod"   onclick="goTo('ch-mod')">その他</div>
+    <div class="ch-tab" id="tab-mod"   onclick="goTo('ch-mod')">モジュール</div>
   </div>
 
   <div class="sb-toc">
@@ -285,6 +285,10 @@ footer { text-align: center; padding: 28px 24px; font-size: 11.5px; color: var(-
     <a class="toc-a er" href="#e2"><span class="toc-n">E-2</span>エラーの種類</a>
     <a class="toc-a er" href="#e3"><span class="toc-n">E-3</span>非同期エラー</a>
 
+    <div class="toc-ch l-mod">── モジュール ──</div>
+    <a class="toc-a mo" href="#mod1"><span class="toc-n">X-1</span>なぜモジュール？</a>
+    <a class="toc-a mo" href="#mod2"><span class="toc-n">X-2</span>export / import</a>
+    <a class="toc-a mo" href="#mod3"><span class="toc-n">X-3</span>実践パターン</a>
     <div class="toc-ch l-mod">── 便利な構文 ──</div>
     <a class="toc-a mo" href="#m1"><span class="toc-n">M-1</span>分割代入</a>
     <a class="toc-a mo" href="#m2"><span class="toc-n">M-2</span>スプレッド構文</a>
@@ -301,7 +305,7 @@ footer { text-align: center; padding: 28px 24px; font-size: 11.5px; color: var(-
   <h1>JavaScript<br><span class="hl">応用 詳解</span></h1>
   <p class="ph-desc">
     基礎編（変数・関数・配列・DOM・イベント）を学んだ次のステップ。<br>
-    非同期処理・クラス・エラー処理など、実務で必須の知識を解説します。
+    非同期処理・クラス・エラー処理・モジュールなど、実務で必須の知識を解説します。
   </p>
 </div>
 
@@ -897,9 +901,177 @@ results.<span class="fn">forEach</span>((r, i) => {
 ══════════════════════════════════ -->
 <div class="chapter" id="ch-mod">
   <div class="ch-header h-mod">
-    <span class="ch-badge">便利な構文</span>
-    <span class="ch-title">Modern JavaScript Syntax</span>
-    <span class="ch-sub">ES2015+</span>
+    <span class="ch-badge">モジュール＋構文</span>
+    <span class="ch-title">Modules & Modern Syntax</span>
+    <span class="ch-sub">import · export · ES2015+</span>
+  </div>
+
+  <!-- X-1 なぜモジュール？ -->
+  <div class="sec" id="mod1">
+    <div class="sec-hd"><span class="sec-n">X-1</span><h2>なぜモジュールが必要か</h2></div>
+    <p>プログラムが大きくなると、すべてのコードを1つのファイルに書くと読みにくくなります。<strong>モジュール</strong>は「ファイルを機能単位に分割して、必要なものだけを共有する」仕組みです。</p>
+
+    <div class="box bx-warn">
+      <strong>⚠ モジュールなしの問題点：</strong><br>
+      モジュールがないと、すべての変数・関数がグローバル（window）に乗るため、<strong>名前の衝突</strong>が起きやすくなります。また、ファイルの読み込み順に依存するバグも発生します。
+      <pre style="margin-top:10px;padding:10px 12px;"><code style="font-size:11.5px;"><span class="cm">&lt;!-- 問題: utils.jsとlib.jsの両方にcalculate()があったら？ --&gt;</span>
+<span class="kw">&lt;script</span> <span class="fn">src</span>=<span class="st">"utils.js"</span><span class="kw">&gt;&lt;/script&gt;</span>
+<span class="kw">&lt;script</span> <span class="fn">src</span>=<span class="st">"lib.js"</span><span class="kw">&gt;&lt;/script&gt;</span>   <span class="cm">&lt;!-- 後から読んだ方で上書きされる! --&gt;</span></code></pre>
+    </div>
+
+    <p>モジュールを使うと、各ファイルは自分のスコープを持ち、明示的に <code>export</code> したものだけが外から見えます。</p>
+
+    <div class="box bx-info">
+      <strong>💡 ブラウザでのモジュールの使い方：</strong><br>
+      <code>&lt;script type="module" src="main.js"&gt;&lt;/script&gt;</code><br>
+      <code>type="module"</code> を指定するだけで、そのファイル内で <code>import</code>/<code>export</code> が使えます。<strong>ローカルファイル（file://）では動かない</strong>ため、VSCodeのLive Serverなどで動作確認してください。
+    </div>
+  </div>
+
+  <!-- X-2 export / import -->
+  <div class="sec" id="mod2">
+    <div class="sec-hd"><span class="sec-n">X-2</span><h2>export と import の書き方</h2></div>
+
+    <h3 class="sub">名前付きエクスポート（Named Export）— 複数を出せる</h3>
+    <div class="cl">patient-utils.js — エクスポート側</div>
+    <pre><code><span class="cm">// ① 宣言と同時に export</span>
+<span class="kw">export const</span> NORMAL_RANGE = { min: <span class="nm">4.0</span>, max: <span class="nm">5.6</span> };
+
+<span class="kw">export function</span> <span class="fn">diagnoseHbA1c</span>(value) {
+  <span class="kw">if</span> (value <span class="op">&lt;</span> <span class="nm">5.7</span>) <span class="kw">return</span> <span class="st">'正常'</span>;
+  <span class="kw">if</span> (value <span class="op">&lt;</span> <span class="nm">6.5</span>) <span class="kw">return</span> <span class="st">'糖尿病前症'</span>;
+  <span class="kw">return</span> <span class="st">'糖尿病'</span>;
+}
+
+<span class="kw">export function</span> <span class="fn">calcBMI</span>(weight, height) {
+  <span class="kw">return</span> (weight / (height / <span class="nm">100</span>) <span class="op">**</span> <span class="nm">2</span>).<span class="fn">toFixed</span>(<span class="nm">1</span>);
+}
+
+<span class="cm">// ② まとめて export（後で宣言したものを一括で）</span>
+<span class="kw">function</span> <span class="fn">formatDate</span>(d) { <span class="kw">return</span> <span class="kw">new</span> Date(d).<span class="fn">toLocaleDateString</span>(<span class="st">'ja-JP'</span>); }
+<span class="kw">export</span> { formatDate };</code></pre>
+
+    <div class="cl">main.js — インポート側</div>
+    <pre><code><span class="cm">// 名前付き import（{}で指定）</span>
+<span class="kw">import</span> { diagnoseHbA1c, calcBMI } <span class="kw">from</span> <span class="st">'./patient-utils.js'</span>;
+
+<span class="cm">// 別名（as）で受け取る</span>
+<span class="kw">import</span> { diagnoseHbA1c <span class="kw">as</span> diagnose } <span class="kw">from</span> <span class="st">'./patient-utils.js'</span>;
+
+<span class="cm">// 全部まとめて受け取る（名前空間インポート）</span>
+<span class="kw">import</span> * <span class="kw">as</span> PatientUtils <span class="kw">from</span> <span class="st">'./patient-utils.js'</span>;
+PatientUtils.<span class="fn">calcBMI</span>(<span class="nm">65</span>, <span class="nm">170</span>);   <span class="cm">// → "22.5"</span>
+
+<span class="cm">// 使う</span>
+console.<span class="fn">log</span>(<span class="fn">diagnoseHbA1c</span>(<span class="nm">7.2</span>));  <span class="cm">// → "糖尿病"</span>
+console.<span class="fn">log</span>(<span class="fn">calcBMI</span>(<span class="nm">65</span>, <span class="nm">170</span>));   <span class="cm">// → "22.5"</span></code></pre>
+
+    <h3 class="sub">デフォルトエクスポート（Default Export）— 1ファイル1つ</h3>
+    <div class="cl">Patient.js</div>
+    <pre><code><span class="cm">// export default — ファイルの「主役」を1つだけ出す</span>
+<span class="kw">export default class</span> <span class="cls">Patient</span> {
+  <span class="fn">constructor</span>(id, name, age, hba1c) {
+    <span class="kw">this</span>.id = id; <span class="kw">this</span>.name = name;
+    <span class="kw">this</span>.age = age; <span class="kw">this</span>.hba1c = hba1c;
+  }
+  <span class="fn">summary</span>() { <span class="kw">return</span> <span class="st">`[${this.id}] ${this.name}（${this.age}歳）`</span>; }
+}</code></pre>
+
+    <div class="cl">main.js — デフォルトインポート</div>
+    <pre><code><span class="cm">// デフォルト import は {} 不要・名前は自由</span>
+<span class="kw">import</span> Patient <span class="kw">from</span> <span class="st">'./Patient.js'</span>;
+
+<span class="cm">// 名前付き + デフォルトを同時に import</span>
+<span class="kw">import</span> Patient, { diagnoseHbA1c, NORMAL_RANGE } <span class="kw">from</span> <span class="st">'./patient-utils.js'</span>;
+
+<span class="kw">const</span> p = <span class="kw">new</span> Patient(<span class="st">'P001'</span>, <span class="st">'田中 太郎'</span>, <span class="nm">45</span>, <span class="nm">7.2</span>);
+console.<span class="fn">log</span>(p.<span class="fn">summary</span>());   <span class="cm">// → "[P001] 田中 太郎（45歳）"</span></code></pre>
+
+    <div class="box bx-tip">
+      <strong>💡 named vs default — どちらを使う？</strong><br>
+      <strong>Named export</strong>：ユーティリティ関数・定数など、複数を1ファイルにまとめる場合。<br>
+      <strong>Default export</strong>：クラス・コンポーネントなど、「このファイルの主役」が1つの場合。<br>
+      迷ったら Named export を使う方が、リファクタリング時に追跡しやすくなります。
+    </div>
+  </div>
+
+  <!-- X-3 実践パターン -->
+  <div class="sec" id="mod3">
+    <div class="sec-hd"><span class="sec-n">X-3</span><h2>モジュールの実践パターン</h2></div>
+    <p>実際のプロジェクトでよく使うフォルダ構成と import パターンを紹介します。</p>
+
+    <div class="cl">ファイル構成例</div>
+    <pre><code><span class="cm">/ project</span>
+<span class="cm">│</span>
+<span class="cm">├── index.html</span>
+<span class="cm">├── main.js              ← エントリポイント（ここから import）</span>
+<span class="cm">│</span>
+<span class="cm">├── models/</span>
+<span class="cm">│   ├── Patient.js       ← Patient クラス（default export）</span>
+<span class="cm">│   └── Record.js        ← Record クラス</span>
+<span class="cm">│</span>
+<span class="cm">├── utils/</span>
+<span class="cm">│   ├── medical.js       ← HbA1c判定・BMI計算など（named export）</span>
+<span class="cm">│   └── format.js        ← 日付・文字列フォーマット（named export）</span>
+<span class="cm">│</span>
+<span class="cm">└── api/</span>
+<span class="cm">    └── patients.js      ← fetch 関数（named export）</span></code></pre>
+
+    <div class="cl">再エクスポート（index.js パターン）</div>
+    <pre><code><span class="cm">// utils/index.js — まとめて再エクスポートする barrel ファイル</span>
+<span class="kw">export</span> { diagnoseHbA1c, calcBMI } <span class="kw">from</span> <span class="st">'./medical.js'</span>;
+<span class="kw">export</span> { formatDate, formatName } <span class="kw">from</span> <span class="st">'./format.js'</span>;
+
+<span class="cm">// main.js — import がすっきりする</span>
+<span class="kw">import</span> { diagnoseHbA1c, formatDate } <span class="kw">from</span> <span class="st">'./utils/index.js'</span>;
+<span class="cm">// または（index.js は省略可能な環境も）</span>
+<span class="kw">import</span> { diagnoseHbA1c, formatDate } <span class="kw">from</span> <span class="st">'./utils'</span>;</code></pre>
+
+    <div class="cl">動的 import（遅延読み込み）</div>
+    <pre><code><span class="cm">// import() — 必要になったときだけ読み込む（Promise を返す）</span>
+<span class="kw">async function</span> <span class="fn">loadChart</span>() {
+  <span class="cm">// グラフ描画は最初は不要なので、ボタンを押したときだけ読み込む</span>
+  <span class="kw">const</span> { renderChart } = <span class="kw">await import</span>(<span class="st">'./chart.js'</span>);
+  <span class="fn">renderChart</span>(data);
+}
+
+document.<span class="fn">getElementById</span>(<span class="st">'showChart'</span>)
+  .<span class="fn">addEventListener</span>(<span class="st">'click'</span>, loadChart);</code></pre>
+
+    <div class="demo-wrap">
+      <div class="demo-bar"><div class="demo-dot"></div>モジュール構造シミュレーター</div>
+      <div class="demo-area">
+        <div class="live">
+          <div class="live-t">ファイル分割をシミュレート（実際のimportの動作を模倣）</div>
+          <div class="row">
+            <select id="modFile">
+              <option value="medical">utils/medical.js を import</option>
+              <option value="patient">models/Patient.js を import</option>
+              <option value="barrel">utils/index.js（barrel）を import</option>
+              <option value="dynamic">動的 import（遅延読み込み）</option>
+            </select>
+            <button class="run" style="background:var(--mod);" onclick="runModuleDemo()">▶ import 実行</button>
+          </div>
+          <div class="out" id="moduleOut">— ファイルを選んで import を実行してください —</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box bx-warn">
+      <strong>⚠ モジュールを使う際の注意点：</strong><br>
+      ① <code>type="module"</code> のスクリプトは<strong>自動的に defer</strong>（HTML解析後に実行）になります。<br>
+      ② <code>import</code> は静的に解析されるため、<strong>条件分岐の中には書けません</strong>（動的importを使う）。<br>
+      ③ パスは必ず <code>./</code> か <code>../</code> から始めてください（<code>import from 'utils'</code> はブラウザでは動かない）。
+    </div>
+  </div>
+
+  <hr style="border:none;border-top:1px solid var(--border);margin:32px 0;">
+
+  <!-- 便利な構文 サブヘッド -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:0.08em;padding:4px 12px;border-radius:20px;background:var(--mod);color:#fff;flex-shrink:0;">便利な構文</span>
+    <span style="font-family:'Zen Antique',serif;font-size:20px;font-weight:400;letter-spacing:0.04em;">Modern Syntax</span>
+    <span style="font-size:12px;color:var(--ink-light);margin-left:auto;">ES2015+</span>
   </div>
 
   <!-- M-1 分割代入 -->
@@ -1061,6 +1233,13 @@ patient.bloodType <span class="op">??=</span> <span class="st">'不明'</span>; 
       <div class="chk" onclick="doCheck(this)"><div class="cb"></div>class と constructor の役割を説明できる</div>
       <div class="chk" onclick="doCheck(this)"><div class="cb"></div>extends と super を使って継承を書ける</div>
       <div class="chk" onclick="doCheck(this)"><div class="cb"></div>this が変わる問題と対処法（アロー関数/bind）を説明できる</div>
+    </div>
+    <div class="checklist">
+      <div class="cl-title">✓ モジュール</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>モジュールが必要な理由（グローバル汚染・名前衝突）を説明できる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>named export と default export の違いを説明できる</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>import { } from でコンポーネントを読み込める</div>
+      <div class="chk" onclick="doCheck(this)"><div class="cb"></div>動的 import() の用途を説明できる</div>
     </div>
     <div class="checklist">
       <div class="cl-title">✓ エラー処理・モダン構文</div>
@@ -1347,6 +1526,84 @@ function runModernDemo(type) {
   }
 
   document.getElementById('modernOut').innerHTML = out;
+}
+
+/* X-3 モジュールデモ */
+function runModuleDemo() {
+  const file = document.getElementById('modFile').value;
+  const out  = document.getElementById('moduleOut');
+  const modules = {
+    medical: {
+      file: 'utils/medical.js',
+      demo: () => {
+        function diagnoseHbA1c(v) { return v < 5.7 ? '正常' : v < 6.5 ? '糖尿病前症' : '糖尿病'; }
+        function calcBMI(w, h) { return (w / (h/100)**2).toFixed(1); }
+        return [
+          `<span class="ok">import { diagnoseHbA1c, calcBMI } from './utils/medical.js'</span>`,
+          ``,
+          `<span class="info-c">// 名前付きエクスポート: diagnoseHbA1c, calcBMI, NORMAL_RANGE</span>`,
+          `diagnoseHbA1c(7.2)  → "${diagnoseHbA1c(7.2)}"`,
+          `diagnoseHbA1c(5.4)  → "${diagnoseHbA1c(5.4)}"`,
+          `calcBMI(65, 170)    → ${calcBMI(65, 170)}`,
+          `NORMAL_RANGE        → { min: 4.0, max: 5.6 }`,
+        ].join('\n');
+      }
+    },
+    patient: {
+      file: 'models/Patient.js',
+      demo: () => {
+        class Patient {
+          constructor(id, name, age, hba1c) { this.id=id; this.name=name; this.age=age; this.hba1c=hba1c; }
+          summary() { return `[${this.id}] ${this.name}（${this.age}歳）`; }
+        }
+        const p = new Patient('P001','田中 太郎', 45, 7.2);
+        return [
+          `<span class="ok">import Patient from './models/Patient.js'</span>`,
+          ``,
+          `<span class="info-c">// default export: {} 不要・名前は自由</span>`,
+          `const p = new Patient('P001','田中 太郎', 45, 7.2)`,
+          `p.summary()           → "${p.summary()}"`,
+          `p.hba1c               → ${p.hba1c}`,
+          `p instanceof Patient  → true`,
+        ].join('\n');
+      }
+    },
+    barrel: {
+      file: 'utils/index.js（barrel）',
+      demo: () => [
+          `<span class="ok">import { diagnoseHbA1c, formatDate } from './utils/index.js'</span>`,
+          ``,
+          `<span class="info-c">// utils/index.js の中身（再エクスポート）:</span>`,
+          `  export { diagnoseHbA1c, calcBMI } from './medical.js'`,
+          `  export { formatDate, formatName } from './format.js'`,
+          ``,
+          `<span class="warn-c">Before: import { diagnoseHbA1c } from './utils/medical.js'</span>`,
+          `<span class="warn-c">        import { formatDate }     from './utils/format.js'</span>`,
+          `<span class="ok">After:  import { diagnoseHbA1c, formatDate } from './utils'</span>`,
+        ].join('\n')
+    },
+    dynamic: {
+      file: '動的 import()',
+      demo: () => [
+          `<span class="ok">// 動的 import — 必要になったときだけ読み込む</span>`,
+          ``,
+          `<span class="info-c">// ① ボタンクリック時に遅延読み込み</span>`,
+          `btn.addEventListener('click', async () => {`,
+          `  const { renderChart } = await import('./chart.js')`,
+          `  renderChart(data)`,
+          `})`,
+          ``,
+          `<span class="info-c">// ② 言語設定によってファイルを切り替え</span>`,
+          `const locale = navigator.language.startsWith('ja') ? 'ja' : 'en'`,
+          `const { messages } = await import(\`./i18n/\${locale}.js\`)`,
+          ``,
+          `<span class="info-c">// 利点: 初期ロードを軽くできる（パフォーマンス改善）</span>`,
+        ].join('\n')
+    }
+  };
+  const m = modules[file];
+  out.innerHTML = `<span class="warn-c">読み込み中… ${m.file}</span>`;
+  setTimeout(() => { out.innerHTML = m.demo(); }, 350);
 }
 
 /* チェックリスト */
