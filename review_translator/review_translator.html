@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>査読コメント翻訳 / Review Translator</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1410;
+    --paper: #f5f0e8;
+    --paper-dark: #ece6d8;
+    --accent: #8b3a2a;
+    --accent-light: #c5614d;
+    --gold: #b8962e;
+    --muted: #8a7e6e;
+    --border: #cfc4b0;
+    --success: #2d6a4f;
+    --shadow: rgba(26,20,16,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'EB Garamond', 'Noto Serif JP', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(184,150,46,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(139,58,42,0.06) 0%, transparent 50%);
+  }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.8rem 2.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    background: rgba(245,240,232,0.95);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .logo-mark {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.1rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-style: italic;
+  }
+
+  header h1 {
+    font-size: 1.45rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  header h1 span {
+    color: var(--muted);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1.1rem;
+    margin-left: 0.5rem;
+  }
+
+  .status-pill {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--paper-dark);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .status-dot.ok { background: var(--success); box-shadow: 0 0 6px rgba(45,106,79,0.5); }
+  .status-dot.err { background: var(--accent); }
+  .status-dot.checking { animation: pulse 1.2s infinite; background: var(--gold); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Main layout */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem 4rem;
+  }
+
+  /* Direction toggle */
+  .direction-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .lang-label {
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 100px;
+    text-align: center;
+  }
+  .lang-label.active { color: var(--ink); font-weight: 500; }
+
+  .swap-btn {
+    background: var(--paper-dark);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: var(--accent);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .swap-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: rotate(180deg);
+  }
+
+  /* Model selector */
+  .model-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .model-row label { flex-shrink: 0; }
+
+  .model-select {
+    background: var(--paper-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--ink);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .model-input {
+    background: var(--paper-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--ink);
+    width: 180px;
+  }
+
+  .model-input:focus, .model-select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .ollama-url-input {
+    background: var(--paper-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--ink);
+    width: 220px;
+  }
+  .ollama-url-input:focus { outline: none; border-color: var(--accent); }
+
+  /* Panels */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 700px) {
+    .panels { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.5);
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  .panel-header {
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--paper-dark);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+  }
+
+  .char-count {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: var(--border); color: var(--ink); }
+
+  textarea {
+    width: 100%;
+    min-height: 280px;
+    padding: 1.2rem;
+    border: none;
+    background: transparent;
+    font-family: 'EB Garamond', 'Noto Serif JP', serif;
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: var(--ink);
+    resize: vertical;
+    outline: none;
+  }
+
+  textarea::placeholder { color: var(--muted); font-style: italic; }
+
+  .output-panel {
+    min-height: 280px;
+    padding: 1.2rem;
+    font-family: 'EB Garamond', 'Noto Serif JP', serif;
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .output-panel.empty {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .output-panel.loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted);
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Action area */
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .translate-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.8rem 2.2rem;
+    font-family: 'EB Garamond', serif;
+    font-size: 1.05rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .translate-btn:hover { background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(139,58,42,0.3); }
+  .translate-btn:active { transform: translateY(0); }
+  .translate-btn:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .clear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1.4rem;
+    font-family: 'EB Garamond', serif;
+    font-size: 1.05rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { border-color: var(--muted); color: var(--ink); }
+
+  .hint {
+    margin-left: auto;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Error */
+  .error-box {
+    margin-top: 1rem;
+    padding: 0.9rem 1.2rem;
+    border: 1px solid rgba(139,58,42,0.3);
+    border-radius: 8px;
+    background: rgba(139,58,42,0.06);
+    font-size: 0.88rem;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    display: none;
+  }
+
+  /* Divider */
+  .ornament {
+    text-align: center;
+    color: var(--border);
+    font-size: 1.1rem;
+    letter-spacing: 0.5rem;
+    margin: 2rem 0 1.5rem;
+  }
+
+  /* Setup guide */
+  .setup-guide {
+    margin-top: 2.5rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem 1.8rem;
+    background: var(--paper-dark);
+  }
+  .setup-guide h3 {
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 1rem;
+  }
+  .setup-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .setup-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    font-size: 0.9rem;
+    color: var(--ink);
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    background: rgba(26,20,16,0.07);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo-mark">Peer Review</span>
+  <h1>査読コメント翻訳 <span>/ Academic Review Translator</span></h1>
+  <div class="status-pill">
+    <span class="status-dot checking" id="statusDot"></span>
+    <span id="statusText">接続確認中…</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Direction toggle -->
+  <div class="direction-bar">
+    <span class="lang-label active" id="srcLabel">日本語</span>
+    <button class="swap-btn" id="swapBtn" title="翻訳方向を切り替え">⇄</button>
+    <span class="lang-label" id="dstLabel">English</span>
+  </div>
+
+  <!-- Settings row -->
+  <div class="model-row">
+    <label>Ollama URL:</label>
+    <input class="ollama-url-input" id="ollamaUrl" value="http://localhost:11434" />
+    <label style="margin-left:0.5rem;">Model:</label>
+    <select class="model-select" id="modelPreset" onchange="onPresetChange()">
+      <option value="gemma3">gemma3</option>
+      <option value="llama3.2">llama3.2</option>
+      <option value="mistral">mistral</option>
+      <option value="qwen2.5">qwen2.5</option>
+      <option value="custom">カスタム…</option>
+    </select>
+    <input class="model-input" id="customModel" placeholder="model name" style="display:none;" />
+    <button class="clear-btn" style="padding:0.3rem 0.8rem;font-size:0.82rem;" onclick="checkOllama()">再接続</button>
+  </div>
+
+  <!-- Translation panels -->
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title" id="inputPanelTitle">入力 — 日本語</span>
+        <span class="char-count" id="charCount">0 文字</span>
+      </div>
+      <textarea id="inputText" placeholder="査読コメントをここに入力してください…&#10;&#10;例：本研究の手法は興味深いですが、サンプルサイズが小さく統計的有意性に疑問があります。"></textarea>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title" id="outputPanelTitle">翻訳結果 — English</span>
+        <button class="copy-btn" onclick="copyResult()">📋 コピー</button>
+      </div>
+      <div class="output-panel empty" id="outputArea">翻訳結果がここに表示されます…</div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row">
+    <button class="translate-btn" id="translateBtn" onclick="runTranslate()">
+      <span>翻訳する</span>
+      <span style="font-size:1.2rem;">→</span>
+    </button>
+    <button class="clear-btn" onclick="clearAll()">クリア</button>
+    <span class="hint">Ctrl+Enter でも翻訳できます</span>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="ornament">· · ·</div>
+
+  <!-- Setup guide -->
+  <div class="setup-guide">
+    <h3>🛠 Ollamaのセットアップ</h3>
+    <div class="setup-steps">
+      <div class="setup-step">
+        <span class="step-num">1</span>
+        <span><a href="https://ollama.com" target="_blank" style="color:var(--accent);">ollama.com</a> からOllamaをインストール</span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">2</span>
+        <span>モデルを取得: <code>ollama pull gemma3</code></span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">3</span>
+        <span>CORSを有効にして起動: <code>OLLAMA_ORIGINS=* ollama serve</code></span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">4</span>
+        <span>このHTMLファイルをブラウザで開いて翻訳開始 🎉</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // --- State ---
+  let direction = 'ja2en'; // 'ja2en' or 'en2ja'
+  let isTranslating = false;
+
+  // --- Direction swap ---
+  document.getElementById('swapBtn').addEventListener('click', () => {
+    direction = direction === 'ja2en' ? 'en2ja' : 'ja2en';
+    updateDirectionUI();
+    // Swap textarea contents
+    const input = document.getElementById('inputText');
+    const output = document.getElementById('outputArea');
+    if (!output.classList.contains('empty') && !output.classList.contains('loading')) {
+      const prev = input.value;
+      input.value = output.textContent;
+      output.textContent = prev;
+      if (!input.value) {
+        output.textContent = '翻訳結果がここに表示されます…';
+        output.classList.add('empty');
+      } else {
+        output.classList.remove('empty');
+      }
+    }
+    updateCharCount();
+  });
+
+  function updateDirectionUI() {
+    const srcLabel = document.getElementById('srcLabel');
+    const dstLabel = document.getElementById('dstLabel');
+    const inputTitle = document.getElementById('inputPanelTitle');
+    const outputTitle = document.getElementById('outputPanelTitle');
+    const textarea = document.getElementById('inputText');
+
+    if (direction === 'ja2en') {
+      srcLabel.textContent = '日本語'; srcLabel.classList.add('active');
+      dstLabel.textContent = 'English'; dstLabel.classList.remove('active');
+      dstLabel.classList.remove('active');
+      srcLabel.classList.add('active');
+      inputTitle.textContent = '入力 — 日本語';
+      outputTitle.textContent = '翻訳結果 — English';
+      textarea.placeholder = '査読コメントをここに入力してください…\n\n例：本研究の手法は興味深いですが、サンプルサイズが小さく統計的有意性に疑問があります。';
+    } else {
+      srcLabel.textContent = 'English'; srcLabel.classList.remove('active');
+      dstLabel.textContent = '日本語'; dstLabel.classList.add('active');
+      inputTitle.textContent = 'Input — English';
+      outputTitle.textContent = '翻訳結果 — 日本語';
+      textarea.placeholder = 'Enter your review comment here…\n\nExample: While the methodology is interesting, the small sample size raises concerns about statistical significance.';
+    }
+  }
+
+  // --- Model selection ---
+  function onPresetChange() {
+    const preset = document.getElementById('modelPreset').value;
+    const customInput = document.getElementById('customModel');
+    customInput.style.display = preset === 'custom' ? 'inline-block' : 'none';
+  }
+
+  function getModel() {
+    const preset = document.getElementById('modelPreset').value;
+    if (preset === 'custom') {
+      return document.getElementById('customModel').value.trim() || 'gemma3';
+    }
+    return preset;
+  }
+
+  function getOllamaUrl() {
+    return document.getElementById('ollamaUrl').value.trim().replace(/\/$/, '');
+  }
+
+  // --- Ollama connection check ---
+  async function checkOllama() {
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    dot.className = 'status-dot checking';
+    text.textContent = '接続確認中…';
+    try {
+      const res = await fetch(`${getOllamaUrl()}/api/tags`, { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const data = await res.json();
+        const models = (data.models || []).map(m => m.name.split(':')[0]);
+        dot.className = 'status-dot ok';
+        text.textContent = `接続OK (${models.length}モデル)`;
+        updateModelDropdown(models);
+      } else {
+        throw new Error('not ok');
+      }
+    } catch {
+      dot.className = 'status-dot err';
+      text.textContent = 'Ollama未接続';
+    }
+  }
+
+  function updateModelDropdown(models) {
+    const sel = document.getElementById('modelPreset');
+    const current = sel.value;
+    // Keep defaults + add any additional found models
+    const defaults = ['gemma3','llama3.2','mistral','qwen2.5'];
+    const extras = models.filter(m => !defaults.includes(m));
+    // Clear and rebuild
+    sel.innerHTML = '';
+    [...defaults, ...extras].forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      sel.appendChild(opt);
+    });
+    const custom = document.createElement('option');
+    custom.value = 'custom'; custom.textContent = 'カスタム…';
+    sel.appendChild(custom);
+    // Try to restore selection
+    if ([...sel.options].some(o => o.value === current)) sel.value = current;
+  }
+
+  // --- Char count ---
+  document.getElementById('inputText').addEventListener('input', updateCharCount);
+  function updateCharCount() {
+    const len = document.getElementById('inputText').value.length;
+    document.getElementById('charCount').textContent = `${len} 文字`;
+  }
+
+  // --- Keyboard shortcut ---
+  document.getElementById('inputText').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runTranslate();
+  });
+
+  // --- Translation ---
+  async function runTranslate() {
+    if (isTranslating) return;
+    const text = document.getElementById('inputText').value.trim();
+    if (!text) return;
+
+    isTranslating = true;
+    const btn = document.getElementById('translateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span><span>翻訳中…</span>';
+
+    const outputArea = document.getElementById('outputArea');
+    outputArea.className = 'output-panel loading';
+    outputArea.innerHTML = '<span class="spinner"></span><span>翻訳中…</span>';
+
+    hideError();
+
+    const model = getModel();
+    const isJa2En = direction === 'ja2en';
+
+    const systemPrompt = isJa2En
+      ? `You are an expert academic translator specializing in peer review comments. 
+Translate Japanese peer review comments into precise, formal academic English.
+- Preserve technical terminology exactly
+- Maintain a polite but direct scholarly tone
+- Keep the structure and nuance of the original
+- Output ONLY the English translation, no explanations`
+      : `あなたは査読コメントの翻訳を専門とする学術翻訳の専門家です。
+英語の査読コメントを、正確で丁寧な学術的日本語に翻訳してください。
+- 専門用語は正確に訳してください
+- 礼儀正しい学術的なトーンを保ってください
+- 原文の構造とニュアンスを維持してください
+- 翻訳文のみを出力してください。説明は不要です`;
+
+    const userPrompt = isJa2En
+      ? `Translate this peer review comment to English:\n\n${text}`
+      : `以下の査読コメントを日本語に翻訳してください：\n\n${text}`;
+
+    try {
+      const response = await fetch(`${getOllamaUrl()}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          stream: true,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(err || `HTTP ${response.status}`);
+      }
+
+      // Streaming response
+      outputArea.className = 'output-panel';
+      outputArea.textContent = '';
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const json = JSON.parse(line);
+            if (json.message?.content) {
+              outputArea.textContent += json.message.content;
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+
+      if (!outputArea.textContent.trim()) {
+        outputArea.textContent = '（翻訳結果が空でした）';
+        outputArea.classList.add('empty');
+      }
+
+    } catch (err) {
+      outputArea.className = 'output-panel empty';
+      outputArea.textContent = '翻訳結果がここに表示されます…';
+      showError(err.message);
+    } finally {
+      isTranslating = false;
+      btn.disabled = false;
+      btn.innerHTML = '<span>翻訳する</span><span style="font-size:1.2rem;">→</span>';
+    }
+  }
+
+  // --- Helpers ---
+  function clearAll() {
+    document.getElementById('inputText').value = '';
+    const out = document.getElementById('outputArea');
+    out.className = 'output-panel empty';
+    out.textContent = '翻訳結果がここに表示されます…';
+    hideError();
+    updateCharCount();
+  }
+
+  async function copyResult() {
+    const out = document.getElementById('outputArea');
+    if (out.classList.contains('empty') || out.classList.contains('loading')) return;
+    try {
+      await navigator.clipboard.writeText(out.textContent);
+      const btn = event.target;
+      btn.textContent = '✅ コピー完了';
+      setTimeout(() => btn.textContent = '📋 コピー', 1500);
+    } catch {}
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.style.display = 'block';
+    box.textContent = `⚠ エラー: ${msg}`;
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
+      box.textContent += '\n→ Ollamaが起動していないか、CORSが無効です。\n  OLLAMA_ORIGINS=* ollama serve で起動してください。';
+    }
+  }
+
+  function hideError() {
+    document.getElementById('errorBox').style.display = 'none';
+  }
+
+  // --- Init ---
+  checkOllama();
+</script>
+</body>
+</html>

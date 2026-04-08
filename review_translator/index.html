@@ -1,1 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>査読コメント翻訳ツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400&family=Noto+Sans+JP:wght@300;400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink-mid: #4a4a46;
+    --ink-light: #8a8a84;
+    --ink-faint: #d4d4cc;
+    --paper: #f8f7f3;
+    --paper-warm: #f0ede4;
+    --accent: #2a5c8a;
+    --accent-light: #e8f0f8;
+    --success: #2d6a4f;
+    --rule: 1px solid var(--ink-faint);
+    --serif: 'Noto Serif JP', serif;
+    --sans: 'Noto Sans JP', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
 
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(248,247,243,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: var(--rule);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 52px;
+  }
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 14px; font-weight: 300;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+  .nav-links { display: flex; gap: 2rem; }
+  .nav-links a {
+    font-size: 12px; font-weight: 400;
+    color: var(--ink-mid);
+    text-decoration: none;
+    letter-spacing: 0.06em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ── Main layout ── */
+  main { padding-top: 52px; }
+  section { max-width: 720px; margin: 0 auto; padding: 5rem 2rem; }
+  section + section { border-top: var(--rule); }
+
+  /* ── Hero ── */
+  #hero { padding: 7rem 2rem 5rem; text-align: left; }
+  .eyebrow {
+    font-size: 11px; letter-spacing: 0.14em; font-weight: 400;
+    color: var(--ink-light); text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 300;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin-bottom: 1.5rem;
+    color: var(--ink);
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead {
+    font-size: 15px; color: var(--ink-mid);
+    max-width: 540px; margin-bottom: 2.5rem;
+    line-height: 1.85;
+  }
+
+  /* Download button */
+  .dl-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 13px 26px;
+    font-family: var(--sans); font-size: 13px; font-weight: 400;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    border: none; cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .dl-btn:hover { background: var(--accent); transform: translateY(-1px); }
+  .dl-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .dl-note { font-size: 11px; color: var(--ink-light); margin-top: 0.75rem; letter-spacing: 0.02em; }
+
+  /* Feature pills */
+  .features {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 2.5rem;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: var(--rule);
+    padding: 5px 12px;
+    font-size: 11px; letter-spacing: 0.05em;
+    color: var(--ink-mid);
+  }
+  .pill-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+
+  /* ── Section headings ── */
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.5rem; font-weight: 300;
+    margin-bottom: 2rem;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-mid); margin-bottom: 0.75rem;
+  }
+
+  /* ── Steps ── */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: grid; grid-template-columns: 40px 1fr;
+    gap: 0 1.5rem;
+    padding: 1.5rem 0;
+    border-bottom: var(--rule);
+    opacity: 0; transform: translateY(10px);
+    animation: fadein 0.5s forwards;
+  }
+  .step:last-child { border-bottom: none; }
+  @keyframes fadein { to { opacity: 1; transform: none; } }
+  .step:nth-child(1) { animation-delay: 0.05s; }
+  .step:nth-child(2) { animation-delay: 0.1s; }
+  .step:nth-child(3) { animation-delay: 0.15s; }
+  .step:nth-child(4) { animation-delay: 0.2s; }
+  .step-num {
+    font-family: var(--serif); font-size: 1.5rem; font-weight: 300;
+    color: var(--ink-faint); padding-top: 2px;
+    line-height: 1;
+  }
+  .step-body {}
+  .step-title { font-weight: 400; font-size: 15px; margin-bottom: 0.4rem; }
+  .step-desc { font-size: 13px; color: var(--ink-mid); line-height: 1.7; }
+  .step-sub { margin-top: 0.6rem; }
+
+  code, .code-block {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--paper-warm);
+    border: var(--rule);
+    padding: 2px 7px;
+    color: var(--ink);
+    letter-spacing: 0;
+  }
+  .code-block {
+    display: block; padding: 12px 16px;
+    margin-top: 0.5rem; line-height: 1.6;
+    word-break: break-all;
+  }
+  .code-note { font-size: 11px; color: var(--ink-light); margin-top: 5px; }
+
+  /* ── Terminal UI ── */
+  .terminal {
+    background: #1e1e1e;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 0.75rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .terminal-bar {
+    background: #2d2d2d;
+    padding: 7px 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-title {
+    font-family: var(--sans); font-size: 11px;
+    color: #888; margin-left: 6px; letter-spacing: 0.04em;
+  }
+  .terminal-body { padding: 14px 16px; }
+  .t-line { display: flex; gap: 8px; margin-bottom: 2px; }
+  .t-prompt { color: #5f9ea0; white-space: nowrap; user-select: none; }
+  .t-cmd { color: #e0e0e0; }
+  .t-out { color: #888; padding-left: 0; margin-top: 2px; margin-bottom: 6px; }
+  .t-out.success { color: #6aaf6a; }
+  .t-cursor {
+    display: inline-block; width: 7px; height: 13px;
+    background: #e0e0e0; vertical-align: middle;
+    animation: blink 1.1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── Model table ── */
+  .model-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .model-table th {
+    font-weight: 400; font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-light);
+    border-bottom: var(--rule); padding: 6px 12px 8px 0;
+    text-align: left;
+  }
+  .model-table td {
+    padding: 10px 12px 10px 0;
+    border-bottom: var(--rule);
+    color: var(--ink-mid); vertical-align: top;
+  }
+  .model-table td:first-child { color: var(--ink); font-weight: 400; font-size: 13px; font-family: var(--mono); }
+  .model-table tr:last-child td { border-bottom: none; }
+  .rec-badge {
+    display: inline-block; font-size: 10px; letter-spacing: 0.05em;
+    background: var(--accent-light); color: var(--accent);
+    padding: 1px 7px; margin-left: 6px; vertical-align: middle;
+    font-family: var(--sans); font-weight: 400;
+  }
+
+  /* ── Cheatsheet ── */
+  #cheatsheet { background: var(--paper-warm); max-width: 100%; }
+  #cheatsheet > .inner { max-width: 720px; margin: 0 auto; padding: 5rem 2rem; }
+  .cheat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  @media (max-width: 560px) { .cheat-grid { grid-template-columns: 1fr; } }
+
+  .cheat-block { }
+  .cheat-items { list-style: none; font-size: 13px; }
+  .cheat-items li {
+    display: flex; gap: 10px;
+    padding: 7px 0; border-bottom: var(--rule);
+    color: var(--ink-mid); align-items: baseline;
+    line-height: 1.6;
+  }
+  .cheat-items li:last-child { border-bottom: none; }
+  .cheat-n {
+    font-family: var(--serif); color: var(--ink-faint);
+    font-size: 12px; min-width: 16px; flex-shrink: 0;
+  }
+
+  /* ── Trouble ── */
+  .trouble-list { font-size: 13px; }
+  .trouble-item {
+    padding: 1rem 0; border-bottom: var(--rule);
+  }
+  .trouble-item:last-child { border-bottom: none; }
+  .trouble-q { font-weight: 400; color: var(--ink); margin-bottom: 4px; }
+  .trouble-a { color: var(--ink-mid); }
+
+  /* ── Footer ── */
+  footer {
+    border-top: var(--rule);
+    padding: 2.5rem 2rem;
+    max-width: 720px; margin: 0 auto;
+  }
+  .footer-notices {
+    display: flex; flex-direction: column; gap: 0;
+    margin-bottom: 1.5rem;
+  }
+  .notice-item {
+    font-size: 11px; color: var(--ink-light);
+    line-height: 1.8; padding: 0.75rem 0;
+    border-bottom: var(--rule);
+  }
+  .notice-item:first-child { border-top: var(--rule); }
+  .notice-label {
+    display: inline-block;
+    font-weight: 500; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-mid);
+    margin-right: 10px;
+    white-space: nowrap;
+  }
+  .footer-copy {
+    text-align: center;
+    font-size: 11px; color: var(--ink-faint);
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">査読コメント翻訳ツール</span>
+  <div class="nav-links">
+    <a href="#setup">セットアップ</a>
+    <a href="#models">モデル</a>
+    <a href="#cheatsheet">使い方</a>
+    <a href="#trouble">トラブル</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- Hero -->
+  <section id="hero">
+    <p class="eyebrow">ローカルAI翻訳 / Review Translator</p>
+    <h1>査読コメントを、<br><em>安全に</em>翻訳する。</h1>
+    <p class="lead">
+      Ollamaを使ったローカル動作の翻訳ツールです。テキストは外部に送信されず、すべて手元のPCで処理されます。日本語 ⇄ 英語の双方向に対応。
+    </p>
+    <a class="dl-btn" href="review_translator.html" download>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 2v8M4 7l4 4 4-4M2 13h12"/>
+      </svg>
+      review_translator.html をダウンロード
+    </a>
+    <p class="dl-note">※ ダウンロード後、ローカルでダブルクリックして開いてください。</p>
+
+    <div class="features">
+      <span class="pill"><span class="pill-dot"></span>完全ローカル動作</span>
+      <span class="pill"><span class="pill-dot"></span>データ外部送信なし</span>
+      <span class="pill"><span class="pill-dot"></span>日本語 ⇄ 英語</span>
+      <span class="pill"><span class="pill-dot"></span>追加インストール不要（本ツール）</span>
+    </div>
+  </section>
+
+  <!-- Setup -->
+  <section id="setup">
+    <h2>セットアップ手順</h2>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Ollamaをインストールする</div>
+          <div class="step-desc">
+            <a href="https://ollama.com" target="_blank" rel="noopener" style="color:var(--accent);">ollama.com</a> からWindows版インストーラーをダウンロードして実行します。インストール後、PCを再起動してください。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">翻訳モデルをダウンロードする（初回のみ）</div>
+          <div class="step-desc">
+            PowerShellを開いて、以下のコマンドでモデルを取得します。数分〜十数分かかります。
+          </div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dot" style="background:#ff5f57;"></div>
+              <div class="terminal-dot" style="background:#febc2e;"></div>
+              <div class="terminal-dot" style="background:#28c840;"></div>
+              <span class="terminal-title">Windows PowerShell</span>
+            </div>
+            <div class="terminal-body">
+              <div class="t-line">
+                <span class="t-prompt">PS C:\Users\username&gt;</span>
+                <span class="t-cmd">ollama pull gemma3</span>
+              </div>
+              <div class="t-out">pulling manifest...</div>
+              <div class="t-out">pulling ffe83c...  100% ████████████  3.3 GB</div>
+              <div class="t-out success">success</div>
+            </div>
+          </div>
+          <p class="code-note" style="margin-top:8px;">他のモデルは下の「モデル一覧」を参照。追加する場合も同様に <code>ollama pull モデル名</code> で取得できます。</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">ツールをダウンロードする</div>
+          <div class="step-desc">
+            このページ上部のボタンから <code>review_translator.html</code> をダウンロードし、任意のフォルダに保存します。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Ollamaを起動する（使用前に毎回）</div>
+          <div class="step-desc">
+            PowerShellでツールのあるフォルダに移動し、Ollamaを起動します。このウィンドウは翻訳中も開いたままにしてください。
+          </div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dot" style="background:#ff5f57;"></div>
+              <div class="terminal-dot" style="background:#febc2e;"></div>
+              <div class="terminal-dot" style="background:#28c840;"></div>
+              <span class="terminal-title">Windows PowerShell</span>
+            </div>
+            <div class="terminal-body">
+              <div class="t-line">
+                <span class="t-prompt">PS C:\Users\username&gt;</span>
+                <span class="t-cmd">cd Documents\review_translator</span>
+              </div>
+              <div class="t-line" style="margin-top:4px;">
+                <span class="t-prompt">PS C:\Users\username\Documents\review_translator&gt;</span>
+                <span class="t-cmd">$env:OLLAMA_ORIGINS="*"; ollama serve</span>
+              </div>
+              <div class="t-out success" style="margin-top:4px;">Listening on 127.0.0.1:11434 <span style="color:#888;">← これが出れば起動成功</span></div>
+              <div class="t-out" style="color:#555;">（このウィンドウは閉じないでください）<span class="t-cursor"></span></div>
+            </div>
+          </div>
+          <p class="code-note" style="margin-top:8px;"><code>cd</code> の後のパスは、<code>review_translator.html</code> を保存した場所に合わせて変更してください。</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">ツールを開く</div>
+          <div class="step-desc">
+            <code>review_translator.html</code> をダブルクリックしてブラウザで開きます。右上のステータスが <strong>「接続OK」</strong> になっていれば準備完了です。
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Models -->
+  <section id="models">
+    <h2>モデル一覧</h2>
+    <p style="font-size:13px; color:var(--ink-mid); margin-bottom:1.5rem; line-height:1.8;">
+      ツール起動時にインストール済みのモデルが自動で表示されます。複数入れておくと用途に応じて切り替えられます。
+    </p>
+
+    <h3 style="margin-bottom:0.75rem;">モデルの特徴</h3>
+    <table class="model-table" style="margin-bottom:2rem;">
+      <thead>
+        <tr>
+          <th>モデル名</th>
+          <th>サイズ</th>
+          <th>特徴・用途</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>gemma3<span class="rec-badge">推奨</span></td>
+          <td>約 3.3 GB</td>
+          <td>バランスが良く高精度。日常的な査読コメントに最適。</td>
+        </tr>
+        <tr>
+          <td>llama3</td>
+          <td>約 4.7 GB</td>
+          <td>英語表現が自然。英語→日本語翻訳向け。</td>
+        </tr>
+        <tr>
+          <td>mistral</td>
+          <td>約 4 GB</td>
+          <td>速度と品質のバランスが良い。大量翻訳作業に。</td>
+        </tr>
+        <tr>
+          <td>qwen2.5</td>
+          <td>約 4 GB</td>
+          <td>アジア言語に強い。専門的な技術用語を含む文に。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-bottom:0.75rem;">RAMに合わせた推奨モデル</h3>
+    <p style="font-size:13px; color:var(--ink-mid); margin-bottom:1rem; line-height:1.8;">
+      翻訳速度はお使いのPCのRAMに大きく依存します。下記を参考にモデルを選んでください。
+    </p>
+    <table class="model-table">
+      <thead>
+        <tr>
+          <th>RAM</th>
+          <th>推奨モデル</th>
+          <th>備考</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--ink-mid);">8 GB以下</td>
+          <td>gemma3</td>
+          <td>重いモデルは動作しない場合があります。gemma3のみを推奨。</td>
+        </tr>
+        <tr>
+          <td style="color:var(--ink-mid);">16 GB</td>
+          <td>gemma3 / mistral</td>
+          <td>快適に動作します。用途に合わせて選択してください。</td>
+        </tr>
+        <tr>
+          <td style="color:var(--ink-mid);">32 GB以上</td>
+          <td>すべてのモデル</td>
+          <td>llama3・qwen2.5など大きめのモデルも余裕をもって動作します。</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px; color:var(--ink-light); margin-top:1rem;">
+      新しいモデルを追加するには別のPowerShellウィンドウで <code>ollama pull モデル名</code> を実行してください。
+    </p>
+  </section>
+
+  <!-- Cheatsheet -->
+  <div id="cheatsheet">
+    <div class="inner">
+      <h2>使い方の早見表</h2>
+      <div class="cheat-grid">
+
+        <div class="cheat-block">
+          <h3>毎回の起動</h3>
+          <ul class="cheat-items">
+            <li><span class="cheat-n">1</span>PowerShellを開く</li>
+            <li><span class="cheat-n">2</span>ツールのフォルダへ移動</li>
+            <li><span class="cheat-n">3</span><code style="font-size:11px;">$env:OLLAMA_ORIGINS="*"; ollama serve</code> を実行（ウィンドウは閉じない）</li>
+            <li><span class="cheat-n">4</span>HTMLをダブルクリックで開く</li>
+            <li><span class="cheat-n">5</span>右上が「接続OK」になっていることを確認</li>
+          </ul>
+        </div>
+
+        <div class="cheat-block">
+          <h3>翻訳の手順</h3>
+          <ul class="cheat-items">
+            <li><span class="cheat-n">1</span>「⇄」ボタンで翻訳の方向を選ぶ</li>
+            <li><span class="cheat-n">2</span>左の枠に査読コメントを貼り付ける</li>
+            <li><span class="cheat-n">3</span>「翻訳する →」または Ctrl+Enter</li>
+            <li><span class="cheat-n">4</span>右側の結果を「📋 コピー」でコピー</li>
+          </ul>
+        </div>
+
+        <div class="cheat-block">
+          <h3>終了方法</h3>
+          <ul class="cheat-items">
+            <li><span class="cheat-n">1</span>ブラウザのタブを閉じる</li>
+            <li><span class="cheat-n">2</span>PowerShellで Ctrl+C を押す</li>
+            <li><span class="cheat-n">3</span>PowerShellウィンドウを閉じる</li>
+          </ul>
+        </div>
+
+        <div class="cheat-block">
+          <h3>ショートカット</h3>
+          <ul class="cheat-items">
+            <li><span class="cheat-n"></span><code>Ctrl+Enter</code>　翻訳を実行</li>
+            <li><span class="cheat-n"></span><code>Ctrl+C</code>　Ollamaを停止（PowerShell内）</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Trouble -->
+  <section id="trouble">
+    <h2>トラブルシューティング</h2>
+    <div class="trouble-list">
+
+      <div class="trouble-item">
+        <div class="trouble-q">「Ollama未接続」と表示される</div>
+        <div class="trouble-a">PowerShellでOllamaが起動しているか確認。起動していない場合は起動コマンドを再実行してください。</div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-q">「bind: Only one usage...」エラーが出る</div>
+        <div class="trouble-a">Ollamaがすでに起動中です。<code>Shift+Ctrl+Esc</code> でタスクマネージャーを開き、<code>ollama.exe</code> をすべて終了してから再起動してください。</div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-q">翻訳ボタンを押しても何も起きない</div>
+        <div class="trouble-a">別のPowerShellウィンドウで <code>ollama list</code> を実行し、モデルが表示されるか確認してください。表示されない場合は <code>ollama pull gemma3</code> でインストールしてください。</div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-q">翻訳が非常に遅い</div>
+        <div class="trouble-a">PCのメモリが不足している可能性があります。gemma3（小さいモデル）を選択するか、他のアプリを閉じてください。推奨RAM：16 GB以上。</div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-q">「ollama」コマンドが認識されない</div>
+        <div class="trouble-a">Ollamaが正しくインストールされていません。PCを再起動後、<a href="https://ollama.com" target="_blank" style="color:var(--accent);">ollama.com</a> から再インストールしてください。</div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-notices">
+    <div class="notice-item">
+      <span class="notice-label">制作について</span>
+      このツールはAnthropicのAIアシスタント Claude を使って作成しました。
+    </div>
+    <div class="notice-item">
+      <span class="notice-label">免責事項</span>
+      本ツールの使用によって生じたいかなる損害・不利益についても、制作者は責任を負いません。翻訳結果は必ずご自身で内容を確認してください。
+    </div>
+    <div class="notice-item">
+      <span class="notice-label">動作環境</span>
+      翻訳速度はローカルPCのスペック（特にRAM）に依存します。RAM 16 GB以上を推奨します。8 GB以下の環境では大きいモデルが動作しない場合があります。
+    </div>
+      このツールは査読コメントをクラウドサービスに送信せず翻訳することを目的に作成しましたが、通常の翻訳用途にも使用できます。ただし、DeepLや市販の翻訳アプリと比較して精度が劣る場合があります。重要な翻訳には必ず内容の確認をお勧めします。
+    </div>
+  </div>
+  <p class="footer-copy">査読コメント翻訳ツール — 完全ローカル動作 / データ外部送信なし</p>
+</footer>
+
+</body>
+</html>
