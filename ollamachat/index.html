@@ -1,1 +1,547 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ollama Chat — ローカルAIチャット</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --bg2: #fdfaf3;
+    --surface: #ede8da;
+    --border: #d4c9b0;
+    --border-light: #e8e0cc;
+    --text: #2c2417;
+    --text-sub: #7a6e5f;
+    --accent: #5c7a5c;
+    --accent-light: #8aab8a;
+    --accent-bg: #edf2ed;
+    --danger: #a05050;
+    --shadow: 0 2px 16px rgba(44,36,23,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
 
+  /* Layout */
+  .layout {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  #sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h1 {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.3rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .sidebar-logo p {
+    font-size: 0.72rem;
+    color: var(--text-sub);
+    margin-top: 3px;
+  }
+  .nav-link {
+    display: block;
+    padding: 8px 24px;
+    font-size: 0.82rem;
+    color: var(--text-sub);
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .nav-link:hover {
+    color: var(--accent);
+    border-left-color: var(--accent-light);
+    background: var(--accent-bg);
+    text-decoration: none;
+  }
+  .nav-section {
+    font-size: 0.65rem;
+    color: var(--text-sub);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 16px 24px 4px;
+    opacity: 0.7;
+  }
+
+  /* Main */
+  #main {
+    flex: 1;
+    max-width: 860px;
+    padding: 48px 56px;
+  }
+
+  /* Hero */
+  .hero {
+    margin-bottom: 48px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-light);
+    border-radius: 20px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+  .hero h2 {
+    font-family: 'Zen Antique', serif;
+    font-size: 2.2rem;
+    line-height: 1.4;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+  .hero p {
+    font-size: 0.95rem;
+    color: var(--text-sub);
+    max-width: 600px;
+    margin-bottom: 28px;
+  }
+  .btn-primary {
+    display: inline-block;
+    padding: 12px 28px;
+    background: var(--accent);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.15s;
+    margin-right: 12px;
+    margin-bottom: 8px;
+  }
+  .btn-primary:hover { background: #4a6a4a; text-decoration: none; }
+  .btn-secondary {
+    display: inline-block;
+    padding: 12px 28px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    margin-bottom: 8px;
+  }
+  .btn-secondary:hover { background: var(--accent-bg); text-decoration: none; }
+
+  /* Features */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .feature-card {
+    background: var(--bg2);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .feature-card .icon { font-size: 1.4rem; margin-bottom: 8px; }
+  .feature-card h3 { font-size: 0.9rem; margin-bottom: 4px; font-weight: 500; }
+  .feature-card p { font-size: 0.78rem; color: var(--text-sub); line-height: 1.6; }
+
+  /* Sections */
+  section { margin-bottom: 48px; }
+  section h2 {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.4rem;
+    color: var(--text);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  section h3 {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  section p, section li {
+    font-size: 0.87rem;
+    color: var(--text-sub);
+    margin-bottom: 8px;
+  }
+  section ul, section ol {
+    padding-left: 1.5em;
+  }
+  section li { margin-bottom: 6px; }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--text);
+  }
+  .code-block {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    background: var(--text);
+    color: #e8e0cc;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-block .comment { color: #8aab8a; }
+  .step-block {
+    background: var(--bg2);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: var(--accent);
+    color: white;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-body h3 { font-size: 0.88rem; margin: 0 0 4px; color: var(--text); }
+  .step-body p { font-size: 0.8rem; color: var(--text-sub); margin: 0; }
+
+  /* Notice box */
+  .notice-box {
+    background: #fdf6ec;
+    border: 1px solid #d4b896;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-top: 12px;
+  }
+  .notice-box h3 {
+    font-size: 0.88rem;
+    color: #7a5a30;
+    margin-bottom: 10px;
+    margin-top: 0;
+  }
+  .notice-box ul { margin: 0; padding-left: 1.4em; }
+  .notice-box li { font-size: 0.8rem; color: #7a6050; margin-bottom: 5px; }
+  .notice-danger {
+    background: #fdf0f0;
+    border-color: #d4a0a0;
+  }
+  .notice-danger h3 { color: var(--danger); }
+  .notice-danger li { color: #7a5050; }
+
+  /* Use cases */
+  .usecase-list {
+    background: var(--bg2);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .usecase-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+  .usecase-item:last-child { border-bottom: none; }
+  .usecase-item .uc-icon { font-size: 1.1rem; width: 28px; text-align: center; }
+  .usecase-item .uc-text { flex: 1; }
+  .usecase-item .uc-label { font-size: 0.7rem; color: var(--text-sub); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 48px;
+    padding-top: 24px;
+    font-size: 0.75rem;
+    color: var(--text-sub);
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- Sidebar -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <h1>Ollama Chat</h1>
+    <p>ローカルAIチャット</p>
+  </div>
+  <div class="nav-section">はじめに</div>
+  <a class="nav-link" href="#overview">概要・機能</a>
+  <a class="nav-link" href="#requirements">動作環境</a>
+  <a class="nav-link" href="#setup">環境設定</a>
+  <div class="nav-section">使い方</div>
+  <a class="nav-link" href="#usage">基本的な使い方</a>
+  <a class="nav-link" href="#usecases">主な使用用途</a>
+  <div class="nav-section">注意事項</div>
+  <a class="nav-link" href="#notice">注意・免責事項</a>
+  <a class="nav-link" href="#download">ダウンロード</a>
+</nav>
+
+<!-- Main Content -->
+<main id="main">
+
+  <!-- Hero -->
+  <div class="hero" id="overview">
+    <div class="hero-badge">ローカル動作 ・ 完全無料 ・ 外部送信なし</div>
+    <h2>Ollama Chat</h2>
+    <p>
+      ローカルで動作するOllamaのAIモデルをブラウザから手軽に使えるチャットツールです。
+      外部のAPIキーは不要で、入力したテキストはインターネットに送信されません。
+      翻訳・要約・校正など、日々の作業をAIにサポートしてもらえます。
+    </p>
+    <a class="btn-primary" href="chat.html" download>⬇ chat.html をダウンロード</a>
+    <a class="btn-secondary" href="chat.html" target="_blank">▶ デモを開く</a>
+
+    <div class="feature-grid" style="margin-top:32px;">
+      <div class="feature-card">
+        <div class="icon">🔒</div>
+        <h3>完全ローカル動作</h3>
+        <p>入力内容はすべてお使いのPC内で処理されます。外部サーバーへの送信はありません。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔤</div>
+        <h3>翻訳ショートカット</h3>
+        <p>日↔英翻訳ボタンをワンクリック。翻訳専門のシステムプロンプトも内蔵しています。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🤖</div>
+        <h3>モデル切り替え</h3>
+        <p>Ollamaで取得済みのモデルを自由に切り替えて使えます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">⚙️</div>
+        <h3>システムプロンプト</h3>
+        <p>AIへの事前指示をUIから設定。「日本語で答えて」などをプリセットから選べます。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Requirements -->
+  <section id="requirements">
+    <h2>動作環境</h2>
+    <div class="step-block">
+      <div class="step-num">✓</div>
+      <div class="step-body">
+        <h3>Ollama のインストール</h3>
+        <p><a href="https://ollama.com" target="_blank">ollama.com</a> からお使いのOS向けのインストーラをダウンロードしてください。Windows・macOS・Linux に対応しています。</p>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">✓</div>
+      <div class="step-body">
+        <h3>AI モデルの取得</h3>
+        <p>Ollamaインストール後、使いたいモデルをダウンロードします。日本語対応で使いやすいモデル例：</p>
+        <div class="code-block"><span class="comment"># 軽量で高速（推奨：日本語対応）</span>
+ollama pull llama3.2
+
+<span class="comment"># より高品質（GPUが必要）</span>
+ollama pull llama3.1:8b</div>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">✓</div>
+      <div class="step-body">
+        <h3>モダンブラウザ</h3>
+        <p>Chrome・Firefox・Edge・Safari の最新版で動作します。Internet Explorerは非対応です。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Setup -->
+  <section id="setup">
+    <h2>環境設定</h2>
+
+    <h3>① Ollama を起動する</h3>
+    <p>Ollamaをインストールすると、通常は自動的にバックグラウンドで起動します。手動で起動する場合はターミナルで：</p>
+    <div class="code-block">ollama serve</div>
+
+    <h3>② chat.html をダウンロードして開く</h3>
+    <p>このページ上部のボタンから <code>chat.html</code> をダウンロードし、ファイルをブラウザで直接開いてください（ダブルクリックで開けます）。</p>
+
+    <h3>③ 接続確認</h3>
+    <p>画面上部に「接続中」と表示されれば準備完了です。接続エラーが出る場合は、OllamaのURLが <code>http://localhost:11434</code> になっているか確認してください。</p>
+
+    <h3>CORS 設定（接続できない場合）</h3>
+    <p>ブラウザのセキュリティ制限で接続できない場合は、Ollama 起動時に環境変数を設定してください：</p>
+    <div class="code-block"><span class="comment"># Windows（コマンドプロンプト）</span>
+set OLLAMA_ORIGINS=*
+ollama serve
+
+<span class="comment"># macOS / Linux</span>
+OLLAMA_ORIGINS=* ollama serve</div>
+  </section>
+
+  <!-- Usage -->
+  <section id="usage">
+    <h2>基本的な使い方</h2>
+
+    <div class="step-block">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>モデルを選ぶ</h3>
+        <p>左サイドバーの「モデル」セレクタから使いたいモデルを選択します。</p>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>（任意）システムプロンプトを設定する</h3>
+        <p>「必ず日本語で回答」「翻訳専門」などのプリセットを選ぶか、自由に入力できます。何も入れなくてもOKです。</p>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>メッセージを入力して送信</h3>
+        <p>テキストエリアに入力し、<code>Ctrl + Enter</code> または送信ボタンで送信します。翻訳・要約などのクイックボタンも活用できます。</p>
+      </div>
+    </div>
+
+    <h3>クイックボタンの使い方</h3>
+    <p>入力エリア上部のボタンをクリックすると、テキストの先頭に定型文が自動入力されます。テキストを貼り付けてからボタンを押しても、先頭に追加されます。</p>
+  </section>
+
+  <!-- Use cases -->
+  <section id="usecases">
+    <h2>主な使用用途</h2>
+    <div class="usecase-list">
+      <div class="usecase-item">
+        <div class="uc-icon">🔤</div>
+        <div class="uc-text">
+          <div>日↔英 翻訳</div>
+          <div class="uc-label">論文・メール・資料の翻訳支援</div>
+        </div>
+      </div>
+      <div class="usecase-item">
+        <div class="uc-icon">📝</div>
+        <div class="uc-text">
+          <div>文章の要約・整理</div>
+          <div class="uc-label">長い文書を簡潔にまとめる</div>
+        </div>
+      </div>
+      <div class="usecase-item">
+        <div class="uc-icon">✏️</div>
+        <div class="uc-text">
+          <div>文章校正・表現の改善</div>
+          <div class="uc-label">誤字・不自然な表現のチェック</div>
+        </div>
+      </div>
+      <div class="usecase-item">
+        <div class="uc-icon">❓</div>
+        <div class="uc-text">
+          <div>質問・情報収集</div>
+          <div class="uc-label">知識の確認や概念の説明（要事実確認）</div>
+        </div>
+      </div>
+      <div class="usecase-item">
+        <div class="uc-icon">💡</div>
+        <div class="uc-text">
+          <div>アイデア出し・ブレインストーミング</div>
+          <div class="uc-label">企画・文章構成のたたき台作成</div>
+        </div>
+      </div>
+      <div class="usecase-item">
+        <div class="uc-icon">🏥</div>
+        <div class="uc-text">
+          <div>医学・専門用語の解説</div>
+          <div class="uc-label">医療系テキストの理解補助（診断・治療判断には使用不可）</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notice -->
+  <section id="notice">
+    <h2>注意・免責事項</h2>
+
+    <div class="notice-box">
+      <h3>🤖 生成AIに関する注意</h3>
+      <ul>
+        <li>本ツールはローカルで動作するAIモデル（Ollama）を使用した実験的なソフトウェアです。</li>
+        <li>AIが生成する回答は<strong>必ずしも正確ではありません</strong>。重要な判断に使用する場合は、必ず一次情報や専門家の意見で確認してください。</li>
+        <li>AIの回答には誤情報・偏り・不適切な表現が含まれる場合があります。</li>
+        <li>翻訳結果は参考程度にとどめ、正式な文書や医療・法律・財務に関わる翻訳には専門家への確認を推奨します。</li>
+      </ul>
+    </div>
+
+    <div class="notice-box" style="margin-top:12px;">
+      <h3>⚙️ ツール・動作に関する注意</h3>
+      <ul>
+        <li>本ツールはOllamaおよびダウンロードしたAIモデルに依存します。これらの動作・品質は各モデルの開発元によるものです。</li>
+        <li>会話履歴はブラウザのローカルストレージに保存されます。PCを共有する場合はご注意ください。</li>
+        <li>本ツールの使用中に発生したいかなる損害・不具合についても、開発者は一切の責任を負いません。</li>
+        <li>本ツールはオープンソース・無保証で提供されます。</li>
+      </ul>
+    </div>
+
+    <div class="notice-box notice-danger" style="margin-top:12px;">
+      <h3>🚫 使用してはいけない用途</h3>
+      <ul>
+        <li>医師・専門家の診断・処方・治療方針の代替としての使用</li>
+        <li>法的効力を持つ文書の作成・翻訳（契約書・診断書など）</li>
+        <li>他者の個人情報・機密情報を入力すること（ローカル動作ですが、モデルの挙動は保証外）</li>
+        <li>医療・法律・財務に関する最終判断の根拠とすること</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section id="download">
+    <h2>ダウンロード</h2>
+    <p>単一のHTMLファイルです。ダウンロード後、ブラウザで開くだけで使えます。インストール不要。</p>
+    <div style="margin-top:20px;">
+      <a class="btn-primary" href="chat.html" download>⬇ chat.html をダウンロード</a>
+    </div>
+    <p style="margin-top:16px; font-size:0.78rem;">
+      ソースコード・更新情報はGitHubリポジトリをご覧ください。バグ報告・改善提案はIssueからどうぞ。
+    </p>
+  </section>
+
+  <footer>
+    <p>Ollama Chat — ローカルAIチャットツール</p>
+    <p style="margin-top:4px;">本ツールは生成AIを活用して作成されました。内容の正確性は保証しません。使用は自己責任でお願いします。</p>
+  </footer>
+
+</main>
+</div>
+</body>
+</html>
