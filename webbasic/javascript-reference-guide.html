@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript かんたんガイド</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f5f0;
+      --surface: #ffffff;
+      --border: #e2ddd6;
+      --text: #1a1a1a;
+      --muted: #666;
+      --accent: #1a6b8a;
+      --accent2: #3a7d44;
+      --accent3: #7b3fa0;
+      --accent4: #c45e00;
+      --code-bg: #1e1e2e;
+      --code-text: #cdd6f4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    header {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 3rem 2rem 2.5rem;
+      text-align: center;
+    }
+
+    header .eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #89dceb;
+      margin-bottom: 0.75rem;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700;
+      color: #cdd6f4;
+      margin-bottom: 0.5rem;
+    }
+
+    header h1 span { color: #f9e2af; }
+
+    header p {
+      color: #a6adc8;
+      font-size: 0.95rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .syntax-box {
+      background: #181825;
+      border: 1px solid #313244;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      max-width: 560px;
+      margin: 1.5rem auto 0;
+      text-align: left;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--code-text);
+      line-height: 1.8;
+    }
+
+    .syntax-box .kw  { color: #cba6f7; }
+    .syntax-box .fn  { color: #89dceb; }
+    .syntax-box .str { color: #a6e3a1; }
+    .syntax-box .num { color: #fab387; }
+    .syntax-box .cm  { color: #6c7086; }
+    .syntax-box .op  { color: #89b4fa; }
+
+    nav.toc {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    nav.toc a {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.2rem 0.7rem;
+      border: 1px solid #a0c8d8;
+      border-radius: 999px;
+      background: #f0f8fa;
+      transition: all 0.15s;
+    }
+
+    nav.toc a:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    section { margin-bottom: 3rem; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-icon { font-size: 1.25rem; }
+
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .section-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      padding-left: 0.5rem;
+      border-left: 3px solid var(--border);
+    }
+
+    .element-grid { display: grid; gap: 0.75rem; }
+
+    .element-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem 1rem;
+      align-items: start;
+      transition: box-shadow 0.15s;
+    }
+
+    .element-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+
+    .element-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      align-self: start;
+      margin-top: 0.1rem;
+      border: 1px solid;
+    }
+
+    .element-info {}
+    .element-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .element-desc { font-size: 0.85rem; color: #444; line-height: 1.6; }
+
+    .element-example {
+      grid-column: 1 / -1;
+      background: var(--code-bg);
+      border-radius: 5px;
+      padding: 0.6rem 0.9rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--code-text);
+      margin-top: 0.4rem;
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+
+    .element-example .kw  { color: #cba6f7; }
+    .element-example .fn  { color: #89dceb; }
+    .element-example .str { color: #a6e3a1; }
+    .element-example .num { color: #fab387; }
+    .element-example .cm  { color: #6c7086; }
+    .element-example .op  { color: #89b4fa; }
+    .element-example .prop { color: #89b4fa; }
+    .element-example .val  { color: #f9e2af; }
+
+    /* category tag colors */
+    .cat-syntax   .element-tag { color: #1a6b8a; background: #f0f8fa; border-color: #90c8d8; }
+    .cat-types    .element-tag { color: #3a7d44; background: #f0faf4; border-color: #90d0a0; }
+    .cat-array    .element-tag { color: #7b3fa0; background: #faf0ff; border-color: #c090e0; }
+    .cat-object   .element-tag { color: #b04040; background: #fff5f5; border-color: #e0a0a0; }
+    .cat-string   .element-tag { color: #c45e00; background: #fff8f0; border-color: #e0c090; }
+    .cat-async    .element-tag { color: #40607a; background: #f0f5fa; border-color: #90b0c8; }
+    .cat-dom      .element-tag { color: #5a5a00; background: #fafaf0; border-color: #c0c080; }
+
+    .tip {
+      background: #f0faf4;
+      border: 1px solid #a0d8b0;
+      border-left: 4px solid var(--accent2);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.82rem;
+      color: #2a5a38;
+      margin-top: 0.75rem;
+      grid-column: 1 / -1;
+    }
+
+    .tip strong { font-weight: 700; }
+
+    .citation {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      margin-top: 3rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .citation a { color: var(--accent); }
+
+    footer {
+      background: var(--code-bg);
+      color: #a6adc8;
+      padding: 2rem;
+      font-size: 0.8rem;
+      line-height: 1.8;
+    }
+
+    footer .footer-inner { max-width: 900px; margin: 0 auto; }
+
+    footer h3 {
+      font-size: 0.85rem;
+      color: #89dceb;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    footer ul { list-style: none; padding: 0; }
+    footer ul li::before { content: "⚠ "; color: #f38ba8; }
+
+    footer .meta {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid #313244;
+      color: #6c7086;
+      font-size: 0.75rem;
+    }
+
+    footer .meta a { color: #89b4fa; text-decoration: none; }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8em;
+      background: #f0f0f0;
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+    }
+
+    @media (max-width: 600px) {
+      .element-card {
+        grid-template-columns: 1fr;
+      }
+      .element-tag { width: fit-content; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">初心者向けリファレンス</p>
+  <h1>JavaScript <span>かんたんガイド</span></h1>
+  <p>よく使うJavaScriptの構文・メソッドを、シンプルな言葉でまとめました</p>
+  <div class="syntax-box">
+    <span class="cm">// 変数の宣言と関数の基本</span><br>
+    <span class="kw">const</span> message = <span class="str">"こんにちは"</span>;<br>
+    <span class="kw">function</span> <span class="fn">greet</span>(name) {<br>
+    &nbsp;&nbsp;<span class="kw">return</span> message + <span class="str">"、"</span> + name;<br>
+    }<br>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">greet</span>(<span class="str">"世界"</span>)); <span class="cm">// → "こんにちは、世界"</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#syntax">基本構文</a>
+  <a href="#types">型・変数</a>
+  <a href="#array">配列</a>
+  <a href="#string">文字列</a>
+  <a href="#object">オブジェクト</a>
+  <a href="#async">非同期</a>
+  <a href="#dom">DOM操作</a>
+</nav>
+
+<main>
+
+  <!-- 基本構文 -->
+  <section id="syntax">
+    <div class="section-header">
+      <span class="section-icon">📝</span>
+      <h2>基本構文 — 制御フローと関数</h2>
+    </div>
+    <p class="section-desc">JavaScriptの基本的な書き方です。条件分岐・繰り返し・関数を組み合わせてプログラムを構築します。</p>
+    <div class="element-grid">
+
+      <div class="element-card cat-syntax">
+        <span class="element-tag">if / else</span>
+        <div class="element-info">
+          <div class="element-name">条件分岐</div>
+          <div class="element-desc">条件が <code>true</code> のとき <code>if</code> ブロックを、<code>false</code> のとき <code>else</code> ブロックを実行します。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">if</span> (score &gt;= <span class="num">80</span>) {<br>
+&nbsp;&nbsp;<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"合格"</span>);<br>
+} <span class="kw">else</span> {<br>
+&nbsp;&nbsp;<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"不合格"</span>);<br>
+}
+        </div>
+      </div>
+
+      <div class="element-card cat-syntax">
+        <span class="element-tag">for</span>
+        <div class="element-info">
+          <div class="element-name">for ループ</div>
+          <div class="element-desc">決まった回数だけ処理を繰り返します。「初期化; 条件; 更新」の3つをセミコロンで区切って書きます。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="num">3</span>; i++) {<br>
+&nbsp;&nbsp;<span class="fn">console</span>.<span class="fn">log</span>(i); <span class="cm">// 0, 1, 2</span><br>
+}
+        </div>
+      </div>
+
+      <div class="element-card cat-syntax">
+        <span class="element-tag">for...of</span>
+        <div class="element-info">
+          <div class="element-name">for...of ループ</div>
+          <div class="element-desc">配列・文字列などの反復可能オブジェクトの要素を1つずつ取り出します。インデックスが不要なときに便利です。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> fruits = [<span class="str">"りんご"</span>, <span class="str">"バナナ"</span>, <span class="str">"みかん"</span>];<br>
+<span class="kw">for</span> (<span class="kw">const</span> f <span class="op">of</span> fruits) {<br>
+&nbsp;&nbsp;<span class="fn">console</span>.<span class="fn">log</span>(f);<br>
+}
+        </div>
+      </div>
+
+      <div class="element-card cat-syntax">
+        <span class="element-tag">function</span>
+        <div class="element-info">
+          <div class="element-name">関数宣言</div>
+          <div class="element-desc">処理をまとめて名前を付けます。<code>return</code> で値を返し、引数で値を受け取ります。巻き上げ（ホイスティング）により宣言前でも呼び出し可能です。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">function</span> <span class="fn">add</span>(a, b) {<br>
+&nbsp;&nbsp;<span class="kw">return</span> a + b;<br>
+}<br>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">add</span>(<span class="num">3</span>, <span class="num">4</span>)); <span class="cm">// → 7</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-syntax">
+        <span class="element-tag">アロー関数</span>
+        <div class="element-info">
+          <div class="element-name">アロー関数（=&gt;）</div>
+          <div class="element-desc"><code>=&gt;</code> を使ったコンパクトな関数記法です。処理が1行なら <code>return</code> と <code>{}</code> を省略できます。コールバックでよく使われます。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> <span class="fn">double</span> = (n) =&gt; n * <span class="num">2</span>;<br>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">double</span>(<span class="num">5</span>)); <span class="cm">// → 10</span><br><br>
+<span class="kw">const</span> <span class="fn">greet</span> = (name) =&gt; {<br>
+&nbsp;&nbsp;<span class="kw">return</span> <span class="str">`こんにちは、${name}`</span>;<br>
+};
+        </div>
+      </div>
+
+      <div class="element-card cat-syntax">
+        <span class="element-tag">try / catch</span>
+        <div class="element-info">
+          <div class="element-name">例外処理</div>
+          <div class="element-desc">エラーが起きそうなコードを <code>try</code> で囲み、エラー発生時の処理を <code>catch</code> に書きます。プログラムのクラッシュを防げます。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">try</span> {<br>
+&nbsp;&nbsp;<span class="kw">const</span> data = JSON.<span class="fn">parse</span>(invalidJson);<br>
+} <span class="kw">catch</span> (err) {<br>
+&nbsp;&nbsp;<span class="fn">console</span>.<span class="fn">error</span>(<span class="str">"エラー:"</span>, err.<span class="prop">message</span>);<br>
+}
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 型・変数 -->
+  <section id="types">
+    <div class="section-header">
+      <span class="section-icon">📦</span>
+      <h2>型・変数 — データの種類と宣言</h2>
+    </div>
+    <p class="section-desc">JavaScriptには動的型付けがあり、変数に様々な型の値を格納できます。<code>const</code>・<code>let</code>・<code>var</code>の使い分けが重要です。</p>
+    <div class="element-grid">
+
+      <div class="element-card cat-types">
+        <span class="element-tag">const / let</span>
+        <div class="element-info">
+          <div class="element-name">変数宣言</div>
+          <div class="element-desc">基本は <code>const</code>（再代入不可）を使い、後で値を変える必要があるときだけ <code>let</code> を使います。<code>var</code> はスコープが広すぎるので現代では非推奨です。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> name = <span class="str">"田中"</span>;  <span class="cm">// 再代入不可</span><br>
+<span class="kw">let</span> count = <span class="num">0</span>;     <span class="cm">// 再代入可</span><br>
+count = <span class="num">1</span>;          <span class="cm">// OK</span><br>
+<span class="cm">// name = "鈴木";  // エラー！</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-types">
+        <span class="element-tag">typeof</span>
+        <div class="element-info">
+          <div class="element-name">型の確認</div>
+          <div class="element-desc">値の型を文字列で返します。<code>"string"</code>・<code>"number"</code>・<code>"boolean"</code>・<code>"object"</code>・<code>"undefined"</code>・<code>"function"</code> などがあります。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">typeof</span> <span class="str">"hello"</span>   <span class="cm">// → "string"</span><br>
+<span class="kw">typeof</span> <span class="num">42</span>        <span class="cm">// → "number"</span><br>
+<span class="kw">typeof</span> <span class="kw">true</span>      <span class="cm">// → "boolean"</span><br>
+<span class="kw">typeof</span> []        <span class="cm">// → "object" ※注意</span>
+        </div>
+        <div class="tip"><strong>💡 注意：</strong><code>typeof null</code> も <code>"object"</code> を返します。これはJavaScriptの歴史的バグです。</div>
+      </div>
+
+      <div class="element-card cat-types">
+        <span class="element-tag">テンプレート文字列</span>
+        <div class="element-info">
+          <div class="element-name">テンプレートリテラル（バッククォート）</div>
+          <div class="element-desc">バッククォート（<code>`</code>）で囲むと、<code>${変数}</code> の形で文字列の中に変数を埋め込めます。改行もそのまま書けます。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> name = <span class="str">"田中"</span>;<br>
+<span class="kw">const</span> age = <span class="num">30</span>;<br>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`${name}さんは${age}歳です`</span>);<br>
+<span class="cm">// → "田中さんは30歳です"</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-types">
+        <span class="element-tag">分割代入</span>
+        <div class="element-info">
+          <div class="element-name">分割代入（Destructuring）</div>
+          <div class="element-desc">配列やオブジェクトから値を取り出して変数に一括代入できます。コードを簡潔に書けます。</div>
+        </div>
+        <div class="element-example">
+<span class="cm">// 配列の分割代入</span><br>
+<span class="kw">const</span> [first, second] = [<span class="num">10</span>, <span class="num">20</span>];<br><br>
+<span class="cm">// オブジェクトの分割代入</span><br>
+<span class="kw">const</span> { name, age } = { name: <span class="str">"田中"</span>, age: <span class="num">30</span> };<br>
+<span class="fn">console</span>.<span class="fn">log</span>(name); <span class="cm">// → "田中"</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-types">
+        <span class="element-tag">スプレッド構文</span>
+        <div class="element-info">
+          <div class="element-name">スプレッド演算子（...）</div>
+          <div class="element-desc">配列やオブジェクトを展開します。コピーや結合を簡単に書けます。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> a = [<span class="num">1</span>, <span class="num">2</span>];<br>
+<span class="kw">const</span> b = [...a, <span class="num">3</span>, <span class="num">4</span>];  <span class="cm">// → [1, 2, 3, 4]</span><br><br>
+<span class="kw">const</span> obj1 = { x: <span class="num">1</span> };<br>
+<span class="kw">const</span> obj2 = { ...obj1, y: <span class="num">2</span> }; <span class="cm">// → { x: 1, y: 2 }</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 配列 -->
+  <section id="array">
+    <div class="section-header">
+      <span class="section-icon">🗂️</span>
+      <h2>配列 — リストデータの操作</h2>
+    </div>
+    <p class="section-desc">配列はデータのリストを扱う最も基本的な構造です。<code>map</code>・<code>filter</code>・<code>reduce</code> などのメソッドをマスターすると、データ操作が格段に楽になります。</p>
+    <div class="element-grid">
+
+      <div class="element-card cat-array">
+        <span class="element-tag">push / pop</span>
+        <div class="element-info">
+          <div class="element-name">末尾への追加・削除</div>
+          <div class="element-desc"><code>push()</code> は配列の末尾に要素を追加し、<code>pop()</code> は末尾の要素を取り出して返します。元の配列を変更します。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> arr = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];<br>
+arr.<span class="fn">push</span>(<span class="num">4</span>);  <span class="cm">// → [1, 2, 3, 4]</span><br>
+arr.<span class="fn">pop</span>();   <span class="cm">// → 4 を返し、配列は [1, 2, 3]</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-array">
+        <span class="element-tag">map()</span>
+        <div class="element-info">
+          <div class="element-name">要素を変換して新しい配列を作る</div>
+          <div class="element-desc">各要素にコールバックを適用し、その戻り値で新しい配列を作ります。元の配列は変更しません。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> nums = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];<br>
+<span class="kw">const</span> doubled = nums.<span class="fn">map</span>(n =&gt; n * <span class="num">2</span>);<br>
+<span class="cm">// → [2, 4, 6]</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-array">
+        <span class="element-tag">filter()</span>
+        <div class="element-info">
+          <div class="element-name">条件に合う要素だけ抽出</div>
+          <div class="element-desc">コールバックが <code>true</code> を返した要素だけを集めた新しい配列を返します。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> nums = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span>];<br>
+<span class="kw">const</span> evens = nums.<span class="fn">filter</span>(n =&gt; n % <span class="num">2</span> === <span class="num">0</span>);<br>
+<span class="cm">// → [2, 4]</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-array">
+        <span class="element-tag">find() / findIndex()</span>
+        <div class="element-info">
+          <div class="element-name">条件に合う最初の要素を探す</div>
+          <div class="element-desc"><code>find()</code> は条件を満たす最初の要素を、<code>findIndex()</code> はそのインデックスを返します。見つからない場合は <code>undefined</code> / <code>-1</code> を返します。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> users = [{id: <span class="num">1</span>, name: <span class="str">"田中"</span>}, {id: <span class="num">2</span>, name: <span class="str">"鈴木"</span>}];<br>
+<span class="kw">const</span> user = users.<span class="fn">find</span>(u =&gt; u.id === <span class="num">2</span>);<br>
+<span class="cm">// → { id: 2, name: "鈴木" }</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-array">
+        <span class="element-tag">reduce()</span>
+        <div class="element-info">
+          <div class="element-name">配列を1つの値にまとめる</div>
+          <div class="element-desc">各要素を「累積値」に畳み込んで最終的に1つの値を返します。合計・最大値・グループ化など幅広く使えます。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> nums = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>];<br>
+<span class="kw">const</span> sum = nums.<span class="fn">reduce</span>((acc, n) =&gt; acc + n, <span class="num">0</span>);<br>
+<span class="cm">// → 10</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-array">
+        <span class="element-tag">includes() / some() / every()</span>
+        <div class="element-info">
+          <div class="element-name">存在・条件の確認</div>
+          <div class="element-desc"><code>includes()</code> は値の存在確認、<code>some()</code> は1つでも条件を満たすか、<code>every()</code> は全要素が条件を満たすかを確認します。すべて <code>true/false</code> を返します。</div>
+        </div>
+        <div class="element-example">
+[<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>].<span class="fn">includes</span>(<span class="num">2</span>)         <span class="cm">// → true</span><br>
+[<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>].<span class="fn">some</span>(n =&gt; n &gt; <span class="num">2</span>)    <span class="cm">// → true</span><br>
+[<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>].<span class="fn">every</span>(n =&gt; n &gt; <span class="num">0</span>)   <span class="cm">// → true</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 文字列 -->
+  <section id="string">
+    <div class="section-header">
+      <span class="section-icon">🔤</span>
+      <h2>文字列 — テキストの操作</h2>
+    </div>
+    <p class="section-desc">文字列はJavaScriptでよく扱うデータ型です。検索・切り出し・変換など便利なメソッドが多数あります。</p>
+    <div class="element-grid">
+
+      <div class="element-card cat-string">
+        <span class="element-tag">slice()</span>
+        <div class="element-info">
+          <div class="element-name">文字列の切り出し</div>
+          <div class="element-desc">開始インデックスから終了インデックス（含まない）までを切り出します。負の値を使うと末尾からカウントします。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> s = <span class="str">"Hello, World!"</span>;<br>
+s.<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">5</span>)   <span class="cm">// → "Hello"</span><br>
+s.<span class="fn">slice</span>(-<span class="num">6</span>)    <span class="cm">// → "World!"</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-string">
+        <span class="element-tag">includes() / startsWith() / endsWith()</span>
+        <div class="element-info">
+          <div class="element-name">文字列の検索</div>
+          <div class="element-desc">文字列が特定の文字列を含むか、特定の文字列で始まる・終わるかを確認します。</div>
+        </div>
+        <div class="element-example">
+<span class="str">"JavaScript"</span>.<span class="fn">includes</span>(<span class="str">"Script"</span>)     <span class="cm">// → true</span><br>
+<span class="str">"JavaScript"</span>.<span class="fn">startsWith</span>(<span class="str">"Java"</span>)   <span class="cm">// → true</span><br>
+<span class="str">"JavaScript"</span>.<span class="fn">endsWith</span>(<span class="str">"Script"</span>)  <span class="cm">// → true</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-string">
+        <span class="element-tag">replace() / replaceAll()</span>
+        <div class="element-info">
+          <div class="element-name">文字列の置換</div>
+          <div class="element-desc"><code>replace()</code> は最初の一致だけ、<code>replaceAll()</code> はすべての一致を置換します。正規表現も使えます。</div>
+        </div>
+        <div class="element-example">
+<span class="str">"aa-bb-cc"</span>.<span class="fn">replace</span>(<span class="str">"-"</span>, <span class="str">"/"</span>)     <span class="cm">// → "aa/bb-cc"</span><br>
+<span class="str">"aa-bb-cc"</span>.<span class="fn">replaceAll</span>(<span class="str">"-"</span>, <span class="str">"/"</span>) <span class="cm">// → "aa/bb/cc"</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-string">
+        <span class="element-tag">split() / join()</span>
+        <div class="element-info">
+          <div class="element-name">分割・結合</div>
+          <div class="element-desc"><code>split()</code> は文字列を区切り文字で分割して配列に、<code>join()</code> は配列を区切り文字でつないで文字列にします。セットで覚えましょう。</div>
+        </div>
+        <div class="element-example">
+<span class="str">"a,b,c"</span>.<span class="fn">split</span>(<span class="str">","</span>)        <span class="cm">// → ["a","b","c"]</span><br>
+[<span class="str">"a"</span>, <span class="str">"b"</span>, <span class="str">"c"</span>].<span class="fn">join</span>(<span class="str">"-"</span>) <span class="cm">// → "a-b-c"</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-string">
+        <span class="element-tag">trim() / padStart() / padEnd()</span>
+        <div class="element-info">
+          <div class="element-name">空白除去・文字埋め</div>
+          <div class="element-desc"><code>trim()</code> は両端の空白を取り除きます。<code>padStart()</code> / <code>padEnd()</code> は指定の長さになるまで文字を埋めます。</div>
+        </div>
+        <div class="element-example">
+<span class="str">"  hello  "</span>.<span class="fn">trim</span>()          <span class="cm">// → "hello"</span><br>
+<span class="str">"5"</span>.<span class="fn">padStart</span>(<span class="num">3</span>, <span class="str">"0"</span>)       <span class="cm">// → "005"</span><br>
+<span class="str">"ok"</span>.<span class="fn">padEnd</span>(<span class="num">5</span>, <span class="str">"."</span>)        <span class="cm">// → "ok..."</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- オブジェクト -->
+  <section id="object">
+    <div class="section-header">
+      <span class="section-icon">🗃️</span>
+      <h2>オブジェクト — キーと値のペア</h2>
+    </div>
+    <p class="section-desc">オブジェクトは名前（キー）と値のペアでデータを管理します。<code>Object</code> の静的メソッドを使うとデータ変換が楽になります。</p>
+    <div class="element-grid">
+
+      <div class="element-card cat-object">
+        <span class="element-tag">Object.keys() / values() / entries()</span>
+        <div class="element-info">
+          <div class="element-name">キー・値・ペアの配列を取得</div>
+          <div class="element-desc">オブジェクトのキー・値・[キー, 値] ペアの配列を返します。<code>map</code> や <code>for...of</code> と組み合わせてよく使います。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> obj = { a: <span class="num">1</span>, b: <span class="num">2</span>, c: <span class="num">3</span> };<br>
+Object.<span class="fn">keys</span>(obj)     <span class="cm">// → ["a", "b", "c"]</span><br>
+Object.<span class="fn">values</span>(obj)   <span class="cm">// → [1, 2, 3]</span><br>
+Object.<span class="fn">entries</span>(obj)  <span class="cm">// → [["a",1],["b",2],["c",3]]</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-object">
+        <span class="element-tag">Object.assign()</span>
+        <div class="element-info">
+          <div class="element-name">オブジェクトのコピー・結合</div>
+          <div class="element-desc">1つ以上のオブジェクトのプロパティをターゲットにコピーします。スプレッド構文（<code>{ ...obj }</code>）の方が読みやすい場合も多いです。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> target = { a: <span class="num">1</span> };<br>
+Object.<span class="fn">assign</span>(target, { b: <span class="num">2</span> }, { c: <span class="num">3</span> });<br>
+<span class="cm">// target → { a: 1, b: 2, c: 3 }</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-object">
+        <span class="element-tag">JSON.stringify() / JSON.parse()</span>
+        <div class="element-info">
+          <div class="element-name">JSON変換</div>
+          <div class="element-desc"><code>stringify()</code> はオブジェクトをJSON文字列に変換し、<code>parse()</code> はJSON文字列をオブジェクトに戻します。APIやデータ保存でよく使います。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> obj = { name: <span class="str">"田中"</span>, age: <span class="num">30</span> };<br>
+<span class="kw">const</span> json = JSON.<span class="fn">stringify</span>(obj);<br>
+<span class="cm">// → '{"name":"田中","age":30}'</span><br>
+JSON.<span class="fn">parse</span>(json).<span class="prop">name</span> <span class="cm">// → "田中"</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-object">
+        <span class="element-tag">オプショナルチェーン (?.)</span>
+        <div class="element-info">
+          <div class="element-name">安全なプロパティアクセス</div>
+          <div class="element-desc">プロパティが <code>null</code> / <code>undefined</code> のときにエラーではなく <code>undefined</code> を返します。深いネストのデータを扱うときに便利です。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> user = { profile: { name: <span class="str">"田中"</span> } };<br>
+user?.profile?.name    <span class="cm">// → "田中"</span><br>
+user?.address?.city   <span class="cm">// → undefined（エラーなし）</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-object">
+        <span class="element-tag">Null合体演算子 (??)</span>
+        <div class="element-info">
+          <div class="element-name">デフォルト値の設定</div>
+          <div class="element-desc">左辺が <code>null</code> または <code>undefined</code> のとき右辺を返します。<code>0</code> や空文字 <code>""</code> は有効な値として扱います（<code>||</code> との違い）。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> name = <span class="kw">null</span> ?? <span class="str">"ゲスト"</span>;  <span class="cm">// → "ゲスト"</span><br>
+<span class="kw">const</span> count = <span class="num">0</span> ?? <span class="num">10</span>;          <span class="cm">// → 0 (0は有効)</span><br>
+<span class="kw">const</span> cnt2 = <span class="num">0</span> || <span class="num">10</span>;           <span class="cm">// → 10 (|| は0をfalsy扱い)</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 非同期 -->
+  <section id="async">
+    <div class="section-header">
+      <span class="section-icon">⏳</span>
+      <h2>非同期処理 — Promise と async/await</h2>
+    </div>
+    <p class="section-desc">JavaScriptは非同期処理を多用します。APIからデータを取得したりファイルを読み込む際に必須の知識です。</p>
+    <div class="element-grid">
+
+      <div class="element-card cat-async">
+        <span class="element-tag">Promise</span>
+        <div class="element-info">
+          <div class="element-name">Promise — 非同期処理の結果</div>
+          <div class="element-desc">非同期操作の「将来の結果」を表すオブジェクトです。成功（<code>then</code>）・失敗（<code>catch</code>）・完了（<code>finally</code>）で処理を連鎖できます。</div>
+        </div>
+        <div class="element-example">
+<span class="fn">fetch</span>(<span class="str">"https://api.example.com/data"</span>)<br>
+&nbsp;&nbsp;.<span class="fn">then</span>(res =&gt; res.<span class="fn">json</span>())<br>
+&nbsp;&nbsp;.<span class="fn">then</span>(data =&gt; <span class="fn">console</span>.<span class="fn">log</span>(data))<br>
+&nbsp;&nbsp;.<span class="fn">catch</span>(err =&gt; <span class="fn">console</span>.<span class="fn">error</span>(err));
+        </div>
+      </div>
+
+      <div class="element-card cat-async">
+        <span class="element-tag">async / await</span>
+        <div class="element-info">
+          <div class="element-name">async/await — 同期的に書く非同期処理</div>
+          <div class="element-desc">Promise を <code>await</code> で「待つ」ことで、非同期処理を同期的なコードのように書けます。<code>async</code> の付いた関数の中でだけ使えます。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">async function</span> <span class="fn">getData</span>() {<br>
+&nbsp;&nbsp;<span class="kw">try</span> {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">"/api/data"</span>);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">const</span> data = <span class="kw">await</span> res.<span class="fn">json</span>();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> data;<br>
+&nbsp;&nbsp;} <span class="kw">catch</span> (err) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">console</span>.<span class="fn">error</span>(err);<br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+        <div class="tip"><strong>💡 ベストプラクティス：</strong> <code>await</code> は必ず <code>try...catch</code> と組み合わせてエラー処理をしましょう。</div>
+      </div>
+
+      <div class="element-card cat-async">
+        <span class="element-tag">Promise.all()</span>
+        <div class="element-info">
+          <div class="element-name">複数の非同期処理を並行実行</div>
+          <div class="element-desc">複数のPromiseを同時に実行し、すべて完了したら結果の配列を返します。順番に待つより高速です。1つでも失敗するとrejectされます。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> [users, posts] = <span class="kw">await</span> Promise.<span class="fn">all</span>([<br>
+&nbsp;&nbsp;<span class="fn">fetch</span>(<span class="str">"/api/users"</span>).<span class="fn">then</span>(r =&gt; r.<span class="fn">json</span>()),<br>
+&nbsp;&nbsp;<span class="fn">fetch</span>(<span class="str">"/api/posts"</span>).<span class="fn">then</span>(r =&gt; r.<span class="fn">json</span>()),<br>
+]);
+        </div>
+      </div>
+
+      <div class="element-card cat-async">
+        <span class="element-tag">setTimeout / setInterval</span>
+        <div class="element-info">
+          <div class="element-name">タイマー</div>
+          <div class="element-desc"><code>setTimeout()</code> は指定時間後に1回だけ実行し、<code>setInterval()</code> は指定間隔で繰り返し実行します。<code>clearInterval()</code> で停止できます。</div>
+        </div>
+        <div class="element-example">
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"1秒後"</span>), <span class="num">1000</span>);<br><br>
+<span class="kw">const</span> id = <span class="fn">setInterval</span>(() =&gt; {<br>
+&nbsp;&nbsp;<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"1秒ごと"</span>);<br>
+}, <span class="num">1000</span>);<br>
+<span class="fn">clearInterval</span>(id); <span class="cm">// 停止</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- DOM操作 -->
+  <section id="dom">
+    <div class="section-header">
+      <span class="section-icon">🌐</span>
+      <h2>DOM操作 — ページの要素を操作する</h2>
+    </div>
+    <p class="section-desc">DOM（Document Object Model）を通じてHTMLの要素を取得・変更・追加できます。ブラウザ上でのインタラクティブな処理の基本です。</p>
+    <div class="element-grid">
+
+      <div class="element-card cat-dom">
+        <span class="element-tag">querySelector()</span>
+        <div class="element-info">
+          <div class="element-name">要素の取得</div>
+          <div class="element-desc">CSSセレクターで最初の一致要素を取得します。<code>querySelectorAll()</code> はすべての一致要素をNodeListで返します。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> btn = document.<span class="fn">querySelector</span>(<span class="str">"#myBtn"</span>);<br>
+<span class="kw">const</span> items = document.<span class="fn">querySelectorAll</span>(<span class="str">".item"</span>);<br>
+items.<span class="fn">forEach</span>(el =&gt; <span class="fn">console</span>.<span class="fn">log</span>(el.<span class="prop">textContent</span>));
+        </div>
+      </div>
+
+      <div class="element-card cat-dom">
+        <span class="element-tag">addEventListener()</span>
+        <div class="element-info">
+          <div class="element-name">イベントリスナーの追加</div>
+          <div class="element-desc">クリック・入力・スクロールなどのイベントを監視し、発生時にコールバックを実行します。ユーザーインタラクションの基本です。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> btn = document.<span class="fn">querySelector</span>(<span class="str">"button"</span>);<br>
+btn.<span class="fn">addEventListener</span>(<span class="str">"click"</span>, (e) =&gt; {<br>
+&nbsp;&nbsp;<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"クリックされました"</span>);<br>
+&nbsp;&nbsp;e.<span class="fn">preventDefault</span>(); <span class="cm">// デフォルト動作を止める</span><br>
+});
+        </div>
+      </div>
+
+      <div class="element-card cat-dom">
+        <span class="element-tag">classList</span>
+        <div class="element-info">
+          <div class="element-name">クラスの操作</div>
+          <div class="element-desc"><code>add()</code>・<code>remove()</code>・<code>toggle()</code>・<code>contains()</code> でCSSクラスを動的に操作します。スタイルの切り替えに多用します。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> el = document.<span class="fn">querySelector</span>(<span class="str">".box"</span>);<br>
+el.classList.<span class="fn">add</span>(<span class="str">"active"</span>);<br>
+el.classList.<span class="fn">remove</span>(<span class="str">"hidden"</span>);<br>
+el.classList.<span class="fn">toggle</span>(<span class="str">"open"</span>);  <span class="cm">// あれば削除、なければ追加</span>
+        </div>
+      </div>
+
+      <div class="element-card cat-dom">
+        <span class="element-tag">innerHTML / textContent</span>
+        <div class="element-info">
+          <div class="element-name">コンテンツの書き換え</div>
+          <div class="element-desc"><code>textContent</code> はテキストのみを安全に書き換えます。<code>innerHTML</code> はHTMLタグごと書き換えますが、ユーザー入力をそのまま渡すとXSSの危険があります。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> el = document.<span class="fn">querySelector</span>(<span class="str">"#output"</span>);<br>
+el.<span class="prop">textContent</span> = <span class="str">"安全なテキスト"</span>;<br>
+el.<span class="prop">innerHTML</span> = <span class="str">"&lt;strong&gt;HTML込み&lt;/strong&gt;"</span>;
+        </div>
+        <div class="tip"><strong>💡 セキュリティ：</strong>ユーザー入力を <code>innerHTML</code> にそのまま入れると XSS 攻撃に脆弱になります。ユーザーデータには必ず <code>textContent</code> を使いましょう。</div>
+      </div>
+
+      <div class="element-card cat-dom">
+        <span class="element-tag">createElement / appendChild</span>
+        <div class="element-info">
+          <div class="element-name">要素の動的生成・追加</div>
+          <div class="element-desc"><code>createElement()</code> で新しいHTML要素を作り、<code>appendChild()</code> や <code>append()</code> でDOMに追加します。リストの動的生成などに使います。</div>
+        </div>
+        <div class="element-example">
+<span class="kw">const</span> li = document.<span class="fn">createElement</span>(<span class="str">"li"</span>);<br>
+li.<span class="prop">textContent</span> = <span class="str">"新しいアイテム"</span>;<br>
+li.classList.<span class="fn">add</span>(<span class="str">"item"</span>);<br>
+document.<span class="fn">querySelector</span>(<span class="str">"ul"</span>).<span class="fn">appendChild</span>(li);
+        </div>
+      </div>
+
+    </div>
+
+    <div class="citation">
+      📖 このガイドの内容は <a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference" target="_blank">MDN Web Docs — JavaScript リファレンス</a> を参考に作成しています。より詳しい仕様・使用例・ブラウザ互換性情報は MDN をご参照ください。
+    </div>
+
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <h3>⚠ このガイドを使うときの注意点</h3>
+    <ul>
+      <li>このガイドは学習の入口として代表的な構文・メソッドに絞っています。すべての API を網羅しているわけではありません。</li>
+      <li>ブラウザの種類やバージョンによって動作が異なる機能があります。本番環境では <a href="https://caniuse.com/" style="color:#89b4fa">caniuse.com</a> で互換性を確認してください。</li>
+      <li>コード例は説明を簡潔にするため省略している部分があります。実際の開発ではエラー処理や型チェックを適切に追加してください。</li>
+      <li>セキュリティに関わる機能（DOM操作・fetch など）は MDN の公式ドキュメントでベストプラクティスを確認することを強く推奨します。</li>
+    </ul>
+    <div class="meta">
+      参考: <a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference" target="_blank">MDN Web Docs — JavaScript リファレンス</a>　|　
+      <a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Guide" target="_blank">JavaScript ガイド</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
