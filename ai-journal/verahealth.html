@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verahealth ── ハルシネーションと戦う医療特化型AI | AI Journal</title>
+  <meta name="description" content="医療AIにおけるハルシネーション問題に正面から挑む Vera Health。根拠検索→エビデンス評価→回答生成という逆転の設計思想と、発見・計算・Deep Research Modeの実力を解説する。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Site Header ── -->
+<header class="site-header">
+  <div class="site-header__inner">
+    <a href="index.html" class="site-header__logo">AI <span>Journal</span></a>
+    <nav aria-label="サイトナビゲーション">
+      <ul class="site-nav">
+        <li><a href="index.html">記事一覧</a></li>
+        <li><a href="claude.html">Claude</a></li>
+        <li><a href="verahealth.html" aria-current="page">Verahealth</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<!-- ── Page Layout ── -->
+<div class="page-wrapper">
+
+  <!-- ── Article Main ── -->
+  <main class="article-main" id="main-content">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="article-tags">
+        <span class="tag">AI</span>
+        <span class="tag">Verahealth</span>
+        <span class="tag tag--teal">医療特化</span>
+        <span class="tag tag--teal">EBM</span>
+      </div>
+      <h1 class="article-title">Verahealth ── ハルシネーションと戦う医療特化型AI</h1>
+      <p class="article-subtitle">
+        「存在しない論文を自信満々に引用するAI」という問題に正面から挑む Vera Health。
+        根拠検索→エビデンス評価→回答生成という逆転の設計思想と、その実力を解説する。
+      </p>
+      <div class="article-meta">
+        <span class="article-meta__date">2026年4月10日</span>
+        <span class="article-meta__author">金子幸弘</span>
+      </div>
+    </header>
+
+    <!-- Article Body -->
+    <article class="article-body">
+
+      <!-- 1. はじめに -->
+      <h2 id="intro">はじめに ── 医療AIとハルシネーション問題</h2>
+      <p>
+        汎用の大規模言語モデル（LLM）を医療現場で使おうとした人なら、一度は直面したことがあるはずだ。
+        「NEJM 2021年掲載の○○ら」「Lancetに掲載されたランダム化比較試験」——それらしく見えるが、
+        実際には存在しない文献が堂々と提示される。これがいわゆる<strong>ハルシネーション（幻覚）</strong>であり、
+        一般的な会話では笑い話ですむかもしれないが、臨床判断や学術研究においては致命的な誤りにつながりかねない。
+      </p>
+      <p>
+        Vera Health は、この問題に対して設計思想の根本から挑んだ医療特化型AIアシスタントである。
+        2024年に設立されたスタートアップながら、すでに Mayo Clinic・Penn・Yale の臨床家が実際に使用し、
+        米国救急医学会（ACEP）との正式提携も果たしている。本稿では、その特徴と機能を詳しく紹介する。
+      </p>
+
+      <!-- 2. Vera Healthとは -->
+      <h2 id="about">Vera Health とは</h2>
+      <p>
+        Vera Health は、<strong>臨床意思決定支援のための医療特化型検索エンジン</strong>と位置づけられる。
+        単なるチャットbotではなく、6,000万件超の査読済み論文・ガイドラインを対象とした専用インデックスを持ち、
+        臨床医・研究者・医学生が日常的な疑問に根拠を持って答えるためのプラットフォームだ。
+      </p>
+      <p>
+        創業者は Yale と MIT の出身者、Maxime Allouch と Taieb Bennani の二人。
+        両者とも医師の親を持ち、厚い医学書と深夜まで格闘する姿を幼少期から見てきた経験が、
+        「医療情報アクセスを根本から変えたい」という動機の原点にある。
+        Y Combinator（Summer 2024）および Google AI Fund（Gradient Ventures）が出資している。
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-card__value">6,000万+</span>
+          <span class="stat-card__label">インデックス済み査読論文数</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__value">97.5%</span>
+          <span class="stat-card__label">USMLE 精度（世界最高水準）</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__value">100+</span>
+          <span class="stat-card__label">内蔵医療用計算ツール</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__value">無料</span>
+          <span class="stat-card__label">医療従事者・研修医に開放</span>
+        </div>
+      </div>
+
+      <!-- 3. ハルシネーションが少ない理由 -->
+      <h2 id="hallucination">ハルシネーションが少ない理由</h2>
+      <p>
+        Vera Health が他のLLMベースのツールと根本的に異なる点は、<strong>回答生成のアーキテクチャ</strong>にある。
+      </p>
+
+      <div class="callout">
+        <span class="callout__label">設計哲学の違い</span>
+        一般的なAIアシスタントは「先に回答を生成してから、それを支持する文献を後付けで探す」。
+        Vera は逆だ。<strong>まず医療専用検索エンジンとして関連論文・ガイドラインを取得し、
+        エビデンスグレードを評価してから、その根拠に基づいた回答を生成する。</strong>
+      </div>
+
+      <p>
+        この「検索→評価→生成」という順序の逆転が、ハルシネーションを構造的に抑制する。
+        回答中のすべての主要な記述にはオリジナルソースへのリンクが付与されており、
+        「その論文は本当に存在するのか」「内容は正確か」を読者が自分で確認できる。
+        勝手に文献を作り出すことは、この設計上ほぼ起こりえない。
+      </p>
+      <p>
+        精度の面では、米国医師国家試験（USMLE）において<strong>97.5%</strong>を達成し、
+        OpenAI・Google・Anthropic の各モデルを上回る世界最高水準の医療推論システムとして評価されている。
+        NEJM Q&amp;A ベンチマーク（84.9%）および MedXpertQA（62.2%）でもトップを記録した。
+      </p>
+
+      <!-- 4. 正しい文献リンクの提供 -->
+      <h2 id="citations">正しい文献リンクの提供</h2>
+      <p>
+        Vera の回答には、必ず<strong>実在する論文・ガイドラインへの直接リンク</strong>が付く。
+        これは単なる参考文献リストではなく、回答中の各記述と対応づけられたインラインサイテーションだ。
+        エビデンスのグレード（メタアナリシス・RCT・観察研究など）も明示されるため、
+        情報の強さと限界を一目で判断できる。
+      </p>
+      <p>
+        研究者や学生にとって特に有用なのは、PubMed や Scopus で検索語を工夫しながら文献を探す作業が
+        大幅に短縮される点だ。関連論文の発見と品質評価を同時に行えるため、
+        SR/MA（システマティックレビュー・メタアナリシス）の初期段階での文献スクリーニングにも活用可能な場面がある。
+      </p>
+
+      <!-- 5. 医療外の質問への対応 -->
+      <h2 id="scope">医療外の質問への対応</h2>
+      <p>
+        汎用LLMに「今日の天気は？」と聞けば答えが返ってくる。しかし医療現場での使用を想定したとき、
+        そのような雑談への応答能力は必ずしも必要ではなく、むしろ<strong>医療文脈に特化したスコープ管理</strong>が重要になる。
+      </p>
+      <p>
+        Vera Health は医療に関係しない質問に対してそのまま回答せず、
+        <strong>医療的な観点から問いを立て直し、回答可能な形へ誘導する</strong>設計になっている。
+        これにより、ツールが本来の用途を外れた情報を提供するリスクを抑え、
+        臨床・研究の文脈での信頼性を保っている。汎用AIとの最も明確な違いの一つと言えるだろう。
+      </p>
+
+      <!-- 6. 発見・計算機能 -->
+      <h2 id="features">発見・計算機能</h2>
+      <p>
+        Vera には、検索・回答生成以外にも実用的な機能が搭載されている。
+      </p>
+
+      <h3>🔍 発見（Discovery）</h3>
+      <p>
+        疾患の鑑別診断、治療選択肢の比較、禁忌の確認、ガイドライン間の差異の把握など、
+        臨床的な「発見」を支援する機能だ。特定の臨床シナリオを入力するだけで、
+        最新のエビデンスに基づいた整理された情報が即座に提示される。
+        たとえば「喫煙歴のある COPD 合併 Stage 2 高血圧の治療選択肢を比較せよ」といった
+        複合的・多段階的な質問にも対応する。
+      </p>
+
+      <h3>🧮 計算（Calculators）</h3>
+      <p>
+        100種類以上の医療用計算ツールを内蔵している。投薬量計算、GFR・BMI・eGFR などの
+        臨床スコア算出、リスク層別化ツールなど、ベッドサイドや外来で即座に使えるものが揃っている。
+        最新の文献に基づいた用量計算も可能であり、薬剤選択と投与設計を同一プラットフォームで完結できる。
+      </p>
+
+      <div class="callout callout--teal">
+        <span class="callout__label">筆者所感</span>
+        この「発見」と「計算」の組み合わせは、教育的な文脈でも非常に有用だと感じる。
+        学生が症例を検討する際、「なぜその薬か」という根拠を文献とともに確認しながら、
+        同時に投与量を計算できる。従来は複数のリソースを行き来していた作業が一体化されている。
+      </div>
+
+      <!-- 7. Deep Research Mode -->
+      <h2 id="deep-research">Deep Research Mode ── 系統的レビューを数分で</h2>
+      <p>
+        2025年9月に公開された <strong>Deep Research Mode</strong> は、研究者にとって特に注目すべき機能だ。
+        通常の検索・回答とは異なり、SR（システマティックレビュー）と同等のワークフローを
+        計算機的な速度と精度で実行する。
+      </p>
+
+      <div class="callout">
+        <span class="callout__label">Deep Research の処理フロー</span>
+        <ol style="padding-left:1.2rem; margin-top:.5rem; line-height:2;">
+          <li><strong>PICO フレームワーク</strong>で臨床疑問を定式化し、包含・除外基準を設定</li>
+          <li>エビデンスヒエラルキー（ガイドライン・メタアナリシス・SR・RCT を優先）に基づき文献を優先順位付け</li>
+          <li>6,000万件以上の論文に対して<strong>数十件の並列クエリ</strong>を同時実行</li>
+          <li>重複排除・スクリーニング・エンドポイントへのマッピングを自動実施</li>
+          <li>構造化されたエビデンス要約として合成・出力</li>
+        </ol>
+      </div>
+
+      <p>
+        SR/MA を自分で実施する研究者にとっては、最初の文献探索・スクリーニングに要する時間が
+        劇的に短縮される可能性がある。もちろん、最終的な批判的吟味と判断は研究者が行う必要があるが、
+        「どの論文が存在するか」を把握するための初期段階の補助として、実用的な価値は高い。
+      </p>
+
+      <!-- 8. 信頼性と導入実績 -->
+      <h2 id="adoption">信頼性と導入実績</h2>
+      <p>
+        Vera Health の信頼性を示す指標はベンチマークスコアだけではない。
+        <strong>Mayo Clinic・Penn・Yale</strong> など米国の主要医療機関の臨床家が実際に使用しており、
+        ACEP（米国救急医学会・会員38,000名超）との正式提携が2026年3月に締結された。
+        この提携により、救急医が利用する際に ACEP のガイドラインが回答に組み込まれ、出典明示される。
+      </p>
+      <p>
+        また、HIPAA（米国医療情報ポータビリティ・責任法）に準拠しており、
+        実臨床での患者情報を含む文脈での使用にも対応している。
+        さらに検索1回ごとに<strong>0.5 CMEクレジット</strong>を取得できる仕組みも特徴的だ。
+        医師にとって、知識の更新と単位取得が同時に行えることは実務上の強いインセンティブになる。
+      </p>
+
+      <!-- 9. まとめ -->
+      <h2 id="summary">まとめ</h2>
+      <p>
+        Vera Health の強みを一言で表すなら、<strong>「嘘をつかない設計」</strong>だと思う。
+        ハルシネーションを減らすために後付けでフィルタリングするのではなく、
+        そもそも根拠のない回答が生成されないよう、アーキテクチャ自体が構成されている。
+      </p>
+      <p>
+        医学教育の場から見ると、文献リンク付きの即時回答・医療用計算ツール・Deep Research Mode の組み合わせは、
+        学生が「調べる→考える→計算する」という一連のプロセスを単一のプラットフォームで完結させる可能性を開く。
+        汎用AIが「便利だが信頼できない」という立場に甘んじている中で、
+        Vera Health は医療という高リスク領域においてAIが果たすべきあり方の一つの答えを示している。
+      </p>
+      <p>
+        なお本稿は筆者の使用体験と公開情報に基づくものであり、個別の臨床判断や診断に利用することを意図したものではない。
+      </p>
+
+      <hr class="section-rule">
+
+      <!-- References -->
+      <section class="references" aria-label="参考文献・リンク">
+        <h2>参考文献・リンク</h2>
+        <ol>
+          <li>
+            Vera Health 公式サイト —
+            <a href="https://www.verahealth.ai/home" target="_blank" rel="noopener">
+              https://www.verahealth.ai/home
+            </a>
+          </li>
+          <li>
+            Vera Health App（App Store / iOS）—
+            <a href="https://apps.apple.com/us/app/vera-medical-ai-for-clinicians/id6744374898" target="_blank" rel="noopener">
+              App Store リンク
+            </a>
+          </li>
+          <li>
+            Vera Health App（Google Play / Android）—
+            <a href="https://play.google.com/store/apps/details?id=io.vera.app" target="_blank" rel="noopener">
+              Google Play リンク
+            </a>
+          </li>
+          <li>
+            Vera Health Blog —
+            <a href="https://www.verahealth.ai/blog" target="_blank" rel="noopener">
+              https://www.verahealth.ai/blog
+            </a>
+          </li>
+          <li>
+            USMLE 97.5% 達成の技術的背景（ZeroEntropy 解説記事）—
+            <a href="https://www.zeroentropy.dev/articles/how-vera-health-achieved-state-of-the-art-clinical-accuracy-using-zeroentropy" target="_blank" rel="noopener">
+              How Vera Health Achieved State-of-the-Art Clinical Accuracy
+            </a>
+          </li>
+          <li>
+            Deep Research Mode 解説（Vera Health Blog）—
+            <a href="https://www.verahealth.ai/blog/vera-health-launches-deep-research-mode" target="_blank" rel="noopener">
+              Vera Health Launches Deep Research Mode
+            </a>
+          </li>
+          <li>
+            ACEP との提携発表（Vera Health Blog, 2026年3月）—
+            <a href="https://www.verahealth.ai/blog/acep-vera-health-partner-trusted-ai-emergency-physicians" target="_blank" rel="noopener">
+              ACEP and Vera Health Partner to Deliver Trusted AI to Emergency Physicians
+            </a>
+          </li>
+          <li>
+            Y Combinator 企業紹介ページ —
+            <a href="https://www.ycombinator.com/companies/vera-health" target="_blank" rel="noopener">
+              https://www.ycombinator.com/companies/vera-health
+            </a>
+          </li>
+        </ol>
+      </section>
+
+    </article>
+  </main><!-- /article-main -->
+
+  <!-- ── Sidebar: ToC ── -->
+  <aside class="article-sidebar" aria-label="目次">
+    <nav class="toc">
+      <p class="toc__title">目次</p>
+      <ul class="toc__list">
+        <li><a href="#intro">はじめに</a></li>
+        <li><a href="#about">Vera Health とは</a></li>
+        <li><a href="#hallucination">ハルシネーションが少ない理由</a></li>
+        <li><a href="#citations">正しい文献リンクの提供</a></li>
+        <li><a href="#scope">医療外の質問への対応</a></li>
+        <li><a href="#features">発見・計算機能</a></li>
+        <li><a href="#deep-research">Deep Research Mode</a></li>
+        <li><a href="#adoption">信頼性と導入実績</a></li>
+        <li><a href="#summary">まとめ</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+</div><!-- /page-wrapper -->
+
+<!-- ── Site Footer ── -->
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <div class="site-footer__meta">
+      <span class="site-footer__date">作成日：2026年4月10日</span>
+      <span class="site-footer__tool">本記事は Claude（Anthropic）を使用して作成しました</span>
+    </div>
+    <div class="site-footer__disclaimer">
+      <strong>⚠️ 免責事項：</strong>
+      本記事はAIによって生成されたものであり、<strong>誤りを含む可能性があります</strong>。
+      医療目的での使用・臨床判断には必ず一次情報源および医療専門家にご確認ください。
+      本記事の内容を利用した結果については、<strong>利用者自身の責任</strong>となります。
+      再配布は可能ですが、改変・引用の際は出典の明記を推奨します。
+      再配布による結果についても作成者は責任を負いません。
+    </div>
+  </div>
+</footer>
+
+<!-- ── ToC Active Link Script ── -->
+<script>
+  (function () {
+    const tocLinks = document.querySelectorAll('.toc__list a');
+    const headings = Array.from(document.querySelectorAll('.article-body h2[id]'));
+
+    function updateActive() {
+      const scrollY = window.scrollY + 90;
+      let current = headings[0]?.id ?? '';
+      for (const h of headings) {
+        if (h.offsetTop <= scrollY) current = h.id;
+      }
+      tocLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+      });
+    }
+
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+  })();
+</script>
+
+</body>
+</html>
