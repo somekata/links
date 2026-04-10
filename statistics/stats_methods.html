@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計学 応用編②　検定・パラ/ノンパラ・カテゴリ検定</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f5f1e8; --paper:#fdfaf3; --paper2:#f9f5ec;
+    --ink:#1c1710; --ink-light:#5a5040; --ink-faint:#9a8e7a;
+    --accent:#8b4513; --accent-light:#c47a3a; --accent-pale:#f0e4d0;
+    --blue:#2c5f8a; --blue-pale:#ddeaf5;
+    --green:#3a6b3a; --green-pale:#dff0df;
+    --red-pale:#f5e0e0; --border:#d4c9b0;
+    --shadow:rgba(28,23,16,0.08); --sidebar-w:260px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif;font-weight:300;line-height:1.8;}
+  .layout{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:auto auto 1fr;min-height:100vh;}
+  header{grid-column:1/-1;background:var(--ink);color:var(--paper);padding:28px 40px;display:flex;align-items:baseline;gap:20px;border-bottom:3px solid var(--accent);}
+  header h1{font-family:'Zen Antique',serif;font-size:1.6rem;letter-spacing:0.1em;color:var(--accent-light);}
+  header .subtitle{font-size:0.85rem;color:var(--ink-faint);font-weight:300;}
+  .series-nav{grid-column:1/-1;background:var(--paper2);border-bottom:1px solid var(--border);padding:10px 40px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .series-nav a{font-size:0.78rem;padding:4px 12px;border-radius:20px;text-decoration:none;color:var(--ink-light);border:1px solid var(--border);transition:all 0.2s;}
+  .series-nav a:hover{background:var(--accent-pale);color:var(--accent);}
+  .series-nav a.current{background:var(--accent);color:var(--paper);border-color:var(--accent);}
+  .series-nav .label{font-size:0.72rem;color:var(--ink-faint);margin-right:4px;}
+  aside{grid-column:1;background:var(--paper2);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  aside .toc-title{font-family:'Zen Antique',serif;font-size:0.75rem;letter-spacing:0.2em;color:var(--ink-faint);padding:0 24px 12px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+  aside nav a{display:block;padding:8px 24px;font-size:0.82rem;color:var(--ink-light);text-decoration:none;border-left:3px solid transparent;transition:all 0.2s;line-height:1.5;}
+  aside nav a:hover,aside nav a.active{background:var(--accent-pale);border-left-color:var(--accent);color:var(--accent);}
+  aside nav .ch-num{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--ink-faint);margin-right:6px;}
+  main{grid-column:2;padding:48px 56px 80px;max-width:820px;}
+  .chapter{margin-bottom:72px;padding-bottom:48px;border-bottom:1px dashed var(--border);}
+  .chapter:last-child{border-bottom:none;}
+  .chapter-header{display:flex;align-items:baseline;gap:16px;margin-bottom:28px;}
+  .chapter-num{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--accent-light);background:var(--accent-pale);padding:4px 10px;border-radius:4px;letter-spacing:0.1em;}
+  .chapter-title{font-family:'Zen Antique',serif;font-size:1.4rem;color:var(--ink);letter-spacing:0.05em;}
+  .chapter-lead{font-size:0.88rem;color:var(--ink-light);margin-bottom:28px;font-style:italic;}
+  .dialogue{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:28px 32px;margin-bottom:24px;box-shadow:0 2px 8px var(--shadow);}
+  .dialogue-turn{margin-bottom:20px;display:grid;grid-template-columns:56px 1fr;gap:12px;align-items:start;}
+  .dialogue-turn:last-child{margin-bottom:0;}
+  .speaker{font-family:'JetBrains Mono',monospace;font-size:0.72rem;font-weight:600;padding:4px 8px;border-radius:4px;text-align:center;margin-top:2px;}
+  .speaker.student{background:var(--blue-pale);color:var(--blue);}
+  .speaker.teacher{background:var(--accent-pale);color:var(--accent);}
+  .speech{font-size:0.92rem;line-height:1.9;}
+  .speech em{color:var(--accent);font-style:normal;font-weight:500;}
+  .summary{background:var(--green-pale);border-left:4px solid var(--green);border-radius:0 8px 8px 0;padding:20px 24px;margin-bottom:20px;}
+  .summary-title{font-family:'Zen Antique',serif;font-size:0.8rem;letter-spacing:0.15em;color:var(--green);margin-bottom:10px;}
+  .summary p{font-size:0.88rem;line-height:1.8;color:#2a4a2a;}
+  .definition{background:var(--blue-pale);border:1px solid #b0cde8;border-radius:8px;padding:20px 24px;margin-bottom:20px;}
+  .definition-title{font-family:'Zen Antique',serif;font-size:0.8rem;letter-spacing:0.15em;color:var(--blue);margin-bottom:12px;}
+  .definition p{font-size:0.88rem;line-height:1.8;color:#1a3a5a;}
+  .note{background:var(--red-pale);border-left:4px solid #c0504a;border-radius:0 8px 8px 0;padding:16px 20px;margin-bottom:20px;font-size:0.85rem;color:#5a1a1a;line-height:1.8;}
+  .note-title{font-weight:500;margin-bottom:4px;color:#9a2020;font-size:0.8rem;letter-spacing:0.1em;}
+  .decision-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:0.85rem;}
+  .decision-table th{background:var(--ink);color:var(--paper);padding:10px 14px;text-align:left;font-weight:400;font-family:'Noto Serif JP',serif;}
+  .decision-table td{padding:10px 14px;border:1px solid var(--border);line-height:1.6;vertical-align:top;}
+  .decision-table tr:nth-child(even) td{background:var(--paper2);}
+  .decision-table .tool{font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:var(--blue);font-weight:600;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .col-box{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:18px 20px;}
+  .col-box-title{font-family:'Zen Antique',serif;font-size:0.82rem;color:var(--accent);margin-bottom:10px;letter-spacing:0.08em;}
+  .col-box p{font-size:0.85rem;line-height:1.8;}
+  .col-box ul{font-size:0.85rem;line-height:1.8;padding-left:1.2em;}
+  .page-nav{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border);}
+  .page-nav a{font-size:0.85rem;color:var(--accent);text-decoration:none;padding:8px 16px;border:1px solid var(--accent-light);border-radius:6px;transition:all 0.2s;}
+  .page-nav a:hover{background:var(--accent-pale);}
+  @media(max-width:768px){.layout{grid-template-columns:1fr;}aside{display:none;}main{padding:32px 24px;}.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="layout">
+<header>
+  <h1>統計学 応用編②</h1>
+  <span class="subtitle">検定の系譜・パラ vs ノンパラ・カテゴリ検定</span>
+</header>
+<div class="series-nav">
+  <span class="label">シリーズ：</span>
+  <a href="stats_basics.html">基礎編</a>
+  <a href="stats_foundations.html">応用① 本質・歴史</a>
+  <a href="stats_methods.html" class="current">応用② 検定・パラ/ノンパラ</a>
+  <a href="stats_advanced.html">応用③ 生存・ベイズ・診断</a>
+</div>
+<aside>
+  <div class="toc-title">目　次</div>
+  <nav id="toc">
+    <a href="#ch3"><span class="ch-num">Ⅲ</span>検定の系譜</a>
+    <a href="#ch4"><span class="ch-num">Ⅳ</span>パラ vs ノンパラ</a>
+    <a href="#ch5"><span class="ch-num">Ⅴ</span>カテゴリ検定</a>
+  </nav>
+</aside>
+<main>
+
+<!-- Ⅲ -->
+<section class="chapter" id="ch3">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. Ⅲ</span>
+    <h2 class="chapter-title">検定の系譜 ── 問題から道具を選ぶ</h2>
+  </div>
+  <p class="chapter-lead">「どの検定を使えばいいか」は問題の構造から決まる。道具の対応表を頭に入れよう。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">t検定・χ²検定・U検定…検定の種類が多すぎて、どれを使えばいいか分かりません。</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">それは道具箱の中身を全部暗記しようとしているから。大事なのは<em>「問題の構造」から道具を選ぶ</em>こと。まず聞くけど、比べているのは何と何？</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">グループ間の差とか、関係性とか…ですか？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">そう。整理すると「グループ数」「対応の有無」「データの型」の3つを確認すれば、道具がほぼ決まる。例えば「2グループ・独立・連続量」なら？</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">t検定ですか？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">正解。でも正規分布が怪しければウィルコクソン U 検定。「3グループ以上・独立・連続量」なら分散分析（ANOVA）。対応があるなら対応のある t 検定 か フリードマン検定。こうやって<em>問題→道具</em>で覚えると迷わなくなる。</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">t検定と U 検定は何が違うんですか？ 具体的に教えてください。</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">新薬と対照薬で血圧降下量を比べる試験があるとしよう。血圧降下量が正規分布に従うなら<em>対応のない t 検定</em>。でも患者が少なくて（n=8 とか）、正規性が怪しければ<em>マン・ホイットニー U 検定</em>を使う。U 検定は値そのものじゃなく「順位」を使うから、外れ値に強い。</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">じゃあ常に U 検定を使えばいいんじゃないですか？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">トレードオフがある。正規分布が本当に成り立っているなら、t 検定の方が<em>検定力（統計的パワー）</em>が高い——つまり本当の差を見つけやすい。U 検定は堅牢だけど、少し鈍い。道具の選択は「仮定が成り立つか」と「何を優先するか」のバランスなんだ。</div></div>
+  </div>
+
+  <table class="decision-table">
+    <tr><th>状況</th><th>パラメトリック</th><th>ノンパラメトリック</th></tr>
+    <tr><td>2群・独立・連続量</td><td class="tool">対応のない t 検定</td><td class="tool">Mann-Whitney U 検定</td></tr>
+    <tr><td>2群・対応あり・連続量</td><td class="tool">対応のある t 検定</td><td class="tool">Wilcoxon 符号順位検定</td></tr>
+    <tr><td>3群以上・独立・連続量</td><td class="tool">一元配置 ANOVA</td><td class="tool">Kruskal-Wallis 検定</td></tr>
+    <tr><td>3群以上・対応あり・連続量</td><td class="tool">反復測定 ANOVA</td><td class="tool">Friedman 検定</td></tr>
+    <tr><td>2変数の関係・連続量</td><td class="tool">Pearson 相関</td><td class="tool">Spearman 順位相関</td></tr>
+    <tr><td>2値×2値のカテゴリ</td><td colspan="2" style="text-align:center" class="tool">χ² 検定 / Fisher の直接確率</td></tr>
+    <tr><td>対応ある2値×2値</td><td colspan="2" style="text-align:center" class="tool">McNemar 検定</td></tr>
+  </table>
+
+  <div class="summary">
+    <div class="summary-title">✦ まとめ</div>
+    <p>検定選択の3要素：①グループ数（2群 vs 多群）、②対応の有無（独立 vs 対応あり）、③データの型（連続量 vs カテゴリ）。正規性が成り立てばパラメトリック検定が高検定力。成り立たなければノンパラメトリック検定が堅牢。</p>
+  </div>
+</section>
+
+<!-- Ⅳ -->
+<section class="chapter" id="ch4">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. Ⅳ</span>
+    <h2 class="chapter-title">パラ vs ノンパラ ── トレードオフと使い分け</h2>
+  </div>
+  <p class="chapter-lead">仮定の強さと検定力のトレードオフ。どちらを選ぶか、判断軸を身につける。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">「パラメトリック」「ノンパラメトリック」って、何がパラメーターなんですか？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">パラメトリック検定は「データが特定の分布（主に正規分布）に従う」という<em>仮定（パラメーター）</em>を置く。その仮定のもとで平均・分散という統計量を使って検定する。</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">ノンパラメトリックは仮定を置かない？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">「分布の形を仮定しない」という意味では正しい。代わりに<em>データの順位</em>を使う。順位なら分布に依存しないからね。ただし「仮定が全くない」わけではなく、独立性などの前提は必要だよ。</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">正規性の確認はどうやるんですか？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">主に3つ。①ヒストグラム・Q-Qプロットで目視、②Shapiro-Wilk 検定（n が小さいとき）、③ 中心極限定理——n が 30 以上なら標本平均は近似的に正規分布する、という原則。小サンプル・外れ値あり・ひどい歪みがあればノンパラを選ぶのが安全だよ。</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">じゃあ迷ったらノンパラにすればいいですか？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">気持ちは分かるけど、正規性が成り立つときにノンパラを使うと<em>検定力が落ちる</em>——つまり本当の差を見逃しやすくなる。臨床試験で「差があるのに検出できなかった」は患者さんへの影響が大きい。だから「正規性が成り立つかどうか」を丁寧に確認することが大事なんだ。</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="col-box">
+      <div class="col-box-title">パラメトリック検定</div>
+      <ul>
+        <li>正規分布などの仮定を置く</li>
+        <li>平均・分散を直接使う</li>
+        <li>仮定が成立すれば高検定力</li>
+        <li>外れ値・歪みに弱い</li>
+        <li>例：t検定・ANOVA・Pearson相関</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">ノンパラメトリック検定</div>
+      <ul>
+        <li>分布の形を仮定しない</li>
+        <li>データの順位を使う</li>
+        <li>外れ値・小標本に堅牢</li>
+        <li>正規分布時は検定力が低下</li>
+        <li>例：U検定・Wilcoxon・Spearman</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">⚠ 「正規性検定で p &gt; 0.05 だからパラメトリックOK」の罠</div>
+    Shapiro-Wilk 検定で p &gt; 0.05 は「正規性を否定できなかった」であって「正規分布と証明された」ではない。特に小標本では検定力が低く、非正規でも p &gt; 0.05 になりやすい。Q-Qプロットの目視も組み合わせて判断すること。
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">✦ まとめ</div>
+    <p>パラメトリック = 仮定あり・高検定力、ノンパラメトリック = 仮定なし・堅牢。正規性の確認は目視（Q-Qプロット）＋検定（Shapiro-Wilk）の組み合わせで。迷ったら「外れ値・小標本・ひどい歪み」があればノンパラ、なければパラメトリックを基本方針に。</p>
+  </div>
+</section>
+
+<!-- Ⅴ -->
+<section class="chapter" id="ch5">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. Ⅴ</span>
+    <h2 class="chapter-title">カテゴリ検定 ── フィッシャーとマクネマーの違い</h2>
+  </div>
+  <p class="chapter-lead">「はい/いいえ」「陽性/陰性」など、カテゴリデータを比べるときの道具。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">χ²検定とフィッシャーの直接確率検定って、どう違うんですか？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">どちらも「2×2のクロス表」を使う検定。違いは適用条件だよ。χ²検定はサンプルが大きいときの<em>近似検定</em>。期待度数が5未満のセルがある場合は近似が粗くなる。</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">期待度数って何ですか？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">「もし2群に差がなければ、このセルには何人入るか」という理論値だよ。小さすぎると χ² の近似が崩れる。そのときはフィッシャーの直接確率検定——これは<em>全ての可能な表を列挙して正確な確率を計算する</em>。サンプルが少ない医学研究では必須の知識だね。</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">マクネマー検定は？</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">ここが重要な違いで——マクネマーは<em>対応のある</em>2値データに使う。例えば「治療前後で症状あり/なしが変わったか」。同じ患者を2回測るから対応がある。χ²検定を使ってしまうのは間違いだよ。</div></div>
+    <div class="dialogue-turn"><span class="speaker student">学生</span>
+      <div class="speech">対応の有無、ここでも重要なんですね。</div></div>
+    <div class="dialogue-turn"><span class="speaker teacher">先生</span>
+      <div class="speech">統計選択の最重要チェックポイントの一つだよ。対応があるかどうかで使う道具がガラッと変わる——t 検定 vs 対応のある t 検定、U 検定 vs Wilcoxon 検定、χ² vs マクネマー。全部同じ構造の違いだ。</div></div>
+  </div>
+
+  <div class="definition">
+    <div class="definition-title">📐 マクネマー検定の構造</div>
+    <p>同じ対象者に2回評価（前後・2手法など）を行い、2値の変化を検定する。</p>
+    <br>
+    <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+      <tr><th style="background:var(--accent-pale);padding:8px 12px;border:1px solid var(--border)"></th><th style="background:var(--accent-pale);padding:8px 12px;border:1px solid var(--border)">後：陽性</th><th style="background:var(--accent-pale);padding:8px 12px;border:1px solid var(--border)">後：陰性</th></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--border);font-weight:500">前：陽性</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;font-family:monospace">a（不変）</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;font-family:monospace;color:var(--blue)">b（陽→陰）</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--border);font-weight:500">前：陰性</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;font-family:monospace;color:var(--blue)">c（陰→陽）</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;font-family:monospace">d（不変）</td></tr>
+    </table>
+    <br>
+    <p>注目するのは「変化したペア」b と c のみ。変化がなければ b = c のはず。<br>
+    検定統計量：(b − c)² ÷ (b + c)　→ χ² 分布（自由度1）に従う。</p>
+  </div>
+
+  <div class="note">
+    <div class="note-title">⚠ よくある誤り</div>
+    治療前後の改善率を比較するとき、χ²検定を使ってしまう例が多い。前後の測定は独立ではなく対応があるため、必ずマクネマー検定を使うこと。独立のデータに対応ありの検定を使う（逆も然り）のは根本的な誤りとなる。
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">✦ まとめ</div>
+    <p>カテゴリ検定の選択：独立2群 → χ²検定（大標本）or Fisher の直接確率（小標本）、対応あり2群 → McNemar 検定。「対応の有無」は検定選択の最重要チェックポイント。</p>
+  </div>
+
+  <div class="page-nav">
+    <a href="stats_foundations.html">← 応用① 本質・歴史</a>
+    <a href="stats_advanced.html">応用③ 生存・ベイズ・診断 →</a>
+  </div>
+</section>
+
+</main>
+</div>
+<script>
+const sections=document.querySelectorAll('.chapter');
+const links=document.querySelectorAll('#toc a');
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=document.querySelector(`#toc a[href="#${e.target.id}"]`);if(a)a.classList.add('active');}
+  });
+},{threshold:0.3});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

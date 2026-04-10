@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計学 応用編③ — 生存分析・SR&MA・ベイズ・診断の統計</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8; --paper: #fdfaf3; --paper2: #f9f5ec;
+    --ink: #1c1710; --ink-light: #5a5040; --ink-faint: #9a8e7a;
+    --accent: #8b4513; --accent-light: #c47a3a; --accent-pale: #f0e4d0;
+    --blue: #2c5f8a; --blue-pale: #ddeaf5;
+    --green: #3a6b3a; --green-pale: #dff0df;
+    --red-pale: #f5e0e0; --border: #d4c9b0;
+    --shadow: rgba(28,23,16,0.08); --sidebar-w: 260px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: 'Noto Sans JP', sans-serif; font-weight: 300; line-height: 1.8; }
+  .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+  header { grid-column: 1 / -1; background: var(--ink); color: var(--paper); padding: 28px 40px; display: flex; align-items: baseline; gap: 20px; border-bottom: 3px solid var(--accent); }
+  header h1 { font-family: 'Zen Antique', serif; font-size: 1.6rem; letter-spacing: 0.1em; color: var(--accent-light); }
+  header .subtitle { font-size: 0.85rem; color: var(--ink-faint); font-weight: 300; }
+  aside { background: var(--paper2); border-right: 1px solid var(--border); padding: 32px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .toc-title { font-family: 'Zen Antique', serif; font-size: 0.75rem; letter-spacing: 0.2em; color: var(--ink-faint); padding: 0 24px 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  aside nav a { display: block; padding: 8px 24px; font-size: 0.82rem; color: var(--ink-light); text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s; line-height: 1.5; }
+  aside nav a:hover, aside nav a.active { background: var(--accent-pale); border-left-color: var(--accent); color: var(--accent); }
+  .ch-num { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink-faint); margin-right: 6px; }
+  .nav-links { padding: 20px 24px 0; border-top: 1px solid var(--border); margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .nav-links a { font-size: 0.78rem; color: var(--blue); text-decoration: none; }
+  .nav-links a:hover { text-decoration: underline; }
+  main { grid-column: 2; padding: 48px 56px 80px; max-width: 820px; }
+  .chapter { margin-bottom: 72px; padding-bottom: 48px; border-bottom: 1px dashed var(--border); }
+  .chapter:last-child { border-bottom: none; }
+  .chapter-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 28px; }
+  .chapter-num { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent-light); background: var(--accent-pale); padding: 4px 10px; border-radius: 4px; }
+  .chapter-title { font-family: 'Zen Antique', serif; font-size: 1.4rem; color: var(--ink); letter-spacing: 0.05em; }
+  .chapter-lead { font-size: 0.88rem; color: var(--ink-light); margin-bottom: 28px; font-style: italic; }
+  .dialogue { background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 2px 8px var(--shadow); }
+  .dialogue-turn { margin-bottom: 20px; display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: start; }
+  .dialogue-turn:last-child { margin-bottom: 0; }
+  .speaker { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; text-align: center; margin-top: 2px; }
+  .speaker.student { background: var(--blue-pale); color: var(--blue); }
+  .speaker.teacher { background: var(--accent-pale); color: var(--accent); }
+  .speech { font-size: 0.92rem; line-height: 1.9; }
+  .speech em { color: var(--accent); font-style: normal; font-weight: 500; }
+  .summary { background: var(--green-pale); border-left: 4px solid var(--green); border-radius: 0 8px 8px 0; padding: 20px 24px; margin-bottom: 20px; }
+  .summary-title { font-family: 'Zen Antique', serif; font-size: 0.8rem; letter-spacing: 0.15em; color: var(--green); margin-bottom: 10px; }
+  .summary p { font-size: 0.88rem; line-height: 1.8; color: #2a4a2a; }
+  .definition { background: var(--blue-pale); border: 1px solid #b0cde8; border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; }
+  .definition-title { font-family: 'Zen Antique', serif; font-size: 0.8rem; letter-spacing: 0.15em; color: var(--blue); margin-bottom: 12px; }
+  .definition p { font-size: 0.88rem; line-height: 1.8; color: #1a3a5a; }
+  .formula { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; background: white; border-radius: 6px; padding: 10px 14px; margin: 8px 0; color: var(--blue); border: 1px solid #b0cde8; }
+  .note { background: var(--red-pale); border-left: 4px solid #c0504a; border-radius: 0 8px 8px 0; padding: 16px 20px; margin-bottom: 20px; font-size: 0.85rem; color: #5a1a1a; line-height: 1.8; }
+  .note-title { font-weight: 500; margin-bottom: 4px; color: #9a2020; font-size: 0.8rem; letter-spacing: 0.1em; }
+  .example { background: var(--paper2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; }
+  .example-title { font-family: 'Zen Antique', serif; font-size: 0.78rem; color: var(--accent-light); letter-spacing: 0.12em; margin-bottom: 10px; }
+  .example p { font-size: 0.88rem; line-height: 1.8; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  th { background: var(--accent-pale); padding: 8px 12px; text-align: center; font-weight: 500; border: 1px solid var(--border); }
+  td { padding: 8px 12px; border: 1px solid var(--border); text-align: center; }
+  td.left { text-align: left; }
+  .steps { counter-reset: step; }
+  .step { display: grid; grid-template-columns: 40px 1fr; gap: 12px; margin-bottom: 16px; }
+  .step-num { background: var(--accent); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 600; flex-shrink: 0; }
+  .step-content { font-size: 0.88rem; line-height: 1.8; padding-top: 4px; }
+  .step-content strong { color: var(--accent); }
+  @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } aside { display: none; } main { padding: 32px 24px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+<header>
+  <h1>統計学 応用編③</h1>
+  <span class="subtitle">生存分析 / SR&amp;MA / ベイズ統計 / 診断の統計</span>
+</header>
+
+<aside>
+  <div class="toc-title">目　次</div>
+  <nav id="toc">
+    <a href="#ch6"><span class="ch-num">Ⅵ</span>生存分析</a>
+    <a href="#ch6b"><span class="ch-num">　</span>KM→ログランク→Cox</a>
+    <a href="#ch7"><span class="ch-num">Ⅶ</span>SR &amp; MA</a>
+    <a href="#ch7b"><span class="ch-num">　</span>p-hacking と事前登録</a>
+    <a href="#ch8"><span class="ch-num">Ⅷ</span>ベイズ統計</a>
+    <a href="#ch8b"><span class="ch-num">　</span>頻度主義との比較</a>
+    <a href="#ch9"><span class="ch-num">Ⅸ</span>診断の統計</a>
+    <a href="#ch9b"><span class="ch-num">　</span>感度・特異度・ROC</a>
+  </nav>
+  <div class="nav-links">
+    <a href="stats_methods.html">← 応用編②</a>
+    <a href="stats_basics.html">基礎編へ</a>
+  </div>
+</aside>
+
+<main>
+
+<!-- ===== Ⅵ 生存分析 ===== -->
+<section class="chapter" id="ch6">
+  <div class="chapter-header">
+    <span class="chapter-num">Ⅵ</span>
+    <h2 class="chapter-title">生存分析</h2>
+  </div>
+  <p class="chapter-lead">「いつ起こるか」を分析する——時間という次元を扱う統計。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">生存分析って、名前が怖いですが…</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">「生存」という名前だけど、死亡以外にも使う。「再発までの時間」「退院までの日数」「機器の故障までの時間」——何でも「<em>イベントが起きるまでの時間</em>」を分析するのが生存分析だよ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">普通のt検定じゃだめなんですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">大きな問題がある。<em>打ち切り（censoring）</em>だよ。試験が終了したとき、まだイベントが起きていない人がいる。その人の「生存時間は不明だが少なくとも〇日以上」という情報を捨てるのはもったいない。生存分析はこの不完全な情報も活かせる。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">それでカプラン・マイヤー曲線を描くんですね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そう、3ステップで考えよう。</div>
+    </div>
+  </div>
+
+  <div class="definition" id="ch6b">
+    <div class="definition-title">📐 生存分析の3ステップ</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Kaplan-Meier（KM）曲線</strong>：イベント発生のたびに生存率を更新する階段状の曲線。視覚的に2群を比較できる。打ち切りデータも反映できる。</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Log-rank検定</strong>：2本のKM曲線を統計的に比較する検定。「2群の生存曲線に差があるか？」を p値で示す。ただし「どれくらい違うか」は示せない。</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Cox比例ハザードモデル</strong>：複数の共変量（年齢・性別・重症度など）を調整しながら「各因子がイベントリスクに与える影響」を定量化する。結果は<em>ハザード比（HR）</em>で表す。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="example-title">🩺 ハザード比の読み方</div>
+    <p>Cox回帰の結果：HR = 0.65（95%CI：0.48–0.88）</p>
+    <p style="margin-top:8px">→ この因子があると、イベント発生リスクが対照群と比べて 35% 低い。<br>
+    → 95%信頼区間が1をまたいでいないので、統計的に有意。<br>
+    HR &lt; 1：保護的　HR = 1：差なし　HR &gt; 1：リスク増加</p>
+  </div>
+
+  <div class="note">
+    <div class="note-title">⚠ 比例ハザード仮定</div>
+    Cox回帰は「2群のハザード比が時間によらず一定」という仮定が必要。この仮定が崩れると結果が信頼できない。Schoenfeld残差プロットで確認するのが標準的。
+  </div>
+</section>
+
+<!-- ===== Ⅶ SR & MA ===== -->
+<section class="chapter" id="ch7">
+  <div class="chapter-header">
+    <span class="chapter-num">Ⅶ</span>
+    <h2 class="chapter-title">システマティックレビュー &amp; メタアナリシス</h2>
+  </div>
+  <p class="chapter-lead">エビデンスの頂点——なぜ1つの研究では不十分なのか。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">SR とか MA って、論文で最上位のエビデンスって聞きましたが。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">エビデンスピラミッドの頂点だね。なぜかというと、1つの研究は偶然の結果かもしれない。複数の研究を系統的に集めて統合すれば、より信頼性の高い結論が得られる——それが SR/MA の発想。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">SR と MA の違いは？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">SR（システマティックレビュー）は「系統的な文献検索・選択・評価」のプロセス全体。MA（メタアナリシス）は複数の研究結果を統計的に統合する手法。SR の中で MA を行うイメージだよ。SR はあっても MA がない場合もある。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">p-hacking ってよく聞きますが？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">p値が 0.05 を下回るまで、データの切り方や解析方法を変え続けること。例えば外れ値を抜いたり、共変量を追加したりして、「有意差が出る解析」を探す。これは科学的に不正直だ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">どう防ぐんですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech"><em>事前登録（プロトコル登録）</em>だよ。研究を始める前に「何を、どう解析するか」を PROSPERO などに登録しておく。後から変えることができなくなる。SR/MA では PRISMA ガイドラインに従うことも重要だ。</div>
+    </div>
+  </div>
+
+  <div class="definition" id="ch7b">
+    <div class="definition-title">📐 メタアナリシスのキーコンセプト</div>
+    <p><strong>Forest plot（フォレストプロット）</strong>：各研究の効果量と信頼区間を縦に並べ、統合推定値（ダイヤモンド）を示す図。</p>
+    <p style="margin-top:10px"><strong>異質性（Heterogeneity）</strong>：研究間で結果がばらついている度合い。I²統計量で表す（0%=均質、75%以上=高い異質性）。</p>
+    <p style="margin-top:10px"><strong>出版バイアス</strong>：有意差ありの研究は出版されやすく、なしは眠りがち。Funnel plot で視覚的に確認する。</p>
+    <div class="formula">統合効果量 = Σ(効果量ᵢ × 重みᵢ) ÷ Σ重みᵢ　← 固定効果モデルの場合</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">⚠ ゴミを集めてもゴミ</div>
+    質の低い研究をいくら統合しても、信頼できる結論は得られない。SR/MA の価値は「系統的な文献収集」と「研究の質評価（バイアスリスク評価）」にある。PRISMA チェックリストと GRADE アプローチでエビデンスの確実性を評価することが標準。
+  </div>
+</section>
+
+<!-- ===== Ⅷ ベイズ統計 ===== -->
+<section class="chapter" id="ch8">
+  <div class="chapter-header">
+    <span class="chapter-num">Ⅷ</span>
+    <h2 class="chapter-title">ベイズ統計</h2>
+  </div>
+  <p class="chapter-lead">「知識を更新する」という発想——頻度主義とどう違うのか。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">ベイズ統計って、普通の統計と何が違うんですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">根本的な哲学が違う。普通の（頻度主義の）統計では、「確率は繰り返し実験の頻度」だと考える。だからp値は「この実験を無限に繰り返したとき、これ以上極端なデータが出る割合」だ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">なんか回りくどいですね…</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">ベイズはもっと直感的。「確率は信念の度合い」と考える。「この薬が効く確率は70%」という言い方ができる。そして新しいデータが来たら、確率を更新する。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">更新というのが、ベイズの定理ですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そう。<em>事前確率（Prior）</em>に<em>データの尤度（Likelihood）</em>を掛けて<em>事後確率（Posterior）</em>を求める。医学の例で言うと、検査前の疾患確率（事前確率）×検査結果×を経て、検査後の疾患確率（事後確率）に更新される。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">それって診断のときも使ってますよね？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">まさに。陽性的中率の計算がそれだよ。有病率という事前確率を感度・特異度（尤度）で更新して、陽性的中率（事後確率）を求める。ベイズ的思考は医学の日常に埋め込まれている。</div>
+    </div>
+  </div>
+
+  <div class="definition" id="ch8b">
+    <div class="definition-title">📐 ベイズの定理と頻度主義との比較</div>
+    <div class="formula">P(仮説|データ) ∝ P(データ|仮説) × P(仮説)
+事後確率 ∝ 尤度 × 事前確率</div>
+    <table>
+      <tr><th></th><th>頻度主義</th><th>ベイズ統計</th></tr>
+      <tr><td class="left">確率の解釈</td><td>長期的な頻度</td><td>主観的な信念の度合い</td></tr>
+      <tr><td class="left">パラメータ</td><td>固定した未知定数</td><td>確率分布を持つ変数</td></tr>
+      <tr><td class="left">結果の表現</td><td>p値・信頼区間</td><td>事後確率・信用区間</td></tr>
+      <tr><td class="left">事前情報</td><td>使わない（原則）</td><td>Prior として取り込む</td></tr>
+      <tr><td class="left">解釈の直感性</td><td>難しい（p値の誤解多い）</td><td>直感的</td></tr>
+      <tr><td class="left">計算コスト</td><td>低い</td><td>高い（MCMC等が必要）</td></tr>
+    </table>
+  </div>
+
+  <div class="example">
+    <div class="example-title">🩺 医学の直感例：検査と事前確率</div>
+    <p>疾患Xの有病率 1%、感度 95%、特異度 95% の検査で「陽性」が出た。この患者が本当に疾患Xである確率は？</p>
+    <p style="margin-top:8px">10,000人中：疾患あり100人・なし9,900人<br>
+    真陽性：100 × 0.95 = 95人<br>
+    偽陽性：9,900 × 0.05 = 495人<br>
+    <strong>陽性的中率 = 95 ÷ (95 + 495) ≈ 16%</strong></p>
+    <p style="margin-top:8px; color: var(--accent);">→ 感度・特異度が95%でも、有病率が低ければ陽性は「偽陽性の方が多い」。事前確率（有病率）が重要。</p>
+  </div>
+</section>
+
+<!-- ===== Ⅸ 診断の統計 ===== -->
+<section class="chapter" id="ch9">
+  <div class="chapter-header">
+    <span class="chapter-num">Ⅸ</span>
+    <h2 class="chapter-title">診断の統計</h2>
+  </div>
+  <p class="chapter-lead">感度・特異度から ROC・オッズ比まで——検査を「使いこなす」統計。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">感度と特異度、いつも混乱します。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">覚え方を教えよう。<em>感度は「病気の人を見逃さない力」</em>。感度が高い検査は陰性なら疾患を除外できる（SnNout）。<em>特異度は「健常者を誤診しない力」</em>。特異度が高い検査は陽性なら疾患を確定できる（SpPin）。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">SnNout と SpPin？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">Sensitivity high → Negative rules out（感度高→陰性で除外）。Specificity high → Positive rules in（特異度高→陽性で確定）。英語のごろ合わせだけど、覚えておくと便利。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">尤度比って何ですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">感度・特異度を一つの数字にまとめたもの。陽性尤度比（LR+）= 感度÷(1−特異度)。「陽性の結果が疾患ありとなしでどれくらい出やすさが違うか」を表す。LR+ が10以上あると、非常に有力な証拠になる。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">ROC曲線は？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">カットオフ値を動かしたときの「感度 vs 1−特異度」の軌跡を描いたグラフ。AUC（曲線下面積）が1に近いほど検査の識別能力が高い。0.5は「コインを投げるのと同じ」、0.8以上が良好な検査の目安だよ。</div>
+    </div>
+  </div>
+
+  <div class="definition" id="ch9b">
+    <div class="definition-title">📐 診断統計の全フロー</div>
+    <table>
+      <tr><th></th><th>疾患あり</th><th>疾患なし</th></tr>
+      <tr><td>検査陽性</td><td>TP（真陽性）</td><td>FP（偽陽性）</td></tr>
+      <tr><td>検査陰性</td><td>FN（偽陰性）</td><td>TN（真陰性）</td></tr>
+    </table>
+    <div class="formula">感度（Sensitivity） = TP ÷ (TP + FN)
+特異度（Specificity） = TN ÷ (TN + FP)
+陽性的中率（PPV）  = TP ÷ (TP + FP)
+陰性的中率（NPV）  = TN ÷ (TN + FN)
+陽性尤度比（LR+）  = 感度 ÷ (1 − 特異度)
+陰性尤度比（LR−）  = (1 − 感度) ÷ 特異度</div>
+    <p style="margin-top:10px">PPV・NPV は有病率（事前確率）に依存する。感度・特異度は有病率に依存しない。</p>
+  </div>
+
+  <div class="example">
+    <div class="example-title">📊 オッズ比と相対リスクの違い</div>
+    <p>どちらも「2群の疾患リスクの比較」に使うが、解釈が異なる。</p>
+    <table>
+      <tr><th></th><th>相対リスク（RR）</th><th>オッズ比（OR）</th></tr>
+      <tr><td class="left">意味</td><td>リスクの比</td><td>オッズの比</td></tr>
+      <tr><td class="left">使われる研究デザイン</td><td>コホート研究</td><td>症例対照研究・ロジスティック回帰</td></tr>
+      <tr><td class="left">まれな疾患での近似</td><td>－</td><td>OR ≈ RR（希少疾患仮定）</td></tr>
+      <tr><td class="left">解釈のしやすさ</td><td>直感的</td><td>やや難</td></tr>
+    </table>
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">✦ Ⅵ〜Ⅸ まとめ ── シリーズの結び</div>
+    <p>
+      <strong>生存分析</strong>：打ち切りを扱うKM曲線 → ログランク検定 → Cox比例ハザードモデル。<br>
+      <strong>SR/MA</strong>：系統的な文献統合。p-hacking防止に事前登録。Forest plot と異質性 I²。<br>
+      <strong>ベイズ統計</strong>：事前確率 × 尤度 = 事後確率。医学の診断推論はベイズ的思考。<br>
+      <strong>診断の統計</strong>：感度・特異度・尤度比・ROC・AUC・PPV/NPV の体系的理解。<br><br>
+      基礎編（確率・期待値・分散）から始まり、応用編①〜③で医学統計の主要な道具を一通り概観した。数字の背後にある「問いと設計」を意識することが、統計リテラシーの本質。
+    </p>
+  </div>
+</section>
+
+</main>
+</div>
+<script>
+const sections = document.querySelectorAll('section[id]');
+const links = document.querySelectorAll('#toc a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`#toc a[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

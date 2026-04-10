@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計学の基礎 — 確率から分散まで</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --paper: #fdfaf3;
+    --paper2: #f9f5ec;
+    --ink: #1c1710;
+    --ink-light: #5a5040;
+    --ink-faint: #9a8e7a;
+    --accent: #8b4513;
+    --accent-light: #c47a3a;
+    --accent-pale: #f0e4d0;
+    --blue: #2c5f8a;
+    --blue-pale: #ddeaf5;
+    --green: #3a6b3a;
+    --green-pale: #dff0df;
+    --red-pale: #f5e0e0;
+    --border: #d4c9b0;
+    --shadow: rgba(28,23,16,0.08);
+    --sidebar-w: 260px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    grid-column: 1 / -1;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 40px;
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    border-bottom: 3px solid var(--accent);
+  }
+  header h1 {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.1em;
+    color: var(--accent-light);
+  }
+  header .subtitle {
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Sidebar ── */
+  aside {
+    grid-column: 1;
+    background: var(--paper2);
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  aside .toc-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: var(--ink-faint);
+    padding: 0 24px 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  aside nav a {
+    display: block;
+    padding: 8px 24px;
+    font-size: 0.82rem;
+    color: var(--ink-light);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+    line-height: 1.5;
+  }
+  aside nav a:hover,
+  aside nav a.active {
+    background: var(--accent-pale);
+    border-left-color: var(--accent);
+    color: var(--accent);
+  }
+  aside nav .ch-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    margin-right: 6px;
+  }
+
+  /* ── Main ── */
+  main {
+    grid-column: 2;
+    padding: 48px 56px 80px;
+    max-width: 820px;
+  }
+
+  /* ── Chapter ── */
+  .chapter {
+    margin-bottom: 72px;
+    padding-bottom: 48px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .chapter:last-child { border-bottom: none; }
+
+  .chapter-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .chapter-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-light);
+    background: var(--accent-pale);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.1em;
+  }
+  .chapter-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.4rem;
+    color: var(--ink);
+    letter-spacing: 0.05em;
+  }
+  .chapter-lead {
+    font-size: 0.88rem;
+    color: var(--ink-light);
+    margin-bottom: 28px;
+    padding-left: 2px;
+    font-style: italic;
+  }
+
+  /* ── Dialogue ── */
+  .dialogue {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .dialogue-turn {
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  .dialogue-turn:last-child { margin-bottom: 0; }
+  .speaker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-align: center;
+    margin-top: 2px;
+  }
+  .speaker.student {
+    background: var(--blue-pale);
+    color: var(--blue);
+  }
+  .speaker.teacher {
+    background: var(--accent-pale);
+    color: var(--accent);
+  }
+  .speech {
+    font-size: 0.92rem;
+    line-height: 1.9;
+    color: var(--ink);
+  }
+  .speech em {
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 500;
+  }
+  .speech .math {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    background: var(--bg);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--blue);
+  }
+
+  /* ── Summary box ── */
+  .summary {
+    background: var(--green-pale);
+    border-left: 4px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .summary-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    color: var(--green);
+    margin-bottom: 10px;
+  }
+  .summary p {
+    font-size: 0.88rem;
+    line-height: 1.8;
+    color: #2a4a2a;
+  }
+
+  /* ── Definition box ── */
+  .definition {
+    background: var(--blue-pale);
+    border: 1px solid #b0cde8;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .definition-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    color: var(--blue);
+    margin-bottom: 12px;
+  }
+  .definition .formula {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    background: white;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 10px 0;
+    color: var(--blue);
+    border: 1px solid #b0cde8;
+  }
+  .definition p {
+    font-size: 0.88rem;
+    line-height: 1.8;
+    color: #1a3a5a;
+  }
+
+  /* ── Note box ── */
+  .note {
+    background: var(--red-pale);
+    border-left: 4px solid #c0504a;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    color: #5a1a1a;
+    line-height: 1.8;
+  }
+  .note-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #9a2020;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── Example box ── */
+  .example {
+    background: var(--paper2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .example-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 0.78rem;
+    color: var(--accent-light);
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+  }
+  .example p { font-size: 0.88rem; line-height: 1.8; }
+  .example table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 0.85rem;
+  }
+  .example th {
+    background: var(--accent-pale);
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    font-family: 'Noto Serif JP', serif;
+  }
+  .example td {
+    padding: 8px 12px;
+    text-align: center;
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+  }
+
+  /* ── Scroll-linked TOC highlight ── */
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { display: none; }
+    main { padding: 32px 24px; }
+    header { padding: 20px 24px; }
+    header h1 { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<header>
+  <h1>統計学の基礎</h1>
+  <span class="subtitle">確率・確率変数・期待値・分散 ── 会話で学ぶ入門テキスト</span>
+</header>
+
+<!-- Sidebar -->
+<aside>
+  <div class="toc-title">目　次</div>
+  <nav id="toc">
+    <a href="#ch1"><span class="ch-num">Ch.1</span>確率とは何か</a>
+    <a href="#ch2"><span class="ch-num">Ch.2</span>確率の基本ルール</a>
+    <a href="#ch3"><span class="ch-num">Ch.3</span>独立・排反・条件付き確率</a>
+    <a href="#ch4"><span class="ch-num">Ch.4</span>確率変数という考え方</a>
+    <a href="#ch5"><span class="ch-num">Ch.5</span>期待値</a>
+    <a href="#ch6"><span class="ch-num">Ch.6</span>分散と標準偏差</a>
+    <a href="#ch7"><span class="ch-num">Ch.7</span>期待値・分散の性質</a>
+    <a href="#ch8"><span class="ch-num">Ch.8</span>医学への架け橋</a>
+  </nav>
+</aside>
+
+<!-- Main content -->
+<main>
+
+<!-- ===== Ch.1 ===== -->
+<section class="chapter" id="ch1">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. 1</span>
+    <h2 class="chapter-title">確率とは何か</h2>
+  </div>
+  <p class="chapter-lead">「可能性を数で表す」という発想がどこから来るのか、直感から始めよう。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">そもそも「確率」って、何ですか？ なんとなくわかるけど、ちゃんと説明できないんですよね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">うん、正直に言えたね。じゃあ聞くけど、コインを投げて表が出る確率は？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">1/2…ですよね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そう。なぜそう思った？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">表か裏かの2通りで、どっちも同じくらい出そうだから…</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">それが核心だよ。確率というのは、<em>「全体のうち、注目している結果がどれくらい起こりやすいか」</em>を 0〜1 の数で表したもの。0 は絶対起こらない、1 は必ず起こる。コインは「表」と「裏」が同じだけ起こりやすいから、各1/2 というわけ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">じゃあ、サイコロで 6 が出る確率は 1/6？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">正解。全部で6つの面があって、「6」は1つだから 1/6。これを<em>古典的確率</em>という。「同様に確からしい場合の数」で割るやり方だね。</div>
+    </div>
+  </div>
+
+  <div class="definition">
+    <div class="definition-title">📐 定　義</div>
+    <div class="formula">P(A) = A が起こる場合の数 ÷ 全事象の数</div>
+    <p>ただし、各事象が「同様に確からしい」ことが前提。<br>
+    確率 <span style="font-family:monospace">P(A)</span> は常に <span style="font-family:monospace">0 ≦ P(A) ≦ 1</span> を満たす。</p>
+  </div>
+
+  <div class="note">
+    <div class="note-title">⚠ ポイント</div>
+    「同様に確からしい」が成り立たない場合は、古典的確率の定義が使えない。そのときは繰り返し実験や統計的推定を使う（頻度論的確率）。
+  </div>
+</section>
+
+<!-- ===== Ch.2 ===== -->
+<section class="chapter" id="ch2">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. 2</span>
+    <h2 class="chapter-title">確率の基本ルール</h2>
+  </div>
+  <p class="chapter-lead">加法定理と乗法定理。確率計算の2本柱。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">サイコロで「1 か 2 が出る確率」は 2/6 ですよね？ 1/6 と 1/6 を足した。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そう、それが<em>加法定理</em>の基本形。「または（OR）」のときは確率を足す。ただし条件がある。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">条件？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">「1 が出ると同時に 2 が出る」ことはあるかな？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">ないです。1回の投げでどちらかしか出ない。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">これを<em>排反</em>という。排反なら単純に足せる。でも「偶数 か 3の倍数」だと、6 が両方に入るから、単純に足すと 6 を二重に数えてしまう。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">じゃあ、重なった分を引けばいい？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">完璧。<em>P(A または B) = P(A) + P(B) − P(A かつ B)</em> ——これが一般の加法定理だよ。</div>
+    </div>
+  </div>
+
+  <div class="definition">
+    <div class="definition-title">📐 加法定理（一般形）</div>
+    <div class="formula">P(A ∪ B) = P(A) + P(B) − P(A ∩ B)</div>
+    <p>A と B が排反のとき： <span style="font-family:monospace">P(A ∩ B) = 0</span> なので<br>
+    <span style="font-family:monospace">P(A ∪ B) = P(A) + P(B)</span></p>
+  </div>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">「かつ（AND）」のときはどう計算するんですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">コインを2回投げて、2回とも表が出る確率は？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">1/2 × 1/2 = 1/4？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そう、それが<em>乗法定理</em>。2回のコイン投げは<em>独立</em>だから、掛け算が使える。「独立」というのは、1回目の結果が2回目に影響しない、ということだよ。</div>
+    </div>
+  </div>
+
+  <div class="definition">
+    <div class="definition-title">📐 乗法定理（独立な場合）</div>
+    <div class="formula">P(A ∩ B) = P(A) × P(B)  ← A と B が独立のとき</div>
+    <p>独立でない場合は条件付き確率を使う（次章）。</p>
+  </div>
+</section>
+
+<!-- ===== Ch.3 ===== -->
+<section class="chapter" id="ch3">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. 3</span>
+    <h2 class="chapter-title">独立・排反・条件付き確率</h2>
+  </div>
+  <p class="chapter-lead">医学でよく使う「条件付き確率」の概念を丁寧に。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">「独立」と「排反」ってごっちゃになりそうで…</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">混乱しやすいよね。整理しよう。<br>
+      <em>排反</em>：同時に起こらない。コインで「表と裏」は同時に出ない。<br>
+      <em>独立</em>：片方の結果がもう片方に影響しない。コインを2回投げる。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">じゃあ、排反なのに独立ってありますか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">鋭い質問。確率が 0 でない事象は、排反なら独立になれない。なぜなら「A が起きた」なら「B は絶対起きない」——それはB への影響だから。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">あ、排反の方が強い制約なんですね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そういうこと。では次——「条件付き確率」。ある患者が糖尿病だと分かったとき、HbA1c が高い確率は？ これが<em>P(HbA1c高 | 糖尿病)</em>という書き方だよ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">「糖尿病という条件のもとで」という意味の縦棒ですね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">正確に理解してる。条件付き確率は、<em>全体の空間を絞り込む</em>イメージ。全患者の中から「糖尿病の人だけ」を見ている。</div>
+    </div>
+  </div>
+
+  <div class="definition">
+    <div class="definition-title">📐 条件付き確率</div>
+    <div class="formula">P(A | B) = P(A ∩ B) ÷ P(B)  ← P(B) &gt; 0 のとき</div>
+    <p>「B が起きたという条件のもとで、A が起きる確率」<br>
+    A と B が独立なら <span style="font-family:monospace">P(A | B) = P(A)</span>（条件が意味をもたない）</p>
+  </div>
+
+  <div class="example">
+    <div class="example-title">🩺 医学の例</div>
+    <p>ある病院の患者 1000 人を調べた。</p>
+    <table>
+      <tr><th></th><th>HbA1c 高</th><th>HbA1c 正常</th><th>計</th></tr>
+      <tr><td>糖尿病あり</td><td>180</td><td>20</td><td>200</td></tr>
+      <tr><td>糖尿病なし</td><td>50</td><td>750</td><td>800</td></tr>
+      <tr><td>計</td><td>230</td><td>770</td><td>1000</td></tr>
+    </table>
+    <p style="margin-top:12px">P(HbA1c高 | 糖尿病あり) = 180/200 = 0.90<br>
+    P(HbA1c高 | 糖尿病なし) = 50/800 = 0.063<br>
+    → 条件によって確率が大きく変わる。</p>
+  </div>
+</section>
+
+<!-- ===== Ch.4 ===== -->
+<section class="chapter" id="ch4">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. 4</span>
+    <h2 class="chapter-title">確率変数という考え方</h2>
+  </div>
+  <p class="chapter-lead">数値を「ランダムに決まるもの」として扱う——統計の核心的な発想転換。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">「確率変数」って教科書に出てきて、名前がもう難しそうで…</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">名前は難しそうだけど、やってることは単純。サイコロを振ったとき、出た目を X と書く。X はあるとき 1、あるとき 3、あるとき 6 になる。これが<em>確率変数</em>だよ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">変数って言うから x みたいな未知数かと思ってました。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">違いはね、普通の変数は「決まっているけど知らない」、確率変数は「まだ決まっていない。でも確率はわかる」というもの。患者さんの血圧を測る前、それは確率変数だよ。測った後は、もう固定値。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">測る前と後で意味が違うんですね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そう。確率変数は「測る前の世界」を記述するためのツールなんだ。で、各値に確率をくっつけた表のことを<em>確率分布</em>という。</div>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="example-title">📊 確率分布の例（サイコロ1個）</div>
+    <table>
+      <tr><th>X（出た目）</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr>
+      <tr><th>P(X = x)</th><td>1/6</td><td>1/6</td><td>1/6</td><td>1/6</td><td>1/6</td><td>1/6</td></tr>
+    </table>
+    <p style="margin-top:10px">確率の合計は必ず 1 になる：<span style="font-family:monospace">Σ P(X = x) = 1</span></p>
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">✦ まとめ</div>
+    <p>確率変数 X は「結果に数値を対応させる関数」。各値 x に対して確率 P(X = x) が定まり、それら全体を確率分布という。確率の合計は常に 1。</p>
+  </div>
+</section>
+
+<!-- ===== Ch.5 ===== -->
+<section class="chapter" id="ch5">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. 5</span>
+    <h2 class="chapter-title">期待値</h2>
+  </div>
+  <p class="chapter-lead">「平均してどのくらい？」——確率変数の重心を求める。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">期待値って、期待される値ですよね。どう求めるんですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">どう思う？ まず例を言おうか。Aさんが問題を解いたら、10問中 5問正解した。Bさんは Aさんと同じ実力で、20問解くとしたら何問正解すると思う？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">えっと… Aさんの正解率が 50% だから、Bさんは 10問？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そうそう、自然にやってるじゃない。「20問 × 50%」って計算したでしょ。それが期待値の考え方だよ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">あ、じゃあ期待値って「確率 × 数」ってこと？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">大枠はそれ。もう少しちゃんと言うと——各結果に、その確率を掛けて、全部足し合わせたもの。サイコロでやってみようか。「各目 × その確率」を全部足すと？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">1×1/6 + 2×1/6 + 3×1/6 + 4×1/6 + 5×1/6 + 6×1/6 = 21/6 = 3.5</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">完璧。サイコロの期待値は 3.5 だよ。3.5 の目は存在しないけど、<em>長い目で見たときの平均</em>がそこに落ち着く。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">なんか、「期待」って言葉の意味がわかった気がします。願望じゃなくて、「そうなりそう」ってことですよね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">うまいこと言った。統計の「期待」は希望じゃなくて<em>予測</em>だね。</div>
+    </div>
+  </div>
+
+  <div class="definition">
+    <div class="definition-title">📐 期待値の定義</div>
+    <div class="formula">E[X] = Σ xᵢ · P(X = xᵢ)</div>
+    <p>各取りうる値 xᵢ に確率 P(X = xᵢ) を掛けて合計する。<br>
+    E[X] は「平均」「加重平均」とも呼ばれる。記号は μ（ミュー）も使う。</p>
+  </div>
+
+  <div class="example">
+    <div class="example-title">🩺 医学の例：血圧の期待値</div>
+    <p>ある外来患者の収縮期血圧が次の分布に従うとする。</p>
+    <table>
+      <tr><th>血圧 X (mmHg)</th><td>110</td><td>120</td><td>130</td><td>140</td><td>150</td></tr>
+      <tr><th>P(X = x)</th><td>0.10</td><td>0.30</td><td>0.35</td><td>0.15</td><td>0.10</td></tr>
+    </table>
+    <p style="margin-top:10px">E[X] = 110×0.10 + 120×0.30 + 130×0.35 + 140×0.15 + 150×0.10<br>
+    　　= 11 + 36 + 45.5 + 21 + 15 = <strong>128.5 mmHg</strong></p>
+  </div>
+
+  <div class="note">
+    <div class="note-title">⚠ 期待値 ≠ 最頻値・中央値</div>
+    期待値は「重みつき平均」。分布が偏っていると中央値・最頻値と一致しない。医学データでは正規分布でない場合も多いため、どの代表値を使うか意識することが大切。
+  </div>
+</section>
+
+<!-- ===== Ch.6 ===== -->
+<section class="chapter" id="ch6">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. 6</span>
+    <h2 class="chapter-title">分散と標準偏差</h2>
+  </div>
+  <p class="chapter-lead">平均だけでは語れない「ばらつき」を数で表す。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">期待値（平均）だけじゃだめなんですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">患者A：毎回血糖値が 110 mg/dL。患者B：100 と 120 を交互に繰り返す。平均は両方 110 だけど、同じ？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">Bさんの方が変動が大きくて、管理しにくそう。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そう。それが<em>分散</em>で表せるものだよ。「平均からどれだけ離れているか」を数にする。ずれを <span class="math">X − μ</span> とすると、そのまま足すとプラスとマイナスが打ち消し合うから、<em>2乗</em>してから平均をとる。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">2乗するのはキャンセルを防ぐためか。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">正解。患者Aなら毎回 <span class="math">110 − 110 = 0</span> だからばらつきゼロ。患者Bは <span class="math">(100−110)² = 100</span> と <span class="math">(120−110)² = 100</span> の平均で、分散 = 100。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">でも単位が「(mg/dL)²」になっちゃいますね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">鋭い。だから分散の平方根をとって<em>標準偏差</em>にする。単位が元に戻って「mg/dL」になり、解釈しやすくなる。√100 = 10 mg/dL ということは、「平均から平均的に 10 mg/dL ほどブレる」とイメージできる。</div>
+    </div>
+  </div>
+
+  <div class="definition">
+    <div class="definition-title">📐 分散と標準偏差の定義</div>
+    <div class="formula">Var(X) = E[(X − μ)²] = Σ (xᵢ − μ)² · P(X = xᵢ)</div>
+    <div class="formula">SD(X) = σ = √Var(X)</div>
+    <p>μ = E[X]（期待値）<br>
+    Var(X) の単位は「元の単位の2乗」、σ は元の単位と同じ。<br>
+    記号は Var, σ²（バリアンス）/ SD, σ（シグマ）。</p>
+  </div>
+
+  <div class="example">
+    <div class="example-title">📊 計算例：先ほどの血圧データ（E[X] = 128.5）</div>
+    <table>
+      <tr><th>x</th><th>x − μ</th><th>(x − μ)²</th><th>P(X=x)</th><th>(x−μ)²·P</th></tr>
+      <tr><td>110</td><td>−18.5</td><td>342.25</td><td>0.10</td><td>34.225</td></tr>
+      <tr><td>120</td><td>−8.5</td><td>72.25</td><td>0.30</td><td>21.675</td></tr>
+      <tr><td>130</td><td>+1.5</td><td>2.25</td><td>0.35</td><td>0.788</td></tr>
+      <tr><td>140</td><td>+11.5</td><td>132.25</td><td>0.15</td><td>19.838</td></tr>
+      <tr><td>150</td><td>+21.5</td><td>462.25</td><td>0.10</td><td>46.225</td></tr>
+    </table>
+    <p style="margin-top:10px"><strong>Var(X) = 122.75 (mmHg)²　　σ ≈ 11.1 mmHg</strong></p>
+  </div>
+</section>
+
+<!-- ===== Ch.7 ===== -->
+<section class="chapter" id="ch7">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. 7</span>
+    <h2 class="chapter-title">期待値・分散の性質</h2>
+  </div>
+  <p class="chapter-lead">計算を楽にする便利な公式たち。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">期待値って、定数 a を掛けたらどうなりますか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">身長を cm から mm に換算するイメージ。全部の値を10倍したら平均も10倍になる。だから <em>E[aX] = a·E[X]</em>。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">定数 b を足したら？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">全員に 5 点加点したら平均も 5 上がる。<em>E[X + b] = E[X] + b</em>。これを組み合わせると <em>E[aX + b] = aE[X] + b</em> だね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">分散は？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">定数を足してもばらつきは変わらない——全員に同じ点を加えても格差は変わらない。だから <em>Var(X + b) = Var(X)</em>。でも a 倍すると2乗が効いて <em>Var(aX) = a²·Var(X)</em>。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">だから標準偏差は <em>SD(aX) = |a|·SD(X)</em> ですね。2乗して平方根だから。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">完璧な理解。それともう一つ——計算しやすい公式がある。</div>
+    </div>
+  </div>
+
+  <div class="definition">
+    <div class="definition-title">📐 便利な公式一覧</div>
+    <div class="formula">E[aX + b] = a·E[X] + b</div>
+    <div class="formula">Var(aX + b) = a²·Var(X)</div>
+    <div class="formula">Var(X) = E[X²] − (E[X])²  ← 計算が楽になる変形</div>
+    <p>最後の式は「2乗の期待値」から「期待値の2乗」を引いたもの。<br>
+    手計算では (X−μ)² を展開してこの形を導くと楽になる。</p>
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">✦ Ch.5〜7 まとめ</div>
+    <p>
+      <strong>期待値 E[X]</strong>：確率で重みをつけた平均。長期的な「真ん中」を表す。<br>
+      <strong>分散 Var(X)</strong>：平均からのズレの2乗の平均。ばらつきの大きさ。<br>
+      <strong>標準偏差 σ</strong>：分散の平方根。元の単位で解釈できる。
+    </p>
+  </div>
+</section>
+
+<!-- ===== Ch.8 ===== -->
+<section class="chapter" id="ch8">
+  <div class="chapter-header">
+    <span class="chapter-num">Ch. 8</span>
+    <h2 class="chapter-title">医学への架け橋</h2>
+  </div>
+  <p class="chapter-lead">ここまでの概念が、医学統計のどこにつながるか。</p>
+
+  <div class="dialogue">
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">確率・期待値・分散を学んだけど、これって実際の医学研究でどう使うんですか？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">全部つながってるよ。例えば——臨床試験で「新薬を投与した患者が回復する確率 = 0.7」とわかったとする。100人に投与したら、期待回復人数は？</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">70人。でも「ちょうど70人」になるわけじゃないですよね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">そう、そのばらつきを表すのが分散だよ。このような「回復したか否か」の確率変数はベルヌーイ試行と呼ばれて、n回繰り返したときの合計は<em>二項分布</em>に従う。二項分布の期待値が <em>np</em>、分散が <em>np(1−p)</em>——これが次のステップだ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">じゃあ今学んだことが、t検定とか正規分布とか、もっと先につながるんですね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">まさに。正規分布も「期待値=平均、分散=σ²」のパラメータで完全に決まる。<em>検定</em>も<em>回帰</em>も<em>生存分析</em>も、全部この土台の上に立っている。今日習ったことは、見えない基礎杭なんだ。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker student">学生</span>
+      <div class="speech">難しいと思ってたけど、つながってるとわかると面白いですね。</div>
+    </div>
+    <div class="dialogue-turn">
+      <span class="speaker teacher">先生</span>
+      <div class="speech">統計はパズルみたいなもの。一つひとつのピースは単純。全体像が見えたとき、急に楽しくなるよ。</div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">✦ 基礎編のまとめ ── この先への道</div>
+    <p>
+      確率 → 確率変数 → 期待値・分散 という流れを学んだ。<br><br>
+      <strong>次のステップ（応用編 Ⅰ〜Ⅸ）：</strong><br>
+      統計の本質 / 検定の系譜 / パラ vs ノンパラ /<br>
+      カテゴリ検定 / 生存分析 / SR&amp;MA / ベイズ統計 / 診断の統計<br><br>
+      基礎の「確率・期待値・分散」は、それら全ての土台。迷ったらここに戻ってこよう。
+    </p>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+// スクロール連動TOCハイライト
+const sections = document.querySelectorAll('.chapter');
+const links = document.querySelectorAll('#toc a');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`#toc a[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
