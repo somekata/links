@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生存分析 計算ツール</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&family=Zen+Antique&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f5f1e8;
+            --paper: #fdfaf3;
+            --ink: #1c1710;
+            --accent: #2d5a4a;
+            --accent-light: #5a9480;
+            --border: #d4cfc5;
+            --error: #d4634a;
+            --success: #4a8d6a;
+            --muted: #8b8680;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg);
+            color: var(--ink);
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            background: var(--paper);
+            border-right: 2px solid var(--border);
+            padding: 2rem 1.5rem;
+            overflow-y: auto;
+            position: sticky;
+            top: 0;
+            max-height: 100vh;
+        }
+
+        .back-link {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1.5rem;
+            background: var(--border);
+            color: var(--ink);
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .back-link:hover { background: var(--accent); color: white; }
+
+        .logo {
+            font-family: 'Zen Antique', serif;
+            font-size: 1.3rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .sidebar-section { margin-bottom: 1.5rem; }
+
+        .sidebar-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-content {
+            font-size: 0.83rem;
+            line-height: 1.65;
+            color: var(--muted);
+        }
+
+        .sidebar-content code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            padding: 0 3px;
+            border-radius: 2px;
+            font-size: 0.78rem;
+        }
+
+        /* ── MAIN ── */
+        .main {
+            padding: 3rem;
+            overflow-y: auto;
+            background: var(--bg);
+        }
+
+        .header { margin-bottom: 2.5rem; }
+
+        .page-title {
+            font-family: 'Zen Antique', serif;
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 0.4rem;
+        }
+
+        .page-subtitle { color: var(--muted); font-size: 0.95rem; }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .card-title {
+            font-family: 'Zen Antique', serif;
+            font-size: 1.35rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 1.35rem;
+            background: var(--accent);
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* ── INPUT ── */
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .group-input {
+            padding: 1.25rem;
+            background: rgba(45,90,74,0.04);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .group-label {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .input-field label {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .input-field textarea {
+            width: 100%;
+            min-height: 110px;
+            padding: 0.65rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.84rem;
+            resize: vertical;
+            background: var(--paper);
+            color: var(--ink);
+        }
+        .input-field textarea:focus { outline: 2px solid var(--accent-light); }
+
+        .hint { font-size: 0.74rem; color: var(--muted); margin-top: 0.4rem; }
+
+        /* ── BUTTONS ── */
+        .button-group { display: flex; gap: 1rem; margin-bottom: 1rem; }
+
+        button {
+            padding: 0.7rem 1.4rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.93rem;
+            transition: all 0.18s;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(45,90,74,0.25); }
+        .btn-secondary { background: var(--border); color: var(--ink); }
+        .btn-secondary:hover { background: #c0bbb0; }
+
+        .error-msg {
+            color: var(--error);
+            font-size: 0.88rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        /* ── RESULTS ── */
+        .results-section { display: none; }
+        .results-section.visible { display: block; }
+
+        /* KM Canvas */
+        canvas {
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            display: block;
+        }
+
+        /* Stat boxes */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-box {
+            padding: 1rem 1.25rem;
+            background: rgba(45,90,74,0.05);
+            border-radius: 6px;
+            border-left: 4px solid var(--accent);
+        }
+        .stat-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
+        .stat-value {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: var(--ink);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .p-badge {
+            display: inline-block;
+            padding: 0.35rem 0.8rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            margin-top: 0.4rem;
+        }
+        .p-sig { background: rgba(74,141,106,0.15); color: var(--success); }
+        .p-ns  { background: rgba(212,99,74,0.12);  color: var(--error); }
+
+        .interpretation {
+            padding: 1rem 1.25rem;
+            background: rgba(45,90,74,0.05);
+            border-left: 3px solid var(--accent);
+            border-radius: 4px;
+            line-height: 1.75;
+            font-size: 0.95rem;
+        }
+
+        /* Desc stats table */
+        .desc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .desc-table th {
+            background: var(--accent);
+            color: white;
+            padding: 0.65rem 1rem;
+            text-align: left;
+        }
+        .desc-table td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .desc-table tr:last-child td { border-bottom: none; }
+        .desc-table td:not(:first-child) { text-align: center; font-family: 'JetBrains Mono', monospace; }
+
+        .note-sm {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: 0.75rem;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1100px) {
+            body { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .input-grid { grid-template-columns: 1fr; }
+            .stat-grid { grid-template-columns: 1fr 1fr; }
+            .main { padding: 1.5rem; }
+        }
+
+        ::-webkit-scrollbar { width: 7px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    </style>
+</head>
+<body>
+
+<!-- ============================================================ SIDEBAR -->
+<aside class="sidebar">
+    <a href="survival_analysis_slides.html" class="back-link">← スライド教材に戻る</a>
+    <div class="logo">生存分析<br>計算ツール</div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-title">入力形式</div>
+        <div class="sidebar-content">
+            1行につき1患者。<br>
+            <code>時間,イベント</code> の形式で入力。<br><br>
+            イベント：<br>
+            <code>1</code> = 発生（再発など）<br>
+            <code>0</code> = 打ち切り（観察終了時点で未発生）
+        </div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-title">計算手法</div>
+        <div class="sidebar-content">
+            <strong>KM曲線</strong>：Kaplan-Meier推定量<br>
+            S(t) = ∏ (1 − dᵢ/nᵢ)<br><br>
+            <strong>Log-Rank検定</strong>：各イベント時点での観測数と期待数の差を集計し、χ²統計量（df=1）で検定。<br><br>
+            <strong>中央生存時間</strong>：KM推定量がはじめて 0.5 を下回る時点（未到達の場合は「>&nbsp;最終時間」と表示）。
+        </div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-title">打ち切りマーカー</div>
+        <div class="sidebar-content">
+            KM曲線上の <strong>＋</strong> マークは、その時点で打ち切りが生じたことを示します。
+        </div>
+    </div>
+</aside>
+
+<!-- ============================================================ MAIN -->
+<main class="main">
+    <div class="header">
+        <h1 class="page-title">生存分析 計算ツール</h1>
+        <p class="page-subtitle">カプランマイヤー曲線の描画 と Log-Rank 検定</p>
+    </div>
+
+    <!-- ── INPUT CARD ── -->
+    <div class="card">
+        <h2 class="card-title">データ入力</h2>
+        <p style="margin-bottom:1.25rem; color:var(--muted); font-size:0.9rem;">
+            各グループの患者データを入力してください。形式：<code style="font-family:'JetBrains Mono',monospace; font-size:0.85rem;">時間（日）,イベント（1=発生／0=打ち切り）</code>
+        </p>
+
+        <div class="input-grid">
+            <div class="group-input">
+                <div class="group-label">グループ A（化学療法 A）</div>
+                <div class="input-field">
+                    <label>時間と打ち切り情報（1行 1患者）</label>
+                    <textarea id="groupA"></textarea>
+                    <div class="hint">例：120,1　→ 120日で再発（イベント発生）</div>
+                </div>
+            </div>
+            <div class="group-input">
+                <div class="group-label">グループ B（化学療法 B）</div>
+                <div class="input-field">
+                    <label>時間と打ち切り情報（1行 1患者）</label>
+                    <textarea id="groupB"></textarea>
+                    <div class="hint">例：245,0　→ 245日観察後、未再発（打ち切り）</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="runAnalysis()">▶ 分析実行</button>
+            <button class="btn-secondary" onclick="loadDemo()">サンプルデータ</button>
+            <button class="btn-secondary" onclick="clearData()">クリア</button>
+        </div>
+        <div class="error-msg" id="errMsg"></div>
+    </div>
+
+    <!-- ── KM CURVE ── -->
+    <div class="card results-section" id="secKM">
+        <h2 class="card-title">カプランマイヤー曲線</h2>
+        <canvas id="kmCanvas" width="760" height="400"></canvas>
+        <p class="note-sm">※ ＋ マークは打ち切り（censoring）を示します。</p>
+    </div>
+
+    <!-- ── LOG-RANK ── -->
+    <div class="card results-section" id="secLR">
+        <h2 class="card-title">Log-Rank 検定結果</h2>
+        <div class="stat-grid">
+            <div class="stat-box">
+                <div class="stat-label">χ² 統計量（df = 1）</div>
+                <div class="stat-value" id="valChiSq">—</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">p 値</div>
+                <div class="stat-value" id="valP">—</div>
+                <div id="pBadge"></div>
+            </div>
+        </div>
+        <div class="interpretation" id="interp"></div>
+    </div>
+
+    <!-- ── DESC STATS ── -->
+    <div class="card results-section" id="secDesc">
+        <h2 class="card-title">基本統計量</h2>
+        <table class="desc-table" id="descTable">
+            <thead>
+                <tr>
+                    <th>グループ</th>
+                    <th>n</th>
+                    <th>イベント数</th>
+                    <th>打ち切り数</th>
+                    <th>中央生存時間（日）</th>
+                </tr>
+            </thead>
+            <tbody id="descBody"></tbody>
+        </table>
+        <p class="note-sm">
+            ※ 中央生存時間：KM推定量がはじめて 0.5 を下回る時点。観察期間内に 50% に達しない場合は「&gt; 最終観察時間」と表示します。<br>
+            ※ 打ち切りを含むデータに単純平均は不適切なため、ここでは表示しません。
+        </p>
+    </div>
+</main>
+
+<script>
+// ============================================================
+// 1. データパース
+// ============================================================
+function parseData(text) {
+    const rows = [];
+    const errs = [];
+    text.trim().split('\n').forEach((line, i) => {
+        line = line.trim();
+        if (!line) return;
+        const parts = line.split(',');
+        if (parts.length !== 2) { errs.push(`行${i+1}: カンマ区切りで2値を入力してください`); return; }
+        const t = parseFloat(parts[0]);
+        const e = parseInt(parts[1]);
+        if (isNaN(t) || t < 0)          { errs.push(`行${i+1}: 時間は0以上の数値で入力してください`); return; }
+        if (e !== 0 && e !== 1)         { errs.push(`行${i+1}: イベントは 0 または 1 で入力してください`); return; }
+        rows.push({ time: t, event: e });
+    });
+    return { rows, errs };
+}
+
+// ============================================================
+// 2. Kaplan-Meier 推定
+// ============================================================
+function kaplanMeier(data) {
+    // Sort ascending by time
+    const sorted = [...data].sort((a, b) => a.time - b.time);
+    const n = sorted.length;
+
+    // Unique event times (where event === 1)
+    const eventTimes = [...new Set(sorted.filter(d => d.event === 1).map(d => d.time))]
+                        .sort((a, b) => a - b);
+
+    const curve = [{ time: 0, S: 1 }]; // S(0) = 1
+    let S = 1;
+
+    for (const t of eventTimes) {
+        // at-risk: all with time >= t
+        const nRisk = sorted.filter(d => d.time >= t).length;
+        // events at time t
+        const nEvent = sorted.filter(d => d.time === t && d.event === 1).length;
+        S = S * (1 - nEvent / nRisk);
+        curve.push({ time: t, S, nRisk, nEvent });
+    }
+
+    // Censoring tick positions
+    const censorTimes = sorted.filter(d => d.event === 0).map(d => d.time);
+
+    return { curve, censorTimes };
+}
+
+// ============================================================
+// 3. 中央生存時間（KM曲線から）
+// ============================================================
+function medianSurvival(curve, maxTime) {
+    for (let i = 1; i < curve.length; i++) {
+        if (curve[i].S <= 0.5) return curve[i].time;
+    }
+    return null; // 観察期間内に 50% 未到達
+}
+
+// ============================================================
+// 4. Log-Rank 検定
+// ============================================================
+function logRankTest(dataA, dataB) {
+    const allEvents = [...dataA, ...dataB]
+        .filter(d => d.event === 1)
+        .map(d => d.time);
+    const eventTimes = [...new Set(allEvents)].sort((a, b) => a - b);
+
+    let sumO_E = 0;   // Σ(observed_A − expected_A)
+    let sumVar = 0;   // Σ variance
+
+    for (const t of eventTimes) {
+        const nA = dataA.filter(d => d.time >= t).length;
+        const nB = dataB.filter(d => d.time >= t).length;
+        const N  = nA + nB;
+        if (N === 0) continue;
+
+        const dA = dataA.filter(d => d.time === t && d.event === 1).length;
+        const dB = dataB.filter(d => d.time === t && d.event === 1).length;
+        const D  = dA + dB;
+
+        const eA = (nA / N) * D;
+        sumO_E += dA - eA;
+
+        // Hypergeometric variance; skip if N <= 1 (no meaningful variance)
+        if (N > 1) {
+            sumVar += (nA * nB * D * (N - D)) / (N * N * (N - 1));
+        }
+    }
+
+    if (sumVar <= 0) return { chiSq: 0, pValue: 1 };
+
+    const chiSq = (sumO_E * sumO_E) / sumVar;
+    const p = 1 - chi2CDF1(chiSq); // df = 1
+    return { chiSq, pValue: p };
+}
+
+// ============================================================
+// 5. χ²分布 CDF（df=1）
+//    Abramowitz & Stegun の正規CDF近似を使用
+// ============================================================
+function chi2CDF1(x) {
+    if (x <= 0) return 0;
+    // χ²(1) = Z²  →  P(χ² ≤ x) = 2·Φ(√x) − 1
+    return 2 * normalCDF(Math.sqrt(x)) - 1;
+}
+
+function normalCDF(z) {
+    // Abramowitz & Stegun 7.1.26 （最大誤差 1.5×10⁻⁷）
+    const a = [0, 0.254829592, -0.284496736, 1.421413741, -1.453152027, 1.061405429];
+    const p = 0.3275911;
+    const sign = z < 0 ? -1 : 1;
+    const za = Math.abs(z);
+    const t = 1 / (1 + p * za);
+    let poly = 0;
+    for (let k = 5; k >= 1; k--) poly = poly * t + a[k];
+    const y = 1 - poly * t * Math.exp(-za * za);
+    return 0.5 * (1 + sign * y);
+}
+
+// ============================================================
+// 6. KM曲線の描画
+// ============================================================
+function drawKM(kmA, kmB, maxTimeA, maxTimeB) {
+    const canvas = document.getElementById('kmCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const pad = { top: 30, right: 40, bottom: 55, left: 65 };
+    const pw = W - pad.left - pad.right;
+    const ph = H - pad.top  - pad.bottom;
+
+    const maxT = Math.max(maxTimeA, maxTimeB);
+
+    // Helper: data → pixel
+    const xp = t => pad.left + (t / maxT) * pw;
+    const yp = s => pad.top  + (1 - s) * ph;
+
+    // Clear
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid lines (horizontal)
+    ctx.strokeStyle = '#f0ede3';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 10; i++) {
+        const y = yp(i * 0.1);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    }
+
+    // Axes
+    ctx.strokeStyle = '#d4cfc5';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, H - pad.bottom);
+    ctx.lineTo(W - pad.right, H - pad.bottom);
+    ctx.stroke();
+
+    // X-axis ticks & labels
+    ctx.fillStyle = '#8b8680';
+    ctx.font = '11px "Noto Sans JP", sans-serif';
+    ctx.textAlign = 'center';
+    const nTicks = 8;
+    for (let i = 0; i <= nTicks; i++) {
+        const t = (maxT / nTicks) * i;
+        const x = xp(t);
+        ctx.beginPath(); ctx.moveTo(x, H - pad.bottom); ctx.lineTo(x, H - pad.bottom + 5); ctx.stroke();
+        ctx.fillText(Math.round(t), x, H - pad.bottom + 17);
+    }
+
+    // Y-axis ticks & labels
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 10; i++) {
+        const s = i * 0.1;
+        const y = yp(s);
+        ctx.beginPath(); ctx.moveTo(pad.left - 5, y); ctx.lineTo(pad.left, y); ctx.stroke();
+        ctx.fillText(s.toFixed(1), pad.left - 9, y + 4);
+    }
+
+    // Axis labels
+    ctx.fillStyle = '#5a5550';
+    ctx.font = '12px "Noto Sans JP", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('時間（日）', pad.left + pw / 2, H - 8);
+
+    ctx.save();
+    ctx.translate(14, pad.top + ph / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('イベント非発生確率', 0, 0);
+    ctx.restore();
+
+    // ── Draw KM step function ──
+    const palettes = [
+        { line: '#2d5a4a', censor: '#2d5a4a' },
+        { line: '#d4634a', censor: '#d4634a' }
+    ];
+    const groups = [kmA, kmB];
+    const labels = ['グループ A', 'グループ B'];
+    const maxTimes = [maxTimeA, maxTimeB];
+
+    groups.forEach(({ curve, censorTimes }, gi) => {
+        const col = palettes[gi];
+
+        // Step function
+        ctx.strokeStyle = col.line;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+
+        let prevX = xp(curve[0].time);
+        let prevY = yp(curve[0].S);
+        ctx.moveTo(prevX, prevY);
+
+        for (let i = 1; i < curve.length; i++) {
+            const cx = xp(curve[i].time);
+            const cy = yp(curve[i].S);
+            // Horizontal then vertical (step)
+            ctx.lineTo(cx, prevY);
+            ctx.lineTo(cx, cy);
+            prevX = cx;
+            prevY = cy;
+        }
+        // Extend to max time
+        ctx.lineTo(xp(maxTimes[gi]), prevY);
+        ctx.stroke();
+
+        // Censoring ticks (+)
+        ctx.strokeStyle = col.censor;
+        ctx.lineWidth = 1.8;
+        censorTimes.forEach(ct => {
+            // Find S at this censoring time
+            let S = 1;
+            for (let i = curve.length - 1; i >= 0; i--) {
+                if (curve[i].time <= ct) { S = curve[i].S; break; }
+            }
+            const cx = xp(ct);
+            const cy = yp(S);
+            const sz = 5;
+            ctx.beginPath();
+            ctx.moveTo(cx - sz, cy); ctx.lineTo(cx + sz, cy);
+            ctx.moveTo(cx, cy - sz); ctx.lineTo(cx, cy + sz);
+            ctx.stroke();
+        });
+    });
+
+    // 50% reference line
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#b0aba0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, yp(0.5));
+    ctx.lineTo(W - pad.right, yp(0.5));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#b0aba0';
+    ctx.font = '10px "Noto Sans JP", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('S = 0.5', W - pad.right + 3, yp(0.5) + 4);
+
+    // Legend
+    const legendX = pad.left + pw - 150;
+    const legendY = pad.top + 15;
+    labels.forEach((lb, i) => {
+        const lx = legendX;
+        const ly = legendY + i * 22;
+        ctx.strokeStyle = palettes[i].line;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 25, ly); ctx.stroke();
+        ctx.fillStyle = '#1c1710';
+        ctx.font = '12px "Noto Sans JP", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(lb, lx + 30, ly + 4);
+    });
+}
+
+// ============================================================
+// 7. メイン：分析実行
+// ============================================================
+function runAnalysis() {
+    const errEl = document.getElementById('errMsg');
+    errEl.style.display = 'none';
+
+    const { rows: dataA, errs: errsA } = parseData(document.getElementById('groupA').value);
+    const { rows: dataB, errs: errsB } = parseData(document.getElementById('groupB').value);
+
+    const allErrs = [...errsA.map(e => 'グループA ' + e), ...errsB.map(e => 'グループB ' + e)];
+    if (allErrs.length) {
+        errEl.textContent = allErrs[0];
+        errEl.style.display = 'block';
+        return;
+    }
+    if (dataA.length < 2 || dataB.length < 2) {
+        errEl.textContent = '各グループに最低2名以上のデータが必要です。';
+        errEl.style.display = 'block';
+        return;
+    }
+    const evA = dataA.filter(d => d.event === 1).length;
+    const evB = dataB.filter(d => d.event === 1).length;
+    if (evA === 0 || evB === 0) {
+        errEl.textContent = '各グループに最低1件以上のイベント発生データが必要です（イベント数が 0 では検定できません）。';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    // KM
+    const kmA = kaplanMeier(dataA);
+    const kmB = kaplanMeier(dataB);
+
+    const maxTimeA = Math.max(...dataA.map(d => d.time));
+    const maxTimeB = Math.max(...dataB.map(d => d.time));
+
+    // Log-Rank
+    const lr = logRankTest(dataA, dataB);
+
+    // Draw
+    drawKM(kmA, kmB, maxTimeA, maxTimeB);
+
+    // Display stats
+    document.getElementById('valChiSq').textContent = lr.chiSq.toFixed(4);
+    document.getElementById('valP').textContent     = lr.pValue.toFixed(6);
+
+    const sig = lr.pValue < 0.05;
+    document.getElementById('pBadge').innerHTML = sig
+        ? '<span class="p-badge p-sig">有意差あり（p &lt; 0.05）</span>'
+        : '<span class="p-badge p-ns">有意差なし（p ≥ 0.05）</span>';
+
+    document.getElementById('interp').innerHTML = sig
+        ? `<strong>📌 結論</strong>　Log-Rank 検定の結果、グループ A とグループ B の生存曲線には統計的に有意な差が認められます（χ² = ${lr.chiSq.toFixed(3)}, p = ${lr.pValue.toFixed(4)}）。いずれかの治療法がイベント発生をより長く遅延させると考えられます。`
+        : `<strong>📌 結論</strong>　Log-Rank 検定の結果、グループ A とグループ B の生存曲線に統計的に有意な差は認められませんでした（χ² = ${lr.chiSq.toFixed(3)}, p = ${lr.pValue.toFixed(4)}）。現在のサンプルサイズでは差を検出できませんでしたが、「差がない」を証明したわけではありません。`;
+
+    // Desc table
+    const mA = medianSurvival(kmA.curve, maxTimeA);
+    const mB = medianSurvival(kmB.curve, maxTimeB);
+    const fmtM = (m, max) => m !== null ? m.toFixed(0) : '> ' + max.toFixed(0);
+
+    document.getElementById('descBody').innerHTML = `
+        <tr>
+            <td>グループ A</td>
+            <td>${dataA.length}</td>
+            <td>${evA}</td>
+            <td>${dataA.length - evA}</td>
+            <td>${fmtM(mA, maxTimeA)}</td>
+        </tr>
+        <tr>
+            <td>グループ B</td>
+            <td>${dataB.length}</td>
+            <td>${evB}</td>
+            <td>${dataB.length - evB}</td>
+            <td>${fmtM(mB, maxTimeB)}</td>
+        </tr>
+    `;
+
+    // Show
+    ['secKM','secLR','secDesc'].forEach(id => {
+        document.getElementById(id).classList.add('visible');
+    });
+    document.getElementById('secKM').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ============================================================
+// 8. サンプルデータ・クリア
+// ============================================================
+function loadDemo() {
+    // 教材用サンプル：グループAの方が再発が遅い設定
+    document.getElementById('groupA').value =
+`60,1
+120,0
+150,1
+200,0
+210,1
+250,0
+270,1
+300,0
+330,1
+400,0
+420,1
+480,0`;
+
+    document.getElementById('groupB').value =
+`30,1
+50,1
+80,0
+100,1
+130,1
+160,0
+190,1
+220,1
+250,0
+280,1
+310,1
+350,0`;
+
+    runAnalysis();
+}
+
+function clearData() {
+    document.getElementById('groupA').value = '';
+    document.getElementById('groupB').value = '';
+    document.getElementById('errMsg').style.display = 'none';
+    ['secKM','secLR','secDesc'].forEach(id => {
+        document.getElementById(id).classList.remove('visible');
+    });
+}
+</script>
+</body>
+</html>

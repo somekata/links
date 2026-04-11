@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生存分析 スライド型学習教材</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&family=Zen+Antique&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f5f1e8;
+            --paper: #fdfaf3;
+            --ink: #1c1710;
+            --accent: #2d5a4a;
+            --accent-light: #5a9480;
+            --border: #d4cfc5;
+            --muted: #8b8680;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .logo {
+            font-family: 'Zen Antique', serif;
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 0.4rem;
+        }
+        .subtitle { font-size: 0.9rem; color: var(--muted); }
+
+        /* ── SLIDE ── */
+        .slide-container {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 3rem;
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+        }
+
+        .slide-content { flex: 1; }
+
+        .slide-title {
+            font-family: 'Zen Antique', serif;
+            font-size: 1.75rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .slide-body {
+            font-size: 1rem;
+            line-height: 1.85;
+        }
+        .slide-body p { margin-bottom: 1.1rem; }
+        .slide-body strong { color: var(--accent); font-weight: 600; }
+        .slide-body ul, .slide-body ol {
+            margin-left: 2rem;
+            margin-bottom: 1.1rem;
+            line-height: 1.85;
+        }
+        .slide-body li { margin-bottom: 0.3rem; }
+
+        /* ── EXAMPLE BOX ── */
+        .example-box {
+            background: rgba(45,90,74,0.05);
+            border-left: 4px solid var(--accent);
+            padding: 1.1rem 1.25rem;
+            border-radius: 0 6px 6px 0;
+            margin: 1.25rem 0;
+        }
+        .example-label {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.65rem;
+        }
+        .example-content { font-size: 0.95rem; line-height: 1.75; }
+        .example-content p { margin-bottom: 0.5rem; }
+        .example-content p:last-child { margin-bottom: 0; }
+
+        /* ── TABLE ── */
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin: 1.25rem 0;
+        }
+        .comp-table th {
+            background: var(--accent);
+            color: white;
+            padding: 0.6rem 0.9rem;
+            text-align: left;
+        }
+        .comp-table td {
+            padding: 0.6rem 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .comp-table tr:last-child td { border-bottom: none; }
+        .comp-table tr:nth-child(even) td { background: rgba(45,90,74,0.03); }
+
+        /* ── FORMULA BOX ── */
+        .formula-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            line-height: 1.8;
+            margin: 1.25rem 0;
+        }
+
+        /* ── PROGRESS ── */
+        .progress-wrap { margin: 1.5rem 0 0.75rem; }
+        .progress-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
+        .progress-bar { background: var(--border); border-radius: 99px; height: 5px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent-light); border-radius: 99px; transition: width 0.35s ease; }
+
+        /* ── NAV ── */
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        .slide-counter { font-size: 0.85rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+        .nav-buttons { display: flex; gap: 0.75rem; }
+
+        .nav-buttons button {
+            padding: 0.55rem 1.2rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.18s;
+            background: var(--border);
+            color: var(--ink);
+        }
+        .nav-buttons button:disabled { opacity: 0.35; cursor: default; }
+        .nav-buttons button.next { background: var(--accent); color: white; }
+        .nav-buttons button.next:hover:not(:disabled) { background: var(--accent-light); }
+
+        /* ── CTA ── */
+        .cta-button {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 0.85rem 1.8rem;
+            background: var(--accent);
+            color: white;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(45,90,74,0.2);
+        }
+        .cta-button:hover { background: var(--accent-light); transform: translateY(-2px); }
+
+        @media (max-width: 700px) {
+            .slide-container { padding: 1.5rem; min-height: auto; }
+            .slide-title { font-size: 1.35rem; }
+            body { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <div class="logo">生存分析（Survival Analysis）</div>
+        <div class="subtitle">医学部・大学院向け統計学教材</div>
+    </div>
+
+    <div class="slide-container">
+        <div class="slide-content" id="slideContent"></div>
+
+        <div class="progress-wrap">
+            <div class="progress-label">進度</div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+
+        <div class="nav-row">
+            <div class="slide-counter"><span id="cur">1</span> / <span id="tot">—</span></div>
+            <div class="nav-buttons">
+                <button id="prevBtn" onclick="go(-1)">← 前へ</button>
+                <button id="nextBtn" onclick="go(+1)" class="next">次へ →</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const slides = [
+    // ── 1
+    {
+        title: '生存分析とは何か',
+        content: `
+            <p><strong>生存分析（Survival Analysis）</strong>は、「あるイベント（事象）が発生するまでの<u>時間</u>」を分析する統計手法です。</p>
+            <p>「生存」という名称から医学の生死のみを扱うと誤解されがちですが、以下のようにあらゆる「イベント発生時間」の分析に応用されます：</p>
+            <ul>
+                <li>患者の治療後の <strong>再発までの時間</strong></li>
+                <li>患者の <strong>死亡までの時間</strong>（全生存期間）</li>
+                <li>機器の <strong>故障までの時間</strong>（工学的信頼性解析）</li>
+                <li>顧客の <strong>解約までの時間</strong>（マーケティング）</li>
+            </ul>
+            <p><strong>共通点：</strong>すべて「時間」が主要なアウトカムである点です。生存分析はこの「時間」を正確に扱うための専用手法です。</p>
+        `
+    },
+    // ── 2
+    {
+        title: '通常の統計手法との違い',
+        content: `
+            <p>「治療後の再発時間を2群で比較したい」場合、なぜ普通の <strong>t 検定</strong> が使えないのでしょうか？</p>
+            <table class="comp-table">
+                <tr><th></th><th>t 検定（2標本）</th><th>生存分析（Log-Rank）</th></tr>
+                <tr><td><strong>比較対象</strong></td><td>グループ平均値</td><td>イベント発生時間の分布全体</td></tr>
+                <tr><td><strong>時間の役割</strong></td><td>単純な連続変数</td><td>イベント発生までの経過時間（中心的情報）</td></tr>
+                <tr><td><strong>打ち切りデータ</strong></td><td>扱えない</td><td>正式に組み込んで処理する</td></tr>
+                <tr><td><strong>分布の仮定</strong></td><td>正規分布を仮定</td><td>分布の仮定不要（ノンパラメトリック）</td></tr>
+            </table>
+            <p>再発時間は正規分布しないことが多く、かつ「観察終了まで再発しなかった患者」（打ち切り）を無視すると推定が偏ります。これが生存分析を必要とする理由です。</p>
+        `
+    },
+    // ── 3
+    {
+        title: '打ち切り（Censoring）とは',
+        content: `
+            <p>生存分析特有の概念として、<strong>打ち切り（Censoring）</strong>があります。</p>
+            <div class="example-box">
+                <div class="example-label">具体例：がん患者の再発追跡研究（観察期間 365日）</div>
+                <div class="example-content">
+                    <p><strong>患者 A</strong>：治療後 120日で再発 → <strong>イベント発生（完全観測）</strong>　記録：120, 1</p>
+                    <p><strong>患者 B</strong>：365日観察したが再発なし → <strong>打ち切り（右側打ち切り）</strong>　記録：365, 0</p>
+                    <p><strong>患者 C</strong>：転居のため180日時点で追跡不能 → <strong>打ち切り</strong>　記録：180, 0</p>
+                </div>
+            </div>
+            <p>患者 B や C の「少なくともその時点までは再発しなかった」という情報は貴重です。これを捨ててしまうと推定が偏り（バイアス）、サンプルサイズも無駄になります。</p>
+            <p>最も一般的な打ち切りは<strong>右側打ち切り</strong>（観察終了時点でイベント未発生）です。</p>
+        `
+    },
+    // ── 4
+    {
+        title: 'カプランマイヤー（KM）推定量',
+        content: `
+            <p><strong>カプランマイヤー推定量（Kaplan-Meier estimator）</strong>は、生存関数 S(t) を打ち切りデータを正確に考慮しながらノンパラメトリックに推定する手法です。</p>
+            <div class="formula-box">
+                S(t) = ∏<sub>tᵢ ≤ t</sub> ( 1 − dᵢ / nᵢ )<br><br>
+                S(t) ：時刻 t でのイベント非発生確率<br>
+                dᵢ  ：時刻 tᵢ でのイベント発生数<br>
+                nᵢ  ：時刻 tᵢ の直前に観察中の人数（危険集合, at-risk set）
+            </div>
+            <p>イベントが発生するたびに確率が段階的に下がる <strong>階段関数（step function）</strong>になります。</p>
+            <p><strong>打ち切りの扱い：</strong>打ち切りが生じた時点では S(t) は変化しませんが、その後の nᵢ（危険集合）から除外されます。これにより、打ち切りデータが推定に正しく寄与します。</p>
+        `
+    },
+    // ── 5
+    {
+        title: 'KM曲線の見方',
+        content: `
+            <p>カプランマイヤー曲線から読み取れる主な情報：</p>
+            <ul>
+                <li><strong>Y 軸</strong>：S(t)：イベント非発生確率（生存率・再発なし率など）。1.0（100%）からスタートし、時間とともに下降します</li>
+                <li><strong>X 軸</strong>：観察時間（日・月・年など）</li>
+                <li><strong>曲線の位置が高い</strong>：その時点でのイベント非発生率が高い（予後が良好）</li>
+                <li><strong>急な下降</strong>：短期間に多くのイベントが発生していることを意味する</li>
+                <li><strong>＋ マーク</strong>：打ち切りの発生時点（KM曲線の慣例表示）</li>
+                <li><strong>中央生存時間</strong>：S(t) がはじめて 0.5 を下回る時点（観察期間内で 50% に達しない場合は「未到達」と記載）</li>
+            </ul>
+            <div class="example-box">
+                <div class="example-label">典型的な報告文例</div>
+                <div class="example-content">
+                    「治療 A の 300日無再発生存率は 65% で，治療 B の 40% に比べ有意に高く（Log-Rank p = 0.03），中央再発時間はそれぞれ 420日 vs 210日であった。」
+                </div>
+            </div>
+        `
+    },
+    // ── 6
+    {
+        title: 'Log-Rank 検定',
+        content: `
+            <p>2群の KM 曲線を比較して「差は統計的に有意か」を判定するのが <strong>Log-Rank 検定</strong>（Mantel-Cox 検定）です。</p>
+            <div class="example-box">
+                <div class="example-label">Log-Rank 検定の考え方</div>
+                <div class="example-content">
+                    <p>各イベント発生時点 tᵢ について、</p>
+                    <p>①「グループ A でのイベント数の期待値 Eᵢ」を、危険集合の大きさの比率から計算</p>
+                    <p>②「実際の観測数 Oᵢ」との差（Oᵢ − Eᵢ）を全時点で足し合わせる</p>
+                    <p>③ この総差を分散で割って χ²統計量（df = 1）を求め、p 値を算出する</p>
+                </div>
+            </div>
+            <ul>
+                <li><strong>帰無仮説（H₀）</strong>：グループ A と B の生存関数は等しい</li>
+                <li><strong>特徴</strong>：分布の仮定不要、打ち切りを適切に扱える、全観察期間にわたる差を総合的に検定する</li>
+                <li><strong>注意</strong>：曲線が交差する場合（hazard が一定方向でない場合）は検出力が下がる</li>
+            </ul>
+        `
+    },
+    // ── 7
+    {
+        title: '医学的な例題：がん術後再発の比較',
+        content: `
+            <p>実際の医学的なシナリオで理解を深めましょう。</p>
+            <div class="example-box">
+                <div class="example-label">研究設定</div>
+                <div class="example-content">
+                    <p><strong>対象</strong>：某がんの術後患者 24名（A群 12名・B群 12名）</p>
+                    <p><strong>介入</strong>：化学療法 A vs 化学療法 B（ランダム割り付け）</p>
+                    <p><strong>主要エンドポイント（Primary endpoint）</strong>：術後再発（無再発生存期間）</p>
+                    <p><strong>観察期間</strong>：最長 500日</p>
+                </div>
+            </div>
+            <p>各患者について記録するデータは：</p>
+            <ul>
+                <li><strong>time</strong>：術後からイベント発生または打ち切りまでの日数</li>
+                <li><strong>event</strong>：1 = 再発（イベント発生）、0 = 打ち切り（観察終了時点で再発なし）</li>
+            </ul>
+            <p>このデータから KM 曲線を描き、Log-Rank 検定で「治療法による再発時間に有意差があるか」を判定します。</p>
+        `
+    },
+    // ── 8
+    {
+        title: 'データ形式：実際の入力例',
+        content: `
+            <p>計算ツールへの入力形式：<strong>1行 1患者、カンマ区切りで「時間, イベント」</strong></p>
+            <table class="comp-table">
+                <tr><th>患者</th><th>time（日）</th><th>event</th><th>意味</th></tr>
+                <tr><td>患者1</td><td>60</td><td>1</td><td>60日で再発（イベント発生）</td></tr>
+                <tr><td>患者2</td><td>120</td><td>0</td><td>120日観察後、再発なし（打ち切り）</td></tr>
+                <tr><td>患者3</td><td>150</td><td>1</td><td>150日で再発</td></tr>
+                <tr><td>患者4</td><td>200</td><td>0</td><td>200日観察後、転院のため追跡終了（打ち切り）</td></tr>
+            </table>
+            <div class="example-box">
+                <div class="example-label">よくある誤解</div>
+                <div class="example-content">
+                    <p><strong>「event = 0 はイベントが起きなかった = 良い結果」ではありません。</strong></p>
+                    <p>event = 0 は「観察期間内にイベントを確認できなかった」という意味です。その患者がその後どうなったかは不明であり、生存分析はこの不確実性を数理的に扱います。</p>
+                </div>
+            </div>
+        `
+    },
+    // ── 9
+    {
+        title: 'Log-Rank 検定の結果解釈',
+        content: `
+            <p>Log-Rank 検定の結果から分かること：</p>
+            <table class="comp-table">
+                <tr><th>p 値</th><th>解釈</th></tr>
+                <tr><td>p &lt; 0.05</td><td>グループ間に統計的に有意な差がある（生存曲線が異なると判断）</td></tr>
+                <tr><td>p ≥ 0.05</td><td>有意差なし（このサンプルサイズでは差を検出できなかった）</td></tr>
+            </table>
+            <div class="example-box">
+                <div class="example-label">重要な注意点</div>
+                <div class="example-content">
+                    <p>①「p ≥ 0.05」は「差がない」を証明するものではありません。サンプルサイズ不足による検出力不足の可能性を常に考慮してください。</p>
+                    <p style="margin-top:0.5rem;">②「p &lt; 0.05」は統計的有意性であり、<strong>臨床的意義（clinical significance）</strong>とは別物です。例えば中央生存期間の差が3日しかない場合、統計的有意差があっても臨床的に重要でない可能性があります。</p>
+                    <p style="margin-top:0.5rem;">③ Log-Rank 検定は「差があるかどうか」を判定しますが、「どの程度の差か」はハザード比（HR）とその信頼区間で定量します。</p>
+                </div>
+            </div>
+        `
+    },
+    // ── 10
+    {
+        title: '発展：Cox 比例ハザードモデル',
+        content: `
+            <p>Log-Rank 検定は2群（または多群）の単純比較ですが、実際の臨床研究では <strong>交絡因子（年齢・性別・病期など）</strong>を調整した解析が必要です。</p>
+            <p>そのための手法が <strong>Cox 比例ハザードモデル</strong>（Cox proportional hazards model）です：</p>
+            <div class="formula-box">
+                h(t | X) = h₀(t) · exp( β₁X₁ + β₂X₂ + ··· + βₖXₖ )<br><br>
+                h(t | X)：共変量 X を持つ患者のハザード関数<br>
+                h₀(t)   ：ベースラインハザード（ノンパラメトリックに推定）<br>
+                exp(βᵢ) ：ハザード比（HR）：Xᵢ が1単位増加したときのハザードの比
+            </div>
+            <ul>
+                <li><strong>ハザード比（HR）&lt; 1</strong>：その因子があるとイベント発生リスクが低い（保護的）</li>
+                <li><strong>ハザード比（HR）&gt; 1</strong>：その因子があるとイベント発生リスクが高い（危険因子）</li>
+                <li><strong>比例ハザード仮定</strong>：「2群のハザード比が時間を通じて一定」という仮定。KM 曲線が交差する場合は仮定が崩れる可能性がある</li>
+            </ul>
+        `
+    },
+    // ── 11
+    {
+        title: '生存分析の医学的応用',
+        content: `
+            <p>生存分析は、医学・公衆衛生の多くの領域で活用されています：</p>
+            <ul>
+                <li><strong>腫瘍学</strong>：全生存期間（OS）・無増悪生存期間（PFS）・無再発生存期間（RFS）の比較</li>
+                <li><strong>循環器内科</strong>：心筋梗塞・脳卒中の再発までの時間、心不全入院までの時間</li>
+                <li><strong>感染症</strong>：抗菌薬投与後の解熱・ウイルス陰性化・ICU 退室までの時間</li>
+                <li><strong>臨床試験</strong>：主要評価項目としての生存エンドポイント（ランダム化比較試験の最重要指標の一つ）</li>
+                <li><strong>疫学</strong>：曝露から疾患発症までの潜伏期間の推定</li>
+            </ul>
+            <div class="example-box">
+                <div class="example-label">代表的な論文での報告形式</div>
+                <div class="example-content">
+                    「Kaplan-Meier 法により無再発生存曲線を作成し，群間比較には Log-Rank 検定を用いた。多変量解析には Cox 比例ハザードモデルを使用し，ハザード比（HR）と95%信頼区間（CI）を算出した。」
+                </div>
+            </div>
+        `
+    },
+    // ── 12
+    {
+        title: '計算ツールへ進もう',
+        content: `
+            <p>このスライドで、生存分析の基本概念を学びました。</p>
+            <div class="example-box">
+                <div class="example-label">学んだこと</div>
+                <div class="example-content">
+                    <p>✓ 生存分析が「イベント発生時間」を主要アウトカムとする理由</p>
+                    <p>✓ 打ち切りデータとその適切な扱い方</p>
+                    <p>✓ カプランマイヤー推定量と KM 曲線の見方</p>
+                    <p>✓ Log-Rank 検定による群間比較と結果の解釈</p>
+                    <p>✓ Cox 比例ハザードモデル（発展）</p>
+                </div>
+            </div>
+            <p style="margin-top:1.25rem;">次は、<strong>実際のデータを入力して KM 曲線を描画し、Log-Rank 検定を実行</strong>してみましょう。「サンプルデータ」ボタンでデモを即確認できます。</p>
+            <a href="survival_analysis_tool.html" class="cta-button">📊 計算ツールへ進む →</a>
+        `
+    }
+];
+
+let cur = 0;
+
+function render() {
+    const s = slides[cur];
+    document.getElementById('slideContent').innerHTML =
+        `<h2 class="slide-title">${s.title}</h2><div class="slide-body">${s.content}</div>`;
+    const pct = ((cur + 1) / slides.length) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('cur').textContent = cur + 1;
+    document.getElementById('tot').textContent = slides.length;
+    document.getElementById('prevBtn').disabled = cur === 0;
+    document.getElementById('nextBtn').disabled = cur === slides.length - 1;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function go(dir) {
+    const next = cur + dir;
+    if (next < 0 || next >= slides.length) return;
+    cur = next;
+    render();
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') go(+1);
+    if (e.key === 'ArrowLeft')  go(-1);
+});
+
+render();
+</script>
+</body>
+</html>
