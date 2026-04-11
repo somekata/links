@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第3章：可視化という次元削減 | R言語で学ぶ統計学</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8;
+  --paper: #fdfaf3;
+  --paper2: #f8f4eb;
+  --ink: #1c1710;
+  --ink-light: #4a3f30;
+  --ink-muted: #7a6e5f;
+  --accent: #8b3a2a;
+  --accent-pale: #f0e6df;
+  --gold: #c8922a;
+  --gold-pale: #faf3e0;
+  --teal: #2a6b6e;
+  --teal-pale: #e0f0f0;
+  --green: #3a6b3a;
+  --green-pale: #e8f4e8;
+  --purple: #5a3a8a;
+  --purple-pale: #f0eaf8;
+  --border: #d4c9b0;
+  --border-light: #e8e0cc;
+  --sidebar-w: 260px;
+  --shadow: 0 2px 12px rgba(28,23,16,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.9rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+header .series-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+header .chapter-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+aside {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  background: var(--paper2);
+  border-right: 1px solid var(--border);
+  padding: 1.6rem 1.2rem 2rem;
+  z-index: 90;
+}
+aside h2 {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 0.1rem; }
+.toc-list a {
+  display: block;
+  font-size: 0.79rem;
+  color: var(--ink-light);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 3px;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.45;
+}
+.toc-list a:hover, .toc-list a.active {
+  background: var(--accent-pale);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+.toc-divider {
+  margin: 1rem 0 0.6rem;
+  font-family: 'Zen Antique', serif;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+}
+.chapter-link {
+  font-size: 0.76rem !important;
+  color: var(--ink-muted) !important;
+  padding: 0.28rem 0.6rem !important;
+}
+.chapter-link.current { color: var(--accent) !important; font-weight: 500; }
+.chapter-link .ch-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  margin-right: 0.3em;
+}
+.progress-bar {
+  height: 3px;
+  background: var(--border-light);
+  margin: 1.5rem 0 0;
+  border-radius: 2px;
+}
+.progress-fill {
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 2px;
+}
+.progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
+  text-align: right;
+}
+
+main {
+  margin-left: var(--sidebar-w);
+  margin-top: 52px;
+  padding: 3rem 4rem 4rem 3.5rem;
+  max-width: calc(860px + var(--sidebar-w));
+  min-height: calc(100vh - 52px);
+}
+
+footer {
+  margin-left: var(--sidebar-w);
+  background: var(--paper2);
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  line-height: 1.7;
+  text-align: center;
+}
+footer .footer-mark {
+  font-family: 'Zen Antique', serif;
+  display: block;
+  margin-top: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+.chapter-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+.chapter-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 2.1rem;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+.chapter-subtitle {
+  font-size: 0.97rem;
+  color: var(--ink-muted);
+  font-weight: 300;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+.lead-divider {
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  margin-bottom: 2.5rem;
+}
+
+.dialogue-section { margin-bottom: 3.5rem; }
+.section-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1.18rem;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-heading::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--gold);
+  margin-right: 0.2em;
+}
+.subsection-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  color: var(--teal);
+  margin: 2rem 0 1rem;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--teal);
+}
+
+.turn { display: flex; gap: 1rem; margin-bottom: 1.3rem; align-items: flex-start; }
+.turn.student { flex-direction: row-reverse; }
+.avatar {
+  flex-shrink: 0; width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Zen Antique', serif; font-size: 0.82rem;
+}
+.avatar.teacher { background: var(--ink); color: var(--paper); }
+.avatar.student-av { background: var(--teal); color: #fff; }
+.bubble {
+  max-width: 82%;
+  padding: 0.9rem 1.1rem;
+  border-radius: 4px 12px 12px 12px;
+  line-height: 1.85; font-size: 0.91rem;
+  box-shadow: var(--shadow);
+}
+.turn.student .bubble { border-radius: 12px 4px 12px 12px; }
+.bubble.teacher-bubble { background: var(--paper); border: 1px solid var(--border-light); color: var(--ink); }
+.bubble.student-bubble { background: var(--teal-pale); border: 1px solid #c0dede; color: var(--teal); }
+.speaker-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 0.35rem; opacity: 0.6; display: block; }
+
+pre.code-block {
+  background: #1e1a14;
+  color: #d4c9a8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.81rem;
+  padding: 1.3rem 1.5rem;
+  border-radius: 4px;
+  margin: 1.1rem 0;
+  line-height: 1.8;
+  overflow-x: auto;
+  white-space: pre;
+  position: relative;
+}
+.lang-tag {
+  position: absolute; top: 0.5rem; right: 0.8rem;
+  font-size: 0.62rem; color: #5a5040; letter-spacing: 0.08em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.c-comment { color: #6a6050; }
+.c-string  { color: #a8c878; }
+.c-num     { color: #e8c070; }
+.c-fn      { color: #78b8d8; }
+.c-kw      { color: #d87850; }
+.c-out     { color: #8aaa70; }
+.c-section { color: #888070; font-style: italic; display: block; margin: 0.5em 0 0.1em; font-size: 0.74rem; letter-spacing: 0.05em; }
+
+.inline-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.81em;
+  background: rgba(28,23,16,0.07); padding: 0.1em 0.4em;
+  border-radius: 3px; color: var(--accent);
+}
+
+.callout, .callout-teal, .callout-green, .callout-purple {
+  padding: 1rem 1.2rem;
+  border-radius: 0 4px 4px 0;
+  margin: 1.4rem 0;
+  font-size: 0.89rem; line-height: 1.8;
+  color: var(--ink-light);
+}
+.callout        { border-left: 4px solid var(--gold);   background: var(--gold-pale); }
+.callout-teal   { border-left: 4px solid var(--teal);   background: var(--teal-pale); }
+.callout-green  { border-left: 4px solid var(--green);  background: var(--green-pale); }
+.callout-purple { border-left: 4px solid var(--purple); background: var(--purple-pale); }
+.callout strong        { color: var(--gold); }
+.callout-teal strong   { color: var(--teal); }
+.callout-green strong  { color: var(--green); }
+.callout-purple strong { color: var(--purple); }
+
+.learning-goals {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  padding: 1.3rem 1.5rem; margin-bottom: 2.5rem;
+  box-shadow: var(--shadow);
+}
+.learning-goals h3 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--teal); margin-bottom: 0.8rem; }
+.goal-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.goal-list li { font-size: 0.85rem; color: var(--ink-light); display: flex; align-items: flex-start; gap: 0.5rem; line-height: 1.6; }
+.goal-list li::before { content: '✓'; font-family: 'JetBrains Mono', monospace; color: var(--teal); font-size: 0.78rem; flex-shrink: 0; margin-top: 0.12rem; }
+
+.concept-box {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.4rem 1.6rem; margin: 1.8rem 0; box-shadow: var(--shadow);
+}
+.concept-box h4 { font-family: 'Zen Antique', serif; font-size: 0.97rem; color: var(--ink); margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-light); }
+.concept-box p { font-size: 0.88rem; line-height: 1.85; color: var(--ink-light); margin-bottom: 0.7rem; }
+.concept-box p:last-child { margin-bottom: 0; }
+
+/* ── LAYER DIAGRAM ── */
+.layer-stack {
+  display: flex; flex-direction: column; gap: 0.35rem; margin: 1.3rem 0;
+}
+.layer-item {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.6rem 1rem; border-radius: 4px;
+  font-size: 0.82rem;
+}
+.layer-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+  color: var(--ink-muted); width: 24px; flex-shrink: 0;
+}
+.layer-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+  font-weight: 500; width: 180px; flex-shrink: 0;
+}
+.layer-desc { font-size: 0.78rem; color: var(--ink-muted); }
+.l-base   { background: #1e2a3a; color: #78b8e8; }
+.l-base .layer-desc { color: #5a8ab0; }
+.l-aes    { background: #1e3a2a; color: #78d878; }
+.l-aes .layer-desc  { color: #5a9a5a; }
+.l-geom   { background: #3a2a1e; color: #e8c070; }
+.l-geom .layer-desc { color: #b09050; }
+.l-stat   { background: #2a1e3a; color: #c878e8; }
+.l-stat .layer-desc { color: #8a5aa0; }
+.l-scale  { background: #1e3a3a; color: #78d8d8; }
+.l-scale .layer-desc { color: #5a9898; }
+.l-coord  { background: #3a3a1e; color: #d8d878; }
+.l-coord .layer-desc { color: #9a9858; }
+.l-facet  { background: #3a1e2a; color: #e87878; }
+.l-facet .layer-desc { color: #a05858; }
+.l-theme  { background: #2a2a2a; color: #d8d8d8; }
+.l-theme .layer-desc { color: #909090; }
+
+/* ── GEOM GALLERY ── */
+.geom-gallery {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin: 1.3rem 0;
+}
+.geom-card {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1rem; box-shadow: var(--shadow);
+  transition: border-color 0.2s;
+}
+.geom-card:hover { border-color: var(--gold); }
+.geom-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+.geom-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+  color: var(--accent); font-weight: 500; margin-bottom: 0.3rem;
+}
+.geom-use { font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; }
+.geom-aes { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--gold); margin-top: 0.3rem; }
+
+/* ── SCALE TABLE ── */
+.scale-table {
+  width: 100%; border-collapse: collapse; font-size: 0.82rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.scale-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.scale-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.scale-table tr:last-child td { border-bottom: none; }
+.scale-table tr:hover td { background: var(--accent-pale); }
+.scale-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+/* ── COLOR SWATCHES ── */
+.color-palette {
+  display: flex; gap: 0.5rem; margin: 0.8rem 0; flex-wrap: wrap;
+}
+.swatch {
+  display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+}
+.swatch-box {
+  width: 40px; height: 28px; border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+.swatch-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  color: var(--ink-muted);
+}
+
+/* ── QUIZ ── */
+.quiz-box {
+  background: var(--gold-pale); border: 1px solid #d4b060;
+  border-radius: 6px; padding: 1.3rem 1.5rem; margin: 2rem 0;
+}
+.quiz-box h4 { font-family: 'Zen Antique', serif; font-size: 0.93rem; color: var(--gold); margin-bottom: 0.7rem; }
+.quiz-q { font-size: 0.88rem; color: var(--ink-light); margin-bottom: 0.7rem; line-height: 1.7; }
+.quiz-toggle { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; background: none; border: 1px solid var(--gold); color: var(--gold); padding: 0.35rem 0.85rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.quiz-toggle:hover { background: var(--gold); color: #fff; }
+.quiz-answer { display: none; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid #d4b060; font-size: 0.86rem; line-height: 1.8; color: var(--ink-light); }
+.quiz-answer.open { display: block; }
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.summary-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.summary-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: var(--accent-pale); }
+.summary-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+.next-chapter {
+  background: var(--ink); color: var(--paper);
+  border-radius: 6px; padding: 1.5rem 2rem; margin-top: 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.next-chapter .label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+.next-chapter .title { font-family: 'Zen Antique', serif; font-size: 1.03rem; }
+.next-chapter .arrow { font-size: 1.4rem; opacity: 0.5; }
+
+em { font-style: italic; color: var(--ink-light); }
+
+/* ── GRAPH MOCKUP ── */
+.graph-mock {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.2rem; margin: 1.3rem 0;
+  box-shadow: var(--shadow);
+}
+.graph-mock .gm-title {
+  font-family: 'Zen Antique', serif; font-size: 0.85rem;
+  color: var(--ink-muted); margin-bottom: 0.8rem; text-align: center;
+}
+.graph-mock svg { display: block; margin: 0 auto; }
+
+@media (max-width: 900px) {
+  aside { display: none; }
+  main { margin-left: 0; padding: 2rem 1.2rem; }
+  footer { margin-left: 0; }
+  .geom-gallery { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="series-title">R言語で学ぶ統計学 ── 情報の彫刻刀</span>
+  <span class="chapter-badge">CHAPTER 3</span>
+</header>
+
+<aside>
+  <h2>第3章 目次</h2>
+  <ul class="toc-list">
+    <li><a href="#grammar">3.1 グラフの文法（GoG）</a></li>
+    <li><a href="#aes">3.2 aes マッピング</a></li>
+    <li><a href="#geoms">3.3 geom_ 図形の種類</a></li>
+    <li><a href="#stats">3.4 stat_ 統計変換</a></li>
+    <li><a href="#scales">3.5 scale_ 軸・色の制御</a></li>
+    <li><a href="#facet">3.6 facet_ 小多重図</a></li>
+    <li><a href="#theme">3.7 theme_ デザインの磨き方</a></li>
+    <li><a href="#medical-plots">3.8 医学論文グラフの定石</a></li>
+    <li><a href="#survival">3.9 生存曲線（survminer）</a></li>
+    <li><a href="#interactive">3.10 インタラクティブ化（plotly）</a></li>
+    <li><a href="#exercises">3.11 練習問題</a></li>
+    <li><a href="#summary">3.12 章まとめ</a></li>
+  </ul>
+
+  <div class="toc-divider">── 章一覧 ──</div>
+  <ul class="toc-list">
+    <li><a href="r_intro_chapter0.html" class="chapter-link"><span class="ch-num">序章</span>イントロダクション</a></li>
+    <li><a href="r_chapter1.html" class="chapter-link"><span class="ch-num">Ch.1</span>Rとの出会い</a></li>
+    <li><a href="r_chapter2.html" class="chapter-link"><span class="ch-num">Ch.2</span>情報の箱</a></li>
+    <li><a href="#" class="chapter-link current"><span class="ch-num">Ch.3</span>可視化という次元削減</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.4</span>基本統計量の本質</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.5</span>検定のロジック</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.6</span>生存解析と時間軸</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.7</span>高次元の向こう側</a></li>
+  </ul>
+
+  <div class="progress-bar">
+    <div class="progress-fill"></div>
+  </div>
+  <div class="progress-label">Ch.3 / 7</div>
+</aside>
+
+<main>
+  <p class="chapter-eyebrow">CHAPTER 3 ── 第3章</p>
+  <h1 class="chapter-title">可視化という次元削減<br><span style="font-size:0.68em;color:var(--ink-muted);">〜ggplot2の文法と医学グラフの定石〜</span></h1>
+  <p class="chapter-subtitle">多次元の数値を人間が認識できる2次元の図に変換する——それが可視化の本質。ggplot2の文法を習得し、論文品質のグラフを作る。</p>
+  <div class="lead-divider"></div>
+
+  <div class="learning-goals">
+    <h3>📌 この章の学習目標</h3>
+    <ul class="goal-list">
+      <li>ggplot2の「レイヤー文法（Grammar of Graphics）」の概念を説明できる</li>
+      <li>aes() でデータ変数をグラフ属性にマッピングできる</li>
+      <li>目的に応じた geom_* を選択・組み合わせられる</li>
+      <li>scale_* と theme_* でグラフを論文品質に磨ける</li>
+      <li>facet_wrap / facet_grid で小多重図を作れる</li>
+      <li>Forest plot・Volcano plot・生存曲線など医学定石グラフを作れる</li>
+    </ul>
+  </div>
+
+  <!-- ── 3.1 ── -->
+  <section class="dialogue-section" id="grammar">
+    <h2 class="section-heading"><span class="section-number">3.1</span>グラフの文法（GoG） ── レイヤーを積む哲学</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        ggplot2 は Leland Wilkinson の「グラフィックスの文法（Grammar of Graphics）」という理論に基づいている。グラフを「データ・美的マッピング・図形・統計変換・スケール・座標・ファセット・テーマ」という8つのレイヤーで記述する。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>🎨 ggplot2 の8層構造</h4>
+      <p>すべてのグラフは以下の順にレイヤーを重ねることで構築される。最初の2層（データとaes）は必須、残りは任意。<span class="inline-code">+</span> 演算子でレイヤーを足していくのがggplot2の文法だ。</p>
+    </div>
+
+    <div class="layer-stack">
+      <div class="layer-item l-base"><span class="layer-num">1</span><span class="layer-name">data</span><span class="layer-desc">描画するデータフレーム（必須）</span></div>
+      <div class="layer-item l-aes"><span class="layer-num">2</span><span class="layer-name">aes()</span><span class="layer-desc">変数 → 視覚属性（x, y, color, size, shape など）のマッピング（必須）</span></div>
+      <div class="layer-item l-geom"><span class="layer-num">3</span><span class="layer-name">geom_*()</span><span class="layer-desc">点・線・棒・箱ひげ…実際に描く図形の種類</span></div>
+      <div class="layer-item l-stat"><span class="layer-num">4</span><span class="layer-name">stat_*()</span><span class="layer-desc">データの統計変換（平均・回帰・密度推定など）</span></div>
+      <div class="layer-item l-scale"><span class="layer-num">5</span><span class="layer-name">scale_*()</span><span class="layer-desc">軸範囲・色・サイズ・ラベルの変換ルール</span></div>
+      <div class="layer-item l-coord"><span class="layer-num">6</span><span class="layer-name">coord_*()</span><span class="layer-desc">座標系（デカルト・極座標・対数軸など）</span></div>
+      <div class="layer-item l-facet"><span class="layer-num">7</span><span class="layer-name">facet_*()</span><span class="layer-desc">グループ別に小パネルを並べる小多重図</span></div>
+      <div class="layer-item l-theme"><span class="layer-num">8</span><span class="layer-name">theme_*()</span><span class="layer-desc">背景・フォント・グリッド線などの非データ要素</span></div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(tidyverse)
+
+<span class="c-comment"># 最小構成：データ + aes + geom だけでグラフが描ける</span>
+<span class="c-fn">ggplot</span>(data = patients,          <span class="c-comment"># 層1: data</span>
+       <span class="c-fn">aes</span>(x = bmi, y = hba1c)) + <span class="c-comment"># 層2: aes</span>
+  <span class="c-fn">geom_point</span>()                    <span class="c-comment"># 層3: geom</span>
+
+<span class="c-comment"># パイプで書くことも可能</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi, y = hba1c)) +
+  <span class="c-fn">geom_point</span>()</pre>
+
+    <div class="turn">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        データ整形には <span class="inline-code">|&gt;</span>（パイプ）を使って、グラフのレイヤーを重ねるには <span class="inline-code">+</span>（プラス）を使うんですね。混ざりそう……。
+      </div>
+    </div>
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        混乱しやすい点だね。<span class="inline-code">|&gt;</span> は「データを次の関数に渡す」もの。<span class="inline-code">+</span> は「ggplot オブジェクトにレイヤーを<em>追加</em>する」もの。ggplot() の出力はオブジェクトとして存在し、+ で拡張されていく——この違いを頭に入れておこう。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 3.2 ── -->
+  <section class="dialogue-section" id="aes">
+    <h2 class="section-heading"><span class="section-number">3.2</span>aes マッピング ── データを視覚属性に変換する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        <span class="inline-code">aes()</span>（aesthetics）はデータの変数を「x軸・y軸・色・形・サイズ・透明度」といった視覚的属性に対応させる関数だ。これがggplot2の核心といっても過言ではない。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># よく使う aes 属性</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(
+    x     = bmi,          <span class="c-comment"># x 軸（連続値）</span>
+    y     = hba1c,        <span class="c-comment"># y 軸</span>
+    color = sex,          <span class="c-comment"># 点の色（離散 → 自動でパレット）</span>
+    size  = age,          <span class="c-comment"># 点の大きさ（連続値）</span>
+    shape = on_insulin    <span class="c-comment"># 点の形（論理値）</span>
+  )) +
+  <span class="c-fn">geom_point</span>(alpha = <span class="c-num">0.7</span>)  <span class="c-comment"># alpha は aes の外＝全点に一律適用</span>
+
+<span class="c-section"># ── aes の中 vs 外 ──</span>
+<span class="c-comment"># aes の中：データの値に応じて変化する（凡例が生成される）</span>
+<span class="c-fn">geom_point</span>(<span class="c-fn">aes</span>(color = sex))         <span class="c-comment"># M/F で色分け</span>
+
+<span class="c-comment"># aes の外：全要素に固定値を適用する（凡例は生成されない）</span>
+<span class="c-fn">geom_point</span>(color = <span class="c-string">"#2a6b6e"</span>)         <span class="c-comment"># 全点をティール色に</span>
+
+<span class="c-section"># ── グローバル vs ローカル aes ──</span>
+<span class="c-comment"># ggplot() 内の aes → 全 geom に継承</span>
+<span class="c-comment"># geom_*() 内の aes → そのレイヤーのみに適用</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi, y = hba1c)) +      <span class="c-comment"># グローバル</span>
+  <span class="c-fn">geom_point</span>(<span class="c-fn">aes</span>(color = sex)) +           <span class="c-comment"># ローカル（この geom のみ）</span>
+  <span class="c-fn">geom_smooth</span>(method = <span class="c-string">"lm"</span>, se = <span class="c-kw">TRUE</span>)   <span class="c-comment"># x,y を継承、color は継承しない</span></pre>
+
+    <div class="callout">
+      <strong>よくあるミス：</strong> <span class="inline-code">color = "blue"</span> を <span class="inline-code">aes()</span> の中に書いてしまうと、"blue" という文字列を持つ変数として解釈されて意図しない動作になる。固定色は必ず <span class="inline-code">aes()</span> の<em>外</em>に書くこと。
+    </div>
+  </section>
+
+  <!-- ── 3.3 ── -->
+  <section class="dialogue-section" id="geoms">
+    <h2 class="section-heading"><span class="section-number">3.3</span>geom_ 図形の種類 ── 目的に合わせて選ぶ</h2>
+
+    <div class="geom-gallery">
+      <div class="geom-card">
+        <div class="geom-icon">⚫</div>
+        <div class="geom-name">geom_point()</div>
+        <div class="geom-use">散布図。2変数の関係・外れ値の発見</div>
+        <div class="geom-aes">必須: x, y</div>
+      </div>
+      <div class="geom-card">
+        <div class="geom-icon">📦</div>
+        <div class="geom-name">geom_boxplot()</div>
+        <div class="geom-use">箱ひげ図。分布の中央値・IQR・外れ値</div>
+        <div class="geom-aes">必須: x, y（連続）</div>
+      </div>
+      <div class="geom-card">
+        <div class="geom-icon">🎻</div>
+        <div class="geom-name">geom_violin()</div>
+        <div class="geom-use">バイオリン図。分布の形状を詳細に表示</div>
+        <div class="geom-aes">必須: x, y</div>
+      </div>
+      <div class="geom-card">
+        <div class="geom-icon">📊</div>
+        <div class="geom-name">geom_col() / geom_bar()</div>
+        <div class="geom-use">棒グラフ。カテゴリ別の集計値</div>
+        <div class="geom-aes">必須: x, y（col）</div>
+      </div>
+      <div class="geom-card">
+        <div class="geom-icon">📈</div>
+        <div class="geom-name">geom_line()</div>
+        <div class="geom-use">折れ線グラフ。時系列・変化量</div>
+        <div class="geom-aes">必須: x, y, group</div>
+      </div>
+      <div class="geom-card">
+        <div class="geom-icon">🌊</div>
+        <div class="geom-name">geom_density()</div>
+        <div class="geom-use">密度曲線。ヒストグラムの滑らかな代替</div>
+        <div class="geom-aes">必須: x</div>
+      </div>
+      <div class="geom-card">
+        <div class="geom-icon">🟩</div>
+        <div class="geom-name">geom_tile()</div>
+        <div class="geom-use">ヒートマップ。相関行列・時系列集計</div>
+        <div class="geom-aes">必須: x, y, fill</div>
+      </div>
+      <div class="geom-card">
+        <div class="geom-icon">〰️</div>
+        <div class="geom-name">geom_smooth()</div>
+        <div class="geom-use">回帰直線・LOESS曲線と信頼区間</div>
+        <div class="geom-aes">必須: x, y</div>
+      </div>
+      <div class="geom-card">
+        <div class="geom-icon">🔠</div>
+        <div class="geom-name">geom_text() / geom_label()</div>
+        <div class="geom-use">点・棒にラベルを追加する</div>
+        <div class="geom-aes">必須: x, y, label</div>
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 箱ひげ図 + ジッタープロット（医学論文定番）──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = sex, y = hba1c, fill = sex)) +
+  <span class="c-fn">geom_violin</span>(alpha = <span class="c-num">0.3</span>, color = <span class="c-kw">NA</span>) +              <span class="c-comment"># バイオリン</span>
+  <span class="c-fn">geom_boxplot</span>(width = <span class="c-num">0.25</span>, outlier.shape = <span class="c-kw">NA</span>,      <span class="c-comment"># 箱ひげ（外れ値は jitter に任せる）</span>
+               fill = <span class="c-string">"white"</span>, color = <span class="c-string">"#1c1710"</span>) +
+  <span class="c-fn">geom_jitter</span>(width = <span class="c-num">0.1</span>, size = <span class="c-num">2</span>, alpha = <span class="c-num">0.7</span>,      <span class="c-comment"># 個別データ点</span>
+              <span class="c-fn">aes</span>(color = sex)) +
+  <span class="c-fn">scale_fill_manual</span>(values  = <span class="c-fn">c</span>(M = <span class="c-string">"#2a6b6e"</span>, F = <span class="c-string">"#c8922a"</span>)) +
+  <span class="c-fn">scale_color_manual</span>(values = <span class="c-fn">c</span>(M = <span class="c-string">"#2a6b6e"</span>, F = <span class="c-string">"#c8922a"</span>)) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"性別別 HbA1c 分布"</span>, x = <span class="c-string">"性別"</span>, y = <span class="c-string">"HbA1c (%)"</span>) +
+  <span class="c-fn">theme_classic</span>() +
+  <span class="c-fn">theme</span>(legend.position = <span class="c-string">"none"</span>)
+
+<span class="c-section"># ── 散布図 + 回帰直線 + 信頼区間 ──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi, y = hba1c)) +
+  <span class="c-fn">geom_point</span>(<span class="c-fn">aes</span>(color = sex), size = <span class="c-num">3</span>, alpha = <span class="c-num">0.8</span>) +
+  <span class="c-fn">geom_smooth</span>(method = <span class="c-string">"lm"</span>, se = <span class="c-kw">TRUE</span>,              <span class="c-comment"># 線形回帰＋95%CI</span>
+              color = <span class="c-string">"#8b3a2a"</span>, fill = <span class="c-string">"#f0e6df"</span>) +
+  <span class="c-fn">geom_text</span>(<span class="c-fn">aes</span>(label = id), nudge_y = <span class="c-num">0.15</span>,          <span class="c-comment"># 患者IDをラベル</span>
+            size = <span class="c-num">2.5</span>, color = <span class="c-string">"#7a6e5f"</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"BMI と HbA1c の関連"</span>,
+       x = <span class="c-string">"BMI (kg/m²)"</span>, y = <span class="c-string">"HbA1c (%)"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+  </section>
+
+  <!-- ── 3.4 ── -->
+  <section class="dialogue-section" id="stats">
+    <h2 class="section-heading"><span class="section-number">3.4</span>stat_ 統計変換 ── データを集計してから描く</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        geom_bar() や geom_histogram() は内部で自動的にデータを集計している。この統計変換を明示的に制御するのが stat_* だ。また geom_* にも stat 引数があり、どの集計を使うかを指定できる。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── ヒストグラム（stat_bin が内部で使われる）──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = hba1c)) +
+  <span class="c-fn">geom_histogram</span>(binwidth = <span class="c-num">0.5</span>, fill = <span class="c-string">"#2a6b6e"</span>,
+                 color = <span class="c-string">"white"</span>, alpha = <span class="c-num">0.8</span>) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-num">6.5</span>, linetype = <span class="c-string">"dashed"</span>,
+             color = <span class="c-string">"#c8922a"</span>, linewidth = <span class="c-num">0.8</span>) +    <span class="c-comment"># HbA1c目標値</span>
+  <span class="c-fn">labs</span>(title = <span class="c-string">"HbA1c 分布"</span>, x = <span class="c-string">"HbA1c (%)"</span>) +
+  <span class="c-fn">theme_classic</span>()
+
+<span class="c-section"># ── stat_summary：平均 ± SD を表示 ──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = sex, y = hba1c, color = sex)) +
+  <span class="c-fn">geom_jitter</span>(width = <span class="c-num">0.15</span>, alpha = <span class="c-num">0.5</span>) +
+  <span class="c-fn">stat_summary</span>(fun = mean, geom = <span class="c-string">"point"</span>,
+               size = <span class="c-num">4</span>, shape = <span class="c-num">18</span>) +                <span class="c-comment"># 平均を大きなひし形で</span>
+  <span class="c-fn">stat_summary</span>(fun.data = mean_sd, geom = <span class="c-string">"errorbar"</span>,
+               width = <span class="c-num">0.15</span>, linewidth = <span class="c-num">0.8</span>) +        <span class="c-comment"># ±SD のエラーバー</span>
+  <span class="c-fn">labs</span>(y = <span class="c-string">"HbA1c (%)"</span>) + <span class="c-fn">theme_classic</span>()
+
+<span class="c-section"># ── 密度曲線（複数グループを重ねる）──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = hba1c, fill = sex, color = sex)) +
+  <span class="c-fn">geom_density</span>(alpha = <span class="c-num">0.3</span>, linewidth = <span class="c-num">0.8</span>) +
+  <span class="c-fn">scale_fill_manual</span>(values  = <span class="c-fn">c</span>(M = <span class="c-string">"#2a6b6e"</span>, F = <span class="c-string">"#c8922a"</span>)) +
+  <span class="c-fn">scale_color_manual</span>(values = <span class="c-fn">c</span>(M = <span class="c-string">"#2a6b6e"</span>, F = <span class="c-string">"#c8922a"</span>)) +
+  <span class="c-fn">theme_classic</span>()</pre>
+  </section>
+
+  <!-- ── 3.5 ── -->
+  <section class="dialogue-section" id="scales">
+    <h2 class="section-heading"><span class="section-number">3.5</span>scale_ 軸・色の制御 ── グラフを語らせる</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        scale_* は「データの値」と「視覚属性」のマッピングルールを制御する関数だ。色・軸ラベル・目盛り・変換（対数軸）など、グラフの読みやすさに直結する設定がここに集まっている。
+      </div>
+    </div>
+
+    <table class="scale-table">
+      <thead><tr><th>関数</th><th>対象</th><th>よく使うパラメータ</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">scale_x_continuous()</td><td>x軸（連続）</td><td class="mono">limits, breaks, labels, trans</td></tr>
+        <tr><td class="mono">scale_y_log10()</td><td>y軸（対数）</td><td class="mono">labels = scales::label_log()</td></tr>
+        <tr><td class="mono">scale_color_manual()</td><td>離散色</td><td class="mono">values = c(A="#aa3333", B="#2a6b6e")</td></tr>
+        <tr><td class="mono">scale_fill_gradient()</td><td>連続グラデーション</td><td class="mono">low, high, midpoint</td></tr>
+        <tr><td class="mono">scale_color_brewer()</td><td>ColorBrewer パレット</td><td class="mono">palette = "Set2", type = "qual"</td></tr>
+        <tr><td class="mono">scale_size_continuous()</td><td>点サイズ</td><td class="mono">range = c(1, 8)</td></tr>
+        <tr><td class="mono">scale_x_date()</td><td>日付軸</td><td class="mono">date_labels = "%Y-%m"</td></tr>
+      </tbody>
+    </table>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 軸の細かい制御 ──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi, y = hba1c)) +
+  <span class="c-fn">geom_point</span>() +
+  <span class="c-fn">scale_x_continuous</span>(
+    limits = <span class="c-fn">c</span>(<span class="c-num">15</span>, <span class="c-num">40</span>),
+    breaks = <span class="c-fn">seq</span>(<span class="c-num">15</span>, <span class="c-num">40</span>, <span class="c-num">5</span>),
+    labels = <span class="c-fn">function</span>(x) <span class="c-fn">paste0</span>(x, <span class="c-string">" kg/m²"</span>)
+  ) +
+  <span class="c-fn">scale_y_continuous</span>(
+    limits = <span class="c-fn">c</span>(<span class="c-num">4</span>, <span class="c-num">12</span>),
+    breaks = <span class="c-fn">seq</span>(<span class="c-num">4</span>, <span class="c-num">12</span>, <span class="c-num">2</span>),
+    labels = scales::<span class="c-fn">label_number</span>(suffix = <span class="c-string">"%"</span>)
+  )
+
+<span class="c-section"># ── 対数軸（感染症・薬物動態など）──</span>
+<span class="c-fn">ggplot</span>(viral_load_df, <span class="c-fn">aes</span>(x = days, y = copies_ml)) +
+  <span class="c-fn">geom_line</span>() +
+  <span class="c-fn">scale_y_log10</span>(
+    breaks = <span class="c-num">10</span>^<span class="c-fn">c</span>(<span class="c-num">1</span>:<span class="c-num">7</span>),
+    labels = scales::<span class="c-fn">label_log</span>()
+  ) +
+  <span class="c-fn">annotation_logticks</span>(sides = <span class="c-string">"l"</span>) +
+  <span class="c-fn">labs</span>(y = <span class="c-string">"Viral load (copies/mL)"</span>)
+
+<span class="c-section"># ── ヒートマップ用グラデーション ──</span>
+<span class="c-fn">scale_fill_gradient2</span>(
+  low  = <span class="c-string">"#2a5080"</span>,
+  mid  = <span class="c-string">"white"</span>,
+  high = <span class="c-string">"#8b3a2a"</span>,
+  midpoint = <span class="c-num">0</span>,
+  limits   = <span class="c-fn">c</span>(-<span class="c-num">2</span>, <span class="c-num">2</span>),
+  name     = <span class="c-string">"z-score"</span>
+)</pre>
+
+    <div class="subsection-heading">色覚バリアフリーパレット</div>
+
+    <div class="color-palette">
+      <div class="swatch"><div class="swatch-box" style="background:#E69F00;"></div><div class="swatch-label">#E69F00</div></div>
+      <div class="swatch"><div class="swatch-box" style="background:#56B4E9;"></div><div class="swatch-label">#56B4E9</div></div>
+      <div class="swatch"><div class="swatch-box" style="background:#009E73;"></div><div class="swatch-label">#009E73</div></div>
+      <div class="swatch"><div class="swatch-box" style="background:#F0E442;"></div><div class="swatch-label">#F0E442</div></div>
+      <div class="swatch"><div class="swatch-box" style="background:#0072B2;"></div><div class="swatch-label">#0072B2</div></div>
+      <div class="swatch"><div class="swatch-box" style="background:#D55E00;"></div><div class="swatch-label">#D55E00</div></div>
+      <div class="swatch"><div class="swatch-box" style="background:#CC79A7;"></div><div class="swatch-label">#CC79A7</div></div>
+    </div>
+
+    <div class="callout-teal">
+      <strong>Okabe-Ito パレット（推奨）：</strong> 上記7色は色覚異常の方にも判別しやすいOkabe-Itoパレット。論文投稿では色覚バリアフリーへの配慮が求められることも多い。<span class="inline-code">scale_color_manual(values = palette.colors(8, "Okabe-Ito")[-1])</span> で使える。
+    </div>
+  </section>
+
+  <!-- ── 3.6 ── -->
+  <section class="dialogue-section" id="facet">
+    <h2 class="section-heading"><span class="section-number">3.6</span>facet_ 小多重図 ── グループを並べて比較する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        小多重図（small multiples）は同じ構造のグラフをカテゴリ別に並べる強力な比較手法だ。1枚のグラフに色分けで詰め込むより、読みやすく誤解も少ない。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── facet_wrap：1変数で分割 ──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi, y = hba1c)) +
+  <span class="c-fn">geom_point</span>() +
+  <span class="c-fn">geom_smooth</span>(method = <span class="c-string">"lm"</span>, se = <span class="c-kw">FALSE</span>) +
+  <span class="c-fn">facet_wrap</span>(~ sex, ncol = <span class="c-num">2</span>)        <span class="c-comment"># M / F で2パネル</span>
+
+<span class="c-section"># ── facet_grid：行×列で分割 ──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = hba1c)) +
+  <span class="c-fn">geom_histogram</span>(binwidth = <span class="c-num">0.5</span>) +
+  <span class="c-fn">facet_grid</span>(
+    rows = <span class="c-fn">vars</span>(sex),
+    cols = <span class="c-fn">vars</span>(bmi_cat)     <span class="c-comment"># 行=性別、列=BMIカテゴリ</span>
+  )
+
+<span class="c-section"># ── 軸スケールをパネルごとに自由にする ──</span>
+<span class="c-fn">facet_wrap</span>(~ disease_stage, scales = <span class="c-string">"free_y"</span>)  <span class="c-comment"># y軸だけ自由</span>
+<span class="c-fn">facet_wrap</span>(~ gene_set,      scales = <span class="c-string">"free"</span>)     <span class="c-comment"># 両軸自由</span>
+
+<span class="c-section"># ── ラベルを日本語にする ──</span>
+sex_labels &lt;- <span class="c-fn">c</span>(M = <span class="c-string">"男性"</span>, F = <span class="c-string">"女性"</span>)
+<span class="c-fn">facet_wrap</span>(~ sex, labeller = <span class="c-fn">as_labeller</span>(sex_labels))</pre>
+
+    <div class="callout-green">
+      <strong>facet vs color の使い分け：</strong> グループが2〜3の場合は色分け（color/fill）で1枚に収めてもよい。4グループ以上、またはグループ内の構造を詳しく見たい場合は facet が有効。論文の Figure では誌面幅の制約から facet_wrap(ncol = 2) が頻用される。
+    </div>
+  </section>
+
+  <!-- ── 3.7 ── -->
+  <section class="dialogue-section" id="theme">
+    <h2 class="section-heading"><span class="section-number">3.7</span>theme_ デザインの磨き方 ── 論文品質へ</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        theme_* は背景・グリッド線・フォント・凡例位置など「データを表現しない装飾」を制御する。まず組み込みテーマで大枠を決め、theme() で細部を上書きする、というのが定石の流れだ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 組み込みテーマ ──</span>
+<span class="c-fn">theme_classic</span>()   <span class="c-comment"># 論文に最も使われる。グリッドなし・外枠あり</span>
+<span class="c-fn">theme_bw</span>()        <span class="c-comment"># 白地 + 黒枠 + グリッドあり</span>
+<span class="c-fn">theme_minimal</span>()   <span class="c-comment"># 最小限。グリッド薄め・枠なし</span>
+<span class="c-fn">theme_void</span>()      <span class="c-comment"># 完全に空白（マップ・図解向け）</span>
+
+<span class="c-section"># ── theme() で細部を上書き ──</span>
+my_theme &lt;- <span class="c-fn">theme_classic</span>(base_size = <span class="c-num">12</span>,
+                            base_family = <span class="c-string">"sans"</span>) +
+  <span class="c-fn">theme</span>(
+    <span class="c-comment"># タイトル</span>
+    plot.title     = <span class="c-fn">element_text</span>(size = <span class="c-num">13</span>, face = <span class="c-string">"bold"</span>, hjust = <span class="c-num">0</span>),
+    plot.subtitle  = <span class="c-fn">element_text</span>(size = <span class="c-num">10</span>, color = <span class="c-string">"gray50"</span>, hjust = <span class="c-num">0</span>),
+
+    <span class="c-comment"># 軸</span>
+    axis.title     = <span class="c-fn">element_text</span>(size = <span class="c-num">11</span>),
+    axis.text      = <span class="c-fn">element_text</span>(size = <span class="c-num">10</span>),
+    axis.line      = <span class="c-fn">element_line</span>(linewidth = <span class="c-num">0.5</span>),
+
+    <span class="c-comment"># 凡例</span>
+    legend.position  = <span class="c-string">"bottom"</span>,
+    legend.key.size  = <span class="c-fn">unit</span>(<span class="c-num">0.4</span>, <span class="c-string">"cm"</span>),
+    legend.text      = <span class="c-fn">element_text</span>(size = <span class="c-num">9</span>),
+
+    <span class="c-comment"># ファセットラベル</span>
+    strip.background = <span class="c-fn">element_rect</span>(fill = <span class="c-string">"#f5f1e8"</span>, color = <span class="c-string">"#d4c9b0"</span>),
+    strip.text       = <span class="c-fn">element_text</span>(size = <span class="c-num">10</span>, face = <span class="c-string">"bold"</span>),
+
+    <span class="c-comment"># マージン</span>
+    plot.margin = <span class="c-fn">margin</span>(<span class="c-num">12</span>, <span class="c-num">12</span>, <span class="c-num">12</span>, <span class="c-num">12</span>)
+  )
+
+<span class="c-comment"># 共通テーマを先に設定しておく方法</span>
+<span class="c-fn">theme_set</span>(my_theme)   <span class="c-comment"># 以降の全グラフに自動適用</span>
+
+<span class="c-section"># ── 保存 ──</span>
+<span class="c-fn">ggsave</span>(<span class="c-string">"fig1_hba1c.pdf"</span>, width = <span class="c-num">7</span>, height = <span class="c-num">5</span>,
+       device = cairo_pdf)   <span class="c-comment"># 日本語フォント対応</span>
+<span class="c-fn">ggsave</span>(<span class="c-string">"fig1_hba1c.png"</span>, width = <span class="c-num">7</span>, height = <span class="c-num">5</span>,
+       dpi = <span class="c-num">300</span>)           <span class="c-comment"># 300 dpi で論文品質</span></pre>
+  </section>
+
+  <!-- ── 3.8 ── -->
+  <section class="dialogue-section" id="medical-plots">
+    <h2 class="section-heading"><span class="section-number">3.8</span>医学論文グラフの定石 ── Forest plot と Volcano plot</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        医学論文には特有のグラフ形式がある。メタアナリシスの森林図（Forest plot）とRNASeqの火山図（Volcano plot）は特に重要だ。第1章で予告したVolcano plotをggplot2で丁寧に作ってみよう。
+      </div>
+    </div>
+
+    <div class="subsection-heading">Forest plot（森林図）</div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># Forest plot：各研究のOR/RR と 95%CI を表示</span>
+meta_df &lt;- <span class="c-fn">tibble</span>(
+  study  = <span class="c-fn">c</span>(<span class="c-string">"Smith 2018"</span>, <span class="c-string">"Jones 2020"</span>, <span class="c-string">"Lee 2021"</span>,
+             <span class="c-string">"Wang 2022"</span>, <span class="c-string">"Pooled"</span>),
+  or     = <span class="c-fn">c</span>(<span class="c-num">1.42</span>, <span class="c-num">0.88</span>, <span class="c-num">1.15</span>, <span class="c-num">1.31</span>, <span class="c-num">1.18</span>),
+  lower  = <span class="c-fn">c</span>(<span class="c-num">0.95</span>, <span class="c-num">0.61</span>, <span class="c-num">0.82</span>, <span class="c-num">0.97</span>, <span class="c-num">1.02</span>),
+  upper  = <span class="c-fn">c</span>(<span class="c-num">2.11</span>, <span class="c-num">1.28</span>, <span class="c-num">1.61</span>, <span class="c-num">1.76</span>, <span class="c-num">1.37</span>),
+  weight = <span class="c-fn">c</span>(<span class="c-num">18</span>, <span class="c-num">24</span>, <span class="c-num">21</span>, <span class="c-num">20</span>, <span class="c-num">NA</span>)   <span class="c-comment"># Pooled はダイヤモンド</span>
+)
+
+meta_df |&gt;
+  <span class="c-fn">mutate</span>(study = <span class="c-fn">fct_rev</span>(<span class="c-fn">factor</span>(study))) |&gt;    <span class="c-comment"># 上から順に表示</span>
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(y = study, x = or)) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-num">1</span>, linetype = <span class="c-string">"dashed"</span>,
+             color = <span class="c-string">"gray50"</span>, linewidth = <span class="c-num">0.6</span>) +      <span class="c-comment"># HR=1 の参照線</span>
+  <span class="c-fn">geom_errorbarh</span>(<span class="c-fn">aes</span>(xmin = lower, xmax = upper,
+                      linewidth = <span class="c-fn">if_else</span>(study == <span class="c-string">"Pooled"</span>, <span class="c-num">1.2</span>, <span class="c-num">0.6</span>)),
+                 height = <span class="c-num">0.25</span>) +
+  <span class="c-fn">geom_point</span>(<span class="c-fn">aes</span>(
+    size  = <span class="c-fn">if_else</span>(!<span class="c-fn">is.na</span>(weight), weight, <span class="c-num">8</span>),     <span class="c-comment"># 重みを点サイズに</span>
+    shape = <span class="c-fn">if_else</span>(study == <span class="c-string">"Pooled"</span>, <span class="c-num">18L</span>, <span class="c-num">15L</span>),    <span class="c-comment"># Pooled はひし形</span>
+    color = <span class="c-fn">if_else</span>(study == <span class="c-string">"Pooled"</span>, <span class="c-string">"#8b3a2a"</span>, <span class="c-string">"#1c1710"</span>)
+  )) +
+  <span class="c-fn">scale_x_continuous</span>(trans = <span class="c-string">"log"</span>,
+                     breaks = <span class="c-fn">c</span>(<span class="c-num">0.5</span>, <span class="c-num">1</span>, <span class="c-num">1.5</span>, <span class="c-num">2</span>, <span class="c-num">3</span>)) +  <span class="c-comment"># 対数軸</span>
+  <span class="c-fn">scale_size</span>(range = <span class="c-fn">c</span>(<span class="c-num">2</span>, <span class="c-num">6</span>)) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"Forest Plot: Drug X vs Placebo"</span>,
+       x = <span class="c-string">"Odds Ratio (95% CI)"</span>, y = <span class="c-kw">NULL</span>) +
+  <span class="c-fn">theme_classic</span>() +
+  <span class="c-fn">theme</span>(legend.position = <span class="c-string">"none"</span>)</pre>
+
+    <div class="subsection-heading">Volcano plot（火山図）</div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># DESeq2 の結果データフレーム res_df が存在する前提</span>
+volcano_df &lt;- res_df |&gt;
+  <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(padj)) |&gt;
+  <span class="c-fn">mutate</span>(
+    sig = <span class="c-fn">case_when</span>(
+      padj &lt; <span class="c-num">0.05</span> &amp; log2FoldChange &gt;  <span class="c-num">1</span> ~ <span class="c-string">"Up"</span>,
+      padj &lt; <span class="c-num">0.05</span> &amp; log2FoldChange &lt; -<span class="c-num">1</span> ~ <span class="c-string">"Down"</span>,
+      <span class="c-kw">TRUE</span>                               ~ <span class="c-string">"NS"</span>
+    ),
+    label = <span class="c-fn">if_else</span>(padj &lt; <span class="c-num">0.001</span> &amp; <span class="c-fn">abs</span>(log2FoldChange) &gt; <span class="c-num">2</span>,
+                    gene, <span class="c-kw">NA_character_</span>)   <span class="c-comment"># 上位遺伝子にラベル</span>
+  )
+
+<span class="c-fn">ggplot</span>(volcano_df, <span class="c-fn">aes</span>(x = log2FoldChange, y = -<span class="c-fn">log10</span>(pvalue))) +
+  <span class="c-fn">geom_point</span>(<span class="c-fn">aes</span>(color = sig), alpha = <span class="c-num">0.5</span>, size = <span class="c-num">0.9</span>) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-fn">c</span>(-<span class="c-num">1</span>, <span class="c-num">1</span>),
+             linetype = <span class="c-string">"dashed"</span>, color = <span class="c-string">"gray60"</span>) +
+  <span class="c-fn">geom_hline</span>(yintercept = -<span class="c-fn">log10</span>(<span class="c-num">0.05</span>),
+             linetype = <span class="c-string">"dashed"</span>, color = <span class="c-string">"gray60"</span>) +
+  <span class="c-fn">ggrepel</span>::<span class="c-fn">geom_text_repel</span>(            <span class="c-comment"># ggrepel でラベル重複を回避</span>
+    <span class="c-fn">aes</span>(label = label),
+    size = <span class="c-num">2.5</span>, max.overlaps = <span class="c-num">20</span>,
+    color = <span class="c-string">"#1c1710"</span>
+  ) +
+  <span class="c-fn">scale_color_manual</span>(
+    values = <span class="c-fn">c</span>(Up = <span class="c-string">"#c83a2a"</span>, Down = <span class="c-string">"#2a6b8a"</span>, NS = <span class="c-string">"#c0b8a8"</span>),
+    labels = <span class="c-fn">c</span>(<span class="c-fn">glue</span>::<span class="c-fn">glue</span>(<span class="c-string">"Up ({sum(volcano_df$sig=='Up')})"</span>),
+               <span class="c-fn">glue</span>::<span class="c-fn">glue</span>(<span class="c-string">"Down ({sum(volcano_df$sig=='Down')})"</span>),
+               <span class="c-string">"NS"</span>)
+  ) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"Volcano Plot: Tumor vs Normal"</span>,
+       x = <span class="c-string">"log2 Fold Change"</span>, y = <span class="c-string">"-log10(p-value)"</span>,
+       color = <span class="c-string">"DEG status"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+
+    <div class="callout-purple">
+      <strong>ggrepel パッケージ：</strong> <span class="inline-code">geom_text_repel()</span> / <span class="inline-code">geom_label_repel()</span> はラベルが重複しないよう自動的に位置を調整する。Volcano plot・Forest plot などラベルが密集するグラフでは必須に近い。
+    </div>
+  </section>
+
+  <!-- ── 3.9 ── -->
+  <section class="dialogue-section" id="survival">
+    <h2 class="section-heading"><span class="section-number">3.9</span>生存曲線（survminer） ── 時間とイベントを可視化する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        Kaplan-Meier 曲線は生存解析の顔。survminer パッケージを使えば、ggplot2ベースの美しい生存曲線をほぼ自動で描ける。p値・at-risk テーブル・信頼区間も1関数で追加できる。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(survival)
+<span class="c-fn">library</span>(survminer)
+
+<span class="c-comment"># KM推定</span>
+fit &lt;- <span class="c-fn">survfit</span>(<span class="c-fn">Surv</span>(time, status) ~ treatment, data = trial_df)
+
+<span class="c-comment"># 美しい生存曲線</span>
+<span class="c-fn">ggsurvplot</span>(
+  fit,
+  data          = trial_df,
+  pval          = <span class="c-kw">TRUE</span>,               <span class="c-comment"># log-rank p値を自動表示</span>
+  conf.int      = <span class="c-kw">TRUE</span>,               <span class="c-comment"># 95%CI のリボン</span>
+  risk.table    = <span class="c-kw">TRUE</span>,               <span class="c-comment"># At-risk テーブルを下部に追加</span>
+  risk.table.col= <span class="c-string">"strata"</span>,
+  linetype      = <span class="c-string">"strata"</span>,
+  palette       = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#c8922a"</span>),
+  ggtheme       = <span class="c-fn">theme_classic</span>(),
+  xlab          = <span class="c-string">"Time (months)"</span>,
+  ylab          = <span class="c-string">"Overall Survival"</span>,
+  legend.labs   = <span class="c-fn">c</span>(<span class="c-string">"Drug A"</span>, <span class="c-string">"Placebo"</span>),
+  surv.median.line = <span class="c-string">"hv"</span>            <span class="c-comment"># 中央生存期間の参照線</span>
+)
+
+<span class="c-comment"># 累積発症率（1-KM）で表示する場合</span>
+<span class="c-fn">ggsurvplot</span>(fit, data = trial_df,
+           fun = <span class="c-string">"event"</span>,             <span class="c-comment"># 1-survival = cumulative incidence</span>
+           ylab = <span class="c-string">"Cumulative Incidence"</span>)</pre>
+  </section>
+
+  <!-- ── 3.10 ── -->
+  <section class="dialogue-section" id="interactive">
+    <h2 class="section-heading"><span class="section-number">3.10</span>インタラクティブ化（plotly） ── 探索的解析のために</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        論文投稿には静的なPDF・PNG形式が必要だが、自分の探索的解析やR Markdownレポートではインタラクティブグラフが便利だ。<span class="inline-code">plotly</span> パッケージの <span class="inline-code">ggplotly()</span> は、作成済みのggplot2オブジェクトを1行でインタラクティブ化できる。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(plotly)
+
+<span class="c-comment"># 通常通り ggplot を作成</span>
+p &lt;- patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi, y = hba1c,
+             color = sex,
+             text = <span class="c-fn">paste0</span>(<span class="c-string">"ID: "</span>, id, <span class="c-string">"&lt;br&gt;Age: "</span>, age))) +
+  <span class="c-fn">geom_point</span>(size = <span class="c-num">3</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"BMI vs HbA1c"</span>) +
+  <span class="c-fn">theme_classic</span>()
+
+<span class="c-comment"># 1行でインタラクティブ化（ホバーでツールチップ表示）</span>
+<span class="c-fn">ggplotly</span>(p, tooltip = <span class="c-string">"text"</span>)
+
+<span class="c-section"># ── plotly ネイティブ記法（より細かい制御）──</span>
+<span class="c-fn">plot_ly</span>(patients,
+  x = ~bmi, y = ~hba1c, color = ~sex,
+  type = <span class="c-string">"scatter"</span>, mode = <span class="c-string">"markers"</span>,
+  text = ~<span class="c-fn">paste</span>(<span class="c-string">"ID:"</span>, id, <span class="c-string">"&lt;br&gt;Age:"</span>, age),
+  hoverinfo = <span class="c-string">"text+x+y"</span>
+) |&gt;
+  <span class="c-fn">layout</span>(
+    title = <span class="c-string">"BMI vs HbA1c"</span>,
+    xaxis = <span class="c-fn">list</span>(title = <span class="c-string">"BMI (kg/m²)"</span>),
+    yaxis = <span class="c-fn">list</span>(title = <span class="c-string">"HbA1c (%)"</span>)
+  )</pre>
+
+    <div class="callout-teal">
+      <strong>探索 → 仕上げのワークフロー：</strong> データ探索では <span class="inline-code">ggplotly()</span> でインタラクティブに外れ値や構造を発見し、報告用には <span class="inline-code">ggsave()</span> で300dpi PNG or PDF に書き出す——このワークフローが実際の研究では効率的。
+    </div>
+  </section>
+
+  <!-- ── 3.11 exercises ── -->
+  <section class="dialogue-section" id="exercises">
+    <h2 class="section-heading"><span class="section-number">3.11</span>練習問題</h2>
+
+    <div class="quiz-box">
+      <h4>🧠 問題1：基本グラフ</h4>
+      <p class="quiz-q">patients データを使って、インスリン使用群・非使用群で色分けした BMI のヒストグラムを描け。さらに2群の密度曲線を重ねて表示すること。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>patients |&gt;
+  <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(on_insulin)) |&gt;
+  <span class="c-fn">mutate</span>(group = <span class="c-fn">if_else</span>(on_insulin, <span class="c-string">"インスリン使用"</span>, <span class="c-string">"非使用"</span>)) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi, fill = group, color = group)) +
+  <span class="c-fn">geom_histogram</span>(binwidth = <span class="c-num">2</span>, alpha = <span class="c-num">0.4</span>, position = <span class="c-string">"identity"</span>) +
+  <span class="c-fn">geom_density</span>(alpha = <span class="c-num">0</span>, linewidth = <span class="c-num">1</span>) +   <span class="c-comment"># fill なし、線のみ</span>
+  <span class="c-fn">scale_fill_manual</span>(values  = <span class="c-fn">c</span>(<span class="c-string">"インスリン使用"</span> = <span class="c-string">"#c8922a"</span>, <span class="c-string">"非使用"</span> = <span class="c-string">"#2a6b6e"</span>)) +
+  <span class="c-fn">scale_color_manual</span>(values = <span class="c-fn">c</span>(<span class="c-string">"インスリン使用"</span> = <span class="c-string">"#c8922a"</span>, <span class="c-string">"非使用"</span> = <span class="c-string">"#2a6b6e"</span>)) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"BMI 分布（インスリン使用別）"</span>, x = <span class="c-string">"BMI"</span>, fill = <span class="c-kw">NULL</span>, color = <span class="c-kw">NULL</span>) +
+  <span class="c-fn">theme_classic</span>() +
+  <span class="c-fn">theme</span>(legend.position = <span class="c-string">"top"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題2：facet + stat_summary</h4>
+      <p class="quiz-q">以下の縦長データ（patients_long：id, time（0/3/6ヶ月）, hba1c）を使って、①患者ごとの折れ線グラフ、②平均値 ± SD の重ね表示、③sex 別に facet で分割したグラフを1つ作成せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>patients_long |&gt;
+  <span class="c-fn">left_join</span>(patients |&gt; <span class="c-fn">select</span>(id, sex), by = <span class="c-string">"id"</span>) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = time, y = hba1c)) +
+  <span class="c-fn">geom_line</span>(<span class="c-fn">aes</span>(group = id), color = <span class="c-string">"gray70"</span>, linewidth = <span class="c-num">0.5</span>) +   <span class="c-comment"># 個人軌跡</span>
+  <span class="c-fn">stat_summary</span>(fun = mean, geom = <span class="c-string">"line"</span>,
+               color = <span class="c-string">"#8b3a2a"</span>, linewidth = <span class="c-num">1.2</span>) +               <span class="c-comment"># 平均値の線</span>
+  <span class="c-fn">stat_summary</span>(fun.data = mean_sd, geom = <span class="c-string">"ribbon"</span>,
+               fill = <span class="c-string">"#8b3a2a"</span>, alpha = <span class="c-num">0.15</span>) +                   <span class="c-comment"># ±SD リボン</span>
+  <span class="c-fn">facet_wrap</span>(~ sex, labeller = <span class="c-fn">as_labeller</span>(<span class="c-fn">c</span>(M = <span class="c-string">"男性"</span>, F = <span class="c-string">"女性"</span>))) +
+  <span class="c-fn">scale_x_continuous</span>(breaks = <span class="c-fn">c</span>(<span class="c-num">0</span>, <span class="c-num">3</span>, <span class="c-num">6</span>),
+                     labels = <span class="c-fn">c</span>(<span class="c-string">"開始前"</span>, <span class="c-string">"3ヶ月"</span>, <span class="c-string">"6ヶ月"</span>)) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"HbA1c の経時変化（性別別）"</span>, x = <span class="c-kw">NULL</span>, y = <span class="c-string">"HbA1c (%)"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題3：Forest plot 改良</h4>
+      <p class="quiz-q">3.8節の Forest plot コードを使って、①各研究のOR値と95%CIをラベルとして右側に表示せよ（例：1.42 [0.95–2.11]）。②Pooled 行を水平線で他の行と区切れ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>meta_df |&gt;
+  <span class="c-fn">mutate</span>(
+    study    = <span class="c-fn">fct_rev</span>(<span class="c-fn">factor</span>(study)),
+    ci_label = <span class="c-fn">sprintf</span>(<span class="c-string">"%.2f [%.2f–%.2f]"</span>, or, lower, upper)
+  ) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(y = study, x = or)) +
+  <span class="c-fn">geom_hline</span>(yintercept = <span class="c-fn">which</span>(<span class="c-fn">levels</span>(<span class="c-fn">fct_rev</span>(<span class="c-fn">factor</span>(meta_df$study))) == <span class="c-string">"Pooled"</span>) + <span class="c-num">0.5</span>,
+             color = <span class="c-string">"gray70"</span>, linewidth = <span class="c-num">0.5</span>) +        <span class="c-comment"># 区切り線</span>
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-num">1</span>, linetype = <span class="c-string">"dashed"</span>, color = <span class="c-string">"gray50"</span>) +
+  <span class="c-fn">geom_errorbarh</span>(<span class="c-fn">aes</span>(xmin = lower, xmax = upper), height = <span class="c-num">0.2</span>) +
+  <span class="c-fn">geom_point</span>(<span class="c-fn">aes</span>(size = <span class="c-fn">if_else</span>(!<span class="c-fn">is.na</span>(weight), weight, <span class="c-num">8</span>),
+                  shape = <span class="c-fn">if_else</span>(study == <span class="c-string">"Pooled"</span>, <span class="c-num">18L</span>, <span class="c-num">15L</span>))) +
+  <span class="c-fn">geom_text</span>(<span class="c-fn">aes</span>(label = ci_label, x = <span class="c-num">2.6</span>),                <span class="c-comment"># 右端にCI表示</span>
+            hjust = <span class="c-num">0</span>, size = <span class="c-num">3</span>, family = <span class="c-string">"mono"</span>) +
+  <span class="c-fn">scale_x_continuous</span>(limits = <span class="c-fn">c</span>(<span class="c-num">0.4</span>, <span class="c-num">3.5</span>), trans = <span class="c-string">"log"</span>) +
+  <span class="c-fn">scale_size</span>(range = <span class="c-fn">c</span>(<span class="c-num">2</span>, <span class="c-num">6</span>)) +
+  <span class="c-fn">labs</span>(x = <span class="c-string">"Odds Ratio (95% CI)"</span>, y = <span class="c-kw">NULL</span>) +
+  <span class="c-fn">theme_classic</span>() + <span class="c-fn">theme</span>(legend.position = <span class="c-string">"none"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題4（発展）：相関ヒートマップ</h4>
+      <p class="quiz-q">patients の数値列（age, hba1c, bmi など）の相関行列を計算し、geom_tile() と geom_text() を使ってヒートマップで可視化せよ。色はネガティブ（青）〜ゼロ（白）〜ポジティブ（赤）のグラデーションにすること。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(corrr)    <span class="c-comment"># または cor() + pivot_longer</span>
+
+cor_df &lt;- patients |&gt;
+  <span class="c-fn">select</span>(<span class="c-fn">where</span>(is.numeric)) |&gt;
+  <span class="c-fn">drop_na</span>() |&gt;
+  <span class="c-fn">cor</span>() |&gt;
+  <span class="c-fn">as.data.frame</span>() |&gt;
+  <span class="c-fn">rownames_to_column</span>(<span class="c-string">"var1"</span>) |&gt;
+  <span class="c-fn">pivot_longer</span>(-var1, names_to = <span class="c-string">"var2"</span>, values_to = <span class="c-string">"r"</span>)
+
+<span class="c-fn">ggplot</span>(cor_df, <span class="c-fn">aes</span>(x = var1, y = var2, fill = r)) +
+  <span class="c-fn">geom_tile</span>(color = <span class="c-string">"white"</span>) +
+  <span class="c-fn">geom_text</span>(<span class="c-fn">aes</span>(label = <span class="c-fn">sprintf</span>(<span class="c-string">"%.2f"</span>, r)),
+            size = <span class="c-num">3.2</span>, family = <span class="c-string">"mono"</span>) +
+  <span class="c-fn">scale_fill_gradient2</span>(
+    low = <span class="c-string">"#2a5080"</span>, mid = <span class="c-string">"white"</span>, high = <span class="c-string">"#8b3a2a"</span>,
+    midpoint = <span class="c-num">0</span>, limits = <span class="c-fn">c</span>(-<span class="c-num">1</span>, <span class="c-num">1</span>)
+  ) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"相関行列ヒートマップ"</span>, x = <span class="c-kw">NULL</span>, y = <span class="c-kw">NULL</span>, fill = <span class="c-string">"r"</span>) +
+  <span class="c-fn">coord_fixed</span>() +
+  <span class="c-fn">theme_minimal</span>() +
+  <span class="c-fn">theme</span>(axis.text.x = <span class="c-fn">element_text</span>(angle = <span class="c-num">45</span>, hjust = <span class="c-num">1</span>))</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 3.12 summary ── -->
+  <section class="dialogue-section" id="summary">
+    <h2 class="section-heading"><span class="section-number">3.12</span>章まとめ</h2>
+
+    <table class="summary-table">
+      <thead><tr><th>トピック</th><th>キーワード</th><th>一言まとめ</th></tr></thead>
+      <tbody>
+        <tr><td>GoG の思想</td><td class="mono">data + aes + geom + …</td><td>グラフはレイヤーを積み重ねた「文」で表現する</td></tr>
+        <tr><td>aes マッピング</td><td class="mono">x, y, color, fill, size, shape, alpha</td><td>aes の中はデータ依存、外は固定値</td></tr>
+        <tr><td>geom の選択</td><td class="mono">geom_point / boxplot / violin / col / line / density / tile</td><td>目的（比較・分布・時系列・関係）で選ぶ</td></tr>
+        <tr><td>統計変換</td><td class="mono">stat_summary / geom_smooth / geom_histogram</td><td>geom の多くは内部で自動集計している</td></tr>
+        <tr><td>スケール制御</td><td class="mono">scale_*_manual / scale_y_log10 / scale_fill_gradient2</td><td>色・軸・範囲の変換ルールを明示的に指定</td></tr>
+        <tr><td>小多重図</td><td class="mono">facet_wrap / facet_grid</td><td>グループ別比較には色分けより facet が明快</td></tr>
+        <tr><td>テーマ</td><td class="mono">theme_classic / theme_bw / theme()</td><td>論文にはtheme_classic + 細部上書きが定番</td></tr>
+        <tr><td>医学グラフ</td><td class="mono">Forest plot / Volcano plot / KM curve</td><td>論文の文脈に合ったグラフ形式を選ぶ</td></tr>
+        <tr><td>インタラクティブ</td><td class="mono">ggplotly() / plot_ly()</td><td>探索には plotly、報告には ggsave(dpi=300)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        第3章はここまで。「可視化は次元削減だ」と最初に言ったのを覚えているか？BMI・HbA1c・性別・治療群……複数の変数を、人間が瞬時に把握できる2次元の図に圧縮する——そのルールがGoGだ。次の第4章では、グラフで見えていたものを数字で語る——基本統計量と推測統計の世界に入る。
+      </div>
+    </div>
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        Forest plotが自分で作れるようになるとは……。ggplot2の + でレイヤーを重ねるイメージが最初は難しかったけど、今は自然に思えます。次は統計量ですね。
+      </div>
+    </div>
+
+    <div class="next-chapter">
+      <div>
+        <div class="label">NEXT CHAPTER</div>
+        <div class="title">第4章：基本統計量の本質 〜平均・分散・分布の意味を掘り下げる〜</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>⚠ 注意書き：本テキストは生成AIによって作成されたものであり、内容に誤りを含む可能性があります。利用・参照は自己責任でお願いします。再配布については、自己責任の範囲内であれば問題ありません。</p>
+  <span class="footer-mark">―― 統計は専門ではない研究者の備忘録 ――</span>
+</footer>
+
+<script>
+const links = document.querySelectorAll('aside .toc-list a:not(.chapter-link)');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector('aside .toc-list a[href="#' + e.target.id + '"]');
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

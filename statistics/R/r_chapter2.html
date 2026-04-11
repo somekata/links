@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第2章：情報の箱 | R言語で学ぶ統計学</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8;
+  --paper: #fdfaf3;
+  --paper2: #f8f4eb;
+  --ink: #1c1710;
+  --ink-light: #4a3f30;
+  --ink-muted: #7a6e5f;
+  --accent: #8b3a2a;
+  --accent-pale: #f0e6df;
+  --gold: #c8922a;
+  --gold-pale: #faf3e0;
+  --teal: #2a6b6e;
+  --teal-pale: #e0f0f0;
+  --green: #3a6b3a;
+  --green-pale: #e8f4e8;
+  --purple: #5a3a8a;
+  --purple-pale: #f0eaf8;
+  --border: #d4c9b0;
+  --border-light: #e8e0cc;
+  --sidebar-w: 260px;
+  --shadow: 0 2px 12px rgba(28,23,16,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.9rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+header .series-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+header .chapter-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+aside {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  background: var(--paper2);
+  border-right: 1px solid var(--border);
+  padding: 1.6rem 1.2rem 2rem;
+  z-index: 90;
+}
+aside h2 {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 0.1rem; }
+.toc-list a {
+  display: block;
+  font-size: 0.79rem;
+  color: var(--ink-light);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 3px;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.45;
+}
+.toc-list a:hover, .toc-list a.active {
+  background: var(--accent-pale);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+.toc-divider {
+  margin: 1rem 0 0.6rem;
+  font-family: 'Zen Antique', serif;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+}
+.chapter-link {
+  font-size: 0.76rem !important;
+  color: var(--ink-muted) !important;
+  padding: 0.28rem 0.6rem !important;
+}
+.chapter-link.current { color: var(--accent) !important; font-weight: 500; }
+.chapter-link .ch-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  margin-right: 0.3em;
+}
+.progress-bar {
+  height: 3px;
+  background: var(--border-light);
+  margin: 1.5rem 0 0;
+  border-radius: 2px;
+}
+.progress-fill {
+  height: 100%;
+  width: 37.5%;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 2px;
+}
+.progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
+  text-align: right;
+}
+
+main {
+  margin-left: var(--sidebar-w);
+  margin-top: 52px;
+  padding: 3rem 4rem 4rem 3.5rem;
+  max-width: calc(860px + var(--sidebar-w));
+  min-height: calc(100vh - 52px);
+}
+
+footer {
+  margin-left: var(--sidebar-w);
+  background: var(--paper2);
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  line-height: 1.7;
+  text-align: center;
+}
+footer .footer-mark {
+  font-family: 'Zen Antique', serif;
+  display: block;
+  margin-top: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+.chapter-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+.chapter-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 2.1rem;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+.chapter-subtitle {
+  font-size: 0.97rem;
+  color: var(--ink-muted);
+  font-weight: 300;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+.lead-divider {
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  margin-bottom: 2.5rem;
+}
+
+.dialogue-section { margin-bottom: 3.5rem; }
+.section-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1.18rem;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-heading::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--gold);
+  margin-right: 0.2em;
+}
+.subsection-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  color: var(--teal);
+  margin: 2rem 0 1rem;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--teal);
+}
+
+.turn { display: flex; gap: 1rem; margin-bottom: 1.3rem; align-items: flex-start; }
+.turn.student { flex-direction: row-reverse; }
+.avatar {
+  flex-shrink: 0; width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Zen Antique', serif; font-size: 0.82rem;
+}
+.avatar.teacher { background: var(--ink); color: var(--paper); }
+.avatar.student-av { background: var(--teal); color: #fff; }
+.bubble {
+  max-width: 82%;
+  padding: 0.9rem 1.1rem;
+  border-radius: 4px 12px 12px 12px;
+  line-height: 1.85; font-size: 0.91rem;
+  box-shadow: var(--shadow);
+}
+.turn.student .bubble { border-radius: 12px 4px 12px 12px; }
+.bubble.teacher-bubble { background: var(--paper); border: 1px solid var(--border-light); color: var(--ink); }
+.bubble.student-bubble { background: var(--teal-pale); border: 1px solid #c0dede; color: var(--teal); }
+.speaker-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 0.35rem; opacity: 0.6; display: block; }
+
+pre.code-block {
+  background: #1e1a14;
+  color: #d4c9a8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.81rem;
+  padding: 1.3rem 1.5rem;
+  border-radius: 4px;
+  margin: 1.1rem 0;
+  line-height: 1.8;
+  overflow-x: auto;
+  white-space: pre;
+  position: relative;
+}
+.lang-tag {
+  position: absolute; top: 0.5rem; right: 0.8rem;
+  font-size: 0.62rem; color: #5a5040; letter-spacing: 0.08em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.c-comment { color: #6a6050; }
+.c-string  { color: #a8c878; }
+.c-num     { color: #e8c070; }
+.c-fn      { color: #78b8d8; }
+.c-kw      { color: #d87850; }
+.c-out     { color: #8aaa70; }
+.c-section { color: #888070; font-style: italic; display: block; margin: 0.5em 0 0.1em; font-size: 0.74rem; letter-spacing: 0.05em; }
+
+.inline-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.81em;
+  background: rgba(28,23,16,0.07); padding: 0.1em 0.4em;
+  border-radius: 3px; color: var(--accent);
+}
+
+.callout, .callout-teal, .callout-green, .callout-purple {
+  padding: 1rem 1.2rem;
+  border-radius: 0 4px 4px 0;
+  margin: 1.4rem 0;
+  font-size: 0.89rem; line-height: 1.8;
+  color: var(--ink-light);
+}
+.callout        { border-left: 4px solid var(--gold);   background: var(--gold-pale); }
+.callout-teal   { border-left: 4px solid var(--teal);   background: var(--teal-pale); }
+.callout-green  { border-left: 4px solid var(--green);  background: var(--green-pale); }
+.callout-purple { border-left: 4px solid var(--purple); background: var(--purple-pale); }
+.callout strong        { color: var(--gold); }
+.callout-teal strong   { color: var(--teal); }
+.callout-green strong  { color: var(--green); }
+.callout-purple strong { color: var(--purple); }
+
+.learning-goals {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  padding: 1.3rem 1.5rem; margin-bottom: 2.5rem;
+  box-shadow: var(--shadow);
+}
+.learning-goals h3 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--teal); margin-bottom: 0.8rem; }
+.goal-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.goal-list li { font-size: 0.85rem; color: var(--ink-light); display: flex; align-items: flex-start; gap: 0.5rem; line-height: 1.6; }
+.goal-list li::before { content: '✓'; font-family: 'JetBrains Mono', monospace; color: var(--teal); font-size: 0.78rem; flex-shrink: 0; margin-top: 0.12rem; }
+
+.concept-box {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.4rem 1.6rem; margin: 1.8rem 0; box-shadow: var(--shadow);
+}
+.concept-box h4 { font-family: 'Zen Antique', serif; font-size: 0.97rem; color: var(--ink); margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-light); }
+.concept-box p { font-size: 0.88rem; line-height: 1.85; color: var(--ink-light); margin-bottom: 0.7rem; }
+.concept-box p:last-child { margin-bottom: 0; }
+
+/* ── DATA FRAME VISUAL ── */
+.df-visual {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.2rem 1.4rem; margin: 1.3rem 0;
+  box-shadow: var(--shadow); overflow-x: auto;
+}
+.df-visual h4 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--ink-muted); margin-bottom: 0.9rem; }
+.df-table { border-collapse: collapse; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; }
+.df-table th {
+  background: var(--ink); color: var(--paper);
+  padding: 0.4rem 0.8rem; text-align: center;
+  font-weight: 500; font-size: 0.72rem;
+}
+.df-table th.row-idx { background: #2a2018; color: var(--ink-muted); }
+.df-table td {
+  padding: 0.35rem 0.8rem; border: 1px solid var(--border-light);
+  text-align: center; color: var(--ink-light);
+}
+.df-table td.row-idx { background: var(--paper2); color: var(--ink-muted); font-size: 0.68rem; }
+.df-table tr:hover td:not(.row-idx) { background: var(--accent-pale); }
+.df-table .num  { color: var(--gold); }
+.df-table .str  { color: #a8c878; }
+.df-table .bool { color: #d87850; }
+.df-table .na   { color: #888070; font-style: italic; }
+.df-type { font-size: 0.62rem; color: var(--ink-muted); display: block; font-style: italic; margin-top: 0.1rem; }
+
+/* ── COMPARISON TABLE ── */
+.compare-table {
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.compare-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.compare-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: var(--accent-pale); }
+.compare-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+/* ── QUIZ ── */
+.quiz-box {
+  background: var(--gold-pale); border: 1px solid #d4b060;
+  border-radius: 6px; padding: 1.3rem 1.5rem; margin: 2rem 0;
+}
+.quiz-box h4 { font-family: 'Zen Antique', serif; font-size: 0.93rem; color: var(--gold); margin-bottom: 0.7rem; }
+.quiz-q { font-size: 0.88rem; color: var(--ink-light); margin-bottom: 0.7rem; line-height: 1.7; }
+.quiz-toggle { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; background: none; border: 1px solid var(--gold); color: var(--gold); padding: 0.35rem 0.85rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.quiz-toggle:hover { background: var(--gold); color: #fff; }
+.quiz-answer { display: none; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid #d4b060; font-size: 0.86rem; line-height: 1.8; color: var(--ink-light); }
+.quiz-answer.open { display: block; }
+
+/* ── JOIN DIAGRAM ── */
+.join-diagram {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem;
+  margin: 1.3rem 0;
+}
+.join-card {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.9rem 1rem; box-shadow: var(--shadow);
+  text-align: center;
+}
+.join-card .join-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+  color: var(--accent); font-weight: 500; margin-bottom: 0.4rem;
+}
+.join-card .join-venn {
+  font-size: 1.6rem; margin: 0.4rem 0;
+}
+.join-card .join-desc { font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; }
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.summary-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.summary-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: var(--accent-pale); }
+.summary-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+.next-chapter {
+  background: var(--ink); color: var(--paper);
+  border-radius: 6px; padding: 1.5rem 2rem; margin-top: 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.next-chapter .label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+.next-chapter .title { font-family: 'Zen Antique', serif; font-size: 1.03rem; }
+.next-chapter .arrow { font-size: 1.4rem; opacity: 0.5; }
+
+em { font-style: italic; color: var(--ink-light); }
+
+/* ── PIPE FLOW ── */
+.pipe-flow {
+  display: flex; align-items: center; gap: 0.4rem;
+  flex-wrap: wrap; margin: 1rem 0; padding: 0.8rem 1rem;
+  background: #1e1a14; border-radius: 4px;
+}
+.pipe-step {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+  padding: 0.3rem 0.65rem; border-radius: 3px;
+}
+.pipe-step.data { background: #2a4a6a; color: #78b8e8; }
+.pipe-step.verb { background: #2a4a2a; color: #78d878; }
+.pipe-step.out  { background: #3a2a1a; color: #e8c070; }
+.pipe-arrow { color: #5a5040; font-size: 0.9rem; }
+
+@media (max-width: 900px) {
+  aside { display: none; }
+  main { margin-left: 0; padding: 2rem 1.2rem; }
+  footer { margin-left: 0; }
+  .join-diagram { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="series-title">R言語で学ぶ統計学 ── 情報の彫刻刀</span>
+  <span class="chapter-badge">CHAPTER 2</span>
+</header>
+
+<aside>
+  <h2>第2章 目次</h2>
+  <ul class="toc-list">
+    <li><a href="#df-intro">2.1 データフレームとは</a></li>
+    <li><a href="#tibble">2.2 tibble という現代の表</a></li>
+    <li><a href="#access">2.3 列と行へのアクセス</a></li>
+    <li><a href="#mutate">2.4 列を加工する mutate</a></li>
+    <li><a href="#filter-select">2.5 filter と select</a></li>
+    <li><a href="#groupby">2.6 group_by で層別化</a></li>
+    <li><a href="#pivot">2.7 縦横変換：pivot</a></li>
+    <li><a href="#join">2.8 テーブルを結合する</a></li>
+    <li><a href="#missing">2.9 欠損値 NA との付き合い方</a></li>
+    <li><a href="#clinical">2.10 臨床データ整形の実例</a></li>
+    <li><a href="#exercises">2.11 練習問題</a></li>
+    <li><a href="#summary">2.12 章まとめ</a></li>
+  </ul>
+
+  <div class="toc-divider">── 章一覧 ──</div>
+  <ul class="toc-list">
+    <li><a href="r_intro_chapter0.html" class="chapter-link"><span class="ch-num">序章</span>イントロダクション</a></li>
+    <li><a href="r_chapter1.html" class="chapter-link"><span class="ch-num">Ch.1</span>Rとの出会い</a></li>
+    <li><a href="#" class="chapter-link current"><span class="ch-num">Ch.2</span>情報の箱</a></li>
+    <li><a href="r_chapter3.html" class="chapter-link"><span class="ch-num">Ch.3</span>可視化という次元削減</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.4</span>基本統計量の本質</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.5</span>検定のロジック</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.6</span>生存解析と時間軸</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.7</span>高次元の向こう側</a></li>
+  </ul>
+
+  <div class="progress-bar">
+    <div class="progress-fill"></div>
+  </div>
+  <div class="progress-label">Ch.2 / 7</div>
+</aside>
+
+<main>
+  <p class="chapter-eyebrow">CHAPTER 2 ── 第2章</p>
+  <h1 class="chapter-title">情報の箱<br><span style="font-size:0.68em;color:var(--ink-muted);">〜カオスを整理するデータフレーム〜</span></h1>
+  <p class="chapter-subtitle">複数のベクトルを一枚の表に束ね、フィルタリング・集計・結合で臨床データを整形する。</p>
+  <div class="lead-divider"></div>
+
+  <div class="learning-goals">
+    <h3>📌 この章の学習目標</h3>
+    <ul class="goal-list">
+      <li>データフレームと tibble の違いを説明できる</li>
+      <li>列アクセス（<span class="inline-code">$</span>・<span class="inline-code">[[]]</span>・<span class="inline-code">pull()</span>）を使い分けられる</li>
+      <li>mutate / filter / select / group_by / summarise をパイプで組み合わせられる</li>
+      <li>pivot_longer / pivot_wider で縦横変換ができる</li>
+      <li>left_join 等でテーブルを結合できる</li>
+      <li>NA（欠損値）を適切に検出・除外・補完できる</li>
+    </ul>
+  </div>
+
+  <!-- ── 2.1 ── -->
+  <section class="dialogue-section" id="df-intro">
+    <h2 class="section-heading"><span class="section-number">2.1</span>データフレームとは ── ベクトルを束ねた「表」</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        第1章でベクトルを学んだ。患者10人のHbA1c値が1本の線として存在していた。でも現実の臨床データはどうだろう？HbA1c・BMI・年齢・性別・治療法——これらが<em>横に揃った形</em>でないと、患者ごとの比較ができない。これを実現するのが<strong>データフレーム</strong>だ。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>📦 データフレームの本質</h4>
+      <p>データフレームは「同じ長さのベクトルを列として束ねたリスト」である。各列は独立した型を持てる（数値・文字・論理など混在OK）。行は「1つの観察単位（患者・試験・サンプル）」に対応する。</p>
+      <p>Excelのシート1枚に相当するが、R上では数百万行でも高速に操作でき、再現可能なコードで処理を記録できる点が根本的に異なる。</p>
+    </div>
+
+    <div class="df-visual">
+      <h4>患者データフレームのイメージ</h4>
+      <table class="df-table">
+        <thead>
+          <tr>
+            <th class="row-idx"></th>
+            <th>id<div class="df-type">&lt;chr&gt;</div></th>
+            <th>age<div class="df-type">&lt;int&gt;</div></th>
+            <th>sex<div class="df-type">&lt;chr&gt;</div></th>
+            <th>hba1c<div class="df-type">&lt;dbl&gt;</div></th>
+            <th>bmi<div class="df-type">&lt;dbl&gt;</div></th>
+            <th>on_insulin<div class="df-type">&lt;lgl&gt;</div></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="row-idx">1</td><td class="str">"P001"</td><td class="num">58</td><td class="str">"M"</td><td class="num">7.2</td><td class="num">24.1</td><td class="bool">FALSE</td></tr>
+          <tr><td class="row-idx">2</td><td class="str">"P002"</td><td class="num">43</td><td class="str">"F"</td><td class="num">9.4</td><td class="num">28.7</td><td class="bool">TRUE</td></tr>
+          <tr><td class="row-idx">3</td><td class="str">"P003"</td><td class="num">67</td><td class="str">"M"</td><td class="num">6.8</td><td class="num">22.3</td><td class="bool">FALSE</td></tr>
+          <tr><td class="row-idx">4</td><td class="str">"P004"</td><td class="num">51</td><td class="str">"F"</td><td class="num">8.1</td><td class="num">31.2</td><td class="bool">TRUE</td></tr>
+          <tr><td class="row-idx">5</td><td class="str">"P005"</td><td class="num">39</td><td class="str">"M"</td><td class="num">5.9</td><td class="num">20.8</td><td class="na">NA</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># データフレームを手で作る</span>
+patients &lt;- <span class="c-fn">data.frame</span>(
+  id         = <span class="c-fn">c</span>(<span class="c-string">"P001"</span>, <span class="c-string">"P002"</span>, <span class="c-string">"P003"</span>, <span class="c-string">"P004"</span>, <span class="c-string">"P005"</span>),
+  age        = <span class="c-fn">c</span>(<span class="c-num">58L</span>, <span class="c-num">43L</span>, <span class="c-num">67L</span>, <span class="c-num">51L</span>, <span class="c-num">39L</span>),
+  sex        = <span class="c-fn">c</span>(<span class="c-string">"M"</span>, <span class="c-string">"F"</span>, <span class="c-string">"M"</span>, <span class="c-string">"F"</span>, <span class="c-string">"M"</span>),
+  hba1c      = <span class="c-fn">c</span>(<span class="c-num">7.2</span>, <span class="c-num">9.4</span>, <span class="c-num">6.8</span>, <span class="c-num">8.1</span>, <span class="c-num">5.9</span>),
+  bmi        = <span class="c-fn">c</span>(<span class="c-num">24.1</span>, <span class="c-num">28.7</span>, <span class="c-num">22.3</span>, <span class="c-num">31.2</span>, <span class="c-num">20.8</span>),
+  on_insulin = <span class="c-fn">c</span>(<span class="c-kw">FALSE</span>, <span class="c-kw">TRUE</span>, <span class="c-kw">FALSE</span>, <span class="c-kw">TRUE</span>, <span class="c-kw">NA</span>)
+)
+
+<span class="c-fn">str</span>(patients)    <span class="c-comment"># 構造を確認</span>
+<span class="c-fn">dim</span>(patients)    <span class="c-comment"># 行数・列数</span>
+<span class="c-out"># [1] 5 6</span>
+<span class="c-fn">nrow</span>(patients); <span class="c-fn">ncol</span>(patients)   <span class="c-comment"># 行・列を個別に</span></pre>
+
+    <div class="turn">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        列ごとに型が違っていいんですね。文字列・整数・小数・論理値が混在している……。
+      </div>
+    </div>
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        そう、それがデータフレームの最大の特徴。ベクトルは1種類の型しか持てないが、データフレームは列ごとに型を変えられる。だからこそ「患者ID（文字）・年齢（整数）・HbA1c（小数）・インスリン使用（論理）」という現実の構造をそのまま表現できる。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 2.2 ── -->
+  <section class="dialogue-section" id="tibble">
+    <h2 class="section-heading"><span class="section-number">2.2</span>tibble という現代の表 ── data.frame の進化形</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        tidyverse では <span class="inline-code">data.frame</span> の代わりに <span class="inline-code">tibble</span> を使う。機能は同じだが、表示が格段に賢い。巨大なデータを print しても最初の10行だけ表示され、列型も表示される。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(tidyverse)
+
+<span class="c-comment"># tibble で作り直す</span>
+patients &lt;- <span class="c-fn">tibble</span>(
+  id         = <span class="c-fn">c</span>(<span class="c-string">"P001"</span>, <span class="c-string">"P002"</span>, <span class="c-string">"P003"</span>, <span class="c-string">"P004"</span>, <span class="c-string">"P005"</span>),
+  age        = <span class="c-fn">c</span>(<span class="c-num">58L</span>, <span class="c-num">43L</span>, <span class="c-num">67L</span>, <span class="c-num">51L</span>, <span class="c-num">39L</span>),
+  sex        = <span class="c-fn">c</span>(<span class="c-string">"M"</span>, <span class="c-string">"F"</span>, <span class="c-string">"M"</span>, <span class="c-string">"F"</span>, <span class="c-string">"M"</span>),
+  hba1c      = <span class="c-fn">c</span>(<span class="c-num">7.2</span>, <span class="c-num">9.4</span>, <span class="c-num">6.8</span>, <span class="c-num">8.1</span>, <span class="c-num">5.9</span>),
+  bmi        = <span class="c-fn">c</span>(<span class="c-num">24.1</span>, <span class="c-num">28.7</span>, <span class="c-num">22.3</span>, <span class="c-num">31.2</span>, <span class="c-num">20.8</span>),
+  on_insulin = <span class="c-fn">c</span>(<span class="c-kw">FALSE</span>, <span class="c-kw">TRUE</span>, <span class="c-kw">FALSE</span>, <span class="c-kw">TRUE</span>, <span class="c-kw">NA</span>)
+)
+
+patients   <span class="c-comment"># 自動で型付き表示</span>
+<span class="c-out"># # A tibble: 5 × 6</span>
+<span class="c-out">#   id      age sex   hba1c   bmi on_insulin</span>
+<span class="c-out">#   &lt;chr&gt; &lt;int&gt; &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;lgl&gt;</span>
+<span class="c-out"># 1 P001     58 M       7.2  24.1 FALSE</span>
+<span class="c-out"># 2 P002     43 F       9.4  28.7 TRUE</span>
+<span class="c-out"># ...</span>
+
+<span class="c-fn">glimpse</span>(patients)   <span class="c-comment"># 横に長い場合も全列を確認できる</span></pre>
+
+    <table class="compare-table">
+      <thead><tr><th>比較点</th><th>data.frame（旧）</th><th>tibble（新）</th></tr></thead>
+      <tbody>
+        <tr><td>print 挙動</td><td>全行全列を出力（暴走の危険）</td><td class="mono">最初の10行 × 画面幅まで</td></tr>
+        <tr><td>列名の扱い</td><td>スペースを含む列名に注意</td><td class="mono">バッククォートで安全に扱える</td></tr>
+        <tr><td>部分一致</td><td class="mono">df$ag で age が返る（危険）</td><td>完全一致のみ（安全）</td></tr>
+        <tr><td>1列取り出し</td><td class="mono">df[, "col"] → vector に変換</td><td>tibble のまま保持（予測可能）</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout-teal">
+      <strong>実践的アドバイス：</strong> CSVを読み込む <span class="inline-code">read_csv()</span> は自動的に tibble を返す。手動で作るときも <span class="inline-code">tibble()</span> を使う習慣にしておくとトラブルが少ない。
+    </div>
+  </section>
+
+  <!-- ── 2.3 ── -->
+  <section class="dialogue-section" id="access">
+    <h2 class="section-heading"><span class="section-number">2.3</span>列と行へのアクセス ── データを取り出す3つの方法</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        データフレームから値を取り出す方法はいくつかある。目的によって使い分けよう。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 列へのアクセス（3通り）──</span>
+patients$hba1c               <span class="c-comment"># $ 演算子：ベクトルとして取り出す</span>
+patients[["hba1c"]]          <span class="c-comment"># [[]] ：同上。変数名も使える</span>
+patients |&gt; <span class="c-fn">pull</span>(hba1c)     <span class="c-comment"># pull()：パイプとの相性が良い</span>
+<span class="c-out"># [1] 7.2 9.4 6.8 8.1 5.9</span>
+
+<span class="c-section"># ── 行へのアクセス（スライス）──</span>
+patients[<span class="c-num">2</span>, ]              <span class="c-comment"># 第2行を取り出す</span>
+patients[<span class="c-num">1</span>:<span class="c-num">3</span>, ]            <span class="c-comment"># 第1〜3行</span>
+patients |&gt; <span class="c-fn">slice</span>(<span class="c-num">1</span>:<span class="c-num">3</span>)    <span class="c-comment"># tidyverse版（こちらを推奨）</span>
+
+<span class="c-section"># ── 行列両方の指定 ──</span>
+patients[<span class="c-num">2</span>, <span class="c-string">"hba1c"</span>]       <span class="c-comment"># 第2行 hba1c列の値</span>
+<span class="c-out"># [1] 9.4</span>
+
+<span class="c-section"># ── 複数列を選ぶ ──</span>
+patients[, <span class="c-fn">c</span>(<span class="c-string">"id"</span>, <span class="c-string">"hba1c"</span>)]          <span class="c-comment"># 旧記法</span>
+patients |&gt; <span class="c-fn">select</span>(id, hba1c)         <span class="c-comment"># tidyverse版（後述）</span></pre>
+
+    <div class="callout">
+      <strong>【重要】$ vs [[]] の使い分け：</strong> プログラム内で列名を変数に格納して使う場合は必ず <span class="inline-code">[[]]</span> を使うこと。<br>
+      例：<span class="inline-code">col &lt;- "hba1c"; df[[col]]</span> は正しいが、<span class="inline-code">df$col</span> は「col という列名」を探してしまう。
+    </div>
+  </section>
+
+  <!-- ── 2.4 ── -->
+  <section class="dialogue-section" id="mutate">
+    <h2 class="section-heading"><span class="section-number">2.4</span>列を加工する mutate ── 新しい変数を生み出す</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        <span class="inline-code">mutate()</span> は既存の列を元に新しい列を作ったり、既存の列を書き換えたりする動詞だ。Excelで言えば「新しい列に数式を入れる」操作に相当する。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span>patients &lt;- patients |&gt;
+  <span class="c-fn">mutate</span>(
+    <span class="c-comment"># 数値の変換</span>
+    hba1c_mmol = hba1c * <span class="c-num">10.929</span>,      <span class="c-comment"># HbA1c を mmol/mol に換算</span>
+
+    <span class="c-comment"># 条件分岐で新しいカテゴリ変数</span>
+    bmi_cat = <span class="c-fn">case_when</span>(
+      bmi &lt;  <span class="c-num">18.5</span> ~ <span class="c-string">"低体重"</span>,
+      bmi &lt;  <span class="c-num">25.0</span> ~ <span class="c-string">"標準"</span>,
+      bmi &lt;  <span class="c-num">30.0</span> ~ <span class="c-string">"過体重"</span>,
+      <span class="c-kw">TRUE</span>         ~ <span class="c-string">"肥満"</span>
+    ),
+
+    <span class="c-comment"># factor 化（順序を明示）</span>
+    bmi_cat = <span class="c-fn">factor</span>(bmi_cat,
+                     levels = <span class="c-fn">c</span>(<span class="c-string">"低体重"</span>, <span class="c-string">"標準"</span>, <span class="c-string">"過体重"</span>, <span class="c-string">"肥満"</span>)),
+
+    <span class="c-comment"># 論理値→文字列</span>
+    insulin_label = <span class="c-fn">if_else</span>(on_insulin, <span class="c-string">"使用"</span>, <span class="c-string">"非使用"</span>,
+                             missing = <span class="c-string">"不明"</span>),
+
+    <span class="c-comment"># 年齢を10歳刻みに</span>
+    age_decade = (<span class="c-fn">age</span> %/% <span class="c-num">10</span>) * <span class="c-num">10L</span>
+  )
+
+<span class="c-fn">glimpse</span>(patients)</pre>
+
+    <div class="subsection-heading">case_when vs if_else</div>
+
+    <table class="compare-table">
+      <thead><tr><th>関数</th><th>使いどころ</th><th>書き方の例</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">if_else()</td>
+          <td>2値分岐（TRUE/FALSE）。NAの扱いを明示できる</td>
+          <td class="mono">if_else(x &gt; 0, "正", "非正", missing = "不明")</td>
+        </tr>
+        <tr>
+          <td class="mono">case_when()</td>
+          <td>3値以上の分岐。条件を上から評価し、最初にTRUEになった枝を使う</td>
+          <td class="mono">case_when(x &lt; 18 ~ "未満", x &lt; 60 ~ "現役", TRUE ~ "高齢")</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout-purple">
+      <strong>TRUEが「その他」：</strong> <span class="inline-code">case_when()</span> の末尾に <span class="inline-code">TRUE ~ "その他"</span> を置くと「上記いずれにも当てはまらない場合」になる。これを省略すると未分類の行がNAになるので注意。
+    </div>
+  </section>
+
+  <!-- ── 2.5 ── -->
+  <section class="dialogue-section" id="filter-select">
+    <h2 class="section-heading"><span class="section-number">2.5</span>filter と select ── 行と列を絞る</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        <span class="inline-code">filter()</span> は行を絞る、<span class="inline-code">select()</span> は列を絞る——この2つはデータ整形の基本動作だ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── filter：行を絞る ──</span>
+patients |&gt; <span class="c-fn">filter</span>(hba1c &gt;= <span class="c-num">8.0</span>)               <span class="c-comment"># HbA1c 8以上</span>
+patients |&gt; <span class="c-fn">filter</span>(sex == <span class="c-string">"F"</span>, bmi &gt; <span class="c-num">25</span>)         <span class="c-comment"># AND条件</span>
+patients |&gt; <span class="c-fn">filter</span>(sex == <span class="c-string">"F"</span> | bmi &gt; <span class="c-num">25</span>)         <span class="c-comment"># OR条件</span>
+patients |&gt; <span class="c-fn">filter</span>(<span class="c-fn">between</span>(age, <span class="c-num">40</span>, <span class="c-num">60</span>))           <span class="c-comment"># 範囲指定</span>
+patients |&gt; <span class="c-fn">filter</span>(id <span class="c-fn">%in%</span> <span class="c-fn">c</span>(<span class="c-string">"P001"</span>, <span class="c-string">"P003"</span>))     <span class="c-comment"># リスト一致</span>
+patients |&gt; <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(on_insulin))            <span class="c-comment"># NAを除外</span>
+
+<span class="c-section"># ── select：列を絞る ──</span>
+patients |&gt; <span class="c-fn">select</span>(id, hba1c, bmi)              <span class="c-comment"># 列名で指定</span>
+patients |&gt; <span class="c-fn">select</span>(-on_insulin)                 <span class="c-comment"># 列を除外（マイナス）</span>
+patients |&gt; <span class="c-fn">select</span>(<span class="c-fn">where</span>(is.numeric))            <span class="c-comment"># 数値列だけ</span>
+patients |&gt; <span class="c-fn">select</span>(<span class="c-fn">starts_with</span>(<span class="c-string">"bmi"</span>))           <span class="c-comment"># 列名の前方一致</span>
+patients |&gt; <span class="c-fn">select</span>(<span class="c-fn">ends_with</span>(<span class="c-string">"_cat"</span>))            <span class="c-comment"># 列名の後方一致</span>
+patients |&gt; <span class="c-fn">rename</span>(patient_id = id)             <span class="c-comment"># 列名を変更</span>
+
+<span class="c-section"># ── 組み合わせ ──</span>
+patients |&gt;
+  <span class="c-fn">filter</span>(sex == <span class="c-string">"F"</span>) |&gt;
+  <span class="c-fn">select</span>(id, age, hba1c) |&gt;
+  <span class="c-fn">arrange</span>(<span class="c-fn">desc</span>(hba1c))   <span class="c-comment"># HbA1c降順で並べ替え</span></pre>
+
+    <div class="pipe-flow">
+      <span class="pipe-step data">patients</span>
+      <span class="pipe-arrow">|&gt;</span>
+      <span class="pipe-step verb">filter(sex == "F")</span>
+      <span class="pipe-arrow">|&gt;</span>
+      <span class="pipe-step verb">select(id, hba1c)</span>
+      <span class="pipe-arrow">|&gt;</span>
+      <span class="pipe-step verb">arrange(desc(hba1c))</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-step out">tibble 結果</span>
+    </div>
+  </section>
+
+  <!-- ── 2.6 ── -->
+  <section class="dialogue-section" id="groupby">
+    <h2 class="section-heading"><span class="section-number">2.6</span>group_by で層別化 ── 「グループごと」の集計</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        臨床研究では「男女別」「年代別」「治療群別」という層別比較が頻出する。<span class="inline-code">group_by()</span> + <span class="inline-code">summarise()</span> がそれを担う。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 基本的な層別集計 ──</span>
+patients |&gt;
+  <span class="c-fn">group_by</span>(sex) |&gt;
+  <span class="c-fn">summarise</span>(
+    n          = <span class="c-fn">n</span>(),
+    mean_hba1c = <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),
+    sd_hba1c   = <span class="c-fn">sd</span>(hba1c,   na.rm = <span class="c-kw">TRUE</span>),
+    med_bmi    = <span class="c-fn">median</span>(bmi, na.rm = <span class="c-kw">TRUE</span>)
+  )
+<span class="c-out"># # A tibble: 2 × 5</span>
+<span class="c-out">#   sex       n mean_hba1c sd_hba1c med_bmi</span>
+<span class="c-out">#   &lt;chr&gt; &lt;int&gt;      &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;</span>
+<span class="c-out"># 1 F         2       8.75    0.919    29.95</span>
+<span class="c-out"># 2 M         3       6.63    0.655    22.30</span>
+
+<span class="c-section"># ── 複数変数でグループ化 ──</span>
+patients |&gt;
+  <span class="c-fn">group_by</span>(sex, bmi_cat) |&gt;
+  <span class="c-fn">summarise</span>(n = <span class="c-fn">n</span>(), mean_hba1c = <span class="c-fn">mean</span>(hba1c), .groups = <span class="c-string">"drop"</span>)
+
+<span class="c-section"># ── グループ内の割合を計算 ──</span>
+patients |&gt;
+  <span class="c-fn">count</span>(sex, bmi_cat) |&gt;
+  <span class="c-fn">group_by</span>(sex) |&gt;
+  <span class="c-fn">mutate</span>(pct = <span class="c-fn">round</span>(n / <span class="c-fn">sum</span>(n) * <span class="c-num">100</span>, <span class="c-num">1</span>))
+
+<span class="c-section"># ── グループ内最大値の行を取り出す ──</span>
+patients |&gt;
+  <span class="c-fn">group_by</span>(sex) |&gt;
+  <span class="c-fn">slice_max</span>(hba1c, n = <span class="c-num">1</span>)   <span class="c-comment"># 性別ごとにHbA1c最大の患者</span></pre>
+
+    <div class="callout-green">
+      <strong>.groups = "drop" とは：</strong> summarise() 後はデフォルトでグループが残る（警告が出る）。<span class="inline-code">.groups = "drop"</span> を指定するとグループを解除した通常の tibble が返る。次の操作に予期しない影響を与えたくない場合は明示的に指定しよう。
+    </div>
+  </section>
+
+  <!-- ── 2.7 ── -->
+  <section class="dialogue-section" id="pivot">
+    <h2 class="section-heading"><span class="section-number">2.7</span>縦横変換：pivot ── tidy data の思想</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        データには「横長（wide）」と「縦長（long）」という2つの形がある。Excelでは横長が多いが、Rでグラフを描いたり統計モデルを当てたりするには縦長（tidy形式）が必要になる場合が多い。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>🔄 Tidy Data の3原則</h4>
+      <p>① 1行 = 1観測（1人・1時点）<br>② 1列 = 1変数（測定した1つの値）<br>③ 1セル = 1値</p>
+      <p>「患者×複数時点のHbA1c」が横に並んでいたら、それをtidy形式に直すのが <span class="inline-code">pivot_longer()</span> の仕事だ。</p>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># 横長データ（よくあるExcel形式）</span>
+wide_df &lt;- <span class="c-fn">tibble</span>(
+  id      = <span class="c-fn">c</span>(<span class="c-string">"P001"</span>, <span class="c-string">"P002"</span>, <span class="c-string">"P003"</span>),
+  hba1c_0 = <span class="c-fn">c</span>(<span class="c-num">9.2</span>, <span class="c-num">8.6</span>, <span class="c-num">7.8</span>),    <span class="c-comment"># 治療開始前</span>
+  hba1c_3 = <span class="c-fn">c</span>(<span class="c-num">8.1</span>, <span class="c-num">7.9</span>, <span class="c-num">7.1</span>),    <span class="c-comment"># 3ヶ月後</span>
+  hba1c_6 = <span class="c-fn">c</span>(<span class="c-num">7.4</span>, <span class="c-num">7.2</span>, <span class="c-num">6.8</span>)     <span class="c-comment"># 6ヶ月後</span>
+)
+
+<span class="c-section"># ── pivot_longer：横→縦 ──</span>
+long_df &lt;- wide_df |&gt;
+  <span class="c-fn">pivot_longer</span>(
+    cols      = <span class="c-fn">starts_with</span>(<span class="c-string">"hba1c_"</span>),  <span class="c-comment"># 変換する列</span>
+    names_to  = <span class="c-string">"time"</span>,                   <span class="c-comment"># 列名が入る新しい列</span>
+    values_to = <span class="c-string">"hba1c"</span>,                  <span class="c-comment"># 値が入る新しい列</span>
+    names_prefix = <span class="c-string">"hba1c_"</span>              <span class="c-comment"># 列名のプレフィックスを除去</span>
+  ) |&gt;
+  <span class="c-fn">mutate</span>(time = <span class="c-fn">as.integer</span>(time))
+
+long_df
+<span class="c-out"># # A tibble: 9 × 3</span>
+<span class="c-out">#   id     time hba1c</span>
+<span class="c-out">#   &lt;chr&gt; &lt;int&gt; &lt;dbl&gt;</span>
+<span class="c-out"># 1 P001      0   9.2</span>
+<span class="c-out"># 2 P001      3   8.1</span>
+<span class="c-out"># 3 P001      6   7.4  ...</span>
+
+<span class="c-section"># ── pivot_wider：縦→横（逆操作）──</span>
+long_df |&gt;
+  <span class="c-fn">pivot_wider</span>(names_from = time, values_from = hba1c,
+              names_prefix = <span class="c-string">"hba1c_"</span>)</pre>
+
+    <div class="turn">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        縦長にすると行が増えますね。でもこの形のほうがggplot2で時系列グラフを描きやすいということですか？
+      </div>
+    </div>
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        その通り。ggplot2はtidy形式を前提として設計されている。時点を x 軸に、HbA1cを y 軸に、患者IDを color に——これが縦長なら<span class="inline-code">aes(x = time, y = hba1c, color = id)</span>の1行で書ける。横長のままだと列ごとに geom_line を追加しなければならなくなる。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 2.8 ── -->
+  <section class="dialogue-section" id="join">
+    <h2 class="section-heading"><span class="section-number">2.8</span>テーブルを結合する ── join 操作</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        臨床研究では「患者基本情報テーブル」と「検査値テーブル」が別ファイルになっていることが多い。これらをIDをキーにして結合するのが join 操作だ。SQLに慣れていれば馴染み深いはずだよ。
+      </div>
+    </div>
+
+    <div class="join-diagram">
+      <div class="join-card">
+        <div class="join-name">left_join()</div>
+        <div class="join-venn">🟧⚪</div>
+        <div class="join-desc">左テーブルの全行を保持。右に対応がなければNA</div>
+      </div>
+      <div class="join-card">
+        <div class="join-name">inner_join()</div>
+        <div class="join-venn">⬛🟫</div>
+        <div class="join-desc">両テーブルに存在するキーの行のみ残す</div>
+      </div>
+      <div class="join-card">
+        <div class="join-name">full_join()</div>
+        <div class="join-venn">🟧🟧</div>
+        <div class="join-desc">両テーブルの全行を保持。対応がなければNA</div>
+      </div>
+      <div class="join-card">
+        <div class="join-name">anti_join()</div>
+        <div class="join-venn">🟧❌</div>
+        <div class="join-desc">右テーブルに存在しないキーの行のみ残す（欠損チェックに便利）</div>
+      </div>
+      <div class="join-card">
+        <div class="join-name">semi_join()</div>
+        <div class="join-venn">✅⬛</div>
+        <div class="join-desc">右テーブルに存在するキーの行を残すが、右の列は追加しない</div>
+      </div>
+      <div class="join-card">
+        <div class="join-name">right_join()</div>
+        <div class="join-venn">⚪🟦</div>
+        <div class="join-desc">右テーブルの全行を保持。left_join の左右反転版</div>
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># 2つのテーブルを準備</span>
+demographics &lt;- <span class="c-fn">tibble</span>(
+  id  = <span class="c-fn">c</span>(<span class="c-string">"P001"</span>, <span class="c-string">"P002"</span>, <span class="c-string">"P003"</span>, <span class="c-string">"P004"</span>),
+  age = <span class="c-fn">c</span>(<span class="c-num">58L</span>, <span class="c-num">43L</span>, <span class="c-num">67L</span>, <span class="c-num">51L</span>),
+  sex = <span class="c-fn">c</span>(<span class="c-string">"M"</span>, <span class="c-string">"F"</span>, <span class="c-string">"M"</span>, <span class="c-string">"F"</span>)
+)
+
+lab_results &lt;- <span class="c-fn">tibble</span>(
+  id    = <span class="c-fn">c</span>(<span class="c-string">"P001"</span>, <span class="c-string">"P002"</span>, <span class="c-string">"P005"</span>),  <span class="c-comment"># P003,P004は欠損、P005は新規</span>
+  hba1c = <span class="c-fn">c</span>(<span class="c-num">7.2</span>, <span class="c-num">9.4</span>, <span class="c-num">8.8</span>),
+  ldl   = <span class="c-fn">c</span>(<span class="c-num">112</span>, <span class="c-num">145</span>, <span class="c-num">98</span>)
+)
+
+<span class="c-section"># ── left_join（最も頻用）──</span>
+merged &lt;- demographics |&gt;
+  <span class="c-fn">left_join</span>(lab_results, by = <span class="c-string">"id"</span>)
+<span class="c-out"># P003, P004 の hba1c/ldl は NA になる</span>
+
+<span class="c-section"># ── キー名が違う場合 ──</span>
+<span class="c-fn">left_join</span>(demographics, lab_results,
+           by = <span class="c-fn">c</span>(<span class="c-string">"id"</span> = <span class="c-string">"patient_id"</span>))  <span class="c-comment"># 左=id, 右=patient_id</span>
+
+<span class="c-section"># ── anti_join で結合できなかった行を確認 ──</span>
+demographics |&gt; <span class="c-fn">anti_join</span>(lab_results, by = <span class="c-string">"id"</span>)
+<span class="c-out"># P003, P004 が返る → 検査データ未収集の患者を特定できる</span></pre>
+
+    <div class="callout-teal">
+      <strong>join 前のデータ品質チェック：</strong> 結合前に必ず両テーブルのキー列の重複・NA・表記ゆれを確認すること。<span class="inline-code">n_distinct(df$id) == nrow(df)</span> でキーの一意性を確認できる。
+    </div>
+  </section>
+
+  <!-- ── 2.9 ── -->
+  <section class="dialogue-section" id="missing">
+    <h2 class="section-heading"><span class="section-number">2.9</span>欠損値 NA との付き合い方</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        臨床データに欠損値はつきものだ。RはNAを「値が存在しない」という明示的な概念として扱う。NAは伝染する——<span class="inline-code">NA + 1</span> は <span class="inline-code">NA</span> になる。だから常に意識的に対処する必要がある。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── NA の基本操作 ──</span>
+<span class="c-fn">is.na</span>(<span class="c-kw">NA</span>)            <span class="c-comment"># TRUE</span>
+<span class="c-kw">NA</span> == <span class="c-kw">NA</span>            <span class="c-comment"># NA（！== は使えない）</span>
+
+<span class="c-section"># ── データ全体の欠損を確認 ──</span>
+patients |&gt;
+  <span class="c-fn">summarise</span>(<span class="c-fn">across</span>(<span class="c-fn">everything</span>(), ~ <span class="c-fn">sum</span>(<span class="c-fn">is.na</span>(.x))))
+
+<span class="c-comment"># パーセンテージで</span>
+patients |&gt;
+  <span class="c-fn">summarise</span>(<span class="c-fn">across</span>(<span class="c-fn">everything</span>(),
+    ~ <span class="c-fn">scales</span>::<span class="c-fn">percent</span>(<span class="c-fn">mean</span>(<span class="c-fn">is.na</span>(.x)), accuracy = <span class="c-num">0.1</span>)))
+
+<span class="c-section"># ── NA を除外して計算（na.rm）──</span>
+<span class="c-fn">mean</span>(patients$hba1c, na.rm = <span class="c-kw">TRUE</span>)
+<span class="c-fn">sum</span>(patients$hba1c,  na.rm = <span class="c-kw">TRUE</span>)
+
+<span class="c-section"># ── NA 行を除外 ──</span>
+patients |&gt; <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(on_insulin))          <span class="c-comment"># 特定列のNA除外</span>
+patients |&gt; <span class="c-fn">drop_na</span>()                          <span class="c-comment"># 全列のNA含む行を除外</span>
+patients |&gt; <span class="c-fn">drop_na</span>(hba1c, bmi)               <span class="c-comment"># 指定列のNA含む行を除外</span>
+
+<span class="c-section"># ── NA を置換 ──</span>
+patients |&gt;
+  <span class="c-fn">mutate</span>(on_insulin = <span class="c-fn">replace_na</span>(on_insulin, <span class="c-kw">FALSE</span>))
+
+<span class="c-section"># ── 単純補完（前の値で埋める・縦方向）──</span>
+patients |&gt; <span class="c-fn">fill</span>(on_insulin, .direction = <span class="c-string">"down"</span>)
+
+<span class="c-section"># ── 平均値補完（慎重に！）──</span>
+patients |&gt;
+  <span class="c-fn">mutate</span>(hba1c = <span class="c-fn">if_else</span>(<span class="c-fn">is.na</span>(hba1c),
+                          <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>), hba1c))</pre>
+
+    <div class="callout">
+      <strong>欠損値の種類と対処：</strong><br>
+      ・<strong>MCAR</strong>（完全無作為欠損）: 単純除外でバイアスなし<br>
+      ・<strong>MAR</strong>（無作為欠損）: 多重代入法（mice パッケージ）が適切<br>
+      ・<strong>MNAR</strong>（非無作為欠損）: 欠損自体が情報を持つ（例：副作用で脱落）、感度分析が必要<br>
+      臨床研究では欠損の理由を確認することが最優先。
+    </div>
+  </section>
+
+  <!-- ── 2.10 ── -->
+  <section class="dialogue-section" id="clinical">
+    <h2 class="section-heading"><span class="section-number">2.10</span>臨床データ整形の実例 ── 生データから分析可能な形へ</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        実際の臨床研究では、CSVを読み込んでそのまま分析できることはほぼない。典型的な整形フローをまとめよう。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(tidyverse)
+<span class="c-fn">library</span>(janitor)    <span class="c-comment"># clean_names() で列名を統一</span>
+
+<span class="c-section"># ── ① CSVの読み込みと列名整形 ──</span>
+raw &lt;- <span class="c-fn">read_csv</span>(<span class="c-string">"clinical_data.csv"</span>, na = <span class="c-fn">c</span>(<span class="c-string">""</span>, <span class="c-string">"NA"</span>, <span class="c-string">"N/A"</span>, <span class="c-string">"-"</span>)) |&gt;
+  <span class="c-fn">clean_names</span>()   <span class="c-comment"># 列名をスネークケースに統一</span>
+
+<span class="c-fn">glimpse</span>(raw)
+
+<span class="c-section"># ── ② 型変換 ──</span>
+df &lt;- raw |&gt;
+  <span class="c-fn">mutate</span>(
+    enrollment_date = <span class="c-fn">as.Date</span>(enrollment_date, format = <span class="c-string">"%Y/%m/%d"</span>),
+    sex             = <span class="c-fn">factor</span>(sex, levels = <span class="c-fn">c</span>(<span class="c-string">"M"</span>, <span class="c-string">"F"</span>)),
+    treatment_group = <span class="c-fn">factor</span>(treatment_group,
+                              levels = <span class="c-fn">c</span>(<span class="c-string">"Control"</span>, <span class="c-string">"Drug_A"</span>, <span class="c-string">"Drug_B"</span>))
+  )
+
+<span class="c-section"># ── ③ 変数追加 ──</span>
+df &lt;- df |&gt;
+  <span class="c-fn">mutate</span>(
+    age_at_enrollment = <span class="c-fn">as.integer</span>(<span class="c-fn">difftime</span>(enrollment_date, birthdate,
+                                    units = <span class="c-string">"days"</span>)) %/% <span class="c-num">365L</span>,
+    egfr_stage = <span class="c-fn">case_when</span>(
+      egfr &gt;= <span class="c-num">90</span>              ~ <span class="c-string">"G1"</span>,
+      <span class="c-fn">between</span>(egfr, <span class="c-num">60</span>, <span class="c-num">89</span>)   ~ <span class="c-string">"G2"</span>,
+      <span class="c-fn">between</span>(egfr, <span class="c-num">30</span>, <span class="c-num">59</span>)   ~ <span class="c-string">"G3"</span>,
+      <span class="c-fn">between</span>(egfr, <span class="c-num">15</span>, <span class="c-num">29</span>)   ~ <span class="c-string">"G4"</span>,
+      egfr &lt; <span class="c-num">15</span>               ~ <span class="c-string">"G5"</span>,
+      <span class="c-kw">TRUE</span>                     ~ <span class="c-kw">NA_character_</span>
+    ) |&gt; <span class="c-fn">factor</span>(levels = <span class="c-fn">paste0</span>(<span class="c-string">"G"</span>, <span class="c-num">1</span>:<span class="c-num">5</span>))
+  )
+
+<span class="c-section"># ── ④ 解析対象の絞り込み ──</span>
+analysis_set &lt;- df |&gt;
+  <span class="c-fn">filter</span>(
+    age_at_enrollment &gt;= <span class="c-num">20</span>,
+    !<span class="c-fn">is.na</span>(hba1c_baseline),
+    !<span class="c-fn">is.na</span>(treatment_group)
+  )
+
+<span class="c-section"># ── ⑤ Table 1 の作成（tableone パッケージ）──</span>
+<span class="c-fn">library</span>(tableone)
+<span class="c-fn">CreateTableOne</span>(
+  vars      = <span class="c-fn">c</span>(<span class="c-string">"age_at_enrollment"</span>, <span class="c-string">"sex"</span>, <span class="c-string">"hba1c_baseline"</span>, <span class="c-string">"egfr_stage"</span>),
+  strata    = <span class="c-string">"treatment_group"</span>,
+  data      = analysis_set,
+  factorVars = <span class="c-fn">c</span>(<span class="c-string">"sex"</span>, <span class="c-string">"egfr_stage"</span>)
+)</pre>
+
+    <div class="callout-purple">
+      <strong>janitor パッケージ：</strong> <span class="inline-code">clean_names()</span> は日本語を含む列名・スペース・大文字混在などを一括でスネークケースに変換する。多人数が作ったExcelを読み込む際には必須に近いツール。また <span class="inline-code">tabyl()</span> はクロス集計表を素早く作るのに便利。
+    </div>
+  </section>
+
+  <!-- ── 2.11 exercises ── -->
+  <section class="dialogue-section" id="exercises">
+    <h2 class="section-heading"><span class="section-number">2.11</span>練習問題</h2>
+
+    <div class="quiz-box">
+      <h4>🧠 問題1：データ整形</h4>
+      <p class="quiz-q">以下の patients tibble（10名分）を使って、①BMI別カテゴリ（標準/過体重/肥満）ごとの人数・HbA1c平均・HbA1c標準偏差を計算し、②結果を HbA1c 平均の降順に並べよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>patients |&gt;
+  <span class="c-fn">mutate</span>(bmi_cat = <span class="c-fn">case_when</span>(
+    bmi &lt; <span class="c-num">25</span> ~ <span class="c-string">"標準"</span>,
+    bmi &lt; <span class="c-num">30</span> ~ <span class="c-string">"過体重"</span>,
+    <span class="c-kw">TRUE</span>     ~ <span class="c-string">"肥満"</span>
+  )) |&gt;
+  <span class="c-fn">group_by</span>(bmi_cat) |&gt;
+  <span class="c-fn">summarise</span>(
+    n          = <span class="c-fn">n</span>(),
+    mean_hba1c = <span class="c-fn">round</span>(<span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>), <span class="c-num">2</span>),
+    sd_hba1c   = <span class="c-fn">round</span>(<span class="c-fn">sd</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),   <span class="c-num">2</span>),
+    .groups = <span class="c-string">"drop"</span>
+  ) |&gt;
+  <span class="c-fn">arrange</span>(<span class="c-fn">desc</span>(mean_hba1c))</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題2：縦横変換</h4>
+      <p class="quiz-q">以下の横長データを縦長（tidy）形式に変換し、患者ごとのHbA1c変化量（6ヶ月後 − 開始前）を計算せよ。</p>
+<pre class="code-block" style="margin:0.5rem 0;"><span class="lang-tag">R</span>wide_hba1c &lt;- <span class="c-fn">tibble</span>(
+  id      = <span class="c-fn">c</span>(<span class="c-string">"P001"</span>, <span class="c-string">"P002"</span>, <span class="c-string">"P003"</span>),
+  hba1c_0 = <span class="c-fn">c</span>(<span class="c-num">9.2</span>, <span class="c-num">8.6</span>, <span class="c-num">7.8</span>),
+  hba1c_6 = <span class="c-fn">c</span>(<span class="c-num">7.4</span>, <span class="c-num">7.2</span>, <span class="c-num">6.8</span>)
+)</pre>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># 縦長に変換してから差分を計算</span>
+wide_hba1c |&gt;
+  <span class="c-fn">pivot_longer</span>(-id, names_to = <span class="c-string">"time"</span>, values_to = <span class="c-string">"hba1c"</span>,
+               names_prefix = <span class="c-string">"hba1c_"</span>) |&gt;
+  <span class="c-fn">mutate</span>(time = <span class="c-fn">as.integer</span>(time)) |&gt;
+  <span class="c-fn">group_by</span>(id) |&gt;
+  <span class="c-fn">summarise</span>(
+    hba1c_baseline = hba1c[time == <span class="c-num">0</span>],
+    hba1c_6m       = hba1c[time == <span class="c-num">6</span>],
+    delta          = hba1c[time == <span class="c-num">6</span>] - hba1c[time == <span class="c-num">0</span>],
+    .groups = <span class="c-string">"drop"</span>
+  )
+<span class="c-out"># id    hba1c_baseline hba1c_6m delta</span>
+<span class="c-out"># P001            9.2      7.4  -1.8</span>
+<span class="c-out"># P002            8.6      7.2  -1.4</span>
+<span class="c-out"># P003            7.8      6.8  -1.0</span></pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題3：テーブル結合</h4>
+      <p class="quiz-q">demographics（患者基本情報）と lab_results（検査値）を left_join で結合し、検査値が取得できていない患者（NAになった行）を特定せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># 結合して NA を探す方法 ①</span>
+merged &lt;- demographics |&gt;
+  <span class="c-fn">left_join</span>(lab_results, by = <span class="c-string">"id"</span>)
+
+merged |&gt; <span class="c-fn">filter</span>(<span class="c-fn">is.na</span>(hba1c))
+
+<span class="c-comment"># anti_join を使う方法 ②（よりシンプル）</span>
+demographics |&gt; <span class="c-fn">anti_join</span>(lab_results, by = <span class="c-string">"id"</span>)
+
+<span class="c-out"># → P003, P004 が返る</span></pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題4（発展）：臨床データ整形パイプライン</h4>
+      <p class="quiz-q">patients tibble に対して、①NAを含む行を除外、②HbA1c ≥ 7.0 の患者を「HbA1c要管理」とラベル付け、③sex別・HbA1cラベル別の人数クロス表を作成せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>patients |&gt;
+  <span class="c-fn">drop_na</span>() |&gt;
+  <span class="c-fn">mutate</span>(hba1c_flag = <span class="c-fn">if_else</span>(hba1c &gt;= <span class="c-num">7.0</span>, <span class="c-string">"HbA1c要管理"</span>, <span class="c-string">"良好"</span>)) |&gt;
+  <span class="c-fn">count</span>(sex, hba1c_flag) |&gt;
+  <span class="c-fn">pivot_wider</span>(names_from = hba1c_flag, values_from = n, values_fill = <span class="c-num">0</span>)</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 2.12 summary ── -->
+  <section class="dialogue-section" id="summary">
+    <h2 class="section-heading"><span class="section-number">2.12</span>章まとめ</h2>
+
+    <table class="summary-table">
+      <thead><tr><th>トピック</th><th>キーワード</th><th>一言まとめ</th></tr></thead>
+      <tbody>
+        <tr><td>データフレーム</td><td class="mono">data.frame / tibble</td><td>列ごとに型が違えるベクトルの束。tibble が推奨</td></tr>
+        <tr><td>列アクセス</td><td class="mono">$ / [[]] / pull()</td><td>変数名を渡すときは [[]] を使う</td></tr>
+        <tr><td>変数作成</td><td class="mono">mutate / case_when / if_else</td><td>派生変数・カテゴリ変数をパイプで追加</td></tr>
+        <tr><td>行・列の絞り込み</td><td class="mono">filter / select / arrange</td><td>行は filter、列は select、並び替えは arrange</td></tr>
+        <tr><td>層別集計</td><td class="mono">group_by + summarise</td><td>臨床研究の基本。.groups = "drop" を忘れずに</td></tr>
+        <tr><td>縦横変換</td><td class="mono">pivot_longer / pivot_wider</td><td>ggplot2・統計モデルには縦長（tidy）形式が必要</td></tr>
+        <tr><td>テーブル結合</td><td class="mono">left_join / inner_join / anti_join</td><td>left_join を基本に。anti_join で欠損チェック</td></tr>
+        <tr><td>欠損値</td><td class="mono">is.na / drop_na / replace_na / fill</td><td>NAの理由（MCAR/MAR/MNAR）を見極めて対処</td></tr>
+        <tr><td>データ品質</td><td class="mono">janitor / tableone</td><td>clean_names で列名統一、Table 1 で群間比較</td></tr>
+      </tbody>
+    </table>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        第2章はここまで。データフレームという「情報の箱」を自由に整形できるようになった。filter・mutate・group_by・pivot・join——これだけで臨床データの9割は扱える。次の第3章では、整形したデータを「見える化」する——ggplot2の文法を徹底的に掘り下げる。
+      </div>
+    </div>
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        pivot_longer と join の組み合わせで、バラバラだった検査値ファイルが1つの分析用データセットになる感覚がつかめました。次は可視化ですね！
+      </div>
+    </div>
+
+    <div class="next-chapter">
+      <div>
+        <div class="label">NEXT CHAPTER</div>
+        <div class="title">第3章：可視化という次元削減 〜ggplot2の文法と医学グラフの定石〜</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>⚠ 注意書き：本テキストは生成AIによって作成されたものであり、内容に誤りを含む可能性があります。利用・参照は自己責任でお願いします。再配布については、自己責任の範囲内であれば問題ありません。</p>
+  <span class="footer-mark">―― 統計は専門ではない研究者の備忘録 ――</span>
+</footer>
+
+<script>
+const links = document.querySelectorAll('aside .toc-list a:not(.chapter-link)');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector('aside .toc-list a[href="#' + e.target.id + '"]');
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
