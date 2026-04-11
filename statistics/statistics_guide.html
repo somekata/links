@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計学 完全ガイド</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Serif+JP:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --paper: #fdfaf3;
+    --paper2: #f9f5ec;
+    --ink: #1c1710;
+    --ink-light: #5a5040;
+    --ink-faint: #9a8e7a;
+    --accent: #8b4513;
+    --accent-light: #c47a3a;
+    --accent-pale: #f0e4d0;
+    --blue: #2c5f8a;
+    --blue-pale: #ddeaf5;
+    --green: #3a6b3a;
+    --green-pale: #dff0df;
+    --red-pale: #f5e0e0;
+    --yellow-pale: #fdf5d0;
+    --border: #d4c9b0;
+    --shadow: rgba(28,23,16,0.08);
+    --sidebar-w: 260px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    font-size: 15px;
+  }
+
+  /* ── Layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    grid-column: 1 / -1;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 40px;
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    border-bottom: 3px solid var(--accent);
+  }
+  header h1 {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.1em;
+    color: var(--accent-light);
+  }
+  header .subtitle {
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    font-weight: 300;
+  }
+
+  /* ── Sidebar ── */
+  aside {
+    background: var(--paper2);
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .toc-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: var(--ink-faint);
+    padding: 0 24px 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  aside nav a {
+    display: block;
+    padding: 8px 24px;
+    font-size: 0.82rem;
+    color: var(--ink-light);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+    line-height: 1.5;
+  }
+  aside nav a:hover, aside nav a.active {
+    background: var(--accent-pale);
+    border-left-color: var(--accent);
+    color: var(--accent);
+  }
+  .ch-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    margin-right: 6px;
+  }
+  .nav-links {
+    padding: 20px 24px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .nav-links a {
+    font-size: 0.78rem;
+    color: var(--blue);
+    text-decoration: none;
+    line-height: 1.5;
+  }
+  .nav-links a:hover { text-decoration: underline; }
+
+  /* ── Main ── */
+  main {
+    grid-column: 2;
+    padding: 0 0 80px;
+    max-width: 860px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 56px 56px 40px;
+    border-bottom: 1px dashed var(--border);
+    margin-bottom: 16px;
+  }
+  .hero-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: 'Zen Antique', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.3;
+    margin-bottom: 16px;
+    color: var(--ink);
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero-sub {
+    font-size: 0.95rem;
+    color: var(--ink-light);
+    margin-bottom: 24px;
+    max-width: 560px;
+  }
+  .hero-essence {
+    display: inline-block;
+    background: var(--accent-pale);
+    border-left: 4px solid var(--accent);
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-style: italic;
+    border-radius: 0 8px 8px 0;
+    color: var(--accent);
+  }
+
+  /* ── Section ── */
+  section {
+    padding: 48px 56px 40px;
+    border-bottom: 1px dashed var(--border);
+    scroll-margin-top: 20px;
+  }
+  section:last-of-type { border-bottom: none; }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent-light);
+    background: var(--accent-pale);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  section h2 {
+    font-family: 'Zen Antique', serif;
+    font-weight: 600;
+    font-size: 1.35rem;
+    line-height: 1.4;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+  }
+  section h2 em { font-style: normal; color: var(--accent-light); }
+  section h3 {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    margin: 28px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  p { margin-bottom: 1rem; font-size: 0.92rem; line-height: 1.9; }
+
+  /* ── Cards ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .card {
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 8px 0;
+    border: 1px solid var(--border);
+    background: var(--paper);
+  }
+  .card.accent-pink { background: #fdf0f0; border-color: #e8c0c0; }
+  .card.accent-blue { background: var(--blue-pale); border-color: #b0cde8; }
+  .card.accent-green { background: var(--green-pale); border-color: #a0c8a0; }
+  .card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+  }
+
+  .essence {
+    border-radius: 8px;
+    padding: 18px 24px;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    font-style: italic;
+    text-align: center;
+    background: var(--accent-pale);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    color: var(--accent);
+    text-align: left;
+  }
+
+  /* ── Compare ── */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .compare-side {
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .compare-side.blue { background: var(--blue-pale); border: 1px solid #b0cde8; }
+  .compare-side.yellow { background: var(--yellow-pale); border: 1px solid #d4c060; }
+  .compare-side.green { background: var(--green-pale); border: 1px solid #a0c8a0; }
+  .compare-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-list { list-style: none; }
+  .compare-list li {
+    font-size: 0.88rem;
+    padding: 3px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .compare-list li::before { content: '—'; color: var(--ink-faint); font-size: 0.7rem; }
+
+  /* ── Timeline ── */
+  .timeline { padding-left: 0; margin: 20px 0; }
+  .timeline-item {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: start;
+  }
+  .timeline-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--accent-light);
+    font-weight: 600;
+    padding-top: 2px;
+  }
+  .timeline-body-wrap {
+    border-left: 2px solid var(--border);
+    padding-left: 16px;
+  }
+  .timeline-title { font-weight: 500; font-size: 0.92rem; margin-bottom: 4px; }
+  .timeline-body { font-size: 0.87rem; color: var(--ink-light); line-height: 1.7; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th {
+    background: var(--accent-pale);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding: 9px 14px; vertical-align: top; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  td strong { font-weight: 500; }
+  td em { font-style: normal; color: var(--accent); }
+
+  /* ── Flow ── */
+  .flow { margin: 16px 0; }
+  .flow-item { display: flex; align-items: flex-start; margin-bottom: 8px; }
+  .flow-connector { display: flex; flex-direction: column; align-items: center; padding: 0 12px 0 0; width: 28px; }
+  .flow-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent-light); margin-top: 5px; flex-shrink: 0; }
+  .flow-line { width: 1px; flex: 1; min-height: 24px; background: var(--border); margin-top: 4px; }
+  .flow-content {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    flex: 1;
+    font-size: 0.88rem;
+    line-height: 1.7;
+  }
+  .flow-content strong { font-size: 0.9rem; display: block; margin-bottom: 4px; color: var(--accent); }
+
+  /* ── Formula ── */
+  .formula {
+    background: var(--blue-pale);
+    border: 1px solid #b0cde8;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    color: var(--blue);
+  }
+
+  /* ── Note / Warning ── */
+  .note {
+    background: var(--green-pale);
+    border-left: 4px solid var(--green);
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    color: #2a4a2a;
+  }
+  .warning {
+    background: var(--red-pale);
+    border-left: 4px solid #c0504a;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    color: #5a1a1a;
+  }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+    background: var(--accent-pale);
+    color: var(--accent);
+    border: 1px solid var(--accent-light);
+  }
+
+  /* ── Highlight ── */
+  .hl3 { background: var(--green-pale); padding: 1px 4px; border-radius: 3px; }
+  .hl4 { background: var(--red-pale); padding: 1px 4px; border-radius: 3px; }
+
+  /* ── Arrow row ── */
+  .arrow-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+  .arrow-box {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+    background: var(--paper);
+    white-space: nowrap;
+  }
+  .arrow { color: var(--accent-light); font-size: 1.1rem; }
+
+  /* ── Mini card ── */
+  .mini-card {
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+    background: var(--paper);
+    border: 1px solid var(--border);
+  }
+  .mini-card .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .mini-card .label { font-size: 0.78rem; color: var(--ink-light); }
+
+  hr { border: none; border-top: 1px dashed var(--border); margin: 24px 0; }
+
+  /* ── Footer ── */
+  footer {
+    grid-column: 2 / -1;
+    background: var(--paper2);
+    border-top: 1px solid var(--border);
+    padding: 20px 40px;
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+    line-height: 1.8;
+  }
+
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { display: none; }
+    main { padding: 0 0 60px; }
+    .hero { padding: 32px 24px; }
+    section { padding: 32px 24px; }
+    .two-col, .three-col, .compare { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<header>
+  <h1>統計学 完全ガイド</h1>
+  <span class="subtitle">記述統計から生存分析・ベイズ・診断の統計まで</span>
+</header>
+
+<!-- Sidebar -->
+<aside>
+  <div class="toc-title">目　次</div>
+  <nav id="toc">
+    <a href="#s1"><span class="ch-num">Ⅰ</span>統計の本質</a>
+    <a href="#s2"><span class="ch-num">Ⅱ</span>歴史と進化</a>
+    <a href="#s3"><span class="ch-num">Ⅲ</span>検定の系譜</a>
+    <a href="#s4"><span class="ch-num">Ⅳ</span>パラ vs ノンパラ</a>
+    <a href="#s5"><span class="ch-num">Ⅴ</span>カテゴリ検定</a>
+    <a href="#s6"><span class="ch-num">Ⅵ</span>生存分析</a>
+    <a href="#s7"><span class="ch-num">Ⅶ</span>SR &amp; MA</a>
+    <a href="#s8"><span class="ch-num">Ⅷ</span>ベイズ統計</a>
+    <a href="#s9"><span class="ch-num">Ⅸ</span>診断の統計</a>
+  </nav>
+  <div class="nav-links">
+    <div style="font-family:'Zen Antique',serif;font-size:0.72rem;letter-spacing:0.15em;color:var(--ink-faint);margin-bottom:6px;">関連テキスト</div>
+    <a href="stats_basics.html">基礎編（確率〜分散）</a>
+    <a href="stats_foundations.html">応用編①</a>
+    <a href="stats_methods.html">応用編②</a>
+    <a href="stats_advanced.html">応用編③</a>
+    <a href="stats_quiz.html">📝 練習問題</a>
+  </div>
+</aside>
+
+<main>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-label">Complete Guide</div>
+  <h1>統計学<br><span>完全ガイド</span></h1>
+  <p class="hero-sub">記述統計から生存分析、ベイズ統計、診断の統計まで。<br>「なぜその道具が生まれたのか」を軸に体系的に理解する。</p>
+  <div class="hero-essence">統計とは「見えないものを、見えるようにする技術」</div>
+</div>
+
+<!-- ===== Ⅰ ===== -->
+<section id="s1">
+<div class="section-header">
+<div class="section-num">CHAPTER 01</div>
+<h2>統計の本質<br><em>「情報を圧縮する技術」</em></h2>
+</div>
+<p>統計学は、膨大な個別データ（高次元な生の情報）を、平均・分散・相関といった数個の指標（低次元）に凝縮する作業そのものです。これは「可視化・理解」と引き換えに大きな代償を伴います。</p>
+<div class="two-col">
+<div class="card accent-pink">
+<div class="card-title">代償① 情報の捨象</div>
+<p style="margin:0; font-size:0.9rem">何百万行ものデータを「平均値」という1点に潰すことで、背後にある個別の事情や外れ値のストーリーは消えてしまいます。</p>
+</div>
+<div class="card accent-pink">
+<div class="card-title">代償② 解釈枠への押し込め</div>
+<p style="margin:0; font-size:0.9rem">正規分布やカイ二乗分布といった「型」に当てはめることで、型からはみ出した「生きた情報」をノイズとして処理してしまいます。</p>
+</div>
+</div>
+<p>しかし、人間が数万次元のデータをそのまま認識することは不可能なため、「あえて情報を削って、意味だけを取り出す」というこのプロセスが、意思決定の道具としての統計学の正体です。</p>
+<h3>データ量と統計の関係</h3>
+<div class="flow">
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>データが少ない（例：4件）</strong>圧縮する必要があまりない → 目で見て判断できる → 統計を使う前に人間が解釈できてしまうが、<span class="hl4">不確実性は最大</span></div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>データが中程度</strong>パターンが掴みにくくなってくる → 記述統計・可視化が助けになる</div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>データが多い（例：100人以上）</strong>1個ずつ見るのは無理 → 平均・分散・分布といった「次元圧縮」が必要 → <span class="hl3">統計が本領発揮</span></div>
+</div>
+</div>
+<h3>記述統計 vs 推計統計</h3>
+<div class="compare">
+<div class="compare-side blue">
+<div class="compare-label">記述統計</div>
+<ul class="compare-list">
+<li>「見えているものを整理する」</li>
+<li>平均・グラフ・分布を出す</li>
+<li>事実の要約</li>
+<li>国家の語源から生まれた（人口・税・兵士数）</li>
+</ul>
+</div>
+<div class="compare-side yellow">
+<div class="compare-label">推計統計</div>
+<ul class="compare-list">
+<li>「見えていないものを推測する」</li>
+<li>サンプル → 母集団を推定</li>
+<li>偶然か本当の差かを判断</li>
+<li>不確実性との戦い</li>
+</ul>
+</div>
+</div>
+<div class="essence">統計は「正解を出す道具」ではなく、「問いに対して一貫した答えを出すためのルール」</div>
+</section>
+
+<!-- ===== Ⅱ ===== -->
+<section id="s2">
+<div class="section-header">
+<div class="section-num">CHAPTER 02</div>
+<h2>統計の歴史<br><em>道具はなぜこの形になったのか</em></h2>
+</div>
+<p>「どの順で検定が生まれたか」を「問題 → 道具」という形で並べると、なぜこの形になったかが驚くほどスッと理解できます。</p>
+<div class="timeline">
+<div class="timeline-item">
+<div class="timeline-date">19世紀以前</div>
+<div class="timeline-body-wrap"><div class="timeline-title">出発点：まずは「数える」だけだった</div>
+<div class="timeline-body">統計の語源は国家（state）。最初は「現状を記録する」ための学問。人口・税・兵士数を把握するだけで十分だった。これが<strong>記述統計の原点</strong>。</div></div>
+</div>
+<div class="timeline-item">
+<div class="timeline-date">19世紀</div>
+<div class="timeline-body-wrap"><div class="timeline-title">正規分布の発見（カール・フリードリヒ・ガウス）</div>
+<div class="timeline-body">天文学の観測誤差から「データはベル型になることが多い」と気づく。これで「データは要約できる」という考えが確立。グラフ・平均・分散といった道具が整備される。</div></div>
+</div>
+<div class="timeline-item">
+<div class="timeline-date">19世紀末</div>
+<div class="timeline-body-wrap"><div class="timeline-title">カイ二乗検定（カール・ピアソン）</div>
+<div class="timeline-body">「観察された分布は偶然か？」遺伝や人口データで「理論通りかどうか」を確かめたい → ズレの大きさを数値化。偶然かどうかを初めて統計的に検証できるようになった。</div></div>
+</div>
+<div class="timeline-item">
+<div class="timeline-date">1908年</div>
+<div class="timeline-body-wrap"><div class="timeline-title">t検定の誕生（ウィリアム・シーリー・ゴセット）</div>
+<div class="timeline-body">ギネスビール社の品質管理で「サンプルが少ない！」という問題に直面。少数データで平均の差が偶然かどうかを判断したい → t検定が生まれる。ペンネーム「Student」で発表。</div></div>
+</div>
+<div class="timeline-item">
+<div class="timeline-date">1920年代</div>
+<div class="timeline-body-wrap"><div class="timeline-title">分散分析・p値・仮説検定（ロナルド・フィッシャー）</div>
+<div class="timeline-body">農業実験（肥料A/B/C）で複数群を比較したい。t検定を何回も使うと誤りが増える → 分散分析（ANOVA）が生まれる。同時に仮説検定・p値の概念を整備。推計統計の基礎を確立。</div></div>
+</div>
+<div class="timeline-item">
+<div class="timeline-date">1940年代〜</div>
+<div class="timeline-body-wrap"><div class="timeline-title">ノンパラメトリック革命</div>
+<div class="timeline-body">データが歪んでいる、外れ値がある、小標本で正規分布が怪しい → 「前提を使わない」検定が必要に。マン・ホイットニーU検定・ウィルコクソン検定などが登場。</div></div>
+</div>
+<div class="timeline-item">
+<div class="timeline-date">20世紀後半〜</div>
+<div class="timeline-body-wrap"><div class="timeline-title">多変量解析・生存分析・ベイズ統計</div>
+<div class="timeline-body">医学・疫学の発展で複数要因が絡む現実へ。コックス比例ハザードモデル、ロジスティック回帰、そして計算機の発展によりベイズ統計が実用化。</div></div>
+</div>
+</div>
+<div class="essence">統計手法の違い = 「何に困っていたか」の違い</div>
+</section>
+
+<!-- ===== Ⅲ ===== -->
+<section id="s3">
+<div class="section-header">
+<div class="section-num">CHAPTER 03</div>
+<h2>主要検定の系譜<br><em>問題 → 道具の対応表</em></h2>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>時代</th><th>問題・背景</th><th>検定・手法</th><th>本質</th></tr>
+</thead>
+<tbody>
+<tr><td>19C末</td><td>分布のズレを確かめたい<br>遺伝・人口データ</td><td><strong>カイ二乗検定</strong></td><td>観察 vs 期待のズレを数値化</td></tr>
+<tr><td>1908</td><td>小標本で平均差を検定したい</td><td><strong>t検定</strong><span class="badge">Student</span></td><td>小標本の正規近似</td></tr>
+<tr><td>1920s</td><td>3群以上を一度に比較したい</td><td><strong>ANOVA（分散分析）</strong></td><td>群間変動 vs 群内変動</td></tr>
+<tr><td>1940s</td><td>正規分布の仮定が怪しい</td><td><strong>Mann-Whitney U<br>Wilcoxon検定</strong></td><td>順位を使った頑健な比較</td></tr>
+<tr><td>1950s</td><td>2×2表の割合を正確に比較</td><td><strong>Fisher正確検定</strong></td><td>超幾何分布による正確確率</td></tr>
+<tr><td>1960s</td><td>イベントまでの時間を比較</td><td><strong>Kaplan-Meier<br>Log-rank検定</strong></td><td>打ち切りを考慮した生存分析</td></tr>
+<tr><td>1970s</td><td>複数要因を調整しながら解析</td><td><strong>Cox比例ハザードモデル<br>ロジスティック回帰</strong></td><td>多変量調整</td></tr>
+</tbody>
+</table>
+</div>
+<h3>t検定 vs Mann-Whitney U検定：具体例で比較</h3>
+<div class="compare">
+<div class="compare-side blue">
+<div class="compare-label">t検定を使う場面</div>
+<ul class="compare-list">
+<li>正規分布に従うデータ</li>
+<li>n ≧ 30（中心極限定理）</li>
+<li>外れ値が少ない</li>
+<li>結果：平均の差と95%CI</li>
+</ul>
+</div>
+<div class="compare-side yellow">
+<div class="compare-label">Mann-Whitney U検定を使う場面</div>
+<ul class="compare-list">
+<li>分布が歪んでいる</li>
+<li>小標本（n &lt; 30）</li>
+<li>外れ値が存在する</li>
+<li>結果：順位和の比較</li>
+</ul>
+</div>
+</div>
+<div class="note"><strong>使い分けの原則：</strong>まず分布を確認（ヒストグラム・QQプロット）。正規性が怪しければノンパラに切り替える。n が大きければt検定は頑健。</div>
+</section>
+
+<!-- ===== Ⅳ ===== -->
+<section id="s4">
+<div class="section-header">
+<div class="section-num">CHAPTER 04</div>
+<h2>パラメトリック vs ノンパラメトリック<br><em>精密さ vs 頑健さ</em></h2>
+</div>
+<p>「パラメトリック」とは「分布のパラメータ（μ, σ）を仮定する」こと。その仮定が正しければ高い検出力を持つが、崩れると信頼性を失う。ノンパラメトリック検定は分布を仮定しない代わりにやや保守的になる。</p>
+<div class="compare">
+<div class="compare-side blue">
+<div class="compare-label">パラメトリック</div>
+<ul class="compare-list">
+<li>正規分布などの仮定あり</li>
+<li>仮定が正しければ検出力が高い</li>
+<li>平均・分散を使って計算</li>
+<li>外れ値に脆弱</li>
+<li>例：t検定、ANOVA、線形回帰</li>
+</ul>
+</div>
+<div class="compare-side green">
+<div class="compare-label">ノンパラメトリック</div>
+<ul class="compare-list">
+<li>分布の形を仮定しない</li>
+<li>頑健（外れ値に強い）</li>
+<li>順位・符号を使って計算</li>
+<li>やや検出力が低め</li>
+<li>例：Mann-Whitney U, Wilcoxon, Kruskal-Wallis</li>
+</ul>
+</div>
+</div>
+<h3>ガイドライン</h3>
+<div class="flow">
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>n ≧ 30 かつ外れ値なし</strong>パラメトリックで問題なし（中心極限定理が機能する）</div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>n &lt; 30 または分布が偏っている</strong>ノンパラメトリックを検討。Shapiro-Wilk検定やQQプロットで確認。</div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div></div>
+<div class="flow-content"><strong>外れ値が意味のあるデータの場合</strong>安易な削除は禁物。文脈を確認してから判断する。</div>
+</div>
+</div>
+<div class="warning"><strong>注意：</strong>「とりあえずノンパラ」は安全だが損をする可能性がある。本当に差があるのに「有意差なし」になるリスク（第二種過誤）が高まる。</div>
+</section>
+
+<!-- ===== Ⅴ ===== -->
+<section id="s5">
+<div class="section-header">
+<div class="section-num">CHAPTER 05</div>
+<h2>カテゴリデータの検定<br><em>フィッシャー と マクネマー</em></h2>
+</div>
+<p>「はい/いいえ」「陽性/陰性」のような2値データ、あるいは複数カテゴリに分類されたデータを比較するとき、t検定は使えない。専用の道具が必要になる。</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>場面</th><th>対応あり？</th><th>期待度数</th><th>使う検定</th></tr>
+</thead>
+<tbody>
+<tr><td>2群の割合比較（大標本）</td><td>なし</td><td>全セル ≧ 5</td><td><strong>χ²検定</strong></td></tr>
+<tr><td>2群の割合比較（小標本）</td><td>なし</td><td>1つでも &lt; 5</td><td><strong>Fisher正確検定</strong></td></tr>
+<tr><td>治療前後の2値比較</td><td>あり</td><td>—</td><td><strong>McNemar検定</strong></td></tr>
+<tr><td>3群以上の割合比較</td><td>なし</td><td>全セル ≧ 5</td><td><strong>χ²検定（多群）</strong></td></tr>
+</tbody>
+</table>
+</div>
+<h3>Fisher正確検定 と McNemar検定の直感的な違い</h3>
+<div class="compare">
+<div class="compare-side blue">
+<div class="compare-label">Fisher正確検定</div>
+<ul class="compare-list">
+<li>別々の群を比較（独立）</li>
+<li>例：新薬群 vs プラセボ群の副作用率</li>
+<li>全ての組み合わせの正確確率を計算</li>
+<li>小標本・稀なイベントに強い</li>
+</ul>
+</div>
+<div class="compare-side yellow">
+<div class="compare-label">McNemar検定</div>
+<ul class="compare-list">
+<li>同じ人を繰り返し測定（対応あり）</li>
+<li>例：治療前後で陽性→陰性になった割合</li>
+<li>「変化した」ペアだけを使って検定</li>
+<li>不一致ペアの偏りを検定する</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- ===== Ⅵ ===== -->
+<section id="s6">
+<div class="section-header">
+<div class="section-num">CHAPTER 06</div>
+<h2>生存分析<br><em>「時間を捨てない統計」</em></h2>
+</div>
+<p>「いつ起こるか」を分析したいとき、普通のt検定では対応できない。理由は<strong>打ち切り（censoring）</strong>の存在だ。観察終了時にまだイベントが起きていない患者の「少なくとも〇日間は生存した」という情報を捨てるのは非効率。</p>
+<h3>KM → Log-rank → Cox の3ステップ</h3>
+<div class="flow">
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>Step 1：Kaplan-Meier曲線</strong>イベント発生のたびに生存率を更新する階段状グラフ。打ち切りデータも反映。2群を視覚的に比較できる。</div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>Step 2：Log-rank検定</strong>2本のKM曲線が統計的に異なるかをp値で示す。「差があるか/ないか」の判定。「どれくらい差があるか」は示せない。</div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div></div>
+<div class="flow-content"><strong>Step 3：Cox比例ハザードモデル</strong>複数の共変量（年齢・性別・重症度など）を調整しながらリスクを定量化。結果はハザード比（HR）で表す。HR &lt; 1：保護的、HR &gt; 1：リスク増加。</div>
+</div>
+</div>
+<div class="note"><strong>比例ハザード仮定：</strong>Cox回帰は「2群のHRが時間によらず一定」という仮定が必要。Schoenfeld残差プロットで確認するのが標準。</div>
+<h3>ハザード比の読み方</h3>
+<div class="arrow-row">
+<div class="arrow-box">HR = 0.65（95%CI: 0.48–0.88）</div>
+<div class="arrow">→</div>
+<div class="arrow-box">イベントリスクが対照群より35%低い</div>
+<div class="arrow">→</div>
+<div class="arrow-box">CIが1をまたがない → 有意</div>
+</div>
+</section>
+
+<!-- ===== Ⅶ ===== -->
+<section id="s7">
+<div class="section-header">
+<div class="section-num">CHAPTER 07</div>
+<h2>SR &amp; メタアナリシス<br><em>研究を統合するための方法論</em></h2>
+</div>
+<p>1つの研究は偶然の結果かもしれない。複数の研究を系統的に集めて統合することで、より信頼性の高い結論を得る——それがSR/MAの発想。エビデンスピラミッドの頂点とされる理由がここにある。</p>
+<div class="compare">
+<div class="compare-side blue">
+<div class="compare-label">SR（システマティックレビュー）</div>
+<ul class="compare-list">
+<li>系統的な文献検索・選択・評価</li>
+<li>バイアスリスク評価を含む</li>
+<li>MAを含む場合と含まない場合がある</li>
+<li>PRISMA声明に従う</li>
+</ul>
+</div>
+<div class="compare-side yellow">
+<div class="compare-label">MA（メタアナリシス）</div>
+<ul class="compare-list">
+<li>複数研究の効果量を統計的に統合</li>
+<li>Forest plot で可視化</li>
+<li>I²で異質性を評価</li>
+<li>SRの中の1手法として実施</li>
+</ul>
+</div>
+</div>
+<h3>p-hacking と事前登録</h3>
+<div class="warning"><strong>p-hacking：</strong>p &lt; 0.05 になるまで解析方法・サブグループ・共変量を変え続けること。科学的不正直の一形態。</div>
+<div class="note"><strong>対策：事前登録（PROSPERO等）</strong>研究開始前に「何を・どう解析するか」を登録し、後から変更できない仕組みを作る。</div>
+<h3>メタアナリシスの重要概念</h3>
+<div class="three-col">
+<div class="mini-card"><div class="num">I²</div><div class="label">異質性の指標<br>75%以上は高い異質性</div></div>
+<div class="mini-card"><div class="num">Funnel<br>plot</div><div class="label">出版バイアスの視覚的確認</div></div>
+<div class="mini-card"><div class="num">GRADE</div><div class="label">エビデンスの確実性評価</div></div>
+</div>
+<div class="essence">ゴミを集めてもゴミ——質の低い研究をいくら統合しても信頼できる結論は得られない</div>
+</section>
+
+<!-- ===== Ⅷ ===== -->
+<section id="s8">
+<div class="section-header">
+<div class="section-num">CHAPTER 08</div>
+<h2>ベイズ統計<br><em>「信念をアップデートする方法」</em></h2>
+</div>
+<p>頻度主義では「確率は長期的な頻度」と考える。ベイズ統計では「確率は信念の度合い」。新しいデータが来るたびに確率を更新する——これがベイズ的思考の核心だ。</p>
+<h3>ベイズの定理</h3>
+<div class="formula">P(A|B) = P(B|A) × P(A) ÷ P(B)
+
+P(A)　　　：事象 A が起こる確率（事前確率・周辺確率）
+P(B)　　　：事象 B が起こる確率（周辺確率）
+P(A|B)　　：B が起きた条件のもとで A が起きる確率（事後確率）
+P(B|A)　　：A が起きた条件のもとで B が起きる確率（尤度）</div>
+<p>医学文脈では：A = 疾患あり、B = 検査陽性 と置き換えると</p>
+<div class="formula">P(疾患あり|陽性) = P(陽性|疾患あり) × P(疾患あり) ÷ P(陽性)
+　　　　　　　　= 感度 × 有病率 ÷ P(陽性)　← 陽性的中率（PPV）</div>
+<div class="compare">
+<div class="compare-side blue">
+<div class="compare-label">頻度主義</div>
+<ul class="compare-list">
+<li>確率 = 長期的な頻度</li>
+<li>パラメータは固定した未知定数</li>
+<li>結果：p値・信頼区間</li>
+<li>事前情報は原則使わない</li>
+<li>計算コストが低い</li>
+</ul>
+</div>
+<div class="compare-side yellow">
+<div class="compare-label">ベイズ統計</div>
+<ul class="compare-list">
+<li>確率 = 主観的な信念の度合い</li>
+<li>パラメータは確率分布を持つ</li>
+<li>結果：事後確率・信用区間</li>
+<li>Prior として事前情報を取り込む</li>
+<li>計算コストが高い（MCMC等）</li>
+</ul>
+</div>
+</div>
+<h3>医学での直感例：検査と有病率</h3>
+<p>疾患Xの有病率 1%、感度 95%、特異度 95% の検査で陽性が出た場合：</p>
+<div class="three-col">
+<div class="mini-card"><div class="num">95</div><div class="label">真陽性<br>（疾患あり100人×0.95）</div></div>
+<div class="mini-card"><div class="num">495</div><div class="label">偽陽性<br>（疾患なし9900人×0.05）</div></div>
+<div class="mini-card"><div class="num" style="font-size:1.2rem">≈16%</div><div class="label">陽性的中率<br>（95÷590）</div></div>
+</div>
+<div class="essence">感度・特異度が95%でも、有病率が低ければ陽性のほとんどは偽陽性——事前確率が全てを左右する</div>
+</section>
+
+<!-- ===== Ⅸ ===== -->
+<section id="s9">
+<div class="section-header">
+<div class="section-num">CHAPTER 09</div>
+<h2>診断の統計<br><em>「事前確率を検査で更新するプロセス」</em></h2>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th></th><th>疾患あり</th><th>疾患なし</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>検査陽性</strong></td><td>TP（真陽性）</td><td>FP（偽陽性）</td></tr>
+<tr><td><strong>検査陰性</strong></td><td>FN（偽陰性）</td><td>TN（真陰性）</td></tr>
+</tbody>
+</table>
+</div>
+<div class="formula">感度（Sensitivity）= TP ÷ (TP + FN)　←　病気の人を見逃さない力（SnNout）
+特異度（Specificity） = TN ÷ (TN + FP)　←　健常者を誤診しない力（SpPin）
+陽性的中率（PPV）　 = TP ÷ (TP + FP)　←　有病率に依存する
+陰性的中率（NPV）　 = TN ÷ (TN + FN)　←　有病率に依存する
+陽性尤度比（LR+）　 = 感度 ÷ (1 − 特異度)
+陰性尤度比（LR−）　 = (1 − 感度) ÷ 特異度</div>
+<h3>ROC曲線とAUC</h3>
+<p>カットオフ値を動かしたときの「感度 vs（1−特異度）」の軌跡。AUCが1.0に近いほど識別能力が高い。AUC = 0.5 はコイントスと同じ（識別力なし）。</p>
+<div class="three-col">
+<div class="mini-card"><div class="num" style="color:var(--green)">≥0.8</div><div class="label">AUC：良好な検査</div></div>
+<div class="mini-card"><div class="num" style="color:var(--accent-light)">0.7〜0.8</div><div class="label">AUC：許容範囲</div></div>
+<div class="mini-card"><div class="num" style="color:#c0504a">&lt;0.7</div><div class="label">AUC：識別力が低い</div></div>
+</div>
+<h3>診断の全体フロー</h3>
+<div class="flow">
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>Step 1：検査性能を知る</strong>感度・特異度（検査そのものの固有の性能）</div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>Step 2：事前確率を設定</strong>この患者の背景・症状からどれくらいの確率で病気か（病歴・身体所見から）</div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div><div class="flow-line"></div></div>
+<div class="flow-content"><strong>Step 3：尤度比で更新</strong>事前オッズ × LR = 事後オッズ → 事後確率に変換</div>
+</div>
+<div class="flow-item">
+<div class="flow-connector"><div class="flow-dot"></div></div>
+<div class="flow-content"><strong>Step 4：臨床的閾値と照らし合わせる</strong>治療開始するか、さらに検査するか、除外できるかを判断</div>
+</div>
+</div>
+<div class="essence">診断とは「事前確率を、検査で更新するプロセス」</div>
+<div class="card" style="text-align:center; padding:32px 24px; margin-top: 24px;">
+<div style="font-family:'Noto Serif JP',serif; font-weight:600; line-height:1.6; margin-bottom:16px; font-size:1.05rem;">
+統計とは「正解を出す道具」ではなく、<br>「問いに対して一貫した答えを出すためのルール」</div>
+<p style="font-size:0.9rem; color: var(--ink-light);">検定の選択＝価値観の選択。何を「差」と定義するかで結果は変わる。<br>だからこそ、事前に問いを固定することが研究の質を決める。</p>
+</div>
+</section>
+
+</main>
+
+<footer>
+  本テキストは統計学の専門家によるものではなく、学習過程の備忘録として作成しました。内容に誤りが含まれる可能性があります。ご利用・再配布は自己責任でお願いします。<br>
+  作成補助：Claude（Anthropic）を使用しています。
+</footer>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section[id]');
+const links = document.querySelectorAll('#toc a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`#toc a[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { threshold: 0.2 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
