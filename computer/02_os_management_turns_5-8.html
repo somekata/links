@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機械仕掛けコンピュータシリーズ - パート2: OS管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        
+        .breadcrumb {
+            background: #f0f2f5;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+        
+        .breadcrumb a {
+            color: #a855f7;
+            text-decoration: none;
+            margin: 0 5px;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        main {
+            padding: 40px 30px;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+        }
+        
+        .section h2 {
+            font-size: 24px;
+            color: #a855f7;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #a855f7;
+        }
+        
+        .section h3 {
+            font-size: 18px;
+            color: #ec4899;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .content {
+            font-size: 15px;
+            line-height: 1.9;
+            color: #444;
+        }
+        
+        .content p {
+            margin-bottom: 15px;
+        }
+        
+        .content ul, .content ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .content li {
+            margin-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        table th {
+            background: #a855f7;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        table tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .highlight-box {
+            background: #f3e8ff;
+            border-left: 4px solid #a855f7;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .highlight-box strong {
+            color: #a855f7;
+        }
+        
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        footer {
+            background: #f5f7fa;
+            padding: 30px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.8;
+        }
+        
+        footer h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            margin-top: 20px;
+        }
+        
+        footer h3:first-child {
+            margin-top: 0;
+        }
+        
+        footer ul {
+            margin-left: 20px;
+        }
+        
+        footer li {
+            margin-bottom: 8px;
+        }
+        
+        .footer-divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 20px 0;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .nav-button {
+            background: #a855f7;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .nav-button:hover {
+            background: #ec4899;
+        }
+        
+        .nav-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏭 機械仕掛けのコンピュータ</h1>
+            <p>全13ターン完全版 - パート2: OS管理（ターン5-8）</p>
+        </header>
+        
+        <div class="breadcrumb">
+            <a href="01_fundamentals_turns_1-4.html">パート1</a> &gt; パート2: OS管理 &gt; <a href="03_language_hierarchy_turns_9-13.html">パート3</a> | 
+            <a href="#turn5">ターン5-6</a> | 
+            <a href="#turn7">ターン7</a> | 
+            <a href="#turn8">ターン8-9</a>
+        </div>
+        
+        <main>
+            <div class="section">
+                <h2>パート2: OS管理（ターン5-8）の概要</h2>
+                <div class="content">
+                    <p>このパートでは、複雑な「見えない管理」がどのように実現されているかを理解します。</p>
+                    
+                    <div class="highlight-box">
+                        <strong>学習目標:</strong> OSが「複雑な管理システム」であることを直感的に理解する
+                    </div>
+                    
+                    <h3>このパートで学ぶこと</h3>
+                    <ul>
+                        <li><strong>ターン5-6:</strong> メモリ管理 - 有限のリソースをどう効率よく使うか</li>
+                        <li><strong>ターン7:</strong> クロック同期 - すべてのレバーを同じリズムで動かす方法</li>
+                        <li><strong>ターン8:</strong> セキュリティ - プログラム間のプライバシーを守る仕組み</li>
+                        <li><strong>ターン9:</strong> ブートプロセス - 電源ボタンから起動までの「着火」</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section" id="turn5">
+                <h2>ターン5-6: メモリ管理と仮想記憶</h2>
+                <div class="content">
+                    <h3>記憶の基本単位：パチンと止まる「ラッチ機構」</h3>
+                    <p>メモリの最小単位（1ビット）は、電気では「フリップフロップ」と呼ばれますが、機械仕掛けでは<strong>「トグルスイッチ」や「パチンと止まるかんぬき」</strong>です。</p>
+                    
+                    <ul>
+                        <li><strong>構造:</strong> バネのついたレバーと、それを固定する小さなツメをイメージしてください。</li>
+                        <li><strong>書き込み（保存）:</strong> CPUから伸びた棒がレバーをグイッと押し込むと、ツメが「パチン」と引っかかって、棒が戻ってもレバーは押し込まれたまま固定されます。これが「1」を記憶した状態です。</li>
+                        <li><strong>消去（リセット）:</strong> 別の方向から「リセット用の棒」がツメを外すと、バネの力でレバーが元の位置（0の状態）に跳ね返ります。これが「メモリの解放」です。</li>
+                    </ul>
+                    
+                    <h3>メモリ管理：巨大な「私書箱」と「台車」</h3>
+                    <p>コンピュータには、この「パチンと止まるレバー」が数億個並んでいます。これを効率よく使うのがOS（工場長）の仕事です。</p>
+                    
+                    <ul>
+                        <li><strong>アドレス（番地）:</strong> 膨大な数のレバーが並ぶ棚に、縦と横の「座標」がついたレールが走っています。「100番地のデータを持ってこい」と指示が出ると、巨大な「セレクター（選別機）」がガチャガチャと動き、100番目の棚のレバーだけにアクセスするための隙間を作ります。</li>
+                        <li><strong>バス（伝送路）:</strong> 棚とCPUの間には、データを運ぶための「往復する台車（または長い連結棒）」があります。棚のレバーが「1」の状態なら、台車に付いている突起がガッと噛み合い、CPU側までその動きを伝えます。</li>
+                    </ul>
+                    
+                    <h3>仮想記憶（スワッピング）：溢れた時の「手書きメモ」</h3>
+                    <p>もし棚（メモリ）が全部埋まってしまったら？</p>
+                    
+                    <ul>
+                        <li>工場長は「最近、誰も見に来ていない棚」を見つけ出します。</li>
+                        <li>その棚のレバーの状態（0か1か）を、物理的な「長い紙のテープ（HDD/SSD）」にパンチ穴を開けて記録します。</li>
+                        <li>記録が終わったら棚のレバーを全部リセットして、新しい職人に「空いたぞ！」と貸し出します。</li>
+                        <li>元の職人が戻ってきたら、工場長は紙テープを読み取り、またせっせとレバーを「パチン、パチン」とセットし直します。これが<strong>仮想記憶（スワップ）</strong>の物理的な正体です。</li>
+                    </ul>
+                    
+                    <div class="success-box">
+                        <strong>✅ 正確性評価: 完全に正確</strong><br>
+                        SR型フリップフロップ、アドレス指定（デコーダ）、LRUアルゴリズムの概要が完璧に説明されています。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section" id="turn7">
+                <h2>ターン7: クロック周波数と同期</h2>
+                <div class="content">
+                    <h3>工場全体を支配する「巨大なメトロノーム」</h3>
+                    <p>コンピュータには「2.4GHz」といったクロック周波数がありますよね。これは機械の世界では、工場の真ん中に鎮座する<strong>「超高速で往復する巨大な蒸気ピストン」</strong>です。</p>
+                    
+                    <h3>なぜ「せーの！」が必要なのか？</h3>
+                    <p>もしレバーや歯車が各自のペースで勝手に動いたら、計算結果が届く前に次の歯車が回ってしまう「大事故」が起きます。</p>
+                    
+                    <ul>
+                        <li>これを防ぐために、工場中に「硬い鉄の棒」が張り巡らされています。</li>
+                        <li>中央のピストンが「ガチャン！」と動くたびに、この鉄の棒が工場中のレバーを一斉に叩きます。</li>
+                        <li>この<strong>一叩きが「1クロック」</strong>です。</li>
+                    </ul>
+                    
+                    <h3>「クロックを上げる」という過酷な状況</h3>
+                    <p>パソコンの性能を上げるためにクロックを高くするのは、このピストンの往復速度を上げることです。</p>
+                    
+                    <ul>
+                        <li><strong>物理的な限界:</strong> ピストンを速く動かしすぎると、摩擦で歯車が真っ赤に焼け、最後には溶けてしまいます。これが「パソコンの熱」の正体です。</li>
+                        <li><strong>オーバークロック:</strong> 壊れるギリギリの速度でピストンを回すこと。機械の世界では、常に油（冷却液）をドバドバかけ続けないと火を吹く状態です。</li>
+                    </ul>
+                    
+                    <h3>「パイプライン」：コンベアを止めない工夫</h3>
+                    <p>最近のCPUは、一つの計算が終わるのを待たずに、次の計算を始めます。</p>
+                    
+                    <ul>
+                        <li>1個目のレバーが「足し算」をしている間に、隣のレバーが「次の数字の準備」を始め、その隣が「結果の書き込み準備」をします。</li>
+                        <li>ちょうど、お寿司屋さんの回転寿司のコンベアのように、常に何かが流れている状態を作ることで、ピストンの速度以上に効率よく計算をこなします。</li>
+                    </ul>
+                    
+                    <div class="info-box">
+                        <strong>⚠️ 補足が必要な部分:</strong><br>
+                        パイプラインには「ハザード（衝突）」というデータ依存による待機が発生します。現在の説明では省略されていますが、これは初心者向けとしては適切な判断です。応用段階で学習してください。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section" id="turn8">
+                <h2>ターン8: セキュリティと権限管理</h2>
+                <div class="content">
+                    <h3>メモリ保護：物理的な「見張り番」と「壁」</h3>
+                    <p>OS（工場長）は、職人にメモリの棚を貸し出すとき、ただ場所を教えるだけでなく、その周りに見えない壁を作ります。これを実現するのが<strong>MMU（メモリ管理ユニット）</strong>という装置です。</p>
+                    
+                    <ul>
+                        <li><strong>仕組み:</strong> 職人が棚に手を伸ばそうとすると、その手前に「検問所」があります。</li>
+                        <li><strong>動き:</strong> 職人が持っている「通行許可証（番地）」を検問所がチェックします。もし許可されていない棚（別のプログラムの領域）に手を触れようとした瞬間、検問所のレバーが「ガシャン！」と作動して、その職人の腕を物理的に弾き飛ばします。</li>
+                        <li><strong>面白さ:</strong> これが「メモリアクセス違反」や「セグメンテーションフォールト（強制終了）」の正体です。</li>
+                    </ul>
+                    
+                    <h3>特権モード：工場長だけが触れる「黄金のレバー」</h3>
+                    <p>コンピュータには、誰でも触れる「一般レバー」と、工場長（OS）しか触れない<strong>「黄金のレバー（特権命令）」</strong>があります。</p>
+                    
+                    <ul>
+                        <li><strong>カーネルモード:</strong> 工場全体の電源を切る、通信路を遮断する、といった重要な操作は、高い防護柵の中に隔離されています。</li>
+                        <li><strong>システムコール:</strong> 一般の職人が「通信したい」と思ったら、防護柵の窓口まで行き、「工場長、代わりにこのレバーを引いてください」と依頼書を出します。工場長が内容を確認し、問題なければ黄金のレバーを代行して操作します。</li>
+                    </ul>
+                    
+                    <h3>セキュリティホール：物理的な「抜け穴」</h3>
+                    <p>ハッカーとは、この工場の壁の裏側に回ったり、検問所のバネが緩んでいる隙を見つけたりして、本来触ってはいけないレバーを<strong>「長い棒」を使って外からつつこうとする人</strong>のことです。</p>
+                    
+                    <div class="success-box">
+                        <strong>✅ 正確性評価: ほぼ完全に正確</strong><br>
+                        MMU、カーネルモード、システムコール、権限分離の概念が正確に説明されています。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section" id="turn9">
+                <h2>ターン9: ブートプロセス（工場の「着火」）</h2>
+                <div class="content">
+                    <h3>最初の火種：BIOSという「小さなネジ巻き」</h3>
+                    <p>工場が止まっているとき、メインの巨大な歯車を回す方法はありません。そこで、電源ボタンに直結した小さな<strong>ゼンマイ仕掛け（BIOS/UEFI）</strong>が動き出します。</p>
+                    
+                    <ul>
+                        <li>この小さなゼンマイは、たった一つの仕事しか知りません。それは「倉庫の特定の場所にある、<strong>工場長の起動説明書（ブートローダー）</strong>を読み取ること」です。</li>
+                        <li>ガチャリとゼンマイが回り、最初の数行の指示がCPU（中央演算装置）に送られます。</li>
+                    </ul>
+                    
+                    <h3>歯車の噛み合わせ：OSの立ち上がり</h3>
+                    <p>説明書を読み取ったCPUは、次に大きな倉庫（SSD/HDD）から、眠っていた<strong>工場長（OSの核：カーネル）</strong>を呼び起こします。</p>
+                    
+                    <ul>
+                        <li>工場長が目覚めると、彼はまず工場中の全ての装置（メモリ、通信路、入力装置）に「異常はないか？」と信号を送り、点検します。</li>
+                        <li>点検が終わると、巨大な蒸気ピストン（クロック）を本格的に回し始め、何億ものレバーが「スタンバイ状態」に入ります。</li>
+                    </ul>
+                    
+                    <h3>着火完了：デスクトップという「受付窓口」の出現</h3>
+                    <p>全ての歯車が噛み合い、リズムに乗って回り始めると、最後に<strong>「デスクトップ（GUI）」</strong>という受付窓口が用意されます。</p>
+                    
+                    <ul>
+                        <li>ここで初めて、人間は「マウス（レバー）」を動かして、工場に命令を出せるようになります。</li>
+                        <li>これが、あなたがパソコンの画面を見たときの「起動完了」の正体です。</li>
+                    </ul>
+                    
+                    <div class="success-box">
+                        <strong>✅ 正確性評価: 完全に正確（ハイレベル説明として）</strong><br>
+                        ブートプロセスの基本的な段階が正確に説明されています。詳細な段階化は応用学習向けです。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>パート2のまとめ</h2>
+                <div class="content">
+                    <div class="highlight-box">
+                        <strong>この段階で学習者が獲得すること：</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>メモリは「有限」なので、OSが厳密に管理する</li>
+                            <li>クロック（ピストン）が「同期」を保つ必要がある</li>
+                            <li>複数のプログラムも「壁」（MMU）で隔離される</li>
+                            <li>電源ボタンからGUIまで、複雑な「儀式」が行われている</li>
+                            <li><strong>最重要:</strong> OSが「複雑な管理システム」であること</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="nav-buttons">
+                <a href="01_fundamentals_turns_1-4.html" class="nav-button">← 前へ</a>
+                <a href="03_language_hierarchy_turns_9-13.html" class="nav-button">次へ →</a>
+            </div>
+        </main>
+        
+        <footer>
+            <h3>⚠️ 重要な注意事項</h3>
+            
+            <h3>1. 著作権とライセンス</h3>
+            <ul>
+                <li>このコンテンツは、Geminiによって生成された対話内容をベースに、Claudeを用いて構造化・再構成した「機械仕掛けのコンピュータ」シリーズです。複数のAIモデルの特性を活かし、技術検証・教育改善の目的で整理されています。</li>
+                <li>このHTMLファイル群は、<strong>教育目的での使用に限定</strong>されています。</li>
+                <li>商用利用、出版、再配布の際は、事前に著作権者の許可を得てください。</li>
+            </ul>
+            
+            <h3>2. 技術的正確性について</h3>
+            <ul>
+                <li>このシリーズは、<strong>初心者向けの教育教材</strong>として設計されています。</li>
+                <li>パイプラインハザード、仮想アドレス空間の翻訳（TLB）など、実装の詳細は意図的に省略されています。</li>
+                <li>これらの詳細は、応用段階の学習に適した専門書をご参照ください。</li>
+            </ul>
+            
+            <h3>3. メタファーの利用について</h3>
+            <ul>
+                <li>「工場」「歯車」「ピストン」などのメタファーは、複雑なコンピュータの概念を理解するための<strong>教育的ツール</strong>です。</li>
+                <li>実際のコンピュータの実装は、これらの機械仕掛けとは異なります。</li>
+                <li>メタファーは「直感の獲得」を目的としており、完全な技術的対応を目指していません。</li>
+            </ul>
+            
+            <h3>4. 関連する学習リソース</h3>
+            <ul>
+                <li><strong>メモリ管理の詳細:</strong> 『オペレーティングシステム』（Tanenbaum著）など専門書を推奨</li>
+                <li><strong>CPUキャッシュ:</strong> L1/L2/L3キャッシュの階層構造</li>
+                <li><strong>仮想メモリ実装:</strong> ページテーブル、TLB、スワップ領域の詳細</li>
+            </ul>
+            
+            <div class="footer-divider"></div>
+            
+            <h3>5. 推奨される学習ロードマップ</h3>
+            <ul>
+                <li><strong>パート1（基礎）：</strong> 物理的直感の獲得 ✅ 完了</li>
+                <li><strong>パート2（OS管理）：</strong> 複雑な管理システムの理解 ← 現在地</li>
+                <li><strong>パート3（言語階層）：</strong> プログラミングの本質</li>
+                <li><strong>応用段階（推奨）：</strong> 実装詳細、コンパイラ理論、マイクロプロセッサアーキテクチャ</li>
+            </ul>
+            
+            <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                <strong>このシリーズについて：</strong> 「機械仕掛けのコンピュータ」は、複雑なコンピュータの概念を初心者にも理解可能な形で説明するために設計された教育教材です。医学教育の原則を応用し、段階的な複雑性の構築と一貫したメタファーを通じて、学習者が「見えないものを見える形」で理解できるようにしています。
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
