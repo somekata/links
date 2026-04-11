@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計学 練習問題</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8; --paper: #fdfaf3; --paper2: #f9f5ec;
+    --ink: #1c1710; --ink-light: #5a5040; --ink-faint: #9a8e7a;
+    --accent: #8b4513; --accent-light: #c47a3a; --accent-pale: #f0e4d0;
+    --blue: #2c5f8a; --blue-pale: #ddeaf5;
+    --green: #3a6b3a; --green-pale: #dff0df;
+    --red: #c0504a; --red-pale: #f5e0e0;
+    --border: #d4c9b0; --shadow: rgba(28,23,16,0.08);
+    --sidebar-w: 260px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: 'Noto Sans JP', sans-serif; font-weight: 300; line-height: 1.8; }
+
+  .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+  header { grid-column: 1 / -1; background: var(--ink); color: var(--paper); padding: 28px 40px; display: flex; align-items: baseline; gap: 20px; border-bottom: 3px solid var(--accent); }
+  header h1 { font-family: 'Zen Antique', serif; font-size: 1.6rem; letter-spacing: 0.1em; color: var(--accent-light); }
+  header .subtitle { font-size: 0.85rem; color: var(--ink-faint); }
+
+  aside { background: var(--paper2); border-right: 1px solid var(--border); padding: 32px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .toc-title { font-family: 'Zen Antique', serif; font-size: 0.75rem; letter-spacing: 0.2em; color: var(--ink-faint); padding: 0 24px 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  aside nav a { display: block; padding: 8px 24px; font-size: 0.82rem; color: var(--ink-light); text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s; line-height: 1.5; }
+  aside nav a:hover { background: var(--accent-pale); border-left-color: var(--accent); color: var(--accent); }
+  .ch-num { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink-faint); margin-right: 6px; }
+  .nav-links { padding: 20px 24px 0; border-top: 1px solid var(--border); margin-top: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .nav-links a { font-size: 0.78rem; color: var(--blue); text-decoration: none; }
+  .nav-links a:hover { text-decoration: underline; }
+
+  .score-panel { margin: 0 24px 20px; background: var(--accent-pale); border-radius: 8px; padding: 14px 18px; font-size: 0.82rem; }
+  .score-panel .score-num { font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; color: var(--accent); font-weight: 600; }
+  .reset-btn { display: block; margin: 8px 24px 0; background: var(--ink); color: var(--paper); border: none; border-radius: 6px; padding: 8px 14px; font-size: 0.78rem; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; text-align: center; }
+  .reset-btn:hover { background: var(--accent); }
+
+  main { grid-column: 2; padding: 48px 56px 80px; max-width: 840px; }
+
+  .section-title { font-family: 'Zen Antique', serif; font-size: 1.2rem; color: var(--ink); letter-spacing: 0.08em; margin-bottom: 6px; margin-top: 40px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .section-title:first-child { margin-top: 0; }
+  .section-lead { font-size: 0.85rem; color: var(--ink-light); margin-bottom: 24px; font-style: italic; }
+
+  /* ── Quiz card ── */
+  .quiz-card {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: border-color 0.3s;
+  }
+  .quiz-card.correct { border-color: var(--green); }
+  .quiz-card.wrong { border-color: var(--red); }
+
+  .quiz-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .quiz-num { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; background: var(--accent-pale); color: var(--accent); padding: 3px 9px; border-radius: 4px; }
+  .quiz-tag { font-size: 0.7rem; color: var(--ink-faint); background: var(--bg); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); }
+  .quiz-q { font-size: 0.92rem; line-height: 1.9; margin-bottom: 16px; }
+  .quiz-q em { color: var(--accent); font-style: normal; font-weight: 500; }
+  .quiz-q .formula { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; background: var(--bg); padding: 2px 8px; border-radius: 3px; color: var(--blue); }
+
+  /* ── Options ── */
+  .options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .option-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 0.88rem;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    text-align: left;
+    color: var(--ink);
+    transition: all 0.2s;
+    line-height: 1.6;
+  }
+  .option-btn:hover:not(:disabled) { background: var(--accent-pale); border-color: var(--accent-light); }
+  .option-btn.selected-correct { background: var(--green-pale); border-color: var(--green); color: #1a4a1a; font-weight: 500; }
+  .option-btn.selected-wrong { background: var(--red-pale); border-color: var(--red); color: #5a1a1a; }
+  .option-btn.reveal-correct { background: var(--green-pale); border-color: var(--green); color: #1a4a1a; }
+  .option-btn:disabled { cursor: default; }
+
+  /* ── Explanation ── */
+  .explanation {
+    display: none;
+    margin-top: 14px;
+    background: var(--blue-pale);
+    border-left: 4px solid var(--blue);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    font-size: 0.87rem;
+    line-height: 1.8;
+    color: #1a3a5a;
+  }
+  .explanation.visible { display: block; }
+  .explanation strong { color: var(--blue); }
+  .explanation .formula { font-family: 'JetBrains Mono', monospace; font-size: 0.83rem; background: white; padding: 6px 12px; border-radius: 4px; margin: 6px 0; display: block; color: var(--blue); border: 1px solid #b0cde8; }
+
+  .result-badge {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+  .result-badge.ok { background: var(--green-pale); color: var(--green); }
+  .result-badge.ng { background: var(--red-pale); color: var(--red); }
+
+  footer { grid-column: 1 / -1; background: var(--paper2); border-top: 1px solid var(--border); padding: 20px 40px; font-size: 0.75rem; color: var(--ink-faint); line-height: 1.8; }
+
+  @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } aside { display: none; } main { padding: 32px 24px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<header>
+  <h1>統計学 練習問題</h1>
+  <span class="subtitle">基礎編〜応用編 ── 選択式・解説付き</span>
+</header>
+
+<aside>
+  <div class="toc-title">セクション</div>
+  <nav>
+    <a href="#sec1"><span class="ch-num">§1</span>確率の基礎</a>
+    <a href="#sec2"><span class="ch-num">§2</span>確率変数・期待値・分散</a>
+    <a href="#sec3"><span class="ch-num">§3</span>検定の選択</a>
+    <a href="#sec4"><span class="ch-num">§4</span>生存分析・ベイズ</a>
+    <a href="#sec5"><span class="ch-num">§5</span>診断の統計</a>
+  </nav>
+  <div class="score-panel">
+    <div>正解数</div>
+    <div><span class="score-num" id="score">0</span> / <span id="total">0</span> 問</div>
+  </div>
+  <button class="reset-btn" onclick="resetAll()">🔄 全問リセット</button>
+  <div class="nav-links">
+    <div style="font-family:'Zen Antique',serif;font-size:0.72rem;letter-spacing:0.15em;color:var(--ink-faint);margin-bottom:6px;">テキストに戻る</div>
+    <a href="stats_basics.html">基礎編</a>
+    <a href="stats_foundations.html">応用編①</a>
+    <a href="stats_methods.html">応用編②</a>
+    <a href="stats_advanced.html">応用編③</a>
+  </div>
+</aside>
+
+<main>
+
+<!-- ===== §1 確率の基礎 ===== -->
+<h2 class="section-title" id="sec1">§1　確率の基礎</h2>
+<p class="section-lead">確率の定義・加法定理・乗法定理・条件付き確率</p>
+
+<div class="quiz-card" id="q1">
+  <div class="quiz-header">
+    <span class="quiz-num">Q1</span>
+    <span class="quiz-tag">確率の定義</span>
+  </div>
+  <div class="quiz-q">サイコロを1個振るとき、偶数の目が出る確率として正しいのはどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q1',this,false)">① 1/6</button>
+    <button class="option-btn" onclick="answer('q1',this,false)">② 1/3</button>
+    <button class="option-btn" onclick="answer('q1',this,true)">③ 1/2</button>
+    <button class="option-btn" onclick="answer('q1',this,false)">④ 2/3</button>
+  </div>
+  <div class="explanation" id="q1-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    偶数の目は 2・4・6 の3通り。全事象は 1〜6 の6通り。<br>
+    <span class="formula">P(偶数) = 3 ÷ 6 = 1/2</span>
+    古典的確率の定義：P(A) = A が起こる場合の数 ÷ 全事象の数
+  </div>
+</div>
+
+<div class="quiz-card" id="q2">
+  <div class="quiz-header">
+    <span class="quiz-num">Q2</span>
+    <span class="quiz-tag">加法定理</span>
+  </div>
+  <div class="quiz-q">P(A) = 0.4、P(B) = 0.3、P(A∩B) = 0.1 のとき、P(A∪B) はいくらか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q2',this,false)">① 0.5</button>
+    <button class="option-btn" onclick="answer('q2',this,true)">② 0.6</button>
+    <button class="option-btn" onclick="answer('q2',this,false)">③ 0.7</button>
+    <button class="option-btn" onclick="answer('q2',this,false)">④ 1.0</button>
+  </div>
+  <div class="explanation" id="q2-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    加法定理（一般形）を使う。<br>
+    <span class="formula">P(A∪B) = P(A) + P(B) − P(A∩B) = 0.4 + 0.3 − 0.1 = 0.6</span>
+    AとBが排反でない場合、重複部分（A∩B）を一度引く必要がある。
+  </div>
+</div>
+
+<div class="quiz-card" id="q3">
+  <div class="quiz-header">
+    <span class="quiz-num">Q3</span>
+    <span class="quiz-tag">条件付き確率</span>
+  </div>
+  <div class="quiz-q">ある病院の患者のうち、糖尿病患者は20%。HbA1c高値（&gt;6.5%）の患者は15%。糖尿病かつHbA1c高値の患者は12%。<br>糖尿病である患者の中で、HbA1c が高値である条件付き確率 P(HbA1c高|糖尿病) はいくらか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q3',this,false)">① 0.15</button>
+    <button class="option-btn" onclick="answer('q3',this,false)">② 0.20</button>
+    <button class="option-btn" onclick="answer('q3',this,false)">③ 0.40</button>
+    <button class="option-btn" onclick="answer('q3',this,true)">④ 0.60</button>
+  </div>
+  <div class="explanation" id="q3-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    条件付き確率の定義式を使う。<br>
+    <span class="formula">P(HbA1c高|糖尿病) = P(HbA1c高 ∩ 糖尿病) ÷ P(糖尿病) = 0.12 ÷ 0.20 = 0.60</span>
+    「糖尿病という条件のもとで空間を絞り込み、その中でHbA1c高値が占める割合」を計算する。
+  </div>
+</div>
+
+<div class="quiz-card" id="q4">
+  <div class="quiz-header">
+    <span class="quiz-num">Q4</span>
+    <span class="quiz-tag">独立・排反</span>
+  </div>
+  <div class="quiz-q">以下の記述のうち、正しいものはどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q4',this,false)">① 排反な2事象は常に独立である</button>
+    <button class="option-btn" onclick="answer('q4',this,false)">② 独立な2事象は常に排反である</button>
+    <button class="option-btn" onclick="answer('q4',this,true)">③ 確率が0でない排反な2事象は独立でない</button>
+    <button class="option-btn" onclick="answer('q4',this,false)">④ 独立と排反は同じ概念である</button>
+  </div>
+  <div class="explanation" id="q4-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    排反とは「同時に起こらない」こと（P(A∩B)=0）。<br>
+    独立とは「一方の結果が他方に影響しない」こと（P(A|B)=P(A)）。<br><br>
+    確率が0でない排反事象では、「A が起きた → B は絶対起きない」という影響関係がある。<br>これは独立の定義に反する。つまり排反事象は独立ではない。
+  </div>
+</div>
+
+<!-- ===== §2 確率変数・期待値・分散 ===== -->
+<h2 class="section-title" id="sec2">§2　確率変数・期待値・分散</h2>
+<p class="section-lead">E[X]・Var(X)の計算と性質</p>
+
+<div class="quiz-card" id="q5">
+  <div class="quiz-header">
+    <span class="quiz-num">Q5</span>
+    <span class="quiz-tag">期待値の計算</span>
+  </div>
+  <div class="quiz-q">
+    確率変数 X が次の分布に従うとき、E[X] はいくらか。
+    <br><br>
+    <table style="border-collapse:collapse;font-size:0.85rem;margin:8px 0;">
+      <tr><th style="background:var(--accent-pale);padding:6px 14px;border:1px solid var(--border);">X</th><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace">0</td><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace">1</td><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace">2</td><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace">3</td></tr>
+      <tr><th style="background:var(--accent-pale);padding:6px 14px;border:1px solid var(--border);">P</th><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace">0.2</td><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace">0.4</td><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace">0.3</td><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace">0.1</td></tr>
+    </table>
+  </div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q5',this,false)">① 1.0</button>
+    <button class="option-btn" onclick="answer('q5',this,true)">② 1.3</button>
+    <button class="option-btn" onclick="answer('q5',this,false)">③ 1.5</button>
+    <button class="option-btn" onclick="answer('q5',this,false)">④ 2.0</button>
+  </div>
+  <div class="explanation" id="q5-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    <span class="formula">E[X] = 0×0.2 + 1×0.4 + 2×0.3 + 3×0.1
+     = 0 + 0.4 + 0.6 + 0.3 = 1.3</span>
+    期待値は「各値 × その確率」を全て足したもの。確率の合計は 0.2+0.4+0.3+0.1=1.0 で確認できる。
+  </div>
+</div>
+
+<div class="quiz-card" id="q6">
+  <div class="quiz-header">
+    <span class="quiz-num">Q6</span>
+    <span class="quiz-tag">期待値の性質</span>
+  </div>
+  <div class="quiz-q">E[X] = 5、Var(X) = 4 のとき、Y = 3X + 2 に対して E[Y] と Var(Y) はいくらか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q6',this,false)">① E[Y]=17、Var(Y)=12</button>
+    <button class="option-btn" onclick="answer('q6',this,false)">② E[Y]=17、Var(Y)=14</button>
+    <button class="option-btn" onclick="answer('q6',this,true)">③ E[Y]=17、Var(Y)=36</button>
+    <button class="option-btn" onclick="answer('q6',this,false)">④ E[Y]=15、Var(Y)=36</button>
+  </div>
+  <div class="explanation" id="q6-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    <span class="formula">E[Y] = E[3X+2] = 3×E[X] + 2 = 3×5 + 2 = 17</span>
+    <span class="formula">Var(Y) = Var(3X+2) = 3²×Var(X) = 9×4 = 36</span>
+    定数を足しても分散は変わらない。定数を掛けると分散は2乗倍になる点に注意。<br>
+    標準偏差なら SD(Y) = 3×SD(X) = 3×2 = 6。
+  </div>
+</div>
+
+<div class="quiz-card" id="q7">
+  <div class="quiz-header">
+    <span class="quiz-num">Q7</span>
+    <span class="quiz-tag">分散の意味</span>
+  </div>
+  <div class="quiz-q">患者AとBの血糖値（mg/dL）を5回ずつ測定した。<br>
+  A：110, 110, 110, 110, 110（平均110）<br>
+  B：90, 100, 110, 120, 130（平均110）<br>
+  2人の分散について正しい記述はどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q7',this,false)">① AとBの分散は等しい</button>
+    <button class="option-btn" onclick="answer('q7',this,true)">② AはBより分散が小さい</button>
+    <button class="option-btn" onclick="answer('q7',this,false)">③ BはAより分散が小さい</button>
+    <button class="option-btn" onclick="answer('q7',this,false)">④ 平均が同じなので分散の比較はできない</button>
+  </div>
+  <div class="explanation" id="q7-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    A の全値は平均(110)と完全に一致 → 各偏差²=0 → Var(A)=0<br>
+    B の偏差は −20, −10, 0, +10, +20 →<br>
+    <span class="formula">Var(B) = (400+100+0+100+400) ÷ 5 = 200</span>
+    平均が同じでも分散（ばらつき）は全く異なる。分散はデータの「不確実性」や「変動の大きさ」を表す。
+  </div>
+</div>
+
+<!-- ===== §3 検定の選択 ===== -->
+<h2 class="section-title" id="sec3">§3　検定の選択</h2>
+<p class="section-lead">問いの形から適切な検定を選ぶ</p>
+
+<div class="quiz-card" id="q8">
+  <div class="quiz-header">
+    <span class="quiz-num">Q8</span>
+    <span class="quiz-tag">検定の選択</span>
+  </div>
+  <div class="quiz-q">同じ患者20人に対して、治療前・治療後の疼痛スコア（0〜10の連続値、正規分布に従う）を比較したい。最も適切な検定はどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q8',this,false)">① 独立2標本 t 検定</button>
+    <button class="option-btn" onclick="answer('q8',this,true)">② 対応のある t 検定</button>
+    <button class="option-btn" onclick="answer('q8',this,false)">③ Mann-Whitney U 検定</button>
+    <button class="option-btn" onclick="answer('q8',this,false)">④ χ² 検定</button>
+  </div>
+  <div class="explanation" id="q8-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    検定選択の3ステップで考える：<br>
+    ①変数型 → 連続変数（疼痛スコア）<br>
+    ②群数 → 2群（治療前・後）<br>
+    ③対応 → あり（同じ患者を繰り返し測定）<br><br>
+    正規分布に従う連続変数で対応ありの場合 →<strong> 対応のある t 検定</strong><br>
+    「独立2標本 t 検定」は別々の患者群を比べるとき。対応があるのに独立検定を使うと検出力が下がる。
+  </div>
+</div>
+
+<div class="quiz-card" id="q9">
+  <div class="quiz-header">
+    <span class="quiz-num">Q9</span>
+    <span class="quiz-tag">カテゴリ検定</span>
+  </div>
+  <div class="quiz-q">新薬群（n=10）とプラセボ群（n=10）で、副作用発生の有無（あり/なし）を比較する。新薬群での副作用発生者は2名、プラセボ群では1名だった。最も適切な検定はどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q9',this,false)">① t 検定</button>
+    <button class="option-btn" onclick="answer('q9',this,false)">② χ² 検定</button>
+    <button class="option-btn" onclick="answer('q9',this,true)">③ Fisher 正確検定</button>
+    <button class="option-btn" onclick="answer('q9',this,false)">④ McNemar 検定</button>
+  </div>
+  <div class="explanation" id="q9-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    カテゴリ変数（副作用あり/なし）・対応なし → χ² 検定か Fisher 正確検定。<br><br>
+    χ² 検定の適用条件：全セルの期待度数が5以上。<br>
+    この例は小標本（n=10ずつ）で副作用が少なく、期待度数が5未満のセルが生じる →<strong> Fisher 正確検定</strong> が適切。<br><br>
+    McNemar 検定は対応ありの2値比較（治療前後など）に使う。
+  </div>
+</div>
+
+<div class="quiz-card" id="q10">
+  <div class="quiz-header">
+    <span class="quiz-num">Q10</span>
+    <span class="quiz-tag">パラ vs ノンパラ</span>
+  </div>
+  <div class="quiz-q">パラメトリック検定とノンパラメトリック検定の比較として、正しい記述はどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q10',this,false)">① ノンパラメトリック検定は常にパラメトリックより優れている</button>
+    <button class="option-btn" onclick="answer('q10',this,false)">② パラメトリック検定は分布の仮定が不要である</button>
+    <button class="option-btn" onclick="answer('q10',this,true)">③ 正規分布の仮定が成り立つ場合、パラメトリック検定の方が検出力が高い</button>
+    <button class="option-btn" onclick="answer('q10',this,false)">④ ノンパラメトリック検定は外れ値に弱い</button>
+  </div>
+  <div class="explanation" id="q10-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    パラメトリック検定は「正規分布」などの仮定を必要とする代わりに、仮定が正しければ検出力（真の差を見つける力）が高い。<br><br>
+    ノンパラメトリック検定は分布の形を仮定しないため頑健で外れ値にも強いが、その分やや保守的（検出力が低め）。<br><br>
+    「どちらが常に優れている」というわけではなく、データの特性に合わせて選ぶのが正解。
+  </div>
+</div>
+
+<!-- ===== §4 生存分析・ベイズ ===== -->
+<h2 class="section-title" id="sec4">§4　生存分析・ベイズ統計</h2>
+<p class="section-lead">時間イベントデータとベイズ的思考</p>
+
+<div class="quiz-card" id="q11">
+  <div class="quiz-header">
+    <span class="quiz-num">Q11</span>
+    <span class="quiz-tag">生存分析</span>
+  </div>
+  <div class="quiz-q">生存分析における「打ち切り（censoring）」の説明として正しいのはどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q11',this,false)">① 解析から除外すべき外れ値データ</button>
+    <button class="option-btn" onclick="answer('q11',this,false)">② イベントが発生した時点のデータ</button>
+    <button class="option-btn" onclick="answer('q11',this,true)">③ 観察期間終了時にイベントが未発生の対象者のデータ</button>
+    <button class="option-btn" onclick="answer('q11',this,false)">④ 追跡不能で除外したデータ</button>
+  </div>
+  <div class="explanation" id="q11-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    打ち切りとは「観察終了時にまだイベントが起きていない」状態。例：試験終了時点で生存中の患者。<br><br>
+    このデータは「少なくとも〇日間イベントなし」という情報を持っており、完全に捨てるべきではない。カプラン・マイヤー法はこの情報を活かして生存曲線を推定できる点が最大の強み。<br><br>
+    ④の「追跡不能」も打ち切りとして扱われるが、打ち切りの説明としては③が最も正確。
+  </div>
+</div>
+
+<div class="quiz-card" id="q12">
+  <div class="quiz-header">
+    <span class="quiz-num">Q12</span>
+    <span class="quiz-tag">ベイズの定理</span>
+  </div>
+  <div class="quiz-q">疾患Yの有病率は5%。検査Zの感度は90%、特異度は80%。ある患者の検査Zが陽性だった。この患者が疾患Yである確率（陽性的中率）に最も近いのはどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q12',this,false)">① 約5%</button>
+    <button class="option-btn" onclick="answer('q12',this,true)">② 約19%</button>
+    <button class="option-btn" onclick="answer('q12',this,false)">③ 約50%</button>
+    <button class="option-btn" onclick="answer('q12',this,false)">④ 約90%</button>
+  </div>
+  <div class="explanation" id="q12-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    1000人で計算する。<br>
+    疾患あり：50人、疾患なし：950人<br>
+    真陽性：50 × 0.90 = 45人<br>
+    偽陽性：950 × (1−0.80) = 190人<br>
+    <span class="formula">PPV = 45 ÷ (45 + 190) = 45 ÷ 235 ≈ 19%</span>
+    感度・特異度が高くても有病率が低ければ PPV は低くなる。これがベイズ的思考の核心——事前確率（有病率）が事後確率（PPV）を大きく左右する。
+  </div>
+</div>
+
+<!-- ===== §5 診断の統計 ===== -->
+<h2 class="section-title" id="sec5">§5　診断の統計</h2>
+<p class="section-lead">感度・特異度・尤度比・ROC</p>
+
+<div class="quiz-card" id="q13">
+  <div class="quiz-header">
+    <span class="quiz-num">Q13</span>
+    <span class="quiz-tag">感度・特異度</span>
+  </div>
+  <div class="quiz-q">「感度が高い検査では陰性であれば疾患を除外できる（SnNout）」の理由として正しいのはどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q13',this,false)">① 感度が高いと偽陽性が少ないから</button>
+    <button class="option-btn" onclick="answer('q13',this,true)">② 感度が高いと偽陰性が少なく、陰性なら真の陰性と考えられるから</button>
+    <button class="option-btn" onclick="answer('q13',this,false)">③ 感度が高いと特異度も高いから</button>
+    <button class="option-btn" onclick="answer('q13',this,false)">④ 感度が高いと陽性的中率が高いから</button>
+  </div>
+  <div class="explanation" id="q13-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    感度 = TP ÷ (TP + FN)。感度が高い = FN（偽陰性）が少ない。<br><br>
+    つまり「本当に病気なのに陰性」という見逃しがほとんどない。<br>
+    → 陰性が出たなら「見逃しではない」→ 疾患除外の根拠になる。<br><br>
+    <strong>SnNout</strong>：Sensitivity high → Negative rules out（除外に使う）<br>
+    <strong>SpPin</strong>：Specificity high → Positive rules in（確定に使う）
+  </div>
+</div>
+
+<div class="quiz-card" id="q14">
+  <div class="quiz-header">
+    <span class="quiz-num">Q14</span>
+    <span class="quiz-tag">ROC・AUC</span>
+  </div>
+  <div class="quiz-q">ROC曲線とAUCについての記述のうち、正しいのはどれか。</div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q14',this,false)">① AUC が 0.5 は完璧な検査を意味する</button>
+    <button class="option-btn" onclick="answer('q14',this,false)">② ROC曲線は感度と特異度の関係を直接プロットしたもの</button>
+    <button class="option-btn" onclick="answer('q14',this,true)">③ AUC が 1.0 に近いほど識別能力が高い</button>
+    <button class="option-btn" onclick="answer('q14',this,false)">④ カットオフ値を変えてもROC曲線の形は変わらない</button>
+  </div>
+  <div class="explanation" id="q14-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    ROC曲線は「カットオフ値を動かしたときの感度 vs（1−特異度）の軌跡」。<br><br>
+    AUC（Area Under the Curve）の解釈：<br>
+    1.0 = 完璧な識別　0.5 = コイントスと同じ（識別力なし）<br>
+    0.8以上 = 良好な検査、0.7〜0.8 = 許容範囲、0.7未満 = 識別力が低い<br><br>
+    カットオフ値を変えると感度と特異度が変わるので、曲線上の「どこに位置するか」が変わるが、AUC（曲線の形そのもの）は変わらない。
+  </div>
+</div>
+
+<div class="quiz-card" id="q15">
+  <div class="quiz-header">
+    <span class="quiz-num">Q15</span>
+    <span class="quiz-tag">総合問題</span>
+  </div>
+  <div class="quiz-q">次の2×2表から、感度・特異度・陽性的中率を求めた。正しい組み合わせはどれか。<br><br>
+  <table style="border-collapse:collapse;font-size:0.85rem;margin:8px 0;">
+    <tr><th style="background:var(--accent-pale);padding:6px 12px;border:1px solid var(--border);"></th><th style="background:var(--accent-pale);padding:6px 12px;border:1px solid var(--border);">疾患あり</th><th style="background:var(--accent-pale);padding:6px 12px;border:1px solid var(--border);">疾患なし</th></tr>
+    <tr><td style="padding:6px 12px;border:1px solid var(--border);">検査陽性</td><td style="padding:6px 12px;border:1px solid var(--border);text-align:center;font-family:monospace">80</td><td style="padding:6px 12px;border:1px solid var(--border);text-align:center;font-family:monospace">20</td></tr>
+    <tr><td style="padding:6px 12px;border:1px solid var(--border);">検査陰性</td><td style="padding:6px 12px;border:1px solid var(--border);text-align:center;font-family:monospace">20</td><td style="padding:6px 12px;border:1px solid var(--border);text-align:center;font-family:monospace">180</td></tr>
+  </table>
+  </div>
+  <div class="options">
+    <button class="option-btn" onclick="answer('q15',this,false)">① 感度80%・特異度80%・PPV80%</button>
+    <button class="option-btn" onclick="answer('q15',this,true)">② 感度80%・特異度90%・PPV80%</button>
+    <button class="option-btn" onclick="answer('q15',this,false)">③ 感度90%・特異度80%・PPV80%</button>
+    <button class="option-btn" onclick="answer('q15',this,false)">④ 感度80%・特異度90%・PPV90%</button>
+  </div>
+  <div class="explanation" id="q15-exp">
+    <span class="result-badge ok">✓ 正解</span>
+    TP=80、FP=20、FN=20、TN=180<br>
+    <span class="formula">感度 = TP÷(TP+FN) = 80÷(80+20) = 80÷100 = 80%</span>
+    <span class="formula">特異度 = TN÷(TN+FP) = 180÷(180+20) = 180÷200 = 90%</span>
+    <span class="formula">PPV = TP÷(TP+FP) = 80÷(80+20) = 80÷100 = 80%</span>
+    感度と PPV がともに80%になっているが、計算の分母が異なる点に注意。感度の分母は「疾患あり全員」、PPV の分母は「検査陽性全員」。
+  </div>
+</div>
+
+</main>
+
+<footer style="grid-column:1/-1;background:var(--paper2);border-top:1px solid var(--border);padding:20px 40px;font-size:0.75rem;color:var(--ink-faint);line-height:1.8;">
+  本テキストは統計学の専門家によるものではなく、学習過程の備忘録として作成しました。内容に誤りが含まれる可能性があります。ご利用・再配布は自己責任でお願いします。<br>
+  作成補助：Claude（Anthropic）を使用しています。
+</footer>
+
+</div>
+
+<script>
+let scores = 0;
+let answered = 0;
+const total = 15;
+document.getElementById('total').textContent = total;
+
+function answer(qid, btn, isCorrect) {
+  const card = document.getElementById(qid);
+  if (card.classList.contains('correct') || card.classList.contains('wrong')) return;
+
+  const buttons = card.querySelectorAll('.option-btn');
+  buttons.forEach(b => b.disabled = true);
+
+  const exp = document.getElementById(qid + '-exp');
+  const badge = exp.querySelector('.result-badge');
+
+  if (isCorrect) {
+    btn.classList.add('selected-correct');
+    card.classList.add('correct');
+    badge.textContent = '✓ 正解';
+    badge.className = 'result-badge ok';
+    scores++;
+    document.getElementById('score').textContent = scores;
+  } else {
+    btn.classList.add('selected-wrong');
+    card.classList.add('wrong');
+    badge.textContent = '✗ 不正解';
+    badge.className = 'result-badge ng';
+    // 正解ボタンを緑で表示
+    buttons.forEach(b => {
+      if (b.onclick && b.onclick.toString().includes('true')) {
+        b.classList.add('reveal-correct');
+      }
+    });
+  }
+
+  exp.classList.add('visible');
+  answered++;
+}
+
+function resetAll() {
+  scores = 0;
+  answered = 0;
+  document.getElementById('score').textContent = 0;
+
+  document.querySelectorAll('.quiz-card').forEach(card => {
+    card.classList.remove('correct', 'wrong');
+    card.querySelectorAll('.option-btn').forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove('selected-correct', 'selected-wrong', 'reveal-correct');
+    });
+    const exp = card.querySelector('.explanation');
+    if (exp) exp.classList.remove('visible');
+  });
+}
+</script>
+</body>
+</html>
