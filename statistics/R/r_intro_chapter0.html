@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R言語で学ぶ統計学 — 序章</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --paper: #fdfaf3;
+    --paper2: #f8f4eb;
+    --ink: #1c1710;
+    --ink-light: #4a3f30;
+    --ink-muted: #7a6e5f;
+    --accent: #8b3a2a;
+    --accent-light: #b85c3a;
+    --accent-pale: #f0e6df;
+    --gold: #c8922a;
+    --gold-pale: #faf3e0;
+    --teal: #2a6b6e;
+    --teal-pale: #e0f0f0;
+    --border: #d4c9b0;
+    --border-light: #e8e0cc;
+    --sidebar-w: 260px;
+    --shadow: 0 2px 12px rgba(28,23,16,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    height: 52px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.9rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header .series-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    opacity: 0.9;
+  }
+  header .chapter-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--accent);
+    color: #fff;
+    padding: 0.3rem 0.8rem;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    position: fixed;
+    top: 52px;
+    left: 0;
+    width: var(--sidebar-w);
+    height: calc(100vh - 52px);
+    overflow-y: auto;
+    background: var(--paper2);
+    border-right: 1px solid var(--border);
+    padding: 1.6rem 1.2rem 2rem;
+    z-index: 90;
+  }
+  aside h2 {
+    font-family: 'Zen Antique', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .toc-list { list-style: none; }
+  .toc-list li { margin-bottom: 0.15rem; }
+  .toc-list a {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--ink-light);
+    text-decoration: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 3px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+    line-height: 1.5;
+  }
+  .toc-list a:hover,
+  .toc-list a.active {
+    background: var(--accent-pale);
+    border-left-color: var(--accent);
+    color: var(--accent);
+  }
+  .toc-divider {
+    margin: 1rem 0 0.8rem;
+    font-family: 'Zen Antique', serif;
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+    letter-spacing: 0.08em;
+  }
+  .chapter-link {
+    font-size: 0.78rem !important;
+    color: var(--ink-muted) !important;
+    padding: 0.3rem 0.6rem !important;
+  }
+  .chapter-link .ch-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--gold);
+    margin-right: 0.3em;
+  }
+
+  /* ── MAIN ── */
+  main {
+    margin-left: var(--sidebar-w);
+    margin-top: 52px;
+    padding: 3rem 4rem 4rem 3.5rem;
+    max-width: calc(860px + var(--sidebar-w));
+    min-height: calc(100vh - 52px);
+  }
+
+  .chapter-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+  .chapter-title {
+    font-family: 'Zen Antique', serif;
+    font-size: 2.2rem;
+    line-height: 1.3;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+  .chapter-subtitle {
+    font-size: 1rem;
+    color: var(--ink-muted);
+    font-weight: 300;
+    margin-bottom: 2.5rem;
+    line-height: 1.7;
+  }
+  .lead-divider {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    margin-bottom: 2.5rem;
+  }
+
+  /* ── DIALOGUE ── */
+  .dialogue-section { margin-bottom: 3rem; }
+
+  .section-heading {
+    font-family: 'Zen Antique', serif;
+    font-size: 1.2rem;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .section-heading::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+  }
+
+  .turn {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.4rem;
+    align-items: flex-start;
+  }
+  .turn.student { flex-direction: row-reverse; }
+
+  .avatar {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Zen Antique', serif;
+    font-size: 0.85rem;
+  }
+  .avatar.teacher {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .avatar.student-av {
+    background: var(--teal);
+    color: #fff;
+  }
+
+  .bubble {
+    max-width: 82%;
+    padding: 1rem 1.2rem;
+    border-radius: 4px 12px 12px 12px;
+    line-height: 1.85;
+    font-size: 0.92rem;
+    position: relative;
+    box-shadow: var(--shadow);
+  }
+  .turn.student .bubble {
+    border-radius: 12px 4px 12px 12px;
+    text-align: right;
+  }
+  .bubble.teacher-bubble {
+    background: var(--paper);
+    border: 1px solid var(--border-light);
+    color: var(--ink);
+  }
+  .bubble.student-bubble {
+    background: var(--teal-pale);
+    border: 1px solid #c0dede;
+    color: var(--teal);
+  }
+  .speaker-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+    opacity: 0.65;
+    display: block;
+  }
+
+  /* ── CURRICULUM MAP ── */
+  .curriculum-map {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.8rem 2rem;
+    margin: 2rem 0;
+    box-shadow: var(--shadow);
+  }
+  .curriculum-map h3 {
+    font-family: 'Zen Antique', serif;
+    font-size: 1rem;
+    color: var(--ink-muted);
+    margin-bottom: 1.4rem;
+    letter-spacing: 0.06em;
+  }
+  .chapter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+  .chapter-card {
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    padding: 0.9rem 1rem;
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .chapter-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(139,58,42,0.1);
+  }
+  .chapter-card.highlight {
+    background: var(--accent-pale);
+    border-color: var(--accent);
+  }
+  .ch-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--gold);
+    font-weight: 500;
+    white-space: nowrap;
+    margin-top: 0.15rem;
+  }
+  .ch-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .ch-sub {
+    font-size: 0.74rem;
+    color: var(--ink-muted);
+    margin-top: 0.2rem;
+    line-height: 1.4;
+  }
+  .ch-tag {
+    display: inline-block;
+    font-size: 0.62rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 2px;
+    margin-top: 0.35rem;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  .tag-basic { background: var(--gold-pale); color: var(--gold); border: 1px solid #e8d090; }
+  .tag-visual { background: var(--teal-pale); color: var(--teal); border: 1px solid #b0d8d8; }
+  .tag-stats { background: var(--accent-pale); color: var(--accent); border: 1px solid #d8b0a0; }
+  .tag-advanced { background: #e8e0f8; color: #5a3a9a; border: 1px solid #c8b8e8; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: #1e1a14;
+    color: #d4c9a8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    padding: 1.2rem 1.5rem;
+    border-radius: 4px;
+    margin: 1.2rem 0;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-block .c-comment { color: #7a7060; }
+  .code-block .c-string { color: #a8c878; }
+  .code-block .c-num { color: #e8c070; }
+  .code-block .c-fn { color: #78b8d8; }
+  .code-block .c-kw { color: #d87850; }
+
+  /* ── CALLOUT ── */
+  .callout {
+    border-left: 4px solid var(--gold);
+    background: var(--gold-pale);
+    padding: 1rem 1.2rem;
+    border-radius: 0 4px 4px 0;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--ink-light);
+  }
+  .callout strong {
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  .philosophy-box {
+    border: 1px solid var(--accent);
+    background: var(--accent-pale);
+    padding: 1.4rem 1.6rem;
+    border-radius: 4px;
+    margin: 2rem 0;
+    font-size: 0.92rem;
+    line-height: 1.9;
+    color: var(--ink);
+    font-family: 'Noto Serif JP', serif;
+    position: relative;
+  }
+  .philosophy-box::before {
+    content: '\201C';
+    font-family: 'Zen Antique', serif;
+    font-size: 4rem;
+    color: var(--accent);
+    opacity: 0.2;
+    position: absolute;
+    top: -0.5rem;
+    left: 0.5rem;
+    line-height: 1;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-left: var(--sidebar-w);
+    background: var(--paper2);
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    line-height: 1.7;
+    text-align: center;
+  }
+  footer .footer-mark {
+    font-family: 'Zen Antique', serif;
+    display: block;
+    margin-top: 0.5rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 3px;
+    background: var(--border-light);
+    margin: 2rem 0 0;
+    border-radius: 2px;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 12.5%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    border-radius: 2px;
+  }
+  .progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-muted);
+    margin-top: 0.4rem;
+    text-align: right;
+  }
+
+  .inline-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82em;
+    background: rgba(28,23,16,0.07);
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  em { font-style: italic; color: var(--ink-light); }
+
+  @media (max-width: 900px) {
+    aside { display: none; }
+    main { margin-left: 0; padding: 2rem 1.5rem; }
+    footer { margin-left: 0; }
+    .chapter-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="series-title">R言語で学ぶ統計学 ── 情報の彫刻刀</span>
+  <span class="chapter-badge">PROLOGUE</span>
+</header>
+
+<aside>
+  <h2>目次</h2>
+  <ul class="toc-list">
+    <li><a href="#opening" class="active">はじめに ── 彫刻家の比喩</a></li>
+    <li><a href="#curriculum">全7章の地図</a></li>
+    <li><a href="#philosophy">統計学の哲学</a></li>
+    <li><a href="#tool">Rという道具</a></li>
+    <li><a href="#python-vs-r">PythonとRの違い</a></li>
+    <li><a href="#index">「1」から始まる心地よさ</a></li>
+    <li><a href="#hello">最初の一行</a></li>
+    <li><a href="r_chapter1.html">次の章へ</a></li>
+  </ul>
+
+  <p class="toc-divider">── 全章リスト ──</p>
+  <ul class="toc-list">
+    <li><a href="#" class="chapter-link"><span class="ch-num">序章</span>イントロダクション</a></li>
+    <li><a href="r_chapter1.html" class="chapter-link"><span class="ch-num">Ch.1</span>Rとの出会い</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.2</span>情報の箱</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.3</span>可視化という次元削減</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.4</span>基本統計量の本質</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.5</span>検定のロジック</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.6</span>生存解析と時間軸</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.7</span>高次元の向こう側</a></li>
+  </ul>
+
+  <div class="progress-bar" style="margin-top:2rem;">
+    <div class="progress-fill"></div>
+  </div>
+  <p class="progress-label">序章 / 全7章</p>
+</aside>
+
+<main>
+  <p class="chapter-eyebrow">PROLOGUE ── 序章</p>
+  <h1 class="chapter-title">彫刻家としての<br>統計学者へ</h1>
+  <p class="chapter-subtitle">数万次元のデータから意味を削り出す旅へ、ようこそ。</p>
+  <div class="lead-divider"></div>
+
+  <!-- ── SECTION 1 ── -->
+  <section class="dialogue-section" id="opening">
+    <h2 class="section-heading">はじめに ── 彫刻家の比喩</h2>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        先生、今日からRを勉強するんですよね。正直、「なんで今さらRを？PythonでもExcelでもいいじゃないか」って思ってるんですが……。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        いい疑問だ。そう感じるのは自然なことだよ。でも少し待って。ミケランジェロがダビデ像を作ったとき、どうやって作ったと思う？
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        ……えっと、大理石を彫って？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        そう。彼は言ったんだ。「大理石の中にすでにダビデがいる。余分なものを取り除くだけだ」と。統計学というのは、それとまったく同じことをしている。患者さんの血液検査、遺伝子の発現量、生存期間……そういったデータの塊の中にはすでに「答え」が眠っている。私たちの仕事は、ノイズを削り落として、その答えを浮き彫りにすることだ。
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        なるほど……。じゃあRは、その彫刻刀みたいなものですか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        まさに。Rは統計学のために生まれた言語だ。数万個の遺伝子の発現データを扱おうが、何千人もの患者の生存曲線を描こうが、同じ「彫刻刀」で対応できる。今日からの7章で、その刀の使い方を一緒に学んでいこう。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 2: CURRICULUM MAP ── -->
+  <section class="dialogue-section" id="curriculum">
+    <h2 class="section-heading">全7章の地図</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        まず全体像を見ておこう。旅に出るなら地図が必要だ。今回の旅は7つの章で構成されている。
+      </div>
+    </div>
+
+    <div class="curriculum-map">
+      <h3>📐 カリキュラム全体図</h3>
+      <div class="chapter-grid">
+        <div class="chapter-card highlight">
+          <div>
+            <div class="ch-label">序章</div>
+          </div>
+          <div>
+            <div class="ch-title">イントロダクション</div>
+            <div class="ch-sub">今ここ。全体の地図を掴む</div>
+            <span class="ch-tag tag-basic">NOW</span>
+          </div>
+        </div>
+
+        <div class="chapter-card">
+          <div>
+            <div class="ch-label">Ch.1</div>
+          </div>
+          <div>
+            <div class="ch-title">Rとの出会い</div>
+            <div class="ch-sub">〜1から始まるデータの塊〜</div>
+            <span class="ch-tag tag-basic">基礎</span>
+          </div>
+        </div>
+
+        <div class="chapter-card">
+          <div>
+            <div class="ch-label">Ch.2</div>
+          </div>
+          <div>
+            <div class="ch-title">情報の箱</div>
+            <div class="ch-sub">〜カオスを整理するデータフレーム〜</div>
+            <span class="ch-tag tag-basic">基礎</span>
+          </div>
+        </div>
+
+        <div class="chapter-card">
+          <div>
+            <div class="ch-label">Ch.3</div>
+          </div>
+          <div>
+            <div class="ch-title">可視化という次元削減</div>
+            <div class="ch-sub">〜plot関数でデータの顔を見る〜</div>
+            <span class="ch-tag tag-visual">可視化</span>
+          </div>
+        </div>
+
+        <div class="chapter-card">
+          <div>
+            <div class="ch-label">Ch.4</div>
+          </div>
+          <div>
+            <div class="ch-title">基本統計量の本質</div>
+            <div class="ch-sub">〜平均・分散による濃縮還元〜</div>
+            <span class="ch-tag tag-stats">統計</span>
+          </div>
+        </div>
+
+        <div class="chapter-card">
+          <div>
+            <div class="ch-label">Ch.5</div>
+          </div>
+          <div>
+            <div class="ch-title">検定のロジック</div>
+            <div class="ch-sub">〜「偶然」を切り捨てる勇気〜</div>
+            <span class="ch-tag tag-stats">統計</span>
+          </div>
+        </div>
+
+        <div class="chapter-card">
+          <div>
+            <div class="ch-label">Ch.6</div>
+          </div>
+          <div>
+            <div class="ch-title">生存解析と時間軸</div>
+            <div class="ch-sub">〜ログランク検定が捉える命の軌跡〜</div>
+            <span class="ch-tag tag-stats">医学統計</span>
+          </div>
+        </div>
+
+        <div class="chapter-card">
+          <div>
+            <div class="ch-label">Ch.7</div>
+          </div>
+          <div>
+            <div class="ch-title">高次元の向こう側</div>
+            <div class="ch-sub">〜t-SNE/UMAPによる究極の削減〜</div>
+            <span class="ch-tag tag-advanced">発展</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        最後の章、t-SNEとかUMAPって……聞いたことはありますが、なんか怖そうな名前ですね。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        （笑）名前は怖いけど、やっていることは本質的には同じだよ。「余分な次元を削り落として、人間が見える2次元の平面に投影する」——それだけだ。第1章でベクトルの基本を掴んでから、少しずつ登っていけば、第7章に辿り着いたとき、見える景色がまったく変わっているはずだ。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 3: PHILOSOPHY ── -->
+  <section class="dialogue-section" id="philosophy">
+    <h2 class="section-heading">統計学の哲学</h2>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        「次元を削る」というのが、先生の統計学の定義なんですか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        そう考えると分かりやすい。例えば——100人の患者さんがいて、それぞれ血圧、血糖値、BMI、年齢、HbA1c……と50項目のデータを持っているとしよう。それは「100人×50次元」の空間に存在しているデータだ。
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        50次元……もはや想像できません。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        当然だ、人間は3次元の生き物だから。でも平均値を計算するというのは、その50次元のデータを「1つの数字」に圧縮する作業だ。分散を計算するのは「ばらつき」という1次元の情報に落とし込むこと。t検定は「2群の差は偶然か否か」という1ビットの判断に還元する。すべては次元削減なんだよ。
+      </div>
+    </div>
+
+    <div class="philosophy-box">
+      統計学とは、高次元のデータから彫刻刀で不要な情報を削ぎ落とし、本質的な意味を可視化する技術である。計算はその手段に過ぎず、問いは常に「このデータの中に眠る真実は何か」でなければならない。
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        じゃあ第3章の「可視化という次元削減」というタイトルも、そういう意味なんですね。グラフを描くというのは、多次元データを2次元の絵に圧縮する行為だ、と。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        素晴らしい。まさにその通りだ。第3章でそのことを深く体感できるように設計してある。<span class="inline-code">plot()</span>関数一つ打つだけで、それがどれほど深い行為かを理解できるはずだよ。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 4: TOOL ── -->
+  <section class="dialogue-section" id="tool">
+    <h2 class="section-heading">Rという道具の本質</h2>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        Rって、統計計算専用のソフトですよね？正直、研究室の先輩たちはSPSSを使ってますし、医学部ではエクセルで十分じゃないかという話も聞きますが……。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        エクセルは確かに便利な道具だ。でも比喩で言うなら、エクセルは「家庭用の万能ナイフ」だ。Rは「外科医の執刀セット」に相当する。ペーパーナイフで開胸手術はできないよね？
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Rでできること（例）</strong><br>
+      患者10万人のゲノムデータ（約2万遺伝子 × 10万人）を読み込み、t-SNEで2次元に圧縮し、クラスターを見つけ、生存解析で予後を比較する——これを数十行のコードで実現できる。エクセルのシート上限（104万行）では、そもそもデータが入らない。
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        2万×10万のデータ……確かにExcelじゃ無理ですね。でもPythonは？最近、みんなPythonを使ってるイメージがあります。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        Pythonは素晴らしい汎用言語だ。何でもできる。でもRは「統計のために生まれた」という点が本質的に違う。パッケージを見ればわかる——生存解析の<span class="inline-code">survival</span>パッケージ、メタアナリシスの<span class="inline-code">meta</span>パッケージ、次元削減の<span class="inline-code">Rtsne</span>や<span class="inline-code">uwot</span>。医学統計の道具が最初から揃っている。<em>料理人が「フランス料理には、フランス包丁を」と言うようなものだよ。</em>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 5: INDEX ── -->
+  <section class="dialogue-section" id="index">
+    <h2 class="section-heading">「1」から始まる心地よさ</h2>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        情報Ⅰの授業でPythonをやりましたが、リストのインデックスって0から始まるんですよね。最初、すごく混乱しました。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        ああ、0始まりのインデックスだね。あれはコンピューターの都合だ。メモリのアドレスが0から始まるから、という理由で設計されている。Pythonだけでなく、C言語、JavaScript、Javaも同様だ。<br><br>でもRは違う。Rのインデックスは<strong>1から始まる</strong>。最初の要素は<span class="inline-code">x[1]</span>だ。これは人間の直感に合っている——「1番目」は1だ、と。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="c-comment"># Pythonの場合（0始まり）</span>
+x = [<span class="c-num">10</span>, <span class="c-num">20</span>, <span class="c-num">30</span>]
+x[<span class="c-num">0</span>]  <span class="c-comment"># → 10  ← 「最初」なのに0？</span>
+
+<span class="c-comment"># Rの場合（1始まり）</span>
+x &lt;- <span class="c-fn">c</span>(<span class="c-num">10</span>, <span class="c-num">20</span>, <span class="c-num">30</span>)
+x[<span class="c-num">1</span>]  <span class="c-comment"># → 10  ← 「1番目」は1。自然だ。</span></pre>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        確かに。医学のデータって「患者1番」「検体1番」って言いますから、1から始まるほうが直感的です。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        そういうことだよ。第1章では、このベクトルの概念から丁寧に始める。<span class="inline-code">c()</span>関数でデータを「束ねる」ところから、Rとの対話が始まる。慌てなくていい。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 6: HELLO ── -->
+  <section class="dialogue-section" id="hello">
+    <h2 class="section-heading">最初の一行を打ってみよう</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        理屈はいい。今日は序章だから、まずRと挨拶しよう。RStudioを開いて、コンソールにこう打ってみてほしい。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="c-comment"># Rに自己紹介する</span>
+<span class="c-fn">print</span>(<span class="c-string">"こんにちは、R。これから統計を学ぶ医学生です。"</span>)
+
+<span class="c-comment"># 少し数学もできることを確認</span>
+<span class="c-num">2</span> + <span class="c-num">2</span>         <span class="c-comment"># → 4</span>
+<span class="c-fn">sqrt</span>(<span class="c-num">144</span>)      <span class="c-comment"># → 12  （√144 = 12）</span>
+<span class="c-fn">factorial</span>(<span class="c-num">5</span>) <span class="c-comment"># → 120 （5! = 120）</span></pre>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        打ちました！ちゃんと「こんにちは、R。これから統計を学ぶ医学生です。」と返ってきました！
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        それが最初の一歩だ。Rはこうやって、打ったことに即座に答えてくれる。インタープリタ型の言語だから、コンパイルも待ち時間もいらない。思いついた仮説をすぐ試せる——それが統計探索に向いている理由の一つだよ。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 7: NEXT ── -->
+  <section class="dialogue-section" id="next">
+    <h2 class="section-heading">次の章へ ── 旅の始まり</h2>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        なんか、ワクワクしてきました。第7章のt-SNEやUMAPで遺伝子データを可視化するところまで、本当に辿り着けるんでしょうか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        辿り着けるよ。この旅は「データを削る」という一貫したテーマで繋がっている。第1章でベクトルという「小さな彫刻刀」を手に入れ、第2章でデータフレームという「作業台」を得て、第3章で初めて「作品の姿」が見えてくる。第7章に着いたとき、あなたは「なんだ、やってることはずっと同じだったんだ」と笑えるはずだ。<br><br>さあ、第1章を開こう。
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>次の章：第1章「Rとの出会い 〜1から始まるデータの塊〜」</strong><br>
+      ベクトル（<span class="inline-code">c()</span>）の生成から始まり、スカラー演算、インデックス、データ型の基本を学ぶ。医学的な例（患者のHbA1c値、BMI）を使いながら、Rの「感触」を掴む章。
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>⚠ 注意書き：本テキストは生成AIによって作成されたものであり、内容に誤りを含む可能性があります。利用・参照は自己責任でお願いします。再配布については、自己責任の範囲内であれば問題ありません。</p>
+  <span class="footer-mark">―― 統計は専門ではない研究者の備忘録 ――</span>
+</footer>
+
+<script>
+  const links = document.querySelectorAll('.toc-list a:not(.chapter-link)');
+  const sections = document.querySelectorAll('section[id]');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector('.toc-list a[href="#' + e.target.id + '"]');
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.4 });
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

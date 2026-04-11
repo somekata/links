@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第1章：Rとの出会い | R言語で学ぶ統計学</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8;
+  --paper: #fdfaf3;
+  --paper2: #f8f4eb;
+  --ink: #1c1710;
+  --ink-light: #4a3f30;
+  --ink-muted: #7a6e5f;
+  --accent: #8b3a2a;
+  --accent-pale: #f0e6df;
+  --gold: #c8922a;
+  --gold-pale: #faf3e0;
+  --teal: #2a6b6e;
+  --teal-pale: #e0f0f0;
+  --green: #3a6b3a;
+  --green-pale: #e8f4e8;
+  --purple: #5a3a8a;
+  --purple-pale: #f0eaf8;
+  --border: #d4c9b0;
+  --border-light: #e8e0cc;
+  --sidebar-w: 260px;
+  --shadow: 0 2px 12px rgba(28,23,16,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── ROOT LAYOUT ──
+   sidebar は float、main は margin-left で隣に並べる。
+   footer は通常フローで最後に来るため見切れない。
+*/
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.9rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+header .series-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+header .chapter-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+/* ── SIDEBAR ── */
+aside {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  background: var(--paper2);
+  border-right: 1px solid var(--border);
+  padding: 1.6rem 1.2rem 2rem;
+  z-index: 90;
+}
+aside h2 {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 0.1rem; }
+.toc-list a {
+  display: block;
+  font-size: 0.79rem;
+  color: var(--ink-light);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 3px;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.45;
+}
+.toc-list a:hover, .toc-list a.active {
+  background: var(--accent-pale);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+.toc-divider {
+  margin: 1rem 0 0.6rem;
+  font-family: 'Zen Antique', serif;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+}
+.chapter-link {
+  font-size: 0.76rem !important;
+  color: var(--ink-muted) !important;
+  padding: 0.28rem 0.6rem !important;
+}
+.chapter-link.current { color: var(--accent) !important; font-weight: 500; }
+.chapter-link .ch-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  margin-right: 0.3em;
+}
+.progress-bar {
+  height: 3px;
+  background: var(--border-light);
+  margin: 1.5rem 0 0;
+  border-radius: 2px;
+}
+.progress-fill {
+  height: 100%;
+  width: 25%;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 2px;
+}
+.progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
+  text-align: right;
+}
+
+/* ── MAIN ── */
+main {
+  margin-left: var(--sidebar-w);
+  margin-top: 52px;
+  padding: 3rem 4rem 4rem 3.5rem;
+  max-width: calc(860px + var(--sidebar-w));
+  min-height: calc(100vh - 52px);
+}
+
+/* ── FOOTER ── */
+footer {
+  margin-left: var(--sidebar-w);
+  background: var(--paper2);
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  line-height: 1.7;
+  text-align: center;
+}
+footer .footer-mark {
+  font-family: 'Zen Antique', serif;
+  display: block;
+  margin-top: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+/* ── TYPOGRAPHY ── */
+.chapter-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+.chapter-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 2.1rem;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+.chapter-subtitle {
+  font-size: 0.97rem;
+  color: var(--ink-muted);
+  font-weight: 300;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+.lead-divider {
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  margin-bottom: 2.5rem;
+}
+
+/* ── SECTION ── */
+.dialogue-section { margin-bottom: 3.5rem; }
+.section-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1.18rem;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-heading::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--gold);
+  margin-right: 0.2em;
+}
+.subsection-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  color: var(--teal);
+  margin: 2rem 0 1rem;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--teal);
+}
+
+/* ── DIALOGUE ── */
+.turn { display: flex; gap: 1rem; margin-bottom: 1.3rem; align-items: flex-start; }
+.turn.student { flex-direction: row-reverse; }
+.avatar {
+  flex-shrink: 0; width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Zen Antique', serif; font-size: 0.82rem;
+}
+.avatar.teacher { background: var(--ink); color: var(--paper); }
+.avatar.student-av { background: var(--teal); color: #fff; }
+.bubble {
+  max-width: 82%;
+  padding: 0.9rem 1.1rem;
+  border-radius: 4px 12px 12px 12px;
+  line-height: 1.85; font-size: 0.91rem;
+  box-shadow: var(--shadow);
+}
+.turn.student .bubble { border-radius: 12px 4px 12px 12px; }
+.bubble.teacher-bubble { background: var(--paper); border: 1px solid var(--border-light); color: var(--ink); }
+.bubble.student-bubble { background: var(--teal-pale); border: 1px solid #c0dede; color: var(--teal); }
+.speaker-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 0.35rem; opacity: 0.6; display: block; }
+
+/* ── CODE ── */
+pre.code-block {
+  background: #1e1a14;
+  color: #d4c9a8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.81rem;
+  padding: 1.3rem 1.5rem;
+  border-radius: 4px;
+  margin: 1.1rem 0;
+  line-height: 1.8;
+  overflow-x: auto;
+  white-space: pre;
+  position: relative;
+}
+.lang-tag {
+  position: absolute; top: 0.5rem; right: 0.8rem;
+  font-size: 0.62rem; color: #5a5040; letter-spacing: 0.08em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.c-comment { color: #6a6050; }
+.c-string  { color: #a8c878; }
+.c-num     { color: #e8c070; }
+.c-fn      { color: #78b8d8; }
+.c-kw      { color: #d87850; }
+.c-out     { color: #8aaa70; }
+.c-section { color: #888070; font-style: italic; display: block; margin: 0.5em 0 0.1em; font-size: 0.74rem; letter-spacing: 0.05em; }
+
+.inline-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.81em;
+  background: rgba(28,23,16,0.07); padding: 0.1em 0.4em;
+  border-radius: 3px; color: var(--accent);
+}
+
+/* ── CALLOUTS ── */
+.callout, .callout-teal, .callout-green, .callout-purple {
+  padding: 1rem 1.2rem;
+  border-radius: 0 4px 4px 0;
+  margin: 1.4rem 0;
+  font-size: 0.89rem; line-height: 1.8;
+  color: var(--ink-light);
+}
+.callout        { border-left: 4px solid var(--gold);   background: var(--gold-pale); }
+.callout-teal   { border-left: 4px solid var(--teal);   background: var(--teal-pale); }
+.callout-green  { border-left: 4px solid var(--green);  background: var(--green-pale); }
+.callout-purple { border-left: 4px solid var(--purple); background: var(--purple-pale); }
+.callout strong        { color: var(--gold); }
+.callout-teal strong   { color: var(--teal); }
+.callout-green strong  { color: var(--green); }
+.callout-purple strong { color: var(--purple); }
+
+/* ── LEARNING GOALS ── */
+.learning-goals {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  padding: 1.3rem 1.5rem; margin-bottom: 2.5rem;
+  box-shadow: var(--shadow);
+}
+.learning-goals h3 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--teal); margin-bottom: 0.8rem; }
+.goal-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.goal-list li { font-size: 0.85rem; color: var(--ink-light); display: flex; align-items: flex-start; gap: 0.5rem; line-height: 1.6; }
+.goal-list li::before { content: '✓'; font-family: 'JetBrains Mono', monospace; color: var(--teal); font-size: 0.78rem; flex-shrink: 0; margin-top: 0.12rem; }
+
+/* ── CONCEPT BOX ── */
+.concept-box {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.4rem 1.6rem; margin: 1.8rem 0; box-shadow: var(--shadow);
+}
+.concept-box h4 { font-family: 'Zen Antique', serif; font-size: 0.97rem; color: var(--ink); margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-light); }
+.concept-box p { font-size: 0.88rem; line-height: 1.85; color: var(--ink-light); margin-bottom: 0.7rem; }
+.concept-box p:last-child { margin-bottom: 0; }
+
+/* ── RSTUDIO PANEL ── */
+.panel-diagram {
+  background: #1a1a2e;
+  border-radius: 8px; padding: 1.4rem; margin: 1.5rem 0;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto;
+  gap: 0.5rem; box-shadow: var(--shadow);
+}
+.panel-item {
+  border-radius: 4px; padding: 0.9rem 1rem;
+  font-size: 0.8rem; line-height: 1.5;
+}
+.panel-item .panel-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+  font-weight: 500; margin-bottom: 0.4rem; letter-spacing: 0.05em;
+}
+.panel-item .panel-desc { font-size: 0.76rem; line-height: 1.6; }
+.p-source  { background: #1e3a5f; color: #b8d4f0; }
+.p-source .panel-title { color: #78b8e8; }
+.p-console { background: #1e3a2a; color: #a8d4a8; }
+.p-console .panel-title { color: #78d878; }
+.p-env     { background: #3a2a1e; color: #d4c4a8; }
+.p-env .panel-title { color: #e8c070; }
+.p-files   { background: #2a1e3a; color: #c4b4d4; }
+.p-files .panel-title { color: #c878e8; }
+.panel-label {
+  grid-column: 1 / -1; text-align: center;
+  font-family: 'Zen Antique', serif; font-size: 0.75rem;
+  color: #888; margin-bottom: 0.3rem;
+}
+
+/* ── DATA TYPE GRID ── */
+.data-type-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin: 1.3rem 0;
+}
+.dtype-card {
+  background: var(--paper); border: 1px solid var(--border-light);
+  border-radius: 4px; padding: 0.85rem 0.9rem; box-shadow: var(--shadow);
+  transition: border-color 0.2s;
+}
+.dtype-card:hover { border-color: var(--gold); }
+.dtype-name { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--accent); font-weight: 500; margin-bottom: 0.25rem; }
+.dtype-jp { font-size: 0.75rem; color: var(--ink-muted); margin-bottom: 0.45rem; }
+.dtype-example { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--gold); background: rgba(28,23,16,0.05); padding: 0.2rem 0.45rem; border-radius: 3px; display: block; margin-bottom: 0.35rem; }
+.dtype-desc { font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; }
+
+/* ── VECTOR VISUAL ── */
+.vector-visual {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.2rem 1.4rem; margin: 1.3rem 0;
+  box-shadow: var(--shadow); overflow-x: auto;
+}
+.vector-visual h4 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--ink-muted); margin-bottom: 0.9rem; }
+.vec-row { display: flex; align-items: center; gap: 0; margin-bottom: 0.7rem; flex-wrap: nowrap; }
+.vec-label { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; color: var(--ink-muted); width: 115px; flex-shrink: 0; }
+.vec-cells { display: flex; gap: 0; }
+.vec-cell { min-width: 50px; height: 36px; background: var(--paper2); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.vec-cell:first-child { border-radius: 4px 0 0 4px; }
+.vec-cell:last-child  { border-radius: 0 4px 4px 0; }
+.vec-cell + .vec-cell { border-left: none; }
+.vec-cell-val { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--ink); font-weight: 500; }
+.vec-cell-idx { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--accent); position: absolute; top: 2px; right: 3px; opacity: 0.7; }
+.vec-cell.hl { background: var(--accent-pale); border-color: var(--accent); }
+.vec-cell.hl .vec-cell-val { color: var(--accent); }
+
+/* ── QUIZ ── */
+.quiz-box {
+  background: var(--gold-pale); border: 1px solid #d4b060;
+  border-radius: 6px; padding: 1.3rem 1.5rem; margin: 2rem 0;
+}
+.quiz-box h4 { font-family: 'Zen Antique', serif; font-size: 0.93rem; color: var(--gold); margin-bottom: 0.7rem; }
+.quiz-q { font-size: 0.88rem; color: var(--ink-light); margin-bottom: 0.7rem; line-height: 1.7; }
+.quiz-toggle { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; background: none; border: 1px solid var(--gold); color: var(--gold); padding: 0.35rem 0.85rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.quiz-toggle:hover { background: var(--gold); color: #fff; }
+.quiz-answer { display: none; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid #d4b060; font-size: 0.86rem; line-height: 1.8; color: var(--ink-light); }
+.quiz-answer.open { display: block; }
+
+/* ── PACKAGE TABLE ── */
+.pkg-table {
+  width: 100%; border-collapse: collapse; font-size: 0.84rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.pkg-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.pkg-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.pkg-table tr:last-child td { border-bottom: none; }
+.pkg-table tr:hover td { background: var(--accent-pale); }
+.pkg-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.summary-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.summary-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: var(--accent-pale); }
+.summary-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+/* ── NEXT CHAPTER ── */
+.next-chapter {
+  background: var(--ink); color: var(--paper);
+  border-radius: 6px; padding: 1.5rem 2rem; margin-top: 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.next-chapter .label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+.next-chapter .title { font-family: 'Zen Antique', serif; font-size: 1.03rem; }
+.next-chapter .arrow { font-size: 1.4rem; opacity: 0.5; }
+
+em { font-style: italic; color: var(--ink-light); }
+
+@media (max-width: 900px) {
+  aside { display: none; }
+  main { margin-left: 0; padding: 2rem 1.2rem; }
+  footer { margin-left: 0; }
+  .data-type-grid { grid-template-columns: 1fr 1fr; }
+  .panel-diagram { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="series-title">R言語で学ぶ統計学 ── 情報の彫刻刀</span>
+  <span class="chapter-badge">CHAPTER 1</span>
+</header>
+
+<aside>
+  <h2>第1章 目次</h2>
+  <ul class="toc-list">
+    <li><a href="#rstudio">1.0 RStudioの環境</a></li>
+    <li><a href="#vector-create">1.1 c() でデータを束ねる</a></li>
+    <li><a href="#index">1.2 インデックスの心地よさ</a></li>
+    <li><a href="#vector-ops">1.3 ベクトル演算</a></li>
+    <li><a href="#datatypes">1.4 データ型の種類</a></li>
+    <li><a href="#packages">1.5 パッケージの世界</a></li>
+    <li><a href="#tidyverse">1.6 tidyverse入門</a></li>
+    <li><a href="#csv">1.7 CSVの読み込み</a></li>
+    <li><a href="#ggplot2">1.8 ggplot2で可視化</a></li>
+    <li><a href="#rmd">1.9 R Markdownと再現性</a></li>
+    <li><a href="#rnaseq">1.10 RNASeq解析入門</a></li>
+    <li><a href="#exercises">1.11 練習問題</a></li>
+    <li><a href="#summary">1.12 章まとめ</a></li>
+  </ul>
+  <p class="toc-divider">── 全章リスト ──</p>
+  <ul class="toc-list">
+    <li><a href="r_intro_chapter0.html" class="chapter-link"><span class="ch-num">序章</span>イントロダクション</a></li>
+    <li><a href="#" class="chapter-link current"><span class="ch-num">Ch.1</span>Rとの出会い</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.2</span>情報の箱</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.3</span>可視化という次元削減</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.4</span>基本統計量の本質</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.5</span>検定のロジック</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.6</span>生存解析と時間軸</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.7</span>高次元の向こう側</a></li>
+  </ul>
+  <div class="progress-bar"><div class="progress-fill"></div></div>
+  <p class="progress-label">第1章 / 全7章</p>
+</aside>
+
+<main>
+  <p class="chapter-eyebrow">CHAPTER 1 ── 第1章</p>
+  <h1 class="chapter-title">Rとの出会い<br><span style="font-size:0.68em;color:var(--ink-muted);">〜1から始まるデータの塊〜</span></h1>
+  <p class="chapter-subtitle">環境を整え、ベクトルを掴み、遺伝子データを可視化するまで。</p>
+  <div class="lead-divider"></div>
+
+  <div class="learning-goals">
+    <h3>📌 この章の学習目標</h3>
+    <ul class="goal-list">
+      <li>RStudioの4パネル構成を理解し、快適な作業環境を整えられる</li>
+      <li><span class="inline-code">c()</span> 関数でベクトルを生成し、インデックスで要素を取り出せる</li>
+      <li>パッケージのインストール・読み込みの仕組みを理解する</li>
+      <li>tidyverseの思想とパイプ演算子 <span class="inline-code">|&gt;</span> を使ったデータ操作ができる</li>
+      <li>CSVファイルを読み込み、ggplot2で美しいグラフを描ける</li>
+      <li>R Markdownで解析と文章を一体化した再現可能なレポートを作れる</li>
+      <li>NGS/RNASeqデータ解析の基本的な流れを理解する</li>
+    </ul>
+  </div>
+
+  <!-- ── 1.0 RStudio ── -->
+  <section class="dialogue-section" id="rstudio">
+    <h2 class="section-heading"><span class="section-number">1.0</span>RStudioの環境 ── 4つのパネルを知る</h2>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        先生、RStudioを起動したら画面が4つに分かれていて、どこに何を入力するのか分かりませんでした。
+      </div>
+    </div>
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        ああ、あれは最初は戸惑うよね。でも慣れると、この4分割が非常に合理的に設計されていることがわかる。図で説明しよう。
+      </div>
+    </div>
+
+    <div class="panel-diagram">
+      <div class="panel-label">RStudio の画面構成</div>
+      <div class="panel-item p-source">
+        <div class="panel-title">① Source（左上）</div>
+        <div class="panel-desc">スクリプトエディタ。コードを書いて保存する場所。Ctrl+Enter で実行。<br>→ <strong>ここにコードを書く</strong></div>
+      </div>
+      <div class="panel-item p-env">
+        <div class="panel-title">③ Environment（右上）</div>
+        <div class="panel-desc">現在メモリにある変数・データフレームが一覧表示される。<br>→ <strong>作ったデータを確認</strong></div>
+      </div>
+      <div class="panel-item p-console">
+        <div class="panel-title">② Console（左下）</div>
+        <div class="panel-desc">Rとの対話画面。コードの出力結果がここに表示される。<br>→ <strong>出力と即時実行</strong></div>
+      </div>
+      <div class="panel-item p-files">
+        <div class="panel-title">④ Files/Plots（右下）</div>
+        <div class="panel-desc">ファイル管理・グラフ表示・パッケージ管理・ヘルプ。<br>→ <strong>グラフと補助機能</strong></div>
+      </div>
+    </div>
+
+    <div class="callout-teal">
+      <strong>作業の基本フロー：</strong><br>
+      ① Source（左上）にコードを書く → Ctrl+Enter で実行 → ② Console（左下）に結果が出る → ③ Environment（右上）で変数を確認 → ④ Plots（右下）でグラフを確認
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        まず新しいスクリプトファイルを作ろう。<span class="inline-code">File → New File → R Script</span> だ。これで左上にエディタが開く。コンソールに直接打つのは試行錯誤のときだけにして、本番のコードはすべてスクリプトに書く習慣をつけよう。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># スクリプトの先頭に書く慣習（情報を記録する）</span>
+<span class="c-comment"># ============================================</span>
+<span class="c-comment"># タイトル  : 第1章 練習スクリプト</span>
+<span class="c-comment"># 作成者    : 金子幸弘</span>
+<span class="c-comment"># 作成日    : 2025-01-01</span>
+<span class="c-comment"># 説明      : ベクトルとデータ型の基礎練習</span>
+<span class="c-comment"># ============================================</span>
+
+<span class="c-comment"># まずRのバージョンを確認する</span>
+<span class="c-fn">R.version.string</span>
+<span class="c-out"># [1] "R version 4.4.0 (2024-04-24)"</span>
+
+<span class="c-comment"># 作業ディレクトリの確認と設定</span>
+<span class="c-fn">getwd</span>()               <span class="c-comment"># 現在の作業場所を確認</span>
+<span class="c-fn">setwd</span>(<span class="c-string">"~/Desktop/R_study"</span>)  <span class="c-comment"># 作業場所を変更（任意）</span></pre>
+  </section>
+
+  <!-- ── 1.1 vector ── -->
+  <section class="dialogue-section" id="vector-create">
+    <h2 class="section-heading"><span class="section-number">1.1</span>c() でデータを束ねる ── ベクトルの誕生</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        Rの最小単位はベクトルだ。<span class="inline-code">c()</span> は「combine」の略で、値を1列に束ねる関数だよ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># 糖尿病外来 患者5人のHbA1c（%）</span>
+hba1c &lt;- <span class="c-fn">c</span>(<span class="c-num">5.8</span>, <span class="c-num">7.2</span>, <span class="c-num">6.1</span>, <span class="c-num">8.5</span>, <span class="c-num">6.9</span>)
+hba1c
+<span class="c-out"># [1] 5.8 7.2 6.1 8.5 6.9</span>
+
+<span class="c-fn">length</span>(hba1c)   <span class="c-out"># → 5  （要素の数）</span>
+<span class="c-fn">class</span>(hba1c)    <span class="c-out"># → "numeric"</span>
+
+<span class="c-comment"># コロン演算子：連続整数を一気に作る</span>
+x &lt;- <span class="c-num">1</span>:<span class="c-num">10</span>        <span class="c-comment"># c(1,2,3,...,10) と同じ</span>
+x
+<span class="c-out"># [1]  1  2  3  4  5  6  7  8  9 10</span>
+
+<span class="c-comment"># seq()：より細かい連続値</span>
+<span class="c-fn">seq</span>(<span class="c-num">0</span>, <span class="c-num">1</span>, by = <span class="c-num">0.1</span>)
+<span class="c-out"># [1] 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0</span>
+
+<span class="c-comment"># rep()：繰り返し</span>
+<span class="c-fn">rep</span>(<span class="c-string">"対照群"</span>, times = <span class="c-num">3</span>)
+<span class="c-out"># [1] "対照群" "対照群" "対照群"</span></pre>
+
+    <div class="callout">
+      <strong>代入演算子 &lt;- のショートカット：</strong><br>
+      Windows/Linux：<strong>Alt + -</strong>　Mac：<strong>Option + -</strong>　（RStudio 専用ショートカット）<br>
+      コードの実行：<strong>Ctrl/Cmd + Enter</strong>（選択行 or カーソル行を実行）
+    </div>
+  </section>
+
+  <!-- ── 1.2 index ── -->
+  <section class="dialogue-section" id="index">
+    <h2 class="section-heading"><span class="section-number">1.2</span>インデックスの心地よさ ── 1から始まる世界</h2>
+
+    <div class="vector-visual">
+      <h4>hba1c ベクトルの構造（インデックスは1から始まる）</h4>
+      <div class="vec-row">
+        <div class="vec-label">hba1c[ ]</div>
+        <div class="vec-cells">
+          <div class="vec-cell"><span class="vec-cell-idx">1</span><span class="vec-cell-val">5.8</span></div>
+          <div class="vec-cell"><span class="vec-cell-idx">2</span><span class="vec-cell-val">7.2</span></div>
+          <div class="vec-cell"><span class="vec-cell-idx">3</span><span class="vec-cell-val">6.1</span></div>
+          <div class="vec-cell hl"><span class="vec-cell-idx">4</span><span class="vec-cell-val">8.5</span></div>
+          <div class="vec-cell"><span class="vec-cell-idx">5</span><span class="vec-cell-val">6.9</span></div>
+        </div>
+      </div>
+      <p style="font-size:0.73rem;color:var(--ink-muted);margin-top:0.5rem;">ハイライト（赤）= <span class="inline-code">hba1c[4]</span>。Pythonでは <span class="inline-code">[3]</span> だが、Rでは直感的に <span class="inline-code">[4]</span>。</p>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># 単一要素</span>
+hba1c[<span class="c-num">1</span>]              <span class="c-out"># → 5.8</span>
+hba1c[<span class="c-num">4</span>]              <span class="c-out"># → 8.5</span>
+
+<span class="c-comment"># 範囲指定</span>
+hba1c[<span class="c-num">2</span>:<span class="c-num">4</span>]            <span class="c-out"># → 7.2 6.1 8.5</span>
+
+<span class="c-comment"># 複数指定</span>
+hba1c[<span class="c-fn">c</span>(<span class="c-num">1</span>, <span class="c-num">3</span>, <span class="c-num">5</span>)]     <span class="c-out"># → 5.8 6.1 6.9</span>
+
+<span class="c-comment"># 除外（マイナスインデックス）※Pythonとは逆の意味</span>
+hba1c[-<span class="c-num">4</span>]             <span class="c-out"># → 5.8 7.2 6.1 6.9（4番目を除く）</span>
+
+<span class="c-comment"># 条件でインデックス（論理インデックス）</span>
+hba1c[hba1c &gt; <span class="c-num">7.0</span>]   <span class="c-out"># → 7.2 8.5</span>
+
+<span class="c-comment"># 末尾の要素</span>
+hba1c[<span class="c-fn">length</span>(hba1c)] <span class="c-out"># → 6.9</span></pre>
+  </section>
+
+  <!-- ── 1.3 ops ── -->
+  <section class="dialogue-section" id="vector-ops">
+    <h2 class="section-heading"><span class="section-number">1.3</span>ベクトル演算 ── 一括処理の快感</h2>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 算術演算：全要素に一括適用 ──</span>
+hba1c + <span class="c-num">1</span>
+<span class="c-out"># [1] 6.8 8.2 7.1 9.5 7.9</span>
+
+<span class="c-comment"># HbA1c → 推定平均血糖値（eAG）変換式</span>
+eag &lt;- <span class="c-num">28.7</span> * hba1c - <span class="c-num">46.7</span>
+<span class="c-fn">round</span>(eag, <span class="c-num">1</span>)
+<span class="c-out"># [1] 119.8 160.0 128.5 197.0 151.2</span>
+
+<span class="c-section"># ── 比較演算：TRUE/FALSE ベクトルを返す ──</span>
+hba1c &gt; <span class="c-num">7.0</span>
+<span class="c-out"># [1] FALSE  TRUE FALSE  TRUE FALSE</span>
+
+<span class="c-comment"># 条件を満たす患者数（TRUE=1, FALSE=0 の和）</span>
+<span class="c-fn">sum</span>(hba1c &gt; <span class="c-num">7.0</span>)
+<span class="c-out"># [1] 2</span>
+
+<span class="c-comment"># 割合</span>
+<span class="c-fn">mean</span>(hba1c &gt; <span class="c-num">7.0</span>)
+<span class="c-out"># [1] 0.4  （40%）</span>
+
+<span class="c-section"># ── 欠損値（NA）の扱い ──</span>
+x &lt;- <span class="c-fn">c</span>(<span class="c-num">5.8</span>, NA, <span class="c-num">6.1</span>, NA, <span class="c-num">6.9</span>)
+<span class="c-fn">mean</span>(x)                    <span class="c-out"># → NA （NAに汚染される）</span>
+<span class="c-fn">mean</span>(x, na.rm = <span class="c-kw">TRUE</span>)      <span class="c-out"># → 6.267 （NAを除いて計算）</span>
+<span class="c-fn">sum</span>(<span class="c-fn">is.na</span>(x))              <span class="c-out"># → 2   （欠損値の数）</span></pre>
+  </section>
+
+  <!-- ── 1.4 datatypes ── -->
+  <section class="dialogue-section" id="datatypes">
+    <h2 class="section-heading"><span class="section-number">1.4</span>データ型の種類 ── 彫刻の素材を知る</h2>
+
+    <div class="data-type-grid">
+      <div class="dtype-card">
+        <div class="dtype-name">numeric</div>
+        <div class="dtype-jp">実数（連続値）</div>
+        <code class="dtype-example">c(5.8, 7.2, 6.1)</code>
+        <div class="dtype-desc">HbA1c・BMI・体重など。Rの数値のデフォルト型。</div>
+      </div>
+      <div class="dtype-card">
+        <div class="dtype-name">integer</div>
+        <div class="dtype-jp">整数</div>
+        <code class="dtype-example">c(1L, 2L, 3L)</code>
+        <div class="dtype-desc">年齢・回数など。末尾Lで明示。メモリ効率が良い。</div>
+      </div>
+      <div class="dtype-card">
+        <div class="dtype-name">character</div>
+        <div class="dtype-jp">文字列</div>
+        <code class="dtype-example">c("男性", "女性")</code>
+        <div class="dtype-desc">患者名・性別など。必ず引用符で囲む。</div>
+      </div>
+      <div class="dtype-card">
+        <div class="dtype-name">logical</div>
+        <div class="dtype-jp">論理値</div>
+        <code class="dtype-example">c(TRUE, FALSE)</code>
+        <div class="dtype-desc">条件判定の結果。TRUE=1、FALSE=0として計算可。</div>
+      </div>
+      <div class="dtype-card">
+        <div class="dtype-name">factor</div>
+        <div class="dtype-jp">因子型（カテゴリ）</div>
+        <code class="dtype-example">factor(c("I","II","III"))</code>
+        <div class="dtype-desc">病期・群など順序あるカテゴリ。統計解析で重要。</div>
+      </div>
+      <div class="dtype-card">
+        <div class="dtype-name">NA / NULL</div>
+        <div class="dtype-jp">欠損値 / 空</div>
+        <code class="dtype-example">c(5.8, NA, 6.1)</code>
+        <div class="dtype-desc">NA=欠損（どの型にも入る）。NULL=存在しない。</div>
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># 型の確認</span>
+<span class="c-fn">class</span>(<span class="c-num">5.8</span>)          <span class="c-out"># → "numeric"</span>
+<span class="c-fn">class</span>(<span class="c-num">5L</span>)           <span class="c-out"># → "integer"</span>
+<span class="c-fn">class</span>(<span class="c-string">"HbA1c"</span>)     <span class="c-out"># → "character"</span>
+<span class="c-fn">class</span>(<span class="c-kw">TRUE</span>)         <span class="c-out"># → "logical"</span>
+
+<span class="c-comment"># 型の変換</span>
+<span class="c-fn">as.integer</span>(<span class="c-num">5.8</span>)     <span class="c-out"># → 5   （小数点以下切り捨て）</span>
+<span class="c-fn">as.numeric</span>(<span class="c-kw">TRUE</span>)   <span class="c-out"># → 1</span>
+<span class="c-fn">as.character</span>(<span class="c-num">7.2</span>)  <span class="c-out"># → "7.2"</span>
+
+<span class="c-comment"># factor の作成</span>
+stage &lt;- <span class="c-fn">factor</span>(<span class="c-fn">c</span>(<span class="c-string">"I"</span>, <span class="c-string">"II"</span>, <span class="c-string">"I"</span>, <span class="c-string">"III"</span>),
+                levels = <span class="c-fn">c</span>(<span class="c-string">"I"</span>, <span class="c-string">"II"</span>, <span class="c-string">"III"</span>, <span class="c-string">"IV"</span>))
+<span class="c-fn">table</span>(stage)
+<span class="c-out"># stage</span>
+<span class="c-out">#   I  II III  IV</span>
+<span class="c-out">#   2   1   1   0</span></pre>
+  </section>
+
+  <!-- ── 1.5 packages ── -->
+  <section class="dialogue-section" id="packages">
+    <h2 class="section-heading"><span class="section-number">1.5</span>パッケージの世界 ── 彫刻刀のセットを揃える</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        Rの標準機能だけでもかなりのことができるが、専門家が作ったパッケージを使うと一気に能力が広がる。CRANというリポジトリに2万以上のパッケージが登録されている。医学統計で特に重要なものを表にまとめた。
+      </div>
+    </div>
+
+    <table class="pkg-table">
+      <thead><tr><th>パッケージ名</th><th>用途</th><th>医学での活用例</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">tidyverse</td><td>データ操作・可視化の統合環境</td><td>患者データの整形・グラフ作成全般</td></tr>
+        <tr><td class="mono">ggplot2</td><td>高品質な可視化（tidyverseに含む）</td><td>生存曲線・箱ひげ図・散布図</td></tr>
+        <tr><td class="mono">dplyr</td><td>データ操作（tidyverseに含む）</td><td>患者の絞り込み・集計・結合</td></tr>
+        <tr><td class="mono">readr</td><td>高速CSVインポート（tidyverseに含む）</td><td>電子カルテエクスポートの読み込み</td></tr>
+        <tr><td class="mono">survival</td><td>生存解析・ログランク検定</td><td>全生存期間（OS）・無増悪生存期間（PFS）</td></tr>
+        <tr><td class="mono">meta</td><td>メタアナリシス</td><td>フォレストプロット・出版バイアス評価</td></tr>
+        <tr><td class="mono">DESeq2</td><td>RNASeq差次的発現解析（Bioconductor）</td><td>腫瘍 vs 正常の発現差比較</td></tr>
+        <tr><td class="mono">Seurat</td><td>シングルセルRNA-Seq解析</td><td>scRNA-Seqのクラスタリング・UMAP</td></tr>
+        <tr><td class="mono">rmarkdown</td><td>再現可能な解析レポート</td><td>論文付録・研究報告書の自動生成</td></tr>
+      </tbody>
+    </table>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── パッケージのインストール（初回のみ）──</span>
+<span class="c-fn">install.packages</span>(<span class="c-string">"tidyverse"</span>)    <span class="c-comment"># CRANから取得</span>
+<span class="c-fn">install.packages</span>(<span class="c-string">"survival"</span>)
+<span class="c-fn">install.packages</span>(<span class="c-string">"meta"</span>)
+
+<span class="c-comment"># Bioconductorパッケージ（DESeq2など）は専用の方法で</span>
+<span class="c-fn">install.packages</span>(<span class="c-string">"BiocManager"</span>)
+BiocManager::<span class="c-fn">install</span>(<span class="c-string">"DESeq2"</span>)
+BiocManager::<span class="c-fn">install</span>(<span class="c-string">"clusterProfiler"</span>)
+
+<span class="c-section"># ── パッケージの読み込み（セッションごとに必要）──</span>
+<span class="c-fn">library</span>(tidyverse)   <span class="c-comment"># ggplot2, dplyr, readr 等を一括読み込み</span>
+<span class="c-fn">library</span>(survival)
+
+<span class="c-comment"># 読み込まれたパッケージを確認</span>
+<span class="c-fn">sessionInfo</span>()
+
+<span class="c-comment"># 特定の関数だけ使う（パッケージ全体は読み込まない）</span>
+dplyr::<span class="c-fn">filter</span>(df, age &gt; <span class="c-num">60</span>)</pre>
+
+    <div class="callout-teal">
+      <strong>install.packages() vs library() の違い：</strong><br>
+      <span class="inline-code">install.packages()</span> はパッケージをPCにダウンロード（初回一度だけ）。<span class="inline-code">library()</span> はそのパッケージをRセッションに読み込む（毎回必要）。本の購入 vs 本棚から取り出す、のイメージ。
+    </div>
+  </section>
+
+  <!-- ── 1.6 tidyverse ── -->
+  <section class="dialogue-section" id="tidyverse">
+    <h2 class="section-heading"><span class="section-number">1.6</span>tidyverse入門 ── データをパイプでつなぐ</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        tidyverseはRのデータ分析を劇的に変えた革命的なパッケージ群だ。核心にあるのは「パイプ演算子」という概念だ。データを左から右へ水が流れるように処理していく。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(tidyverse)
+
+<span class="c-comment"># 患者データフレームを作成（詳細は第2章で）</span>
+patients &lt;- <span class="c-fn">tibble</span>(
+  id        = <span class="c-num">1</span>:<span class="c-num">8</span>,
+  sex       = <span class="c-fn">c</span>(<span class="c-string">"M"</span>,<span class="c-string">"F"</span>,<span class="c-string">"M"</span>,<span class="c-string">"F"</span>,<span class="c-string">"M"</span>,<span class="c-string">"F"</span>,<span class="c-string">"M"</span>,<span class="c-string">"F"</span>),
+  age       = <span class="c-fn">c</span>(<span class="c-num">52</span>,<span class="c-num">67</span>,<span class="c-num">45</span>,<span class="c-num">71</span>,<span class="c-num">58</span>,<span class="c-num">63</span>,<span class="c-num">49</span>,<span class="c-num">76</span>),
+  hba1c     = <span class="c-fn">c</span>(<span class="c-num">5.8</span>,<span class="c-num">7.2</span>,<span class="c-num">6.1</span>,<span class="c-num">8.5</span>,<span class="c-num">6.9</span>,<span class="c-num">7.8</span>,<span class="c-num">5.5</span>,<span class="c-num">9.1</span>),
+  bmi       = <span class="c-fn">c</span>(<span class="c-num">24.3</span>,<span class="c-num">27.8</span>,<span class="c-num">22.1</span>,<span class="c-num">30.5</span>,<span class="c-num">25.6</span>,<span class="c-num">28.9</span>,<span class="c-num">23.4</span>,<span class="c-num">31.2</span>),
+  on_insulin = <span class="c-fn">c</span>(<span class="c-kw">F</span>,<span class="c-kw">T</span>,<span class="c-kw">F</span>,<span class="c-kw">T</span>,<span class="c-kw">F</span>,<span class="c-kw">T</span>,<span class="c-kw">F</span>,<span class="c-kw">T</span>)
+)
+
+<span class="c-section"># ── パイプ演算子 |&gt; でデータを流す ──</span>
+<span class="c-comment"># 旧来の書き方（ネストが深くて読みにくい）</span>
+<span class="c-fn">mean</span>(<span class="c-fn">filter</span>(patients, hba1c &gt; <span class="c-num">7.0</span>)$bmi)
+
+<span class="c-comment"># パイプを使った書き方（左から右に読める）</span>
+patients |&gt;
+  <span class="c-fn">filter</span>(hba1c &gt; <span class="c-num">7.0</span>) |&gt;
+  <span class="c-fn">summarise</span>(mean_bmi = <span class="c-fn">mean</span>(bmi),
+            n        = <span class="c-fn">n</span>())
+<span class="c-out"># # A tibble: 1 × 2</span>
+<span class="c-out">#   mean_bmi     n</span>
+<span class="c-out">#      &lt;dbl&gt; &lt;int&gt;</span>
+<span class="c-out">#  1     29.5     4</span>
+
+<span class="c-section"># ── dplyrの主要動詞 ──</span>
+<span class="c-comment"># filter()   : 行の絞り込み</span>
+<span class="c-comment"># select()   : 列の選択</span>
+<span class="c-comment"># mutate()   : 新しい列の作成</span>
+<span class="c-comment"># summarise(): 集計</span>
+<span class="c-comment"># group_by() : グループ化</span>
+<span class="c-comment"># arrange()  : 並び替え</span>
+
+patients |&gt;
+  <span class="c-fn">mutate</span>(dm_control = <span class="c-fn">if_else</span>(hba1c &lt;= <span class="c-num">7.0</span>, <span class="c-string">"良好"</span>, <span class="c-string">"不良"</span>)) |&gt;
+  <span class="c-fn">group_by</span>(dm_control) |&gt;
+  <span class="c-fn">summarise</span>(n = <span class="c-fn">n</span>(), mean_bmi = <span class="c-fn">round</span>(<span class="c-fn">mean</span>(bmi), <span class="c-num">1</span>))
+<span class="c-out"># # A tibble: 2 × 3</span>
+<span class="c-out">#   dm_control     n mean_bmi</span>
+<span class="c-out">#   &lt;chr&gt;      &lt;int&gt;    &lt;dbl&gt;</span>
+<span class="c-out"># 1 不良           4     29.5</span>
+<span class="c-out"># 2 良好           4     23.9</span></pre>
+
+    <div class="callout-purple">
+      <strong>パイプ演算子 |&gt; について：</strong><br>
+      R 4.1以降は組み込みパイプ <span class="inline-code">|&gt;</span> が使える。tidyverse伝統の <span class="inline-code">%&gt;%</span>（magrittrパッケージ）も同様の動作。新規コードでは <span class="inline-code">|&gt;</span> の使用を推奨。RStudioでは <strong>Ctrl/Cmd + Shift + M</strong> でパイプを挿入できる。
+    </div>
+  </section>
+
+  <!-- ── 1.7 CSV ── -->
+  <section class="dialogue-section" id="csv">
+    <h2 class="section-heading"><span class="section-number">1.7</span>CSVの読み込み ── 実データと出会う</h2>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        実際の研究では電子カルテからエクスポートしたCSVファイルを使うと思いますが、Rへの読み込み方を教えてください。
+      </div>
+    </div>
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        よい質問だ。readrパッケージの <span class="inline-code">read_csv()</span> を使うのが現代的な方法だ。日本語データにも対応しているよ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(tidyverse)
+
+<span class="c-section"># ── 基本的な読み込み ──</span>
+df &lt;- <span class="c-fn">read_csv</span>(<span class="c-string">"patients.csv"</span>)
+
+<span class="c-comment"># 日本語CSVで文字化けする場合（UTF-8指定）</span>
+df &lt;- <span class="c-fn">read_csv</span>(<span class="c-string">"patients.csv"</span>, locale = <span class="c-fn">locale</span>(encoding = <span class="c-string">"UTF-8"</span>))
+
+<span class="c-comment"># Shift-JIS（Excelの日本語デフォルト）の場合</span>
+df &lt;- <span class="c-fn">read_csv</span>(<span class="c-string">"patients.csv"</span>, locale = <span class="c-fn">locale</span>(encoding = <span class="c-string">"Shift-JIS"</span>))
+
+<span class="c-section"># ── 読み込み後の最初の確認 ──</span>
+<span class="c-fn">glimpse</span>(df)       <span class="c-comment"># 列名・型・最初の値を一覧表示</span>
+<span class="c-fn">head</span>(df, <span class="c-num">6</span>)       <span class="c-comment"># 最初の6行を表示</span>
+<span class="c-fn">dim</span>(df)           <span class="c-comment"># 行数・列数</span>
+<span class="c-fn">summary</span>(df)       <span class="c-comment"># 各列の基本統計量</span>
+<span class="c-fn">names</span>(df)         <span class="c-comment"># 列名の一覧</span>
+
+<span class="c-section"># ── 書き出し ──</span>
+<span class="c-fn">write_csv</span>(df, <span class="c-string">"output.csv"</span>)   <span class="c-comment"># CSV保存</span>
+
+<span class="c-comment"># Excelファイルの読み書き（readxlパッケージ）</span>
+<span class="c-fn">install.packages</span>(<span class="c-string">"readxl"</span>)
+<span class="c-fn">library</span>(readxl)
+df &lt;- <span class="c-fn">read_excel</span>(<span class="c-string">"patients.xlsx"</span>, sheet = <span class="c-num">1</span>)</pre>
+
+    <div class="callout">
+      <strong>read_csv() vs read.csv() の違い：</strong><br>
+      <span class="inline-code">read.csv()</span> はR標準（遅い・文字列を自動factorに変換する）。<span class="inline-code">read_csv()</span> はreadrパッケージ（高速・tibble型・型推論が賢い）。新規プロジェクトでは <span class="inline-code">read_csv()</span> を推奨。
+    </div>
+  </section>
+
+  <!-- ── 1.8 ggplot2 ── -->
+  <section class="dialogue-section" id="ggplot2">
+    <h2 class="section-heading"><span class="section-number">1.8</span>ggplot2で可視化 ── グラフは仮説の言語</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        ggplot2は「グラフの文法（Grammar of Graphics）」という概念に基づいている。データ・座標系・幾何学的オブジェクト（点・線・棒）を積み重ねてグラフを構築するんだ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(tidyverse)
+
+<span class="c-section"># ── 基本構造：ggplot() + geom_*() ──</span>
+<span class="c-comment"># HbA1cの分布をヒストグラムで</span>
+<span class="c-fn">ggplot</span>(patients, <span class="c-fn">aes</span>(x = hba1c)) +
+  <span class="c-fn">geom_histogram</span>(binwidth = <span class="c-num">0.5</span>, fill = <span class="c-string">"#8b3a2a"</span>, color = <span class="c-string">"white"</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"HbA1c分布"</span>,
+       x = <span class="c-string">"HbA1c (%)"</span>, y = <span class="c-string">"患者数"</span>) +
+  <span class="c-fn">theme_minimal</span>()
+
+<span class="c-section"># ── 散布図：HbA1c vs BMI ──</span>
+<span class="c-fn">ggplot</span>(patients, <span class="c-fn">aes</span>(x = bmi, y = hba1c,
+                      color = on_insulin, shape = sex)) +
+  <span class="c-fn">geom_point</span>(size = <span class="c-num">3</span>) +
+  <span class="c-fn">geom_smooth</span>(method = <span class="c-string">"lm"</span>, se = <span class="c-kw">TRUE</span>, color = <span class="c-string">"gray40"</span>) +
+  <span class="c-fn">scale_color_manual</span>(values = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#c8922a"</span>),
+                     labels = <span class="c-fn">c</span>(<span class="c-string">"非インスリン"</span>, <span class="c-string">"インスリン"</span>)) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"BMI と HbA1c の関連"</span>,
+       x = <span class="c-string">"BMI (kg/m²)"</span>, y = <span class="c-string">"HbA1c (%)"</span>,
+       color = <span class="c-string">"インスリン"</span>, shape = <span class="c-string">"性別"</span>) +
+  <span class="c-fn">theme_classic</span>()
+
+<span class="c-section"># ── 箱ひげ図：性別別HbA1c ──</span>
+<span class="c-fn">ggplot</span>(patients, <span class="c-fn">aes</span>(x = sex, y = hba1c, fill = sex)) +
+  <span class="c-fn">geom_boxplot</span>(alpha = <span class="c-num">0.7</span>) +
+  <span class="c-fn">geom_jitter</span>(width = <span class="c-num">0.1</span>, size = <span class="c-num">2</span>) +   <span class="c-comment"># 個別データも重ねる</span>
+  <span class="c-fn">scale_fill_manual</span>(values = <span class="c-fn">c</span>(<span class="c-string">"#78b8d8"</span>, <span class="c-string">"#d87898"</span>)) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"性別別 HbA1c"</span>, x = <span class="c-string">"性別"</span>, y = <span class="c-string">"HbA1c (%)"</span>) +
+  <span class="c-fn">theme_minimal</span>() +
+  <span class="c-fn">theme</span>(legend.position = <span class="c-string">"none"</span>)
+
+<span class="c-section"># ── グラフの保存 ──</span>
+<span class="c-fn">ggsave</span>(<span class="c-string">"hba1c_boxplot.png"</span>,
+       width = <span class="c-num">8</span>, height = <span class="c-num">5</span>, dpi = <span class="c-num">300</span>)</pre>
+
+    <div class="callout-green">
+      <strong>ggplot2の layer 構造：</strong><br>
+      <span class="inline-code">ggplot(data, aes(...))</span> でキャンバスを用意 → <span class="inline-code">geom_*()</span> で図形を重ねる → <span class="inline-code">scale_*()</span> で色・軸を調整 → <span class="inline-code">labs()</span> でラベル → <span class="inline-code">theme_*()</span> でデザイン。「＋」でレイヤーを積み上げていくイメージ。
+    </div>
+  </section>
+
+  <!-- ── 1.9 Rmd ── -->
+  <section class="dialogue-section" id="rmd">
+    <h2 class="section-heading"><span class="section-number">1.9</span>R Markdown ── 解析と文章の一体化</h2>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        解析結果を論文やレポートに貼り付けるとき、数字を手作業でコピーするのは間違いのもとですよね……。
+      </div>
+    </div>
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        そこでR Markdownだ。Rコードと文章を一つのファイルに書いて、HTMLやPDFや Word文書に自動変換できる。「再現可能な研究（Reproducible Research）」の基盤だよ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">Rmd</span><span class="c-comment">---
+title: "糖尿病外来 データ解析レポート"
+author: "金子幸弘"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true          # 目次を自動生成
+    toc_float: true    # 目次をフロート表示
+    theme: flatly
+  word_document: default
+  pdf_document:
+    latex_engine: xelatex
+---</span>
+
+<span class="c-comment">```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+```</span>
+
+<span class="c-section">## 患者背景</span>
+
+今回の解析対象は糖尿病外来患者 `<span class="c-fn">r nrow(patients)</span>` 名で、
+平均HbA1cは `<span class="c-fn">r round(mean(patients$hba1c), 1)</span>` % であった。
+
+<span class="c-comment">```{r fig1, fig.cap="図1. HbA1c分布"}
+ggplot(patients, aes(x = hba1c)) +
+  geom_histogram(binwidth = 0.5, fill = "#8b3a2a") +
+  theme_minimal()
+```</span>
+
+<span class="c-comment">```{r table1}
+patients |>
+  summarise(
+    n      = n(),
+    mean   = round(mean(hba1c), 1),
+    sd     = round(sd(hba1c), 2),
+    median = median(hba1c)
+  ) |>
+  knitr::kable(caption = "表1. HbA1c基本統計量")
+```</span></pre>
+
+    <div class="callout-teal">
+      <strong>R Markdownの実行方法：</strong><br>
+      RStudioで <span class="inline-code">.Rmd</span> ファイルを開き、上部の「Knit」ボタンをクリック（またはCtrl/Cmd+Shift+K）。HTML/PDF/Word に自動変換される。コードの出力・グラフが文章と合体した完全なレポートが生成される。
+    </div>
+  </section>
+
+  <!-- ── 1.10 RNASeq ── -->
+  <section class="dialogue-section" id="rnaseq">
+    <h2 class="section-heading"><span class="section-number">1.10</span>NGS / RNASeq解析入門 ── 高次元の彫刻</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        いよいよ本章の最大の山場だ。RNASeqは「どの遺伝子がどのくらい発現しているか」を網羅的に測定する技術だ。腫瘍vs正常、治療前vs治療後……「2万次元のデータから意味ある差を彫り出す」典型例だよ。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>💡 RNASeq解析の全体フロー</h4>
+      <p><strong>① 生データ（FASTQ）</strong> → FastQCで品質確認 → <strong>② アライメント</strong>（STAR/HISAT2でゲノムにマッピング）→ <strong>③ カウントデータ</strong>（featureCountsでgene×sampleの行列）→ <strong>④ Rで差次的発現解析</strong>（DESeq2/edgeR）→ <strong>⑤ 可視化・パスウェイ解析</strong>（ggplot2, clusterProfiler）</p>
+      <p>ここではRが登場するステップ③以降を扱う。</p>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── DESeq2によるRNA-Seq差次的発現解析 ──</span>
+<span class="c-fn">library</span>(DESeq2)
+<span class="c-fn">library</span>(tidyverse)
+
+<span class="c-comment"># カウントマトリクスの読み込み（行=遺伝子, 列=サンプル）</span>
+counts &lt;- <span class="c-fn">read_csv</span>(<span class="c-string">"counts.csv"</span>, row.names = <span class="c-num">1</span>) |&gt;
+  <span class="c-fn">as.matrix</span>()
+<span class="c-comment"># dim(counts): 20000行（遺伝子数） × 12列（サンプル数）</span>
+
+<span class="c-comment"># サンプル情報テーブル</span>
+coldata &lt;- <span class="c-fn">tibble</span>(
+  sample    = <span class="c-fn">colnames</span>(counts),
+  condition = <span class="c-fn">factor</span>(<span class="c-fn">rep</span>(<span class="c-fn">c</span>(<span class="c-string">"tumor"</span>, <span class="c-string">"normal"</span>), each = <span class="c-num">6</span>))
+)
+
+<span class="c-section"># ── DESeq2オブジェクトの作成と正規化 ──</span>
+dds &lt;- <span class="c-fn">DESeqDataSetFromMatrix</span>(
+  countData = counts,
+  colData   = coldata,
+  design    = ~condition
+)
+
+<span class="c-comment"># 低発現遺伝子のフィルタリング（解析精度向上）</span>
+dds &lt;- dds[<span class="c-fn">rowSums</span>(<span class="c-fn">counts</span>(dds)) &gt;= <span class="c-num">10</span>, ]
+
+<span class="c-comment"># 差次的発現解析の実行</span>
+dds &lt;- <span class="c-fn">DESeq</span>(dds)
+
+<span class="c-section"># ── 結果の取得と整形 ──</span>
+res &lt;- <span class="c-fn">results</span>(dds, contrast = <span class="c-fn">c</span>(<span class="c-string">"condition"</span>, <span class="c-string">"tumor"</span>, <span class="c-string">"normal"</span>))
+res_df &lt;- <span class="c-fn">as.data.frame</span>(res) |&gt;
+  <span class="c-fn">rownames_to_column</span>(<span class="c-string">"gene"</span>) |&gt;
+  <span class="c-fn">as_tibble</span>() |&gt;
+  <span class="c-fn">arrange</span>(padj)
+
+<span class="c-comment"># 有意に発現変動した遺伝子（DEG）</span>
+degs &lt;- res_df |&gt;
+  <span class="c-fn">filter</span>(padj &lt; <span class="c-num">0.05</span>, <span class="c-fn">abs</span>(log2FoldChange) &gt; <span class="c-num">1</span>)
+<span class="c-fn">nrow</span>(degs)   <span class="c-comment"># 有意DEG数</span>
+
+<span class="c-section"># ── Volcano plot（火山図）──</span>
+res_df |&gt;
+  <span class="c-fn">mutate</span>(
+    sig = <span class="c-fn">case_when</span>(
+      padj &lt; <span class="c-num">0.05</span> &amp; log2FoldChange &gt;  <span class="c-num">1</span> ~ <span class="c-string">"Up"</span>,
+      padj &lt; <span class="c-num">0.05</span> &amp; log2FoldChange &lt; -<span class="c-num">1</span> ~ <span class="c-string">"Down"</span>,
+      <span class="c-kw">TRUE</span>                                ~ <span class="c-string">"NS"</span>
+    )
+  ) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = log2FoldChange, y = -<span class="c-fn">log10</span>(pvalue),
+             color = sig)) +
+  <span class="c-fn">geom_point</span>(alpha = <span class="c-num">0.5</span>, size = <span class="c-num">0.8</span>) +
+  <span class="c-fn">scale_color_manual</span>(values = <span class="c-fn">c</span>(Up = <span class="c-string">"#c83a2a"</span>, Down = <span class="c-string">"#2a6b8a"</span>, NS = <span class="c-string">"#aaa090"</span>)) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-fn">c</span>(-<span class="c-num">1</span>, <span class="c-num">1</span>), linetype = <span class="c-string">"dashed"</span>, color = <span class="c-string">"gray50"</span>) +
+  <span class="c-fn">geom_hline</span>(yintercept = -<span class="c-fn">log10</span>(<span class="c-num">0.05</span>), linetype = <span class="c-string">"dashed"</span>, color = <span class="c-string">"gray50"</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"Volcano Plot: Tumor vs Normal"</span>,
+       x = <span class="c-string">"log2 Fold Change"</span>, y = <span class="c-string">"-log10(p-value)"</span>,
+       color = <span class="c-string">"DEG status"</span>) +
+  <span class="c-fn">theme_classic</span>()
+
+<span class="c-section"># ── ヒートマップ（pheatmapパッケージ）──</span>
+<span class="c-fn">library</span>(pheatmap)
+top50 &lt;- degs |&gt; <span class="c-fn">slice_min</span>(padj, n = <span class="c-num">50</span>) |&gt; <span class="c-fn">pull</span>(gene)
+mat   &lt;- <span class="c-fn">assay</span>(<span class="c-fn">vst</span>(dds))[top50, ]
+<span class="c-fn">pheatmap</span>(mat,
+         scale          = <span class="c-string">"row"</span>,
+         annotation_col = <span class="c-fn">as.data.frame</span>(<span class="c-fn">colData</span>(dds)[, <span class="c-string">"condition"</span>, drop = <span class="c-kw">FALSE</span>]),
+         show_rownames   = <span class="c-kw">FALSE</span>,
+         color           = <span class="c-fn">colorRampPalette</span>(<span class="c-fn">c</span>(<span class="c-string">"#2a5080"</span>, <span class="c-string">"white"</span>, <span class="c-string">"#8b3a2a"</span>))(<span class="c-num">50</span>))
+
+<span class="c-section"># ── パスウェイ解析（GSEA）──</span>
+<span class="c-fn">library</span>(clusterProfiler)
+<span class="c-fn">library</span>(org.Hs.eg.db)
+
+gene_list &lt;- res_df |&gt;
+  <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(padj)) |&gt;
+  <span class="c-fn">arrange</span>(<span class="c-fn">desc</span>(log2FoldChange)) |&gt;
+  <span class="c-fn">pull</span>(log2FoldChange, name = gene)
+
+gsea_res &lt;- <span class="c-fn">gseGO</span>(
+  geneList     = gene_list,
+  OrgDb        = org.Hs.eg.db,
+  keyType      = <span class="c-string">"SYMBOL"</span>,
+  ont          = <span class="c-string">"BP"</span>,
+  pvalueCutoff = <span class="c-num">0.05</span>
+)
+<span class="c-fn">dotplot</span>(gsea_res, showCategory = <span class="c-num">15</span>)</pre>
+
+    <div class="callout-purple">
+      <strong>DESeq2の統計的背景：</strong><br>
+      RNASeqカウントデータは負の二項分布（Negative Binomial Distribution）に従う。DESeq2はサンプル間のライブラリサイズ差を「サイズ因子（size factor）」で補正し、遺伝子ごとの分散を全遺伝子からshrinkage推定することで、少ないサンプルでも安定した検定を実現している。調整済みp値（padj）はBenjamini-Hochberg法で多重比較補正済み。
+    </div>
+  </section>
+
+  <!-- ── 1.11 exercises ── -->
+  <section class="dialogue-section" id="exercises">
+    <h2 class="section-heading"><span class="section-number">1.11</span>練習問題</h2>
+
+    <div class="quiz-box">
+      <h4>🧠 問題1：ベクトル操作</h4>
+      <p class="quiz-q">以下の収縮期血圧ベクトルを使って、①140以上の患者数、②140未満の患者の平均血圧、③最大値と最小値の差を求めよ。<br><code style="font-family:'JetBrains Mono',monospace;font-size:0.85em;">sbp &lt;- c(128, 145, 118, 162, 135, 158, 122, 141)</code></p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>sbp &lt;- <span class="c-fn">c</span>(<span class="c-num">128</span>, <span class="c-num">145</span>, <span class="c-num">118</span>, <span class="c-num">162</span>, <span class="c-num">135</span>, <span class="c-num">158</span>, <span class="c-num">122</span>, <span class="c-num">141</span>)
+
+<span class="c-comment"># ① 140以上の患者数</span>
+<span class="c-fn">sum</span>(sbp >= <span class="c-num">140</span>)
+<span class="c-out"># [1] 4</span>
+
+<span class="c-comment"># ② 140未満の患者の平均血圧</span>
+<span class="c-fn">mean</span>(sbp[sbp &lt; <span class="c-num">140</span>])
+<span class="c-out"># [1] 125.75</span>
+
+<span class="c-comment"># ③ 最大値と最小値の差（range）</span>
+<span class="c-fn">diff</span>(<span class="c-fn">range</span>(sbp))
+<span class="c-out"># [1] 44</span></pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題2：tidyverse操作</h4>
+      <p class="quiz-q">以下のコードで作成した <span class="inline-code">patients</span> データから、①女性患者のみ抽出して平均HbA1cを求めよ。②BMIが25以上の患者に "過体重" ラベルを付け、そのグループ別HbA1c平均を計算せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># ① 女性患者の平均HbA1c</span>
+patients |&gt;
+  <span class="c-fn">filter</span>(sex == <span class="c-string">"F"</span>) |&gt;
+  <span class="c-fn">summarise</span>(mean_hba1c = <span class="c-fn">mean</span>(hba1c))
+<span class="c-out"># mean_hba1c</span>
+<span class="c-out">#       8.15</span>
+
+<span class="c-comment"># ② BMIグループ別HbA1c平均</span>
+patients |&gt;
+  <span class="c-fn">mutate</span>(bmi_group = <span class="c-fn">if_else</span>(bmi >= <span class="c-num">25</span>, <span class="c-string">"過体重"</span>, <span class="c-string">"標準"</span>)) |&gt;
+  <span class="c-fn">group_by</span>(bmi_group) |&gt;
+  <span class="c-fn">summarise</span>(n          = <span class="c-fn">n</span>(),
+            mean_hba1c = <span class="c-fn">round</span>(<span class="c-fn">mean</span>(hba1c), <span class="c-num">2</span>))
+<span class="c-out"># bmi_group     n mean_hba1c</span>
+<span class="c-out"># 過体重         5       8.30</span>
+<span class="c-out"># 標準           3       5.80</span></pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題3：ggplot2</h4>
+      <p class="quiz-q"><span class="inline-code">patients</span> データで、インスリン使用群/非使用群に色分けしたHbA1cの箱ひげ図を描け。個別データ点も重ねて表示すること。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>patients |&gt;
+  <span class="c-fn">mutate</span>(insulin_label = <span class="c-fn">if_else</span>(on_insulin, <span class="c-string">"インスリン使用"</span>, <span class="c-string">"非使用"</span>)) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = insulin_label, y = hba1c, fill = insulin_label)) +
+  <span class="c-fn">geom_boxplot</span>(alpha = <span class="c-num">0.6</span>, outlier.shape = NA) +
+  <span class="c-fn">geom_jitter</span>(width = <span class="c-num">0.12</span>, size = <span class="c-num">2.5</span>, color = <span class="c-string">"#1c1710"</span>) +
+  <span class="c-fn">scale_fill_manual</span>(values = <span class="c-fn">c</span>(<span class="c-string">"インスリン使用"</span> = <span class="c-string">"#c8922a"</span>,
+                               <span class="c-string">"非使用"</span>       = <span class="c-string">"#2a6b6e"</span>)) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"インスリン使用の有無別 HbA1c"</span>,
+       x = <span class="c-string">"治療群"</span>, y = <span class="c-string">"HbA1c (%)"</span>) +
+  <span class="c-fn">theme_classic</span>() +
+  <span class="c-fn">theme</span>(legend.position = <span class="c-string">"none"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題4（発展）：DESeq2</h4>
+      <p class="quiz-q">DESeq2で解析後、<span class="inline-code">res_df</span> から「padj &lt; 0.01かつ|log2FC| &gt; 2」の遺伝子を抽出し、上位10遺伝子の名前とlog2FCを表示せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>res_df |&gt;
+  <span class="c-fn">filter</span>(padj &lt; <span class="c-num">0.01</span>, <span class="c-fn">abs</span>(log2FoldChange) &gt; <span class="c-num">2</span>) |&gt;
+  <span class="c-fn">arrange</span>(padj) |&gt;
+  <span class="c-fn">slice_head</span>(n = <span class="c-num">10</span>) |&gt;
+  <span class="c-fn">select</span>(gene, log2FoldChange, padj) |&gt;
+  <span class="c-fn">mutate</span>(<span class="c-fn">across</span>(<span class="c-fn">where</span>(is.numeric), \(x) <span class="c-fn">round</span>(x, <span class="c-num">3</span>)))</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 1.12 summary ── -->
+  <section class="dialogue-section" id="summary">
+    <h2 class="section-heading"><span class="section-number">1.12</span>章まとめ</h2>
+
+    <table class="summary-table">
+      <thead><tr><th>トピック</th><th>キーワード</th><th>一言まとめ</th></tr></thead>
+      <tbody>
+        <tr><td>RStudio環境</td><td class="mono">Source / Console / Environment / Plots</td><td>左上でコードを書き、左下で結果を確認</td></tr>
+        <tr><td>ベクトル生成</td><td class="mono">c()、1:n、seq()、rep()</td><td>Rのすべての基盤。インデックスは1から</td></tr>
+        <tr><td>インデックス</td><td class="mono">x[1]、x[-1]、x[x&gt;7]</td><td>マイナスは除外。論理インデックスが強力</td></tr>
+        <tr><td>データ型</td><td class="mono">numeric / integer / character / logical / factor / NA</td><td>型を意識することが解析ミス防止の第一歩</td></tr>
+        <tr><td>パッケージ</td><td class="mono">install.packages() / library()</td><td>購入（一度）→ 読み込み（毎回）</td></tr>
+        <tr><td>tidyverse</td><td class="mono">|&gt; / filter / mutate / group_by / summarise</td><td>パイプでデータを左から右へ流す</td></tr>
+        <tr><td>CSV読み込み</td><td class="mono">read_csv() / glimpse() / head()</td><td>読んだら必ずglimpse()で確認する習慣</td></tr>
+        <tr><td>ggplot2</td><td class="mono">ggplot() + geom_*() + theme_*()</td><td>レイヤーを積み重ねてグラフを構築する</td></tr>
+        <tr><td>R Markdown</td><td class="mono">.Rmd / Knit / ```{r}</td><td>解析と文章を一体化した再現可能なレポート</td></tr>
+        <tr><td>RNASeq / DESeq2</td><td class="mono">DESeq() / results() / Volcano plot</td><td>2万次元から意味ある差を彫り出す</td></tr>
+      </tbody>
+    </table>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        第1章はここまで。ベクトルという「点と線」から始まり、パッケージという「道具箱」を手に入れ、RNASeqという「2万次元の彫刻」まで一気に駆け抜けた。次の第2章では、複数のベクトルを「テーブル」として整理する——データフレームの世界に入る。第1章で作った患者データが、そこで初めて「分析できる形」になるよ。
+      </div>
+    </div>
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        RNASeqのvolcano plotのコードを自分で書けるようになるとは思っていませんでした……！練習問題でもう一度手を動かしてみます。
+      </div>
+    </div>
+
+    <div class="next-chapter">
+      <div>
+        <div class="label">NEXT CHAPTER</div>
+        <div class="title">第2章：情報の箱 〜カオスを整理するデータフレーム〜</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>⚠ 注意書き：本テキストは生成AIによって作成されたものであり、内容に誤りを含む可能性があります。利用・参照は自己責任でお願いします。再配布については、自己責任の範囲内であれば問題ありません。</p>
+  <span class="footer-mark">―― 統計は専門ではない研究者の備忘録 ――</span>
+</footer>
+
+<script>
+const links = document.querySelectorAll('aside .toc-list a:not(.chapter-link)');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector('aside .toc-list a[href="#' + e.target.id + '"]');
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
