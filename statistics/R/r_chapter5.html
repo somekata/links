@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第5章：検定のロジック | R言語で学ぶ統計学</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8;
+  --paper: #fdfaf3;
+  --paper2: #f8f4eb;
+  --ink: #1c1710;
+  --ink-light: #4a3f30;
+  --ink-muted: #7a6e5f;
+  --accent: #8b3a2a;
+  --accent-pale: #f0e6df;
+  --gold: #c8922a;
+  --gold-pale: #faf3e0;
+  --teal: #2a6b6e;
+  --teal-pale: #e0f0f0;
+  --green: #3a6b3a;
+  --green-pale: #e8f4e8;
+  --purple: #5a3a8a;
+  --purple-pale: #f0eaf8;
+  --border: #d4c9b0;
+  --border-light: #e8e0cc;
+  --sidebar-w: 260px;
+  --shadow: 0 2px 12px rgba(28,23,16,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.9rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+header .series-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+header .chapter-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+aside {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  background: var(--paper2);
+  border-right: 1px solid var(--border);
+  padding: 1.6rem 1.2rem 2rem;
+  z-index: 90;
+}
+aside h2 {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 0.1rem; }
+.toc-list a {
+  display: block;
+  font-size: 0.79rem;
+  color: var(--ink-light);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 3px;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.45;
+}
+.toc-list a:hover, .toc-list a.active {
+  background: var(--accent-pale);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+.toc-divider {
+  margin: 1rem 0 0.6rem;
+  font-family: 'Zen Antique', serif;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+}
+.chapter-link {
+  font-size: 0.76rem !important;
+  color: var(--ink-muted) !important;
+  padding: 0.28rem 0.6rem !important;
+}
+.chapter-link.current { color: var(--accent) !important; font-weight: 500; }
+.chapter-link .ch-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  margin-right: 0.3em;
+}
+.progress-bar {
+  height: 3px;
+  background: var(--border-light);
+  margin: 1.5rem 0 0;
+  border-radius: 2px;
+}
+.progress-fill {
+  height: 100%;
+  width: calc(100% * 5 / 7);
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 2px;
+}
+.progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
+  text-align: right;
+}
+
+main {
+  margin-left: var(--sidebar-w);
+  margin-top: 52px;
+  padding: 3rem 4rem 4rem 3.5rem;
+  max-width: calc(860px + var(--sidebar-w));
+  min-height: calc(100vh - 52px);
+}
+
+footer {
+  margin-left: var(--sidebar-w);
+  background: var(--paper2);
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  line-height: 1.7;
+  text-align: center;
+}
+footer .footer-mark {
+  font-family: 'Zen Antique', serif;
+  display: block;
+  margin-top: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+.chapter-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+.chapter-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 2.1rem;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+.chapter-subtitle {
+  font-size: 0.97rem;
+  color: var(--ink-muted);
+  font-weight: 300;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+.lead-divider {
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  margin-bottom: 2.5rem;
+}
+
+.dialogue-section { margin-bottom: 3.5rem; }
+.section-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1.18rem;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-heading::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--gold);
+  margin-right: 0.2em;
+}
+.subsection-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  color: var(--teal);
+  margin: 2rem 0 1rem;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--teal);
+}
+
+.turn { display: flex; gap: 1rem; margin-bottom: 1.3rem; align-items: flex-start; }
+.turn.student { flex-direction: row-reverse; }
+.avatar {
+  flex-shrink: 0; width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Zen Antique', serif; font-size: 0.82rem;
+}
+.avatar.teacher { background: var(--ink); color: var(--paper); }
+.avatar.student-av { background: var(--teal); color: #fff; }
+.bubble {
+  max-width: 82%;
+  padding: 0.9rem 1.1rem;
+  border-radius: 4px 12px 12px 12px;
+  line-height: 1.85; font-size: 0.91rem;
+  box-shadow: var(--shadow);
+}
+.turn.student .bubble { border-radius: 12px 4px 12px 12px; }
+.bubble.teacher-bubble { background: var(--paper); border: 1px solid var(--border-light); color: var(--ink); }
+.bubble.student-bubble { background: var(--teal-pale); border: 1px solid #c0dede; color: var(--teal); }
+.speaker-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 0.35rem; opacity: 0.6; display: block; }
+
+pre.code-block {
+  background: #1e1a14;
+  color: #d4c9a8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.81rem;
+  padding: 1.3rem 1.5rem;
+  border-radius: 4px;
+  margin: 1.1rem 0;
+  line-height: 1.8;
+  overflow-x: auto;
+  white-space: pre;
+  position: relative;
+}
+.lang-tag {
+  position: absolute; top: 0.5rem; right: 0.8rem;
+  font-size: 0.62rem; color: #5a5040; letter-spacing: 0.08em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.c-comment { color: #6a6050; }
+.c-string  { color: #a8c878; }
+.c-num     { color: #e8c070; }
+.c-fn      { color: #78b8d8; }
+.c-kw      { color: #d87850; }
+.c-out     { color: #8aaa70; }
+.c-section { color: #888070; font-style: italic; display: block; margin: 0.5em 0 0.1em; font-size: 0.74rem; letter-spacing: 0.05em; }
+
+.inline-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.81em;
+  background: rgba(28,23,16,0.07); padding: 0.1em 0.4em;
+  border-radius: 3px; color: var(--accent);
+}
+
+.callout, .callout-teal, .callout-green, .callout-purple {
+  padding: 1rem 1.2rem;
+  border-radius: 0 4px 4px 0;
+  margin: 1.4rem 0;
+  font-size: 0.89rem; line-height: 1.8;
+  color: var(--ink-light);
+}
+.callout        { border-left: 4px solid var(--gold);   background: var(--gold-pale); }
+.callout-teal   { border-left: 4px solid var(--teal);   background: var(--teal-pale); }
+.callout-green  { border-left: 4px solid var(--green);  background: var(--green-pale); }
+.callout-purple { border-left: 4px solid var(--purple); background: var(--purple-pale); }
+.callout strong        { color: var(--gold); }
+.callout-teal strong   { color: var(--teal); }
+.callout-green strong  { color: var(--green); }
+.callout-purple strong { color: var(--purple); }
+
+.learning-goals {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  padding: 1.3rem 1.5rem; margin-bottom: 2.5rem;
+  box-shadow: var(--shadow);
+}
+.learning-goals h3 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--teal); margin-bottom: 0.8rem; }
+.goal-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.goal-list li { font-size: 0.85rem; color: var(--ink-light); display: flex; align-items: flex-start; gap: 0.5rem; line-height: 1.6; }
+.goal-list li::before { content: '✓'; font-family: 'JetBrains Mono', monospace; color: var(--teal); font-size: 0.78rem; flex-shrink: 0; margin-top: 0.12rem; }
+
+.concept-box {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.4rem 1.6rem; margin: 1.8rem 0; box-shadow: var(--shadow);
+}
+.concept-box h4 { font-family: 'Zen Antique', serif; font-size: 0.97rem; color: var(--ink); margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-light); }
+.concept-box p { font-size: 0.88rem; line-height: 1.85; color: var(--ink-light); margin-bottom: 0.7rem; }
+.concept-box p:last-child { margin-bottom: 0; }
+
+/* ── HYPOTHESIS FLOW ── */
+.hyp-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 1.5rem 0;
+}
+.hyp-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+}
+.hyp-step:nth-child(odd)  { background: var(--paper); }
+.hyp-step:nth-child(even) { background: var(--paper2); }
+.hyp-step:first-child { border-radius: 6px 6px 0 0; border: 1px solid var(--border); border-bottom: none; }
+.hyp-step:last-child  { border-radius: 0 0 6px 6px; border: 1px solid var(--border); }
+.hyp-step:not(:first-child):not(:last-child) { border: 1px solid var(--border); border-top: none; border-bottom: none; }
+.hyp-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--gold);
+  background: var(--gold-pale);
+  border: 1px solid #d4b060;
+  border-radius: 50%;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+.hyp-content { font-size: 0.87rem; line-height: 1.7; color: var(--ink-light); }
+.hyp-content strong { color: var(--ink); font-weight: 500; }
+
+/* ── TEST SELECTION TABLE ── */
+.test-table {
+  width: 100%; border-collapse: collapse; font-size: 0.82rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.test-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.test-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.test-table tr:last-child td { border-bottom: none; }
+.test-table tr:hover td { background: var(--accent-pale); }
+.test-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+.test-table .tag-para  { background: var(--teal-pale); color: var(--teal); padding: 0.1em 0.5em; border-radius: 3px; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; }
+.test-table .tag-nonpara { background: var(--purple-pale); color: var(--purple); padding: 0.1em 0.5em; border-radius: 3px; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; }
+
+/* ── ERROR TYPE GRID ── */
+.error-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  margin: 1.4rem 0;
+}
+.error-card {
+  border-radius: 6px;
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--shadow);
+}
+.error-card.type1 {
+  background: var(--accent-pale);
+  border: 1px solid #d4a090;
+}
+.error-card.type2 {
+  background: var(--purple-pale);
+  border: 1px solid #b0a0d0;
+}
+.error-card .e-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.93rem;
+  margin-bottom: 0.5rem;
+}
+.error-card.type1 .e-title { color: var(--accent); }
+.error-card.type2 .e-title { color: var(--purple); }
+.error-card .e-def {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+.error-card .e-body { font-size: 0.79rem; color: var(--ink-light); line-height: 1.6; }
+
+/* ── QUIZ ── */
+.quiz-box {
+  background: var(--gold-pale); border: 1px solid #d4b060;
+  border-radius: 6px; padding: 1.3rem 1.5rem; margin: 2rem 0;
+}
+.quiz-box h4 { font-family: 'Zen Antique', serif; font-size: 0.93rem; color: var(--gold); margin-bottom: 0.7rem; }
+.quiz-q { font-size: 0.88rem; color: var(--ink-light); margin-bottom: 0.7rem; line-height: 1.7; }
+.quiz-toggle { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; background: none; border: 1px solid var(--gold); color: var(--gold); padding: 0.35rem 0.85rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.quiz-toggle:hover { background: var(--gold); color: #fff; }
+.quiz-answer { display: none; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid #d4b060; font-size: 0.86rem; line-height: 1.8; color: var(--ink-light); }
+.quiz-answer.open { display: block; }
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.summary-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.summary-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: var(--accent-pale); }
+.summary-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+.next-chapter {
+  background: var(--ink); color: var(--paper);
+  border-radius: 6px; padding: 1.5rem 2rem; margin-top: 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.next-chapter .label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+.next-chapter .title { font-family: 'Zen Antique', serif; font-size: 1.03rem; }
+.next-chapter .arrow { font-size: 1.4rem; opacity: 0.5; }
+
+em { font-style: italic; color: var(--ink-light); }
+
+@media (max-width: 900px) {
+  aside { display: none; }
+  main { margin-left: 0; padding: 2rem 1.2rem; }
+  footer { margin-left: 0; }
+  .error-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="series-title">R言語で学ぶ統計学 ── 情報の彫刻刀</span>
+  <span class="chapter-badge">CHAPTER 5</span>
+</header>
+
+<aside>
+  <h2>第5章 目次</h2>
+  <ul class="toc-list">
+    <li><a href="#logic">5.1 仮説検定のロジック</a></li>
+    <li><a href="#errors">5.2 第1種・第2種の過誤</a></li>
+    <li><a href="#ttest">5.3 t検定（対応なし・あり）</a></li>
+    <li><a href="#nonpara">5.4 ノンパラメトリック検定</a></li>
+    <li><a href="#chisq">5.5 カイ二乗検定と比率の検定</a></li>
+    <li><a href="#anova">5.6 分散分析（ANOVA）</a></li>
+    <li><a href="#multiple">5.7 多重比較の問題</a></li>
+    <li><a href="#effect">5.8 効果量と検定力</a></li>
+    <li><a href="#pvalue">5.9 p値を超えて ── 統計的有意性の限界</a></li>
+    <li><a href="#exercises">5.10 練習問題</a></li>
+    <li><a href="#chapter-summary">5.11 章まとめ</a></li>
+  </ul>
+
+  <div class="toc-divider">── 章一覧 ──</div>
+  <ul class="toc-list">
+    <li><a href="r_intro_chapter0.html" class="chapter-link"><span class="ch-num">序章</span>イントロダクション</a></li>
+    <li><a href="r_chapter1.html" class="chapter-link"><span class="ch-num">Ch.1</span>Rとの出会い</a></li>
+    <li><a href="r_chapter2.html" class="chapter-link"><span class="ch-num">Ch.2</span>情報の箱</a></li>
+    <li><a href="r_chapter3.html" class="chapter-link"><span class="ch-num">Ch.3</span>可視化という次元削減</a></li>
+    <li><a href="r_chapter4.html" class="chapter-link"><span class="ch-num">Ch.4</span>基本統計量の本質</a></li>
+    <li><a href="#" class="chapter-link current"><span class="ch-num">Ch.5</span>検定のロジック</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.6</span>生存解析と時間軸</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.7</span>高次元の向こう側</a></li>
+  </ul>
+
+  <div class="progress-bar">
+    <div class="progress-fill"></div>
+  </div>
+  <div class="progress-label">Ch.5 / 7</div>
+</aside>
+
+<main>
+  <p class="chapter-eyebrow">CHAPTER 5 ── 第5章</p>
+  <h1 class="chapter-title">検定のロジック<br><span style="font-size:0.68em;color:var(--ink-muted);">〜「偶然」を切り捨てる勇気〜</span></h1>
+  <p class="chapter-subtitle">差があるように見えるのは「本当の差」か「偶然のゆらぎ」か——仮説検定はその問いに答える道具だ。p値の本当の意味から、効果量・検定力まで掘り下げる。</p>
+  <div class="lead-divider"></div>
+
+  <div class="learning-goals">
+    <h3>📌 この章の学習目標</h3>
+    <ul class="goal-list">
+      <li>帰無仮説・対立仮説・p値の概念を正確に説明できる</li>
+      <li>第1種過誤（α）と第2種過誤（β）の違いと関係を説明できる</li>
+      <li>対応なし・あり t検定を適切に使い分け、Rで実行できる</li>
+      <li>ウィルコクソン検定・マン・ホイットニー検定を使える</li>
+      <li>カイ二乗検定・フィッシャーの正確検定を実行できる</li>
+      <li>一元配置・二元配置ANOVAを実行し、多重比較を行える</li>
+      <li>効果量（Cohen's d）と検定力（power）を計算できる</li>
+      <li>p値の限界と「統計的有意性」の誤用について議論できる</li>
+    </ul>
+  </div>
+
+  <!-- ── 5.1 ── -->
+  <section class="dialogue-section" id="logic">
+    <h2 class="section-heading"><span class="section-number">5.1</span>仮説検定のロジック ── 「偶然」を疑う</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        ある新薬を使った50人のHbA1cが平均7.1%、対照群50人が平均7.4%だったとする。この差0.3%は「新薬が効いた証拠」だろうか？　それとも「たまたまそういうサンプルを引いた」という偶然だろうか？　仮説検定はこの問いに答える論理の枠組みだ。
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        差が大きいほど「偶然じゃない」と言えそうですが、どう定量化するんですか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        逆向きに考えるんだ。「もし本当は差がないとしたら（帰無仮説）、今回のような差が偶然生じる確率はどれくらいか？」——この確率がp値だ。p値が小さいほど「帰無仮説のもとではめったに起きないこと」が起きたことを示す。慣例としてp &lt; 0.05 を「有意」とみなして帰無仮説を棄却する。
+      </div>
+    </div>
+
+    <div class="hyp-flow">
+      <div class="hyp-step">
+        <div class="hyp-num">1</div>
+        <div class="hyp-content"><strong>帰無仮説（H₀）を立てる：</strong>「新薬群と対照群のHbA1cに差はない」</div>
+      </div>
+      <div class="hyp-step">
+        <div class="hyp-num">2</div>
+        <div class="hyp-content"><strong>対立仮説（H₁）を立てる：</strong>「新薬群のほうがHbA1cが低い（または差がある）」</div>
+      </div>
+      <div class="hyp-step">
+        <div class="hyp-num">3</div>
+        <div class="hyp-content"><strong>検定統計量を計算する：</strong>t値・χ²値など。データの差を「標準誤差」で割った比として表現される</div>
+      </div>
+      <div class="hyp-step">
+        <div class="hyp-num">4</div>
+        <div class="hyp-content"><strong>p値を求める：</strong>帰無仮説が正しいとき、この検定統計量以上に極端な値が出る確率</div>
+      </div>
+      <div class="hyp-step">
+        <div class="hyp-num">5</div>
+        <div class="hyp-content"><strong>判断する：</strong>p &lt; 0.05 なら H₀ を棄却→「統計的に有意な差がある」。p ≥ 0.05 なら H₀ を棄却できない</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>p値の正確な定義：</strong> 「帰無仮説が真であるという前提のもとで、観察されたデータ以上に極端なデータが生じる確率」。「差がある確率」でも「帰無仮説が正しい確率」でもない。
+    </div>
+  </section>
+
+  <!-- ── 5.2 ── -->
+  <section class="dialogue-section" id="errors">
+    <h2 class="section-heading"><span class="section-number">5.2</span>第1種・第2種の過誤 ── 間違いの2種類</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        検定は間違いを犯すことがある。その間違いには2種類ある。どちらを重視するかは、研究の文脈によって変わってくる。
+      </div>
+    </div>
+
+    <div class="error-grid">
+      <div class="error-card type1">
+        <div class="e-title">第1種過誤（Type I Error）</div>
+        <div class="e-def">確率 = α（有意水準）</div>
+        <div class="e-body">「本当は差がないのに、差があると結論する」。フォールス・ポジティブ（偽陽性）。α = 0.05 に設定することで、この誤りを5%以下に抑える。新薬が本当は無効なのに「有効」と判定してしまう危険。</div>
+      </div>
+      <div class="error-card type2">
+        <div class="e-title">第2種過誤（Type II Error）</div>
+        <div class="e-def">確率 = β（通常 0.1〜0.2）</div>
+        <div class="e-body">「本当は差があるのに、差がないと結論する」。フォールス・ネガティブ（偽陰性）。検定力 = 1 - β。有効な薬を「効かない」と見逃す危険。サンプルサイズを増やすと β は減る。</div>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>⚖️ α と β のトレードオフ</h4>
+      <p>α を厳しくすると（0.05→0.01）、第1種過誤は減るが第2種過誤が増える。双方を同時に下げるには<em>サンプルサイズを増やす</em>しかない。このバランスをどう設定するかが「検定力計算（power calculation）」の本質であり、研究計画の段階で必ず行うべき作業だ。</p>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── サンプルサイズ計算（pwr パッケージ）──</span>
+<span class="c-fn">library</span>(pwr)
+
+<span class="c-comment"># 2群のt検定：効果量 d=0.5、α=0.05、検定力=0.8 に必要なn</span>
+<span class="c-fn">pwr.t.test</span>(
+  d    = <span class="c-num">0.5</span>,      <span class="c-comment"># Cohen's d（中程度の効果量）</span>
+  sig.level = <span class="c-num">0.05</span>,
+  power     = <span class="c-num">0.80</span>,
+  type      = <span class="c-string">"two.sample"</span>
+)
+<span class="c-out"># n = 63.77 → 各群64人必要</span>
+
+<span class="c-comment"># 逆に：n=50, d=0.5 のときの検定力は？</span>
+<span class="c-fn">pwr.t.test</span>(n = <span class="c-num">50</span>, d = <span class="c-num">0.5</span>, sig.level = <span class="c-num">0.05</span>, type = <span class="c-string">"two.sample"</span>)
+<span class="c-out"># power = 0.6970 → 70%の検定力（やや不足）</span></pre>
+  </section>
+
+  <!-- ── 5.3 ── -->
+  <section class="dialogue-section" id="ttest">
+    <h2 class="section-heading"><span class="section-number">5.3</span>t検定 ── 2群の平均を比較する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        最もよく使う検定がt検定だ。「2群の平均に差があるか」を問う。対応なし（独立2群）と対応あり（paired）の2種類がある。「対応あり」は同一患者の治療前後など、個体が対になっているケースで使う。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 対応なし t検定（independent samples）──</span>
+<span class="c-comment"># 男女のHbA1cに差があるか？</span>
+t_result &lt;- <span class="c-fn">t.test</span>(
+  hba1c ~ sex,
+  data    = patients,
+  var.equal = <span class="c-kw">FALSE</span>   <span class="c-comment"># Welchのt検定（等分散を仮定しない）</span>
+)
+<span class="c-fn">print</span>(t_result)
+<span class="c-out"># t = -1.84, df = 95.3, p-value = 0.0688
+# 95% CI: -0.52 to 0.02
+# 有意水準0.05では有意差なし</span>
+
+<span class="c-section"># ── 等分散の確認（Levene 検定）──</span>
+<span class="c-fn">library</span>(car)
+<span class="c-fn">leveneTest</span>(hba1c ~ sex, data = patients)
+
+<span class="c-section"># ── 対応あり t検定（paired samples）──</span>
+<span class="c-comment"># 治療前後のHbA1c変化</span>
+t_paired &lt;- <span class="c-fn">t.test</span>(
+  x       = patients$hba1c_post,
+  y       = patients$hba1c_pre,
+  paired  = <span class="c-kw">TRUE</span>,
+  alternative = <span class="c-string">"less"</span>    <span class="c-comment"># 一側検定：治療後の方が低いか</span>
+)
+<span class="c-fn">print</span>(t_paired)
+
+<span class="c-section"># ── 結果を tidyで取り出す（broom パッケージ）──</span>
+<span class="c-fn">library</span>(broom)
+<span class="c-fn">tidy</span>(t_result)
+<span class="c-out"># estimate statistic p.value conf.low conf.high method
+#    -0.248    -1.838  0.0688   -0.518    0.021  Welch Two Sample t-test</span>
+
+<span class="c-section"># ── グラフと検定をセットで（ggpubr パッケージ）──</span>
+<span class="c-fn">library</span>(ggpubr)
+patients |&gt;
+  <span class="c-fn">ggboxplot</span>(x = <span class="c-string">"sex"</span>, y = <span class="c-string">"hba1c"</span>,
+            fill = <span class="c-string">"sex"</span>,
+            palette = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#c8922a"</span>),
+            add = <span class="c-string">"jitter"</span>) +
+  <span class="c-fn">stat_compare_means</span>(method = <span class="c-string">"t.test"</span>,
+                     label = <span class="c-string">"p.format"</span>)</pre>
+
+    <div class="callout-teal">
+      <strong>Welch vs Student の t検定：</strong> Rのデフォルトは <span class="inline-code">var.equal = FALSE</span>（Welch法）。等分散を仮定しないWelch法はより頑健で、等分散が成り立っている場合でも大きな損失がない。よほどの理由がなければWelch法を使うことを推奨する。
+    </div>
+  </section>
+
+  <!-- ── 5.4 ── -->
+  <section class="dialogue-section" id="nonpara">
+    <h2 class="section-heading"><span class="section-number">5.4</span>ノンパラメトリック検定 ── 正規性を仮定しない</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        t検定は正規分布を前提とする。しかし医学データの多くは非正規だ——入院日数・医療費・CRPなど。こういうケースではノンパラメトリック検定が安全だ。データの「値」ではなく「順位」に基づくので、分布の仮定が不要だ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── マン・ホイットニーのU検定（対応なし2群）──</span>
+<span class="c-comment"># Wilcoxon rank-sum test とも呼ばれる</span>
+<span class="c-fn">wilcox.test</span>(
+  hba1c ~ sex,
+  data = patients,
+  exact = <span class="c-kw">FALSE</span>   <span class="c-comment"># タイがある場合は exact=FALSE</span>
+)
+<span class="c-out"># W = 1089, p-value = 0.0534</span>
+
+<span class="c-section"># ── ウィルコクソンの符号付き順位検定（対応あり）──</span>
+<span class="c-fn">wilcox.test</span>(
+  x      = patients$hba1c_post,
+  y      = patients$hba1c_pre,
+  paired = <span class="c-kw">TRUE</span>,
+  alternative = <span class="c-string">"less"</span>
+)
+
+<span class="c-section"># ── クラスカル・ウォリス検定（3群以上のノンパラ）──</span>
+<span class="c-fn">kruskal.test</span>(hba1c ~ age_group, data = patients)
+<span class="c-out"># Kruskal-Wallis chi-squared = 8.43, df = 2, p-value = 0.0148</span>
+
+<span class="c-comment"># 多重比較（Dunn 検定）</span>
+<span class="c-fn">library</span>(dunn.test)
+<span class="c-fn">dunn.test</span>(patients$hba1c, patients$age_group, method = <span class="c-string">"bonferroni"</span>)</pre>
+
+    <table class="test-table">
+      <thead><tr><th>状況</th><th>パラメトリック</th><th>ノンパラメトリック代替</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>独立2群の比較</td>
+          <td class="mono"><span class="tag-para">正規</span> t.test(var.equal=F)</td>
+          <td class="mono"><span class="tag-nonpara">順位</span> wilcox.test()</td>
+        </tr>
+        <tr>
+          <td>対応2群の比較</td>
+          <td class="mono"><span class="tag-para">正規</span> t.test(paired=T)</td>
+          <td class="mono"><span class="tag-nonpara">順位</span> wilcox.test(paired=T)</td>
+        </tr>
+        <tr>
+          <td>3群以上の比較</td>
+          <td class="mono"><span class="tag-para">正規</span> aov()</td>
+          <td class="mono"><span class="tag-nonpara">順位</span> kruskal.test()</td>
+        </tr>
+        <tr>
+          <td>対応3群以上</td>
+          <td class="mono"><span class="tag-para">正規</span> aov() + Error(id)</td>
+          <td class="mono"><span class="tag-nonpara">順位</span> friedman.test()</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 5.5 ── -->
+  <section class="dialogue-section" id="chisq">
+    <h2 class="section-heading"><span class="section-number">5.5</span>カイ二乗検定と比率の検定 ── カテゴリ変数を比べる</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        「男女で糖尿病の合併症の有無に差があるか」など、カテゴリ変数同士の関連を調べるにはカイ二乗検定を使う。クロス集計表（分割表）を作って、期待度数と観察度数のズレを検定する。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── カイ二乗検定 ──</span>
+<span class="c-comment"># インスリン使用率は性別で異なるか？</span>
+tbl &lt;- <span class="c-fn">table</span>(patients$sex, patients$on_insulin)
+<span class="c-fn">print</span>(tbl)
+<span class="c-out">#      FALSE TRUE
+#   F    28   17
+#   M    32   23</span>
+
+chi_result &lt;- <span class="c-fn">chisq.test</span>(tbl)
+<span class="c-fn">print</span>(chi_result)
+<span class="c-out"># X-squared = 0.228, df = 1, p-value = 0.633</span>
+
+<span class="c-comment"># 期待度数の確認（期待度数が5未満のセルがある場合はFisherの正確検定へ）</span>
+chi_result$expected
+
+<span class="c-section"># ── フィッシャーの正確検定（小サンプル時）──</span>
+<span class="c-fn">fisher.test</span>(tbl)
+
+<span class="c-section"># ── 2比率のZ検定（prop.test）──</span>
+<span class="c-comment"># A病院50人中12人合併症、B病院80人中28人合併症</span>
+<span class="c-fn">prop.test</span>(
+  x = <span class="c-fn">c</span>(<span class="c-num">12</span>, <span class="c-num">28</span>),
+  n = <span class="c-fn">c</span>(<span class="c-num">50</span>, <span class="c-num">80</span>),
+  correct = <span class="c-kw">FALSE</span>
+)
+<span class="c-out"># prop 1 = 0.24, prop 2 = 0.35
+# p-value = 0.182 → 有意差なし</span>
+
+<span class="c-section"># ── 分割表の可視化（モザイクプロット）──</span>
+patients |&gt;
+  <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(on_insulin)) |&gt;
+  <span class="c-fn">count</span>(sex, on_insulin) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = sex, y = n, fill = on_insulin)) +
+  <span class="c-fn">geom_col</span>(position = <span class="c-string">"fill"</span>) +
+  <span class="c-fn">scale_fill_manual</span>(values = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#c8922a"</span>),
+                     labels = <span class="c-fn">c</span>(<span class="c-string">"非使用"</span>, <span class="c-string">"使用"</span>)) +
+  <span class="c-fn">scale_y_continuous</span>(labels = scales::<span class="c-fn">percent</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"性別別インスリン使用率"</span>,
+       y = <span class="c-kw">NULL</span>, fill = <span class="c-string">"インスリン"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+  </section>
+
+  <!-- ── 5.6 ── -->
+  <section class="dialogue-section" id="anova">
+    <h2 class="section-heading"><span class="section-number">5.6</span>分散分析（ANOVA） ── 3群以上の平均を同時に比較</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        3つの治療群を比較したいとき、t検定を3回繰り返してはいけない。比較を繰り返すたびに偶然有意になる確率が膨らむからだ（多重比較の問題）。3群以上を一度に比較するのがANOVA（分散分析）だ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 一元配置ANOVA ──</span>
+<span class="c-comment"># 年齢3群でHbA1cに差があるか</span>
+patients &lt;- patients |&gt;
+  <span class="c-fn">mutate</span>(age_group = <span class="c-fn">case_when</span>(
+    age &lt; <span class="c-num">40</span>           ~ <span class="c-string">"40未満"</span>,
+    age &gt;= <span class="c-num">40</span> &amp; age &lt; <span class="c-num">60</span> ~ <span class="c-string">"40-59"</span>,
+    age &gt;= <span class="c-num">60</span>           ~ <span class="c-string">"60以上"</span>
+  ))
+
+anova_result &lt;- <span class="c-fn">aov</span>(hba1c ~ age_group, data = patients)
+<span class="c-fn">summary</span>(anova_result)
+<span class="c-out">#            Df Sum Sq Mean Sq F value Pr(>F)
+# age_group   2  12.45   6.23   3.41  0.037 *
+# Residuals  97 177.3    1.83</span>
+
+<span class="c-comment"># F検定が有意 → どの群間に差があるかを多重比較で調べる</span>
+
+<span class="c-section"># ── Tukey の HSD（多重比較）──</span>
+<span class="c-fn">TukeyHSD</span>(anova_result)
+<span class="c-out"># $age_group
+#              diff   lwr   upr  p adj
+# 40-59-40未満 0.38 -0.18  0.94  0.256
+# 60以上-40未満 0.72  0.12  1.32  0.014 *
+# 60以上-40-59  0.34 -0.18  0.86  0.283</span>
+
+<span class="c-section"># ── 二元配置ANOVA（交互作用あり）──</span>
+anova2 &lt;- <span class="c-fn">aov</span>(hba1c ~ sex * on_insulin, data = patients)
+<span class="c-fn">summary</span>(anova2)
+
+<span class="c-section"># ── 交互作用プロット ──</span>
+patients |&gt;
+  <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(on_insulin)) |&gt;
+  <span class="c-fn">group_by</span>(sex, on_insulin) |&gt;
+  <span class="c-fn">summarise</span>(mean_hba1c = <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>), .groups = <span class="c-string">"drop"</span>) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = on_insulin, y = mean_hba1c,
+             color = sex, group = sex)) +
+  <span class="c-fn">geom_line</span>(linewidth = <span class="c-num">1</span>) +
+  <span class="c-fn">geom_point</span>(size = <span class="c-num">3</span>) +
+  <span class="c-fn">scale_color_manual</span>(values = <span class="c-fn">c</span>(M = <span class="c-string">"#2a6b6e"</span>, F = <span class="c-string">"#c8922a"</span>)) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"交互作用プロット"</span>,
+       x = <span class="c-string">"インスリン使用"</span>, y = <span class="c-string">"HbA1c 平均"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+  </section>
+
+  <!-- ── 5.7 ── -->
+  <section class="dialogue-section" id="multiple">
+    <h2 class="section-heading"><span class="section-number">5.7</span>多重比較の問題 ── 検定を繰り返す危険</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        α = 0.05 で検定を20回繰り返すと、本当は差がなくても1回は偶然「p &lt; 0.05」になる計算だ。これが多重比較問題だ。補正には主にBonferroni法とBenjamini-Hochberg（BH）法が使われる。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── p値の多重比較補正 ──</span>
+<span class="c-comment"># 例：5つの検定を行ったp値</span>
+p_values &lt;- <span class="c-fn">c</span>(<span class="c-num">0.023</span>, <span class="c-num">0.041</span>, <span class="c-num">0.003</span>, <span class="c-num">0.310</span>, <span class="c-num">0.048</span>)
+
+<span class="c-comment"># Bonferroni 補正（保守的、familywise error rateを制御）</span>
+<span class="c-fn">p.adjust</span>(p_values, method = <span class="c-string">"bonferroni"</span>)
+<span class="c-out"># [1] 0.115 0.205 0.015 1.000 0.240</span>
+
+<span class="c-comment"># BH 補正（FDR制御、複数仮説検定に推奨）</span>
+<span class="c-fn">p.adjust</span>(p_values, method = <span class="c-string">"BH"</span>)
+<span class="c-out"># [1] 0.058 0.068 0.015 0.310 0.068</span>
+
+<span class="c-section"># ── emmeans による多重比較（ANOVAの後処理）──</span>
+<span class="c-fn">library</span>(emmeans)
+emm &lt;- <span class="c-fn">emmeans</span>(anova_result, ~ age_group)
+<span class="c-fn">pairs</span>(emm, adjust = <span class="c-string">"tukey"</span>)
+
+<span class="c-comment"># Compact letter display（どの群が有意に異なるかを「a, b, c」で表示）</span>
+<span class="c-fn">library</span>(multcomp)
+<span class="c-fn">cld</span>(emm, Letters = letters)</pre>
+
+    <div class="callout-green">
+      <strong>Bonferroni vs BH の使い分け：</strong> 1つでも誤りを犯してはいけないケース（臨床試験の主要評価項目）にはBonferroni。多くの仮説を探索的に検定する場合（ゲノムワイド解析・プロテオミクス）にはBH法（偽発見率制御）が適している。
+    </div>
+  </section>
+
+  <!-- ── 5.8 ── -->
+  <section class="dialogue-section" id="effect">
+    <h2 class="section-heading"><span class="section-number">5.8</span>効果量と検定力 ── 「有意」だけでは足りない</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        10万人の大規模研究でHbA1cの差が0.01%でもp &lt; 0.001になる。しかしその差は臨床的に意味があるか？　p値はサンプルサイズの影響を強く受ける。「差の大きさ」を表す指標が効果量だ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── Cohen's d（2群の平均差を標準化）──</span>
+<span class="c-fn">library</span>(effectsize)
+
+<span class="c-fn">cohens_d</span>(hba1c ~ sex, data = patients)
+<span class="c-out"># Cohen's d |       95% CI
+# ----------|-------------
+#     -0.37 | [-0.77, 0.03]
+# d = 0.2: 小, 0.5: 中, 0.8: 大（Cohenの目安）</span>
+
+<span class="c-section"># ── η²（イータ二乗）：ANOVAの効果量 ──</span>
+<span class="c-fn">eta_squared</span>(anova_result)
+<span class="c-out"># Parameter | Eta2 |       95% CI
+# ---------|------|---------------
+# age_group | 0.07 | [0.01, 0.18]
+# η² ≈ 0.01: 小, 0.06: 中, 0.14: 大</span>
+
+<span class="c-section"># ── 検定力曲線のプロット ──</span>
+<span class="c-fn">library</span>(pwr)
+n_seq &lt;- <span class="c-fn">seq</span>(<span class="c-num">10</span>, <span class="c-num">150</span>, by = <span class="c-num">5</span>)
+power_seq &lt;- <span class="c-fn">sapply</span>(n_seq, <span class="c-kw">function</span>(n) {
+  <span class="c-fn">pwr.t.test</span>(n = n, d = <span class="c-num">0.4</span>, sig.level = <span class="c-num">0.05</span>,
+             type = <span class="c-string">"two.sample"</span>)$power
+})
+
+<span class="c-fn">tibble</span>(n = n_seq, power = power_seq) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = n, y = power)) +
+  <span class="c-fn">geom_line</span>(color = <span class="c-string">"#2a6b6e"</span>, linewidth = <span class="c-num">1.2</span>) +
+  <span class="c-fn">geom_hline</span>(yintercept = <span class="c-num">0.8</span>, linetype = <span class="c-string">"dashed"</span>,
+             color = <span class="c-string">"#c8922a"</span>) +
+  <span class="c-fn">annotate</span>(<span class="c-string">"text"</span>, x = <span class="c-num">10</span>, y = <span class="c-num">0.82</span>, label = <span class="c-string">"80%の検定力"</span>,
+           hjust = <span class="c-num">0</span>, size = <span class="c-num">3</span>, color = <span class="c-string">"#c8922a"</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"検定力曲線（d = 0.4, α = 0.05）"</span>,
+       x = <span class="c-string">"各群のサンプルサイズ"</span>, y = <span class="c-string">"検定力（1 - β）"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+  </section>
+
+  <!-- ── 5.9 ── -->
+  <section class="dialogue-section" id="pvalue">
+    <h2 class="section-heading"><span class="section-number">5.9</span>p値を超えて ── 統計的有意性の限界</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        2019年、科学誌Natureに800人以上の科学者が署名した論文が発表された。主張はシンプルだ——「統計的有意性という概念の使用をやめよ」。なぜそこまで言うのか、考えてみよう。
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        p &lt; 0.05 が長年使われてきたのに、やめろというのは急進的に聞こえます。何が問題なんですか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        問題は「p &lt; 0.05 か否か」という二値的な判断に研究者が飛びつきすぎることだ。第一に、p = 0.049 と p = 0.051 の間に実質的な差はない。第二に、有意でも効果量が小さければ臨床的に無意味な差かもしれない。第三に、「有意でない＝差がない」ではなく「差があるとは言えない」にすぎない——これを混同している論文が多い。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>📋 p値に関する6つの誤解</h4>
+      <p><strong>誤解1：</strong>「p = 0.03 は差がある確率が97%」——p値は「帰無仮説のもとで」計算される確率。「差がある確率」ではない。</p>
+      <p><strong>誤解2：</strong>「p &gt; 0.05 は差がない証拠」——差がないことを証明するには「等価性検定」が必要。</p>
+      <p><strong>誤解3：</strong>「有意な差は重要な差」——効果量が小さくてもサンプルが大きければ有意になる。</p>
+      <p><strong>誤解4：</strong>「p値が小さいほど研究の価値が高い」——再現性・効果量・バイアスのほうが重要なことが多い。</p>
+      <p><strong>誤解5：</strong>「p = 0.049 と p = 0.051 は本質的に違う」——閾値はあくまで慣例。連続的に報告すべき。</p>
+      <p><strong>誤解6：</strong>「検定をたくさんやれば何か有意になる」——多重比較問題。これは研究不正（p-hacking）になる。</p>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 等価性検定（差がないことを積極的に示す）──</span>
+<span class="c-fn">library</span>(TOSTER)
+
+<span class="c-comment"># 「臨床的意味のある差 = ±0.5% 以内なら等価」とする</span>
+<span class="c-fn">tsum_TOST</span>(
+  m1 = <span class="c-num">7.4</span>, sd1 = <span class="c-num">1.2</span>, n1 = <span class="c-num">50</span>,
+  m2 = <span class="c-num">7.3</span>, sd2 = <span class="c-num">1.3</span>, n2 = <span class="c-num">50</span>,
+  low_eqbound = -<span class="c-num">0.5</span>,
+  high_eqbound =  <span class="c-num">0.5</span>,
+  alpha = <span class="c-num">0.05</span>
+)
+
+<span class="c-section"># ── 推奨される報告スタイル（効果量 + CI を主役に）──</span>
+<span class="c-fn">library</span>(broom)
+<span class="c-fn">library</span>(effectsize)
+
+t_res  &lt;- <span class="c-fn">t.test</span>(hba1c ~ sex, data = patients)
+d_res  &lt;- <span class="c-fn">cohens_d</span>(hba1c ~ sex, data = patients)
+
+<span class="c-fn">sprintf</span>(
+  <span class="c-string">"差 = %.2f (95%%CI: %.2f to %.2f), t(%d) = %.2f, p = %.3f, d = %.2f"</span>,
+  <span class="c-fn">diff</span>(t_res$estimate),
+  t_res$conf.int[<span class="c-num">1</span>], t_res$conf.int[<span class="c-num">2</span>],
+  <span class="c-fn">round</span>(t_res$parameter),
+  t_res$statistic,
+  t_res$p.value,
+  d_res$Cohens_d
+)
+    <div class="callout-purple">
+      <strong>現代の推奨スタイル：</strong> p値は「0.047」のように連続値で報告する。効果量と95%CIを必ず併記する。「有意な差があった（p = 0.03）」ではなく「HbA1cは治療群で平均0.4%（95%CI: 0.1〜0.7）低下した（t(96) = 2.8, p = 0.006, Cohen's d = 0.28）」のように記述する。
+    </div>
+  </section>
+
+  <!-- ── 5.10 練習問題 ── -->
+  <section class="dialogue-section" id="exercises">
+    <h2 class="section-heading"><span class="section-number">5.10</span>練習問題</h2>
+
+    <div class="quiz-box">
+      <h4>🧠 問題1：検定の選択</h4>
+      <p class="quiz-q">以下の各状況に適切な検定を選び、Rで実行せよ。(1) 男女のBMIに差があるか（正規性は確認済み）。(2) インスリン使用前後のHbA1c変化（同一患者、非正規分布）。(3) 年齢3群と合併症の有無（カテゴリ×カテゴリ）。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># (1) 対応なしt検定（正規性確認済み）</span>
+<span class="c-fn">t.test</span>(bmi ~ sex, data = patients, var.equal = <span class="c-kw">FALSE</span>)
+
+<span class="c-comment"># (2) ウィルコクソン符号付き順位検定（対応あり・非正規）</span>
+<span class="c-fn">wilcox.test</span>(patients$hba1c_post, patients$hba1c_pre,
+            paired = <span class="c-kw">TRUE</span>, alternative = <span class="c-string">"less"</span>)
+
+<span class="c-comment"># (3) カイ二乗検定（カテゴリ×カテゴリ）</span>
+tbl &lt;- <span class="c-fn">table</span>(patients$age_group, patients$complication)
+<span class="c-fn">chisq.test</span>(tbl)
+<span class="c-comment"># 期待度数が5未満のセルがある場合はフィッシャーの正確検定へ</span>
+<span class="c-fn">fisher.test</span>(tbl)</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題2：ANOVA + 多重比較</h4>
+      <p class="quiz-q">BMIを「低体重（<18.5）・普通体重（18.5〜25）・肥満（≥25）」の3群に分け、HbA1cに有意差があるか一元配置ANOVAで検定せよ。F検定が有意だった場合、Tukey法で多重比較を行い、どの群間に差があるかを特定せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>patients &lt;- patients |&gt;
+  <span class="c-fn">mutate</span>(
+    bmi_group = <span class="c-fn">case_when</span>(
+      bmi &lt; <span class="c-num">18.5</span>           ~ <span class="c-string">"低体重"</span>,
+      bmi &gt;= <span class="c-num">18.5</span> &amp; bmi &lt; <span class="c-num">25</span> ~ <span class="c-string">"普通体重"</span>,
+      bmi &gt;= <span class="c-num">25</span>            ~ <span class="c-string">"肥満"</span>
+    ),
+    bmi_group = <span class="c-fn">factor</span>(bmi_group,
+                       levels = <span class="c-fn">c</span>(<span class="c-string">"低体重"</span>, <span class="c-string">"普通体重"</span>, <span class="c-string">"肥満"</span>))
+  )
+
+<span class="c-comment"># 一元配置ANOVA</span>
+anova_bmi &lt;- <span class="c-fn">aov</span>(hba1c ~ bmi_group, data = patients)
+<span class="c-fn">summary</span>(anova_bmi)
+
+<span class="c-comment"># F検定が有意なら Tukey HSD</span>
+<span class="c-fn">TukeyHSD</span>(anova_bmi) |&gt; <span class="c-fn">tidy</span>() |&gt;
+  <span class="c-fn">arrange</span>(adj.p.value)
+
+<span class="c-comment"># 視覚化（箱ひげ図 + p値）</span>
+patients |&gt;
+  <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(bmi_group)) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi_group, y = hba1c, fill = bmi_group)) +
+  <span class="c-fn">geom_boxplot</span>(alpha = <span class="c-num">0.7</span>, outlier.shape = <span class="c-num">21</span>) +
+  <span class="c-fn">scale_fill_manual</span>(values = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#c8922a"</span>, <span class="c-string">"#8b3a2a"</span>)) +
+  <span class="c-fn">labs</span>(x = <span class="c-string">"BMI 区分"</span>, y = <span class="c-string">"HbA1c (%)"</span>) +
+  <span class="c-fn">theme_classic</span>() + <span class="c-fn">theme</span>(legend.position = <span class="c-string">"none"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題3：効果量とサンプルサイズ計算</h4>
+      <p class="quiz-q">新薬臨床試験を計画する。過去のデータからHbA1cのSDは約1.3%、臨床的に意味のある最小差を0.5%とする。α = 0.05、検定力 = 0.90 に必要な各群のサンプルサイズを計算し、Cohen's d も求めよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(pwr)
+
+<span class="c-comment"># Cohen's d = 差 / SD</span>
+d &lt;- <span class="c-num">0.5</span> / <span class="c-num">1.3</span>
+<span class="c-fn">cat</span>(<span class="c-string">"Cohen's d ="</span>, <span class="c-fn">round</span>(d, <span class="c-num">3</span>), <span class="c-string">"\n"</span>)
+<span class="c-out"># Cohen's d = 0.385（中程度の効果量）</span>
+
+<span class="c-comment"># 必要サンプルサイズ（検定力90%）</span>
+result &lt;- <span class="c-fn">pwr.t.test</span>(
+  d         = d,
+  sig.level = <span class="c-num">0.05</span>,
+  power     = <span class="c-num">0.90</span>,
+  type      = <span class="c-string">"two.sample"</span>,
+  alternative = <span class="c-string">"two.sided"</span>
+)
+<span class="c-fn">ceiling</span>(result$n)
+<span class="c-out"># [1] 143 → 各群143人、合計286人必要</span>
+
+<span class="c-comment"># ドロップアウト率10%を見込む場合</span>
+<span class="c-fn">ceiling</span>(result$n / (1 - <span class="c-num">0.10</span>))
+<span class="c-out"># [1] 159 → 各群159人（合計318人）でリクルートを開始する</span></pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題4（発展）：ベイズ因子</h4>
+      <p class="quiz-q">男女のHbA1c差をBayesFactor パッケージで検定し、「差がない（H₀）」と「差がある（H₁）」のどちらに証拠が向いているか解釈せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(BayesFactor)
+
+bf_result &lt;- <span class="c-fn">ttestBF</span>(
+  formula = hba1c ~ sex,
+  data    = patients
+)
+<span class="c-fn">print</span>(bf_result)
+<span class="c-out"># Bayes factor analysis
+# [1] Alt., r=0.707 : 0.847 ±0%
+# Against denominator: Null, mu1-mu2 = 0
+# BF = 0.847 < 1 → H₀（差がない）の方向に証拠がわずかに向いている
+# BF = 1〜3: 証拠弱い / 3〜10: 中程度 / 10〜: 強い</span>
+
+<span class="c-comment"># BFの解釈目安</span>
+<span class="c-fn">tibble</span>(
+  BF   = <span class="c-fn">c</span>(<span class="c-string">"> 100"</span>, <span class="c-string">"10-100"</span>, <span class="c-string">"3-10"</span>, <span class="c-string">"1-3"</span>, <span class="c-string">"1/3-1"</span>, <span class="c-string">"< 1/10"</span>),
+  解釈 = <span class="c-fn">c</span>(<span class="c-string">"H₁への決定的証拠"</span>, <span class="c-string">"H₁への強い証拠"</span>,
+          <span class="c-string">"H₁への中程度証拠"</span>, <span class="c-string">"H₁への弱い証拠"</span>,
+          <span class="c-string">"H₀への弱い証拠"</span>, <span class="c-string">"H₀への強い証拠"</span>)
+) |&gt; <span class="c-fn">print</span>()</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 5.11 章まとめ ── -->
+  <section class="dialogue-section" id="chapter-summary">
+    <h2 class="section-heading"><span class="section-number">5.11</span>章まとめ</h2>
+
+    <table class="summary-table">
+      <thead><tr><th>トピック</th><th>キーワード</th><th>一言まとめ</th></tr></thead>
+      <tbody>
+        <tr><td>仮説検定の枠組み</td><td class="mono">H₀ / H₁ / p値</td><td>p値は「帰無仮説のもとでこの結果が起きる確率」であり、差がある確率ではない</td></tr>
+        <tr><td>2種類の過誤</td><td class="mono">α（第1種）/ β（第2種）</td><td>トレードオフ関係。両方を下げるにはn増加しかない</td></tr>
+        <tr><td>t検定</td><td class="mono">t.test(var.equal=F) / paired=T</td><td>正規分布の2群比較。Welch法を標準とする</td></tr>
+        <tr><td>ノンパラ検定</td><td class="mono">wilcox.test() / kruskal.test()</td><td>非正規・外れ値が多い医学データに安全な選択</td></tr>
+        <tr><td>カテゴリ変数</td><td class="mono">chisq.test() / fisher.test()</td><td>期待度数 < 5 のセルがある小規模データにはFisher</td></tr>
+        <tr><td>ANOVA</td><td class="mono">aov() / TukeyHSD()</td><td>3群以上はANOVAで一括検定してから多重比較</td></tr>
+        <tr><td>多重比較補正</td><td class="mono">p.adjust("bonferroni" / "BH")</td><td>探索研究はBH（FDR）、主要評価項目はBonferroni</td></tr>
+        <tr><td>効果量</td><td class="mono">cohens_d() / eta_squared()</td><td>p値だけでなく効果量と95%CIを必ず報告する</td></tr>
+        <tr><td>検定力</td><td class="mono">pwr.t.test()</td><td>事前に計算してサンプルサイズを決める。後付けPowerは無意味</td></tr>
+        <tr><td>p値の限界</td><td class="mono">TOST / BayesFactor</td><td>0.05の閾値は慣例。効果量・CIを主体に報告する</td></tr>
+      </tbody>
+    </table>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        第5章はここまで。t検定・ANOVA・カイ二乗検定と、医学論文で最もよく使う検定を一通り学んだ。そして最後に「p &lt; 0.05 だけに頼ってはいけない」という話をした——これは単なる注意事項ではなく、統計学の本質に関わる問いだ。次の第6章では、検定をさらに発展させて「時間」の次元を組み込む——生存解析の世界に入る。
+      </div>
+    </div>
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        p値の誤解が自分にもあったと気づきました。「有意差あり」と書くだけじゃダメで、効果量とCIを一緒に書く習慣をつけなければ……。生存解析はカプランマイヤー曲線のことですか？
+      </div>
+    </div>
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        そう。カプランマイヤー曲線、ログランク検定、そしてCox比例ハザードモデルまで踏み込む。「死亡・再入院・退院」など時間付きのイベントを扱う統計だ。医学論文で欠かせない道具だよ。
+      </div>
+    </div>
+
+    <div class="next-chapter">
+      <div>
+        <div class="label">NEXT CHAPTER</div>
+        <div class="title">第6章：生存解析と時間軸 〜ログランク検定が捉える命の軌跡〜</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>⚠ 注意書き：本テキストは生成AIによって作成されたものであり、内容に誤りを含む可能性があります。利用・参照は自己責任でお願いします。再配布については、自己責任の範囲内であれば問題ありません。</p>
+  <span class="footer-mark">―― 統計は専門ではない研究者の備忘録 ――</span>
+</footer>
+
+<script>
+const links = document.querySelectorAll('aside .toc-list a:not(.chapter-link)');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector('aside .toc-list a[href="#' + e.target.id + '"]');
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

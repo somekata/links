@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第6章：生存解析と時間軸 | R言語で学ぶ統計学</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8; --paper: #fdfaf3; --paper2: #f8f4eb;
+  --ink: #1c1710; --ink-light: #4a3f30; --ink-muted: #7a6e5f;
+  --accent: #8b3a2a; --accent-pale: #f0e6df;
+  --gold: #c8922a; --gold-pale: #faf3e0;
+  --teal: #2a6b6e; --teal-pale: #e0f0f0;
+  --green: #3a6b3a; --green-pale: #e8f4e8;
+  --purple: #5a3a8a; --purple-pale: #f0eaf8;
+  --border: #d4c9b0; --border-light: #e8e0cc;
+  --sidebar-w: 260px; --shadow: 0 2px 12px rgba(28,23,16,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--ink); color: var(--paper); padding: 0.9rem 2rem; display: flex; align-items: center; justify-content: space-between; height: 52px; }
+header .series-title { font-family: 'Zen Antique', serif; font-size: 1rem; letter-spacing: 0.08em; opacity: 0.9; }
+header .chapter-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: var(--accent); color: #fff; padding: 0.25rem 0.75rem; border-radius: 2px; letter-spacing: 0.05em; }
+
+aside { position: fixed; top: 52px; left: 0; width: var(--sidebar-w); height: calc(100vh - 52px); overflow-y: auto; background: var(--paper2); border-right: 1px solid var(--border); padding: 1.6rem 1.2rem 2rem; z-index: 90; }
+aside h2 { font-family: 'Zen Antique', serif; font-size: 0.82rem; letter-spacing: 0.1em; color: var(--ink-muted); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 0.1rem; }
+.toc-list a { display: block; font-size: 0.79rem; color: var(--ink-light); text-decoration: none; padding: 0.35rem 0.6rem; border-radius: 3px; border-left: 3px solid transparent; transition: all 0.15s; line-height: 1.45; }
+.toc-list a:hover, .toc-list a.active { background: var(--accent-pale); border-left-color: var(--accent); color: var(--accent); }
+.toc-divider { margin: 1rem 0 0.6rem; font-family: 'Zen Antique', serif; font-size: 0.72rem; color: var(--ink-muted); letter-spacing: 0.08em; }
+.chapter-link { font-size: 0.76rem !important; color: var(--ink-muted) !important; padding: 0.28rem 0.6rem !important; }
+.chapter-link.current { color: var(--accent) !important; font-weight: 500; }
+.chapter-link .ch-num { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gold); margin-right: 0.3em; }
+.progress-bar { height: 3px; background: var(--border-light); margin: 1.5rem 0 0; border-radius: 2px; }
+.progress-fill { height: 100%; width: calc(100% * 6 / 7); background: linear-gradient(90deg, var(--accent), var(--gold)); border-radius: 2px; }
+.progress-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--ink-muted); margin-top: 0.35rem; text-align: right; }
+
+main { margin-left: var(--sidebar-w); margin-top: 52px; padding: 3rem 4rem 4rem 3.5rem; max-width: calc(860px + var(--sidebar-w)); min-height: calc(100vh - 52px); }
+footer { margin-left: var(--sidebar-w); background: var(--paper2); border-top: 1px solid var(--border); padding: 1.5rem 2rem; font-size: 0.78rem; color: var(--ink-muted); line-height: 1.7; text-align: center; }
+footer .footer-mark { font-family: 'Zen Antique', serif; display: block; margin-top: 0.4rem; letter-spacing: 0.1em; }
+
+.chapter-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.7rem; }
+.chapter-title { font-family: 'Zen Antique', serif; font-size: 2.1rem; line-height: 1.3; color: var(--ink); margin-bottom: 0.5rem; }
+.chapter-subtitle { font-size: 0.97rem; color: var(--ink-muted); font-weight: 300; margin-bottom: 2rem; line-height: 1.7; }
+.lead-divider { width: 60px; height: 3px; background: linear-gradient(90deg, var(--accent), var(--gold)); margin-bottom: 2.5rem; }
+
+.dialogue-section { margin-bottom: 3.5rem; }
+.section-heading { font-family: 'Zen Antique', serif; font-size: 1.18rem; color: var(--accent); margin-bottom: 1.4rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; gap: 0.5rem; }
+.section-heading::before { content: ''; display: inline-block; width: 6px; height: 6px; background: var(--gold); border-radius: 50%; flex-shrink: 0; }
+.section-number { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; color: var(--gold); margin-right: 0.2em; }
+
+.turn { display: flex; gap: 1rem; margin-bottom: 1.3rem; align-items: flex-start; }
+.turn.student { flex-direction: row-reverse; }
+.avatar { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Zen Antique', serif; font-size: 0.82rem; }
+.avatar.teacher { background: var(--ink); color: var(--paper); }
+.avatar.student-av { background: var(--teal); color: #fff; }
+.bubble { max-width: 82%; padding: 0.9rem 1.1rem; border-radius: 4px 12px 12px 12px; line-height: 1.85; font-size: 0.91rem; box-shadow: var(--shadow); }
+.turn.student .bubble { border-radius: 12px 4px 12px 12px; }
+.bubble.teacher-bubble { background: var(--paper); border: 1px solid var(--border-light); color: var(--ink); }
+.bubble.student-bubble { background: var(--teal-pale); border: 1px solid #c0dede; color: var(--teal); }
+.speaker-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 0.35rem; opacity: 0.6; display: block; }
+
+pre.code-block { background: #1e1a14; color: #d4c9a8; font-family: 'JetBrains Mono', monospace; font-size: 0.81rem; padding: 1.3rem 1.5rem; border-radius: 4px; margin: 1.1rem 0; line-height: 1.8; overflow-x: auto; white-space: pre; position: relative; }
+.lang-tag { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.62rem; color: #5a5040; letter-spacing: 0.08em; font-family: 'JetBrains Mono', monospace; }
+.c-comment { color: #6a6050; } .c-string { color: #a8c878; } .c-num { color: #e8c070; } .c-fn { color: #78b8d8; } .c-kw { color: #d87850; } .c-out { color: #8aaa70; }
+.c-section { color: #888070; font-style: italic; display: block; margin: 0.5em 0 0.1em; font-size: 0.74rem; letter-spacing: 0.05em; }
+.inline-code { font-family: 'JetBrains Mono', monospace; font-size: 0.81em; background: rgba(28,23,16,0.07); padding: 0.1em 0.4em; border-radius: 3px; color: var(--accent); }
+
+.callout, .callout-teal, .callout-green, .callout-purple { padding: 1rem 1.2rem; border-radius: 0 4px 4px 0; margin: 1.4rem 0; font-size: 0.89rem; line-height: 1.8; color: var(--ink-light); }
+.callout        { border-left: 4px solid var(--gold);   background: var(--gold-pale); }
+.callout-teal   { border-left: 4px solid var(--teal);   background: var(--teal-pale); }
+.callout-green  { border-left: 4px solid var(--green);  background: var(--green-pale); }
+.callout-purple { border-left: 4px solid var(--purple); background: var(--purple-pale); }
+.callout strong { color: var(--gold); } .callout-teal strong { color: var(--teal); } .callout-green strong { color: var(--green); } .callout-purple strong { color: var(--purple); }
+
+.learning-goals { background: var(--paper); border: 1px solid var(--border); border-left: 4px solid var(--teal); border-radius: 0 6px 6px 0; padding: 1.3rem 1.5rem; margin-bottom: 2.5rem; box-shadow: var(--shadow); }
+.learning-goals h3 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--teal); margin-bottom: 0.8rem; }
+.goal-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.goal-list li { font-size: 0.85rem; color: var(--ink-light); display: flex; align-items: flex-start; gap: 0.5rem; line-height: 1.6; }
+.goal-list li::before { content: '✓'; font-family: 'JetBrains Mono', monospace; color: var(--teal); font-size: 0.78rem; flex-shrink: 0; margin-top: 0.12rem; }
+
+.concept-box { background: var(--paper); border: 1px solid var(--border); border-radius: 6px; padding: 1.4rem 1.6rem; margin: 1.8rem 0; box-shadow: var(--shadow); }
+.concept-box h4 { font-family: 'Zen Antique', serif; font-size: 0.97rem; color: var(--ink); margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-light); }
+.concept-box p { font-size: 0.88rem; line-height: 1.85; color: var(--ink-light); margin-bottom: 0.7rem; }
+.concept-box p:last-child { margin-bottom: 0; }
+
+/* ── KM CURVE MOCK ── */
+.km-panel { background: var(--paper); border: 1px solid var(--border); border-radius: 6px; padding: 1.3rem; margin: 1.4rem 0; box-shadow: var(--shadow); }
+.km-panel .km-title { font-family: 'Zen Antique', serif; font-size: 0.85rem; color: var(--ink-muted); text-align: center; margin-bottom: 0.9rem; }
+.km-panel svg { display: block; margin: 0 auto; }
+
+/* ── CENSORING TIMELINE ── */
+.censor-timeline { background: var(--paper); border: 1px solid var(--border); border-radius: 6px; padding: 1.2rem 1.4rem; margin: 1.4rem 0; }
+.censor-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem; font-size: 0.79rem; color: var(--ink-light); }
+.censor-label { width: 60px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink-muted); }
+.censor-bar { flex: 1; position: relative; height: 8px; background: var(--border-light); border-radius: 4px; }
+.censor-fill { height: 100%; border-radius: 4px; }
+.censor-event { width: 10px; height: 10px; border-radius: 50%; position: absolute; right: 0; top: -1px; }
+
+/* ── COX MODEL TABLE ── */
+.cox-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 1.3rem 0; background: var(--paper); border-radius: 4px; overflow: hidden; box-shadow: var(--shadow); }
+.cox-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.cox-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.cox-table tr:last-child td { border-bottom: none; }
+.cox-table tr:hover td { background: var(--accent-pale); }
+.cox-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+/* ── QUIZ ── */
+.quiz-box { background: var(--gold-pale); border: 1px solid #d4b060; border-radius: 6px; padding: 1.3rem 1.5rem; margin: 2rem 0; }
+.quiz-box h4 { font-family: 'Zen Antique', serif; font-size: 0.93rem; color: var(--gold); margin-bottom: 0.7rem; }
+.quiz-q { font-size: 0.88rem; color: var(--ink-light); margin-bottom: 0.7rem; line-height: 1.7; }
+.quiz-toggle { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; background: none; border: 1px solid var(--gold); color: var(--gold); padding: 0.35rem 0.85rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.quiz-toggle:hover { background: var(--gold); color: #fff; }
+.quiz-answer { display: none; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid #d4b060; font-size: 0.86rem; line-height: 1.8; color: var(--ink-light); }
+.quiz-answer.open { display: block; }
+
+.summary-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin: 1.3rem 0; background: var(--paper); border-radius: 4px; overflow: hidden; box-shadow: var(--shadow); }
+.summary-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.summary-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: var(--accent-pale); }
+.summary-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+.next-chapter { background: var(--ink); color: var(--paper); border-radius: 6px; padding: 1.5rem 2rem; margin-top: 3rem; display: flex; justify-content: space-between; align-items: center; }
+.next-chapter .label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+.next-chapter .title { font-family: 'Zen Antique', serif; font-size: 1.03rem; }
+.next-chapter .arrow { font-size: 1.4rem; opacity: 0.5; }
+em { font-style: italic; color: var(--ink-light); }
+
+@media (max-width: 900px) { aside { display: none; } main { margin-left: 0; padding: 2rem 1.2rem; } footer { margin-left: 0; } }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="series-title">R言語で学ぶ統計学 ── 情報の彫刻刀</span>
+  <span class="chapter-badge">CHAPTER 6</span>
+</header>
+
+<aside>
+  <h2>第6章 目次</h2>
+  <ul class="toc-list">
+    <li><a href="#concept">6.1 生存解析とは何か</a></li>
+    <li><a href="#censoring">6.2 打ち切りの概念</a></li>
+    <li><a href="#km">6.3 カプランマイヤー曲線</a></li>
+    <li><a href="#logrank">6.4 ログランク検定</a></li>
+    <li><a href="#cox">6.5 Cox比例ハザードモデル</a></li>
+    <li><a href="#assumption">6.6 比例ハザード仮定の確認</a></li>
+    <li><a href="#competing">6.7 競合リスクと拡張モデル</a></li>
+    <li><a href="#exercises">6.8 練習問題</a></li>
+    <li><a href="#chapter-summary">6.9 章まとめ</a></li>
+  </ul>
+  <div class="toc-divider">── 章一覧 ──</div>
+  <ul class="toc-list">
+    <li><a href="r_intro_chapter0.html" class="chapter-link"><span class="ch-num">序章</span>イントロダクション</a></li>
+    <li><a href="r_chapter1.html" class="chapter-link"><span class="ch-num">Ch.1</span>Rとの出会い</a></li>
+    <li><a href="r_chapter2.html" class="chapter-link"><span class="ch-num">Ch.2</span>情報の箱</a></li>
+    <li><a href="r_chapter3.html" class="chapter-link"><span class="ch-num">Ch.3</span>可視化という次元削減</a></li>
+    <li><a href="r_chapter4.html" class="chapter-link"><span class="ch-num">Ch.4</span>基本統計量の本質</a></li>
+    <li><a href="r_chapter5.html" class="chapter-link"><span class="ch-num">Ch.5</span>検定のロジック</a></li>
+    <li><a href="#" class="chapter-link current"><span class="ch-num">Ch.6</span>生存解析と時間軸</a></li>
+    <li><a href="r_chapter7.html" class="chapter-link"><span class="ch-num">Ch.7</span>高次元の向こう側</a></li>
+  </ul>
+  <div class="progress-bar"><div class="progress-fill"></div></div>
+  <div class="progress-label">Ch.6 / 7</div>
+</aside>
+
+<main>
+  <p class="chapter-eyebrow">CHAPTER 6 ── 第6章</p>
+  <h1 class="chapter-title">生存解析と時間軸<br><span style="font-size:0.68em;color:var(--ink-muted);">〜ログランク検定が捉える命の軌跡〜</span></h1>
+  <p class="chapter-subtitle">「いつ」イベントが起きるかを分析する——死亡・再発・退院・離脱。時間という次元を組み込んだ統計の世界を、カプランマイヤー曲線からCox回帰まで体系的に学ぶ。</p>
+  <div class="lead-divider"></div>
+
+  <div class="learning-goals">
+    <h3>📌 この章の学習目標</h3>
+    <ul class="goal-list">
+      <li>生存解析が通常の検定と異なる理由（打ち切り・時間軸）を説明できる</li>
+      <li>Surv オブジェクトを作成し、カプランマイヤー曲線を描ける</li>
+      <li>ログランク検定で群間の生存曲線を比較できる</li>
+      <li>Cox比例ハザードモデルを構築し、ハザード比を解釈できる</li>
+      <li>比例ハザード仮定をSchoenfeld残差で確認できる</li>
+      <li>競合リスクの概念と Fine-Gray モデルを理解できる</li>
+    </ul>
+  </div>
+
+  <!-- ── 6.1 ── -->
+  <section class="dialogue-section" id="concept">
+    <h2 class="section-heading"><span class="section-number">6.1</span>生存解析とは何か ── 時間をデータに加える</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        これまでの検定は「ある時点のスナップショット」を比較するものだった。しかし医学では「いつ再発するか」「いつ死亡するか」という<em>時間つきのイベント</em>を扱う場面が多い。生存解析はまさにそのための道具だ。
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        「死亡までの時間」なら、普通に平均や中央値を計算するのとどう違うんですか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        それが「打ち切り（censoring）」の問題だ。研究期間中に死亡しなかった患者は、その後どうなるかわからない。試験終了時点でまだ生きているなら「少なくともその期間は生存した」という情報はある——しかしそれ以上はわからない。この「不完全な情報」を捨てずに使う仕組みが生存解析だ。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>🕐 生存解析の基本概念</h4>
+      <p><strong>イベント（event）：</strong>死亡・再発・退院など、分析対象とする事象。研究によって定義が変わる。</p>
+      <p><strong>生存時間（survival time）：</strong>観察開始からイベント発生（または打ち切り）までの時間。</p>
+      <p><strong>打ち切り（censoring）：</strong>観察期間中にイベントが観察されなかった場合。「少なくともこの期間は生存した」という情報は利用する。</p>
+      <p><strong>ハザード（hazard）：</strong>その瞬間にイベントが起きる「瞬間的なリスク」。t時点まで生存していた条件のもとでの、t時点でのイベント発生率。</p>
+    </div>
+  </section>
+
+  <!-- ── 6.2 ── -->
+  <section class="dialogue-section" id="censoring">
+    <h2 class="section-heading"><span class="section-number">6.2</span>打ち切りの概念 ── 不完全な情報を捨てない</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        5人の患者を追跡した例を見てみよう。観察期間は24ヶ月だ。
+      </div>
+    </div>
+
+    <!-- 打ち切りのタイムライン図 -->
+    <div class="censor-timeline">
+      <div style="font-family:'Zen Antique',serif;font-size:0.82rem;color:var(--ink-muted);margin-bottom:0.8rem;">患者の追跡タイムライン（24ヶ月）</div>
+      <div class="censor-row">
+        <span class="censor-label">患者A</span>
+        <div class="censor-bar"><div class="censor-fill" style="width:100%;background:#8b3a2a;"></div><div class="censor-event" style="background:#8b3a2a;"></div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#8b3a2a;">24ヶ月で死亡</span>
+      </div>
+      <div class="censor-row">
+        <span class="censor-label">患者B</span>
+        <div class="censor-bar"><div class="censor-fill" style="width:58%;background:#8b3a2a;"></div><div class="censor-event" style="right:42%;background:#8b3a2a;"></div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#8b3a2a;">14ヶ月で死亡</span>
+      </div>
+      <div class="censor-row">
+        <span class="censor-label">患者C</span>
+        <div class="censor-bar"><div class="censor-fill" style="width:75%;background:#2a6b6e;"></div><div class="censor-event" style="right:25%;background:#2a6b6e;border:2px solid #2a6b6e;background:white;"></div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#2a6b6e;">18ヶ月で転院（打ち切り）</span>
+      </div>
+      <div class="censor-row">
+        <span class="censor-label">患者D</span>
+        <div class="censor-bar"><div class="censor-fill" style="width:100%;background:#2a6b6e;"></div><div class="censor-event" style="background:white;border:2px solid #2a6b6e;"></div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#2a6b6e;">24ヶ月で生存（打ち切り）</span>
+      </div>
+      <div class="censor-row">
+        <span class="censor-label">患者E</span>
+        <div class="censor-bar"><div class="censor-fill" style="width:38%;background:#2a6b6e;"></div><div class="censor-event" style="right:62%;background:white;border:2px solid #2a6b6e;"></div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#2a6b6e;">9ヶ月で同意撤回（打ち切り）</span>
+      </div>
+      <div style="font-size:0.72rem;color:var(--ink-muted);margin-top:0.6rem;">● 塗り潰し = イベント発生　○ 白抜き = 打ち切り（生存のまま離脱）</div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── Surv オブジェクトの作成 ──</span>
+<span class="c-fn">library</span>(survival)
+<span class="c-fn">library</span>(survminer)
+
+<span class="c-comment"># time：観察時間、event：1=イベント発生, 0=打ち切り</span>
+surv_obj &lt;- <span class="c-fn">Surv</span>(time = patients$os_months,
+                  event = patients$death)
+
+<span class="c-comment"># Surv の表示：+ は打ち切りを示す</span>
+<span class="c-fn">head</span>(surv_obj)
+<span class="c-out"># [1]  24   14   18+  24+   9+</span>
+
+<span class="c-section"># ── survivalデータの作成（lubridate）──</span>
+<span class="c-fn">library</span>(lubridate)
+patients &lt;- patients |&gt;
+  <span class="c-fn">mutate</span>(
+    os_months = <span class="c-fn">interval</span>(enrollment_date, last_contact_date) /
+                <span class="c-fn">dmonths</span>(<span class="c-num">1</span>),
+    death     = <span class="c-fn">as.integer</span>(vital_status == <span class="c-string">"dead"</span>)
+  )</pre>
+
+    <div class="callout">
+      <strong>打ち切りの種類：</strong> ①右側打ち切り（最も一般的。観察終了時点でまだ生存）②区間打ち切り（イベントがある区間内に起きたとわかるが正確な時刻不明）③左側打ち切り（観察開始前にイベントが起きた可能性）。多くの医学研究では右側打ち切りのみを扱う。
+    </div>
+  </section>
+
+  <!-- ── 6.3 ── -->
+  <section class="dialogue-section" id="km">
+    <h2 class="section-heading"><span class="section-number">6.3</span>カプランマイヤー曲線 ── 生存率を時間軸で描く</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        カプランマイヤー（KM）曲線は「時刻tまで生存している確率」をノンパラメトリックに推定する方法だ。イベントが起きるたびに曲線が階段状に下がる。打ち切りの時点では曲線は動かず、「＋」記号でマークされる。
+      </div>
+    </div>
+
+    <!-- KM曲線のモック -->
+    <div class="km-panel">
+      <div class="km-title">カプランマイヤー曲線のイメージ（治療群 vs 対照群）</div>
+      <svg viewBox="0 0 460 220" width="440" height="210">
+        <rect width="460" height="220" fill="var(--paper)"/>
+        <!-- 軸 -->
+        <line x1="50" y1="180" x2="420" y2="180" stroke="var(--border)" stroke-width="1"/>
+        <line x1="50" y1="20"  x2="50"  y2="180" stroke="var(--border)" stroke-width="1"/>
+        <!-- y軸ラベル -->
+        <text x="44" y="185" text-anchor="end" font-size="8" fill="var(--ink-muted)" font-family="monospace">0</text>
+        <text x="44" y="140" text-anchor="end" font-size="8" fill="var(--ink-muted)" font-family="monospace">0.5</text>
+        <text x="44" y="24"  text-anchor="end" font-size="8" fill="var(--ink-muted)" font-family="monospace">1.0</text>
+        <text x="20" y="110" text-anchor="middle" font-size="8" fill="var(--ink-muted)" font-family="monospace" transform="rotate(-90,20,110)">生存率</text>
+        <!-- x軸ラベル -->
+        <text x="50"  y="193" text-anchor="middle" font-size="8" fill="var(--ink-muted)" font-family="monospace">0</text>
+        <text x="143" y="193" text-anchor="middle" font-size="8" fill="var(--ink-muted)" font-family="monospace">6</text>
+        <text x="235" y="193" text-anchor="middle" font-size="8" fill="var(--ink-muted)" font-family="monospace">12</text>
+        <text x="328" y="193" text-anchor="middle" font-size="8" fill="var(--ink-muted)" font-family="monospace">18</text>
+        <text x="420" y="193" text-anchor="middle" font-size="8" fill="var(--ink-muted)" font-family="monospace">24</text>
+        <text x="235" y="208" text-anchor="middle" font-size="8" fill="var(--ink-muted)" font-family="monospace">観察期間（月）</text>
+        <!-- 治療群（teal） -->
+        <polyline points="50,24 110,24 110,45 155,45 155,60 200,60 200,78 270,78 270,95 330,95 330,110 420,110"
+                  stroke="#2a6b6e" stroke-width="2" fill="none"/>
+        <!-- 打ち切り記号（治療群） -->
+        <line x1="175" y1="50" x2="175" y2="62" stroke="#2a6b6e" stroke-width="1.5"/>
+        <line x1="290" y1="83" x2="290" y2="75" stroke="#2a6b6e" stroke-width="1.5"/>
+        <!-- 対照群（accent） -->
+        <polyline points="50,24 85,24 85,52 120,52 120,78 160,78 160,102 210,102 210,125 260,125 260,150 310,150 310,170 420,170"
+                  stroke="#8b3a2a" stroke-width="2" fill="none"/>
+        <!-- 信頼区間（対照群・薄い塗り） -->
+        <polygon points="50,20 85,20 85,56 120,56 120,84 160,84 160,108 210,108 210,132 260,132 260,158 310,158 310,176 420,176 420,164 310,164 310,142 260,142 210,118 160,96 120,72 85,48 50,28"
+                 fill="#8b3a2a" fill-opacity="0.08"/>
+        <!-- 凡例 -->
+        <line x1="270" y1="50" x2="295" y2="50" stroke="#2a6b6e" stroke-width="2"/>
+        <text x="298" y="53" font-size="8" fill="#2a6b6e" font-family="monospace">治療群</text>
+        <line x1="270" y1="65" x2="295" y2="65" stroke="#8b3a2a" stroke-width="2"/>
+        <text x="298" y="68" font-size="8" fill="#8b3a2a" font-family="monospace">対照群</text>
+        <!-- p値 -->
+        <text x="270" y="82" font-size="7" fill="var(--ink-muted)" font-family="monospace">p = 0.023</text>
+      </svg>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── KM曲線の推定と描画 ──</span>
+<span class="c-fn">library</span>(survival)
+<span class="c-fn">library</span>(survminer)
+
+<span class="c-comment"># Surv オブジェクト作成</span>
+km_fit &lt;- <span class="c-fn">survfit</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~ treatment,
+  data = patients
+)
+
+<span class="c-comment"># 基本情報の確認</span>
+<span class="c-fn">summary</span>(km_fit, times = <span class="c-fn">c</span>(<span class="c-num">6</span>, <span class="c-num">12</span>, <span class="c-num">24</span>))
+<span class="c-out"># time n.risk n.event survival std.err lower95%CI upper95%CI
+#    6    43       8    0.840   0.056      0.736      0.959
+#   12    38      14    0.700   0.069      0.575      0.852
+#   24    18      22    0.440   0.078      0.311      0.622</span>
+
+<span class="c-section"># ── ggsurvplot による論文品質の描画 ──</span>
+<span class="c-fn">ggsurvplot</span>(
+  km_fit,
+  data          = patients,
+  pval          = <span class="c-kw">TRUE</span>,          <span class="c-comment"># p値を自動表示（ログランク検定）</span>
+  conf.int      = <span class="c-kw">TRUE</span>,          <span class="c-comment"># 95% CI の帯</span>
+  risk.table    = <span class="c-kw">TRUE</span>,          <span class="c-comment"># リスク表（At Risk数）を下部に</span>
+  risk.table.height = <span class="c-num">0.25</span>,
+  xlab          = <span class="c-string">"観察期間（月）"</span>,
+  ylab          = <span class="c-string">"生存率"</span>,
+  legend.labs   = <span class="c-fn">c</span>(<span class="c-string">"治療群"</span>, <span class="c-string">"対照群"</span>),
+  palette       = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#8b3a2a"</span>),
+  ggtheme       = <span class="c-fn">theme_classic</span>(),
+  surv.median.line = <span class="c-string">"hv"</span>       <span class="c-comment"># 中央生存時間に破線を引く</span>
+)
+
+<span class="c-section"># ── 中央生存時間の取得 ──</span>
+<span class="c-fn">surv_median</span>(km_fit)
+<span class="c-out"># strata         median  0.95LCL  0.95UCL
+# treatment=A      20.5     17.1     24.0
+# treatment=B      11.3      8.2     15.8</span></pre>
+
+    <div class="callout-teal">
+      <strong>リスク表（at-risk table）の重要性：</strong> KM曲線の右端は少数の患者しか残っていないため、信頼区間が非常に広くなる。リスク表を必ず添えることで「この時点の曲線は何人の情報に基づくか」が読者に伝わる。論文投稿時には多くのジャーナルが必須としている。
+    </div>
+  </section>
+
+  <!-- ── 6.4 ── -->
+  <section class="dialogue-section" id="logrank">
+    <h2 class="section-heading"><span class="section-number">6.4</span>ログランク検定 ── 2つの生存曲線を比較する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        ログランク検定は「2群（以上）の生存曲線が同じか」を検定する。イベントが起きる各時点で「期待されるイベント数」と「観察されたイベント数」のずれを集積して検定統計量を作る。打ち切りを自然に組み込める点が優れている。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── ログランク検定 ──</span>
+lr_test &lt;- <span class="c-fn">survdiff</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~ treatment,
+  data = patients
+)
+<span class="c-fn">print</span>(lr_test)
+<span class="c-out"># Call:
+# survdiff(formula = Surv(os_months, death) ~ treatment, data = patients)
+#
+#                  N Observed Expected (O-E)^2/E (O-E)^2/V
+# treatment=A     50       22     30.1      2.18      5.12
+# treatment=B     50       30     21.9      3.00      5.12
+#
+# Chisq= 5.1  on 1 degrees of freedom, p= 0.023</span>
+
+<span class="c-section"># ── p値の取り出し ──</span>
+p_logrank &lt;- <span class="c-num">1</span> - <span class="c-fn">pchisq</span>(lr_test$chisq, df = <span class="c-fn">length</span>(lr_test$n) - <span class="c-num">1</span>)
+
+<span class="c-section"># ── 3群以上のログランク検定 ──</span>
+<span class="c-fn">survdiff</span>(<span class="c-fn">Surv</span>(os_months, death) ~ stage, data = patients)
+<span class="c-comment"># 有意な場合は pairwise.survdiff() で多重比較へ</span>
+<span class="c-fn">pairwise.survdiff</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~ stage,
+  data = patients,
+  p.adjust.method = <span class="c-string">"BH"</span>
+)
+
+<span class="c-section"># ── 重み付きログランク検定（Peto 法：早期差を重視）──</span>
+<span class="c-fn">survdiff</span>(<span class="c-fn">Surv</span>(os_months, death) ~ treatment,
+         data = patients, rho = <span class="c-num">1</span>)  <span class="c-comment"># rho=1: Wilcoxon型（早期差を重視）</span></pre>
+
+    <div class="callout">
+      <strong>ログランク検定の前提：</strong> 群間のハザード比が時間を通じて一定であること（比例ハザード仮定）。2つの曲線が交差するような場合（たとえば初期は対照群が優り、後期は治療群が優る）にはログランク検定は検出力が低い。この場合は重み付きログランク検定や複合エンドポイントを検討する。
+    </div>
+  </section>
+
+  <!-- ── 6.5 ── -->
+  <section class="dialogue-section" id="cox">
+    <h2 class="section-heading"><span class="section-number">6.5</span>Cox比例ハザードモデル ── 複数の因子を同時に調整する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        ログランク検定は「治療群 vs 対照群」の1変数比較だ。しかし実際の研究では年齢・性別・病期などの交絡因子を同時に調整する必要がある。Cox比例ハザードモデルは重回帰の「生存解析版」で、複数の共変量を組み込んでハザード比（HR）を推定する。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>📐 Coxモデルのハザード関数</h4>
+      <p><strong>h(t|X) = h₀(t) × exp(β₁X₁ + β₂X₂ + … + βₚXₚ)</strong></p>
+      <p>h₀(t) はベースラインハザード（特定の分布を仮定しない）。exp(βᵢ) がハザード比（HR）で、「その共変量が1単位増えたとき、イベントリスクが何倍になるか」を示す。HR &gt; 1はリスク増加、HR &lt; 1はリスク減少。</p>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 単変量Cox回帰 ──</span>
+cox_uni &lt;- <span class="c-fn">coxph</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~ treatment,
+  data = patients
+)
+<span class="c-fn">summary</span>(cox_uni)
+<span class="c-out"># coef   exp(coef) se(coef)  z       Pr(>|z|)
+# -0.682   0.506    0.239   -2.85    0.0043
+# HR = 0.51 → 治療群は対照群比でハザードが約半分</span>
+
+<span class="c-section"># ── 多変量Cox回帰（交絡因子を調整）──</span>
+cox_multi &lt;- <span class="c-fn">coxph</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~ treatment + age + sex + stage + hba1c,
+  data = patients
+)
+<span class="c-fn">summary</span>(cox_multi)
+
+<span class="c-section"># ── Forest plot（broom + ggplot2）──</span>
+<span class="c-fn">library</span>(broom)
+cox_multi |&gt;
+  <span class="c-fn">tidy</span>(exponentiate = <span class="c-kw">TRUE</span>, conf.int = <span class="c-kw">TRUE</span>) |&gt;
+  <span class="c-fn">filter</span>(term != <span class="c-string">"(Intercept)"</span>) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(y = <span class="c-fn">fct_rev</span>(<span class="c-fn">factor</span>(term)),
+             x = estimate, xmin = conf.low, xmax = conf.high)) +
+  <span class="c-fn">geom_pointrange</span>(color = <span class="c-string">"#2a6b6e"</span>) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-num">1</span>, linetype = <span class="c-string">"dashed"</span>,
+             color = <span class="c-string">"#8b3a2a"</span>) +
+  <span class="c-fn">scale_x_log10</span>() +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"Cox比例ハザードモデル（Forest plot）"</span>,
+       x = <span class="c-string">"ハザード比（95% CI）"</span>, y = <span class="c-kw">NULL</span>) +
+  <span class="c-fn">theme_classic</span>()
+
+<span class="c-section"># ── gtsummary で論文スタイルの出力 ──</span>
+<span class="c-fn">library</span>(gtsummary)
+cox_multi |&gt;
+  <span class="c-fn">tbl_regression</span>(exponentiate = <span class="c-kw">TRUE</span>) |&gt;
+  <span class="c-fn">bold_p</span>(t = <span class="c-num">0.05</span>) |&gt;
+  <span class="c-fn">bold_labels</span>()</pre>
+
+    <div class="callout-green">
+      <strong>ハザード比の解釈：</strong> HR = 0.6 は「このグループのハザードが基準群の60%」すなわち「死亡リスクが40%低い」という意味だ。相対リスクと似ているが、時間を通じた瞬間的なリスクの比という点で異なる。HR の95%CIが1をまたがなければ統計的に有意。
+    </div>
+  </section>
+
+  <!-- ── 6.6 ── -->
+  <section class="dialogue-section" id="assumption">
+    <h2 class="section-heading"><span class="section-number">6.6</span>比例ハザード仮定の確認 ── モデルの前提を検証する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        Coxモデルの最重要な前提は「ハザード比が時間を通じて一定」という比例ハザード仮定だ。これが崩れているとモデルの解釈が危うくなる。Schoenfeld残差の検定と時間-残差プロットで確認するのが標準的だ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── Schoenfeld残差によるPH仮定の検定 ──</span>
+ph_test &lt;- <span class="c-fn">cox.zph</span>(cox_multi)
+<span class="c-fn">print</span>(ph_test)
+<span class="c-out"># chisq df      p
+# treatment  0.82  1  0.365   # 有意でない → PH仮定 OK
+# age        2.11  1  0.146
+# sex        0.38  1  0.537
+# stage      5.43  1  0.020   # 有意 → PH仮定が怪しい
+# GLOBAL     8.12  4  0.087</span>
+
+<span class="c-section"># ── 残差プロット（PH仮定の視覚確認）──</span>
+<span class="c-fn">ggcoxzph</span>(ph_test, point.size = <span class="c-num">0.5</span>,
+         ggtheme = <span class="c-fn">theme_classic</span>())
+
+<span class="c-section"># ── PH仮定が成立しない場合の対処：時間交互作用の導入 ──</span>
+<span class="c-comment"># stage の効果が時間によって変化する場合</span>
+cox_tv &lt;- <span class="c-fn">coxph</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~
+    treatment + age + sex + stage + hba1c +
+    <span class="c-fn">tt</span>(stage),                <span class="c-comment"># tt()で時間変化共変量を指定</span>
+  data   = patients,
+  tt     = <span class="c-kw">function</span>(x, t, ...) x * <span class="c-fn">log</span>(t)  <span class="c-comment"># log(t)との交互作用</span>
+)
+
+<span class="c-section"># ── 代替：層別Cox（strata）──</span>
+<span class="c-comment"># 層別変数のHRは推定せず、各層で別のh₀(t)を持たせる</span>
+cox_strat &lt;- <span class="c-fn">coxph</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~
+    treatment + age + sex + hba1c + <span class="c-fn">strata</span>(stage),
+  data = patients
+)</pre>
+  </section>
+
+  <!-- ── 6.7 ── -->
+  <section class="dialogue-section" id="competing">
+    <h2 class="section-heading"><span class="section-number">6.7</span>競合リスクと拡張モデル ── 現実の複雑さに対応する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        がん研究で「がん特異的死亡」を主エンドポイントとするとき、他原因による死亡が起きると「がんで死亡できなくなる」——これが競合リスクだ。通常のKMやCoxでは他原因死を単純に打ち切りとして扱うが、これは生存率を過大推定してしまう。
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        交通事故で亡くなった患者を「打ち切り」として扱うのは確かに不自然な感じがします。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        そう。Fine-Gray モデルは「サブ分布ハザード」という概念でこの問題を解決する。他原因死亡例も分母に残したまま推定するため、累積発生率が過大にならない。高齢患者を対象とした研究では特に重要だ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 競合リスク解析（cmprsk パッケージ）──</span>
+<span class="c-fn">library</span>(cmprsk)
+
+<span class="c-comment"># event: 1=目的イベント（がん死）, 2=競合イベント（他原因死）, 0=打ち切り</span>
+cif &lt;- <span class="c-fn">cuminc</span>(
+  ftime   = patients$os_months,
+  fstatus = patients$event_type,    <span class="c-comment"># 0/1/2</span>
+  group   = patients$treatment
+)
+
+<span class="c-comment"># 累積発生率の可視化</span>
+<span class="c-fn">ggcompetingrisks</span>(
+  cif,
+  gnames   = <span class="c-fn">c</span>(<span class="c-string">"治療群 がん死"</span>, <span class="c-string">"治療群 他原因死"</span>,
+               <span class="c-string">"対照群 がん死"</span>, <span class="c-string">"対照群 他原因死"</span>),
+  palette  = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#a0d0d0"</span>, <span class="c-string">"#8b3a2a"</span>, <span class="c-string">"#d0a090"</span>),
+  ggtheme  = <span class="c-fn">theme_classic</span>()
+)
+
+<span class="c-section"># ── Fine-Gray モデル ──</span>
+fg_model &lt;- <span class="c-fn">crr</span>(
+  ftime   = patients$os_months,
+  fstatus = patients$event_type,
+  cov1    = <span class="c-fn">model.matrix</span>(~ treatment + age + sex, patients)[, -<span class="c-num">1</span>],
+  failcode = <span class="c-num">1</span>     <span class="c-comment"># 目的イベントのコード</span>
+)
+<span class="c-fn">summary</span>(fg_model)
+
+<span class="c-section"># ── tidycmprsk（モダンな実装）──</span>
+<span class="c-fn">library</span>(tidycmprsk)
+cr_fit &lt;- <span class="c-fn">crr</span>(
+  <span class="c-fn">Surv</span>(os_months, <span class="c-fn">factor</span>(event_type)) ~ treatment + age + sex,
+  data = patients
+)
+<span class="c-fn">tbl_regression</span>(cr_fit, exponentiate = <span class="c-kw">TRUE</span>)</pre>
+
+    <table class="cox-table">
+      <thead><tr><th>手法</th><th>用途</th><th>主な関数</th></tr></thead>
+      <tbody>
+        <tr><td>カプランマイヤー</td><td>単変量の生存曲線推定・描画</td><td class="mono">survfit() + ggsurvplot()</td></tr>
+        <tr><td>ログランク検定</td><td>2群以上の生存曲線の比較</td><td class="mono">survdiff()</td></tr>
+        <tr><td>Cox比例ハザード</td><td>多変量調整・ハザード比の推定</td><td class="mono">coxph()</td></tr>
+        <tr><td>PH仮定の検定</td><td>Coxモデルの妥当性確認</td><td class="mono">cox.zph() + ggcoxzph()</td></tr>
+        <tr><td>競合リスク（KM）</td><td>累積発生率の推定</td><td class="mono">cuminc() + ggcompetingrisks()</td></tr>
+        <tr><td>Fine-Gray モデル</td><td>競合リスクの多変量調整</td><td class="mono">crr() / tidycmprsk::crr()</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 6.8 練習問題 ── -->
+  <section class="dialogue-section" id="exercises">
+    <h2 class="section-heading"><span class="section-number">6.8</span>練習問題</h2>
+
+    <div class="quiz-box">
+      <h4>🧠 問題1：KM曲線とログランク検定</h4>
+      <p class="quiz-q">patients データで、インスリン使用群（on_insulin = TRUE）と非使用群の全生存期間（os_months, death）を比較せよ。KM曲線をリスク表付きで描き、ログランク検定のp値を求めよ。中央生存時間も報告すること。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(survival); <span class="c-fn">library</span>(survminer)
+
+km_insulin &lt;- <span class="c-fn">survfit</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~ on_insulin,
+  data = patients |&gt; <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(on_insulin))
+)
+
+<span class="c-fn">ggsurvplot</span>(
+  km_insulin,
+  data         = patients |&gt; <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(on_insulin)),
+  pval         = <span class="c-kw">TRUE</span>,
+  conf.int     = <span class="c-kw">TRUE</span>,
+  risk.table   = <span class="c-kw">TRUE</span>,
+  legend.labs  = <span class="c-fn">c</span>(<span class="c-string">"非使用"</span>, <span class="c-string">"インスリン使用"</span>),
+  palette      = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#c8922a"</span>),
+  xlab         = <span class="c-string">"観察期間（月）"</span>,
+  ylab         = <span class="c-string">"生存率"</span>,
+  surv.median.line = <span class="c-string">"hv"</span>,
+  ggtheme      = <span class="c-fn">theme_classic</span>()
+)
+
+<span class="c-comment"># 中央生存時間</span>
+<span class="c-fn">surv_median</span>(km_insulin)</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題2：多変量Cox回帰</h4>
+      <p class="quiz-q">全生存期間を従属変数として、treatment・age・sex・bmi・hba1c を共変量とする多変量Cox比例ハザードモデルを構築せよ。Forest plotと gtsummary の表を出力し、PH仮定を cox.zph() で確認せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>cox_full &lt;- <span class="c-fn">coxph</span>(
+  <span class="c-fn">Surv</span>(os_months, death) ~
+    treatment + age + sex + bmi + hba1c,
+  data = patients
+)
+
+<span class="c-comment"># gtsummary 出力</span>
+<span class="c-fn">library</span>(gtsummary)
+cox_full |&gt;
+  <span class="c-fn">tbl_regression</span>(exponentiate = <span class="c-kw">TRUE</span>) |&gt;
+  <span class="c-fn">bold_p</span>() |&gt; <span class="c-fn">bold_labels</span>()
+
+<span class="c-comment"># Forest plot</span>
+<span class="c-fn">library</span>(broom)
+cox_full |&gt;
+  <span class="c-fn">tidy</span>(exponentiate = <span class="c-kw">TRUE</span>, conf.int = <span class="c-kw">TRUE</span>) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(y = <span class="c-fn">fct_rev</span>(<span class="c-fn">factor</span>(term)),
+             x = estimate, xmin = conf.low, xmax = conf.high)) +
+  <span class="c-fn">geom_pointrange</span>(color = <span class="c-string">"#2a6b6e"</span>) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-num">1</span>, linetype = <span class="c-string">"dashed"</span>, color = <span class="c-string">"#8b3a2a"</span>) +
+  <span class="c-fn">scale_x_log10</span>() +
+  <span class="c-fn">labs</span>(x = <span class="c-string">"HR (95% CI)"</span>, y = <span class="c-kw">NULL</span>) + <span class="c-fn">theme_classic</span>()
+
+<span class="c-comment"># PH仮定の確認</span>
+<span class="c-fn">cox.zph</span>(cox_full) |&gt; <span class="c-fn">print</span>()
+<span class="c-fn">ggcoxzph</span>(<span class="c-fn">cox.zph</span>(cox_full), ggtheme = <span class="c-fn">theme_classic</span>())</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題3（発展）：競合リスク解析</h4>
+      <p class="quiz-q">patients データで event_type（0=打ち切り, 1=がん死, 2=心疾患死）を用いて、治療群別の累積発生率をcuminc()で推定し、ggcompetingrisks()で可視化せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(cmprsk); <span class="c-fn">library</span>(survminer)
+
+cif_result &lt;- <span class="c-fn">cuminc</span>(
+  ftime   = patients$os_months,
+  fstatus = patients$event_type,
+  group   = patients$treatment
+)
+
+<span class="c-fn">ggcompetingrisks</span>(
+  cif_result,
+  gnames  = <span class="c-fn">names</span>(cif_result)[!<span class="c-fn">grepl</span>(<span class="c-string">"Tests"</span>, <span class="c-fn">names</span>(cif_result))],
+  palette = <span class="c-fn">c</span>(<span class="c-string">"#2a6b6e"</span>, <span class="c-string">"#a0d0d0"</span>, <span class="c-string">"#8b3a2a"</span>, <span class="c-string">"#d0a090"</span>),
+  xlab    = <span class="c-string">"観察期間（月）"</span>,
+  ylab    = <span class="c-string">"累積発生率"</span>,
+  ggtheme = <span class="c-fn">theme_classic</span>()
+)
+
+<span class="c-comment"># Gray の検定（競合リスク版ログランク）</span>
+<span class="c-fn">print</span>(cif_result$Tests)</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 6.9 章まとめ ── -->
+  <section class="dialogue-section" id="chapter-summary">
+    <h2 class="section-heading"><span class="section-number">6.9</span>章まとめ</h2>
+
+    <table class="summary-table">
+      <thead><tr><th>トピック</th><th>キーワード</th><th>一言まとめ</th></tr></thead>
+      <tbody>
+        <tr><td>打ち切り</td><td class="mono">Surv(time, event)</td><td>不完全な観察情報を捨てずに利用する仕組みが生存解析の核心</td></tr>
+        <tr><td>KM曲線</td><td class="mono">survfit() + ggsurvplot()</td><td>ノンパラメトリックな生存率推定。リスク表を必ず付ける</td></tr>
+        <tr><td>ログランク検定</td><td class="mono">survdiff()</td><td>2群以上の生存曲線を比較。比例ハザードが前提</td></tr>
+        <tr><td>Cox回帰</td><td class="mono">coxph()</td><td>多変量調整でハザード比を推定。医学論文の主力モデル</td></tr>
+        <tr><td>PH仮定の確認</td><td class="mono">cox.zph() + ggcoxzph()</td><td>Schoenfeld残差。違反時は時間交互作用か層別Coxへ</td></tr>
+        <tr><td>競合リスク</td><td class="mono">cuminc() / crr()</td><td>複数のイベントが競合する場合はFine-Grayモデルへ</td></tr>
+      </tbody>
+    </table>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        第6章はここまで。カプランマイヤー曲線からCox比例ハザードモデルまで、医学論文に頻出する生存解析の道具を一通り学んだ。最終章の第7章ではいよいよ「高次元データ」に挑む。遺伝子発現データのような数千〜数万変数の世界を2次元に圧縮するt-SNEやUMAPだ。
+      </div>
+    </div>
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        Coxモデルで論文のTable 2がそのまま出せるのは感動です。競合リスクは聞いたことはあったけど実際に使えるとは思っていませんでした。第7章が最後ですね……。
+      </div>
+    </div>
+
+    <div class="next-chapter">
+      <div>
+        <div class="label">NEXT CHAPTER</div>
+        <div class="title">第7章：高次元の向こう側 〜t-SNE/UMAPによる究極の次元削減〜</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>⚠ 注意書き：本テキストは生成AIによって作成されたものであり、内容に誤りを含む可能性があります。利用・参照は自己責任でお願いします。再配布については、自己責任の範囲内であれば問題ありません。</p>
+  <span class="footer-mark">―― 統計は専門ではない研究者の備忘録 ――</span>
+</footer>
+
+<script>
+const links = document.querySelectorAll('aside .toc-list a:not(.chapter-link)');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector('aside .toc-list a[href="#' + e.target.id + '"]');
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

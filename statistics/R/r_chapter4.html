@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第4章：基本統計量の本質 | R言語で学ぶ統計学</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8;
+  --paper: #fdfaf3;
+  --paper2: #f8f4eb;
+  --ink: #1c1710;
+  --ink-light: #4a3f30;
+  --ink-muted: #7a6e5f;
+  --accent: #8b3a2a;
+  --accent-pale: #f0e6df;
+  --gold: #c8922a;
+  --gold-pale: #faf3e0;
+  --teal: #2a6b6e;
+  --teal-pale: #e0f0f0;
+  --green: #3a6b3a;
+  --green-pale: #e8f4e8;
+  --purple: #5a3a8a;
+  --purple-pale: #f0eaf8;
+  --border: #d4c9b0;
+  --border-light: #e8e0cc;
+  --sidebar-w: 260px;
+  --shadow: 0 2px 12px rgba(28,23,16,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.9rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+header .series-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+header .chapter-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+aside {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  background: var(--paper2);
+  border-right: 1px solid var(--border);
+  padding: 1.6rem 1.2rem 2rem;
+  z-index: 90;
+}
+aside h2 {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 0.1rem; }
+.toc-list a {
+  display: block;
+  font-size: 0.79rem;
+  color: var(--ink-light);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 3px;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.45;
+}
+.toc-list a:hover, .toc-list a.active {
+  background: var(--accent-pale);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+.toc-divider {
+  margin: 1rem 0 0.6rem;
+  font-family: 'Zen Antique', serif;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+}
+.chapter-link {
+  font-size: 0.76rem !important;
+  color: var(--ink-muted) !important;
+  padding: 0.28rem 0.6rem !important;
+}
+.chapter-link.current { color: var(--accent) !important; font-weight: 500; }
+.chapter-link .ch-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  margin-right: 0.3em;
+}
+.progress-bar {
+  height: 3px;
+  background: var(--border-light);
+  margin: 1.5rem 0 0;
+  border-radius: 2px;
+}
+.progress-fill {
+  height: 100%;
+  width: calc(100% * 4 / 7);
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 2px;
+}
+.progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
+  text-align: right;
+}
+
+main {
+  margin-left: var(--sidebar-w);
+  margin-top: 52px;
+  padding: 3rem 4rem 4rem 3.5rem;
+  max-width: calc(860px + var(--sidebar-w));
+  min-height: calc(100vh - 52px);
+}
+
+footer {
+  margin-left: var(--sidebar-w);
+  background: var(--paper2);
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  line-height: 1.7;
+  text-align: center;
+}
+footer .footer-mark {
+  font-family: 'Zen Antique', serif;
+  display: block;
+  margin-top: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+.chapter-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+.chapter-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 2.1rem;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+.chapter-subtitle {
+  font-size: 0.97rem;
+  color: var(--ink-muted);
+  font-weight: 300;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+.lead-divider {
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  margin-bottom: 2.5rem;
+}
+
+.dialogue-section { margin-bottom: 3.5rem; }
+.section-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1.18rem;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-heading::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--gold);
+  margin-right: 0.2em;
+}
+.subsection-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  color: var(--teal);
+  margin: 2rem 0 1rem;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--teal);
+}
+
+.turn { display: flex; gap: 1rem; margin-bottom: 1.3rem; align-items: flex-start; }
+.turn.student { flex-direction: row-reverse; }
+.avatar {
+  flex-shrink: 0; width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Zen Antique', serif; font-size: 0.82rem;
+}
+.avatar.teacher { background: var(--ink); color: var(--paper); }
+.avatar.student-av { background: var(--teal); color: #fff; }
+.bubble {
+  max-width: 82%;
+  padding: 0.9rem 1.1rem;
+  border-radius: 4px 12px 12px 12px;
+  line-height: 1.85; font-size: 0.91rem;
+  box-shadow: var(--shadow);
+}
+.turn.student .bubble { border-radius: 12px 4px 12px 12px; }
+.bubble.teacher-bubble { background: var(--paper); border: 1px solid var(--border-light); color: var(--ink); }
+.bubble.student-bubble { background: var(--teal-pale); border: 1px solid #c0dede; color: var(--teal); }
+.speaker-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 0.35rem; opacity: 0.6; display: block; }
+
+pre.code-block {
+  background: #1e1a14;
+  color: #d4c9a8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.81rem;
+  padding: 1.3rem 1.5rem;
+  border-radius: 4px;
+  margin: 1.1rem 0;
+  line-height: 1.8;
+  overflow-x: auto;
+  white-space: pre;
+  position: relative;
+}
+.lang-tag {
+  position: absolute; top: 0.5rem; right: 0.8rem;
+  font-size: 0.62rem; color: #5a5040; letter-spacing: 0.08em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.c-comment { color: #6a6050; }
+.c-string  { color: #a8c878; }
+.c-num     { color: #e8c070; }
+.c-fn      { color: #78b8d8; }
+.c-kw      { color: #d87850; }
+.c-out     { color: #8aaa70; }
+.c-section { color: #888070; font-style: italic; display: block; margin: 0.5em 0 0.1em; font-size: 0.74rem; letter-spacing: 0.05em; }
+
+.inline-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.81em;
+  background: rgba(28,23,16,0.07); padding: 0.1em 0.4em;
+  border-radius: 3px; color: var(--accent);
+}
+
+.callout, .callout-teal, .callout-green, .callout-purple {
+  padding: 1rem 1.2rem;
+  border-radius: 0 4px 4px 0;
+  margin: 1.4rem 0;
+  font-size: 0.89rem; line-height: 1.8;
+  color: var(--ink-light);
+}
+.callout        { border-left: 4px solid var(--gold);   background: var(--gold-pale); }
+.callout-teal   { border-left: 4px solid var(--teal);   background: var(--teal-pale); }
+.callout-green  { border-left: 4px solid var(--green);  background: var(--green-pale); }
+.callout-purple { border-left: 4px solid var(--purple); background: var(--purple-pale); }
+.callout strong        { color: var(--gold); }
+.callout-teal strong   { color: var(--teal); }
+.callout-green strong  { color: var(--green); }
+.callout-purple strong { color: var(--purple); }
+
+.learning-goals {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  padding: 1.3rem 1.5rem; margin-bottom: 2.5rem;
+  box-shadow: var(--shadow);
+}
+.learning-goals h3 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--teal); margin-bottom: 0.8rem; }
+.goal-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.goal-list li { font-size: 0.85rem; color: var(--ink-light); display: flex; align-items: flex-start; gap: 0.5rem; line-height: 1.6; }
+.goal-list li::before { content: '✓'; font-family: 'JetBrains Mono', monospace; color: var(--teal); font-size: 0.78rem; flex-shrink: 0; margin-top: 0.12rem; }
+
+.concept-box {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.4rem 1.6rem; margin: 1.8rem 0; box-shadow: var(--shadow);
+}
+.concept-box h4 { font-family: 'Zen Antique', serif; font-size: 0.97rem; color: var(--ink); margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-light); }
+.concept-box p { font-size: 0.88rem; line-height: 1.85; color: var(--ink-light); margin-bottom: 0.7rem; }
+.concept-box p:last-child { margin-bottom: 0; }
+
+/* ── STATS CARD GRID ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+  margin: 1.4rem 0;
+}
+.stats-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--shadow);
+}
+.stats-card:hover { border-color: var(--gold); }
+.stats-card .s-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.71rem;
+  color: var(--accent);
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.06em;
+}
+.stats-card .s-name {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.93rem;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+.stats-card .s-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--gold);
+  margin-bottom: 0.4rem;
+  line-height: 1.5;
+}
+.stats-card .s-desc {
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+/* ── DISTRIBUTION VISUAL ── */
+.dist-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.3rem 0;
+}
+.dist-panel {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.1rem;
+  box-shadow: var(--shadow);
+}
+.dist-panel .dp-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.83rem;
+  color: var(--ink-muted);
+  text-align: center;
+  margin-bottom: 0.7rem;
+}
+.dist-panel svg { display: block; margin: 0 auto; }
+
+/* ── FORMULA BOX ── */
+.formula-box {
+  background: #1e1a14;
+  color: #d4c9a8;
+  border-radius: 4px;
+  padding: 1rem 1.4rem;
+  margin: 1.2rem 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.84rem;
+  line-height: 2;
+  text-align: center;
+}
+.formula-box .f-label {
+  font-size: 0.65rem;
+  color: #6a6050;
+  letter-spacing: 0.08em;
+  text-align: left;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+.formula-box .f-main { color: #e8c070; font-size: 0.95rem; }
+.formula-box .f-note { color: #8aaa70; font-size: 0.72rem; display: block; margin-top: 0.2rem; }
+
+/* ── COMPARISON TABLE ── */
+.compare-table {
+  width: 100%; border-collapse: collapse; font-size: 0.82rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.compare-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.compare-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: var(--accent-pale); }
+.compare-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+.compare-table .tag-robust { background: var(--green-pale); color: var(--green); padding: 0.1em 0.5em; border-radius: 3px; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; }
+.compare-table .tag-sensitive { background: var(--accent-pale); color: var(--accent); padding: 0.1em 0.5em; border-radius: 3px; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; }
+
+/* ── QUIZ ── */
+.quiz-box {
+  background: var(--gold-pale); border: 1px solid #d4b060;
+  border-radius: 6px; padding: 1.3rem 1.5rem; margin: 2rem 0;
+}
+.quiz-box h4 { font-family: 'Zen Antique', serif; font-size: 0.93rem; color: var(--gold); margin-bottom: 0.7rem; }
+.quiz-q { font-size: 0.88rem; color: var(--ink-light); margin-bottom: 0.7rem; line-height: 1.7; }
+.quiz-toggle { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; background: none; border: 1px solid var(--gold); color: var(--gold); padding: 0.35rem 0.85rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.quiz-toggle:hover { background: var(--gold); color: #fff; }
+.quiz-answer { display: none; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid #d4b060; font-size: 0.86rem; line-height: 1.8; color: var(--ink-light); }
+.quiz-answer.open { display: block; }
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.summary-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.summary-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: var(--accent-pale); }
+.summary-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+.next-chapter {
+  background: var(--ink); color: var(--paper);
+  border-radius: 6px; padding: 1.5rem 2rem; margin-top: 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.next-chapter .label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+.next-chapter .title { font-family: 'Zen Antique', serif; font-size: 1.03rem; }
+.next-chapter .arrow { font-size: 1.4rem; opacity: 0.5; }
+
+em { font-style: italic; color: var(--ink-light); }
+
+@media (max-width: 900px) {
+  aside { display: none; }
+  main { margin-left: 0; padding: 2rem 1.2rem; }
+  footer { margin-left: 0; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .dist-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="series-title">R言語で学ぶ統計学 ── 情報の彫刻刀</span>
+  <span class="chapter-badge">CHAPTER 4</span>
+</header>
+
+<aside>
+  <h2>第4章 目次</h2>
+  <ul class="toc-list">
+    <li><a href="#what-is-stats">4.1 統計量とは何か</a></li>
+    <li><a href="#location">4.2 位置の統計量</a></li>
+    <li><a href="#spread">4.3 散らばりの統計量</a></li>
+    <li><a href="#shape">4.4 分布の形を見る</a></li>
+    <li><a href="#robust">4.5 外れ値と頑健統計量</a></li>
+    <li><a href="#summary-stats">4.6 層別集計と group_by</a></li>
+    <li><a href="#normal">4.7 正規分布の意味</a></li>
+    <li><a href="#ci">4.8 信頼区間の考え方</a></li>
+    <li><a href="#exercises">4.9 練習問題</a></li>
+    <li><a href="#chapter-summary">4.10 章まとめ</a></li>
+  </ul>
+
+  <div class="toc-divider">── 章一覧 ──</div>
+  <ul class="toc-list">
+    <li><a href="r_intro_chapter0.html" class="chapter-link"><span class="ch-num">序章</span>イントロダクション</a></li>
+    <li><a href="r_chapter1.html" class="chapter-link"><span class="ch-num">Ch.1</span>Rとの出会い</a></li>
+    <li><a href="r_chapter2.html" class="chapter-link"><span class="ch-num">Ch.2</span>情報の箱</a></li>
+    <li><a href="r_chapter3.html" class="chapter-link"><span class="ch-num">Ch.3</span>可視化という次元削減</a></li>
+    <li><a href="#" class="chapter-link current"><span class="ch-num">Ch.4</span>基本統計量の本質</a></li>
+    <li><a href="r_chapter5.html" class="chapter-link"><span class="ch-num">Ch.5</span>検定のロジック</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.6</span>生存解析と時間軸</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.7</span>高次元の向こう側</a></li>
+  </ul>
+
+  <div class="progress-bar">
+    <div class="progress-fill"></div>
+  </div>
+  <div class="progress-label">Ch.4 / 7</div>
+</aside>
+
+<main>
+  <p class="chapter-eyebrow">CHAPTER 4 ── 第4章</p>
+  <h1 class="chapter-title">基本統計量の本質<br><span style="font-size:0.68em;color:var(--ink-muted);">〜平均・分散・分布による情報の濃縮〜</span></h1>
+  <p class="chapter-subtitle">グラフで「見えていた」ものを数字で語る。平均・中央値・分散・標準偏差……それぞれが何を意味し、どう使い分けるのかを徹底的に掘り下げる。</p>
+  <div class="lead-divider"></div>
+
+  <div class="learning-goals">
+    <h3>📌 この章の学習目標</h3>
+    <ul class="goal-list">
+      <li>平均・中央値・最頻値の違いと使い分けを説明できる</li>
+      <li>分散・標準偏差・IQR の計算原理を理解し、Rで算出できる</li>
+      <li>分布の形（正規・右裾・左裾・二峰性）を見て判断できる</li>
+      <li>外れ値が統計量に与える影響を把握し、頑健な統計量を選べる</li>
+      <li>group_by + summarise で層別集計ができる</li>
+      <li>正規分布・標準正規分布・68-95-99.7 則を説明できる</li>
+      <li>信頼区間の概念を「繰り返し実験の文脈」で説明できる</li>
+    </ul>
+  </div>
+
+  <!-- ── 4.1 ── -->
+  <section class="dialogue-section" id="what-is-stats">
+    <h2 class="section-heading"><span class="section-number">4.1</span>統計量とは何か ── データを1つの数字に圧縮する</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        第3章では「可視化は次元削減だ」と言ったね。統計量はその究極形だ。100人のHbA1cデータを1枚のグラフに圧縮するのが可視化なら、統計量はそれをさらに<em>1つの数字</em>に圧縮する。平均値は「100人の情報を1個の数字で代表する」という大胆な試みだ。
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        でも1つの数字だと、情報がたくさん失われませんか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        そう、失われる。だから<em>複数の統計量を組み合わせる</em>んだ。「中心はどこか（位置の統計量）」「どれだけ散らばっているか（散らばりの統計量）」「分布の形はどうか（歪度・尖度）」——この3つを揃えてはじめてデータの全体像が見えてくる。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>📐 統計量の3つの役割</h4>
+      <p><strong>位置（Location）</strong>：データの中心はどこにあるか。平均・中央値・最頻値。</p>
+      <p><strong>散らばり（Spread）</strong>：データはどれほど散らばっているか。分散・標準偏差・IQR・範囲。</p>
+      <p><strong>形（Shape）</strong>：分布はどんな形か。歪度・尖度、あるいはヒストグラムで直接確認。</p>
+    </div>
+  </section>
+
+  <!-- ── 4.2 ── -->
+  <section class="dialogue-section" id="location">
+    <h2 class="section-heading"><span class="section-number">4.2</span>位置の統計量 ── 中心をどう定義するか</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        「中心」の定義には複数の流儀がある。それぞれが「中心」の異なる側面を捉えている。どれが正しいのではなく、データの性質と問いに応じて選ぶんだ。
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stats-card">
+        <div class="s-label">mean()</div>
+        <div class="s-name">平均値</div>
+        <div class="s-formula">Σxᵢ / n</div>
+        <div class="s-desc">全データの合計を個数で割る。外れ値の影響を受けやすい。</div>
+      </div>
+      <div class="stats-card">
+        <div class="s-label">median()</div>
+        <div class="s-name">中央値</div>
+        <div class="s-formula">順位の真ん中の値</div>
+        <div class="s-desc">データを並べたときの真ん中。外れ値に強い頑健な統計量。</div>
+      </div>
+      <div class="stats-card">
+        <div class="s-label">table() / mode</div>
+        <div class="s-name">最頻値</div>
+        <div class="s-formula">最も頻繁に現れる値</div>
+        <div class="s-desc">カテゴリ変数での代表値。連続変数ではあまり使わない。</div>
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># patients データで位置の統計量を計算</span>
+patients$hba1c |&gt; <span class="c-fn">mean</span>(na.rm = <span class="c-kw">TRUE</span>)    <span class="c-comment"># 平均値</span>
+patients$hba1c |&gt; <span class="c-fn">median</span>(na.rm = <span class="c-kw">TRUE</span>)  <span class="c-comment"># 中央値</span>
+
+<span class="c-comment"># summarise で一括計算</span>
+patients |&gt;
+  <span class="c-fn">summarise</span>(
+    n      = <span class="c-fn">n</span>(),
+    mean   = <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),
+    median = <span class="c-fn">median</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),
+    min    = <span class="c-fn">min</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),
+    max    = <span class="c-fn">max</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>)
+  )
+
+<span class="c-comment"># summary() でまとめて確認</span>
+<span class="c-fn">summary</span>(patients$hba1c)
+<span class="c-out">#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#   4.80    6.20    7.30    7.42    8.50   12.80</span></pre>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        平均が7.42で中央値が7.30……少し違いますね。これは何を意味しているんですか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        平均 &gt; 中央値ということは、<em>右に裾が長い分布</em>——つまり高HbA1cの患者が少数いて、平均を引き上げているサインだ。HbA1cは血糖コントロールが悪い患者が12や13を超えることがあるが、下限は理論上4前後で打ち止めになる。こういう一方向に歪んだ分布では、中央値のほうが「典型的な患者」を代表しやすい。
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>医学データの傾向：</strong> 検査値（AST・クレアチニン・CRP）や入院期間・費用など、医学データの多くは右裾が長い分布を示す。このようなデータでは平均より中央値を報告するほうが適切なことが多い。論文の Table 1 で「中央値（IQR）」と書かれているのはそのためだ。
+    </div>
+  </section>
+
+  <!-- ── 4.3 ── -->
+  <section class="dialogue-section" id="spread">
+    <h2 class="section-heading"><span class="section-number">4.3</span>散らばりの統計量 ── データのばらつきを測る</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        2つの病院のHbA1c平均がどちらも7.5だったとして、一方は全員7.4〜7.6の範囲に密集し、もう一方は4.5から12.5まで散らばっているとしたら——平均だけ見ていたら気づけない。「散らばり」を測る統計量が必要だ。
+      </div>
+    </div>
+
+    <div class="formula-box">
+      <span class="f-label">分散（Variance）</span>
+      <span class="f-main">s² = Σ(xᵢ − x̄)² / (n − 1)</span>
+      <span class="f-note">各データと平均の差を二乗して平均したもの（標本分散はn-1で割る）</span>
+    </div>
+
+    <div class="formula-box">
+      <span class="f-label">標準偏差（Standard Deviation）</span>
+      <span class="f-main">s = √s²</span>
+      <span class="f-note">分散の平方根。元のデータと同じ単位になるので解釈しやすい</span>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># 散らばりの主要統計量</span>
+patients |&gt;
+  <span class="c-fn">summarise</span>(
+    sd      = <span class="c-fn">sd</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),       <span class="c-comment"># 標準偏差</span>
+    var     = <span class="c-fn">var</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),      <span class="c-comment"># 分散</span>
+    iqr     = <span class="c-fn">IQR</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),      <span class="c-comment"># 四分位範囲（Q3 - Q1）</span>
+    range   = <span class="c-fn">diff</span>(<span class="c-fn">range</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>)), <span class="c-comment"># 範囲（max - min）</span>
+    cv      = <span class="c-fn">sd</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>) /
+              <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>) * <span class="c-num">100</span>  <span class="c-comment"># 変動係数（%）</span>
+  )
+
+<span class="c-section"># ── 四分位数（Quantiles）──</span>
+<span class="c-fn">quantile</span>(patients$hba1c, probs = <span class="c-fn">c</span>(<span class="c-num">0.25</span>, <span class="c-num">0.5</span>, <span class="c-num">0.75</span>), na.rm = <span class="c-kw">TRUE</span>)
+<span class="c-out">#  25%  50%  75%
+# 6.20 7.30 8.50</span>
+
+<span class="c-comment"># 任意のパーセンタイル（例：5th / 95th）</span>
+<span class="c-fn">quantile</span>(patients$hba1c, probs = <span class="c-fn">c</span>(<span class="c-num">0.05</span>, <span class="c-num">0.95</span>), na.rm = <span class="c-kw">TRUE</span>)</pre>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        分散の式で「n-1」で割るのはなぜですか？nで割れば普通の平均なのに。
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        これは「自由度」の問題だ。手元のデータ（標本）は母集団の一部に過ぎない。n個のデータで平均を1つ計算すると、残り「n-1個」のデータの値が決まれば最後の1個は自動的に決まってしまう——つまり「独立に動ける個数」はn-1なんだ。n-1で割ることで、母集団の分散を偏りなく推定できる（不偏推定）。これをベッセルの補正という。
+      </div>
+    </div>
+
+    <div class="callout-teal">
+      <strong>論文での書き方：</strong> 正規分布に従うデータは「平均 ± SD」、非正規分布のデータは「中央値（IQR）」で報告する。IQRは第1四分位数〜第3四分位数の範囲（Q1–Q3）として記載するのが一般的だ。
+    </div>
+  </section>
+
+  <!-- ── 4.4 ── -->
+  <section class="dialogue-section" id="shape">
+    <h2 class="section-heading"><span class="section-number">4.4</span>分布の形を見る ── ヒストグラムと密度曲線</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        位置と散らばりを計算したら、必ず<em>分布の形</em>も確認しろ、というのが鉄則だ。同じ平均・標準偏差でも、形がまったく異なることがある。
+      </div>
+    </div>
+
+    <div class="dist-row">
+      <div class="dist-panel">
+        <div class="dp-title">正規分布（symmetric）</div>
+        <svg viewBox="0 0 220 100" width="200" height="90">
+          <defs>
+            <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2a6b6e" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#2a6b6e" stop-opacity="0.1"/>
+            </linearGradient>
+          </defs>
+          <path d="M 10 85 Q 50 85 70 60 Q 90 35 110 15 Q 130 35 150 60 Q 170 85 210 85 Z" fill="url(#grad1)" stroke="#2a6b6e" stroke-width="1.5"/>
+          <line x1="110" y1="15" x2="110" y2="85" stroke="#c8922a" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="110" y="93" text-anchor="middle" font-size="8" fill="#7a6e5f" font-family="monospace">mean = median</text>
+        </svg>
+      </div>
+      <div class="dist-panel">
+        <div class="dp-title">右裾分布（right-skewed）</div>
+        <svg viewBox="0 0 220 100" width="200" height="90">
+          <defs>
+            <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c8922a" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#c8922a" stop-opacity="0.1"/>
+            </linearGradient>
+          </defs>
+          <path d="M 10 85 Q 35 85 55 30 Q 65 10 75 18 Q 95 40 120 65 Q 160 82 210 85 Z" fill="url(#grad2)" stroke="#c8922a" stroke-width="1.5"/>
+          <line x1="65" y1="15" x2="65" y2="85" stroke="#2a6b6e" stroke-width="1" stroke-dasharray="3,2"/>
+          <line x1="90" y1="28" x2="90" y2="85" stroke="#8b3a2a" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="60" y="93" text-anchor="middle" font-size="7" fill="#2a6b6e" font-family="monospace">median</text>
+          <text x="95" y="93" text-anchor="start" font-size="7" fill="#8b3a2a" font-family="monospace">mean</text>
+        </svg>
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── ヒストグラム + 密度曲線で分布の形を確認 ──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = hba1c)) +
+  <span class="c-fn">geom_histogram</span>(
+    <span class="c-fn">aes</span>(y = <span class="c-fn">after_stat</span>(density)),   <span class="c-comment"># y軸を密度に変換（density曲線と合わせるため）</span>
+    binwidth = <span class="c-num">0.4</span>,
+    fill = <span class="c-string">"#2a6b6e"</span>, color = <span class="c-string">"white"</span>, alpha = <span class="c-num">0.7</span>
+  ) +
+  <span class="c-fn">geom_density</span>(color = <span class="c-string">"#8b3a2a"</span>, linewidth = <span class="c-num">1</span>) +
+  <span class="c-fn">geom_vline</span>(<span class="c-fn">aes</span>(xintercept = <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>)),
+             color = <span class="c-string">"#8b3a2a"</span>, linetype = <span class="c-string">"dashed"</span>, linewidth = <span class="c-num">0.8</span>) +
+  <span class="c-fn">geom_vline</span>(<span class="c-fn">aes</span>(xintercept = <span class="c-fn">median</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>)),
+             color = <span class="c-string">"#2a6b6e"</span>, linetype = <span class="c-string">"dashed"</span>, linewidth = <span class="c-num">0.8</span>) +
+  <span class="c-fn">annotate</span>(<span class="c-string">"text"</span>, x = <span class="c-num">9</span>, y = <span class="c-num">0.25</span>,
+           label = <span class="c-string">"赤：平均\n青：中央値"</span>, size = <span class="c-num">3</span>, color = <span class="c-string">"#4a3f30"</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"HbA1c の分布"</span>, x = <span class="c-string">"HbA1c (%)"</span>, y = <span class="c-string">"密度"</span>) +
+  <span class="c-fn">theme_classic</span>()
+
+<span class="c-section"># ── 歪度・尖度（e1071パッケージ）──</span>
+<span class="c-fn">library</span>(e1071)
+<span class="c-fn">skewness</span>(patients$hba1c, na.rm = <span class="c-kw">TRUE</span>)  <span class="c-comment"># 正 → 右裾、負 → 左裾</span>
+<span class="c-fn">kurtosis</span>(patients$hba1c, na.rm = <span class="c-kw">TRUE</span>)  <span class="c-comment"># 0より大 → 尖った分布</span></pre>
+  </section>
+
+  <!-- ── 4.5 ── -->
+  <section class="dialogue-section" id="robust">
+    <h2 class="section-heading"><span class="section-number">4.5</span>外れ値と頑健統計量 ── 異常値に騙されない</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        患者データには外れ値がつきものだ。入力ミスかもしれないし、本当に極端な患者かもしれない。外れ値の存在を知らずに平均・標準偏差だけで議論するのは危険だ。
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <thead><tr><th>統計量</th><th>外れ値への感受性</th><th>代替の頑健統計量</th><th>Rの関数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>平均</td>
+          <td><span class="tag-sensitive">高い</span></td>
+          <td>中央値 / トリム平均</td>
+          <td class="mono">median() / mean(x, trim=0.1)</td>
+        </tr>
+        <tr>
+          <td>標準偏差</td>
+          <td><span class="tag-sensitive">高い</span></td>
+          <td>IQR / MAD</td>
+          <td class="mono">IQR() / mad()</td>
+        </tr>
+        <tr>
+          <td>分散</td>
+          <td><span class="tag-sensitive">非常に高い</span></td>
+          <td>IQR²（近似）</td>
+          <td class="mono">IQR()^2 / 1.35</td>
+        </tr>
+        <tr>
+          <td>中央値</td>
+          <td><span class="tag-robust">低い</span></td>
+          <td>—（頑健）</td>
+          <td class="mono">median()</td>
+        </tr>
+        <tr>
+          <td>IQR</td>
+          <td><span class="tag-robust">低い</span></td>
+          <td>—（頑健）</td>
+          <td class="mono">IQR()</td>
+        </tr>
+      </tbody>
+    </table>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 外れ値の検出 ──</span>
+<span class="c-comment"># 方法1：Tukey フェンス（IQRの1.5倍）</span>
+q1 &lt;- <span class="c-fn">quantile</span>(patients$hba1c, <span class="c-num">0.25</span>, na.rm = <span class="c-kw">TRUE</span>)
+q3 &lt;- <span class="c-fn">quantile</span>(patients$hba1c, <span class="c-num">0.75</span>, na.rm = <span class="c-kw">TRUE</span>)
+iqr_val &lt;- q3 - q1
+
+lower_fence &lt;- q1 - <span class="c-num">1.5</span> * iqr_val
+upper_fence &lt;- q3 + <span class="c-num">1.5</span> * iqr_val
+
+patients |&gt;
+  <span class="c-fn">filter</span>(hba1c &lt; lower_fence | hba1c &gt; upper_fence) |&gt;
+  <span class="c-fn">select</span>(id, hba1c)
+
+<span class="c-section"># ── 方法2：Zスコアによる検出 ──</span>
+patients |&gt;
+  <span class="c-fn">mutate</span>(
+    z_score = (<span class="c-fn">hba1c</span> - <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>)) /
+               <span class="c-fn">sd</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>)
+  ) |&gt;
+  <span class="c-fn">filter</span>(<span class="c-fn">abs</span>(z_score) &gt; <span class="c-num">3</span>) |&gt;            <span class="c-comment"># |Z| > 3 を外れ値とみなす</span>
+  <span class="c-fn">select</span>(id, hba1c, z_score)
+
+<span class="c-section"># ── MAD（中央絶対偏差）：頑健な散らばりの指標 ──</span>
+<span class="c-fn">mad</span>(patients$hba1c, na.rm = <span class="c-kw">TRUE</span>)
+<span class="c-comment"># デフォルトで定数1.4826をかけてSDと比較可能なスケールにしてくれる</span></pre>
+
+    <div class="callout-green">
+      <strong>外れ値の扱い方の原則：</strong> 外れ値を発見したら、まず「入力ミスか・真の値か」を確認する。削除する場合は理由を明記する。感度分析として「外れ値あり」「外れ値なし」の両方の結果を報告するのが誠実だ。削除の判断を統計的アルゴリズムだけに任せてはならない。
+    </div>
+  </section>
+
+  <!-- ── 4.6 ── -->
+  <section class="dialogue-section" id="summary-stats">
+    <h2 class="section-heading"><span class="section-number">4.6</span>層別集計と group_by ── 「グループ別に見る」基本技</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        全体の統計量を出したら、次は「性別別」「治療群別」「年齢層別」に層別して比較するのが医学研究の常道だ。tidyverse の <span class="inline-code">group_by()</span> + <span class="inline-code">summarise()</span> はそのための道具だ。
+      </div>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 性別別の基本統計量 ──</span>
+patients |&gt;
+  <span class="c-fn">group_by</span>(sex) |&gt;
+  <span class="c-fn">summarise</span>(
+    n      = <span class="c-fn">n</span>(),
+    mean   = <span class="c-fn">round</span>(<span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>), <span class="c-num">2</span>),
+    sd     = <span class="c-fn">round</span>(<span class="c-fn">sd</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>), <span class="c-num">2</span>),
+    median = <span class="c-fn">round</span>(<span class="c-fn">median</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>), <span class="c-num">2</span>),
+    q1     = <span class="c-fn">quantile</span>(hba1c, <span class="c-num">0.25</span>, na.rm = <span class="c-kw">TRUE</span>),
+    q3     = <span class="c-fn">quantile</span>(hba1c, <span class="c-num">0.75</span>, na.rm = <span class="c-kw">TRUE</span>)
+  )
+
+<span class="c-section"># ── 複数変数をまとめて集計（across）──</span>
+patients |&gt;
+  <span class="c-fn">group_by</span>(sex) |&gt;
+  <span class="c-fn">summarise</span>(
+    <span class="c-fn">across</span>(
+      <span class="c-fn">c</span>(hba1c, bmi, age),
+      <span class="c-fn">list</span>(mean = \(x) <span class="c-fn">round</span>(<span class="c-fn">mean</span>(x, na.rm = <span class="c-kw">TRUE</span>), <span class="c-num">1</span>),
+           sd   = \(x) <span class="c-fn">round</span>(<span class="c-fn">sd</span>(x, na.rm = <span class="c-kw">TRUE</span>), <span class="c-num">1</span>)),
+      .names = <span class="c-string">"{.col}_{.fn}"</span>
+    )
+  )
+
+<span class="c-section"># ── 論文の Table 1 スタイルで出力（gtsummary パッケージ）──</span>
+<span class="c-fn">library</span>(gtsummary)
+
+patients |&gt;
+  <span class="c-fn">select</span>(sex, age, bmi, hba1c, on_insulin) |&gt;
+  <span class="c-fn">tbl_summary</span>(
+    by = sex,
+    statistic = <span class="c-fn">list</span>(
+      <span class="c-fn">all_continuous</span>()  ~ <span class="c-string">"{mean} ({sd})"</span>,
+      <span class="c-fn">all_categorical</span>() ~ <span class="c-string">"{n} ({p}%)"</span>
+    ),
+    digits = <span class="c-fn">all_continuous</span>() ~ <span class="c-num">1</span>
+  ) |&gt;
+  <span class="c-fn">add_p</span>() |&gt;
+  <span class="c-fn">add_overall</span>()</pre>
+
+    <div class="callout">
+      <strong>gtsummary の威力：</strong> <span class="inline-code">tbl_summary()</span> 1行で論文品質の Table 1 が出力できる。<span class="inline-code">add_p()</span> で自動的にt検定・カイ二乗検定・ノンパラメトリック検定が選択されてp値も付く。修士論文・学会発表のスライドに直接貼れる水準の表が生成される。
+    </div>
+  </section>
+
+  <!-- ── 4.7 ── -->
+  <section class="dialogue-section" id="normal">
+    <h2 class="section-heading"><span class="section-number">4.7</span>正規分布の意味 ── なぜこんなに重要なのか</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        統計学でもっとも重要な分布は何かと聞かれたら、迷わず正規分布と答える。なぜかというと——現実の多くの現象がこの形に近づくからだ。そして「平均と標準偏差の2つだけで完全に定義できる」という数学的な美しさがある。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>🔔 正規分布の3つの性質</h4>
+      <p><strong>68-95-99.7 則：</strong> 平均 ± 1SD の範囲に約68%、± 2SD に約95%、± 3SD に約99.7% のデータが含まれる。</p>
+      <p><strong>加法性：</strong> 正規分布に従う独立した確率変数の和も正規分布に従う。これが多くの統計検定の理論的基盤になる。</p>
+      <p><strong>中心極限定理：</strong> 元の分布が何であれ、標本平均は標本サイズが大きくなるにつれて正規分布に近づく——これがt検定などが広く使える理由だ。</p>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 正規分布の確率計算 ──</span>
+<span class="c-comment"># HbA1c ~ N(7.42, 1.38²) と仮定</span>
+m &lt;- <span class="c-num">7.42</span>; s &lt;- <span class="c-num">1.38</span>
+
+<span class="c-comment"># HbA1c ≥ 10 の確率（コントロール不良の割合）</span>
+<span class="c-fn">pnorm</span>(<span class="c-num">10</span>, mean = m, sd = s, lower.tail = <span class="c-kw">FALSE</span>)
+<span class="c-out"># [1] 0.02383   → 約2.4%</span>
+
+<span class="c-comment"># 上位5%に入るHbA1c値（95パーセンタイル）</span>
+<span class="c-fn">qnorm</span>(<span class="c-num">0.95</span>, mean = m, sd = s)
+<span class="c-out"># [1] 9.690   → 9.7% 以上が上位5%</span>
+
+<span class="c-section"># ── 正規性の検定（シャピロ・ウィルク検定）──</span>
+<span class="c-fn">shapiro.test</span>(patients$hba1c)
+<span class="c-out"># Shapiro-Wilk normality test
+# W = 0.9742, p-value = 0.0842
+# p > 0.05 → 正規分布から有意に外れているとは言えない</span>
+
+<span class="c-section"># ── Q-Qプロット（正規性の視覚確認）──</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(sample = hba1c)) +
+  <span class="c-fn">stat_qq</span>(color = <span class="c-string">"#2a6b6e"</span>, alpha = <span class="c-num">0.7</span>) +
+  <span class="c-fn">stat_qq_line</span>(color = <span class="c-string">"#8b3a2a"</span>, linewidth = <span class="c-num">0.8</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"Q-Qプロット（HbA1c）"</span>,
+       x = <span class="c-string">"理論分位数"</span>, y = <span class="c-string">"標本分位数"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        シャピロ検定でp &gt; 0.05なら「正規分布でよい」ということですか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        注意が必要だ。「正規分布から有意に外れているとは言えない」というだけで、「正規分布だと証明された」ではない。さらにサンプルサイズが大きくなると、わずかな歪みでも検定が有意になってしまう。だから<em>Q-Qプロットを目視確認する</em>こととセットで使うのが正しいやり方だ。
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 4.8 ── -->
+  <section class="dialogue-section" id="ci">
+    <h2 class="section-heading"><span class="section-number">4.8</span>信頼区間の考え方 ── 「95%CI」の本当の意味</h2>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        論文を読むと必ず出てくる「95%信頼区間（95%CI）」。これを「真の値が95%の確率でこの範囲に入る」と解釈している人が多いが、それは<em>誤りだ</em>。
+      </div>
+    </div>
+
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        え、違うんですか？　ではどういう意味ですか？
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        正確にはこうだ——「同じ方法で100回研究を繰り返したとき、そのうち約95回は構築された信頼区間が真の値を含む」。真の値は固定されていて動かない。動くのは標本と、そこから計算される信頼区間のほうだ。手元の信頼区間が真の値を含んでいるかどうかは、実はわからない。
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h4>🎯 信頼区間の正しいイメージ</h4>
+      <p>「的（真の値）は動かない。矢（信頼区間）を100本射たとき、95本が的に当たるように作られたルールで矢を作っている」——これが頻度論的な95%CIの解釈だ。</p>
+      <p>実際の研究で得られた「7.2–7.8」という区間が当たり（真の値を含む）か外れかは、その1回の結果だけからはわからない。だが研究者たちはこのルールに従った区間を信頼して議論を積み上げる。</p>
+    </div>
+
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-section"># ── 平均の95%信頼区間（t分布を使用）──</span>
+<span class="c-fn">t.test</span>(patients$hba1c)$conf.int
+<span class="c-out"># [1] 7.144 7.696
+# attr(,"conf.level")
+# [1] 0.95</span>
+
+<span class="c-section"># ── 手動計算（原理を理解するために）──</span>
+n    &lt;- <span class="c-fn">sum</span>(!<span class="c-fn">is.na</span>(patients$hba1c))
+m    &lt;- <span class="c-fn">mean</span>(patients$hba1c, na.rm = <span class="c-kw">TRUE</span>)
+s    &lt;- <span class="c-fn">sd</span>(patients$hba1c, na.rm = <span class="c-kw">TRUE</span>)
+se   &lt;- s / <span class="c-fn">sqrt</span>(n)             <span class="c-comment"># 標準誤差</span>
+t_cv &lt;- <span class="c-fn">qt</span>(<span class="c-num">0.975</span>, df = n - <span class="c-num">1</span>)  <span class="c-comment"># t分布の97.5パーセンタイル</span>
+
+<span class="c-fn">c</span>(lower = m - t_cv * se,
+  upper = m + t_cv * se)
+
+<span class="c-section"># ── 層別CIをグラフに（pointrange）──</span>
+patients |&gt;
+  <span class="c-fn">group_by</span>(sex) |&gt;
+  <span class="c-fn">summarise</span>(
+    mean = <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),
+    se   = <span class="c-fn">sd</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>) / <span class="c-fn">sqrt</span>(<span class="c-fn">n</span>())
+  ) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = sex, y = mean, color = sex)) +
+  <span class="c-fn">geom_pointrange</span>(<span class="c-fn">aes</span>(ymin = mean - <span class="c-num">1.96</span> * se,
+                       ymax = mean + <span class="c-num">1.96</span> * se),
+                  size = <span class="c-num">0.8</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"性別別 HbA1c（平均 ± 95%CI）"</span>,
+       y = <span class="c-string">"HbA1c (%)"</span>, x = <span class="c-kw">NULL</span>) +
+  <span class="c-fn">scale_color_manual</span>(values = <span class="c-fn">c</span>(M = <span class="c-string">"#2a6b6e"</span>, F = <span class="c-string">"#c8922a"</span>)) +
+  <span class="c-fn">theme_classic</span>() + <span class="c-fn">theme</span>(legend.position = <span class="c-string">"none"</span>)</pre>
+
+    <div class="callout-purple">
+      <strong>標準偏差 vs 標準誤差：</strong> SD（標準偏差）はデータの「散らばり」を表し、患者個人のばらつきを記述する。SE（標準誤差）は標本平均の「不確かさ」を表し、推定の精度を表す。SE = SD / √n なので、n が大きいほど SE は小さくなる。論文で「平均 ± SE」と書く場合は、個々のばらつきではなく推定精度を強調したいときだ。
+    </div>
+  </section>
+
+  <!-- ── 4.9 練習問題 ── -->
+  <section class="dialogue-section" id="exercises">
+    <h2 class="section-heading"><span class="section-number">4.9</span>練習問題</h2>
+
+    <div class="quiz-box">
+      <h4>🧠 問題1：分布の記述</h4>
+      <p class="quiz-q">patients データの BMI について、(1) 平均・中央値・SD・IQR を計算し、(2) ヒストグラム + 密度曲線を作図し、(3) 分布の形（対称性・外れ値の有無）を文章で述べよ。シャピロ検定とQ-Qプロットも確認すること。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-comment"># (1) 記述統計量</span>
+patients |&gt;
+  <span class="c-fn">summarise</span>(
+    mean   = <span class="c-fn">mean</span>(bmi, na.rm = <span class="c-kw">TRUE</span>),
+    median = <span class="c-fn">median</span>(bmi, na.rm = <span class="c-kw">TRUE</span>),
+    sd     = <span class="c-fn">sd</span>(bmi, na.rm = <span class="c-kw">TRUE</span>),
+    iqr    = <span class="c-fn">IQR</span>(bmi, na.rm = <span class="c-kw">TRUE</span>)
+  )
+
+<span class="c-comment"># (2) ヒストグラム + 密度曲線</span>
+patients |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = bmi)) +
+  <span class="c-fn">geom_histogram</span>(<span class="c-fn">aes</span>(y = <span class="c-fn">after_stat</span>(density)),
+                 binwidth = <span class="c-num">1.5</span>, fill = <span class="c-string">"#c8922a"</span>,
+                 color = <span class="c-string">"white"</span>, alpha = <span class="c-num">0.7</span>) +
+  <span class="c-fn">geom_density</span>(color = <span class="c-string">"#8b3a2a"</span>, linewidth = <span class="c-num">1</span>) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-fn">mean</span>(patients$bmi, na.rm = <span class="c-kw">TRUE</span>),
+             color = <span class="c-string">"#8b3a2a"</span>, linetype = <span class="c-string">"dashed"</span>) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-fn">median</span>(patients$bmi, na.rm = <span class="c-kw">TRUE</span>),
+             color = <span class="c-string">"#2a6b6e"</span>, linetype = <span class="c-string">"dashed"</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"BMI の分布"</span>, x = <span class="c-string">"BMI (kg/m²)"</span>) +
+  <span class="c-fn">theme_classic</span>()
+
+<span class="c-comment"># (3) 正規性の確認</span>
+<span class="c-fn">shapiro.test</span>(patients$bmi)
+patients |&gt; <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(sample = bmi)) +
+  <span class="c-fn">stat_qq</span>() + <span class="c-fn">stat_qq_line</span>(color = <span class="c-string">"#8b3a2a"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題2：層別集計 + gtsummary</h4>
+      <p class="quiz-q">patients データで、インスリン使用群（on_insulin = TRUE）と非使用群を比較する Table 1 を gtsummary で作成せよ。含める変数は age, bmi, hba1c, sex（カテゴリ）とし、p値も表示すること。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(gtsummary)
+
+patients |&gt;
+  <span class="c-fn">filter</span>(!<span class="c-fn">is.na</span>(on_insulin)) |&gt;
+  <span class="c-fn">select</span>(on_insulin, age, bmi, hba1c, sex) |&gt;
+  <span class="c-fn">tbl_summary</span>(
+    by = on_insulin,
+    label = <span class="c-fn">list</span>(
+      on_insulin ~ <span class="c-string">"インスリン使用"</span>,
+      age ~ <span class="c-string">"年齢（歳）"</span>,
+      bmi ~ <span class="c-string">"BMI (kg/m²)"</span>,
+      hba1c ~ <span class="c-string">"HbA1c (%)"</span>,
+      sex ~ <span class="c-string">"性別"</span>
+    ),
+    statistic = <span class="c-fn">list</span>(
+      <span class="c-fn">all_continuous</span>()  ~ <span class="c-string">"{median} ({p25}, {p75})"</span>,
+      <span class="c-fn">all_categorical</span>() ~ <span class="c-string">"{n} ({p}%)"</span>
+    )
+  ) |&gt;
+  <span class="c-fn">add_p</span>() |&gt;
+  <span class="c-fn">add_overall</span>() |&gt;
+  <span class="c-fn">bold_labels</span>()</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題3：信頼区間の視覚化</h4>
+      <p class="quiz-q">patients データで、年齢を 40歳未満・40〜59歳・60歳以上の3群に分け、各群の HbA1c 平均と 95%CI を pointrange グラフで比較せよ。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span>patients |&gt;
+  <span class="c-fn">mutate</span>(
+    age_group = <span class="c-fn">case_when</span>(
+      age &lt; <span class="c-num">40</span>           ~ <span class="c-string">"40歳未満"</span>,
+      age &gt;= <span class="c-num">40</span> &amp; age &lt; <span class="c-num">60</span> ~ <span class="c-string">"40〜59歳"</span>,
+      age &gt;= <span class="c-num">60</span>           ~ <span class="c-string">"60歳以上"</span>
+    ),
+    age_group = <span class="c-fn">factor</span>(age_group,
+                       levels = <span class="c-fn">c</span>(<span class="c-string">"40歳未満"</span>, <span class="c-string">"40〜59歳"</span>, <span class="c-string">"60歳以上"</span>))
+  ) |&gt;
+  <span class="c-fn">group_by</span>(age_group) |&gt;
+  <span class="c-fn">summarise</span>(
+    n    = <span class="c-fn">n</span>(),
+    mean = <span class="c-fn">mean</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>),
+    se   = <span class="c-fn">sd</span>(hba1c, na.rm = <span class="c-kw">TRUE</span>) / <span class="c-fn">sqrt</span>(<span class="c-fn">n</span>())
+  ) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = age_group, y = mean)) +
+  <span class="c-fn">geom_pointrange</span>(
+    <span class="c-fn">aes</span>(ymin = mean - <span class="c-num">1.96</span> * se, ymax = mean + <span class="c-num">1.96</span> * se),
+    color = <span class="c-string">"#2a6b6e"</span>, size = <span class="c-num">0.8</span>
+  ) +
+  <span class="c-fn">geom_hline</span>(yintercept = <span class="c-num">6.5</span>, linetype = <span class="c-string">"dashed"</span>,
+             color = <span class="c-string">"#8b3a2a"</span>, alpha = <span class="c-num">0.7</span>) +
+  <span class="c-fn">annotate</span>(<span class="c-string">"text"</span>, x = <span class="c-num">0.6</span>, y = <span class="c-num">6.6</span>, label = <span class="c-string">"目標値 6.5"</span>,
+           size = <span class="c-num">3</span>, color = <span class="c-string">"#8b3a2a"</span>, hjust = <span class="c-num">0</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"年齢群別 HbA1c（平均 ± 95%CI）"</span>,
+       x = <span class="c-kw">NULL</span>, y = <span class="c-string">"HbA1c (%)"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <h4>🧠 問題4（発展）：Bootstrap 信頼区間</h4>
+      <p class="quiz-q">HbA1c の中央値について、t分布を使わずに Bootstrap 法で 95%CI を計算せよ（boot パッケージを使用。B = 1000回）。</p>
+      <button class="quiz-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 解答を見る</button>
+      <div class="quiz-answer">
+<pre class="code-block"><span class="lang-tag">R</span><span class="c-fn">library</span>(boot)
+
+<span class="c-comment"># Bootstrap のための関数（statisticには (data, indices) が必要）</span>
+median_fn &lt;- <span class="c-kw">function</span>(data, indices) {
+  <span class="c-fn">median</span>(data[indices], na.rm = <span class="c-kw">TRUE</span>)
+}
+
+set.seed(<span class="c-num">42</span>)
+boot_result &lt;- <span class="c-fn">boot</span>(
+  data      = patients$hba1c[!<span class="c-fn">is.na</span>(patients$hba1c)],
+  statistic = median_fn,
+  R         = <span class="c-num">1000</span>
+)
+
+<span class="c-fn">boot.ci</span>(boot_result, type = <span class="c-string">"perc"</span>)
+<span class="c-out"># Percentile CI:
+# ( 7.1,  7.5 )  95%</span>
+
+<span class="c-comment"># Bootstrap 分布の可視化</span>
+<span class="c-fn">tibble</span>(median_boot = boot_result$t[,<span class="c-num">1</span>]) |&gt;
+  <span class="c-fn">ggplot</span>(<span class="c-fn">aes</span>(x = median_boot)) +
+  <span class="c-fn">geom_histogram</span>(bins = <span class="c-num">40</span>, fill = <span class="c-string">"#5a3a8a"</span>, alpha = <span class="c-num">0.7</span>) +
+  <span class="c-fn">geom_vline</span>(xintercept = <span class="c-fn">boot.ci</span>(boot_result, type = <span class="c-string">"perc"</span>)$percent[<span class="c-num">4</span>:<span class="c-num">5</span>],
+             color = <span class="c-string">"#c8922a"</span>, linetype = <span class="c-string">"dashed"</span>) +
+  <span class="c-fn">labs</span>(title = <span class="c-string">"Bootstrap 分布（HbA1c 中央値）"</span>,
+       x = <span class="c-string">"Bootstrap 中央値"</span>) +
+  <span class="c-fn">theme_classic</span>()</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 4.10 章まとめ ── -->
+  <section class="dialogue-section" id="chapter-summary">
+    <h2 class="section-heading"><span class="section-number">4.10</span>章まとめ</h2>
+
+    <table class="summary-table">
+      <thead><tr><th>トピック</th><th>キーワード</th><th>一言まとめ</th></tr></thead>
+      <tbody>
+        <tr><td>位置の統計量</td><td class="mono">mean() / median()</td><td>右裾分布では中央値が「典型的な値」をよく代表する</td></tr>
+        <tr><td>散らばりの統計量</td><td class="mono">sd() / IQR() / mad()</td><td>SDは外れ値に弱い。非正規分布にはIQRを使う</td></tr>
+        <tr><td>分布の形</td><td class="mono">geom_histogram / geom_density / skewness()</td><td>平均・中央値のずれで歪みを疑い、必ず可視化する</td></tr>
+        <tr><td>外れ値の検出</td><td class="mono">Tukeyフェンス / Zスコア</td><td>削除前に必ず「ミスか真の値か」を確認する</td></tr>
+        <tr><td>層別集計</td><td class="mono">group_by + summarise / across</td><td>医学研究の基本は「グループ別に比較する」</td></tr>
+        <tr><td>Table 1 作成</td><td class="mono">gtsummary::tbl_summary()</td><td>論文品質の表を1行で。add_p()でp値も自動付与</td></tr>
+        <tr><td>正規分布</td><td class="mono">pnorm() / qnorm() / shapiro.test()</td><td>68-95-99.7則、中心極限定理が統計検定の基盤</td></tr>
+        <tr><td>信頼区間</td><td class="mono">t.test()$conf.int</td><td>「真の値が含まれる確率」ではなく「繰り返し実験の頻度」</td></tr>
+      </tbody>
+    </table>
+
+    <div class="turn">
+      <div class="avatar teacher">師</div>
+      <div class="bubble teacher-bubble">
+        <span class="speaker-label">先生</span>
+        第4章はここまで。位置・散らばり・形という3つの軸でデータを記述する方法を学んだ。信頼区間の正確な解釈は難しかったかもしれないが、「繰り返し実験の文脈で考える」という枠組みは次章の検定にも直結する。第5章ではいよいよ「グループ間の差は偶然か・必然か」を判断する仮説検定に踏み込む。
+      </div>
+    </div>
+    <div class="turn student">
+      <div class="avatar student-av">学</div>
+      <div class="bubble student-bubble">
+        <span class="speaker-label">学生</span>
+        信頼区間の解釈が実は難しいということ、初めて知りました。gtsummaryで論文クオリティの表がすぐ出せるのは感動です。次の検定が楽しみになってきました。
+      </div>
+    </div>
+
+    <div class="next-chapter">
+      <div>
+        <div class="label">NEXT CHAPTER</div>
+        <div class="title">第5章：検定のロジック 〜「偶然」を切り捨てる勇気〜</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>⚠ 注意書き：本テキストは生成AIによって作成されたものであり、内容に誤りを含む可能性があります。利用・参照は自己責任でお願いします。再配布については、自己責任の範囲内であれば問題ありません。</p>
+  <span class="footer-mark">―― 統計は専門ではない研究者の備忘録 ――</span>
+</footer>
+
+<script>
+const links = document.querySelectorAll('aside .toc-list a:not(.chapter-link)');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector('aside .toc-list a[href="#' + e.target.id + '"]');
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
