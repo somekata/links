@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一元配置ANOVA スライド型学習教材</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&family=Zen+Antique:wght@400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #f5f1e8;
+            --paper: #fdfaf3;
+            --ink: #1c1710;
+            --accent: #2d5a4a;
+            --accent-light: #5a9480;
+            --border: #d4cfc5;
+            --muted: #8b8680;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #f9f5ed 100%);
+            color: var(--ink);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* ==================== HEADER ==================== */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            font-family: 'Zen Antique', serif;
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+
+        /* ==================== SLIDE CONTAINER ==================== */
+        .slide-container {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 3rem;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ==================== SLIDE CONTENT ==================== */
+        .slide-content {
+            flex: 1;
+        }
+
+        .slide-title {
+            font-family: 'Zen Antique', serif;
+            font-size: 1.8rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .slide-body {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: var(--ink);
+        }
+
+        .slide-body p {
+            margin-bottom: 1.25rem;
+        }
+
+        .slide-body strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* ==================== EXAMPLE BOX ==================== */
+        .example-box {
+            background: rgba(45, 90, 74, 0.05);
+            border-left: 4px solid var(--accent);
+            padding: 1.25rem;
+            border-radius: 6px;
+            margin: 1.5rem 0;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        .example-label {
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .example-content {
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* ==================== COMPARISON TABLE ==================== */
+        .comparison-table {
+            width: 100%;
+            margin: 1.5rem 0;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .comparison-table th {
+            background: var(--accent);
+            color: white;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(45, 90, 74, 0.05);
+        }
+
+        /* ==================== PROGRESS BAR ==================== */
+        .progress-section {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .progress-label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* ==================== NAVIGATION ==================== */
+        .nav-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .slide-counter {
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-next {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .btn-next:hover:not(:disabled) {
+            background: var(--accent-light);
+            border-color: var(--accent-light);
+        }
+
+        /* ==================== CALL-TO-ACTION BUTTON ==================== */
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            margin-top: 1.5rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(45, 90, 74, 0.2);
+        }
+
+        .cta-button:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(45, 90, 74, 0.3);
+        }
+
+        .cta-button:active {
+            transform: translateY(0);
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .slide-container {
+                padding: 2rem;
+                min-height: auto;
+            }
+
+            .slide-title {
+                font-size: 1.4rem;
+            }
+
+            .slide-body {
+                font-size: 0.95rem;
+            }
+
+            .nav-section {
+                flex-direction: column;
+            }
+
+            .nav-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">一元配置ANOVA</div>
+            <div class="subtitle">医学部1年生向け統計学教材</div>
+        </div>
+
+        <div class="slide-container">
+            <div class="slide-content" id="slideContent"></div>
+
+            <div class="progress-section">
+                <div class="progress-label">進度</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="slide-counter">
+                    <span id="currentSlide">1</span> / <span id="totalSlides">9</span>
+                </div>
+                <div class="nav-buttons">
+                    <button id="prevBtn" onclick="prevSlide()">← 前へ</button>
+                    <button id="nextBtn" onclick="nextSlide()" class="btn-next">次へ →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const slides = [
+            {
+                title: '「一元配置」とは何か',
+                content: `
+                    <p><strong>「一元配置（One-way）」</strong>の「一元」とは、「データを分類する切り口（要因）が1つだけ」という意味です。</p>
+                    <p>「配置」という言葉は少し硬いですが、データをその切り口に基づいて「グループ分けして並べる」イメージだと考えると分かりやすくなります。</p>
+                `
+            },
+            {
+                title: '具体例：肥料の効果実験',
+                content: `
+                    <p>新しい肥料の効果を調べたいとき、こう考えます：</p>
+                    <div class="example-box">
+                        <div class="example-label">実験設定</div>
+                        <div class="example-content">
+                            <p><strong>要因（切り口）</strong>: 肥料の種類（A、B、Cの3種類）</p>
+                            <p><strong>観測データ</strong>: 植物の成長後の高さ</p>
+                        </div>
+                    </div>
+                    <p>この場合、データの違いを生み出している原因（と仮定しているもの）は「肥料の種類」という<strong>1つの軸だけ</strong>なので「一元配置」と呼びます。</p>
+                `
+            },
+            {
+                title: '「二元配置」と比較する',
+                content: `
+                    <p>もし、切り口を2つに増やしたらどうなるでしょうか？</p>
+                    <div class="example-box">
+                        <div class="example-label">二元配置の例</div>
+                        <div class="example-content">
+                            <p><strong>要因1</strong>: 肥料の種類（A、B、C）</p>
+                            <p><strong>要因2</strong>: 日当たり（日向、日陰）</p>
+                        </div>
+                    </div>
+                    <p>この場合、植物の高さが違うのは：</p>
+                    <ul style="margin-left: 2rem; margin-top: 0.75rem; line-height: 1.8;">
+                        <li>「肥料のせい」なのか</li>
+                        <li>「日当たりのせい」なのか</li>
+                        <li>「この肥料は日向でこそ真価を発揮する（相互作用）」のか</li>
+                    </ul>
+                    <p style="margin-top: 1rem;">2つの軸で分析する必要があります。これが<strong>二元配置</strong>です。</p>
+                `
+            },
+            {
+                title: '「一元」のメリット',
+                content: `
+                    <p>一元配置の主な役割は2つです：</p>
+                    <div class="example-box">
+                        <div class="example-label">特徴1: 情報の絞り込み</div>
+                        <div class="example-content">
+                            <p>他の複雑な要因（気温、土壌など）を無視、あるいは一定だと見なして、「たった1つの要素」の影響力だけを抽出することができます。</p>
+                        </div>
+                    </div>
+                    <div class="example-box">
+                        <div class="example-label">特徴2: シンプルさ</div>
+                        <div class="example-content">
+                            <p>3つ以上のグループを比較する際、最も単純な構造で「どこかに差があるか」を可視化する手法です。</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: '有意差が出ない場合は？',
+                content: `
+                    <p>「一元」で分析して有意差が出なかった場合は？</p>
+                    <div class="example-box">
+                        <div class="example-label">重要な考え方</div>
+                        <div class="example-content">
+                            <p>実は「別の要因（二元目）」が隠れていて、情報をかき乱している可能性を疑う……といった具合に、分析のステップアップとして使われます。</p>
+                        </div>
+                    </div>
+                    <p style="margin-top: 1.5rem;">つまり、一元配置は「統計分析の入口」であり、より複雑な現象を理解するための<strong>足がかり</strong>となるのです。</p>
+                `
+            },
+            {
+                title: '次に学ぶこと：「群間」と「群内」',
+                content: `
+                    <p>一元配置がどのようにして効果の有無を判定するのかを理解するには、2つの重要な概念を知る必要があります。</p>
+                    <div class="example-box">
+                        <div class="example-label">キーワード1: 群間バラツキ</div>
+                        <div class="example-content">
+                            <p>3つのグループ（肥料A、B、C）の平均値がどのくらい離れているか</p>
+                        </div>
+                    </div>
+                    <div class="example-box">
+                        <div class="example-label">キーワード2: 群内バラツキ</div>
+                        <div class="example-content">
+                            <p>各グループ内で、個別のデータがどのくらいばらついているか</p>
+                        </div>
+                    </div>
+                    <p style="margin-top: 1.5rem;">これらを比較することが、一元配置ANOVAの核心です。</p>
+                `
+            },
+            {
+                title: '「信号」と「ノイズ」の比',
+                content: `
+                    <p>統計学的には、こう考えることもできます：</p>
+                    <div class="example-box">
+                        <div class="example-label">別の見方</div>
+                        <div class="example-content">
+                            <p><strong>信号</strong> = グループ間の平均値の違い（真の効果を反映）</p>
+                            <p><strong>ノイズ</strong> = グループ内のばらつき（ランダムな変動）</p>
+                            <p style="margin-top: 0.75rem;"><strong>判定</strong> = 「信号 ÷ ノイズ」の比率が大きければ、本当の効果がある</p>
+                        </div>
+                    </div>
+                    <p style="margin-top: 1.5rem;">この比率を計算する手法が「一元配置ANOVA」です。F値とp値という統計量を求めます。</p>
+                `
+            },
+            {
+                title: '学習の流れ',
+                content: `
+                    <p>このテキストを通じて、以下の順番で学習を進めます：</p>
+                    <table class="comparison-table">
+                        <tr>
+                            <th>フェーズ</th>
+                            <th>学習内容</th>
+                        </tr>
+                        <tr>
+                            <td><strong>① 概念理解</strong></td>
+                            <td>「一元」「二元」「群間・群内」の意味</td>
+                        </tr>
+                        <tr>
+                            <td><strong>② 計算原理</strong></td>
+                            <td>平方和、自由度、F値の計算方法</td>
+                        </tr>
+                        <tr>
+                            <td><strong>③ 検定結果</strong></td>
+                            <td>F値・p値の解釈と「有意性」の判定</td>
+                        </tr>
+                        <tr>
+                            <td><strong>④ 応用</strong></td>
+                            <td>二元配置への発展、多重比較法</td>
+                        </tr>
+                    </table>
+                `
+            },
+            {
+                title: 'はじめに',
+                content: `
+                    <p style="margin-bottom: 1.5rem;">このスライドで「一元配置ANOVAの概念」を理解しました。</p>
+                    <div class="example-box">
+                        <div class="example-label">次のステップ</div>
+                        <div class="example-content">
+                            <p>実は、統計分析は<strong>概念の理解</strong>が最も重要です。</p>
+                            <p style="margin-top: 0.75rem;">計算方法やF値・p値の意味も大切ですが、「なぜそんなことをするのか」という思考が根底にあると、学習はぐっと深まります。</p>
+                        </div>
+                    </div>
+                    <p style="margin-top: 1.5rem;">医学や生物学の研究では、この「統計的思考」が患者さんの人生を左右する治療方針の決定を支えています。ぜひ、その重要性を感じながら学習を進めてください。</p>
+                    <a href="oneway_anova_tool.html" class="cta-button">📊 計算ツールへ進む →</a>
+                `
+            }
+        ];
+
+        let currentSlideIndex = 0;
+
+        function renderSlide() {
+            const slide = slides[currentSlideIndex];
+            const contentDiv = document.getElementById('slideContent');
+            
+            contentDiv.innerHTML = `
+                <h2 class="slide-title">${slide.title}</h2>
+                <div class="slide-body">${slide.content}</div>
+            `;
+
+            // Update progress
+            const progress = ((currentSlideIndex + 1) / slides.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('currentSlide').textContent = currentSlideIndex + 1;
+            document.getElementById('totalSlides').textContent = slides.length;
+
+            // Update button states
+            document.getElementById('prevBtn').disabled = currentSlideIndex === 0;
+            document.getElementById('nextBtn').disabled = currentSlideIndex === slides.length - 1;
+
+            // Scroll to top
+            document.querySelector('.slide-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function nextSlide() {
+            if (currentSlideIndex < slides.length - 1) {
+                currentSlideIndex++;
+                renderSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+                renderSlide();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        // Initialize
+        renderSlide();
+    </script>
+</body>
+</html>
