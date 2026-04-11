@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第2章：情報の箱 | R言語で学ぶ統計学</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8;
+  --paper: #fdfaf3;
+  --paper2: #f8f4eb;
+  --ink: #1c1710;
+  --ink-light: #4a3f30;
+  --ink-muted: #7a6e5f;
+  --accent: #8b3a2a;
+  --accent-pale: #f0e6df;
+  --gold: #c8922a;
+  --gold-pale: #faf3e0;
+  --teal: #2a6b6e;
+  --teal-pale: #e0f0f0;
+  --green: #3a6b3a;
+  --green-pale: #e8f4e8;
+  --purple: #5a3a8a;
+  --purple-pale: #f0eaf8;
+  --border: #d4c9b0;
+  --border-light: #e8e0cc;
+  --sidebar-w: 260px;
+  --shadow: 0 2px 12px rgba(28,23,16,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.9rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+header .series-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+header .chapter-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+aside {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  background: var(--paper2);
+  border-right: 1px solid var(--border);
+  padding: 1.6rem 1.2rem 2rem;
+  z-index: 90;
+}
+aside h2 {
+  font-family: 'Zen Antique', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 0.1rem; }
+.toc-list a {
+  display: block;
+  font-size: 0.79rem;
+  color: var(--ink-light);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 3px;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.45;
+}
+.toc-list a:hover, .toc-list a.active {
+  background: var(--accent-pale);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+.toc-divider {
+  margin: 1rem 0 0.6rem;
+  font-family: 'Zen Antique', serif;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+}
+.chapter-link {
+  font-size: 0.76rem !important;
+  color: var(--ink-muted) !important;
+  padding: 0.28rem 0.6rem !important;
+}
+.chapter-link.current { color: var(--accent) !important; font-weight: 500; }
+.chapter-link .ch-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  margin-right: 0.3em;
+}
+.progress-bar {
+  height: 3px;
+  background: var(--border-light);
+  margin: 1.5rem 0 0;
+  border-radius: 2px;
+}
+.progress-fill {
+  height: 100%;
+  width: 37.5%;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 2px;
+}
+.progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
+  text-align: right;
+}
+
+main {
+  margin-left: var(--sidebar-w);
+  margin-top: 52px;
+  padding: 3rem 4rem 4rem 3.5rem;
+  max-width: calc(860px + var(--sidebar-w));
+  min-height: calc(100vh - 52px);
+}
+
+footer {
+  margin-left: var(--sidebar-w);
+  background: var(--paper2);
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  line-height: 1.7;
+  text-align: center;
+}
+footer .footer-mark {
+  font-family: 'Zen Antique', serif;
+  display: block;
+  margin-top: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+.chapter-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+.chapter-title {
+  font-family: 'Zen Antique', serif;
+  font-size: 2.1rem;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+.chapter-subtitle {
+  font-size: 0.97rem;
+  color: var(--ink-muted);
+  font-weight: 300;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+.lead-divider {
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  margin-bottom: 2.5rem;
+}
+
+.dialogue-section { margin-bottom: 3.5rem; }
+.section-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1.18rem;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-heading::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--gold);
+  margin-right: 0.2em;
+}
+.subsection-heading {
+  font-family: 'Zen Antique', serif;
+  font-size: 1rem;
+  color: var(--teal);
+  margin: 2rem 0 1rem;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--teal);
+}
+
+.turn { display: flex; gap: 1rem; margin-bottom: 1.3rem; align-items: flex-start; }
+.turn.student { flex-direction: row-reverse; }
+.avatar {
+  flex-shrink: 0; width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Zen Antique', serif; font-size: 0.82rem;
+}
+.avatar.teacher { background: var(--ink); color: var(--paper); }
+.avatar.student-av { background: var(--teal); color: #fff; }
+.bubble {
+  max-width: 82%;
+  padding: 0.9rem 1.1rem;
+  border-radius: 4px 12px 12px 12px;
+  line-height: 1.85; font-size: 0.91rem;
+  box-shadow: var(--shadow);
+}
+.turn.student .bubble { border-radius: 12px 4px 12px 12px; }
+.bubble.teacher-bubble { background: var(--paper); border: 1px solid var(--border-light); color: var(--ink); }
+.bubble.student-bubble { background: var(--teal-pale); border: 1px solid #c0dede; color: var(--teal); }
+.speaker-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 0.35rem; opacity: 0.6; display: block; }
+
+pre.code-block {
+  background: #1e1a14;
+  color: #d4c9a8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.81rem;
+  padding: 1.3rem 1.5rem;
+  border-radius: 4px;
+  margin: 1.1rem 0;
+  line-height: 1.8;
+  overflow-x: auto;
+  white-space: pre;
+  position: relative;
+}
+.lang-tag {
+  position: absolute; top: 0.5rem; right: 0.8rem;
+  font-size: 0.62rem; color: #5a5040; letter-spacing: 0.08em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.c-comment { color: #6a6050; }
+.c-string  { color: #a8c878; }
+.c-num     { color: #e8c070; }
+.c-fn      { color: #78b8d8; }
+.c-kw      { color: #d87850; }
+.c-out     { color: #8aaa70; }
+.c-section { color: #888070; font-style: italic; display: block; margin: 0.5em 0 0.1em; font-size: 0.74rem; letter-spacing: 0.05em; }
+
+.inline-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.81em;
+  background: rgba(28,23,16,0.07); padding: 0.1em 0.4em;
+  border-radius: 3px; color: var(--accent);
+}
+
+.callout, .callout-teal, .callout-green, .callout-purple {
+  padding: 1rem 1.2rem;
+  border-radius: 0 4px 4px 0;
+  margin: 1.4rem 0;
+  font-size: 0.89rem; line-height: 1.8;
+  color: var(--ink-light);
+}
+.callout        { border-left: 4px solid var(--gold);   background: var(--gold-pale); }
+.callout-teal   { border-left: 4px solid var(--teal);   background: var(--teal-pale); }
+.callout-green  { border-left: 4px solid var(--green);  background: var(--green-pale); }
+.callout-purple { border-left: 4px solid var(--purple); background: var(--purple-pale); }
+.callout strong        { color: var(--gold); }
+.callout-teal strong   { color: var(--teal); }
+.callout-green strong  { color: var(--green); }
+.callout-purple strong { color: var(--purple); }
+
+.learning-goals {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  padding: 1.3rem 1.5rem; margin-bottom: 2.5rem;
+  box-shadow: var(--shadow);
+}
+.learning-goals h3 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--teal); margin-bottom: 0.8rem; }
+.goal-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.goal-list li { font-size: 0.85rem; color: var(--ink-light); display: flex; align-items: flex-start; gap: 0.5rem; line-height: 1.6; }
+.goal-list li::before { content: '✓'; font-family: 'JetBrains Mono', monospace; color: var(--teal); font-size: 0.78rem; flex-shrink: 0; margin-top: 0.12rem; }
+
+.concept-box {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.4rem 1.6rem; margin: 1.8rem 0; box-shadow: var(--shadow);
+}
+.concept-box h4 { font-family: 'Zen Antique', serif; font-size: 0.97rem; color: var(--ink); margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-light); }
+.concept-box p { font-size: 0.88rem; line-height: 1.85; color: var(--ink-light); margin-bottom: 0.7rem; }
+.concept-box p:last-child { margin-bottom: 0; }
+
+/* ── DATA FRAME VISUAL ── */
+.df-visual {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1.2rem 1.4rem; margin: 1.3rem 0;
+  box-shadow: var(--shadow); overflow-x: auto;
+}
+.df-visual h4 { font-family: 'Zen Antique', serif; font-size: 0.88rem; color: var(--ink-muted); margin-bottom: 0.9rem; }
+.df-table { border-collapse: collapse; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; }
+.df-table th {
+  background: var(--ink); color: var(--paper);
+  padding: 0.4rem 0.8rem; text-align: center;
+  font-weight: 500; font-size: 0.72rem;
+}
+.df-table th.row-idx { background: #2a2018; color: var(--ink-muted); }
+.df-table td {
+  padding: 0.35rem 0.8rem; border: 1px solid var(--border-light);
+  text-align: center; color: var(--ink-light);
+}
+.df-table td.row-idx { background: var(--paper2); color: var(--ink-muted); font-size: 0.68rem; }
+.df-table tr:hover td:not(.row-idx) { background: var(--accent-pale); }
+.df-table .num  { color: var(--gold); }
+.df-table .str  { color: #a8c878; }
+.df-table .bool { color: #d87850; }
+.df-table .na   { color: #888070; font-style: italic; }
+.df-type { font-size: 0.62rem; color: var(--ink-muted); display: block; font-style: italic; margin-top: 0.1rem; }
+
+/* ── COMPARISON TABLE ── */
+.compare-table {
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.compare-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.compare-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: var(--accent-pale); }
+.compare-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+/* ── QUIZ ── */
+.quiz-box {
+  background: var(--gold-pale); border: 1px solid #d4b060;
+  border-radius: 6px; padding: 1.3rem 1.5rem; margin: 2rem 0;
+}
+.quiz-box h4 { font-family: 'Zen Antique', serif; font-size: 0.93rem; color: var(--gold); margin-bottom: 0.7rem; }
+.quiz-q { font-size: 0.88rem; color: var(--ink-light); margin-bottom: 0.7rem; line-height: 1.7; }
+.quiz-toggle { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; background: none; border: 1px solid var(--gold); color: var(--gold); padding: 0.35rem 0.85rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.quiz-toggle:hover { background: var(--gold); color: #fff; }
+.quiz-answer { display: none; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid #d4b060; font-size: 0.86rem; line-height: 1.8; color: var(--ink-light); }
+.quiz-answer.open { display: block; }
+
+/* ── JOIN DIAGRAM ── */
+.join-diagram {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem;
+  margin: 1.3rem 0;
+}
+.join-card {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.9rem 1rem; box-shadow: var(--shadow);
+  text-align: center;
+}
+.join-card .join-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+  color: var(--accent); font-weight: 500; margin-bottom: 0.4rem;
+}
+.join-card .join-venn {
+  font-size: 1.6rem; margin: 0.4rem 0;
+}
+.join-card .join-desc { font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; }
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
+  margin: 1.3rem 0; background: var(--paper);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+.summary-table th { background: var(--ink); color: var(--paper); padding: 0.55rem 0.9rem; text-align: left; font-weight: 500; font-size: 0.78rem; }
+.summary-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.6; color: var(--ink-light); }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: var(--accent-pale); }
+.summary-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); }
+
+.next-chapter {
+  background: var(--ink); color: var(--paper);
+  border-radius: 6px; padding: 1.5rem 2rem; margin-top: 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.next-chapter .label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+.next-chapter .title { font-family: 'Zen Antique', serif; font-size: 1.03rem; }
+.next-chapter .arrow { font-size: 1.4rem; opacity: 0.5; }
+
+em { font-style: italic; color: var(--ink-light); }
+
+/* ── PIPE FLOW ── */
+.pipe-flow {
+  display: flex; align-items: center; gap: 0.4rem;
+  flex-wrap: wrap; margin: 1rem 0; padding: 0.8rem 1rem;
+  background: #1e1a14; border-radius: 4px;
+}
+.pipe-step {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+  padding: 0.3rem 0.65rem; border-radius: 3px;
+}
+.pipe-step.data { background: #2a4a6a; color: #78b8e8; }
+.pipe-step.verb { background: #2a4a2a; color: #78d878; }
+.pipe-step.out  { background: #3a2a1a; color: #e8c070; }
+.pipe-arrow { color: #5a5040; font-size: 0.9rem; }
+
+@media (max-width: 900px) {
+  aside { display: none; }
+  main { margin-left: 0; padding: 2rem 1.2rem; }
+  footer { margin-left: 0; }
+  .join-diagram { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="series-title">R言語で学ぶ統計学 ── 情報の彫刻刀</span>
+  <span class="chapter-badge">CHAPTER 2</span>
+</header>
+
+<aside>
+  <h2>第2章 目次</h2>
+  <ul class="toc-list">
+      <li>補足</li>
+  </ul>
+
+  <div class="toc-divider">── 章一覧 ──</div>
+  <ul class="toc-list">
+    <li><a href="r_intro_chapter0.html" class="chapter-link"><span class="ch-num">序章</span>イントロダクション</a></li>
+    <li><a href="r_chapter1.html" class="chapter-link"><span class="ch-num">Ch.1</span>Rとの出会い</a></li>
+    <li><a href="#" class="chapter-link current"><span class="ch-num">Ch.2</span>情報の箱</a></li>
+    <li><a href="r_chapter3.html" class="chapter-link"><span class="ch-num">Ch.3</span>可視化という次元削減</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.4</span>基本統計量の本質</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.5</span>検定のロジック</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.6</span>生存解析と時間軸</a></li>
+    <li><a href="#" class="chapter-link"><span class="ch-num">Ch.7</span>高次元の向こう側</a></li>
+  </ul>
+
+  <div class="progress-bar">
+    <div class="progress-fill"></div>
+  </div>
+  <div class="progress-label">Ch.2 / 7</div>
+</aside>
+
+<main>
+<section id="supplement-piping">
+    <h2 style="color: #0056b3; border-left: 5px solid #0056b3; padding-left: 15px;">補足資料：パイピング — 思考を「ろ過」するプロセス</h2>
+    
+    <div class="dialogue">
+        <div class="character sensei">【先生】</div>
+        <div class="balloon">
+            「統計解析は、情報の『ろ過』作業だ。パイプ演算子（<code>|&gt;</code> または <code>%&gt;%</code>）を使うと、その工程が驚くほど美しくなるんだよ。」
+        </div>
+    </div>
+
+    <div class="dialogue">
+        <div class="character gakusei">【学生】</div>
+        <div class="balloon">
+            「パイプ……つまり、左の結果を右の処理に流し込むということですね。情報の削減プロセスが一本の線に見えます！」
+        </div>
+    </div>
+
+    <h3>1. 思考とコードの同期</h3>
+    <p>従来の書き方では、内側から外側へ読む「ネスト構造」になりがちでした。パイピングはこれを「左から右」の読書順に変えます。</p>
+    <div style="background: #2d2d2d; color: #ccc; padding: 15px; border-radius: 5px; font-family: monospace; margin: 15px 0;">
+        # 従来の書き方（読みづらい）<br>
+        plot(summarize(filter(data, age > 20)))<br><br>
+        # パイプを使った書き方（思考の順序通り）<br>
+        data |&gt; <br>
+        &nbsp;&nbsp;filter(age > 20) |&gt;   # 20歳以上に絞り（情報の削減）<br>
+        &nbsp;&nbsp;summarize() |&gt;       # 要約統計量を出し（情報の濃縮）<br>
+        &nbsp;&nbsp;plot()               # 可視化する（情報の定着）
+    </div>
+
+    <h3>2. 管理上のノイズを削る</h3>
+    <p>
+        途中で <code>data2</code>, <code>data3</code> といった一時的な保存変数を作る必要がありません。
+        これによって、管理すべき変数の数を最小限に抑え、脳のリソースを「分析そのもの」に集中させることができます。
+    </p>
+
+    <div class="dialogue">
+        <div class="character sensei">【先生】</div>
+        <div class="balloon">
+            「t-SNEやUMAPのような複雑な解析でも、このパイプは強力な彫刻刀になる。情報の流れを一本のストーリーとして記述できるからね。」
+        </div>
+    </div>
+</section>
+</main>
+
+<footer>
+  <p>⚠ 注意書き：本テキストは生成AIによって作成されたものであり、内容に誤りを含む可能性があります。利用・参照は自己責任でお願いします。再配布については、自己責任の範囲内であれば問題ありません。</p>
+  <span class="footer-mark">―― 統計は専門ではない研究者の備忘録 ――</span>
+</footer>
+
+<script>
+const links = document.querySelectorAll('aside .toc-list a:not(.chapter-link)');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector('aside .toc-list a[href="#' + e.target.id + '"]');
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
