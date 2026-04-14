@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Markdown Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f0f2f5;
+      }
+      .upload-zone {
+        border: 2px dashed #3498db;
+        padding: 30px;
+        text-align: center;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      .upload-zone:hover {
+        background: #e8f4fd;
+      }
+      #output {
+        margin-top: 30px;
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: none;
+      }
+      /* テーブルの見た目調整 */
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 20px 0;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+      }
+      th {
+        background: #f8f9fa;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 10px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Markdown Viewer</h1>
+
+    <div class="upload-zone" id="drop-zone">
+      <p>
+        ここに
+        <b>mdファイル</b>
+        をドラッグ＆ドロップするか、クリックして選択してください
+      </p>
+      <input type="file" id="file-input" accept=".md" style="display: none" />
+    </div>
+
+    <div id="output">
+      <div id="content-area"></div>
+    </div>
+
+    <script>
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const output = document.getElementById("output");
+      const contentArea = document.getElementById("content-area");
+
+      // クリックでファイル選択
+      dropZone.addEventListener("click", () => fileInput.click());
+
+      // ファイルが選択された時の処理
+      fileInput.addEventListener("change", (e) =>
+        handleFile(e.target.files[0]),
+      );
+
+      // ドラッグ＆ドロップ処理
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = "#2ecc71";
+      });
+      dropZone.addEventListener("dragleave", () => {
+        dropZone.style.borderColor = "#3498db";
+      });
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        handleFile(e.dataTransfer.files[0]);
+      });
+
+      function handleFile(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const markdownText = e.target.result;
+
+          // MarkdownをHTMLに変換
+          contentArea.innerHTML = marked.parse(markdownText);
+
+          // 表示切り替え
+          output.style.display = "block";
+          dropZone.style.display = "none";
+
+          // もしデータが含まれていれば、おまけでグラフも出したい場合はここに処理を追加可能
+          console.log("File loaded successfully");
+        };
+        reader.readAsText(file);
+      }
+    </script>
+  </body>
+</html>
