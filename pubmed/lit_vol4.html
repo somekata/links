@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文献検索入門 Vol.4 ― Scopus 論文の「影響力」を数値で見る</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A2342;
+  --teal:   #1B6CA8;
+  --ltblue: #E8F1FA;
+  --amber:  #E8873A;
+  --gray:   #64748B;
+  --lgray:  #F0F4F8;
+  --red:    #C0392B;
+  --green:  #1A7A4A;
+  --text:   #1E293B;
+  --white:  #FFFFFF;
+  /* Scopus カラー：オレンジ・サンセット系 */
+  --sco:    #D4500A;
+  --scolt:  #FFF0E8;
+  --scodk:  #4A1A00;
+  --scomed: #F97316;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body { width:100%; height:100%; background:#0a0f1a; font-family:'Noto Sans JP',sans-serif; overflow:hidden; }
+
+.deck { width:100vw; height:100vh; position:relative; overflow:hidden; }
+.slide {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  padding:2.2rem 3rem 1.8rem;
+  opacity:0; pointer-events:none;
+  transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);
+  transform:translateX(60px);
+}
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.prev   { opacity:0; transform:translateX(-60px); }
+
+.slide-dark  { background:var(--navy); }
+.slide-light { background:var(--white); }
+.slide-card  { background:var(--lgray); }
+.slide-code  { background:#0d1117; }
+.slide-quiz  { background:#1a0a00; }
+.slide-sco   { background:var(--scodk); }
+
+.slide-dark::before,.slide-code::before,.slide-quiz::before,.slide-sco::before {
+  content:''; position:absolute; left:0; top:0; width:6px; height:100%;
+}
+.slide-dark::before  { background:var(--amber); }
+.slide-code::before  { background:var(--sco); }
+.slide-quiz::before  { background:var(--scomed); }
+.slide-sco::before   { background:var(--scomed); }
+
+.tag {
+  display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.08em;
+  padding:3px 12px; border-radius:2px; color:#fff; margin-bottom:.5rem; align-self:flex-start;
+}
+.tag-teal   { background:var(--teal); }
+.tag-amber  { background:var(--amber); }
+.tag-sco    { background:var(--sco); }
+.tag-purple { background:#7c3aed; }
+.tag-green  { background:var(--green); }
+.tag-red    { background:var(--red); }
+.tag-gray   { background:var(--gray); }
+
+.stitle {
+  font-size:clamp(1.35rem,2.8vw,2rem); font-weight:900; line-height:1.2; margin-bottom:1rem;
+  border-left:5px solid var(--amber); padding-left:.7rem;
+}
+.slide-dark  .stitle { color:var(--white); border-color:var(--amber); }
+.slide-sco   .stitle { color:var(--white); border-color:var(--scomed); }
+.slide-light .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-card  .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-code  .stitle { color:var(--white); border-color:var(--sco); }
+.slide-quiz  .stitle { color:var(--white); border-color:var(--scomed); }
+
+.title-main { font-size:clamp(2.5rem,6.5vw,4.8rem); font-weight:900; color:var(--white); letter-spacing:-.02em; line-height:1.05; text-align:center; }
+.title-vol  { display:inline-block; background:var(--sco); color:#fff; padding:2px 16px; border-radius:4px; font-size:clamp(.85rem,1.8vw,1.1rem); font-weight:900; letter-spacing:.06em; margin-bottom:.6rem; }
+.title-sub  { font-size:clamp(.85rem,1.6vw,1.05rem); color:rgba(255,255,255,.55); text-align:center; margin-top:.7rem; line-height:1.7; }
+.title-rule { width:240px; height:2px; background:var(--teal); margin:1rem auto; }
+
+.cb { background:#0d1117; border-radius:6px; overflow:hidden; font-family:'JetBrains Mono',monospace; box-shadow:0 4px 20px rgba(0,0,0,.45); }
+.cb-head { display:flex; align-items:center; gap:.45rem; padding:.45rem 1rem; background:#161b22; border-bottom:1px solid #30363d; }
+.dot { width:11px; height:11px; border-radius:50%; }
+.cb-lang { font-size:.7rem; color:#8b949e; letter-spacing:.06em; margin-left:auto; }
+.cb-body { padding:.85rem 1.2rem; overflow-x:auto; font-size:.8rem; line-height:1.75; }
+.cb-body code { color:#e6edf3; white-space:pre; }
+.cm  { color:#8b949e; font-style:italic; }
+.tg  { color:#7ee787; }
+.ok  { color:#4ade80; }
+.str { color:#a5d6ff; }
+.num { color:#79c0ff; }
+.vr  { color:#ffa657; }
+
+.row { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.55rem; }
+.row-lbl { min-width:2.6rem; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:700; color:#fff; padding:0 .7rem; white-space:nowrap; }
+.row-body { padding:.5rem .85rem; font-size:.84rem; color:var(--text); line-height:1.55; }
+.row-body strong { color:var(--navy); }
+.row-body code { font-family:'JetBrains Mono',monospace; font-size:.78rem; background:#f0f4f8; padding:1px 5px; border-radius:3px; color:#c0392b; }
+
+.cr { display:flex; align-items:stretch; border-radius:6px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.12); margin-bottom:.6rem; }
+.cr-lbl { min-width:110px; padding:.65rem .8rem; font-size:.8rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; text-align:center; }
+.cr-arr { background:#f0f4f8; display:flex; align-items:center; justify-content:center; padding:0 .5rem; color:var(--gray); font-size:1rem; }
+.cr-body { flex:1; background:var(--white); padding:.65rem .9rem; font-size:.83rem; color:var(--text); line-height:1.55; }
+.cr-body strong { color:var(--navy); }
+
+.card-dark  { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:.75rem 1rem; }
+.card-warn  { background:#FFF3E0; border-radius:6px; padding:.65rem 1rem; }
+.card-blue  { background:var(--ltblue); border-radius:6px; padding:.65rem 1rem; }
+.card-green { background:#ECFDF5; border-radius:6px; padding:.65rem 1rem; }
+.card-red   { background:#FEF2F2; border-radius:6px; padding:.65rem 1rem; }
+.card-sco   { background:var(--scolt); border-radius:6px; padding:.65rem 1rem; }
+
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.85rem; }
+
+ul.bl { list-style:none; }
+ul.bl li { padding:.26rem 0 .26rem 1.3rem; position:relative; font-size:.85rem; color:var(--text); line-height:1.55; }
+ul.bl li::before { content:'▸'; position:absolute; left:0; color:var(--teal); font-size:.8rem; }
+.slide-dark ul.bl li  { color:#e2e8f0; }
+.slide-dark ul.bl li::before { color:var(--amber); }
+.slide-sco  ul.bl li  { color:#e2e8f0; }
+.slide-sco  ul.bl li::before { color:var(--scomed); }
+.slide-code ul.bl li  { color:#e2e8f0; }
+.slide-code ul.bl li::before { color:var(--sco); }
+.slide-quiz ul.bl li  { color:#e2e8f0; }
+.slide-quiz ul.bl li::before { color:var(--scomed); }
+ul.bl li code { font-family:'JetBrains Mono',monospace; font-size:.76rem; background:rgba(255,255,255,.12); padding:1px 5px; border-radius:3px; color:#a5d6ff; }
+.slide-light ul.bl li code,.slide-card ul.bl li code { background:#f0f4f8; color:#c0392b; }
+
+.sumi { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 8px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.6rem; }
+.sumi-num { min-width:54px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:900; color:#fff; font-family:'JetBrains Mono',monospace; }
+.sumi-body { padding:.6rem .9rem; font-size:.84rem; line-height:1.6; color:var(--text); }
+.sumi-body strong { color:var(--navy); }
+
+.quiz-q { font-size:clamp(.95rem,2vw,1.2rem); font-weight:700; color:#e2e8f0; margin-bottom:1.2rem; line-height:1.6; text-align:center; }
+.qopts { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; max-width:680px; margin:0 auto; }
+.qbtn {
+  background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.13);
+  color:#e2e8f0; border-radius:8px; padding:.85rem 1.1rem;
+  font-family:'Noto Sans JP',sans-serif; font-size:.85rem; font-weight:700;
+  cursor:pointer; text-align:left; line-height:1.45;
+  transition:background .2s,border-color .2s,transform .15s;
+}
+.qbtn:hover { background:rgba(249,115,22,.2); border-color:var(--scomed); transform:translateY(-2px); }
+.qbtn.correct { background:rgba(26,122,74,.35); border-color:#4ade80; color:#4ade80; }
+.qbtn.wrong   { background:rgba(192,57,43,.25); border-color:#f87171; color:#f87171; }
+.qbtn:disabled { cursor:default; transform:none; }
+.qfb { text-align:center; margin-top:.9rem; font-size:.88rem; font-weight:700; min-height:1.4rem; opacity:0; transition:opacity .3s; line-height:1.6; }
+.qfb.show { opacity:1; }
+
+.hl { text-align:center; font-size:.92rem; font-weight:700; font-style:italic; color:var(--teal); margin-top:auto; padding-top:.7rem; }
+.slide-dark .hl { color:var(--amber); }
+.slide-sco  .hl { color:var(--scomed); }
+.slide-code .hl { color:var(--sco); }
+.slide-quiz .hl { color:var(--scomed); }
+
+.pill   { font-family:'JetBrains Mono',monospace; font-size:.8rem; background:#161b22; border:1px solid #30363d; color:#ffa657; padding:2px 8px; border-radius:4px; }
+.pill-l { font-family:'JetBrains Mono',monospace; font-size:.8rem; background:#f0f4f8; border:1px solid #dde3ea; color:#c0392b; padding:2px 8px; border-radius:4px; }
+
+.step-flow { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin:.5rem 0; }
+.step-box  { background:var(--navy); color:#fff; border-radius:6px; padding:.4rem .8rem; font-size:.78rem; font-weight:700; white-space:nowrap; }
+.step-arrow { color:var(--amber); font-size:1.1rem; font-weight:900; }
+
+.big-stat { text-align:center; }
+.big-stat .num-big { font-size:clamp(2.2rem,5vw,3.5rem); font-weight:900; color:var(--scomed); font-family:'JetBrains Mono',monospace; }
+.big-stat .num-label { font-size:.8rem; color:rgba(255,255,255,.55); margin-top:.25rem; }
+
+/* h-index ビジュアル */
+.h-bar-wrap { display:flex; flex-direction:column; gap:.3rem; }
+.h-bar-row  { display:flex; align-items:center; gap:.5rem; font-size:.75rem; }
+.h-bar-label { width:2.2rem; text-align:right; color:#8b949e; font-family:'JetBrains Mono',monospace; }
+.h-bar { height:18px; border-radius:3px; display:flex; align-items:center; padding-left:.4rem; font-size:.7rem; font-weight:700; color:#fff; transition:width .6s; }
+
+/* 比較テーブル */
+.cmp-table { width:100%; border-collapse:collapse; font-size:.77rem; }
+.cmp-table th { background:var(--navy); color:#fff; padding:.42rem .65rem; text-align:left; font-weight:700; }
+.cmp-table td { padding:.4rem .65rem; border-bottom:1px solid #e2e8f0; color:var(--text); vertical-align:top; line-height:1.5; }
+.cmp-table tr:nth-child(even) td { background:#f8fafc; }
+.cmp-table td:first-child { font-weight:700; color:var(--navy); white-space:nowrap; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
+.slide.active .an { animation:fadeUp .5s ease both; }
+.slide.active .an:nth-child(1){animation-delay:.05s;}
+.slide.active .an:nth-child(2){animation-delay:.12s;}
+.slide.active .an:nth-child(3){animation-delay:.19s;}
+.slide.active .an:nth-child(4){animation-delay:.26s;}
+.slide.active .an:nth-child(5){animation-delay:.33s;}
+.slide.active .an:nth-child(6){animation-delay:.40s;}
+.slide.active .an:nth-child(7){animation-delay:.47s;}
+.slide.active .an:nth-child(8){animation-delay:.54s;}
+
+#nav { position:fixed; bottom:1.2rem; right:1.5rem; display:flex; align-items:center; gap:.7rem; z-index:9999; }
+.nbtn { background:rgba(255,255,255,.13); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.22); color:#fff; width:40px; height:40px; border-radius:50%; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s,transform .15s; }
+.nbtn:hover { background:rgba(255,255,255,.28); transform:scale(1.08); }
+#sc { color:rgba(255,255,255,.65); font-size:.76rem; font-family:'JetBrains Mono',monospace; min-width:52px; text-align:center; }
+#bar { position:fixed; bottom:0; left:0; height:3px; background:var(--sco); transition:width .35s ease; z-index:9999; }
+#hint { position:fixed; bottom:1.25rem; left:1.5rem; color:rgba(255,255,255,.3); font-size:.67rem; font-family:'JetBrains Mono',monospace; pointer-events:none; }
+
+#volnav { position:fixed; top:0; left:0; right:0; display:flex; align-items:center; gap:.3rem; padding:.4rem 1rem; background:rgba(10,15,26,.82); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,255,255,.08); z-index:9998; }
+#volnav a { font-size:.68rem; font-weight:700; letter-spacing:.06em; padding:2px 10px; border-radius:3px; text-decoration:none; color:rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.1); transition:all .2s; }
+#volnav a:hover { color:#fff; border-color:rgba(255,255,255,.3); }
+#volnav a.current { color:#fff; background:var(--sco); border-color:var(--sco); }
+#volnav .series-label { font-size:.65rem; color:rgba(255,255,255,.3); letter-spacing:.1em; margin-right:.4rem; }
+
+.small { font-size:.75rem; color:var(--gray); }
+.mono  { font-family:'JetBrains Mono',monospace; }
+</style>
+</head>
+<body>
+
+<div id="volnav">
+  <span class="series-label">文献検索入門</span>
+  <a href="lit_vol1.html">Vol.1 PubMed</a>
+  <a href="lit_vol2.html">Vol.2 医中誌</a>
+  <a href="lit_vol3.html">Vol.3 UpToDate</a>
+  <a href="lit_vol4.html" class="current">Vol.4 Scopus</a>
+  <a href="lit_vol5.html">Vol.5 まとめ</a>
+</div>
+
+<div class="deck" id="deck">
+
+<!-- S1: タイトル -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4rem;margin-top:1.5rem;">
+    <div class="an" style="background:var(--sco);color:#fff;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">文献検索入門シリーズ</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 4 / 5</div>
+    <div class="an title-main">Scopus<span style="color:var(--scomed);font-size:55%;">入門</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">
+      論文の<span style="color:var(--amber);">「影響力」</span>を数値で見る<br>
+      引用分析・h-index・CiteScore・研究者評価まで
+    </div>
+    <div class="an" style="margin-top:.6rem;display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;">
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">📊 引用分析</span>
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">📖 30スライド</span>
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">🏅 研究者評価</span>
+    </div>
+  </div>
+</div>
+
+<!-- S2: これまでの復習 -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">REVIEW</span>
+  <h2 class="stitle an">これまでの3回を振り返る</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="row an">
+      <div class="row-lbl" style="background:#336699;">Vol.1</div>
+      <div class="row-body"><strong>PubMed</strong>：英語医学論文3,600万件。MeSH・検索式で<strong>国際エビデンスを探す</strong></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#2E7D32;">Vol.2</div>
+      <div class="row-body"><strong>医中誌</strong>：日本語論文1,300万件。シソーラスで<strong>国内エビデンスを探す</strong></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#6B21A8;">Vol.3</div>
+      <div class="row-body"><strong>UpToDate</strong>：臨床意思決定支援。GRADEで<strong>推奨を素早く確認する</strong></div>
+    </div>
+    <div class="card-sco an" style="font-size:.84rem;margin-top:.3rem;">
+      🔑 <strong>ここまでのDB共通点</strong>：「論文を<strong>探す</strong>」ツールだった。<br><br>
+      ❓ <strong>こんな疑問はなかっただろうか？</strong><br>
+      「この論文、<strong>どれくらい重要な研究</strong>なんだろう？」<br>
+      「この研究者、<strong>どれくらいの実績</strong>があるんだろう？」<br>
+      「この雑誌、<strong>権威ある雑誌</strong>なんだろうか？」<br><br>
+      → これに答えるのが <strong style="color:var(--sco);">Scopus の引用分析</strong> だ！
+    </div>
+  </div>
+  <div class="hl an">「良い論文」を見つけるだけでなく「重要な論文」を見極める力を身につける</div>
+</div>
+
+<!-- S3: 今日学ぶこと -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-sco an">Vol.4 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--navy);">① Scopusとは</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">何が収録されているか・PubMedとの違い・なぜ引用分析が重要か</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--sco);">② 引用とは何か</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">引用される仕組み・前方引用と後方引用・引用ネットワーク</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#c2410c;">③ 被引用数・h-index</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">研究者の「影響力スコア」を計算・読む。自分の将来に備えて今から理解する</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);">④ CiteScore・IF</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">雑誌の「格」を評価する指標。論文投稿先の選び方にも直結</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--green);">⑤ 文献検索</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">Scopusの検索機能：PubMedより広い分野・前方引用追跡</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">⑥ 活用戦略</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">PubMed・医中誌・UpToDateと組み合わせた四刀流の完成</div>
+    </div>
+  </div>
+</div>
+
+<!-- S4: Scopusとは -->
+<div class="slide slide-sco" id="s4">
+  <span class="tag an" style="background:var(--scomed);color:#1a0500;">WHAT IS SCOPUS?</span>
+  <h2 class="stitle an">Scopus とは何か</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;">
+    <div class="g3 an">
+      <div class="big-stat">
+        <div class="num-big">9,000<span style="font-size:50%;">万+</span></div>
+        <div class="num-label">収録論文数</div>
+      </div>
+      <div class="big-stat">
+        <div class="num-big">27,000<span style="font-size:50%;">+</span></div>
+        <div class="num-label">収録雑誌数</div>
+      </div>
+      <div class="big-stat">
+        <div class="num-big">1996</div>
+        <div class="num-label">サービス開始年</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.5rem;" class="an">
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--sco);min-width:4rem;font-size:.7rem;">運営</div>
+        <div class="row-body" style="color:#e2e8f0;">Elsevier 社（オランダ）が提供。世界最大の<strong style="color:var(--scomed);">学術文献・引用データベース</strong>。医学だけでなく理工・社会科学・人文科学もカバー</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--sco);min-width:4rem;font-size:.7rem;">強み</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:var(--scomed);">引用分析</strong>が最大の特徴。「この論文は何回引用されたか」「誰がこの論文を引用したか」を追跡できる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--sco);min-width:4rem;font-size:.7rem;">費用</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:#f87171;">有料（機関契約）</strong>。多くの大学・研究機関が契約。学内ネットワーク / VPN でアクセス</div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">Scopus は「論文の地図」ではなく「論文の重力図」——どこに知識が集まっているかが見える</div>
+</div>
+
+<!-- S5: PubMedとの違い -->
+<div class="slide slide-dark" id="s5">
+  <span class="tag tag-amber an">PubMedとの違い</span>
+  <h2 class="stitle an">Scopus vs PubMed：何が違うか</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an">
+      <table class="cmp-table" style="background:rgba(255,255,255,.04);">
+        <thead>
+          <tr><th>項目</th><th style="color:#66aadd;">PubMed</th><th style="color:var(--scomed);">Scopus</th></tr>
+        </thead>
+        <tbody style="color:#e2e8f0;">
+          <tr>
+            <td style="color:#e2e8f0;">運営</td>
+            <td style="color:#e2e8f0;">米国NIH（政府）</td>
+            <td style="color:#e2e8f0;">Elsevier（民間）</td>
+          </tr>
+          <tr>
+            <td style="color:#e2e8f0;">費用</td>
+            <td style="color:#4ade80;font-weight:700;">無料</td>
+            <td style="color:#f87171;font-weight:700;">有料（機関契約）</td>
+          </tr>
+          <tr>
+            <td style="color:#e2e8f0;">分野</td>
+            <td style="color:#e2e8f0;">医学・生命科学中心</td>
+            <td style="color:#e2e8f0;">全学術分野（理工・社会・人文も）</td>
+          </tr>
+          <tr>
+            <td style="color:#e2e8f0;">収録件数</td>
+            <td style="color:#e2e8f0;">約3,600万件</td>
+            <td style="color:#e2e8f0;">約9,000万件+</td>
+          </tr>
+          <tr>
+            <td style="color:#e2e8f0;">統制語彙</td>
+            <td style="color:#e2e8f0;">MeSH（医学専門）</td>
+            <td style="color:#e2e8f0;">なし（フリーワード中心）</td>
+          </tr>
+          <tr>
+            <td style="color:#e2e8f0;"><strong style="color:var(--scomed);">引用分析</strong></td>
+            <td style="color:#8b949e;">限定的（PMCのみ）</td>
+            <td style="color:var(--scomed);font-weight:700;">⭐ 最強（全収録論文）</td>
+          </tr>
+          <tr>
+            <td style="color:#e2e8f0;">研究者評価</td>
+            <td style="color:#8b949e;">なし</td>
+            <td style="color:var(--scomed);font-weight:700;">⭐ h-index・被引用数</td>
+          </tr>
+          <tr>
+            <td style="color:#e2e8f0;">雑誌評価</td>
+            <td style="color:#8b949e;">なし</td>
+            <td style="color:var(--scomed);font-weight:700;">⭐ CiteScore</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:var(--sco);">
+      🎯 <strong style="color:var(--scomed);">使い分けの原則</strong>：医学論文を<strong>探す</strong> → PubMed（MeSHが強力）。論文・研究者・雑誌の<strong>影響力を評価する</strong> → Scopus。
+    </div>
+  </div>
+</div>
+
+<!-- S6: 引用とは何か -->
+<div class="slide slide-light" id="s6">
+  <span class="tag tag-sco an">引用の基礎</span>
+  <h2 class="stitle an">「引用」とは何か：科学の積み上げ方</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="card-sco an" style="font-size:.84rem;">
+      📚 <strong>引用（Citation）</strong>とは：新しい論文が、自分の主張の根拠として<strong>先行研究を参照すること</strong>。科学は「引用の連鎖」で積み上がっていく。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📖 後方引用（Backward citation）</strong><br>
+          自分の論文が参照している過去の論文。Reference（参考文献）リストに列挙される。<br><br>
+          「この論文は○○の研究に基づいている」という知識の系譜をたどれる。<strong>スノーボール法の核心。</strong>
+        </div>
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>🔮 前方引用（Forward citation）</strong><br>
+          自分の論文を引用している<strong>後から出た論文</strong>。「Cited by（被引用）」として表示。<br><br>
+          「この研究はその後どう発展したか」を追える。<strong>Scopus の最大の強み。</strong>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+        <div class="an" style="text-align:center;padding:.5rem;">
+          <div style="font-size:.75rem;color:var(--gray);margin-bottom:.4rem;">引用の流れ（時系列）</div>
+          <div style="display:flex;flex-direction:column;gap:.3rem;align-items:center;">
+            <div style="background:#336699;color:#fff;border-radius:4px;padding:.3rem .9rem;font-size:.75rem;font-weight:700;">論文A（2010年）</div>
+            <div style="color:var(--sco);font-size:.9rem;">↓ 後方引用（Aが引用）</div>
+            <div style="background:var(--sco);color:#fff;border-radius:4px;padding:.3rem .9rem;font-size:.75rem;font-weight:700;">論文B（2015年）← 注目論文</div>
+            <div style="color:var(--sco);font-size:.9rem;">↓ 前方引用（Bを引用）</div>
+            <div style="background:#2e7d32;color:#fff;border-radius:4px;padding:.3rem .9rem;font-size:.75rem;font-weight:700;">論文C・D・E（2018〜）</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-green an" style="font-size:.82rem;">
+      💡 <strong>引用数が多い ≠ 正しい論文</strong>。引用数は「影響力」の指標。批判的に引用されることも、肯定的引用と同じカウント。
+    </div>
+  </div>
+</div>
+
+<!-- S7: 被引用数 -->
+<div class="slide slide-card" id="s7">
+  <span class="tag tag-sco an">被引用数</span>
+  <h2 class="stitle an">被引用数（Citation Count）：論文の「影響力スコア」</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-sco an" style="font-size:.84rem;">
+      📊 <strong>被引用数</strong>：その論文が<strong>他の論文に何回引用されたか</strong>の総数。Scopus では各論文の詳細ページに表示される。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📈 被引用数の目安（医学分野）</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>0〜5件</strong>：新しい論文 or 引用されにくい領域</li>
+            <li><strong>10〜50件</strong>：分野内で認知されている</li>
+            <li><strong>100件以上</strong>：重要論文・よく引用される</li>
+            <li><strong>1,000件以上</strong>：landmark paper（歴史的論文）</li>
+          </ul>
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ 被引用数の注意点</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>分野によって相場が大きく違う（基礎 vs 臨床）</li>
+            <li>古い論文ほど引用を積み上げやすい</li>
+            <li>批判的引用もカウントされる</li>
+            <li>自己引用もカウントされる</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ 被引用数の使い方</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>検索結果を「被引用数順」でソート → 重要論文を優先的に確認</li>
+            <li>引用数の多い論文を SR・卒論の核心文献に</li>
+            <li>自分の研究テーマの「landmark paper」を特定する</li>
+          </ul>
+        </div>
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>🔍 Scopusでの確認方法</strong><br>
+          論文を検索 → 結果一覧で「Cited by」数が表示 → クリックで引用している論文一覧へ → <strong>前方引用の連鎖</strong>をたどれる
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S8: h-index入門 -->
+<div class="slide slide-dark" id="s8">
+  <span class="tag tag-amber an">h-index 入門</span>
+  <h2 class="stitle an">h-index：研究者の「総合影響力指標」</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="an" style="font-size:.88rem;color:#e2e8f0;line-height:1.7;">
+      h-index = <strong style="color:var(--scomed);">h本の論文がそれぞれ h回以上引用されている</strong> 最大の h の値<br>
+      2005年に物理学者 Jorge Hirsch が提案した指標。現在は研究者評価の国際標準のひとつ。
+    </div>
+    <div class="card-dark an" style="border-color:var(--sco);">
+      <div style="font-size:.8rem;color:#8b949e;margin-bottom:.5rem;">h-index = 4 の例（論文を被引用数の多い順に並べる）</div>
+      <div class="h-bar-wrap">
+        <div class="h-bar-row">
+          <div class="h-bar-label">論文1</div>
+          <div class="h-bar" style="width:85%;background:var(--sco);">42回引用</div>
+        </div>
+        <div class="h-bar-row">
+          <div class="h-bar-label">論文2</div>
+          <div class="h-bar" style="width:65%;background:var(--sco);">31回引用</div>
+        </div>
+        <div class="h-bar-row">
+          <div class="h-bar-label">論文3</div>
+          <div class="h-bar" style="width:40%;background:var(--sco);">18回引用</div>
+        </div>
+        <div class="h-bar-row">
+          <div class="h-bar-label">論文4</div>
+          <div class="h-bar" style="width:20%;background:#4ade80;outline:2px solid #4ade80;">7回引用 ← h=4 の境界</div>
+        </div>
+        <div class="h-bar-row">
+          <div class="h-bar-label">論文5</div>
+          <div class="h-bar" style="width:6%;background:#475569;">2回引用</div>
+        </div>
+      </div>
+      <div style="font-size:.75rem;color:#4ade80;margin-top:.4rem;">論文1〜4が「4回以上引用」→ h-index = 4</div>
+    </div>
+    <div class="hl an">h-index は「量（論文数）」と「質（引用数）」の両方を一度に測る</div>
+  </div>
+</div>
+
+<!-- S9: h-indexの読み方 -->
+<div class="slide slide-light" id="s9">
+  <span class="tag tag-sco an">h-index 実践</span>
+  <h2 class="stitle an">h-index の読み方・相場・限界</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>📊 医学分野の h-index の目安</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>h = 1〜5</strong>：研究を始めたばかり・大学院生レベル</li>
+            <li><strong>h = 10〜20</strong>：中堅研究者・講師・准教授レベル</li>
+            <li><strong>h = 20〜40</strong>：著名研究者・教授レベル</li>
+            <li><strong>h = 40以上</strong>：トップ研究者・ノーベル賞候補レベル</li>
+          </ul>
+          ※分野・キャリア年数で大きく異なる
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>🔍 Scopus での確認方法</strong><br>
+          Author search → 著者名で検索 → プロフィールページで h-index・総被引用数・論文数を一覧表示。ORCID と連携可能。
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ h-index の限界</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>分野間の比較は不公平（基礎 vs 臨床で相場が違う）</li>
+            <li>キャリア年数に依存する（年長者が有利）</li>
+            <li>自己引用で水増しできる</li>
+            <li>1本の大ヒット論文を評価できない</li>
+            <li>総説・レビューは被引用数が稼ぎやすい</li>
+          </ul>
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>💡 h-index を正しく使う</strong><br>
+          ① 同じ分野・同じキャリア年数で比較する<br>
+          ② 被引用数・論文数と合わせて総合判断<br>
+          ③ 「唯一の指標」ではなく「参考指標のひとつ」として使う<br>
+          ④ 研究助成申請・就職で求められることがある
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">h-index を知ることは「研究者としての自分の将来設計」の第一歩</div>
+</div>
+
+<!-- S10: クイズ1 h-index -->
+<div class="slide slide-quiz" id="s10">
+  <span class="tag an" style="background:var(--scomed);color:#1a0500;">QUIZ 1</span>
+  <h2 class="stitle an" style="border-color:var(--scomed);">h-index クイズ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;" id="q1">
+    <div class="quiz-q an">
+      研究者Aの論文を被引用数の多い順に並べると<br>
+      35回・22回・15回・<strong style="color:var(--scomed);">8回</strong>・3回・1回だった。<br>
+      研究者Aの h-index はいくつか？
+    </div>
+    <div class="qopts an">
+      <button class="qbtn" onclick="ansQ1(this,'a')">A）h = 3</button>
+      <button class="qbtn" onclick="ansQ1(this,'b')">B）h = 4</button>
+      <button class="qbtn" onclick="ansQ1(this,'c')">C）h = 5</button>
+      <button class="qbtn" onclick="ansQ1(this,'d')">D）h = 6</button>
+    </div>
+    <div class="qfb an" id="q1fb"></div>
+  </div>
+</div>
+
+<!-- S11: CiteScoreとは -->
+<div class="slide slide-light" id="s11">
+  <span class="tag tag-sco an">雑誌評価</span>
+  <h2 class="stitle an">CiteScore：雑誌の「格」を測る指標</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-sco an" style="font-size:.84rem;">
+      📰 <strong>CiteScore</strong>（Scopus）：雑誌に掲載された論文が<strong>平均何回引用されているか</strong>を示す指標。Elsevier が毎年公表。雑誌の「影響力・格」を数値化したもの。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>🧮 計算式</strong><br>
+          直近4年間に掲載された論文が<br>
+          直近4年間に受け取った引用数の合計<br>
+          ÷ 直近4年間の掲載論文数<br><br>
+          例：4年間で200論文を掲載し<br>
+          1,600回引用された雑誌の CiteScore = <strong style="color:var(--sco);">8.0</strong>
+        </div>
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>📊 医学系雑誌の目安</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>1〜5</strong>：地域誌・専門分野誌</li>
+            <li><strong>5〜15</strong>：主要な専門誌</li>
+            <li><strong>15〜50</strong>：一流誌（NEJM・Lancet など）</li>
+            <li><strong>50以上</strong>：超一流誌（Nature・Science など）</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ IF（Impact Factor）との違い</strong><br>
+          IF（Clarivate 社 Web of Science）：直近<strong>2年間</strong>の引用を計算<br>
+          CiteScore（Scopus）：直近<strong>4年間</strong>の引用を計算<br><br>
+          CiteScore の方が長期的な傾向を反映し、新興分野に有利な傾向がある。どちらも「一つの参考指標」。
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ 使い方</strong><br>
+          論文を投稿するとき：「この雑誌の格はどれくらいか？」を CiteScore で確認。自分の研究の重要度に合った雑誌を選ぶ。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S12: Impact Factor vs CiteScore -->
+<div class="slide slide-card" id="s12">
+  <span class="tag tag-amber an">雑誌評価 比較</span>
+  <h2 class="stitle an">IF vs CiteScore：どちらを信じるか</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>項目</th><th style="color:#336699;">Impact Factor（IF）</th><th style="color:var(--sco);">CiteScore</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>提供元</td><td>Clarivate（Web of Science）</td><td>Elsevier（Scopus）</td></tr>
+          <tr><td>計算期間</td><td>直近2年間</td><td>直近4年間</td></tr>
+          <tr><td>無料公開</td><td>❌（要契約）</td><td>✅（無料で確認可）</td></tr>
+          <tr><td>対象雑誌数</td><td>約22,000誌</td><td>約27,000誌（多い）</td></tr>
+          <tr><td>新興分野</td><td>やや不利</td><td>比較的有利</td></tr>
+          <tr><td>歴史・権威</td><td>1970年代〜（老舗）</td><td>2016年〜（新参）</td></tr>
+          <tr><td>研究助成審査</td><td>よく使われる</td><td>普及中</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-sco an" style="font-size:.82rem;">
+      💡 <strong>実践的なアドバイス</strong>：IF は歴史があり権威ある指標。CiteScore は無料で確認できる。<br>
+      両方を参照して、投稿先や引用論文の「格」を判断するのが現実的。<strong>どちらも「一つの参考指標」であり絶対的な評価基準ではない</strong>ことを常に念頭に。
+    </div>
+    <div class="card-warn an" style="font-size:.82rem;">
+      ⚠️ <strong>「高IF誌 = 正しい論文」ではない</strong>：Lancet・NEJM でも撤回論文は存在する。雑誌の格で論文の質を判断するのは危険。批判的吟味が常に必要。
+    </div>
+  </div>
+</div>
+
+<!-- S13: Scopusの検索機能 -->
+<div class="slide slide-light" id="s13">
+  <span class="tag tag-sco an">検索機能</span>
+  <h2 class="stitle an">Scopus の検索機能：PubMed と何が違うか</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-sco an" style="font-size:.83rem;">
+      🔍 <strong>Scopusの検索</strong>：フリーワード検索が中心。MeSHのような統制語彙はない。その代わり<strong>分野横断・引用追跡・著者分析</strong>が強力。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>🔎 基本検索フィールド</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><code class="pill-l">ALL</code>：全フィールド検索（デフォルト）</li>
+            <li><code class="pill-l">TITLE</code>：タイトルのみ</li>
+            <li><code class="pill-l">TITLE-ABS-KEY</code>：タイトル・抄録・キーワード</li>
+            <li><code class="pill-l">AUTH</code>：著者名</li>
+            <li><code class="pill-l">AFIL</code>：所属機関</li>
+            <li><code class="pill-l">SRCTITLE</code>：雑誌名</li>
+          </ul>
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ Scopus 検索式の例</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>AND / OR / NOT はPubMedと同じ</li>
+            <li>フレーズは <code class="pill-l">"blood pressure"</code> でクォート</li>
+            <li>ワイルドカード：<code class="pill-l">diabet*</code>（diabetic, diabetes…）</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>⭐ Scopus 独自の強力な検索</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>Author Search</strong>：著者の全論文・h-index・被引用数を一括表示</li>
+            <li><strong>Affiliation Search</strong>：機関別の研究実績を俯瞰</li>
+            <li><strong>Source Search</strong>：雑誌別の論文・CiteScore</li>
+            <li><strong>Cited by</strong>：前方引用の追跡（最大の強み）</li>
+          </ul>
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ 医学専門文献には PubMed が上</strong><br>
+          MeSH がない分、医学専門文献検索の精度は PubMed に劣る。<br>
+          SR・メタ解析の文献検索には PubMed + 医中誌を使い、Scopusは引用分析に使う。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S14: 前方引用の実践 -->
+<div class="slide slide-dark" id="s14">
+  <span class="tag tag-sco an">前方引用</span>
+  <h2 class="stitle an">前方引用の追跡：「この研究はその後どうなったか」</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="an" style="font-size:.87rem;color:#e2e8f0;line-height:1.7;">
+      前方引用 = ある論文を引用している<strong style="color:var(--scomed);">新しい論文を探す</strong>機能。PubMedではできない。<strong style="color:var(--amber);">Scopusの最大の強み</strong>。
+    </div>
+    <div class="an">
+      <div class="step-flow" style="justify-content:center;">
+        <div class="step-box" style="background:var(--sco);">核心論文を発見</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">「Cited by N」をクリック</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">引用論文一覧</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">最新の発展を追跡</div>
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-dark" style="font-size:.82rem;border-color:var(--sco);">
+        <strong style="color:var(--scomed);">🔮 前方引用の使い方</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>landmark paper（古典的名著）から最新研究へたどる</li>
+          <li>自分の研究に関連する<strong>最新の発展</strong>を網羅的に把握</li>
+          <li>スノーボール法の「未来方向」として活用</li>
+          <li>SR・MA の文献収集（後方 + 前方で完全網羅）</li>
+        </ul>
+      </div>
+      <div class="card-dark" style="font-size:.82rem;border-color:#336699;">
+        <strong style="color:#66aadd;">📖 スノーボール法の完成形</strong><br><br>
+        <div style="text-align:center;color:#e2e8f0;font-size:.8rem;line-height:2;">
+          核心論文を1本発見<br>
+          ↑ <span style="color:#66aadd;">後方引用（PubMed）</span><br>
+          過去の基礎研究をたどる<br>
+          ↓ <span style="color:var(--scomed);">前方引用（Scopus）</span><br>
+          その後の発展をたどる<br>
+          → 文献調査の完成！
+        </div>
+      </div>
+    </div>
+    <div class="hl an">「過去を知る」と「未来を追う」――両方揃って真の網羅性</div>
+  </div>
+</div>
+
+<!-- S15: クイズ2 -->
+<div class="slide slide-quiz" id="s15">
+  <span class="tag an" style="background:var(--scomed);color:#1a0500;">QUIZ 2</span>
+  <h2 class="stitle an" style="border-color:var(--scomed);">引用分析クイズ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;" id="q2">
+    <div class="quiz-q an">
+      卒業論文で「2型糖尿病の運動療法」をテーマにしている。<br>
+      2010年に発表された重要な原著論文を見つけた。<br>
+      「その後の研究がどう発展したか」を調べるのに<br>
+      最も適したアクションはどれか？
+    </div>
+    <div class="qopts an">
+      <button class="qbtn" onclick="ansQ2(this,'a')">A）PubMedでその論文の著者名を検索する</button>
+      <button class="qbtn" onclick="ansQ2(this,'b')">B）ScopusでこのでこのPMIDを検索し「Cited by」から前方引用をたどる</button>
+      <button class="qbtn" onclick="ansQ2(this,'c')">C）その論文のReference（参考文献）リストをたどる</button>
+      <button class="qbtn" onclick="ansQ2(this,'d')">D）UpToDateで「2型糖尿病 運動療法」を検索する</button>
+    </div>
+    <div class="qfb an" id="q2fb"></div>
+  </div>
+</div>
+
+<!-- S16: Author Profile -->
+<div class="slide slide-light" id="s16">
+  <span class="tag tag-sco an">著者分析</span>
+  <h2 class="stitle an">Author Profile：研究者の「実績カルテ」</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-sco an" style="font-size:.84rem;">
+      👤 <strong>Author Profile</strong>：Scopus に収録された研究者の論文・引用数・h-index を一覧表示するページ。ORCID と連携すると自動で更新される。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📊 表示される情報</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>h-index</strong>（Scopus ベース）</li>
+            <li><strong>総被引用数</strong></li>
+            <li><strong>論文数・共著者数</strong></li>
+            <li>年別の論文数グラフ</li>
+            <li>分野別の被引用数分布</li>
+            <li>共著者ネットワーク</li>
+          </ul>
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>🎯 使い方</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>研究室選び：教員の実績を客観的に確認</li>
+            <li>査読者・共同研究者の評価</li>
+            <li>論文の著者がどんな研究者か確認</li>
+            <li>自分の将来の ORCID プロフィールの参考に</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>🔗 ORCIDとの連携</strong><br>
+          ORCID（Vol.1 で取得したID！）と Scopus を連携すると：<br>
+          • 論文が自動でプロフィールに追加される<br>
+          • 同姓同名の別人と区別される<br>
+          • 研究助成申請・国際共同研究に活用できる
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ Author Profile の注意点</strong><br>
+          • 同姓同名が1人にまとまる誤りが起きることがある<br>
+          • 収録外の雑誌の論文は反映されない<br>
+          • ORCID で本人確認すると精度が上がる
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S17: Affiliation分析 -->
+<div class="slide slide-card" id="s17">
+  <span class="tag tag-sco an">機関分析</span>
+  <h2 class="stitle an">機関（Affiliation）分析：大学・研究所の実力を測る</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-sco an" style="font-size:.84rem;">
+      🏛️ <strong>Affiliation Search</strong>：特定の大学・病院・研究所から発表された論文の実績を俯瞰できる機能。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📈 分かること</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>機関全体の論文数・被引用数</li>
+            <li>強い研究分野の特定</li>
+            <li>トップ研究者のリスト</li>
+            <li>国際共同研究の相手国・機関</li>
+            <li>年別の研究活動の推移</li>
+          </ul>
+        </div>
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>🎯 学生にとっての使い方</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>大学院進学先の研究力を比較</li>
+            <li>海外留学先・共同研究先の選定</li>
+            <li>自分の所属機関の強みを把握</li>
+            <li>競合機関との比較分析</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>🌍 国別・機関別ランキング</strong><br>
+          SCImago（Scopus データ基盤）：<br>
+          <span class="mono" style="font-size:.76rem;color:var(--sco);">www.scimagojr.com</span><br><br>
+          無料で国・機関・雑誌のランキングを閲覧できる。日本の大学の国際的な位置づけを確認するのに便利。
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ ランキングの限界</strong><br>
+          論文数・引用数は「量・影響力」の一側面。教育の質・臨床力・社会貢献は数値化されていない。数字だけで機関を評価しすぎないこと。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S18: Web of Scienceとの比較 -->
+<div class="slide slide-dark" id="s18">
+  <span class="tag tag-amber an">比較</span>
+  <h2 class="stitle an">Scopus vs Web of Science：引用分析の2大横綱</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an">
+      <table class="cmp-table" style="background:rgba(255,255,255,.04);">
+        <thead>
+          <tr><th>項目</th><th style="color:var(--scomed);">Scopus</th><th style="color:#66aadd;">Web of Science（WoS）</th></tr>
+        </thead>
+        <tbody style="color:#e2e8f0;">
+          <tr><td style="color:#e2e8f0;">運営</td><td style="color:#e2e8f0;">Elsevier</td><td style="color:#e2e8f0;">Clarivate</td></tr>
+          <tr><td style="color:#e2e8f0;">収録雑誌数</td><td style="color:var(--scomed);">約27,000誌（多い）</td><td style="color:#e2e8f0;">約22,000誌</td></tr>
+          <tr><td style="color:#e2e8f0;">雑誌評価指標</td><td style="color:var(--scomed);">CiteScore</td><td style="color:#e2e8f0;">Impact Factor（IF）</td></tr>
+          <tr><td style="color:#e2e8f0;">h-index</td><td style="color:#e2e8f0;">提供あり</td><td style="color:#e2e8f0;">提供あり</td></tr>
+          <tr><td style="color:#e2e8f0;">歴史</td><td style="color:#e2e8f0;">2004年〜</td><td style="color:#66aadd;">1960年代〜（老舗）</td></tr>
+          <tr><td style="color:#e2e8f0;">研究助成での使用</td><td style="color:#e2e8f0;">普及中</td><td style="color:#66aadd;">長年の実績（科研費等）</td></tr>
+          <tr><td style="color:#e2e8f0;">インターフェース</td><td style="color:var(--scomed);">モダン・使いやすい</td><td style="color:#e2e8f0;">やや複雑</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:var(--sco);">
+      🎯 <strong style="color:var(--scomed);">使い分け</strong>：機関によって契約しているDBが違う。<br>
+      日本の科研費など研究助成では WoS ベースの IF を求められることが多い。Scopus の CiteScore は近年普及が進んでいる。<strong>両方使えると理想的。</strong>
+    </div>
+  </div>
+  <div class="hl an">どちらも「論文の影響力を数値化する」という同じ目標を持つ道具</div>
+</div>
+
+<!-- S19: 豆知識 -->
+<div class="slide slide-sco" id="s19">
+  <span class="tag an" style="background:var(--scomed);color:#1a0500;">知ってた？</span>
+  <h2 class="stitle an">引用分析のちょっと面白い話</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:var(--sco);min-width:3rem;">🏆</div>
+      <div class="row-body" style="color:#e2e8f0;">最も引用された医学論文のひとつは「CONSORT Statement」（RCTの報告ガイドライン）。<strong style="color:var(--scomed);">被引用数：数万回</strong>。方法論の論文が内容の論文より引用されることも多い</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#c2410c;min-width:3rem;">😮</div>
+      <div class="row-body" style="color:#e2e8f0;">Wakefield の「ワクチンと自閉症」論文（Lancet, 1998）は撤回後も<strong style="color:#f87171;">批判的引用</strong>で被引用数が増え続けた。引用数 ≠ 信頼性を示す典型例</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#2e7d32;min-width:3rem;">🔬</div>
+      <div class="row-body" style="color:#e2e8f0;">ノーベル医学・生理学賞受賞者の h-index の平均は<strong style="color:#4ade80;">約57</strong>（Nature 調査）。ただし受賞者で h-index が低い例もあり、h-index は万能ではない</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#7c3aed;min-width:3rem;">📈</div>
+      <div class="row-body" style="color:#e2e8f0;">COVID-19 関連論文は2020〜2021年に爆発的に増加し、引用数の記録を更新。<strong style="color:#d2a8ff;">科学の緊急動員</strong>が可視化された歴史的な例</div>
+    </div>
+  </div>
+  <div class="hl an">「数字で見る科学の歴史」——引用分析は科学の地図を描く</div>
+</div>
+
+<!-- S20: 研究評価の倫理 -->
+<div class="slide slide-dark" id="s20">
+  <span class="tag tag-red an">倫理・注意</span>
+  <h2 class="stitle an">研究評価指標の使い方と限界：数字に騙されるな</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#c62828;min-width:100px;">自己引用問題</div>
+      <div class="cr-arr" style="background:#1a0808;color:#f87171;">!</div>
+      <div class="cr-body" style="background:#1a0808;color:#e2e8f0;">自分の論文を自分の新しい論文で引用して h-index を上げる行為。過度な自己引用は研究倫理上問題。Scopus は自己引用除外フィルターを提供</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#b45309;min-width:100px;">IF ゲーム</div>
+      <div class="cr-arr" style="background:#1a1200;color:#fbbf24;">!</div>
+      <div class="cr-body" style="background:#1a1200;color:#e2e8f0;">「IF の高い雑誌に載れば良い」という価値観。研究の本質より掲載誌の格を優先すると、科学的誠実さが失われる危険がある</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#1565c0;min-width:100px;">分野バイアス</div>
+      <div class="cr-arr" style="background:#0d1a2a;color:#60a5fa;">!</div>
+      <div class="cr-body" style="background:#0d1a2a;color:#e2e8f0;">基礎医学・大規模臨床分野は引用数が多くなりやすい。希少疾患・医療政策・臨床教育分野は不利。数値の比較は同分野内で行うべき</div>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:var(--amber);">
+      📜 <strong style="color:var(--amber);">サンフランシスコ宣言（DORA）</strong>：2013年、「研究者の評価に IF を使うな」という宣言。多くの大学・研究機関・助成機関が署名。Scopus・WoS の指標も「補助的参考資料」として使うべきという潮流がある。
+    </div>
+    <div class="hl an">「数字は現実の一側面を映す鏡。鏡を現実と混同してはいけない」</div>
+  </div>
+</div>
+
+<!-- S21: 実践：Scopusで文献検索 -->
+<div class="slide slide-code" id="s21">
+  <span class="tag tag-sco an">実践</span>
+  <h2 class="stitle an">Scopus で実際に検索する</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="an" style="font-size:.82rem;color:#8b949e;">テーマ：「高齢者の心不全に対する運動療法の効果」を Scopus で検索する</div>
+    <div class="cb an">
+      <div class="cb-head">
+        <div class="dot" style="background:#ff5f57;"></div>
+        <div class="dot" style="background:#febc2e;"></div>
+        <div class="dot" style="background:#28c840;"></div>
+        <div class="cb-lang">Scopus 検索式</div>
+      </div>
+      <div class="cb-body"><code><span class="cm">-- Scopus の TITLE-ABS-KEY フィールド検索</span>
+TITLE-ABS-KEY (
+  (<span class="str">"heart failure"</span> OR <span class="str">"cardiac failure"</span>)
+  AND
+  (<span class="str">"exercise therapy"</span> OR <span class="str">"exercise training"</span>
+   OR <span class="str">"physical rehabilitation"</span>)
+  AND
+  (<span class="str">"elderly"</span> OR <span class="str">"aged"</span> OR <span class="str">"older adults"</span>)
+)
+AND PUBYEAR > 2018  <span class="cm">-- 2019年以降</span>
+AND DOCTYPE (ar)    <span class="cm">-- 原著論文のみ（article）</span>
+AND LANGUAGE (english)
+
+<span class="cm">-- 結果を「Cited by: highest」でソート</span>
+<span class="cm">→ 最も引用された重要論文を優先表示</span></code></div>
+    </div>
+    <div class="card-dark an" style="font-size:.8rem;border-color:var(--sco);">
+      💡 <strong style="color:var(--scomed);">ポイント</strong>：<code class="pill">TITLE-ABS-KEY</code> はタイトル・抄録・著者キーワードを同時検索。MeSHがない分、フリーワードとそのバリエーションを OR で幅広く拾う必要がある。<br>
+      結果は「Cited by」でソートすることで、<strong>重要な論文を優先的に確認</strong>できる。
+    </div>
+  </div>
+</div>
+
+<!-- S22: 卒論での活用 -->
+<div class="slide slide-card" id="s22">
+  <span class="tag tag-amber an">実践シナリオ</span>
+  <h2 class="stitle an">卒業論文での Scopus 活用：4ステップ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--sco);">①</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>テーマの核心論文を見つける</strong>：PubMed で高被引用の landmark paper を特定 → Scopus で論文詳細を確認して被引用数を把握</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:#c2410c;">②</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>前方引用で最新研究を把握</strong>：Scopus の「Cited by」から核心論文以降の発展を網羅的にたどる。後方引用（PubMed）と合わせてスノーボール法を完成させる</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--amber);">③</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>著者・雑誌の信頼性を確認</strong>：著者の h-index・所属・専門分野、雑誌の CiteScore を確認。「どのレベルの研究者がどのレベルの雑誌に発表したか」を把握する</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--green);">④</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>投稿先の選定（将来のために）</strong>：自分のテーマと関連する雑誌の CiteScore を Scopus で確認。将来の論文投稿先のリストを今から作っておく</div>
+    </div>
+    <div class="card-sco an" style="font-size:.82rem;">
+      ✅ <strong>卒論で Scopus を使うメリット</strong>：「重要な論文を優先的に読める」「最新の発展まで網羅できる」「使った文献の質・信頼性を客観的に説明できる」
+    </div>
+  </div>
+</div>
+
+<!-- S23: 四刀流の完成 -->
+<div class="slide slide-dark" id="s23">
+  <span class="tag tag-amber an">四刀流戦略</span>
+  <h2 class="stitle an">四刀流の完成：PubMed + 医中誌 + UpToDate + Scopus</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.4rem;">
+        <div style="background:rgba(51,102,153,.25);border:1px solid #336699;border-radius:8px;padding:.7rem;font-size:.8rem;">
+          <div style="font-weight:900;color:#66aadd;margin-bottom:.3rem;">🔵 PubMed</div>
+          国際医学論文を<strong style="color:#fff;">探す</strong><br>MeSH・検索式が強力
+        </div>
+        <div style="background:rgba(46,125,50,.25);border:1px solid #2e7d32;border-radius:8px;padding:.7rem;font-size:.8rem;">
+          <div style="font-weight:900;color:#81c784;margin-bottom:.3rem;">🟢 医中誌</div>
+          日本語論文を<strong style="color:#fff;">探す</strong><br>シソーラス・国内エビデンス
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.4rem;">
+        <div style="background:rgba(107,33,168,.25);border:1px solid #6B21A8;border-radius:8px;padding:.7rem;font-size:.8rem;">
+          <div style="font-weight:900;color:#a855f7;margin-bottom:.3rem;">🟣 UpToDate</div>
+          臨床の答えを<strong style="color:#fff;">素早く得る</strong><br>GRADE・意思決定支援
+        </div>
+        <div style="background:rgba(212,80,10,.25);border:1px solid var(--sco);border-radius:8px;padding:.7rem;font-size:.8rem;">
+          <div style="font-weight:900;color:var(--scomed);margin-bottom:.3rem;">🟠 Scopus</div>
+          論文の影響力を<strong style="color:#fff;">評価する</strong><br>引用分析・h-index・前方引用
+        </div>
+      </div>
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.4rem;">
+      <div class="row" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);">
+        <div class="row-lbl" style="background:#1565c0;font-size:.68rem;min-width:5.5rem;">文献調査・SR</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.8rem;">PubMed + 医中誌（必須）→ Scopus で前方引用・重要度評価</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);">
+        <div class="row-lbl" style="background:#6B21A8;font-size:.68rem;min-width:5.5rem;">臨床現場</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.8rem;">UpToDate（第一選択）→ 根拠確認に PubMed</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);">
+        <div class="row-lbl" style="background:var(--sco);font-size:.68rem;min-width:5.5rem;">研究評価</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.8rem;">Scopus（h-index・CiteScore）→ WoS（IF確認）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S24: アクセス方法 -->
+<div class="slide slide-light" id="s24">
+  <span class="tag tag-sco an">アクセス</span>
+  <h2 class="stitle an">Scopus へのアクセスと無料代替手段</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-sco an" style="font-size:.83rem;">
+      🌐 <strong>URL：</strong><span class="mono" style="color:var(--sco);font-size:.82rem;">https://www.scopus.com/</span><br>
+      学内ネットワーク / VPN で自動認証（機関契約の場合）
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>🏫 機関契約でアクセス</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>多くの大学・研究機関が契約</li>
+            <li>学内Wi-Fi / VPN でアクセス</li>
+            <li>図書館サイトの「DB一覧」から</li>
+            <li>個人アカウント（無料）も作成可</li>
+          </ul>
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>👤 個人アカウント機能</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>検索履歴・アラートの保存</li>
+            <li>文献リストの管理</li>
+            <li>ORCID との連携</li>
+            <li>Author Profile のクレーム（自分の論文の確認）</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>💡 Scopus 未契約のときの代替手段</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>Google Scholar</strong>：無料・引用数・前方引用あり（精度は劣る）</li>
+            <li><strong>Semantic Scholar</strong>：無料・AI解析付きの引用DB</li>
+            <li><strong>SCImago</strong>：雑誌ランキング無料閲覧</li>
+            <li><strong>Dimensions</strong>：無料の引用・研究助成DB</li>
+          </ul>
+        </div>
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>📊 Google Scholar との比較</strong><br>
+          GS：無料・幅広い（プレプリント含む）・精度がばらつく<br>
+          Scopus：有料・厳選収録・引用分析が高精度<br>
+          → <strong>両方使うのが現実的</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S25: よくある失敗 -->
+<div class="slide slide-dark" id="s25">
+  <span class="tag tag-red an">よくある失敗</span>
+  <h2 class="stitle an">Scopus あるある：失敗と対策</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#c62828;min-width:100px;">h-indexで全て判断</div>
+      <div class="cr-arr" style="background:#1a0808;color:#f87171;">!</div>
+      <div class="cr-body" style="background:#1a0808;color:#e2e8f0;">分野・キャリア年数を無視して比較。h-indexだけで研究者・論文の優劣を断じない<br><strong style="color:#4ade80;">対策</strong>：同分野・同キャリア年数で比較。複数指標を参照する</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#b45309;min-width:100px;">IF高い＝正しい</div>
+      <div class="cr-arr" style="background:#1a1200;color:#fbbf24;">!</div>
+      <div class="cr-body" style="background:#1a1200;color:#e2e8f0;">NEJM・Lancetでも撤回論文はある。掲載誌の格で内容を判断しない<br><strong style="color:#4ade80;">対策</strong>：雑誌の格はあくまで参考。批判的吟味を常に行う</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#1565c0;min-width:100px;">被引用数＝正確</div>
+      <div class="cr-arr" style="background:#0d1a2a;color:#60a5fa;">!</div>
+      <div class="cr-body" style="background:#0d1a2a;color:#e2e8f0;">批判的引用・自己引用もカウントされる<br><strong style="color:#4ade80;">対策</strong>：被引用数は「注目度」の指標。内容の正確さとは別に評価する</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#7c3aed;min-width:100px;">Scopusだけで文献検索</div>
+      <div class="cr-arr" style="background:#0d0a1a;color:#a855f7;">!</div>
+      <div class="cr-body" style="background:#0d0a1a;color:#e2e8f0;">MeSHがない分、医学専門文献の精度はPubMedに劣る<br><strong style="color:#4ade80;">対策</strong>：文献検索はPubMed+医中誌。Scopusは引用分析・研究評価に使う</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#2e7d32;min-width:100px;">自己引用しすぎ</div>
+      <div class="cr-arr" style="background:#0d1a0d;color:#4ade80;">!</div>
+      <div class="cr-body" style="background:#0d1a0d;color:#e2e8f0;">h-index を上げようと自分の論文を無節操に引用するのは研究倫理上問題<br><strong style="color:#4ade80;">対策</strong>：必要な場合のみ引用。Scopusは自己引用除外フィルターで確認できる</div>
+    </div>
+  </div>
+</div>
+
+<!-- S26: 将来の研究者として -->
+<div class="slide slide-card" id="s26">
+  <span class="tag tag-teal an">将来へ</span>
+  <h2 class="stitle an">将来の研究者として：今から準備すること</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-sco" style="font-size:.8rem;">
+          <strong>🆔 今日できること</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>ORCID を取得する</strong>（Vol.1で解説）：研究者IDの基盤</li>
+            <li><strong>Scopus でORCIDを連携</strong>する：論文が自動追加</li>
+            <li>興味ある研究者の Author Profile を Scopus で見てみる</li>
+            <li>自分のテーマの CiteScore 上位雑誌をリストアップ</li>
+          </ul>
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📈 研究者になったときに役立つこと</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>科研費申請書に h-index・被引用数を記載</li>
+            <li>国際共同研究先の研究者の実績を Scopus で確認</li>
+            <li>論文投稿先を CiteScore で選定</li>
+            <li>自分の Author Profile を定期的にチェック</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>🌱 学生のうちに h-index を作るには？</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>症例報告を1本書いて投稿してみる</li>
+            <li>学会抄録を発表する</li>
+            <li>指導教員の論文の共著者に入れてもらう</li>
+            <li>学部生論文誌・学内紀要に投稿する</li>
+          </ul>
+          h-index = 1 でも「研究の経験がある」という証明になる
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>💡 大切な視点</strong><br>
+          h-index・IF・被引用数は「外から見た評価」。<br>
+          本当の研究力は「問いを立て、答えを出し、社会に届ける力」。<br>
+          数字はその一側面に過ぎない。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S27: チェックリスト -->
+<div class="slide slide-light" id="s27">
+  <span class="tag tag-green an">CHECKLIST</span>
+  <h2 class="stitle an">Vol.4 習得チェックリスト</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.4rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid var(--sco);">🔰 基本（今日できるようになること）</div>
+        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:.25rem;">
+          <div>☐ 大学図書館経由で Scopus にアクセスできる</div>
+          <div>☐ 論文を検索して被引用数を確認できる</div>
+          <div>☐ h-index の計算方法を説明できる</div>
+          <div>☐ 前方引用（Cited by）をたどれる</div>
+          <div>☐ CiteScore と Impact Factor の違いを説明できる</div>
+          <div>☐ Author Search で研究者プロフィールを確認できる</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.4rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid var(--amber);">🌟 発展（もう一歩進んだら）</div>
+        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:.25rem;">
+          <div>☐ ORCID と Scopus を連携した</div>
+          <div>☐ 自分のテーマの landmark paper を特定できた</div>
+          <div>☐ 前方引用・後方引用でスノーボール法を実践できた</div>
+          <div>☐ 興味ある雑誌の CiteScore を調べた</div>
+          <div>☐ 四刀流（PubMed・医中誌・UpToDate・Scopus）を使い分けられる</div>
+          <div>☐ 自分の将来の投稿候補雑誌リストを作った 🎉</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-sco an" style="font-size:.82rem;">
+      💪 <strong>今すぐできる課題</strong>：自分の卒論テーマ（または興味ある疾患）で Scopus を開き、最も引用されている論文を特定し、「Cited by」から前方引用の発展をたどってみよう！
+    </div>
+  </div>
+</div>
+
+<!-- S28: 次回予告 -->
+<div class="slide slide-card" id="s28">
+  <span class="tag tag-teal an">NEXT & FINAL</span>
+  <h2 class="stitle an">次回予告：Vol.5 その他のDB・総まとめ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="card-blue an" style="font-size:.84rem;">
+      📌 <strong>最終回 Vol.5 では</strong>：PubMed・医中誌・UpToDate・Scopus 以外の重要DBと、5回全体の「使い分け戦略」を完全整理する。
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.5rem;">
+      <div class="sumi">
+        <div class="sumi-num" style="background:#336699;">①</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>Cochrane Library</strong>：SR・メタ解析の聖地。エビデンスの頂点</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:#7c3aed;">②</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>ClinicalTrials.gov</strong>：進行中の臨床試験を探す。未発表データへのアクセス</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--amber);">③</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>Google Scholar・Semantic Scholar</strong>：無料ツールの賢い使い方と限界</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--green);">④</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>シリーズ完全まとめ</strong>：場面別・目的別の最強使い分けフローチャート</div>
+      </div>
+    </div>
+    <div class="an" style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-top:.2rem;">
+      <span style="background:#336699;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol1.html ✅</span>
+      <span style="background:#2E7D32;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol2.html ✅</span>
+      <span style="background:#6B21A8;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol3.html ✅</span>
+      <span style="background:var(--sco);color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol4.html ✅</span>
+      <span style="background:var(--amber);color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol5.html ← 次回</span>
+    </div>
+  </div>
+</div>
+
+<!-- S29: まとめ -->
+<div class="slide slide-sco" id="s29">
+  <span class="tag an" style="background:var(--scomed);color:#1a0500;">まとめ</span>
+  <h2 class="stitle an">Vol.4 で学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--sco);min-width:3rem;font-size:1.1rem;">①</div>
+        <div class="row-body" style="color:#e2e8f0;">Scopus は<strong style="color:var(--scomed);">世界最大の引用データベース</strong>。論文の「影響力」を数値で見られる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#c2410c;min-width:3rem;font-size:1.1rem;">②</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:var(--scomed);">h-index</strong>（量 × 質）・<strong style="color:var(--scomed);">被引用数</strong>（影響力）・<strong style="color:var(--scomed);">CiteScore</strong>（雑誌の格）の3指標が核心</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--amber);min-width:3rem;font-size:1.1rem;">③</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:var(--amber);">前方引用</strong>（Cited by）がScopus最大の強み。「この研究はその後どうなったか」を追跡できる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--green);min-width:3rem;font-size:1.1rem;">④</div>
+        <div class="row-body" style="color:#e2e8f0;">指標は<strong style="color:#4ade80;">「参考」</strong>に過ぎない。引用数が多い ≠ 正しい / h-indexが高い ≠ 優れた研究者</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--teal);min-width:3rem;font-size:1.1rem;">⑤</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:#66aadd;">ORCID + Scopus</strong> の連携で「研究者としての自分」を世界に発信する準備ができる</div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">「論文を探す」を超えて「論文の重力を読む」研究者になろう</div>
+</div>
+
+<!-- S30: 締め -->
+<div class="slide slide-dark" id="s30">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.6rem;">
+    <div class="an title-vol" style="font-size:.75rem;">Vol.4 / 5 完了</div>
+    <div class="an title-main" style="font-size:clamp(2rem,5vw,3.8rem);">
+      引用は<br>
+      <span style="color:var(--scomed);">知識の重力</span>だ<br>
+      <span style="color:var(--amber);">重力を読む者</span>が<br>科学を動かす
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.88rem;line-height:2;">
+      被引用数は「過去の影響力」<br>
+      あなたの論文が引用される日が<br>
+      <span style="color:var(--scomed);font-size:.82rem;">その積み上げはORCIDと共に始まる——今日から</span>
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.38);font-size:.8rem;line-height:1.9;">
+      大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+      <span style="font-size:.72rem;">質問・誤りの指摘、大歓迎です</span>
+    </div>
+  </div>
+  <div style="text-align:center;color:rgba(255,255,255,.22);font-size:.62rem;line-height:1.7;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.08);margin-top:.5rem;">
+    本資料はAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+    医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 30</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  const p = cur;
+  setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev');
+  slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
+}
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft') {e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) dx<0?go(cur+1):go(cur-1);
+},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
+
+/* Quiz 1: h-index */
+function ansQ1(btn, val) {
+  document.querySelectorAll('#q1 .qbtn').forEach(b=>b.disabled=true);
+  const fb = document.getElementById('q1fb');
+  if (val==='b') {
+    btn.classList.add('correct');
+    fb.textContent = '✅ 正解！ h = 4。論文1〜4はそれぞれ35・22・15・8回引用されており、4本すべてが4回以上引用されている。論文5は2回引用で5回に届かないため h = 4 が最大値。';
+    fb.style.color = '#4ade80';
+  } else if (val==='a') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ h = 3 だと「3本の論文が3回以上引用されている」。実際は4本が4回以上引用されているので h = 4 が正解。';
+    fb.style.color = '#fbbf24';
+  } else if (val==='c') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ h = 5 だと「5本の論文が5回以上引用されている」必要がある。論文5は2回しか引用されていないので条件を満たさない。正解は h = 4。';
+    fb.style.color = '#fbbf24';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ h = 6 だと「6本の論文が6回以上引用されている」必要があるが、論文は6本あっても論文5・6の引用数が足りない。正解は h = 4。';
+    fb.style.color = '#fbbf24';
+  }
+  fb.classList.add('show');
+}
+
+/* Quiz 2: 前方引用 */
+function ansQ2(btn, val) {
+  document.querySelectorAll('#q2 .qbtn').forEach(b=>b.disabled=true);
+  const fb = document.getElementById('q2fb');
+  if (val==='b') {
+    btn.classList.add('correct');
+    fb.textContent = '✅ 正解！ Scopus の「Cited by」機能を使うと、その論文を引用した後続の論文を時系列でたどれる。2010年以降の研究の発展を網羅的に把握できる。これが前方引用の使い方。';
+    fb.style.color = '#4ade80';
+  } else if (val==='a') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ 著者名検索はその研究者の他の論文を探すのに有効だが、「その論文がその後どう発展したか」を網羅的に調べることはできない。前方引用の方が適切。';
+    fb.style.color = '#fbbf24';
+  } else if (val==='c') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ Referenceをたどるのは「後方引用」——その論文が引用している過去の研究をたどること。「その後の発展」を追うには前方引用（Cited by）を使う。';
+    fb.style.color = '#fbbf24';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ UpToDateは臨床意思決定支援ツールで、特定の論文の発展を追跡する機能はない。「ある論文以降の研究動向」を網羅的に把握するにはScopusの前方引用が最適。';
+    fb.style.color = '#fbbf24';
+  }
+  fb.classList.add('show');
+}
+</script>
+</body>
+</html>

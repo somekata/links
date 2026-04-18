@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文献検索入門 Vol.5 ― データベースの統合と使い分けの極意</title>
+<style>
+/* ── lit_vol1.html から完全継承したベースCSS ────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A2342;
+  --teal:   #1B6CA8;
+  --ltblue: #E8F1FA;
+  --amber:  #E8873A;
+  --gray:   #64748B;
+  --lgray:  #F0F4F8;
+  --red:    #C0392B;
+  --green:  #1A7A4A;
+  --text:   #1E293B;
+  --white:  #FFFFFF;
+  /* Vol.5 統合カラー：知性を象徴するシルバーグレー */
+  --summary: #475569;
+  --sumlt:   #F1F5F9;
+  --sumdk:   #1E293B;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body {
+  width: 100%; height: 100%;
+  background: #0a0f1a;
+  font-family: 'Noto Sans JP', sans-serif;
+  overflow: hidden;
+}
+
+/* ── スライドアニメーション ────────────────────────────────────── */
+.deck { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: 2.2rem 3rem 1.8rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity .45s cubic-bezier(.4,0,.2,1), transform .45s cubic-bezier(.4,0,.2,1);
+  transform: translateX(60px);
+}
+.slide.active  { opacity: 1; pointer-events: all; transform: translateX(0); }
+.slide.prev    { opacity: 0; transform: translateX(-60px); }
+
+/* ── Vol.1 準拠のテーマスタイル ────────────────────────────────── */
+.slide-dark  { background: var(--navy); }
+.slide-light { background: var(--white); }
+.slide-card  { background: var(--lgray); }
+
+/* 装飾アクセント */
+.slide-dark::before {
+  content: ''; position: absolute; left: 0; top: 0;
+  width: 6px; height: 100%; background: var(--amber);
+}
+
+.title-vol {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 1.1rem; color: var(--amber);
+  display: block; margin-bottom: 0.5rem;
+}
+.title-main {
+  font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.1; color: var(--white);
+}
+.title-rule {
+  width: 80px; height: 6px; background: var(--amber); margin: 1.5rem 0;
+}
+.title-sub {
+  font-size: 1.2rem; opacity: 0.9; line-height: 1.6; max-width: 750px; color: var(--white);
+}
+.title-author {
+  position: absolute; bottom: 2rem; left: 3rem;
+  font-size: 0.9rem; font-weight: 700; color: var(--white); opacity: 0.7;
+}
+
+.stitle {
+  font-size: clamp(1.35rem, 2.8vw, 1.8rem);
+  font-weight: 900; color: var(--navy); line-height: 1.2;
+  margin-bottom: 1.2rem; padding-left: .8rem; border-left: 6px solid var(--summary);
+}
+
+.tag {
+  display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+  padding: 3px 12px; border-radius: 2px; color: #fff; margin-bottom: .8rem;
+  background: var(--summary); align-self: flex-start;
+}
+
+/* ── Vol.5 専用コンテンツパーツ（強化版） ────────────────────────── */
+.table-container { 
+  overflow-x: auto; background: white; border-radius: 8px; 
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 0.5rem;
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th, td { padding: 0.8rem; border: 1px solid #e2e8f0; text-align: left; }
+th { background: var(--sumlt); color: var(--navy); font-weight: 900; white-space: nowrap; }
+.db-name { font-weight: 900; color: var(--teal); }
+
+.flow-box {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;
+}
+.flow-card {
+  background: white; padding: 1rem; border-radius: 8px; border-top: 4px solid var(--summary);
+  position: relative; display: flex; flex-direction: column; gap: 0.5rem;
+}
+.flow-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+.flow-label { font-size: 0.7rem; font-weight: 700; color: var(--amber); }
+.flow-title { font-weight: 900; font-size: 0.9rem; color: var(--navy); }
+.flow-desc { font-size: 0.75rem; color: var(--gray); line-height: 1.4; }
+
+.summary-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;
+}
+.summary-item {
+  background: white; padding: 1.2rem; border-radius: 10px; border-left: 5px solid var(--amber);
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.summary-h { font-weight: 900; font-size: 1rem; color: var(--navy); }
+.summary-b { font-size: 0.85rem; color: var(--text); line-height: 1.5; }
+
+/* ── 共通ナビゲーション ────────────────────────────────────────── */
+.nav {
+  position: absolute; bottom: 1.8rem; right: 3rem;
+  display: flex; align-items: center; gap: 1.5rem;
+}
+.btn {
+  background: none; border: none; color: var(--gray);
+  cursor: pointer; font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: .85rem; transition: color .2s;
+}
+.btn:hover { color: var(--amber); }
+.progress { color: var(--gray); font-size: .75rem; font-weight: 700; letter-spacing: .2em; }
+.slide-dark .btn { color: rgba(255,255,255,0.6); }
+.slide-dark .progress { color: rgba(255,255,255,0.4); }
+</style>
+</head>
+<body>
+
+<div class="deck">
+  <section class="slide slide-dark active">
+    <div style="margin-top: auto; margin-bottom: auto;">
+      <span class="title-vol">Vol.5 - Final Stage</span>
+      <h1 class="title-main">文献検索入門<br>統合と使い分けの極意</h1>
+      <div class="title-rule"></div>
+      <p class="title-sub">
+        PubMed, 医中誌, UpToDate, Scopus。<br>
+        個別のツール習得を超え、目的から最適な経路を逆算する「真の検索技術」へ。
+      </p>
+    </div>
+    <p class="title-author">Created by Shimekata Shiro</p>
+  </section>
+
+  <section class="slide slide-light">
+    <span class="tag">COMPARISON MATRIX</span>
+    <h2 class="stitle">4大データベース横断比較</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>項目</th>
+            <th><span class="db-name">PubMed</span></th>
+            <th><span class="db-name">医中誌Web</span></th>
+            <th><span class="db-name">UpToDate</span></th>
+            <th><span class="db-name">Scopus</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>主な収録範囲</strong></td>
+            <td>世界の生物医学論文</td>
+            <td>国内の医学・歯学・薬学</td>
+            <td>二次情報（エビデンス要約）</td>
+            <td>全分野の科学論文・引用</td>
+          </tr>
+          <tr>
+            <td><strong>検索言語</strong></td>
+            <td>英語</td>
+            <td>日本語</td>
+            <td>英語（自動翻訳可）</td>
+            <td>英語（一部多言語）</td>
+          </tr>
+          <tr>
+            <td><strong>統制語</strong></td>
+            <td>MeSH</td>
+            <td>医中誌シソーラス</td>
+            <td>（なし）</td>
+            <td>（複数分野対応）</td>
+          </tr>
+          <tr>
+            <td><strong>臨床的推奨</strong></td>
+            <td>△ (論文から判断)</td>
+            <td>△ (症例報告が豊富)</td>
+            <td>◎ (専門家による推奨)</td>
+            <td>× (分析・トレンド重視)</td>
+          </tr>
+          <tr>
+            <td><strong>強み</strong></td>
+            <td>世界のデファクト</td>
+            <td>日本の臨床現場に強い</td>
+            <td>意思決定の速さ</td>
+            <td>引用の繋がりを可視化</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="slide slide-light">
+    <span class="tag">DECISION FLOW</span>
+    <h2 class="stitle">「何から開くか？」目的別フロー</h2>
+    <div class="flow-box">
+      <div class="flow-card">
+        <span class="flow-icon">⚡</span>
+        <span class="flow-label">CLINICAL</span>
+        <h3 class="flow-title">今すぐ治療方針を</h3>
+        <p class="flow-desc">患者の前でエビデンスを知りたいなら <strong>UpToDate</strong>。GRADEを確認。</p>
+      </div>
+      <div class="flow-card">
+        <span class="flow-icon">🔬</span>
+        <span class="flow-label">GLOBAL RESEARCH</span>
+        <h3 class="flow-title">世界標準を知る</h3>
+        <p class="flow-desc">RCTやメタ分析を探すなら <strong>PubMed</strong>。MeSHで精緻に絞り込む。</p>
+      </div>
+      <div class="flow-card">
+        <span class="flow-icon">🗾</span>
+        <span class="flow-label">LOCAL JAPAN</span>
+        <h3 class="flow-title">日本での実態を</h3>
+        <p class="flow-desc">保険適用や国内の珍しい症例なら <strong>医中誌Web</strong>。副キーワードを活用。</p>
+      </div>
+      <div class="flow-card">
+        <span class="flow-icon">📈</span>
+        <span class="flow-label">ACADEMIC IMPACT</span>
+        <h3 class="flow-title">研究の発展性を</h3>
+        <p class="flow-desc">注目文献の被引用やh-index、新分野の概観なら <strong>Scopus</strong>。</p>
+      </div>
+    </div>
+    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--ltblue); border-radius: 6px; font-size: 0.85rem; line-height: 1.5;">
+      <strong>💡 最強の検索リレー：</strong><br>
+      ① <strong>UpToDate</strong> で全体像と推奨を確認 ➔ ② キー論文を <strong>PubMed</strong> で精読 ➔ ③ <strong>Scopus</strong> でその後の発展を追う
+    </div>
+  </section>
+
+  <section class="slide slide-card">
+    <span class="tag">SUMMARY CARDS</span>
+    <h2 class="stitle">全5回：文献検索の「黄金律」</h2>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-h">MeSH & Thesaurus</div>
+        <div class="summary-b">概念で検索せよ。表記の揺れを恐れず、統制語（MeSH/医中誌）で網羅性を担保する。</div>
+      </div>
+      <div class="summary-item" style="border-left-color: var(--teal);">
+        <div class="summary-h">Advanced Search</div>
+        <div class="summary-b">検索窓1つで済ませない。タグ（[Mesh]等）と論理演算（AND/OR）で式をビルドする。</div>
+      </div>
+      <div class="summary-item" style="border-left-color: var(--green);">
+        <div class="summary-h">Evidence Level</div>
+        <div class="summary-b">全ての論文は平等ではない。UpToDateの推奨度やGRADEを批判的吟味の指標にする。</div>
+      </div>
+      <div class="summary-item" style="border-left-color: var(--red);">
+        <div class="summary-h">Citation Network</div>
+        <div class="summary-b">「点」ではなく「線」で捉える。Scopusで引用関係を辿り、研究の「未来」と「過去」を繋ぐ。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide slide-dark">
+    <div style="margin-top: auto; margin-bottom: auto; text-align: center;">
+      <h2 style="color: var(--white); font-size: 3rem; font-weight: 900; margin-bottom: 1.5rem;">Happy Searching!</h2>
+      <p style="color: var(--white); font-size: 1.25rem; opacity: 0.8; line-height: 1.8;">
+        エビデンスを自在に操る力は、<br>目の前の患者と、医学の未来を救う力になります。
+      </p>
+      <div style="margin-top: 3rem;">
+        <p style="color: var(--amber); font-family: 'JetBrains Mono', monospace; font-weight: 700;">- MISSION COMPLETE -</p>
+      </div>
+    </div>
+    <p class="title-author">文献検索入門シリーズ 完</p>
+  </section>
+
+  <div class="nav">
+    <button class="btn" onclick="prevSlide()">PREV</button>
+    <span class="progress" id="progress">1 / 5</span>
+    <button class="btn" onclick="nextSlide()">NEXT</button>
+  </div>
+</div>
+
+<script>
+let current = 0;
+const slides = document.querySelectorAll('.slide');
+const progress = document.getElementById('progress');
+
+function update() {
+  slides.forEach((s, i) => {
+    s.classList.remove('active', 'prev');
+    if (i === current) s.classList.add('active');
+    if (i < current) s.classList.add('prev');
+  });
+  progress.textContent = `${current + 1} / ${slides.length}`;
+}
+
+function nextSlide() {
+  if (current < slides.length - 1) {
+    current++;
+    update();
+  }
+}
+
+function prevSlide() {
+  if (current > 0) {
+    current--;
+    update();
+  }
+}
+
+// キーボード操作対応
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+  if (e.key === 'ArrowLeft') prevSlide();
+});
+</script>
+
+</body>
+</html>

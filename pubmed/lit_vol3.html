@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文献検索入門 Vol.3 ― UpToDate 忙しい臨床家の最強の相棒</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A2342;
+  --teal:   #1B6CA8;
+  --ltblue: #E8F1FA;
+  --amber:  #E8873A;
+  --gray:   #64748B;
+  --lgray:  #F0F4F8;
+  --red:    #C0392B;
+  --green:  #1A7A4A;
+  --text:   #1E293B;
+  --white:  #FFFFFF;
+  /* UpToDate カラー：深紫・マゼンタ系 */
+  --utd:    #6B21A8;
+  --utdlt:  #F3E8FF;
+  --utddk:  #3B0764;
+  --utdmed: #A855F7;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body { width:100%; height:100%; background:#0a0f1a; font-family:'Noto Sans JP',sans-serif; overflow:hidden; }
+
+.deck { width:100vw; height:100vh; position:relative; overflow:hidden; }
+.slide {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  padding:2.2rem 3rem 1.8rem;
+  opacity:0; pointer-events:none;
+  transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);
+  transform:translateX(60px);
+}
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.prev   { opacity:0; transform:translateX(-60px); }
+
+.slide-dark  { background:var(--navy); }
+.slide-light { background:var(--white); }
+.slide-card  { background:var(--lgray); }
+.slide-code  { background:#0d1117; }
+.slide-quiz  { background:#100a1a; }
+.slide-utd   { background:var(--utddk); }
+
+.slide-dark::before,.slide-code::before,.slide-quiz::before,.slide-utd::before {
+  content:''; position:absolute; left:0; top:0; width:6px; height:100%;
+}
+.slide-dark::before  { background:var(--amber); }
+.slide-code::before  { background:var(--utd); }
+.slide-quiz::before  { background:var(--utdmed); }
+.slide-utd::before   { background:var(--utdmed); }
+
+.tag {
+  display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.08em;
+  padding:3px 12px; border-radius:2px; color:#fff; margin-bottom:.5rem; align-self:flex-start;
+}
+.tag-teal   { background:var(--teal); }
+.tag-amber  { background:var(--amber); }
+.tag-utd    { background:var(--utd); }
+.tag-purple { background:#7c3aed; }
+.tag-green  { background:var(--green); }
+.tag-red    { background:var(--red); }
+.tag-gray   { background:var(--gray); }
+
+.stitle {
+  font-size:clamp(1.35rem,2.8vw,2rem); font-weight:900; line-height:1.2; margin-bottom:1rem;
+  border-left:5px solid var(--amber); padding-left:.7rem;
+}
+.slide-dark  .stitle { color:var(--white); border-color:var(--amber); }
+.slide-utd   .stitle { color:var(--white); border-color:var(--utdmed); }
+.slide-light .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-card  .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-code  .stitle { color:var(--white); border-color:var(--utd); }
+.slide-quiz  .stitle { color:var(--white); border-color:var(--utdmed); }
+
+.title-main { font-size:clamp(2.5rem,6.5vw,4.8rem); font-weight:900; color:var(--white); letter-spacing:-.02em; line-height:1.05; text-align:center; }
+.title-vol  { display:inline-block; background:var(--utd); color:#fff; padding:2px 16px; border-radius:4px; font-size:clamp(.85rem,1.8vw,1.1rem); font-weight:900; letter-spacing:.06em; margin-bottom:.6rem; }
+.title-sub  { font-size:clamp(.85rem,1.6vw,1.05rem); color:rgba(255,255,255,.55); text-align:center; margin-top:.7rem; line-height:1.7; }
+.title-rule { width:240px; height:2px; background:var(--teal); margin:1rem auto; }
+
+.cb { background:#0d1117; border-radius:6px; overflow:hidden; font-family:'JetBrains Mono',monospace; box-shadow:0 4px 20px rgba(0,0,0,.45); }
+.cb-head { display:flex; align-items:center; gap:.45rem; padding:.45rem 1rem; background:#161b22; border-bottom:1px solid #30363d; }
+.dot { width:11px; height:11px; border-radius:50%; }
+.cb-lang { font-size:.7rem; color:#8b949e; letter-spacing:.06em; margin-left:auto; }
+.cb-body { padding:.85rem 1.2rem; overflow-x:auto; font-size:.8rem; line-height:1.75; }
+.cb-body code { color:#e6edf3; white-space:pre; }
+.cm { color:#8b949e; font-style:italic; }
+.tg { color:#7ee787; }
+.ok { color:#4ade80; }
+.er { color:#f87171; }
+.str { color:#a5d6ff; }
+.num { color:#79c0ff; }
+
+.row { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.55rem; }
+.row-lbl { min-width:2.6rem; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:700; color:#fff; padding:0 .7rem; white-space:nowrap; }
+.row-body { padding:.5rem .85rem; font-size:.84rem; color:var(--text); line-height:1.55; }
+.row-body strong { color:var(--navy); }
+.row-body code { font-family:'JetBrains Mono',monospace; font-size:.78rem; background:#f0f4f8; padding:1px 5px; border-radius:3px; color:#c0392b; }
+
+.cr { display:flex; align-items:stretch; border-radius:6px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.12); margin-bottom:.6rem; }
+.cr-lbl { min-width:110px; padding:.65rem .8rem; font-size:.8rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; text-align:center; }
+.cr-arr { background:#f0f4f8; display:flex; align-items:center; justify-content:center; padding:0 .5rem; color:var(--gray); font-size:1rem; }
+.cr-body { flex:1; background:var(--white); padding:.65rem .9rem; font-size:.83rem; color:var(--text); line-height:1.55; }
+.cr-body strong { color:var(--navy); }
+
+.card-dark  { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:.75rem 1rem; }
+.card-warn  { background:#FFF3E0; border-radius:6px; padding:.65rem 1rem; }
+.card-blue  { background:var(--ltblue); border-radius:6px; padding:.65rem 1rem; }
+.card-green { background:#ECFDF5; border-radius:6px; padding:.65rem 1rem; }
+.card-red   { background:#FEF2F2; border-radius:6px; padding:.65rem 1rem; }
+.card-utd   { background:var(--utdlt); border-radius:6px; padding:.65rem 1rem; }
+
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.85rem; }
+
+ul.bl { list-style:none; }
+ul.bl li { padding:.26rem 0 .26rem 1.3rem; position:relative; font-size:.85rem; color:var(--text); line-height:1.55; }
+ul.bl li::before { content:'▸'; position:absolute; left:0; color:var(--teal); font-size:.8rem; }
+.slide-dark ul.bl li  { color:#e2e8f0; }
+.slide-dark ul.bl li::before { color:var(--amber); }
+.slide-utd  ul.bl li  { color:#e2e8f0; }
+.slide-utd  ul.bl li::before { color:var(--utdmed); }
+.slide-code ul.bl li  { color:#e2e8f0; }
+.slide-code ul.bl li::before { color:var(--utd); }
+.slide-quiz ul.bl li  { color:#e2e8f0; }
+.slide-quiz ul.bl li::before { color:var(--utdmed); }
+ul.bl li code { font-family:'JetBrains Mono',monospace; font-size:.76rem; background:rgba(255,255,255,.12); padding:1px 5px; border-radius:3px; color:#a5d6ff; }
+.slide-light ul.bl li code,.slide-card ul.bl li code { background:#f0f4f8; color:#c0392b; }
+
+.sumi { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 8px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.6rem; }
+.sumi-num { min-width:54px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:900; color:#fff; font-family:'JetBrains Mono',monospace; }
+.sumi-body { padding:.6rem .9rem; font-size:.84rem; line-height:1.6; color:var(--text); }
+.sumi-body strong { color:var(--navy); }
+
+.quiz-q { font-size:clamp(.95rem,2vw,1.2rem); font-weight:700; color:#e2e8f0; margin-bottom:1.2rem; line-height:1.6; text-align:center; }
+.qopts { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; max-width:680px; margin:0 auto; }
+.qbtn {
+  background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.13);
+  color:#e2e8f0; border-radius:8px; padding:.85rem 1.1rem;
+  font-family:'Noto Sans JP',sans-serif; font-size:.85rem; font-weight:700;
+  cursor:pointer; text-align:left; line-height:1.45;
+  transition:background .2s,border-color .2s,transform .15s;
+}
+.qbtn:hover { background:rgba(168,85,247,.22); border-color:var(--utdmed); transform:translateY(-2px); }
+.qbtn.correct { background:rgba(26,122,74,.35); border-color:#4ade80; color:#4ade80; }
+.qbtn.wrong   { background:rgba(192,57,43,.25); border-color:#f87171; color:#f87171; }
+.qbtn:disabled { cursor:default; transform:none; }
+.qfb { text-align:center; margin-top:.9rem; font-size:.88rem; font-weight:700; min-height:1.4rem; opacity:0; transition:opacity .3s; line-height:1.6; }
+.qfb.show { opacity:1; }
+
+.hl { text-align:center; font-size:.92rem; font-weight:700; font-style:italic; color:var(--teal); margin-top:auto; padding-top:.7rem; }
+.slide-dark .hl { color:var(--amber); }
+.slide-utd  .hl { color:var(--utdmed); }
+.slide-code .hl { color:var(--utd); }
+.slide-quiz .hl { color:var(--utdmed); }
+
+.pill   { font-family:'JetBrains Mono',monospace; font-size:.8rem; background:#161b22; border:1px solid #30363d; color:#ffa657; padding:2px 8px; border-radius:4px; }
+.pill-l { font-family:'JetBrains Mono',monospace; font-size:.8rem; background:#f0f4f8; border:1px solid #dde3ea; color:#c0392b; padding:2px 8px; border-radius:4px; }
+
+.step-flow { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin:.5rem 0; }
+.step-box  { background:var(--navy); color:#fff; border-radius:6px; padding:.4rem .8rem; font-size:.78rem; font-weight:700; white-space:nowrap; }
+.step-arrow { color:var(--amber); font-size:1.1rem; font-weight:900; }
+
+.big-stat { text-align:center; }
+.big-stat .num-big { font-size:clamp(2.2rem,5vw,3.5rem); font-weight:900; color:var(--utdmed); font-family:'JetBrains Mono',monospace; }
+.big-stat .num-label { font-size:.8rem; color:rgba(255,255,255,.55); margin-top:.25rem; }
+
+/* GRADE バッジ */
+.grade-badge {
+  display:inline-flex; align-items:center; gap:.4rem;
+  border-radius:6px; padding:.35rem .75rem; font-size:.78rem; font-weight:700;
+}
+
+/* 比較テーブル */
+.cmp-table { width:100%; border-collapse:collapse; font-size:.78rem; }
+.cmp-table th { background:var(--navy); color:#fff; padding:.45rem .7rem; text-align:left; font-weight:700; }
+.cmp-table td { padding:.42rem .7rem; border-bottom:1px solid #e2e8f0; color:var(--text); vertical-align:top; line-height:1.5; }
+.cmp-table tr:nth-child(even) td { background:#f8fafc; }
+.cmp-table td:first-child { font-weight:700; color:var(--navy); white-space:nowrap; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
+.slide.active .an { animation:fadeUp .5s ease both; }
+.slide.active .an:nth-child(1){animation-delay:.05s;}
+.slide.active .an:nth-child(2){animation-delay:.12s;}
+.slide.active .an:nth-child(3){animation-delay:.19s;}
+.slide.active .an:nth-child(4){animation-delay:.26s;}
+.slide.active .an:nth-child(5){animation-delay:.33s;}
+.slide.active .an:nth-child(6){animation-delay:.40s;}
+.slide.active .an:nth-child(7){animation-delay:.47s;}
+.slide.active .an:nth-child(8){animation-delay:.54s;}
+
+#nav { position:fixed; bottom:1.2rem; right:1.5rem; display:flex; align-items:center; gap:.7rem; z-index:9999; }
+.nbtn { background:rgba(255,255,255,.13); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.22); color:#fff; width:40px; height:40px; border-radius:50%; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s,transform .15s; }
+.nbtn:hover { background:rgba(255,255,255,.28); transform:scale(1.08); }
+#sc { color:rgba(255,255,255,.65); font-size:.76rem; font-family:'JetBrains Mono',monospace; min-width:52px; text-align:center; }
+#bar { position:fixed; bottom:0; left:0; height:3px; background:var(--utd); transition:width .35s ease; z-index:9999; }
+#hint { position:fixed; bottom:1.25rem; left:1.5rem; color:rgba(255,255,255,.3); font-size:.67rem; font-family:'JetBrains Mono',monospace; pointer-events:none; }
+
+#volnav { position:fixed; top:0; left:0; right:0; display:flex; align-items:center; gap:.3rem; padding:.4rem 1rem; background:rgba(10,15,26,.82); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,255,255,.08); z-index:9998; }
+#volnav a { font-size:.68rem; font-weight:700; letter-spacing:.06em; padding:2px 10px; border-radius:3px; text-decoration:none; color:rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.1); transition:all .2s; }
+#volnav a:hover { color:#fff; border-color:rgba(255,255,255,.3); }
+#volnav a.current { color:#fff; background:var(--utd); border-color:var(--utd); }
+#volnav .series-label { font-size:.65rem; color:rgba(255,255,255,.3); letter-spacing:.1em; margin-right:.4rem; }
+
+.small { font-size:.75rem; color:var(--gray); }
+.mono  { font-family:'JetBrains Mono',monospace; }
+</style>
+</head>
+<body>
+
+<div id="volnav">
+  <span class="series-label">文献検索入門</span>
+  <a href="lit_vol1.html">Vol.1 PubMed</a>
+  <a href="lit_vol2.html">Vol.2 医中誌</a>
+  <a href="lit_vol3.html" class="current">Vol.3 UpToDate</a>
+  <a href="lit_vol4.html">Vol.4 Scopus</a>
+  <a href="lit_vol5.html">Vol.5 まとめ</a>
+</div>
+
+<div class="deck" id="deck">
+
+<!-- S1: タイトル -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4rem;margin-top:1.5rem;">
+    <div class="an" style="background:var(--utd);color:#fff;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">文献検索入門シリーズ</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 3 / 5</div>
+    <div class="an title-main">UpToDate<span style="color:var(--utdmed);font-size:55%;">入門</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">
+      忙しい臨床家の<span style="color:var(--amber);">最強の相棒</span><br>
+      臨床意思決定支援・GRADE・PubMedとの使い分けまで
+    </div>
+    <div class="an" style="margin-top:.6rem;display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;">
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">🏥 臨床意思決定支援</span>
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">📖 30スライド</span>
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">⭐ GRADE評価</span>
+    </div>
+  </div>
+</div>
+
+<!-- S2: これまでの復習 -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">REVIEW</span>
+  <h2 class="stitle an">Vol.1・2 の復習：論文を「探す」ツール</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="row an">
+      <div class="row-lbl" style="background:#336699;">Vol.1</div>
+      <div class="row-body"><strong>PubMed</strong>：英語医学論文3,600万件。MeSH・検索式・Alert を使いこなした</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#2E7D32;">Vol.2</div>
+      <div class="row-body"><strong>医中誌Web</strong>：日本語論文1,300万件。シソーラスでPubMedと並行検索した</div>
+    </div>
+    <div class="card-warn an" style="font-size:.84rem;margin-top:.3rem;">
+      ⚠️ <strong>PubMed・医中誌の共通の弱点</strong>：<br>
+      「個々の論文を探す」のは得意。でも「今目の前の患者に何をすべきか」という<strong>臨床の問いへの直接の答え</strong>は出してくれない。<br>
+      大量の論文から答えを見つけるには時間がかかる……<br>
+      → そこで登場するのが <strong style="color:var(--utd);">UpToDate</strong> だ！
+    </div>
+    <div class="card-utd an" style="font-size:.83rem;">
+      🔄 <strong>根本的な違い</strong>：PubMed・医中誌は「<strong>論文データベース</strong>」。UpToDateは「<strong>臨床意思決定支援システム</strong>」。目的が違う。両方必要。
+    </div>
+  </div>
+  <div class="hl an">「論文を探す力」と「答えを素早く引き出す力」——どちらも医師に必要</div>
+</div>
+
+<!-- S3: 今日学ぶこと -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-utd an">Vol.3 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--navy);">① UpToDateとは</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">何ができるツールか・誰が使うか・なぜ信頼できるか</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--utd);">② 使い方の基本</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">検索・トピック記事の構造・グラフィックス・計算ツール</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#7c3aed;">③ GRADEとは</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">推奨の強さ・エビデンスの質の読み方：1A・1B・2C…の意味</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);">④ 一次文献へ</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">UpToDate から PubMed 原著論文へのブリッジ。要約を超えて深掘りする</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--green);">⑤ 限界と注意点</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">UpToDate に頼りすぎる危険・更新頻度・日本の保険診療との差</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">⑥ 使い分け戦略</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">PubMed・医中誌・UpToDate を場面ごとに使い分ける</div>
+    </div>
+  </div>
+</div>
+
+<!-- S4: UpToDateとは -->
+<div class="slide slide-utd" id="s4">
+  <span class="tag an" style="background:var(--utdmed);color:#1a0033;">WHAT IS UpToDate?</span>
+  <h2 class="stitle an">UpToDate とは何か</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;">
+    <div class="g3 an">
+      <div class="big-stat">
+        <div class="num-big">11,000<span style="font-size:50%;">+</span></div>
+        <div class="num-label">トピック記事数</div>
+      </div>
+      <div class="big-stat">
+        <div class="num-big">7,100<span style="font-size:50%;">+</span></div>
+        <div class="num-label">執筆・監修医師数</div>
+      </div>
+      <div class="big-stat">
+        <div class="num-big">180<span style="font-size:50%;">ヵ国+</span></div>
+        <div class="num-label">利用国数</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.5rem;" class="an">
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--utd);min-width:4rem;font-size:.7rem;">正体</div>
+        <div class="row-body" style="color:#e2e8f0;">Wolters Kluwer 社（米国）が提供する<strong style="color:var(--utdmed);">臨床意思決定支援システム（CDSS）</strong>。「今この患者に何をすべきか」への答えを提示する</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--utd);min-width:4rem;font-size:.7rem;">中身</div>
+        <div class="row-body" style="color:#e2e8f0;">専門家が最新エビデンスをまとめた「<strong style="color:var(--utdmed);">トピック記事</strong>」の集積。PubMed論文をもとに、専門医が解釈・推奨を提示</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--utd);min-width:4rem;font-size:.7rem;">費用</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:#f87171;">有料（機関契約・個人契約）</strong>。多くの大学病院・医学部が契約。学内ネットワーク / VPN でアクセス</div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">UpToDate は「世界中の専門医の知恵を24時間呼び出せる」ツール</div>
+</div>
+
+<!-- S5: なぜ信頼できるか -->
+<div class="slide slide-dark" id="s5">
+  <span class="tag tag-amber an">信頼性</span>
+  <h2 class="stitle an">なぜ UpToDate は信頼できるのか</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--utd);min-width:90px;">専門家執筆</div>
+      <div class="cr-arr" style="background:#0d0a1a;color:var(--utdmed);">→</div>
+      <div class="cr-body" style="background:#0d0a1a;color:#e2e8f0;">各トピックは該当分野の専門医が執筆し、別の専門医が<strong style="color:var(--utdmed);">peer review（査読）</strong>する。一般のまとめサイトとは次元が違う</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#7c3aed;min-width:90px;">継続更新</div>
+      <div class="cr-arr" style="background:#0d0a1a;color:#a855f7;">→</div>
+      <div class="cr-body" style="background:#0d0a1a;color:#e2e8f0;">重要な新論文が出ると<strong style="color:#d2a8ff;">数週間以内に更新</strong>される。教科書のように「5年前の情報」ではない</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--green);min-width:90px;">GRADE評価</div>
+      <div class="cr-arr" style="background:#0a180a;color:#4ade80;">→</div>
+      <div class="cr-body" style="background:#0a180a;color:#e2e8f0;">全推奨に<strong style="color:#4ade80;">GRADE（根拠の質 + 推奨の強さ）</strong>が明示される。「なぜそう言えるのか」の根拠が透明</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);min-width:90px;">一次文献リンク</div>
+      <div class="cr-arr" style="background:#1a0f00;color:var(--amber);">→</div>
+      <div class="cr-body" style="background:#1a0f00;color:#e2e8f0;">推奨の根拠となった<strong style="color:var(--amber);">PubMed論文へのリンク</strong>が埋め込まれている。「要約だけ読む」か「原著まで遡る」か選べる</div>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:var(--utd);">
+      📊 <strong style="color:var(--utdmed);">エビデンス</strong>：UpToDate を導入した病院では、患者の転帰改善・在院日数短縮が報告されている（Wolters Kluwer 社の調査より）。米国では多くの病院で「Standard of Care」として位置づけられる。
+    </div>
+  </div>
+</div>
+
+<!-- S6: アクセス方法 -->
+<div class="slide slide-light" id="s6">
+  <span class="tag tag-utd an">アクセス</span>
+  <h2 class="stitle an">UpToDate へのアクセス方法</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-utd an" style="font-size:.83rem;">
+      🌐 <strong>URL：</strong><span class="mono" style="color:var(--utd);font-size:.82rem;">https://www.uptodate.com/</span><br>
+      学内ネットワーク or VPN 接続で自動認証される（機関契約の場合）
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>🏫 大学・病院からアクセス</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>学内 Wi-Fi / LAN からアクセスで自動ログイン</li>
+            <li>学外は大学 VPN 経由</li>
+            <li>図書館サイトの「データベース一覧」でも確認</li>
+          </ul>
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>👤 個人アカウント（無料）</strong><br>
+          機関アクセスがあれば個人アカウントを作成できる。<br>
+          • CME（継続教育）ポイントの取得<br>
+          • 検索履歴・ブックマークの保存<br>
+          • モバイルアプリとの同期
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-utd" style="font-size:.8rem;">
+          <strong>📱 モバイルアプリ</strong><br>
+          iOS / Android 両対応。病棟回診・外来で即座に参照できる。<br>
+          オフライン閲覧（一部トピック）にも対応。
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ アクセスできない場合</strong><br>
+          • 所属機関が未契約の可能性 → 図書館に確認<br>
+          • VPN 未設定 → 大学 IT 部門へ<br>
+          • 学生向け無料トライアルあり（一定期間）
+        </div>
+      </div>
+    </div>
+    <div class="card-green an" style="font-size:.82rem;">
+      ✅ <strong>今すぐやること</strong>：所属大学の図書館サイトで「UpToDate」を検索。契約があればリンクからアクセスして個人アカウントを作成しよう。
+    </div>
+  </div>
+</div>
+
+<!-- S7: 画面構成 -->
+<div class="slide slide-card" id="s7">
+  <span class="tag tag-utd an">基本操作</span>
+  <h2 class="stitle an">UpToDate の画面構成</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--utd);">①</div>
+      <div class="sumi-body"><strong>検索ボックス</strong>：疾患名・症状・薬剤名を英語（または日本語）で入力。「どの患者にも使える辞書」感覚で引ける</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:#7c3aed;">②</div>
+      <div class="sumi-body"><strong>トピック記事</strong>：検索結果から目的のトピックを選ぶ。"Hypertension in adults: Overview" のように疾患・対象・視点で分かれている</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--amber);">③</div>
+      <div class="sumi-body"><strong>セクション構造</strong>：各トピックは Introduction → Epidemiology → Diagnosis → Treatment → Monitoring… と標準構成。目次から目的箇所へジャンプできる</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--green);">④</div>
+      <div class="sumi-body"><strong>グラフィックス</strong>：図表・アルゴリズム・フローチャートが豊富。「診断アルゴリズム」はそのまま臨床現場で使える</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--teal);">⑤</div>
+      <div class="sumi-body"><strong>参考文献リスト</strong>：各推奨の根拠論文（PubMed）へのリンク付き。「なぜそう書いてあるか」を一次文献で確認できる</div>
+    </div>
+    <div class="card-utd an" style="font-size:.82rem;">
+      💡 <strong>「What's new」セクション</strong>：トピック冒頭の最新更新情報ハイライト。時間がないときはここだけ読むという使い方も。
+    </div>
+  </div>
+</div>
+
+<!-- S8: 検索の使い方 -->
+<div class="slide slide-light" id="s8">
+  <span class="tag tag-utd an">基本操作</span>
+  <h2 class="stitle an">UpToDate の検索：PubMedと何が違うか</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid #336699;">🔵 PubMed の検索</div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <ul class="bl">
+            <li>検索式（AND/OR/NOT）を組み立てる</li>
+            <li>数千〜数万件がヒット</li>
+            <li>「論文の一覧」が返ってくる</li>
+            <li>自分で読んで解釈・統合が必要</li>
+            <li>時間：数時間〜数日</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid var(--utd);">🟣 UpToDate の検索</div>
+        <div class="card-utd" style="font-size:.8rem;">
+          <ul class="bl">
+            <li>疾患名・症状を自然言語で入力</li>
+            <li>数件〜数十件のトピックがヒット</li>
+            <li>「専門家の解釈済み要約」が返ってくる</li>
+            <li>推奨と根拠がセットで提示される</li>
+            <li>時間：数分</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="an">
+      <div class="step-flow">
+        <div class="step-box" style="background:var(--utd);">疾患名を入力</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">トピック一覧</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">目的のトピック選択</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">推奨を確認</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">根拠論文へ</div>
+      </div>
+    </div>
+    <div class="card-warn an" style="font-size:.82rem;">
+      ⚠️ <strong>落とし穴</strong>：UpToDate は「答え」を出してくれるが、その答えが<strong>あなたの患者に当てはまるか</strong>は自分で考える必要がある。ツールに頼りすぎず、臨床判断と組み合わせること。
+    </div>
+  </div>
+</div>
+
+<!-- S9: トピック記事の読み方 -->
+<div class="slide slide-card" id="s9">
+  <span class="tag tag-utd an">基本操作</span>
+  <h2 class="stitle an">トピック記事の読み方：どこを見るか</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-utd an" style="font-size:.83rem;">
+      📌 <strong>「全部読む必要はない」</strong>：トピックは平均10,000〜30,000語。目的に応じてセクションを選んで読む。
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--utd);min-width:95px;">What's new</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body"><strong>最新更新情報</strong>。忙しいときはここだけ確認。過去6ヶ月の重要な変更点がまとまっている</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#7c3aed;min-width:95px;">Summary and recommendations</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body"><strong>結論と推奨の要約</strong>。GRADE スコア付きで箇条書き。「答え」が最初にある。まずここを読む</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--amber);min-width:95px;">本文セクション</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body">Epidemiology → Pathophysiology → Diagnosis → Treatment の順。詳細を知りたいときに読む</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--green);min-width:95px;">Graphics</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body">診断・治療アルゴリズム・フローチャート・表。病棟やカンファで提示しやすい</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--teal);min-width:95px;">References</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body">PubMed へのリンク付き参考文献。「なぜこの推奨か」を一次文献で確認したいときに使う</div>
+      </div>
+    </div>
+    <div class="card-blue an" style="font-size:.8rem;">
+      💡 <strong>実践的な読み方</strong>：① まず Summary を読んで方針を把握 → ② 不明な点は本文セクションへ → ③ 根拠を確認したいときは References から PubMed へ
+    </div>
+  </div>
+</div>
+
+<!-- S10: GRADEとは -->
+<div class="slide slide-dark" id="s10">
+  <span class="tag tag-amber an">GRADE 入門</span>
+  <h2 class="stitle an">GRADE とは：推奨の「強さ」を読む</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.8rem;">
+    <div class="an" style="font-size:.88rem;color:#e2e8f0;line-height:1.7;">
+      GRADE = <strong style="color:var(--utdmed);">Grading of Recommendations Assessment, Development and Evaluation</strong><br>
+      推奨を「<strong>推奨の強さ</strong>」×「<strong>エビデンスの質</strong>」の2軸で評価する国際標準システム。<br>
+      UpToDate をはじめ、WHO・多くの国際ガイドラインが採用している。
+    </div>
+    <div class="g2 an" style="gap:.8rem;">
+      <div>
+        <div style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:.5rem;letter-spacing:.06em;">推奨の強さ</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;">
+          <div class="grade-badge" style="background:rgba(74,222,128,.18);border:1px solid #4ade80;">
+            <span style="font-size:1rem;">💚</span>
+            <span style="color:#4ade80;font-size:.85rem;"><strong>Grade 1（強い推奨）</strong>：ほとんどの患者に推奨できる。「do it」</span>
+          </div>
+          <div class="grade-badge" style="background:rgba(251,191,36,.12);border:1px solid #fbbf24;">
+            <span style="font-size:1rem;">💛</span>
+            <span style="color:#fbbf24;font-size:.85rem;"><strong>Grade 2（弱い推奨）</strong>：多くの患者に推奨できるが個別判断が必要。「suggest」</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:.5rem;letter-spacing:.06em;">エビデンスの質</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;">
+          <div class="grade-badge" style="background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);">
+            <span style="color:#4ade80;min-width:20px;font-weight:900;">A</span>
+            <span style="color:#e2e8f0;font-size:.82rem;">高（RCT・質の高いSR）</span>
+          </div>
+          <div class="grade-badge" style="background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);">
+            <span style="color:#60a5fa;min-width:20px;font-weight:900;">B</span>
+            <span style="color:#e2e8f0;font-size:.82rem;">中（制限のあるRCT・コホート研究）</span>
+          </div>
+          <div class="grade-badge" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);">
+            <span style="color:#fbbf24;min-width:20px;font-weight:900;">C</span>
+            <span style="color:#e2e8f0;font-size:.82rem;">低（観察研究・症例集積）</span>
+          </div>
+          <div class="grade-badge" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);">
+            <span style="color:#f87171;min-width:20px;font-weight:900;">D</span>
+            <span style="color:#e2e8f0;font-size:.82rem;">非常に低（専門家意見・症例報告）</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S11: GRADE 読み方実践 -->
+<div class="slide slide-light" id="s11">
+  <span class="tag tag-utd an">GRADE 実践</span>
+  <h2 class="stitle an">GRADE を読む：1A・2B・2C の意味</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-utd an" style="font-size:.83rem;">
+      💡 <strong>組み合わせの読み方</strong>：数字（推奨の強さ）+ アルファベット（エビデンスの質）= GRADE スコア
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="row" style="border-left:4px solid #4ade80;">
+        <div class="row-lbl" style="background:#166534;min-width:3rem;font-size:.85rem;font-weight:900;">1A</div>
+        <div class="row-body" style="font-size:.82rem;"><strong style="color:#166534;">強い推奨・高いエビデンス</strong>：「やるべき」。RCT・SR で裏付けられた標準治療。例：高血圧に降圧薬を使う</div>
+      </div>
+      <div class="row" style="border-left:4px solid #60a5fa;">
+        <div class="row-lbl" style="background:#1e40af;min-width:3rem;font-size:.85rem;font-weight:900;">1B</div>
+        <div class="row-body" style="font-size:.82rem;"><strong style="color:#1e40af;">強い推奨・中程度のエビデンス</strong>：強く推奨するが、エビデンスには限界がある。ほとんどの患者に適用可</div>
+      </div>
+      <div class="row" style="border-left:4px solid #fbbf24;">
+        <div class="row-lbl" style="background:#92400e;min-width:3rem;font-size:.85rem;font-weight:900;">2B</div>
+        <div class="row-body" style="font-size:.82rem;"><strong style="color:#92400e;">弱い推奨・中程度のエビデンス</strong>：「してもよい」。患者の価値観・状況によって選択が変わりうる</div>
+      </div>
+      <div class="row" style="border-left:4px solid #f87171;">
+        <div class="row-lbl" style="background:#991b1b;min-width:3rem;font-size:.85rem;font-weight:900;">2C</div>
+        <div class="row-body" style="font-size:.82rem;"><strong style="color:#991b1b;">弱い推奨・低いエビデンス</strong>：「こともある」。個別判断が強く求められる。観察研究ベース</div>
+      </div>
+    </div>
+    <div class="card-warn an" style="font-size:.82rem;">
+      ⚠️ <strong>注意</strong>：Grade 1（強い推奨）でも Grade D（非常に低いエビデンス）はある（= 専門家が「やるべき」と言うが、根拠は薄い）。<strong>推奨の強さとエビデンスの質は別物。</strong>
+    </div>
+  </div>
+</div>
+
+<!-- S12: クイズ1 GRADE -->
+<div class="slide slide-quiz" id="s12">
+  <span class="tag tag-purple an">QUIZ 1</span>
+  <h2 class="stitle an" style="border-color:var(--utdmed);">GRADE クイズ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;" id="q1">
+    <div class="quiz-q an">
+      UpToDate で「Grade 2C」の推奨を見つけた。<br>
+      この推奨の解釈として最も適切なものはどれか？
+    </div>
+    <div class="qopts an">
+      <button class="qbtn" onclick="ansQ1(this,'a')">A）強い推奨・高いエビデンスなので積極的に実施すべき</button>
+      <button class="qbtn" onclick="ansQ1(this,'b')">B）弱い推奨・低いエビデンスなので個別の患者状況をよく考えて判断する</button>
+      <button class="qbtn" onclick="ansQ1(this,'c')">C）GRADEが低いので無視してよい</button>
+      <button class="qbtn" onclick="ansQ1(this,'d')">D）日本では適用されないので参考にしなくてよい</button>
+    </div>
+    <div class="qfb an" id="q1fb"></div>
+  </div>
+</div>
+
+<!-- S13: グラフィックス・計算ツール -->
+<div class="slide slide-card" id="s13">
+  <span class="tag tag-utd an">活用機能</span>
+  <h2 class="stitle an">グラフィックス・計算ツール：UpToDate の隠れた宝</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-utd" style="font-size:.8rem;">
+          <strong>🖼️ グラフィックス（Graphics）</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>診断・治療アルゴリズム（フローチャート）</li>
+            <li>解剖図・病態生理図</li>
+            <li>薬剤用量一覧・比較表</li>
+            <li>検査値の解釈チャート</li>
+          </ul>
+          病棟回診・カンファ・患者説明で<strong>そのまま使える</strong>クオリティ
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>🧮 Calculators（計算ツール）</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>CHA₂DS₂-VASc スコア（心房細動）</li>
+            <li>HAS-BLED スコア（出血リスク）</li>
+            <li>Child-Pugh スコア（肝硬変）</li>
+            <li>eGFR・Cockroft-Gault 式</li>
+            <li>MELD スコア、PSI/PORT スコア…</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📋 Drug information</strong><br>
+          薬剤の用量・腎機能調整・妊婦への投与・相互作用を素早く確認。Lexicomp（薬剤情報DB）との連携あり。
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>🔗 Related topics リンク</strong><br>
+          各トピックから関連トピックへのリンクが豊富。「心不全の治療」を読んでいると「心不全の診断」「利尿薬の使い方」へ自然にたどれる。
+        </div>
+        <div class="card-utd" style="font-size:.8rem;">
+          <strong>🎓 CME（継続医学教育）</strong><br>
+          米国医師免許維持のための CME ポイントをトピック閲覧で取得できる。日本国内ではポイント制度は別途。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">グラフィックスは「最速の理解」を、計算ツールは「最速の判断」を助ける</div>
+</div>
+
+<!-- S14: 一次文献へのブリッジ -->
+<div class="slide slide-dark" id="s14">
+  <span class="tag tag-amber an">一次文献へ</span>
+  <h2 class="stitle an">UpToDate → PubMed：要約を超えて深掘りする</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="an" style="font-size:.88rem;color:#e2e8f0;line-height:1.7;">
+      UpToDate は「地図」。一次論文は「現地」。地図で全体を把握してから、必要な場所に「現地」へ行く。
+    </div>
+    <div class="an">
+      <div class="step-flow" style="justify-content:center;">
+        <div class="step-box" style="background:var(--utd);">UpToDate で推奨確認</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box" style="background:#1a2a1a;">References をクリック</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box" style="background:#336699;">PubMed で原著を読む</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box" style="background:#7c3aed;">批判的吟味</div>
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-dark" style="font-size:.82rem;border-color:var(--utd);">
+        <strong style="color:var(--utdmed);">📖 一次文献まで読むべき場面</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>卒業論文・研究の背景として引用するとき</li>
+          <li>推奨の根拠・研究デザインを確認したいとき</li>
+          <li>症例が標準的でなく個別化が必要なとき</li>
+          <li>UpToDate の推奨に疑問を感じたとき</li>
+        </ul>
+      </div>
+      <div class="card-dark" style="font-size:.82rem;border-color:#336699;">
+        <strong style="color:#66aadd;">⚡ UpToDate だけで十分な場面</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>救急・緊急時に素早く方針を確認</li>
+          <li>自分の専門外の疾患を概観したいとき</li>
+          <li>研修医・学生が標準的な知識を把握するとき</li>
+          <li>患者への説明準備（概要把握）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="hl an">「要約で動く」か「原著まで遡る」かを意識的に選べる医師が強い</div>
+  </div>
+</div>
+
+<!-- S15: クイズ2（使い分け） -->
+<div class="slide slide-quiz" id="s15">
+  <span class="tag tag-purple an">QUIZ 2</span>
+  <h2 class="stitle an" style="border-color:var(--utdmed);">使い分けクイズ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;" id="q2">
+    <div class="quiz-q an">
+      研修医が夜間救急で「急性心不全の初期治療」を<br>
+      素早く確認したい。最適なツールはどれか？
+    </div>
+    <div class="qopts an">
+      <button class="qbtn" onclick="ansQ2(this,'a')">A）PubMedで "acute heart failure treatment" を検索して論文を読む</button>
+      <button class="qbtn" onclick="ansQ2(this,'b')">B）UpToDateで "acute heart failure" を検索してSummaryを読む</button>
+      <button class="qbtn" onclick="ansQ2(this,'c')">C）医中誌で「急性心不全　治療」を検索する</button>
+      <button class="qbtn" onclick="ansQ2(this,'d')">D）Googleで検索する</button>
+    </div>
+    <div class="qfb an" id="q2fb"></div>
+  </div>
+</div>
+
+<!-- S16: UpToDateの限界 -->
+<div class="slide slide-dark" id="s16">
+  <span class="tag tag-red an">限界と注意点</span>
+  <h2 class="stitle an">UpToDate の限界：過信は禁物</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#c62828;min-width:100px;">日本の保険外</div>
+      <div class="cr-arr" style="background:#1a0808;color:#f87171;">!</div>
+      <div class="cr-body" style="background:#1a0808;color:#e2e8f0;">米国中心の推奨。<strong style="color:#f87171;">日本の保険診療・添付文書・用量設定と異なる場合がある</strong>。必ず日本の状況と照合すること</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#b45309;min-width:100px;">希少疾患</div>
+      <div class="cr-arr" style="background:#1a1200;color:#fbbf24;">!</div>
+      <div class="cr-body" style="background:#1a1200;color:#e2e8f0;">希少疾患・新興感染症・最新の治療法はトピックが<strong style="color:#fbbf24;">存在しない・内容が薄い</strong>ことがある。PubMed で一次文献を当たる必要がある</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#1565c0;min-width:100px;">更新の遅れ</div>
+      <div class="cr-arr" style="background:#0d1a2a;color:#60a5fa;">!</div>
+      <div class="cr-body" style="background:#0d1a2a;color:#e2e8f0;">速報性のある領域（COVID-19 初期・新薬承認直後など）は<strong style="color:#60a5fa;">更新が追いつかない</strong>こともある。「What's new」と更新日を確認する習慣を</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#7c3aed;min-width:100px;">思考停止</div>
+      <div class="cr-arr" style="background:#0d0a1a;color:#a855f7;">!</div>
+      <div class="cr-body" style="background:#0d0a1a;color:#e2e8f0;">「UpToDate にそう書いてあったから」は<strong style="color:#a855f7;">思考停止のサイン</strong>。推奨はあくまで「多くの患者への方針」。個別の患者への応用は臨床判断が必要</div>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:var(--amber);">
+      🎯 <strong style="color:var(--amber);">使う姿勢</strong>：UpToDate は「答えを出してくれるオラクル」ではなく「<strong style="color:#fff;">考えるための足がかり</strong>」。読んだあとに「自分はどう判断するか」を必ず考える。
+    </div>
+  </div>
+</div>
+
+<!-- S17: 日本のガイドラインとの違い -->
+<div class="slide slide-light" id="s17">
+  <span class="tag tag-red an">注意点</span>
+  <h2 class="stitle an">UpToDate と日本のガイドライン：何が違うか</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-warn an" style="font-size:.83rem;">
+      ⚠️ UpToDate の推奨は主に<strong>欧米のエビデンス</strong>に基づく。日本の診療ガイドライン（日本循環器学会・日本糖尿病学会など）と<strong>異なる場合がある</strong>。
+    </div>
+    <div class="an">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>観点</th><th>UpToDate</th><th>日本のガイドライン</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>エビデンス源</td><td>国際（欧米中心）</td><td>国内 + 国際</td></tr>
+          <tr><td>薬剤用量</td><td>欧米の承認用量</td><td>日本の添付文書基準</td></tr>
+          <tr><td>保険適用</td><td>考慮外の場合あり</td><td>保険診療を前提</td></tr>
+          <tr><td>日本人データ</td><td>少ない</td><td>豊富（医中誌等を活用）</td></tr>
+          <tr><td>更新頻度</td><td>数週間〜月単位</td><td>数年単位（改訂版）</td></tr>
+          <tr><td>推奨の評価</td><td>GRADE システム</td><td>各学会独自（GRADE 採用増加中）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-green an" style="font-size:.82rem;">
+      ✅ <strong>実践的な使い方</strong>：<br>
+      ① UpToDate でグローバルな標準を把握 → ② 日本のガイドラインで国内の推奨を確認 → ③ 両者を比較して、自施設・患者に合った判断をする
+    </div>
+  </div>
+</div>
+
+<!-- S18: 臨床シナリオでの活用 -->
+<div class="slide slide-card" id="s18">
+  <span class="tag tag-amber an">実践シナリオ</span>
+  <h2 class="stitle an">臨床シナリオ：UpToDate をどう使うか</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-blue an" style="font-size:.83rem;">
+      🏥 <strong>シナリオ</strong>：65歳男性、2型糖尿病 + 高血圧 + CKD stage 3。「ACE阻害薬 vs ARB のどちらを選ぶべきか？」
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--utd);">①</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>UpToDate で検索</strong>：「Hypertension in patients with diabetes mellitus」を検索 → Summary and recommendations を確認</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:#7c3aed;">②</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>GRADE を確認</strong>：「ACE阻害薬またはARBを第一選択とする（Grade 1A）」→ 強い推奨・高いエビデンス。安心して使える</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--amber);">③</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>CKDへの影響を深掘り</strong>：「Chronic kidney disease and hypertension」トピックも参照。eGFR・カリウムのモニタリング推奨を確認</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--green);">④</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>日本のガイドラインで照合</strong>：日本高血圧学会ガイドライン・日本糖尿病学会ガイドラインで国内推奨を確認</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--teal);">⑤</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>患者個別化</strong>：咳の副作用歴があるか → ACEiを避けてARBを選択など、個別因子を加味して最終判断</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S19: 知ってた？UpToDateの豆知識 -->
+<div class="slide slide-utd" id="s19">
+  <span class="tag an" style="background:var(--utdmed);color:#1a0033;">知ってた？</span>
+  <h2 class="stitle an">UpToDate のちょっと面白い話</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:var(--utd);min-width:3rem;">📅</div>
+      <div class="row-body" style="color:#e2e8f0;">UpToDate は<strong style="color:var(--utdmed);">1992年</strong>に Burton Rose 医師が個人的なデータベースとして開始。「患者を目の前にして教科書を調べる時間がない」という臨床の切実な問いから生まれた</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#7c3aed;min-width:3rem;">📊</div>
+      <div class="row-body" style="color:#e2e8f0;">UpToDate を使用した病院では、<strong style="color:#d2a8ff;">患者1,000人当たりの死亡率が有意に低下</strong>したという研究がある（Adherence to UpToDate と転帰の相関）</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#2e7d32;min-width:3rem;">🔄</div>
+      <div class="row-body" style="color:#e2e8f0;">年間<strong style="color:#4ade80;">数千件</strong>のトピック更新が行われる。新しいRCT・ガイドラインが発表されると、数週間以内に内容が更新される</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#c62828;min-width:3rem;">💊</div>
+      <div class="row-body" style="color:#e2e8f0;">Lexicomp（薬剤情報DB）との統合により、<strong style="color:#f87171;">薬剤相互作用チェック・用量調整</strong>も UpToDate 内から直接参照できる</div>
+    </div>
+  </div>
+  <div class="hl an">「臨床の切実な問い」から生まれたツールは、今や医学の標準インフラになった</div>
+</div>
+
+<!-- S20: 卒業論文での活用 -->
+<div class="slide slide-light" id="s20">
+  <span class="tag tag-green an">実践</span>
+  <h2 class="stitle an">卒業論文・研究での UpToDate 活用法</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-utd an" style="font-size:.83rem;">
+      📚 <strong>UpToDate は「文献として引用できるか？」</strong>：原則として<strong>直接引用は推奨されない</strong>。学術論文の参考文献には一次文献（PubMed の原著）を使うべき。UpToDate は「調査の出発点」として使う。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ 推奨される使い方</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>背景理解</strong>：テーマの全体像・標準治療を素早く把握</li>
+            <li><strong>論文探し</strong>：References から重要な原著論文を発見</li>
+            <li><strong>用語確認</strong>：正確な英語の医学用語・概念を確認</li>
+            <li><strong>ギャップ確認</strong>：「何が分かっていないか」を把握して研究疑問を立てる</li>
+          </ul>
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ 避けるべき使い方</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>論文の参考文献に UpToDate を直接記載</li>
+            <li>一次文献を読まずに UpToDate の記述だけで背景を書く</li>
+            <li>UpToDate の表現をそのままコピー（剽窃のリスク）</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>🔄 UpToDate → PubMed ワークフロー</strong><br>
+          ① UpToDate で背景・推奨を把握<br>
+          ② References リストを確認<br>
+          ③ 重要そうな論文の PMID を控える<br>
+          ④ PubMed で原著を取得<br>
+          ⑤ 原著を批判的吟味して引用<br><br>
+          このフローで「UpToDate を論文に引用しない」正しい使い方が完成する。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S21: PubMed・医中誌・UpToDate 三角形 -->
+<div class="slide slide-dark" id="s21">
+  <span class="tag tag-amber an">使い分け戦略</span>
+  <h2 class="stitle an">三刀流：PubMed + 医中誌 + UpToDate</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="g3 an">
+      <div style="background:rgba(51,102,153,.25);border:1px solid #336699;border-radius:8px;padding:.75rem;text-align:center;">
+        <div style="font-size:1.3rem;margin-bottom:.3rem;">🔵</div>
+        <div style="font-weight:900;color:#66aadd;font-size:.88rem;">PubMed</div>
+        <div style="font-size:.75rem;color:#8b949e;margin-top:.3rem;line-height:1.5;">国際的な<br>一次文献を探す<br>SR・研究に必須</div>
+      </div>
+      <div style="background:rgba(46,125,50,.25);border:1px solid #2e7d32;border-radius:8px;padding:.75rem;text-align:center;">
+        <div style="font-size:1.3rem;margin-bottom:.3rem;">🟢</div>
+        <div style="font-weight:900;color:#81c784;font-size:.88rem;">医中誌</div>
+        <div style="font-size:.75rem;color:#8b949e;margin-top:.3rem;line-height:1.5;">日本語論文・<br>国内統計を探す<br>国内研究に必須</div>
+      </div>
+      <div style="background:rgba(107,33,168,.25);border:1px solid var(--utd);border-radius:8px;padding:.75rem;text-align:center;">
+        <div style="font-size:1.3rem;margin-bottom:.3rem;">🟣</div>
+        <div style="font-weight:900;color:var(--utdmed);font-size:.88rem;">UpToDate</div>
+        <div style="font-size:.75rem;color:#8b949e;margin-top:.3rem;line-height:1.5;">臨床の問いに<br>素早く答える<br>臨床現場に必須</div>
+      </div>
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="row" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);">
+        <div class="row-lbl" style="background:#1565c0;font-size:.7rem;min-width:5.5rem;">急ぎの臨床</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.8rem;">→ <strong style="color:var(--utdmed);">UpToDate</strong> で素早く推奨を確認。5分以内に方針を立てる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);">
+        <div class="row-lbl" style="background:#2e7d32;font-size:.7rem;min-width:5.5rem;">卒論の文献調査</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.8rem;">→ <strong style="color:#66aadd;">PubMed</strong> + <strong style="color:#81c784;">医中誌</strong> で網羅的に。UpToDate は背景理解に</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);">
+        <div class="row-lbl" style="background:#7c3aed;font-size:.7rem;min-width:5.5rem;">専門外の疾患</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.8rem;">→ <strong style="color:var(--utdmed);">UpToDate</strong> で概観 → 必要なら <strong style="color:#66aadd;">PubMed</strong> で深掘り</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);">
+        <div class="row-lbl" style="background:#b45309;font-size:.7rem;min-width:5.5rem;">日本の実態把握</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.8rem;">→ <strong style="color:#81c784;">医中誌</strong> + 日本の診療ガイドライン。UpToDate は参考程度に</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S22: Cochrane との違い -->
+<div class="slide slide-card" id="s22">
+  <span class="tag tag-teal an">比較</span>
+  <h2 class="stitle an">UpToDate vs Cochrane：どちらがエビデンスが高い？</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid var(--utd);">🟣 UpToDate</div>
+        <div class="card-utd" style="font-size:.8rem;">
+          <ul class="bl">
+            <li><strong>幅広いトピック</strong>（11,000件+）をカバー</li>
+            <li>専門医が執筆・随時更新</li>
+            <li>「治療方針全般」を提示</li>
+            <li>GRADEで推奨の強さを表示</li>
+            <li>クリニカルツール・計算機も内蔵</li>
+            <li><strong>臨床現場での即時参照に最適</strong></li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid #7c3aed;">🟡 Cochrane Library</div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <ul class="bl">
+            <li><strong>特定の臨床疑問</strong>への系統的レビュー</li>
+            <li>PRISMA準拠の厳格な方法論</li>
+            <li>「この治療法の効果はあるか」を答える</li>
+            <li>エビデンスの質は最高水準</li>
+            <li>トピックは限定的・更新に時間がかかる</li>
+            <li><strong>SR・研究の根拠確認に最適</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="card-green an" style="font-size:.82rem;">
+      🎯 <strong>結論</strong>：「どちらが上」ではなく目的が違う。<br>
+      臨床の素早い意思決定 → <strong>UpToDate</strong>　/　特定疑問の最高エビデンス → <strong>Cochrane</strong>　/　一次文献検索 → <strong>PubMed</strong>
+    </div>
+  </div>
+</div>
+
+<!-- S23: What's new の使い方 -->
+<div class="slide slide-light" id="s23">
+  <span class="tag tag-utd an">上級テクニック</span>
+  <h2 class="stitle an">「What's new」で最新情報をキャッチする</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-utd an" style="font-size:.83rem;">
+      🆕 <strong>What's new</strong>：UpToDate トップページのメニューにある「最新情報」ページ。過去数ヶ月の重要な変更点が診療領域別にまとまっている。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ こんな使い方に</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>週に1回「自分の専門領域」の What's new をざっと眺める</li>
+            <li>重要なものだけ全文を読む</li>
+            <li>医局・チームでの情報共有のネタに</li>
+            <li>PubMed の Alert と組み合わせると最強</li>
+          </ul>
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📋 掲載される内容</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>大型 RCT の結果（治療方針に影響）</li>
+            <li>FDA / EMA 新薬承認・適応拡大</li>
+            <li>新しいガイドラインの要点</li>
+            <li>重要な安全性情報（副作用警告など）</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ メール通知の設定</strong><br>
+          個人アカウントで診療領域を設定すると、What's new の新着情報をメールで受け取れる。PubMed の Alert と合わせると「論文情報の自動収集体制」が完成する。
+        </div>
+        <div class="card-utd" style="font-size:.8rem;">
+          <strong>💡 PubMed Alert との役割分担</strong><br>
+          PubMed Alert：特定の検索式に合致する<strong>論文単位</strong>での通知<br>
+          UpToDate What's new：<strong>臨床的に重要な更新</strong>のダイジェスト
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">「情報が向こうからやってくる」仕組みを2つ持てば、あなたは常に最前線にいられる</div>
+</div>
+
+<!-- S24: エビデンスピラミッド -->
+<div class="slide slide-dark" id="s24">
+  <span class="tag tag-amber an">EBM の基礎</span>
+  <h2 class="stitle an">エビデンスピラミッド：UpToDate はどこにある？</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an" style="display:flex;flex-direction:column;gap:.4rem;">
+      <div style="background:rgba(168,85,247,.25);border:1px solid var(--utdmed);border-radius:6px;padding:.5rem 1rem;text-align:center;font-size:.85rem;font-weight:700;color:var(--utdmed);">
+        🔝 システマティックレビュー・メタ解析（Cochrane など）
+      </div>
+      <div style="background:rgba(74,222,128,.15);border:1px solid #4ade80;border-radius:6px;padding:.5rem 1rem;text-align:center;font-size:.84rem;font-weight:700;color:#4ade80;">
+        ランダム化比較試験（RCT）
+      </div>
+      <div style="background:rgba(96,165,250,.12);border:1px solid #60a5fa;border-radius:6px;padding:.5rem 1rem;text-align:center;font-size:.82rem;font-weight:700;color:#60a5fa;">
+        コホート研究・症例対照研究
+      </div>
+      <div style="background:rgba(251,191,36,.1);border:1px solid #fbbf24;border-radius:6px;padding:.5rem 1rem;text-align:center;font-size:.8rem;font-weight:700;color:#fbbf24;">
+        症例報告・症例集積
+      </div>
+      <div style="background:rgba(248,113,113,.1);border:1px solid #f87171;border-radius:6px;padding:.5rem 1rem;text-align:center;font-size:.78rem;font-weight:700;color:#f87171;">
+        専門家意見・動物実験・基礎研究
+      </div>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:var(--utd);">
+      🟣 <strong style="color:var(--utdmed);">UpToDate の位置づけ</strong>：ピラミッド上の論文を専門家が<strong>統合・解釈</strong>した「臨床意思決定支援」。エビデンスピラミッドの「外」にある応用層。<br>
+      論文の要約 ≠ 一次文献。引用するときは必ず一次文献を確認。
+    </div>
+  </div>
+  <div class="hl an">エビデンスを「知る」だけでなく「使う」ためのツールが UpToDate</div>
+</div>
+
+<!-- S25: 研修医のための活用Tips -->
+<div class="slide slide-card" id="s25">
+  <span class="tag tag-teal an">Tips</span>
+  <h2 class="stitle an">研修医・医学生のための UpToDate 活用 Tips</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--utd);">💡</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>回診前に必ず確認</strong>：受け持ち患者の主疾患トピックを前日夜に UpToDate で読む。「なぜこの治療をしているか」が見えてくる</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:#7c3aed;">💡</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>指導医への質問前に</strong>：「UpToDate で○○と書いてあったのですが、この患者では△△という違いがあります。どう考えますか？」→ 良い議論のスタートになる</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--amber);">💡</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>カンファ発表の準備</strong>：アルゴリズム・フローチャートを UpToDate からスクリーンショット（または PDF 保存）してスライドに使う</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--green);">💡</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>勉強の順序</strong>：教科書（概念） → UpToDate（最新の推奨） → PubMed（根拠の原著） の順で学ぶと「なぜ」が繋がる</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--teal);">💡</div>
+      <div class="sumi-body" style="font-size:.8rem;"><strong>モバイルアプリ活用</strong>：スマホに UpToDate アプリを入れて病棟常駐。「調べられる医師」は患者・同僚から信頼される</div>
+    </div>
+  </div>
+</div>
+
+<!-- S26: よくある使い方の誤り -->
+<div class="slide slide-light" id="s26">
+  <span class="tag tag-red an">よくある誤り</span>
+  <h2 class="stitle an">UpToDate あるある：よくある使い方の誤り</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#c62828;min-width:90px;">丸暗記する</div>
+      <div class="cr-arr">!</div>
+      <div class="cr-body"><strong>問題点</strong>：推奨は患者背景・状況によって変わる。「UpToDateに書いてあるから」は思考停止<br><strong>→ 対策</strong>：推奨を「出発点」として自分の患者に当てはまるか考える</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#b45309;min-width:90px;">論文に引用</div>
+      <div class="cr-arr">!</div>
+      <div class="cr-body"><strong>問題点</strong>：UpToDateは二次資料。査読論文の参考文献に使うと不適切とみなされる<br><strong>→ 対策</strong>：References から一次文献を探してそちらを引用する</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#1565c0;min-width:90px;">日本に直訳</div>
+      <div class="cr-arr">!</div>
+      <div class="cr-body"><strong>問題点</strong>：薬剤用量・保険適用が日本と異なる場合がある<br><strong>→ 対策</strong>：必ず日本の添付文書・日本のガイドラインと照合する</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#2e7d32;min-width:90px;">全文を読む</div>
+      <div class="cr-arr">!</div>
+      <div class="cr-body"><strong>問題点</strong>：臨床の忙しい場面で全文読むのは時間の無駄<br><strong>→ 対策</strong>：Summary → 目的のセクション → References という順番で効率的に読む</div>
+    </div>
+    <div class="card-utd an" style="font-size:.82rem;">
+      ✅ <strong>正しいスタンス</strong>：UpToDate は「解釈済みの知識の地図」。地図を参考に、最終的な判断は<strong>医師の臨床的推論</strong>で行う。
+    </div>
+  </div>
+</div>
+
+<!-- S27: Vol.3 チェックリスト -->
+<div class="slide slide-card" id="s27">
+  <span class="tag tag-green an">CHECKLIST</span>
+  <h2 class="stitle an">Vol.3 習得チェックリスト</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.4rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid var(--utd);">🔰 基本（今日できるようになること）</div>
+        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:.25rem;">
+          <div>☐ 大学図書館 / VPN 経由で UpToDate にアクセスできる</div>
+          <div>☐ 疾患名で検索してトピックを見つけられる</div>
+          <div>☐ Summary and recommendations を最初に読める</div>
+          <div>☐ GRADEスコア（1A・2Cなど）の意味を説明できる</div>
+          <div>☐ グラフィックス・計算ツールを使ってみた</div>
+          <div>☐ 個人アカウントを作成して What's new を確認した</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.4rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid var(--amber);">🌟 発展（もう一歩進んだら）</div>
+        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:.25rem;">
+          <div>☐ References から PubMed の原著へジャンプできる</div>
+          <div>☐ UpToDate の推奨と日本のガイドラインを比較できる</div>
+          <div>☐ PubMed・医中誌・UpToDate を場面で使い分けられる</div>
+          <div>☐ What's new のメール通知を設定した</div>
+          <div>☐ 卒論テーマで UpToDate → PubMed ワークフローを実践した</div>
+          <div>☐ 回診前に受け持ち患者のトピックを読んだ 🎉</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-utd an" style="font-size:.82rem;">
+      💪 <strong>今すぐできる課題</strong>：受け持ち患者（または興味のある疾患）の UpToDate トピックを開き、Summary の GRADE スコアを確認して、1つ以上の一次文献を PubMed で探してみよう！
+    </div>
+  </div>
+</div>
+
+<!-- S28: 次回予告 -->
+<div class="slide slide-card" id="s28">
+  <span class="tag tag-teal an">NEXT</span>
+  <h2 class="stitle an">次回予告：Vol.4 Scopus</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="card-blue an" style="font-size:.84rem;">
+      📌 <strong>Scopus とは</strong>：Elsevier 社が提供する学術文献DB。PubMed より広い分野（理工・社会科学も）をカバーし、<strong>引用分析・研究者評価・ジャーナルランキング</strong>に強い。
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.5rem;">
+      <div class="sumi">
+        <div class="sumi-num" style="background:#336699;">①</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>引用検索</strong>：「この論文を引用している論文を探す」——論文の影響力・発展を追う前方引用</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:#7c3aed;">②</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>h-index・被引用数</strong>：研究者の「影響力スコア」を数値で見る。自分の将来の研究者としての戦略に活かす</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--amber);">③</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>ジャーナルランキング（CiteScore）</strong>：どの雑誌に投稿すべきか・IF との違いを学ぶ</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--green);">④</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>PubMedとの使い分け</strong>：臨床研究 → PubMed / 引用分析・研究評価 → Scopus</div>
+      </div>
+    </div>
+    <div class="an" style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-top:.2rem;">
+      <span style="background:#336699;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol1.html ✅</span>
+      <span style="background:#2E7D32;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol2.html ✅</span>
+      <span style="background:var(--utd);color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol3.html ✅</span>
+      <span style="background:var(--amber);color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol4.html ← 次回</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol5.html</span>
+    </div>
+  </div>
+</div>
+
+<!-- S29: まとめ -->
+<div class="slide slide-utd" id="s29">
+  <span class="tag an" style="background:var(--utdmed);color:#1a0033;">まとめ</span>
+  <h2 class="stitle an">Vol.3 で学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an" style="display:flex;flex-direction:column;gap:.5rem;">
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--utd);min-width:3rem;font-size:1.1rem;">①</div>
+        <div class="row-body" style="color:#e2e8f0;">UpToDate は「論文DB」ではなく<strong style="color:var(--utdmed);">臨床意思決定支援システム</strong>。PubMedとは役割が違う</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#7c3aed;min-width:3rem;font-size:1.1rem;">②</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:#d2a8ff;">GRADE スコア</strong>（1A〜2D）で推奨の強さとエビデンスの質を読み解ける</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--amber);min-width:3rem;font-size:1.1rem;">③</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:var(--amber);">Summary → 本文 → References（PubMed）</strong>の順で読むのが効率的</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--green);min-width:3rem;font-size:1.1rem;">④</div>
+        <div class="row-body" style="color:#e2e8f0;">日本の保険診療・ガイドラインと<strong style="color:#4ade80;">照合すること</strong>。欧米基準そのまま適用は危険</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--teal);min-width:3rem;font-size:1.1rem;">⑤</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:#66aadd;">三刀流</strong>：急ぎの臨床 → UpToDate / 網羅的文献 → PubMed+医中誌 / 日本の実態 → 医中誌</div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">「ツールを知る」のではなく「ツールを使いこなす」医師になろう</div>
+</div>
+
+<!-- S30: 締め -->
+<div class="slide slide-dark" id="s30">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.6rem;">
+    <div class="an title-vol" style="font-size:.75rem;">Vol.3 / 5 完了</div>
+    <div class="an title-main" style="font-size:clamp(2rem,5vw,3.8rem);">
+      答えを素早く出す力と<br>
+      <span style="color:var(--utdmed);">根拠を深掘りする力</span>は<br>
+      <span style="color:var(--amber);">車の両輪</span>だ
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.88rem;line-height:2;">
+      UpToDate で「速さ」を、PubMedで「深さ」を<br>
+      医中誌で「日本」を ── 三刀流の完成へ<br>
+      <span style="color:var(--utdmed);font-size:.82rem;">次回 Vol.4 は「論文の影響力」を数値で見る Scopus へ</span>
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.38);font-size:.8rem;line-height:1.9;">
+      大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+      <span style="font-size:.72rem;">質問・誤りの指摘、大歓迎です</span>
+    </div>
+  </div>
+  <div style="text-align:center;color:rgba(255,255,255,.22);font-size:.62rem;line-height:1.7;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.08);margin-top:.5rem;">
+    本資料はAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+    医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 30</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  const p = cur;
+  setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev');
+  slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
+}
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft') {e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) dx<0?go(cur+1):go(cur-1);
+},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
+
+/* Quiz 1: GRADE */
+function ansQ1(btn, val) {
+  document.querySelectorAll('#q1 .qbtn').forEach(b=>b.disabled=true);
+  const fb = document.getElementById('q1fb');
+  if (val==='b') {
+    btn.classList.add('correct');
+    fb.textContent = '✅ 正解！ Grade 2 = 弱い推奨（個別判断が必要）、C = 低いエビデンス（観察研究ベース）。「してもよい」という意味で、患者の価値観・状況で判断が変わりうる。';
+    fb.style.color = '#4ade80';
+  } else if (val==='a') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ Grade 1A が「強い推奨・高いエビデンス」。2C は「弱い推奨・低いエビデンス」。数字と文字の両方を確認しよう。';
+    fb.style.color = '#fbbf24';
+  } else if (val==='c') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ 無視はNG。Grade 2C でも「エビデンスが限られている中での推奨」として参考にする価値がある。特に希少疾患ではDやCのエビデンスしかないことも多い。';
+    fb.style.color = '#fbbf24';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ UpToDate の推奨は国際的なエビデンスに基づき、日本でも参考になる部分が多い。ただし薬剤用量・保険適用は日本の状況と照合が必要。';
+    fb.style.color = '#fbbf24';
+  }
+  fb.classList.add('show');
+}
+
+/* Quiz 2: 使い分け */
+function ansQ2(btn, val) {
+  document.querySelectorAll('#q2 .qbtn').forEach(b=>b.disabled=true);
+  const fb = document.getElementById('q2fb');
+  if (val==='b') {
+    btn.classList.add('correct');
+    fb.textContent = '✅ 正解！ 緊急時は UpToDate の Summary and recommendations を開くのが最速。専門医が解釈した推奨が数分で確認できる。PubMed は時間があるときに根拠を深掘りする。';
+    fb.style.color = '#4ade80';
+  } else if (val==='a') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ 夜間救急でPubMedを検索して論文を読む時間はない。PubMedは「根拠を調べる」ための道具。緊急時はUpToDateで素早く方針を確認するのが適切。';
+    fb.style.color = '#fbbf24';
+  } else if (val==='c') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ 医中誌は日本語論文DBで、急性心不全の緊急治療方針を素早く確認するには適していない。医中誌は日本の統計・症例報告・国内エビデンスを探す場面で使う。';
+    fb.style.color = '#fbbf24';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ Google は医療情報の質がバラバラで、信頼性が担保されていない。UpToDate は専門医が査読した情報で、医療従事者が使うべきツール。';
+    fb.style.color = '#fbbf24';
+  }
+  fb.classList.add('show');
+}
+</script>
+</body>
+</html>

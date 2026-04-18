@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文献検索入門 Vol.2 ― 医中誌Web 日本語論文の海を泳ぐ</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A2342;
+  --teal:   #1B6CA8;
+  --ltblue: #E8F1FA;
+  --amber:  #E8873A;
+  --gray:   #64748B;
+  --lgray:  #F0F4F8;
+  --red:    #C0392B;
+  --green:  #1A7A4A;
+  --text:   #1E293B;
+  --white:  #FFFFFF;
+  /* 医中誌カラー：深緑系 */
+  --ich:    #2E7D32;
+  --ichlt:  #E8F5E9;
+  --ichdk:  #1B4D1E;
+  --ichmed: #4CAF50;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body {
+  width: 100%; height: 100%;
+  background: #0a0f1a;
+  font-family: 'Noto Sans JP', sans-serif;
+  overflow: hidden;
+}
+
+/* ── Slide engine ─────────────────────────────────────── */
+.deck { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: 2.2rem 3rem 1.8rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity .45s cubic-bezier(.4,0,.2,1), transform .45s cubic-bezier(.4,0,.2,1);
+  transform: translateX(60px);
+}
+.slide.active  { opacity: 1; pointer-events: all; transform: translateX(0); }
+.slide.prev    { opacity: 0; transform: translateX(-60px); }
+
+/* ── Themes ──────────────────────────────────────────── */
+.slide-dark  { background: var(--navy); }
+.slide-light { background: var(--white); }
+.slide-card  { background: var(--lgray); }
+.slide-code  { background: #0d1117; }
+.slide-quiz  { background: #0a1a0a; }
+.slide-ich   { background: var(--ichdk); }
+
+.slide-dark::before,
+.slide-code::before,
+.slide-quiz::before,
+.slide-ich::before {
+  content: ''; position: absolute; left: 0; top: 0;
+  width: 6px; height: 100%;
+}
+.slide-dark::before  { background: var(--amber); }
+.slide-code::before  { background: var(--ich); }
+.slide-quiz::before  { background: #a855f7; }
+.slide-ich::before   { background: var(--ichmed); }
+
+/* ── Section tag ─────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+  padding: 3px 12px; border-radius: 2px;
+  color: #fff; margin-bottom: .5rem; align-self: flex-start;
+}
+.tag-teal   { background: var(--teal); }
+.tag-amber  { background: var(--amber); }
+.tag-ich    { background: var(--ich); }
+.tag-purple { background: #7c3aed; }
+.tag-green  { background: var(--green); }
+.tag-red    { background: var(--red); }
+.tag-gray   { background: var(--gray); }
+
+/* ── Slide title ─────────────────────────────────────── */
+.stitle {
+  font-size: clamp(1.35rem, 2.8vw, 2rem);
+  font-weight: 900; line-height: 1.2; margin-bottom: 1rem;
+  border-left: 5px solid var(--amber); padding-left: .7rem;
+}
+.slide-dark  .stitle { color: var(--white); border-color: var(--amber); }
+.slide-ich   .stitle { color: var(--white); border-color: var(--ichmed); }
+.slide-light .stitle { color: var(--navy);  border-color: var(--amber); }
+.slide-card  .stitle { color: var(--navy);  border-color: var(--amber); }
+.slide-code  .stitle { color: var(--white); border-color: var(--ich); }
+.slide-quiz  .stitle { color: var(--white); border-color: #a855f7; }
+
+/* ── Title slide ─────────────────────────────────────── */
+.title-main {
+  font-size: clamp(2.5rem, 6.5vw, 4.8rem);
+  font-weight: 900; color: var(--white);
+  letter-spacing: -.02em; line-height: 1.05; text-align: center;
+}
+.title-vol {
+  display: inline-block; background: var(--ich);
+  color: #fff; padding: 2px 16px; border-radius: 4px;
+  font-size: clamp(.85rem, 1.8vw, 1.1rem); font-weight: 900;
+  letter-spacing: .06em; margin-bottom: .6rem;
+}
+.title-sub {
+  font-size: clamp(.85rem, 1.6vw, 1.05rem);
+  color: rgba(255,255,255,.55); text-align: center;
+  margin-top: .7rem; line-height: 1.7;
+}
+.title-rule { width: 240px; height: 2px; background: var(--teal); margin: 1rem auto; }
+
+/* ── Code block ──────────────────────────────────────── */
+.cb {
+  background: #0d1117; border-radius: 6px;
+  overflow: hidden; font-family: 'JetBrains Mono', monospace;
+  box-shadow: 0 4px 20px rgba(0,0,0,.45);
+}
+.cb-head {
+  display: flex; align-items: center; gap: .45rem;
+  padding: .45rem 1rem; background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.cb-lang { font-size: .7rem; color: #8b949e; letter-spacing: .06em; margin-left: auto; }
+.cb-body { padding: .85rem 1.2rem; overflow-x: auto; font-size: .8rem; line-height: 1.75; }
+.cb-body code { color: #e6edf3; white-space: pre; }
+.kw  { color: #ff7b72; }
+.str { color: #a5d6ff; }
+.num { color: #79c0ff; }
+.cm  { color: #8b949e; font-style: italic; }
+.tg  { color: #7ee787; }
+.ok  { color: #4ade80; }
+.er  { color: #f87171; }
+
+/* ── Row item ────────────────────────────────────────── */
+.row {
+  display: flex; align-items: stretch;
+  background: var(--white); border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.08);
+  overflow: hidden; margin-bottom: .55rem;
+}
+.row-lbl {
+  min-width: 2.6rem; display: flex;
+  align-items: center; justify-content: center;
+  font-size: .78rem; font-weight: 700; color: #fff;
+  padding: 0 .7rem; white-space: nowrap;
+}
+.row-body {
+  padding: .5rem .85rem; font-size: .84rem;
+  color: var(--text); line-height: 1.55;
+}
+.row-body strong { color: var(--navy); }
+.row-body code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem; background: #f0f4f8;
+  padding: 1px 5px; border-radius: 3px; color: #c0392b;
+}
+
+/* ── Concept row ─────────────────────────────────────── */
+.cr {
+  display: flex; align-items: stretch;
+  border-radius: 6px; overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12); margin-bottom: .6rem;
+}
+.cr-lbl {
+  min-width: 110px; padding: .65rem .8rem;
+  font-size: .8rem; font-weight: 700; color: #fff;
+  display: flex; align-items: center;
+  justify-content: center; text-align: center;
+}
+.cr-arr {
+  background: #f0f4f8; display: flex;
+  align-items: center; justify-content: center;
+  padding: 0 .5rem; color: var(--gray); font-size: 1rem;
+}
+.cr-body {
+  flex: 1; background: var(--white);
+  padding: .65rem .9rem; font-size: .83rem;
+  color: var(--text); line-height: 1.55;
+}
+.cr-body strong { color: var(--navy); }
+.cr-body code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem; background: #f0f4f8;
+  padding: 1px 5px; border-radius: 3px; color: #c0392b;
+}
+
+/* ── Card ────────────────────────────────────────────── */
+.card-dark  { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: .75rem 1rem; }
+.card-warn  { background: #FFF3E0; border-radius: 6px; padding: .65rem 1rem; }
+.card-blue  { background: var(--ltblue); border-radius: 6px; padding: .65rem 1rem; }
+.card-green { background: #ECFDF5; border-radius: 6px; padding: .65rem 1rem; }
+.card-red   { background: #FEF2F2; border-radius: 6px; padding: .65rem 1rem; }
+.card-ich   { background: var(--ichlt); border-radius: 6px; padding: .65rem 1rem; }
+
+/* ── Grids ───────────────────────────────────────────── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .85rem; }
+
+/* ── Bullet list ─────────────────────────────────────── */
+ul.bl { list-style: none; }
+ul.bl li {
+  padding: .26rem 0 .26rem 1.3rem; position: relative;
+  font-size: .85rem; color: var(--text); line-height: 1.55;
+}
+ul.bl li::before {
+  content: '▸'; position: absolute; left: 0;
+  color: var(--teal); font-size: .8rem;
+}
+.slide-dark ul.bl li  { color: #e2e8f0; }
+.slide-dark ul.bl li::before { color: var(--amber); }
+.slide-ich  ul.bl li  { color: #e2e8f0; }
+.slide-ich  ul.bl li::before { color: var(--ichmed); }
+.slide-code ul.bl li  { color: #e2e8f0; }
+.slide-code ul.bl li::before { color: var(--ich); }
+.slide-quiz ul.bl li  { color: #e2e8f0; }
+.slide-quiz ul.bl li::before { color: #a855f7; }
+ul.bl li code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .76rem; background: rgba(255,255,255,.12);
+  padding: 1px 5px; border-radius: 3px; color: #a5d6ff;
+}
+.slide-light ul.bl li code,
+.slide-card  ul.bl li code { background: #f0f4f8; color: #c0392b; }
+
+/* ── Summary item ────────────────────────────────────── */
+.sumi {
+  display: flex; align-items: stretch;
+  background: var(--white); border-radius: 6px;
+  box-shadow: 0 1px 8px rgba(0,0,0,.08);
+  overflow: hidden; margin-bottom: .6rem;
+}
+.sumi-num {
+  min-width: 54px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 1.2rem; font-weight: 900; color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+}
+.sumi-body { padding: .6rem .9rem; font-size: .84rem; line-height: 1.6; color: var(--text); }
+.sumi-body strong { color: var(--navy); }
+
+/* ── Quiz ────────────────────────────────────────────── */
+.quiz-q {
+  font-size: clamp(.95rem, 2vw, 1.2rem);
+  font-weight: 700; color: #e2e8f0;
+  margin-bottom: 1.2rem; line-height: 1.6; text-align: center;
+}
+.qopts { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; max-width: 680px; margin: 0 auto; }
+.qbtn {
+  background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.13);
+  color: #e2e8f0; border-radius: 8px; padding: .85rem 1.1rem;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: .85rem; font-weight: 700;
+  cursor: pointer; text-align: left; line-height: 1.45;
+  transition: background .2s, border-color .2s, transform .15s;
+}
+.qbtn:hover { background: rgba(168,85,247,.22); border-color: #a855f7; transform: translateY(-2px); }
+.qbtn.correct { background: rgba(26,122,74,.35); border-color: #4ade80; color: #4ade80; }
+.qbtn.wrong   { background: rgba(192,57,43,.25); border-color: #f87171; color: #f87171; }
+.qbtn:disabled { cursor: default; transform: none; }
+.qfb {
+  text-align: center; margin-top: .9rem;
+  font-size: .88rem; font-weight: 700;
+  min-height: 1.4rem; opacity: 0; transition: opacity .3s;
+  line-height: 1.6;
+}
+.qfb.show { opacity: 1; }
+
+/* ── Highlight ───────────────────────────────────────── */
+.hl {
+  text-align: center; font-size: .92rem; font-weight: 700;
+  font-style: italic; color: var(--teal);
+  margin-top: auto; padding-top: .7rem;
+}
+.slide-dark .hl { color: var(--amber); }
+.slide-ich  .hl { color: var(--ichmed); }
+.slide-code .hl { color: var(--ich); }
+.slide-quiz .hl { color: #a855f7; }
+
+/* ── Pill ────────────────────────────────────────────── */
+.pill   { font-family: 'JetBrains Mono', monospace; font-size: .8rem; background: #161b22; border: 1px solid #30363d; color: #ffa657; padding: 2px 8px; border-radius: 4px; }
+.pill-l { font-family: 'JetBrains Mono', monospace; font-size: .8rem; background: #f0f4f8; border: 1px solid #dde3ea; color: #c0392b; padding: 2px 8px; border-radius: 4px; }
+
+/* ── Step flow ───────────────────────────────────────── */
+.step-flow { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin: .5rem 0; }
+.step-box  { background: var(--navy); color: #fff; border-radius: 6px; padding: .4rem .8rem; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+.step-arrow { color: var(--amber); font-size: 1.1rem; font-weight: 900; }
+
+/* ── Big stat ────────────────────────────────────────── */
+.big-stat { text-align: center; }
+.big-stat .num-big { font-size: clamp(2.2rem,5vw,3.5rem); font-weight: 900; color: var(--ichmed); font-family: 'JetBrains Mono', monospace; }
+.big-stat .num-label { font-size: .8rem; color: rgba(255,255,255,.55); margin-top: .25rem; }
+
+/* ── Compare table ───────────────────────────────────── */
+.cmp-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+.cmp-table th { background: var(--navy); color: #fff; padding: .45rem .7rem; text-align: left; font-weight: 700; }
+.cmp-table td { padding: .42rem .7rem; border-bottom: 1px solid #e2e8f0; color: var(--text); vertical-align: top; line-height: 1.5; }
+.cmp-table tr:nth-child(even) td { background: #f8fafc; }
+.cmp-table td:first-child { font-weight: 700; color: var(--navy); white-space: nowrap; }
+
+/* ── Animations ──────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide.active .an { animation: fadeUp .5s ease both; }
+.slide.active .an:nth-child(1) { animation-delay: .05s; }
+.slide.active .an:nth-child(2) { animation-delay: .12s; }
+.slide.active .an:nth-child(3) { animation-delay: .19s; }
+.slide.active .an:nth-child(4) { animation-delay: .26s; }
+.slide.active .an:nth-child(5) { animation-delay: .33s; }
+.slide.active .an:nth-child(6) { animation-delay: .40s; }
+.slide.active .an:nth-child(7) { animation-delay: .47s; }
+.slide.active .an:nth-child(8) { animation-delay: .54s; }
+
+/* ── Nav ─────────────────────────────────────────────── */
+#nav {
+  position: fixed; bottom: 1.2rem; right: 1.5rem;
+  display: flex; align-items: center; gap: .7rem; z-index: 9999;
+}
+.nbtn {
+  background: rgba(255,255,255,.13); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.22); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  font-size: 1.1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s, transform .15s;
+}
+.nbtn:hover { background: rgba(255,255,255,.28); transform: scale(1.08); }
+#sc {
+  color: rgba(255,255,255,.65); font-size: .76rem;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 52px; text-align: center;
+}
+#bar {
+  position: fixed; bottom: 0; left: 0; height: 3px;
+  background: var(--ich); transition: width .35s ease; z-index: 9999;
+}
+#hint {
+  position: fixed; bottom: 1.25rem; left: 1.5rem;
+  color: rgba(255,255,255,.3); font-size: .67rem;
+  font-family: 'JetBrains Mono', monospace; pointer-events: none;
+}
+
+/* ── Vol nav top ─────────────────────────────────────── */
+#volnav {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: .3rem;
+  padding: .4rem 1rem; background: rgba(10,15,26,.82); backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,.08); z-index: 9998;
+}
+#volnav a {
+  font-size: .68rem; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 10px; border-radius: 3px; text-decoration: none;
+  color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.1);
+  transition: all .2s;
+}
+#volnav a:hover { color: #fff; border-color: rgba(255,255,255,.3); }
+#volnav a.current { color: #fff; background: var(--ich); border-color: var(--ich); }
+#volnav .series-label { font-size: .65rem; color: rgba(255,255,255,.3); letter-spacing: .1em; margin-right: .4rem; }
+
+/* ── Util ────────────────────────────────────────────── */
+.mb1 { margin-bottom: .55rem; }
+.mb2 { margin-bottom: 1rem; }
+.center { text-align: center; }
+.small  { font-size: .75rem; color: var(--gray); }
+.mono   { font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+
+<!-- ── Vol ナビ ────────────────────────────────────── -->
+<div id="volnav">
+  <span class="series-label">文献検索入門</span>
+  <a href="lit_vol1.html">Vol.1 PubMed</a>
+  <a href="lit_vol2.html" class="current">Vol.2 医中誌</a>
+  <a href="lit_vol3.html">Vol.3 UpToDate</a>
+  <a href="lit_vol4.html">Vol.4 Scopus</a>
+  <a href="lit_vol5.html">Vol.5 まとめ</a>
+</div>
+
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════════════════════════
+  S1: タイトル
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4rem;margin-top:1.5rem;">
+    <div class="an" style="background:var(--ich);color:#fff;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">文献検索入門シリーズ</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 2 / 5</div>
+    <div class="an title-main">医中誌<span style="color:#81c784;font-size:60%;">Web</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">
+      日本語論文の海を<span style="color:var(--amber);">泳ぐ</span><br>
+      シソーラス・絞り込み・PubMedとの連携まで
+    </div>
+    <div class="an" style="margin-top:.6rem;display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;">
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">🇯🇵 日本語論文</span>
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">📖 30スライド</span>
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">🤝 PubMed連携</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S2: 前回の復習
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">REVIEW</span>
+  <h2 class="stitle an">Vol.1 の復習：PubMed でできること</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="row an">
+      <div class="row-lbl" style="background:#336699;">✅</div>
+      <div class="row-body">AND / OR / NOT で<strong>検索式</strong>を組み立てられる</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#336699;">✅</div>
+      <div class="row-body">MeSH（Medical Subject Headings）で<strong>表現ゆれを吸収</strong>できる</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#336699;">✅</div>
+      <div class="row-body">Advanced Search の<strong>History</strong>で複雑な検索式を組み合わせられる</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#336699;">✅</div>
+      <div class="row-body"><strong>Alert</strong> で新着論文を自動受信・MyNCBIで文献を管理できる</div>
+    </div>
+    <div class="card-warn an" style="font-size:.83rem;margin-top:.3rem;">
+      ⚠️ <strong>PubMedの限界</strong>：英語論文が中心。<strong>日本語論文・国内の統計・国内ガイドラインは PubMedでは拾えない</strong>ことが多い。<br>
+      → そこで登場するのが <strong style="color:var(--ich);">医中誌Web</strong> だ！
+    </div>
+  </div>
+  <div class="hl an">「英語 + 日本語」で初めて文献調査が完成する</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S3: 今日学ぶこと
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-ich an">Vol.2 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--navy);">① 医中誌とは</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">何が収録されているか・誰が作ったか・なぜ必要か</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--ich);">② 基本検索</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">キーワード・絞り込み・検索結果の読み方</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#388E3C;">③ シソーラス</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">医中誌版「MeSH」：統制語彙で表現ゆれを乗り越える</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);">④ 詳細検索</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">フィールド指定・論文種別・年齢区分・研究デザイン</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#7c3aed;">⑤ PubMed連携</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">2つのDBを組み合わせて<strong>網羅的な文献検索</strong>を完成させる戦略</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">⑥ 実践Tips</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">卒論・学会発表・論文投稿での医中誌活用シーン</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S4: 医中誌とは
+══════════════════════════════════════════════ -->
+<div class="slide slide-ich" id="s4">
+  <span class="tag an" style="background:var(--ichmed);color:#0a1a0a;">WHAT IS 医中誌?</span>
+  <h2 class="stitle an">医中誌Web とは何か</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;">
+    <div class="g3 an">
+      <div class="big-stat">
+        <div class="num-big">1,300<span style="font-size:50%;">万+</span></div>
+        <div class="num-label">収録論文数</div>
+      </div>
+      <div class="big-stat">
+        <div class="num-big">1983</div>
+        <div class="num-label">電子化開始年</div>
+      </div>
+      <div class="big-stat">
+        <div class="num-big">7,000<span style="font-size:50%;">誌+</span></div>
+        <div class="num-label">収録雑誌数</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.5rem;" class="an">
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--ich);min-width:4rem;font-size:.7rem;">運営</div>
+        <div class="row-body" style="color:#e2e8f0;">特定非営利活動法人 医学中央雑誌刊行会（医中誌）。<strong style="color:var(--ichmed);">1903年創刊</strong>の「医学中央雑誌」が起源。120年の歴史を持つ</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--ich);min-width:4rem;font-size:.7rem;">収録</div>
+        <div class="row-body" style="color:#e2e8f0;">日本の医学・歯学・薬学・看護・獣医・生命科学分野の国内雑誌論文。症例報告・総説・原著・学会抄録を収録</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--ich);min-width:4rem;font-size:.7rem;">アクセス</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:#f87171;">機関契約が必要</strong>（有料）。大学・病院の図書館経由でアクセスする。個人契約プランもあり</div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">医中誌は「日本の医学知識を120年守り続けてきた番人」</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S5: PubMedにない理由
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s5">
+  <span class="tag tag-amber an">なぜ必要か</span>
+  <h2 class="stitle an">PubMedだけでは足りない理由</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#c62828;">症例報告</div>
+      <div class="cr-arr" style="background:#1a0808;color:#f87171;">!</div>
+      <div class="cr-body" style="background:#1a0808;color:#e2e8f0;">日本の<strong style="color:#f87171;">希少疾患・珍しい病態</strong>の症例報告の多くは日本語雑誌のみに掲載。PubMedに登録されていない</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#1565c0;">国内統計</div>
+      <div class="cr-arr" style="background:#0d1a2a;color:#60a5fa;">!</div>
+      <div class="cr-body" style="background:#0d1a2a;color:#e2e8f0;"><strong style="color:#60a5fa;">日本人特有の疾患頻度・疫学データ</strong>（胃がん・H.pylori感染率など）は日本語論文にしかない情報が多い</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#2e7d32;">ガイドライン</div>
+      <div class="cr-arr" style="background:#0d1a0d;color:#4ade80;">!</div>
+      <div class="cr-body" style="background:#0d1a0d;color:#e2e8f0;"><strong style="color:#4ade80;">日本の診療ガイドライン</strong>の根拠として引用されている国内エビデンス。国際ガイドラインと別に確認が必要</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#b45309;">学会発表</div>
+      <div class="cr-arr" style="background:#1a1200;color:#fbbf24;">!</div>
+      <div class="cr-body" style="background:#1a1200;color:#e2e8f0;"><strong style="color:#fbbf24;">国内学会の抄録・総説</strong>は医中誌にしかない。論文化前の最新データもここで見つかる</div>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:var(--ich);">
+      💡 <strong style="color:var(--ichmed);">鉄則</strong>：卒業論文・系統的レビュー・国内の医療政策調査では、<strong style="color:#fff;">PubMed + 医中誌の両方</strong>を検索することが標準。片方だけでは「調べた」とは言えない。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S6: アクセス方法
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s6">
+  <span class="tag tag-ich an">アクセス</span>
+  <h2 class="stitle an">医中誌Webへのアクセス方法</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="card-ich an" style="font-size:.83rem;">
+      🌐 <strong>URL：</strong><span class="mono" style="color:var(--ich);font-size:.82rem;">https://www.jamas.or.jp/</span>（医中誌刊行会）<br>
+      実際の検索画面：<span class="mono" style="color:var(--ich);font-size:.78rem;">https://search.jamas.or.jp/</span>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>🏫 大学・病院からアクセス</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>学内ネットワーク（学内Wi-Fi）から直接アクセス</li>
+            <li>学外からは<strong>VPN</strong>または学認（Shibboleth）でログイン</li>
+            <li>図書館のサイトから「データベース一覧」→医中誌を選択</li>
+          </ul>
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>💻 個人契約プラン</strong><br>
+          個人での契約も可能（有料）。卒後の継続利用や、所属機関に契約がない場合に。月額・年額プランがある。
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ アクセスできない場合</strong><br>
+          • 図書館カウンターに相談<br>
+          • VPN設定が必要な場合は大学IT部門へ<br>
+          • 文献複写（ILL）で個別論文を入手する手も
+        </div>
+        <div class="card-ich" style="font-size:.8rem;">
+          <strong>📱 スマートフォン対応</strong><br>
+          スマホ・タブレットからもアクセス可能。学外ではVPN接続が必要な場合がほとんど。
+        </div>
+      </div>
+    </div>
+    <div class="card-green an" style="font-size:.82rem;">
+      ✅ <strong>今すぐやること</strong>：所属大学の図書館ウェブサイトを開いて「医中誌」を検索してみよう。リンクがあればそこから接続できる。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S7: 基本検索画面の構造
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s7">
+  <span class="tag tag-ich an">基本操作</span>
+  <h2 class="stitle an">医中誌Webの画面構成</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--ich);">①</div>
+      <div class="sumi-body"><strong>フリーワード検索</strong>：画面上部の検索ボックス。日本語でキーワードを入力。「高血圧」「糖尿病」など直感的に使える</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:#388E3C;">②</div>
+      <div class="sumi-body"><strong>詳細検索</strong>：フィールドを指定して細かく条件を設定。タイトル・著者・所属・誌名・年など。PubMedのAdvanced Searchに相当</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--amber);">③</div>
+      <div class="sumi-body"><strong>検索履歴（AND/OR合成）</strong>：PubMedのHistoryと同じ概念。過去の検索番号を組み合わせて複雑な式が作れる</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--teal);">④</div>
+      <div class="sumi-body"><strong>絞り込み</strong>：結果表示後、左サイドバーで年代・論文種別・年齢区分・研究デザインなどを絞り込める</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:#7c3aed;">⑤</div>
+      <div class="sumi-body"><strong>シソーラス参照</strong>：検索語からシソーラス（統制語彙）を確認・選択できる。これが医中誌の最重要機能のひとつ</div>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      💡 画面のデザインはPubMedと異なるが、<strong>思想は同じ</strong>。PubMedを学んだ感覚がそのまま活きる。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S8: フリーワード検索
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s8">
+  <span class="tag tag-ich an">基本操作</span>
+  <h2 class="stitle an">フリーワード検索：まず日本語で探す</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an">
+      <div class="step-flow">
+        <div class="step-box">キーワード入力</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">検索ボタン</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">結果一覧</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">絞り込み</div>
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-green" style="font-size:.8rem;">
+        ✅ <strong>効果的なキーワード例</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>病名（高血圧、糖尿病、心不全）</li>
+          <li>治療法（薬物療法、手術療法）</li>
+          <li>対象（高齢者、小児、妊婦）</li>
+          <li>英語でも検索可能（英語名で収録の場合）</li>
+        </ul>
+      </div>
+      <div class="card-warn" style="font-size:.8rem;">
+        ⚠️ <strong>注意点</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>表記ゆれに注意：「心筋梗塞」「心筋こうそく」</li>
+          <li>略語の扱い：「AMI」より「急性心筋梗塞」の方が安全</li>
+          <li>フリーワードだけでは見落としが出やすい → シソーラスと組み合わせる</li>
+        </ul>
+      </div>
+    </div>
+    <div class="cb an">
+      <div class="cb-head">
+        <div class="dot" style="background:#ff5f57;"></div>
+        <div class="dot" style="background:#febc2e;"></div>
+        <div class="dot" style="background:#28c840;"></div>
+        <div class="cb-lang">医中誌 フリーワード検索例</div>
+      </div>
+      <div class="cb-body"><code><span class="cm">-- 基本：1語で広く</span>
+高血圧
+
+<span class="cm">-- AND で絞る（スペース区切りまたはAND演算子）</span>
+高血圧 AND 薬物療法
+
+<span class="cm">-- ORで表記ゆれをまとめる</span>
+(心筋梗塞 OR 心筋こうそく OR AMI) AND 治療
+
+<span class="cm">-- フィールド指定（タイトルに含む）</span>
+高血圧/TH  <span class="cm">← シソーラス語を使う場合</span></code></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S9: 検索結果の読み方
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s9">
+  <span class="tag tag-ich an">基本操作</span>
+  <h2 class="stitle an">検索結果の読み方</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--ich);">①</div>
+      <div class="sumi-body"><strong>タイトル</strong>：クリックで詳細画面へ。タイトルだけで内容の8割がわかるよう書かれていることが多い（日本語なので読みやすい）</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:#388E3C;">②</div>
+      <div class="sumi-body"><strong>著者・所属</strong>：著者名と所属機関が表示される。同じ著者の他の論文を追うことも可能</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--amber);">③</div>
+      <div class="sumi-body"><strong>雑誌名・巻・号・ページ・年</strong>：引用文献を書くときにそのまま使える。J-STAGEへのリンクが表示されることも</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:var(--teal);">④</div>
+      <div class="sumi-body"><strong>医中誌ID</strong>：各論文に付与される一意の番号。PubMedのPMIDに相当。論文を特定するときに使う</div>
+    </div>
+    <div class="sumi an">
+      <div class="sumi-num" style="background:#7c3aed;">⑤</div>
+      <div class="sumi-body"><strong>抄録（Abstract）</strong>：あれば表示される。ない論文も多い（特に古い論文・学会抄録）</div>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      🔗 <strong>全文へのリンク</strong>：J-STAGE（無料）・機関契約誌（大学経由）・CiNii・外部サイトへのリンクが表示されることがある
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S10: シソーラスとは
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s10">
+  <span class="tag tag-amber an">シソーラス 入門</span>
+  <h2 class="stitle an">シソーラス：医中誌版「MeSH」</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="an" style="font-size:.88rem;color:#e2e8f0;line-height:1.7;">
+      シソーラス（Thesaurus）= 医中誌が独自に整備した<strong style="color:#81c784;">統制語彙</strong>（統一された用語リスト）。<br>
+      PubMedのMeSHと同じ役割を、日本語の医学論文に対して担う。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-dark" style="font-size:.82rem;border-color:var(--ich);">
+        <strong style="color:#81c784;">🗂️ なぜシソーラスが必要か</strong><br>
+        「心不全」には表記ゆれがある：<br>
+        心不全 / 心臓不全 / ハートフェイラー / cardiac failure<br><br>
+        シソーラスでは <strong style="color:#4ade80;">「心不全」</strong> に統一。<br>
+        どの表記で書いた論文もまとめてヒットする。
+      </div>
+      <div class="card-dark" style="font-size:.82rem;border-color:var(--ich);">
+        <strong style="color:#81c784;">🌳 ツリー構造</strong><br>
+        MeSHと同様に階層（ツリー）構造になっている。<br><br>
+        例：循環器疾患 → 心疾患 → 心不全 → 収縮期心不全<br><br>
+        上位語で検索すると、下位語の論文もまとめてヒット（Explode）。
+      </div>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:#1a7a4a;">
+      <strong style="color:#4ade80;">✅ シソーラスの使い方</strong>：検索ボックスにキーワードを入力 → 「シソーラス参照」ボタン → 対応する統制語を確認 → チェックして検索に追加<br>
+      または直接 <code class="pill">心不全/TH</code> と入力（/TH = Thesaurus の略）
+    </div>
+  </div>
+  <div class="hl an">シソーラスを使わないのは、地図なしで宝探しをするようなもの</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S11: シソーラス実践
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s11">
+  <span class="tag tag-ich an">シソーラス 実践</span>
+  <h2 class="stitle an">シソーラスを実際に使う</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an">
+      <div class="step-flow">
+        <div class="step-box">①キーワード入力</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">②「シソーラス参照」</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">③統制語を確認</div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">④チェックして検索</div>
+      </div>
+    </div>
+    <div class="cb an">
+      <div class="cb-head">
+        <div class="dot" style="background:#ff5f57;"></div>
+        <div class="dot" style="background:#febc2e;"></div>
+        <div class="dot" style="background:#28c840;"></div>
+        <div class="cb-lang">シソーラス + フリーワード 組み合わせ（推奨）</div>
+      </div>
+      <div class="cb-body"><code><span class="cm">-- シソーラス語のみ（確実だが最近の論文を漏らすことも）</span>
+糖尿病,2型/TH AND インスリン治療/TH
+
+<span class="cm">-- フリーワードのみ（新語・略語も拾えるが漏れが出やすい）</span>
+2型糖尿病 AND インスリン療法
+
+<span class="cm">-- 組み合わせが最強（推奨）</span>
+(糖尿病,2型/TH OR 2型糖尿病 OR T2DM)
+AND
+(インスリン治療/TH OR インスリン療法 OR インスリン投与)
+
+<span class="cm">-- 論文種別を追加</span>
+... AND PT=原著論文</code></div>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      💡 <strong>PubMedとの対応関係</strong>：<code class="pill-l">シソーラス/TH</code> ＝ PubMedの <code class="pill-l">[mh]</code>（MeSH語）。考え方は全く同じ！
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S12: クイズ1（シソーラス）
+══════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s12">
+  <span class="tag tag-purple an">QUIZ 1</span>
+  <h2 class="stitle an" style="border-color:#a855f7;">シソーラスクイズ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;" id="q1">
+    <div class="quiz-q an">
+      「脳卒中」の論文を医中誌で漏れなく検索したい。<br>
+      最も適切な方法はどれか？
+    </div>
+    <div class="qopts an">
+      <button class="qbtn" onclick="ansQ1(this,'a')">A）「脳卒中」でフリーワード検索のみ</button>
+      <button class="qbtn" onclick="ansQ1(this,'b')">B）シソーラスで「脳卒中」の統制語を確認してから /TH で検索</button>
+      <button class="qbtn" onclick="ansQ1(this,'c')">C）「Stroke」で英語検索のみ</button>
+      <button class="qbtn" onclick="ansQ1(this,'d')">D）「脳卒中/TH OR 脳卒中 OR 脳梗塞 OR 脳出血」で検索</button>
+    </div>
+    <div class="qfb an" id="q1fb"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S13: 詳細検索
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s13">
+  <span class="tag tag-ich an">詳細検索</span>
+  <h2 class="stitle an">詳細検索：フィールドを指定する</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-ich an" style="font-size:.83rem;">
+      📍 <strong>詳細検索の場所</strong>：トップページの「詳細検索」タブ または フリーワード検索後の「詳細検索に切り替え」
+    </div>
+    <div class="an">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>フィールド</th><th>記号</th><th>使い方・例</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>タイトル</td><td><code class="pill-l">TI</code></td><td>タイトルに含む語を指定。絞り込みに強い</td></tr>
+          <tr><td>抄録</td><td><code class="pill-l">AB</code></td><td>抄録中の語を検索。TIより広く拾える</td></tr>
+          <tr><td>著者名</td><td><code class="pill-l">AU</code></td><td>特定の著者の論文を探す。姓名の順に注意</td></tr>
+          <tr><td>所属機関</td><td><code class="pill-l">AF</code></td><td>特定の大学・病院の研究を探す</td></tr>
+          <tr><td>誌名</td><td><code class="pill-l">SO</code></td><td>特定の雑誌に掲載された論文を探す</td></tr>
+          <tr><td>シソーラス</td><td><code class="pill-l">TH</code></td><td>統制語彙。最も正確な主題検索が可能</td></tr>
+          <tr><td>論文種別</td><td><code class="pill-l">PT</code></td><td>原著論文・症例報告・総説など</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-blue an" style="font-size:.8rem;">
+      💡 <strong>組み合わせ例</strong>：<code class="pill-l">高血圧/TH AND 薬物療法/TH AND PT=ランダム化比較試験</code><br>
+      → シソーラス語 + 論文種別指定 で精度の高い絞り込み
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S14: 絞り込み機能
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s14">
+  <span class="tag tag-ich an">絞り込み</span>
+  <h2 class="stitle an">絞り込み機能：件数の暴力に対抗する</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.45rem;">
+        <div class="row">
+          <div class="row-lbl" style="background:var(--ich);font-size:.7rem;">📅</div>
+          <div class="row-body" style="font-size:.8rem;"><strong>発行年</strong>：開始〜終了年を指定。例：2019年〜2024年</div>
+        </div>
+        <div class="row">
+          <div class="row-lbl" style="background:#388E3C;font-size:.7rem;">📄</div>
+          <div class="row-body" style="font-size:.8rem;"><strong>論文種別</strong>：原著論文・症例報告・総説・解説・会議録など</div>
+        </div>
+        <div class="row">
+          <div class="row-lbl" style="background:var(--amber);font-size:.7rem;">👤</div>
+          <div class="row-body" style="font-size:.8rem;"><strong>年齢区分</strong>：新生児・乳児・幼児・学童・成人・高齢者など</div>
+        </div>
+        <div class="row">
+          <div class="row-lbl" style="background:var(--teal);font-size:.7rem;">⚥</div>
+          <div class="row-body" style="font-size:.8rem;"><strong>性別</strong>：男・女・指定なし</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.45rem;">
+        <div class="row">
+          <div class="row-lbl" style="background:#7c3aed;font-size:.7rem;">🔬</div>
+          <div class="row-body" style="font-size:.8rem;"><strong>研究デザイン</strong>：ランダム化比較試験・コホート研究・症例対照研究・メタ解析など</div>
+        </div>
+        <div class="row">
+          <div class="row-lbl" style="background:#c62828;font-size:.7rem;">🐾</div>
+          <div class="row-body" style="font-size:.8rem;"><strong>対象</strong>：ヒト・動物・両方。ヒトのみに絞るとき必須</div>
+        </div>
+        <div class="row">
+          <div class="row-lbl" style="background:#b45309;font-size:.7rem;">🔓</div>
+          <div class="row-body" style="font-size:.8rem;"><strong>本文あり</strong>：全文リンクのある論文だけに絞る</div>
+        </div>
+        <div class="row">
+          <div class="row-lbl" style="background:var(--navy);font-size:.7rem;">🗣️</div>
+          <div class="row-body" style="font-size:.8rem;"><strong>言語</strong>：日本語・英語・その他</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      ⚠️ <strong>注意</strong>：絞り込みのかけすぎは見落としの原因。特にシステマティックレビューでは「どの絞り込みを使ったか」を論文に明記する必要がある。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S15: 論文種別の詳細
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s15">
+  <span class="tag tag-amber an">論文種別</span>
+  <h2 class="stitle an">論文種別を使い分ける</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--navy);min-width:90px;">原著論文</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body"><strong>一次研究の本体</strong>。新しいデータ・実験・調査の結果を報告する。エビデンスの土台</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--ich);min-width:90px;">症例報告</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">珍しい病態・薬剤の副作用・予想外の経過などを1〜数例で報告。稀少疾患の情報源として重要</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#388E3C;min-width:90px;">総説</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">特定のテーマの研究を網羅的にまとめた論文。あるテーマの全体像を掴むのに最適。ただしSRとは別物</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#7c3aed;min-width:90px;">メタ解析</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">複数のRCTを統計的に統合した研究。エビデンスピラミッドの頂点。「日本版メタ解析」は医中誌で見つかることも</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);min-width:90px;">会議録</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">学会発表の抄録。論文化前の最新データが含まれる。ただし査読なし・エビデンスレベルは低い</div>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      💡 <strong>使い分け戦略</strong>：全体像 → 総説 / 最新エビデンス → 原著・ランダム化比較試験 / 珍しい病態 → 症例報告 / 最先端情報 → 会議録
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S16: 検索履歴の活用
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s16">
+  <span class="tag tag-ich an">検索履歴</span>
+  <h2 class="stitle an">検索履歴：PubMed History と同じ仕組み</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-ich an" style="font-size:.83rem;">
+      🔑 <strong>考え方</strong>：検索のたびに番号（#1, #2…）が自動でつく。番号を AND / OR で組み合わせると複雑な検索式が作れる。
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="row">
+        <div class="row-lbl" style="background:var(--ich);font-family:monospace;font-size:.85rem;">#1</div>
+        <div class="row-body">「脳卒中/TH OR 脳卒中 OR 脳梗塞」　→　<strong>23,847件</strong></div>
+      </div>
+      <div class="row">
+        <div class="row-lbl" style="background:#388E3C;font-family:monospace;font-size:.85rem;">#2</div>
+        <div class="row-body">「リハビリテーション/TH OR リハビリ OR 理学療法」　→　<strong>41,209件</strong></div>
+      </div>
+      <div class="row">
+        <div class="row-lbl" style="background:var(--amber);font-family:monospace;font-size:.85rem;">#3</div>
+        <div class="row-body">「PT=ランダム化比較試験」　→　<strong>12,043件</strong></div>
+      </div>
+      <div class="row" style="border-left:4px solid var(--ich);">
+        <div class="row-lbl" style="background:var(--navy);font-family:monospace;font-size:.85rem;">#4</div>
+        <div class="row-body"><code>#1 AND #2 AND #3</code>　→　<strong style="color:var(--ich);">287件</strong>　←　欲しかった文献群！</div>
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;margin-top:.2rem;">
+      <div class="card-green" style="font-size:.8rem;">
+        ✅ <strong>履歴のメリット</strong><br>
+        各ステップの件数が見える・SR論文に「検索式」として記載できる・やり直しが楽
+      </div>
+      <div class="card-warn" style="font-size:.8rem;">
+        ⚠️ <strong>保存に注意</strong><br>
+        ログアウト・ブラウザを閉じると履歴が消える。ログインすると検索式を保存できる（マイ医中誌）
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S17: クイズ2（絞り込み）
+══════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s17">
+  <span class="tag tag-purple an">QUIZ 2</span>
+  <h2 class="stitle an" style="border-color:#a855f7;">絞り込みクイズ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;" id="q2">
+    <div class="quiz-q an">
+      医学部の卒業論文で「日本の高齢者における転倒予防」を調べる。<br>
+      医中誌で最も効果的な絞り込みの組み合わせはどれか？
+    </div>
+    <div class="qopts an">
+      <button class="qbtn" onclick="ansQ2(this,'a')">A）言語：日本語のみ</button>
+      <button class="qbtn" onclick="ansQ2(this,'b')">B）年齢：高齢者 ＋ 論文種別：原著論文 ＋ 対象：ヒト</button>
+      <button class="qbtn" onclick="ansQ2(this,'c')">C）論文種別：会議録のみ</button>
+      <button class="qbtn" onclick="ansQ2(this,'d')">D）絞り込みは一切使わない</button>
+    </div>
+    <div class="qfb an" id="q2fb"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S18: J-STAGEとの連携
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s18">
+  <span class="tag tag-green an">全文入手</span>
+  <h2 class="stitle an">J-STAGEで全文を無料で読む</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-ich an" style="font-size:.83rem;">
+      🌐 <strong>J-STAGE</strong>（科学技術情報発信・流通総合システム）：国立研究開発法人 科学技術振興機構（JST）が運営する<strong>無料の学術論文プラットフォーム</strong>。<br>
+      URL：<span class="mono" style="color:var(--ich);font-size:.8rem;">https://www.jstage.jst.go.jp/</span>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ J-STAGEで読める論文</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>公開から一定期間後に無料になる論文が多い</li>
+            <li>オープンアクセス誌は即時無料</li>
+            <li>医中誌の検索結果からリンクが張られることがある</li>
+            <li>2,500誌以上・600万本以上を収録</li>
+          </ul>
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📥 全文入手の手順</strong><br>
+          ①医中誌で論文を発見<br>
+          ②詳細画面の「J-STAGEリンク」をクリック<br>
+          ③J-STAGEで全文PDF確認<br>
+          ④なければ「CiNii」「機関リポジトリ」も確認
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ 全文が読めないとき</strong><br>
+          • 有料誌の最新号 → 大学図書館経由<br>
+          • 機関リポジトリ（各大学のDR）を検索<br>
+          • 図書館ILL（文献複写）を申請<br>
+          • 著者に直接メールで依頼
+        </div>
+        <div class="card-ich" style="font-size:.8rem;">
+          <strong>📚 CiNii Research</strong><br>
+          国立情報学研究所（NII）が提供する学術情報検索。日本の機関リポジトリと連携しており、無料で読める論文を見つけやすい。<br>
+          <span class="mono" style="font-size:.76rem;color:var(--ich);">https://cir.nii.ac.jp/</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S19: PubMed vs 医中誌 比較表
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s19">
+  <span class="tag tag-teal an">比較</span>
+  <h2 class="stitle an">PubMed vs 医中誌Web：徹底比較</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="an">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>項目</th><th style="color:#66aadd;">PubMed</th><th style="color:#81c784;">医中誌Web</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>運営</td><td>米国NLM / NIH</td><td>医学中央雑誌刊行会（日本）</td></tr>
+          <tr><td>収録言語</td><td>英語中心（多言語あり）</td><td>日本語中心（一部英語あり）</td></tr>
+          <tr><td>収録件数</td><td>約3,600万件+</td><td>約1,300万件+</td></tr>
+          <tr><td>費用</td><td>無料</td><td>機関契約（有料）</td></tr>
+          <tr><td>統制語彙</td><td>MeSH</td><td>シソーラス</td></tr>
+          <tr><td>症例報告</td><td>少ない（英語誌のみ）</td><td>豊富（日本語）</td></tr>
+          <tr><td>国内疫学・統計</td><td>ほぼなし</td><td>豊富</td></tr>
+          <tr><td>学会抄録</td><td>限定的</td><td>充実</td></tr>
+          <tr><td>全文リンク</td><td>PMC（無料）・有料誌</td><td>J-STAGE・CiNii・機関誌</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      🎯 <strong>結論</strong>：<strong>どちらが優れているか？ → 目的が違うので比べられない。</strong> 国際的なエビデンスはPubMed、日本の実情はは医中誌で探す。両方必須。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S20: 連携戦略
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s20">
+  <span class="tag tag-amber an">連携戦略</span>
+  <h2 class="stitle an">PubMed + 医中誌：最強の組み合わせ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="an">
+      <div class="step-flow" style="justify-content:center;">
+        <div class="step-box" style="background:#336699;">PubMed<br><span style="font-size:.7rem;font-weight:400;">国際エビデンス</span></div>
+        <div class="step-arrow">+</div>
+        <div class="step-box" style="background:var(--ich);">医中誌Web<br><span style="font-size:.7rem;font-weight:400;">国内エビデンス</span></div>
+        <div class="step-arrow">=</div>
+        <div class="step-box" style="background:#b45309;">完全な<br>文献調査</div>
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-dark" style="font-size:.82rem;border-color:#336699;">
+        <strong style="color:#66aadd;">🌍 PubMedを使うとき</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>国際的なRCT・システマティックレビュー</li>
+          <li>ガイドラインの根拠となる大規模研究</li>
+          <li>最新の研究動向・概念の確認</li>
+          <li>英語論文でのエビデンス水準の評価</li>
+        </ul>
+      </div>
+      <div class="card-dark" style="font-size:.82rem;border-color:var(--ich);">
+        <strong style="color:#81c784;">🇯🇵 医中誌を使うとき</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>日本の疾患頻度・有病率・疫学</li>
+          <li>国内ガイドラインの根拠</li>
+          <li>日本特有の疾患・病態の症例報告</li>
+          <li>国内の医療政策・診療実態の把握</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card-dark an" style="font-size:.82rem;border-color:#b45309;">
+      📋 <strong style="color:#ffa657;">システマティックレビューでの鉄則</strong>：<br>
+      「PubMed + 医中誌の両方を検索した」と論文のMethodsに明記することが必須。<br>
+      片方だけでは査読で「検索の網羅性が不十分」と指摘される。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S21: 検索式の統一
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s21">
+  <span class="tag tag-ich an">実践</span>
+  <h2 class="stitle an">同じテーマで PubMed + 医中誌 を検索する</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="an" style="font-size:.82rem;color:#8b949e;">テーマ：「高齢者の転倒予防における運動介入の効果」</div>
+    <div class="cb an">
+      <div class="cb-head">
+        <div class="dot" style="background:#ff5f57;"></div>
+        <div class="dot" style="background:#febc2e;"></div>
+        <div class="dot" style="background:#28c840;"></div>
+        <div class="cb-lang">PubMed 検索式</div>
+      </div>
+      <div class="cb-body"><code>(<span class="tg">"Aged"</span>[mh] OR elderly OR older adults)
+AND
+(<span class="tg">"Accidental Falls"</span>[mh] OR fall prevention OR falls)
+AND
+(<span class="tg">"Exercise Therapy"</span>[mh] OR exercise OR physical training)
+AND <span class="tg">"Randomized Controlled Trial"</span>[pt]</code></div>
+    </div>
+    <div class="cb an">
+      <div class="cb-head">
+        <div class="dot" style="background:#ff5f57;"></div>
+        <div class="dot" style="background:#febc2e;"></div>
+        <div class="dot" style="background:#28c840;"></div>
+        <div class="cb-lang">医中誌Web 検索式</div>
+      </div>
+      <div class="cb-body"><code>(高齢者/TH OR 高齢者 OR 老年者)
+AND
+(転倒/TH OR 転倒予防 OR 転倒防止)
+AND
+(運動療法/TH OR 運動介入 OR 運動プログラム)
+AND PT=ランダム化比較試験</code></div>
+    </div>
+    <div class="card-dark an" style="font-size:.8rem;border-color:var(--ich);">
+      💡 <strong style="color:var(--ichmed);">ポイント</strong>：MeSH語 ↔ シソーラス語は同じ概念を違う語彙体系で表現したもの。PICO を先に整理しておけば、両DBの検索式は自然と対になる。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S22: 知ってた？医中誌の豆知識
+══════════════════════════════════════════════ -->
+<div class="slide slide-ich" id="s22">
+  <span class="tag an" style="background:var(--ichmed);color:#0a1a0a;">知ってた？</span>
+  <h2 class="stitle an">医中誌のちょっと面白い話</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:var(--ich);min-width:3rem;">📅</div>
+      <div class="row-body" style="color:#e2e8f0;">「医学中央雑誌」は<strong style="color:var(--ichmed);">1903年（明治36年）</strong>創刊。日露戦争の年に生まれた、日本最古の医学文献索引誌</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#388E3C;min-width:3rem;">✋</div>
+      <div class="row-body" style="color:#e2e8f0;">シソーラスの付与は今も<strong style="color:#4ade80;">専門のインデクサー（索引者）が手作業</strong>で行っている。AIも導入されているが、医学的な判断は人間が担う</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#7c3aed;min-width:3rem;">💡</div>
+      <div class="row-body" style="color:#e2e8f0;">医中誌のシソーラスは<strong style="color:#d2a8ff;">約20,000語</strong>を収録。毎年新語が追加される（新型コロナウイルス感染症も2020年に追加）</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#c62828;min-width:3rem;">🇯🇵</div>
+      <div class="row-body" style="color:#e2e8f0;">日本で行われた<strong style="color:#f87171;">臨床試験・疫学研究の多く</strong>は、英語論文として発表されてもPubMedには登録されず医中誌にしかない、という事態は今もある</div>
+    </div>
+  </div>
+  <div class="hl an">医中誌は「日本の医学史そのもの」を記録してきた</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S23: マイ医中誌（アカウント）
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s23">
+  <span class="tag tag-green an">マイ医中誌</span>
+  <h2 class="stitle an">マイ医中誌：PubMedのMyNCBIに相当</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-ich an" style="font-size:.83rem;">
+      🔑 <strong>マイ医中誌</strong>：無料で登録できる個人アカウント。機関へのログインとは別に作成する。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>💾 できること</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>検索式の保存</strong>：作り込んだ式を保存・再実行</li>
+            <li><strong>文献の保存</strong>：気になった論文をフォルダ管理</li>
+            <li><strong>SDI（自動通知）</strong>：PubMedのAlertに相当する新着通知機能</li>
+          </ul>
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📤 書き出し機能</strong><br>
+          検索結果を以下の形式で出力：<br>
+          • テキスト・CSV形式<br>
+          • 引用文献管理ソフト用（.ris形式）<br>
+          → Zotero・Mendeley・EndNoteに直接インポート可
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-ich" style="font-size:.8rem;">
+          <strong>🔔 SDI（選択的情報提供）</strong><br>
+          保存した検索式に一致する新着論文を自動でメール通知。PubMedのAlertと全く同じ仕組み。<br><br>
+          研究テーマを登録しておけば、毎週 / 毎月、新着論文が届く。
+        </div>
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ 注意</strong><br>
+          機関のアクセス権は「機関が契約している間だけ」有効。卒業・異動後はアクセスできなくなることが多い。重要な文献は在学中に保存・ダウンロードしておくこと。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S24: よくある失敗と対策
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s24">
+  <span class="tag tag-red an">よくある失敗</span>
+  <h2 class="stitle an">医中誌 あるある：失敗と対策</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#c62828;min-width:90px;">件数0件</div>
+      <div class="cr-arr" style="background:#1a0808;color:#f87171;">→</div>
+      <div class="cr-body" style="background:#1a0808;color:#e2e8f0;">表記が厳密すぎる or シソーラス語が違う<br><strong style="color:#4ade80;">対策</strong>：フリーワードに戻す・シソーラス参照で正式語を確認・ORで表記ゆれを追加</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#b45309;min-width:90px;">10万件超え</div>
+      <div class="cr-arr" style="background:#1a1200;color:#fbbf24;">→</div>
+      <div class="cr-body" style="background:#1a1200;color:#e2e8f0;">キーワードが広すぎる or フィールド指定なし<br><strong style="color:#4ade80;">対策</strong>：シソーラス/TH を使う・絞り込みを追加・タイトル（TI）フィールドに限定</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#1565c0;min-width:90px;">見落とし</div>
+      <div class="cr-arr" style="background:#0d1a2a;color:#60a5fa;">→</div>
+      <div class="cr-body" style="background:#0d1a2a;color:#e2e8f0;">シソーラスのみ or フリーワードのみ<br><strong style="color:#4ade80;">対策</strong>：シソーラス/TH ＋ フリーワードを OR で組み合わせる（両方必須）</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#2e7d32;min-width:90px;">全文なし</div>
+      <div class="cr-arr" style="background:#0d1a0d;color:#4ade80;">→</div>
+      <div class="cr-body" style="background:#0d1a0d;color:#e2e8f0;">有料誌・機関外論文<br><strong style="color:#4ade80;">対策</strong>：J-STAGE → CiNii → 機関リポジトリ → 図書館ILL → 著者へ連絡</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#7c3aed;min-width:90px;">古い論文</div>
+      <div class="cr-arr" style="background:#0d0a1a;color:#a855f7;">→</div>
+      <div class="cr-body" style="background:#0d0a1a;color:#e2e8f0;">ソート順・発行年指定忘れ<br><strong style="color:#4ade80;">対策</strong>：発行年フィルターで直近5〜10年に絞る・ソートを「新しい順」に変更</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S25: 実践シナリオ（卒論）
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s25">
+  <span class="tag tag-amber an">実践シナリオ</span>
+  <h2 class="stitle an">卒業論文での医中誌活用：実例</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-blue an" style="font-size:.83rem;">
+      📚 <strong>シナリオ</strong>：「日本の中学生における食物アレルギーの有病率と管理の現状」を卒業論文のテーマにした。
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--ich);">①</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>PubMedでまず全体像</strong>：food allergy AND prevalence AND Japan AND adolescent → 国際的なエビデンス・海外との比較データを把握</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:#388E3C;">②</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>医中誌で日本特有のデータ</strong>：食物アレルギー/TH AND 有病率 AND (中学生 OR 学童) → 日本の疫学調査・学校現場での実態報告が見つかる</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--amber);">③</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>ガイドラインを確認</strong>：「食物アレルギー診療ガイドライン」「学校生活管理指導表」関連論文を医中誌で検索</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:#7c3aed;">④</div>
+        <div class="sumi-body" style="font-size:.8rem;"><strong>両方の結果を統合</strong>：国際的な定義・分類（PubMed）＋ 日本の実態（医中誌）＝ 完成度の高い文献レビュー</div>
+      </div>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      ✅ <strong>まとめ</strong>：PubMedだけでは「日本の話」が弱い。医中誌だけでは「国際的な文脈」が弱い。両方合わせて初めて完成する。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S26: 医中誌 vs CiNii vs NDL
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s26">
+  <span class="tag tag-teal an">比較</span>
+  <h2 class="stitle an">日本語DB三兄弟：医中誌・CiNii・国会図書館</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="an">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>項目</th><th style="color:#388E3C;">医中誌Web</th><th style="color:#336699;">CiNii Research</th><th style="color:#7c3aed;">国立国会図書館</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>専門分野</td><td>医学・生命科学</td><td>全学術分野</td><td>全分野（図書含む）</td></tr>
+          <tr><td>費用</td><td>有料（機関契約）</td><td>無料</td><td>無料</td></tr>
+          <tr><td>シソーラス</td><td>あり（約20,000語）</td><td>なし</td><td>なし</td></tr>
+          <tr><td>全文リンク</td><td>J-STAGE等へリンク</td><td>機関リポジトリ等</td><td>デジタルコレクション</td></tr>
+          <tr><td>学会抄録</td><td>充実</td><td>限定的</td><td>なし（論文のみ）</td></tr>
+          <tr><td>強み</td><td>医学専門・精度高い</td><td>学際・無料・全文多い</td><td>網羅性・保存性</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      💡 <strong>使い分け</strong>：医学文献調査 → <strong>医中誌</strong> が第一選択。予算なし・学際的テーマ → CiNii Research で補完。古い文献・図書を探す → 国立国会図書館。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S27: 検索力チェックリスト
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s27">
+  <span class="tag tag-green an">CHECKLIST</span>
+  <h2 class="stitle an">Vol.2 習得チェックリスト</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.4rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid var(--ich);">🔰 基本（今日できるようになること）</div>
+        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:.25rem;">
+          <div>☐ 大学図書館経由で医中誌Webにアクセスできる</div>
+          <div>☐ 日本語キーワードでフリーワード検索できる</div>
+          <div>☐ シソーラス参照で統制語彙を確認できる</div>
+          <div>☐ 論文種別・年齢区分で絞り込みができる</div>
+          <div>☐ J-STAGEで全文を確認できる</div>
+          <div>☐ 検索履歴でAND/OR合成ができる</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.4rem;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);padding-bottom:.3rem;border-bottom:2px solid var(--amber);">🌟 発展（もう一歩進んだら）</div>
+        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:.25rem;">
+          <div>☐ シソーラス/TH + フリーワードを組み合わせられる</div>
+          <div>☐ PubMedと同じテーマで並行検索できる</div>
+          <div>☐ 詳細検索でフィールド（TI・AU・AF）を指定できる</div>
+          <div>☐ SDI（Alert）を1件設定した</div>
+          <div>☐ 文献管理ソフト用に書き出しができる</div>
+          <div>☐ マイ医中誌アカウントを作成した 🎉</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-ich an" style="font-size:.82rem;">
+      💪 <strong>今すぐできる課題</strong>：自分の卒論テーマ（または興味のある疾患）で医中誌を開き、シソーラスを使った検索式でPubMedと並行検索してみよう！
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S28: 次回予告
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s28">
+  <span class="tag tag-teal an">NEXT</span>
+  <h2 class="stitle an">次回予告：Vol.3 UpToDate</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="card-blue an" style="font-size:.84rem;">
+      📌 <strong>UpToDateとは</strong>：PubMedや医中誌は「論文を探すDB」。UpToDateは「臨床の疑問に答えてくれる意思決定支援ツール」。目的が根本的に違う。
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.5rem;">
+      <div class="sumi">
+        <div class="sumi-num" style="background:#336699;">①</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>臨床意思決定支援とは何か</strong>：「この患者に使う薬は？」に直接答えてくれる、研修医・専門医の強い味方</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--teal);">②</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>エビデンスレベルの評価</strong>：GRADEシステムで推奨の強さが表示される。「強い推奨」「弱い推奨」の読み方</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--amber);">③</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>PubMed・医中誌との使い分け</strong>：素早く答えを得たいときはUpToDate、根拠を深掘りしたいときはPubMed</div>
+      </div>
+      <div class="sumi">
+        <div class="sumi-num" style="background:var(--ich);">④</div>
+        <div class="sumi-body" style="font-size:.82rem;"><strong>限界と注意点</strong>：UpToDateはあくまで要約・解釈。一次文献への当たり方も必ず学ぶ</div>
+      </div>
+    </div>
+    <div class="an" style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-top:.2rem;">
+      <span style="background:#336699;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol1.html ✅</span>
+      <span style="background:var(--ich);color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol2.html ✅</span>
+      <span style="background:var(--amber);color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol3.html ← 次回</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol4.html</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">lit_vol5.html</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S29: ひとこと名言
+══════════════════════════════════════════════ -->
+<div class="slide slide-ich" id="s29">
+  <span class="tag an" style="background:var(--ichmed);color:#0a1a0a;">まとめ</span>
+  <h2 class="stitle an">Vol.2 で学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an" style="display:flex;flex-direction:column;gap:.5rem;">
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--ich);min-width:3rem;font-size:1.1rem;">①</div>
+        <div class="row-body" style="color:#e2e8f0;">医中誌は<strong style="color:var(--ichmed);">120年の歴史</strong>を持つ、日本語医学論文の専門DB</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#388E3C;min-width:3rem;font-size:1.1rem;">②</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:#81c784;">シソーラス ＋ フリーワードの組み合わせ</strong>が最強。どちらか一方では不完全</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--amber);min-width:3rem;font-size:1.1rem;">③</div>
+        <div class="row-body" style="color:#e2e8f0;">日本の疾患疫学・症例報告・国内ガイドラインは<strong style="color:var(--amber);">医中誌でしか見つからない</strong></div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#7c3aed;min-width:3rem;font-size:1.1rem;">④</div>
+        <div class="row-body" style="color:#e2e8f0;"><strong style="color:#d2a8ff;">PubMed ＋ 医中誌</strong> の両方が揃って、初めて完全な文献調査になる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#336699;min-width:3rem;font-size:1.1rem;">⑤</div>
+        <div class="row-body" style="color:#e2e8f0;">全文入手の順番：<strong style="color:#66aadd;">J-STAGE → CiNii → 機関リポジトリ → ILL → 著者へ</strong></div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">「日本語論文を制する者が、国内医療の実態を制する」</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S30: 締め
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s30">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.6rem;">
+    <div class="an title-vol" style="font-size:.75rem;">Vol.2 / 5 完了</div>
+    <div class="an title-main" style="font-size:clamp(2rem,5vw,3.8rem);">
+      日本語論文の海は<br>
+      <span style="color:#81c784;">シソーラス</span>という<br>
+      <span style="color:var(--amber);">羅針盤</span>で渡れ
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.88rem;line-height:2;">
+      英語で読む力と日本語で探す力の両方が<br>
+      あなたを真の「文献の使い手」にする<br>
+      <span style="color:#81c784;font-size:.82rem;">PubMed + 医中誌 ── 今日から両刀使いを目指そう</span>
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.38);font-size:.8rem;line-height:1.9;">
+      大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+      <span style="font-size:.72rem;">質問・誤りの指摘、大歓迎です</span>
+    </div>
+  </div>
+  <!-- Footer 免責事項 -->
+  <div style="text-align:center;color:rgba(255,255,255,.22);font-size:.62rem;line-height:1.7;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.08);margin-top:.5rem;">
+    本資料はAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+    医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ── Nav ─────────────────────────────────── -->
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 30</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+/* ── Engine ──────────────────────── */
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  const p = cur;
+  setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev');
+  slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
+}
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft') {e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) dx<0?go(cur+1):go(cur-1);
+},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
+
+/* ── Quiz 1：シソーラス ─────────── */
+function ansQ1(btn, val) {
+  document.querySelectorAll('#q1 .qbtn').forEach(b=>b.disabled=true);
+  const correct = 'd';
+  const fb = document.getElementById('q1fb');
+  if (val===correct) {
+    btn.classList.add('correct');
+    fb.textContent = '✅ 正解！ シソーラス語（/TH）＋フリーワードをOR でまとめるのが最強。シソーラスは付与漏れがある場合もあるので、フリーワードも一緒に使う。';
+    fb.style.color = '#4ade80';
+  } else if (val==='a') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[3].classList.add('correct');
+    fb.textContent = '❌ フリーワードのみでは「脳血管障害」「CVA」「脳血管発作」など別の表記の論文を見落とす。シソーラスで統制語も一緒に使おう。';
+    fb.style.color = '#fbbf24';
+  } else if (val==='b') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[3].classList.add('correct');
+    fb.textContent = '❌ シソーラス語だけでは、最近の論文でまだシソーラスが付与されていないものや、著者が独自の表記を使った論文を見落とすことがある。';
+    fb.style.color = '#fbbf24';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[3].classList.add('correct');
+    fb.textContent = '❌ 英語検索だと日本語論文がほとんどヒットしない。医中誌は日本語DBなので日本語キーワードが基本。';
+    fb.style.color = '#fbbf24';
+  }
+  fb.classList.add('show');
+}
+
+/* ── Quiz 2：絞り込み ────────────── */
+function ansQ2(btn, val) {
+  document.querySelectorAll('#q2 .qbtn').forEach(b=>b.disabled=true);
+  const correct = 'b';
+  const fb = document.getElementById('q2fb');
+  if (val===correct) {
+    btn.classList.add('correct');
+    fb.textContent = '✅ 正解！ 年齢区分で「高齢者」、論文種別で「原著論文」（査読あり・信頼性高い）、対象で「ヒト」（動物実験を除外）の組み合わせが最適。';
+    fb.style.color = '#4ade80';
+  } else if (val==='a') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ 言語：日本語のみは一つの絞り込みとしては有効だが、これだけでは年齢・論文種別が絞れていない。複数の絞り込みを組み合わせよう。';
+    fb.style.color = '#fbbf24';
+  } else if (val==='c') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ 会議録（学会抄録）は査読なし・エビデンスレベルが低い。卒論の根拠論文としては原著論文を優先しよう。';
+    fb.style.color = '#fbbf24';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    fb.textContent = '❌ 絞り込みなしでは件数が多すぎて使えない。目的に合った絞り込みを活用することが、効率的な文献調査の鍵。';
+    fb.style.color = '#fbbf24';
+  }
+  fb.classList.add('show');
+}
+</script>
+</body>
+</html>
