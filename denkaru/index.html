@@ -1,1 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced EMR Demo - 高機能電子カルテデモ</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
 
+    <div id="loginScreen">
+        <div class="login-card">
+            <i class="fas fa-user-md logo-icon"></i>
+            <h2>Advanced EMR Login</h2>
+            <p class="login-subtext">デモ用システム (ID/PWは何でもログイン可)</p>
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="username" placeholder="ユーザーID">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" placeholder="パスワード">
+            </div>
+            <button onclick="login()" class="btn-login">ログイン</button>
+        </div>
+    </div>
+
+    <div id="mainApp" style="display: none">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-hospital"></i> Medical Demo</h3>
+            </div>
+            
+            <div class="sidebar-action">
+                <button onclick="addPatient()" class="btn-new-pt"><i class="fas fa-user-plus"></i> 新規患者登録</button>
+            </div>
+
+            <div class="patient-search">
+                <label>患者選択</label>
+                <select id="patientSelector"></select>
+            </div>
+
+            <nav class="nav-menu">
+                <p class="nav-label">診察・サマリー</p>
+                <button onclick="showTab('dashboard')" class="nav-item active"><i class="fas fa-th-large"></i> サマリー</button>
+                <button onclick="showTab('orderTab')" class="nav-item"><i class="fas fa-file-signature"></i> 検査オーダー</button>
+                
+                <p class="nav-label">検査部門 (実施)</p>
+                <button onclick="showTab('labExecutionTab')" class="nav-item"><i class="fas fa-flask"></i> 検体検査実施</button>
+                <button onclick="showTab('imagingTab')" class="nav-item"><i class="fas fa-x-ray"></i> 画像診断</button>
+                
+                <p class="nav-label">結果・記録</p>
+                <button onclick="showTab('examInfo')" class="nav-item"><i class="fas fa-list-alt"></i> 検査結果一覧</button>
+                <button onclick="showTab('notesInfo')" class="nav-item"><i class="fas fa-pen-nib"></i> 診療録 (SOAP)</button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button onclick="savePatientData()" class="btn-save"><i class="fas fa-save"></i> データを保存</button>
+                <button onclick="clearAllData()" class="btn-danger"><i class="fas fa-trash-alt"></i> 全データ消去</button>
+            </div>
+        </aside>
+
+        <main class="content">
+            <header class="patient-bar">
+                <div class="pt-info-main">
+                    <span class="pt-id" id="headerID">ID: -----</span>
+                    <span class="pt-name" id="headerName">患者氏名</span>
+                    <span class="pt-meta" id="headerMeta">--歳 / ---</span>
+                </div>
+                <div class="app-status-badge">DEMO MODE</div>
+            </header>
+
+            <div class="tabContent" id="dashboard">
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h4>患者基本情報</h4>
+                        <div class="form-grid">
+                            <input type="text" id="name" placeholder="氏名" oninput="updateHeader()">
+                            <input type="date" id="birthDate" onchange="updateAge()">
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4>重要アラート</h4>
+                        <textarea id="alerts" rows="4" placeholder="既往歴・アレルギーなど"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabContent" id="orderTab" style="display: none">
+                <div class="card">
+                    <h3>血液検査オーダー発行</h3>
+                    <div class="checkbox-grid">
+                        <label><input type="checkbox" class="order-item" value="Basic"> 基本血算 (WBC/RBC/Hb/PLT)</label>
+                        <label><input type="checkbox" class="order-item" value="Liver"> 肝機能 (AST/ALT/GTP/ALP/Bil)</label>
+                        <label><input type="checkbox" class="order-item" value="Renal"> 腎機能 (BUN/Cre/UA/Electrolytes)</label>
+                        <label><input type="checkbox" class="order-item" value="Lipid"> 脂質 (TC/LDL/HDL/TG)</label>
+                        <label><input type="checkbox" class="order-item" value="Diabetes"> 糖尿病 (BS/HbA1c/GA/Ins)</label>
+                        <label><input type="checkbox" class="order-item" value="Inflam"> 炎症・免役 (CRP/ESR/RF/IgG)</label>
+                    </div>
+                    <button onclick="issueOrder()" class="btn-action">オーダーを送信</button>
+                </div>
+            </div>
+
+            <div class="tabContent" id="labExecutionTab" style="display: none">
+                <div class="card">
+                    <h3>未実施検査リスト</h3>
+                    <div id="pendingOrderList"></div>
+                    <hr>
+                    <h3>特殊検査 (即時実施)</h3>
+                    <button onclick="runPCR()" class="btn-special">RT-PCR開始</button>
+                    <button onclick="runRapid('Flu')" class="btn-special">インフル迅速</button>
+                    <div id="pcrStatus" class="pcr-area">待機中</div>
+                </div>
+            </div>
+
+            <div class="tabContent" id="imagingTab" style="display: none">
+                <div class="dashboard-grid">
+                    <div class="card viewer-card">
+                        <h3>CXR (胸部X線)</h3>
+                        <img src="https://via.placeholder.com/400x500/000/fff?text=No+Data" id="viewXray">
+                        <div class="img-btns">
+                            <button onclick="changeImg('viewXray', 'Normal')">正常</button>
+                            <button onclick="changeImg('viewXray', 'Abnormal')">異常</button>
+                        </div>
+                    </div>
+                    <div class="card viewer-card">
+                        <h3>CT (胸部)</h3>
+                        <img src="https://via.placeholder.com/400x400/000/fff?text=No+Data" id="viewCT">
+                        <div class="img-btns">
+                            <button onclick="changeImg('viewCT', 'NormalCT')">正常</button>
+                            <button onclick="changeImg('viewCT', 'AbnormalCT')">異常</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabContent" id="examInfo" style="display: none">
+                <div class="card">
+                    <h3>血液検査報告書</h3>
+                    <div id="resultTable" class="table-container"></div>
+                </div>
+            </div>
+
+            <div class="tabContent" id="notesInfo" style="display: none">
+                <div class="card">
+                    <h3>SOAP記録</h3>
+                    <textarea id="soapBox" rows="15" placeholder="S:&#13;&#10;O:&#13;&#10;A:&#13;&#10;P:"></textarea>
+                </div>
+            </div>
+
+            <footer class="legal-footer">
+                <div class="footer-box">
+                    <p><strong>【重要】本システムは電子カルテの入力をシミュレートするデモ用ツールであり、実際の電子カルテではありません。</strong></p>
+                    <p>Powered by Gemini | 使用は自己責任で行ってください。本プログラムはブラウザのローカル環境でのみ動作するため、データがインターネットへ送信・流出することはありません。ただし、ブラウザのキャッシュ（LocalStorage）にデータが保存される場合があります。セキュリティ確保のため、<strong>本物の患者データは絶対に使用しないでください。</strong></p>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
