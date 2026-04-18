@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はじめてのJavaScript Vol.3 ― 配列・オブジェクト・JSON</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A2342;
+  --teal:   #1B6CA8;
+  --ltblue: #E8F1FA;
+  --amber:  #E8873A;
+  --gray:   #64748B;
+  --lgray:  #F0F4F8;
+  --red:    #C0392B;
+  --green:  #1A7A4A;
+  --text:   #1E293B;
+  --white:  #FFFFFF;
+  --js:     #F7DF1E;
+  --jsdark: #b59a00;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body { width:100%; height:100%; background:#0a0f1a; font-family:'Noto Sans JP',sans-serif; overflow:hidden; }
+
+.deck { width:100vw; height:100vh; position:relative; overflow:hidden; }
+.slide {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  padding:2.2rem 3rem 1.8rem; opacity:0; pointer-events:none;
+  transition:opacity .45s cubic-bezier(.4,0,.2,1), transform .45s cubic-bezier(.4,0,.2,1);
+  transform:translateX(60px);
+}
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.prev   { opacity:0; transform:translateX(-60px); }
+
+.slide-dark  { background:var(--navy); }
+.slide-light { background:var(--white); }
+.slide-card  { background:var(--lgray); }
+.slide-code  { background:#0d1117; }
+.slide-quiz  { background:#12100a; }
+
+.slide-dark::before,.slide-code::before,.slide-quiz::before {
+  content:''; position:absolute; left:0; top:0; width:6px; height:100%;
+}
+.slide-dark::before  { background:var(--amber); }
+.slide-code::before  { background:var(--js); }
+.slide-quiz::before  { background:#a855f7; }
+
+.tag { display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.08em; padding:3px 12px; border-radius:2px; color:#fff; margin-bottom:.5rem; align-self:flex-start; }
+.tag-teal   { background:var(--teal); }
+.tag-amber  { background:var(--amber); }
+.tag-js     { background:var(--jsdark); }
+.tag-purple { background:#7c3aed; }
+.tag-green  { background:var(--green); }
+.tag-red    { background:var(--red); }
+.tag-navy   { background:var(--navy); }
+
+.stitle { font-size:clamp(1.35rem,2.8vw,2rem); font-weight:900; line-height:1.2; margin-bottom:1rem; border-left:5px solid var(--amber); padding-left:.7rem; }
+.slide-dark  .stitle { color:var(--white); border-color:var(--amber); }
+.slide-light .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-card  .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-code  .stitle { color:var(--white); border-color:var(--js); }
+.slide-quiz  .stitle { color:var(--white); border-color:#a855f7; }
+
+.title-main   { font-size:clamp(2.5rem,6.5vw,4.8rem); font-weight:900; color:var(--white); letter-spacing:-.02em; line-height:1.05; text-align:center; }
+.title-vol    { display:inline-block; background:var(--jsdark); color:#1a1a00; padding:2px 16px; border-radius:4px; font-size:clamp(.85rem,1.8vw,1.1rem); font-weight:900; letter-spacing:.06em; margin-bottom:.6rem; }
+.title-sub    { font-size:clamp(.85rem,1.6vw,1.05rem); color:rgba(255,255,255,.55); text-align:center; margin-top:.7rem; line-height:1.7; }
+.title-rule   { width:240px; height:2px; background:var(--teal); margin:1rem auto; }
+.title-author { text-align:center; color:rgba(255,255,255,.4); font-size:.78rem; margin-top:auto; padding-bottom:.3rem; }
+
+.cb { background:#0d1117; border-radius:6px; overflow:hidden; font-family:'JetBrains Mono',monospace; box-shadow:0 4px 20px rgba(0,0,0,.45); }
+.cb-head { display:flex; align-items:center; gap:.45rem; padding:.45rem 1rem; background:#161b22; border-bottom:1px solid #30363d; }
+.dot  { width:11px; height:11px; border-radius:50%; }
+.cb-lang { font-size:.7rem; color:#8b949e; letter-spacing:.06em; margin-left:auto; }
+.cb-body { padding:.85rem 1.2rem; overflow-x:auto; font-size:.8rem; line-height:1.75; }
+.cb-body code { color:#e6edf3; white-space:pre; }
+
+.kw  { color:#ff7b72; }
+.fn  { color:#d2a8ff; }
+.str { color:#a5d6ff; }
+.num { color:#79c0ff; }
+.cm  { color:#8b949e; font-style:italic; }
+.op  { color:#ff7b72; }
+.vr  { color:#ffa657; }
+.tg  { color:#7ee787; }
+.ok  { color:#4ade80; }
+
+.row { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.55rem; }
+.row-lbl { min-width:2.6rem; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:700; color:#fff; padding:0 .7rem; white-space:nowrap; }
+.row-body { padding:.5rem .85rem; font-size:.84rem; color:var(--text); line-height:1.55; }
+.row-body strong { color:var(--navy); }
+.row-body code { font-family:'JetBrains Mono',monospace; font-size:.78rem; background:#f0f4f8; padding:1px 5px; border-radius:3px; color:#c0392b; }
+
+.cr { display:flex; align-items:stretch; border-radius:6px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.12); margin-bottom:.6rem; }
+.cr-lbl { min-width:110px; padding:.65rem .8rem; font-size:.8rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; text-align:center; }
+.cr-arr { background:#f0f4f8; display:flex; align-items:center; justify-content:center; padding:0 .5rem; color:var(--gray); font-size:1rem; }
+.cr-body { flex:1; background:var(--white); padding:.65rem .9rem; font-size:.83rem; color:var(--text); line-height:1.55; }
+.cr-body strong { color:var(--navy); }
+.cr-body code { font-family:'JetBrains Mono',monospace; font-size:.78rem; background:#f0f4f8; padding:1px 5px; border-radius:3px; color:#c0392b; }
+
+.card-dark  { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:.75rem 1rem; }
+.card-warn  { background:#FFF3E0; border-radius:6px; padding:.65rem 1rem; }
+.card-blue  { background:var(--ltblue); border-radius:6px; padding:.65rem 1rem; }
+.card-green { background:#ECFDF5; border-radius:6px; padding:.65rem 1rem; }
+.card-red   { background:#FEF2F2; border-radius:6px; padding:.65rem 1rem; }
+
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.85rem; }
+.fx { display:flex; gap:.85rem; }
+
+ul.bl { list-style:none; }
+ul.bl li { padding:.26rem 0 .26rem 1.3rem; position:relative; font-size:.85rem; color:var(--text); line-height:1.55; }
+ul.bl li::before { content:'▸'; position:absolute; left:0; color:var(--teal); font-size:.8rem; }
+.slide-dark ul.bl li { color:#e2e8f0; }
+.slide-dark ul.bl li::before { color:var(--amber); }
+.slide-code ul.bl li { color:#e2e8f0; }
+.slide-code ul.bl li::before { color:var(--js); }
+ul.bl li code { font-family:'JetBrains Mono',monospace; font-size:.76rem; background:rgba(255,255,255,.12); padding:1px 5px; border-radius:3px; color:#a5d6ff; }
+.slide-light ul.bl li code,.slide-card ul.bl li code { background:#f0f4f8; color:#c0392b; }
+
+.sumi { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 8px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.75rem; }
+.sumi-num { min-width:54px; display:flex; align-items:center; justify-content:center; font-size:1.35rem; font-weight:900; color:#fff; font-family:'JetBrains Mono',monospace; }
+.sumi-body { padding:.65rem .95rem; font-size:.85rem; line-height:1.6; color:var(--text); }
+
+.quiz-q { font-size:clamp(.92rem,1.9vw,1.2rem); font-weight:700; color:#e2e8f0; margin-bottom:1.2rem; line-height:1.5; text-align:center; }
+.qopts  { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; max-width:680px; margin:0 auto; }
+.qbtn { background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.13); color:#e2e8f0; border-radius:8px; padding:.82rem 1.05rem; font-family:'Noto Sans JP',sans-serif; font-size:.84rem; font-weight:700; cursor:pointer; text-align:left; line-height:1.45; transition:background .2s,border-color .2s,transform .15s; }
+.qbtn:hover   { background:rgba(168,85,247,.22); border-color:#a855f7; transform:translateY(-2px); }
+.qbtn.correct { background:rgba(26,122,74,.35); border-color:#4ade80; color:#4ade80; }
+.qbtn.wrong   { background:rgba(192,57,43,.25); border-color:#f87171; color:#f87171; }
+.qbtn:disabled{ cursor:default; }
+.qfb { text-align:center; margin-top:.9rem; font-size:.88rem; font-weight:700; min-height:1.4rem; opacity:0; transition:opacity .3s; line-height:1.5; }
+.qfb.show { opacity:1; }
+
+.pill   { font-family:'JetBrains Mono',monospace; font-size:.8rem; background:#161b22; border:1px solid #30363d; color:#ffa657; padding:2px 8px; border-radius:4px; }
+.pill-l { font-family:'JetBrains Mono',monospace; font-size:.8rem; background:#f0f4f8; border:1px solid #dde3ea; color:#c0392b; padding:2px 8px; border-radius:4px; }
+
+.repl { background:#0d1117; border-radius:6px; padding:.7rem 1rem; font-family:'JetBrains Mono',monospace; font-size:.78rem; line-height:1.9; border:1px solid #30363d; }
+.repl-in::before  { content:'> '; color:#8b949e; }
+.repl-out { color:#4ade80; }
+.repl-out::before { content:'← '; color:#8b949e; }
+
+/* array-method strip */
+.mstrip { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; margin-bottom:.4rem; }
+.mchip  { font-family:'JetBrains Mono',monospace; font-size:.75rem; padding:3px 10px; border-radius:4px; font-weight:700; border:1px solid transparent; }
+.mchip-js  { background:#b59a00; color:#1a1a00; }
+.mchip-out { background:#1a3a2a; color:#4ade80; border-color:#4ade80; }
+.mchip-del { background:#3a1a1a; color:#f87171; border-color:#f87171; text-decoration:line-through; }
+
+/* patient card */
+.pt-card { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:.65rem .9rem; font-family:'JetBrains Mono',monospace; font-size:.78rem; color:#e2e8f0; line-height:1.7; transition:border-color .2s; }
+.pt-card.hi { border-color:#fbbf24; }
+.pt-card.alert { border-color:#f87171; }
+.pt-card.ok   { border-color:#4ade80; }
+
+.hl { text-align:center; font-size:.92rem; font-weight:700; font-style:italic; color:var(--teal); margin-top:auto; padding-top:.7rem; }
+.slide-dark .hl { color:var(--amber); }
+.slide-code .hl { color:var(--js); }
+.slide-quiz .hl { color:#a855f7; }
+
+.next-card { background:var(--navy); border-radius:8px; padding:.8rem 1.2rem; border-left:4px solid var(--amber); }
+.next-card-title { font-size:.8rem; color:var(--amber); font-weight:700; margin-bottom:.3rem; }
+.next-card-body  { font-size:.84rem; color:#e2e8f0; line-height:1.65; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+.slide.active .an { animation:fadeUp .5s ease both; }
+.slide.active .an:nth-child(1){animation-delay:.05s}
+.slide.active .an:nth-child(2){animation-delay:.12s}
+.slide.active .an:nth-child(3){animation-delay:.19s}
+.slide.active .an:nth-child(4){animation-delay:.26s}
+.slide.active .an:nth-child(5){animation-delay:.33s}
+.slide.active .an:nth-child(6){animation-delay:.40s}
+.slide.active .an:nth-child(7){animation-delay:.47s}
+.slide.active .an:nth-child(8){animation-delay:.54s}
+
+#nav { position:fixed; bottom:1.2rem; right:1.5rem; display:flex; align-items:center; gap:.7rem; z-index:9999; }
+.nbtn { background:rgba(255,255,255,.13); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.22); color:#fff; width:40px; height:40px; border-radius:50%; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s,transform .15s; }
+.nbtn:hover { background:rgba(255,255,255,.28); transform:scale(1.08); }
+#sc  { color:rgba(255,255,255,.65); font-size:.76rem; font-family:'JetBrains Mono',monospace; min-width:52px; text-align:center; }
+#bar { position:fixed; bottom:0; left:0; height:3px; background:var(--js); transition:width .35s ease; z-index:9999; }
+#hint{ position:fixed; bottom:1.25rem; left:1.5rem; color:rgba(255,255,255,.3); font-size:.67rem; font-family:'JetBrains Mono',monospace; pointer-events:none; }
+
+.mb1{margin-bottom:.55rem} .mb2{margin-bottom:1rem}
+.small{font-size:.75rem;color:var(--gray)}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════════════
+  S1: タイトル
+══════════════════════════════════ -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.3rem;">
+    <div class="an" style="background:var(--jsdark);color:#1a1a00;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">はじめてのJavaScript</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 3 / 6</div>
+    <div class="an title-main">配列・オブジェクト・<span style="color:var(--js);">JSON</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">データをまとめて扱う構造を理解する<br>map / filter / reduce で一括処理</div>
+  </div>
+  <div class="title-author an">大阪公立大学 医学部 細菌学講座　金子幸弘</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S2: Vol.1-2 復習
+══════════════════════════════════ -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">Vol.1–2 復習</span>
+  <h2 class="stitle an">ここまでのポイント確認</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="row an"><div class="row-lbl" style="background:var(--navy);min-width:5.5rem;font-size:.7rem;">Vol.1<br>変数・型</div><div class="row-body"><code>const</code>/<code>let</code>・number/string/boolean・<code>===</code>・テンプレートリテラル</div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--teal);min-width:5.5rem;font-size:.7rem;">Vol.2<br>分岐・ループ</div><div class="row-body"><code>if/else if/else</code>・三項演算子・<code>for</code>/<code>while</code>/<code>for...of</code>・<code>break</code>/<code>continue</code></div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--jsdark);color:#1a1a00;min-width:5.5rem;font-size:.7rem;">今日の<br>前提知識</div><div class="row-body">配列はすでに少し登場した：<code>const arr = [6.5, 7.8, 5.9]</code><br>for...of で順に取り出せた</div></div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">今日はここを深掘りする</span></div>
+      <div class="cb-body" style="font-size:.78rem;"><code><span class="cm">// Vol.2 で登場したオブジェクト配列 ← 今日これを完全に理解する</span>
+<span class="kw">const</span> <span class="vr">patients</span> = [
+  { <span class="vr">name</span>: <span class="str">"山田"</span>, <span class="vr">hba1c</span>: <span class="num">6.5</span>, <span class="vr">bmi</span>: <span class="num">24</span> },
+  { <span class="vr">name</span>: <span class="str">"鈴木"</span>, <span class="vr">hba1c</span>: <span class="num">8.2</span>, <span class="vr">bmi</span>: <span class="num">28</span> },
+];</code></div>
+    </div>
+  </div>
+  <div class="hl an">今日が終わると「データ構造」が自在に扱えるようになる</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S3: Vol.3 でやること
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-js an">Vol.3 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--navy);">Ch.1<br>配列</div><div class="cr-arr">→</div><div class="cr-body"><strong>データのリスト</strong>：作り方・アクセス・追加/削除<br>map / filter / reduce / find / some / every</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Ch.2<br>オブジェクト</div><div class="cr-arr">→</div><div class="cr-body"><strong>名前付きデータの集合</strong>：{ } 記法・ドット/ブラケット記法<br>分割代入・スプレッド構文・オブジェクト配列</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--amber);">Ch.3<br>JSON</div><div class="cr-arr">→</div><div class="cr-body"><strong>データ交換の標準フォーマット</strong>：JSON.stringify / parse<br>API・ファイル保存・外部連携への入口</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--green);">🔧 デモ×2</div><div class="cr-arr">→</div><div class="cr-body">配列メソッド可視化ツール・患者リスト管理ツール（追加・フィルタ・集計）</div></div>
+  </div>
+  <div class="card-blue an" style="font-size:.82rem;margin-top:.3rem;">💡 <strong>今日のゴール</strong>：患者リストを配列+オブジェクトで管理し、map/filterで一括加工・JSONで出力できるようになる</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S4: 配列の基本
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s4">
+  <span class="tag tag-js an">Ch.1 — 配列の基本</span>
+  <h2 class="stitle an">配列 ― データを順番に並べる「箱の列」</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">配列の作成・アクセス・基本操作</span></div>
+        <div class="cb-body"><code><span class="cm">// 作成：[ ] でくくる</span>
+<span class="kw">const</span> <span class="vr">hba1cList</span> = [<span class="num">6.5</span>, <span class="num">7.8</span>, <span class="num">5.9</span>, <span class="num">9.2</span>, <span class="num">6.8</span>];
+
+<span class="cm">// アクセス：0始まりのインデックス</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">hba1cList</span>[<span class="num">0</span>]);       <span class="cm">// 6.5（先頭）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">hba1cList</span>[<span class="num">4</span>]);       <span class="cm">// 6.8（末尾）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">hba1cList</span>.<span class="vr">length</span>);   <span class="cm">// 5（要素数）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">hba1cList</span>.<span class="fn">at</span>(-<span class="num">1</span>));   <span class="cm">// 6.8（末尾を-1で取得）</span>
+
+<span class="cm">// 追加・削除</span>
+<span class="vr">hba1cList</span>.<span class="fn">push</span>(<span class="num">7.1</span>);  <span class="cm">// 末尾に追加 → [6.5,7.8,5.9,9.2,6.8,7.1]</span>
+<span class="vr">hba1cList</span>.<span class="fn">pop</span>();      <span class="cm">// 末尾を削除 → [6.5,7.8,5.9,9.2,6.8]</span>
+<span class="vr">hba1cList</span>.<span class="fn">unshift</span>(<span class="num">8.0</span>); <span class="cm">// 先頭に追加</span>
+<span class="vr">hba1cList</span>.<span class="fn">shift</span>();    <span class="cm">// 先頭を削除</span>
+
+<span class="cm">// 一部を取り出す（元の配列は変化しない）</span>
+<span class="kw">const</span> <span class="vr">top3</span> = <span class="vr">hba1cList</span>.<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">3</span>); <span class="cm">// [6.5, 7.8, 5.9]</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 インデックスは 0 始まり</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.76rem;color:#e2e8f0;line-height:1.9;">
+          <span style="color:#8b949e;">index:</span> <span style="color:#79c0ff;">0　　1　　2　　3　　4</span><br>
+          <span style="color:#8b949e;">value:</span> <span style="color:#ffa657;">[6.5, 7.8, 5.9, 9.2, 6.8]</span>
+        </div>
+        <div style="font-size:.74rem;color:#94a3b8;margin-top:.4rem;">length=5 だが最後のインデックスは 4<br><code style="color:#a5d6ff;">arr[arr.length]</code> は undefined になる</div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 push vs unshift の速度</div>
+        <ul class="bl" style="font-size:.76rem;">
+          <li><code>push</code>（末尾追加）→ 高速</li>
+          <li><code>unshift</code>（先頭追加）→ 全要素をずらすので遅い</li>
+          <li>大量データでは <code>push</code> を優先する</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S5: QUIZ 1
+══════════════════════════════════ -->
+<div class="slide slide-quiz" id="s5">
+  <span class="tag tag-purple an">QUIZ 1</span>
+  <h2 class="stitle an">配列の出力を当てよう</h2>
+  <div class="quiz-q an">
+    以下のコードの最後の console.log の出力は？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;background:rgba(255,255,255,.08);padding:.55rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.85;text-align:left;">
+      const arr = ["山田", "鈴木", "田中"];<br>
+      arr.push("佐藤");<br>
+      arr.shift();<br>
+      console.log(arr[0]);
+    </span>
+  </div>
+  <div class="qopts an" id="q1">
+    <button class="qbtn" onclick="ansQ1(this,'a')">A. "山田"（最初の要素）</button>
+    <button class="qbtn" onclick="ansQ1(this,'b')">B. "鈴木" ← shift で山田が消えた</button>
+    <button class="qbtn" onclick="ansQ1(this,'c')">C. "佐藤"（最後に追加した）</button>
+    <button class="qbtn" onclick="ansQ1(this,'d')">D. "田中"</button>
+  </div>
+  <div class="qfb an" id="q1fb"></div>
+</div>
+
+<!-- ══════════════════════════════════
+  S6: map / filter / reduce
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s6">
+  <span class="tag tag-js an">Ch.1 — 配列メソッド</span>
+  <h2 class="stitle an"><span class="pill">map</span> / <span class="pill">filter</span> / <span class="pill">reduce</span> ― 配列を加工・集計する</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">患者の HbA1c データを加工する</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="kw">const</span> <span class="vr">values</span> = [<span class="num">6.5</span>, <span class="num">7.8</span>, <span class="num">5.9</span>, <span class="num">9.2</span>, <span class="num">6.8</span>];
+
+<span class="cm">// map：全要素を変換した新しい配列を返す</span>
+<span class="kw">const</span> <span class="vr">labels</span> = <span class="vr">values</span>.<span class="fn">map</span>(<span class="vr">v</span> <span class="op">=></span>
+  <span class="vr">v</span> <span class="op">>=</span> <span class="num">7.0</span> ? <span class="str">`${<span class="vr">v</span>} 🔴`</span> : <span class="str">`${<span class="vr">v</span>} ✅`</span>
+);
+<span class="cm">// ["6.5 ✅","7.8 🔴","5.9 ✅","9.2 🔴","6.8 ✅"]</span>
+
+<span class="cm">// filter：条件を満たす要素だけを取り出す</span>
+<span class="kw">const</span> <span class="vr">highRisk</span> = <span class="vr">values</span>.<span class="fn">filter</span>(<span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">>=</span> <span class="num">7.0</span>);
+<span class="cm">// [7.8, 9.2]</span>
+
+<span class="cm">// reduce：全要素を1つの値に集約する</span>
+<span class="kw">const</span> <span class="vr">sum</span> = <span class="vr">values</span>.<span class="fn">reduce</span>((<span class="vr">acc</span>, <span class="vr">v</span>) <span class="op">=></span> <span class="vr">acc</span> + <span class="vr">v</span>, <span class="num">0</span>);
+<span class="kw">const</span> <span class="vr">avg</span> = (<span class="vr">sum</span> / <span class="vr">values</span>.<span class="vr">length</span>).<span class="fn">toFixed</span>(<span class="num">1</span>);
+<span class="cm">// sum=36.2, avg="7.2"</span>
+
+<span class="cm">// メソッドチェーン：連続して使える</span>
+<span class="kw">const</span> <span class="vr">highAvg</span> = <span class="vr">values</span>
+  .<span class="fn">filter</span>(<span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">>=</span> <span class="num">7.0</span>)
+  .<span class="fn">reduce</span>((<span class="vr">a</span>,<span class="vr">b</span>) <span class="op">=></span> <span class="vr">a</span>+<span class="vr">b</span>, <span class="num">0</span>) / <span class="num">2</span>;
+<span class="cm">// 高リスク患者の平均: (7.8+9.2)/2 = 8.5</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 3メソッドの違い</div>
+        <div style="font-size:.77rem;color:#e2e8f0;line-height:1.9;">
+          <code style="color:#d2a8ff;">map</code>　　→ <strong style="color:#79c0ff;">同じ長さ</strong>の新配列<br>
+          <code style="color:#d2a8ff;">filter</code> → <strong style="color:#79c0ff;">短い</strong>新配列（条件一致のみ）<br>
+          <code style="color:#d2a8ff;">reduce</code> → <strong style="color:#79c0ff;">1つの値</strong>（合計・最大・文字列等）
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 元の配列は変化しない</div>
+        <div style="font-size:.76rem;color:#94a3b8;line-height:1.6;">map/filter/reduce は<strong style="color:#4ade80;">非破壊的</strong><br>新しい配列を返す。元データは安全</div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">⇒ アロー関数 <code style="font-size:.72rem;">v =&gt; ...</code></div>
+        <div style="font-size:.75rem;color:#94a3b8;line-height:1.6;"><code style="color:#a5d6ff;">.map(v => v * 2)</code> の <code style="color:#a5d6ff;">v => ...</code> は<br>関数の省略形。Vol.4 で詳しく学ぶ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S7: find / some / every / sort
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s7">
+  <span class="tag tag-teal an">Ch.1 — その他の配列メソッド</span>
+  <h2 class="stitle an">find / some / every / sort ― 検索・判定・整列</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">患者データでの使い方</span></div>
+      <div class="cb-body" style="font-size:.77rem;"><code><span class="kw">const</span> <span class="vr">vals</span> = [<span class="num">6.5</span>, <span class="num">7.8</span>, <span class="num">5.9</span>, <span class="num">9.2</span>, <span class="num">6.8</span>];
+
+<span class="cm">// find：条件を満たす最初の要素を返す（なければ undefined）</span>
+<span class="kw">const</span> <span class="vr">firstHigh</span> = <span class="vr">vals</span>.<span class="fn">find</span>(<span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">>=</span> <span class="num">9.0</span>);   <span class="cm">// 9.2</span>
+
+<span class="cm">// findIndex：条件を満たす最初のインデックスを返す</span>
+<span class="kw">const</span> <span class="vr">idx</span> = <span class="vr">vals</span>.<span class="fn">findIndex</span>(<span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">>=</span> <span class="num">9.0</span>);   <span class="cm">// 3</span>
+
+<span class="cm">// some：1件でも条件を満たすか（true/false）</span>
+<span class="kw">const</span> <span class="vr">hasCritical</span> = <span class="vr">vals</span>.<span class="fn">some</span>(<span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">>=</span> <span class="num">10</span>); <span class="cm">// false</span>
+
+<span class="cm">// every：全件が条件を満たすか（true/false）</span>
+<span class="kw">const</span> <span class="vr">allGood</span> = <span class="vr">vals</span>.<span class="fn">every</span>(<span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">&lt;</span> <span class="num">7.0</span>);    <span class="cm">// false（7.8, 9.2 あり）</span>
+
+<span class="cm">// sort：並び替え（数値は比較関数が必要）</span>
+<span class="kw">const</span> <span class="vr">sorted</span> = [...<span class="vr">vals</span>].<span class="fn">sort</span>((<span class="vr">a</span>,<span class="vr">b</span>) <span class="op">=></span> <span class="vr">a</span> - <span class="vr">b</span>); <span class="cm">// 昇順</span>
+<span class="cm">// [5.9, 6.5, 6.8, 7.8, 9.2]</span>
+
+<span class="cm">// includes：値が含まれるか</span>
+<span class="kw">const</span> <span class="vr">has78</span> = <span class="vr">vals</span>.<span class="fn">includes</span>(<span class="num">7.8</span>);            <span class="cm">// true</span></code></div>
+    </div>
+    <div class="card-warn an" style="font-size:.8rem;margin-top:.3rem;">
+      ⚠ <strong>sort() は文字列ソートがデフォルト</strong>：数値を並べ替えるには <code class="pill-l">(a,b) => a-b</code> の比較関数が必要。<code class="pill-l">[10,9,2].sort()</code> → <code class="pill-l">[10,2,9]</code>（文字列順になる）
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S8: 🔧 デモ① 配列メソッド可視化
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s8">
+  <span class="tag tag-js an">🔧 ライブデモ①</span>
+  <h2 class="stitle an">配列メソッド可視化 ― map / filter / reduce の動きを見る</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.05;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">元の配列</span></div>
+        <div class="cb-body" style="font-size:.8rem;"><code><span class="kw">const</span> <span class="vr">vals</span> = [<span class="num">6.5</span>, <span class="num">7.8</span>, <span class="num">5.9</span>, <span class="num">9.2</span>, <span class="num">6.8</span>];</code></div>
+      </div>
+      <div id="mv-result" style="display:flex;flex-direction:column;gap:.5rem;"></div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.55rem;">
+      <div style="font-size:.76rem;color:#8b949e;font-weight:700;">▶ メソッドを選んで動かす</div>
+      <button onclick="mvRun('map')"    class="mvbtn" style="background:#1a2d1a;border:1px solid #4ade80;color:#4ade80;">map(v => v >= 7 ? "🔴" : "✅")</button>
+      <button onclick="mvRun('filter')" class="mvbtn" style="background:#1a1a2d;border:1px solid #79c0ff;color:#79c0ff;">filter(v => v >= 7.0)</button>
+      <button onclick="mvRun('reduce')" class="mvbtn" style="background:#2d1a1a;border:1px solid #ffa657;color:#ffa657;">reduce((a,b) => a + b, 0)</button>
+      <button onclick="mvRun('sort')"   class="mvbtn" style="background:#1a2a2d;border:1px solid #a5d6ff;color:#a5d6ff;">sort((a,b) => a - b)</button>
+      <button onclick="mvRun('find')"   class="mvbtn" style="background:#2d2a1a;border:1px solid #d2a8ff;color:#d2a8ff;">find(v => v >= 9.0)</button>
+      <div id="mv-summary" style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#4ade80;min-height:1.2rem;margin-top:.2rem;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S9: オブジェクトの基本
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s9">
+  <span class="tag tag-js an">Ch.2 — オブジェクト</span>
+  <h2 class="stitle an">オブジェクト ― 名前付きデータの集合</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">患者オブジェクトの作成・操作</span></div>
+        <div class="cb-body"><code><span class="cm">// オブジェクト：{ キー: 値 } の形</span>
+<span class="kw">const</span> <span class="vr">patient</span> = {
+  <span class="vr">id</span>:        <span class="num">1001</span>,
+  <span class="vr">name</span>:      <span class="str">"山田太郎"</span>,
+  <span class="vr">age</span>:       <span class="num">65</span>,
+  <span class="vr">hba1c</span>:     <span class="num">7.2</span>,
+  <span class="vr">bmi</span>:       <span class="num">24.5</span>,
+  <span class="vr">isDiabetic</span>: <span class="kw">true</span>,
+};
+
+<span class="cm">// アクセス方法 ①：ドット記法（推奨）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">patient</span>.<span class="vr">name</span>);     <span class="cm">// "山田太郎"</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">patient</span>.<span class="vr">hba1c</span>);   <span class="cm">// 7.2</span>
+
+<span class="cm">// アクセス方法 ②：ブラケット記法（キーが変数のとき）</span>
+<span class="kw">const</span> <span class="vr">key</span> = <span class="str">"age"</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">patient</span>[<span class="vr">key</span>]);     <span class="cm">// 65</span>
+
+<span class="cm">// プロパティの追加・更新・削除</span>
+<span class="vr">patient</span>.<span class="vr">lastVisit</span> = <span class="str">"2025-04"</span>; <span class="cm">// 追加</span>
+<span class="vr">patient</span>.<span class="vr">hba1c</span>     = <span class="num">7.5</span>;       <span class="cm">// 更新</span>
+<span class="kw">delete</span> <span class="vr">patient</span>.<span class="vr">isDiabetic</span>;     <span class="cm">// 削除</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 配列 vs オブジェクト</div>
+        <div style="font-size:.77rem;color:#e2e8f0;line-height:1.9;">
+          <code style="color:#a5d6ff;">配列</code>：順序が重要・インデックスでアクセス<br>
+          <code style="color:#a5d6ff;">オブジェクト</code>：名前が重要・キーでアクセス<br><br>
+          「HbA1cの測定値リスト」→ 配列<br>
+          「患者の情報まとめ」→ オブジェクト
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 Object の便利メソッド</div>
+        <div class="repl" style="font-size:.74rem;">
+          <div class="repl-in"><span class="fn">Object</span>.<span class="fn">keys</span>(<span class="vr">patient</span>)</div>
+          <div class="repl-out">["id","name","age",...]</div>
+          <div class="repl-in"><span class="fn">Object</span>.<span class="fn">values</span>(<span class="vr">patient</span>)</div>
+          <div class="repl-out">[1001,"山田太郎",65,...]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S10: 分割代入・スプレッド
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s10">
+  <span class="tag tag-teal an">Ch.2 — 分割代入・スプレッド</span>
+  <h2 class="stitle an">分割代入 と スプレッド構文 ― 現代的な書き方</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">分割代入（Destructuring）― オブジェクト・配列から一気に取り出す</span></div>
+      <div class="cb-body" style="font-size:.78rem;"><code><span class="kw">const</span> <span class="vr">patient</span> = { <span class="vr">name</span>:<span class="str">"山田"</span>, <span class="vr">age</span>:<span class="num">65</span>, <span class="vr">hba1c</span>:<span class="num">7.2</span>, <span class="vr">bmi</span>:<span class="num">24</span> };
+
+<span class="cm">// 通常の取り出し方（冗長）</span>
+<span class="kw">const</span> <span class="vr">name</span>  = <span class="vr">patient</span>.<span class="vr">name</span>;
+<span class="kw">const</span> <span class="vr">hba1c</span> = <span class="vr">patient</span>.<span class="vr">hba1c</span>;
+
+<span class="cm">// 分割代入（スッキリ）</span>
+<span class="kw">const</span> { <span class="vr">name</span>, <span class="vr">age</span>, <span class="vr">hba1c</span> } = <span class="vr">patient</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`${<span class="vr">name</span>}さん（${<span class="vr">age</span>}歳）HbA1c: ${<span class="vr">hba1c</span>}`</span>);
+
+<span class="cm">// 配列の分割代入</span>
+<span class="kw">const</span> [<span class="vr">first</span>, <span class="vr">second</span>, ...<span class="vr">rest</span>] = [<span class="num">6.5</span>, <span class="num">7.8</span>, <span class="num">5.9</span>, <span class="num">9.2</span>];
+<span class="cm">// first=6.5, second=7.8, rest=[5.9, 9.2]</span></code></div>
+    </div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">スプレッド構文（...）― コピー・マージ</span></div>
+      <div class="cb-body" style="font-size:.78rem;"><code><span class="cm">// オブジェクトのコピー（元を変えずに更新）</span>
+<span class="kw">const</span> <span class="vr">updated</span> = { ...<span class="vr">patient</span>, <span class="vr">hba1c</span>: <span class="num">7.5</span> }; <span class="cm">// hba1c だけ上書き</span>
+
+<span class="cm">// 配列のコピー・結合</span>
+<span class="kw">const</span> <span class="vr">copy</span>    = [...<span class="vr">vals</span>];                  <span class="cm">// 配列の浅いコピー</span>
+<span class="kw">const</span> <span class="vr">merged</span>  = [...<span class="vr">vals1</span>, ...<span class="vr">vals2</span>];      <span class="cm">// 2配列を結合</span>
+
+<span class="cm">// Math.max に配列を渡す</span>
+<span class="kw">const</span> <span class="vr">max</span> = <span class="fn">Math</span>.<span class="fn">max</span>(...<span class="vr">vals</span>);             <span class="cm">// 9.2</span></code></div>
+    </div>
+  </div>
+  <div class="hl an">分割代入とスプレッドは「読みやすいコード」のための現代的構文</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S11: オブジェクト配列の操作
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s11">
+  <span class="tag tag-js an">Ch.2 — オブジェクト配列</span>
+  <h2 class="stitle an">オブジェクト配列 ― 患者リストを本格的に扱う</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.15;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">map / filter / sort をオブジェクト配列に適用</span></div>
+        <div class="cb-body" style="font-size:.76rem;"><code><span class="kw">const</span> <span class="vr">patients</span> = [
+  { <span class="vr">name</span>:<span class="str">"山田"</span>, <span class="vr">hba1c</span>:<span class="num">6.5</span>, <span class="vr">bmi</span>:<span class="num">24</span> },
+  { <span class="vr">name</span>:<span class="str">"鈴木"</span>, <span class="vr">hba1c</span>:<span class="num">8.2</span>, <span class="vr">bmi</span>:<span class="num">28</span> },
+  { <span class="vr">name</span>:<span class="str">"田中"</span>, <span class="vr">hba1c</span>:<span class="num">5.9</span>, <span class="vr">bmi</span>:<span class="num">22</span> },
+  { <span class="vr">name</span>:<span class="str">"佐藤"</span>, <span class="vr">hba1c</span>:<span class="num">9.5</span>, <span class="vr">bmi</span>:<span class="num">31</span> },
+];
+
+<span class="cm">// map：全患者にリスクラベルを追加</span>
+<span class="kw">const</span> <span class="vr">withLabel</span> = <span class="vr">patients</span>.<span class="fn">map</span>(<span class="vr">p</span> <span class="op">=></span> ({
+  ...<span class="vr">p</span>,
+  <span class="vr">risk</span>: <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span> ? <span class="str">"高"</span> : <span class="str">"低"</span>
+}));
+
+<span class="cm">// filter：要管理患者だけ抽出</span>
+<span class="kw">const</span> <span class="vr">alerts</span> = <span class="vr">patients</span>.<span class="fn">filter</span>(
+  <span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span> <span class="op">||</span> <span class="vr">p</span>.<span class="vr">bmi</span> <span class="op">>=</span> <span class="num">30</span>
+);
+<span class="cm">// [鈴木, 佐藤]</span>
+
+<span class="cm">// sort：HbA1c 降順で並べ替え</span>
+<span class="kw">const</span> <span class="vr">ranked</span> = [...<span class="vr">patients</span>]
+  .<span class="fn">sort</span>((<span class="vr">a</span>,<span class="vr">b</span>) <span class="op">=></span> <span class="vr">b</span>.<span class="vr">hba1c</span> - <span class="vr">a</span>.<span class="vr">hba1c</span>);
+<span class="cm">// 佐藤(9.5), 鈴木(8.2), 山田(6.5), 田中(5.9)</span>
+
+<span class="cm">// reduce：平均 HbA1c</span>
+<span class="kw">const</span> <span class="vr">avgHbA1c</span> = (<span class="vr">patients</span>
+  .<span class="fn">reduce</span>((<span class="vr">s</span>,<span class="vr">p</span>) <span class="op">=></span> <span class="vr">s</span> + <span class="vr">p</span>.<span class="vr">hba1c</span>, <span class="num">0</span>)
+  / <span class="vr">patients</span>.<span class="vr">length</span>).<span class="fn">toFixed</span>(<span class="num">1</span>); <span class="cm">// "7.5"</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.85;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#4ade80;margin-bottom:.35rem;">✅ これで何ができるか</div>
+        <ul class="bl" style="font-size:.77rem;">
+          <li>100人の患者データを<br>1行で要管理者だけ抽出</li>
+          <li>全患者にリスクスコアを付与</li>
+          <li>HbA1c 順でランキング表示</li>
+          <li>グループ別平均の計算</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 map の中のスプレッド</div>
+        <div style="font-size:.75rem;color:#94a3b8;line-height:1.6;"><code style="color:#a5d6ff;">{ ...p, risk: "高" }</code><br>元のプロパティを全部コピーしつつ risk を追加。元オブジェクトは変化しない</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S12: QUIZ 2
+══════════════════════════════════ -->
+<div class="slide slide-quiz" id="s12">
+  <span class="tag tag-purple an">QUIZ 2</span>
+  <h2 class="stitle an">配列メソッドを当てよう</h2>
+  <div class="quiz-q an">
+    患者リストから「BMI が 30 以上の患者の名前だけ」を取り出したい。<br>使うメソッドの正しい組み合わせは？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.8rem;background:rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:6px;display:inline-block;">
+      const patients = [{name:"山田",bmi:24},{name:"佐藤",bmi:31},{name:"田中",bmi:28}];
+    </span>
+  </div>
+  <div class="qopts an" id="q2">
+    <button class="qbtn" onclick="ansQ2(this,'a')">A. patients.find(p => p.bmi >= 30)</button>
+    <button class="qbtn" onclick="ansQ2(this,'b')">B. patients.filter(p => p.bmi >= 30).map(p => p.name)</button>
+    <button class="qbtn" onclick="ansQ2(this,'c')">C. patients.map(p => p.bmi >= 30)</button>
+    <button class="qbtn" onclick="ansQ2(this,'d')">D. patients.reduce((a,p) => p.bmi >= 30)</button>
+  </div>
+  <div class="qfb an" id="q2fb"></div>
+</div>
+
+<!-- ══════════════════════════════════
+  S13: JSON
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s13">
+  <span class="tag tag-js an">Ch.3 — JSON</span>
+  <h2 class="stitle an">JSON ― データを「文字列」として持ち運ぶ</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">stringify（JS→文字列）と parse（文字列→JS）</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">patient</span> = {
+  <span class="vr">name</span>: <span class="str">"山田太郎"</span>, <span class="vr">age</span>: <span class="num">65</span>, <span class="vr">hba1c</span>: <span class="num">7.2</span>
+};
+
+<span class="cm">// JS オブジェクト → JSON 文字列</span>
+<span class="kw">const</span> <span class="vr">json</span> = <span class="fn">JSON</span>.<span class="fn">stringify</span>(<span class="vr">patient</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">json</span>);
+<span class="cm">// '{"name":"山田太郎","age":65,"hba1c":7.2}'</span>
+
+<span class="cm">// 見やすく整形（インデント付き）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">JSON</span>.<span class="fn">stringify</span>(<span class="vr">patient</span>, <span class="kw">null</span>, <span class="num">2</span>));
+<span class="cm">// {</span>
+<span class="cm">//   "name": "山田太郎",</span>
+<span class="cm">//   "age": 65,</span>
+<span class="cm">//   "hba1c": 7.2</span>
+<span class="cm">// }</span>
+
+<span class="cm">// JSON 文字列 → JS オブジェクト（API から受け取ったデータ）</span>
+<span class="kw">const</span> <span class="vr">received</span> = <span class="str">'{"name":"鈴木","hba1c":8.2}'</span>;
+<span class="kw">const</span> <span class="vr">obj</span>      = <span class="fn">JSON</span>.<span class="fn">parse</span>(<span class="vr">received</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">obj</span>.<span class="vr">name</span>);   <span class="cm">// "鈴木"</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 JSON が使われる場面</div>
+        <ul class="bl" style="font-size:.77rem;">
+          <li>APIからデータを<strong style="color:#4ade80;">受け取る</strong>とき（→ parse）</li>
+          <li>データをサーバーに<strong style="color:#4ade80;">送る</strong>とき（→ stringify）</li>
+          <li>localStorage に<strong style="color:#4ade80;">保存</strong>するとき</li>
+          <li>設定ファイル（package.json 等）</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">⚠ JSON の制約</div>
+        <ul class="bl" style="font-size:.76rem;">
+          <li>キーは必ず <code>""</code>（ダブルクォート）</li>
+          <li>関数・undefined・Symbol は含めない</li>
+          <li>コメントが書けない</li>
+          <li>parse 失敗時は SyntaxError → try/catch で捕まえる</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">JSONはJS・Python・R・SQL すべてが読める「共通語」</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S14: QUIZ 3
+══════════════════════════════════ -->
+<div class="slide slide-quiz" id="s14">
+  <span class="tag tag-purple an">QUIZ 3</span>
+  <h2 class="stitle an">JSON の出力を当てよう</h2>
+  <div class="quiz-q an">
+    以下のコードで <span style="font-family:monospace;">result.name</span> の値は？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;background:rgba(255,255,255,.08);padding:.55rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.85;text-align:left;">
+      const obj = { name: "田中", hba1c: 6.8 };<br>
+      const json = JSON.stringify(obj);<br>
+      const result = JSON.parse(json);<br>
+      console.log(result.name);
+    </span>
+  </div>
+  <div class="qopts an" id="q3">
+    <button class="qbtn" onclick="ansQ3(this,'a')">A. エラーになる</button>
+    <button class="qbtn" onclick="ansQ3(this,'b')">B. undefined</button>
+    <button class="qbtn" onclick="ansQ3(this,'c')">C. "田中" ← stringify→parse で元に戻る</button>
+    <button class="qbtn" onclick="ansQ3(this,'d')">D. '{"name":"田中","hba1c":6.8}'</button>
+  </div>
+  <div class="qfb an" id="q3fb"></div>
+</div>
+
+<!-- ══════════════════════════════════
+  S15: 🔧 デモ② 患者リスト管理
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s15">
+  <span class="tag tag-js an">🔧 ライブデモ②</span>
+  <h2 class="stitle an">患者リスト管理ツール ― 追加・フィルタ・JSON出力</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.85rem;">
+    <div style="flex:1;display:flex;flex-direction:column;gap:.5rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.8rem;">
+        <div style="font-size:.74rem;color:#8b949e;font-weight:700;margin-bottom:.5rem;">▶ 患者を追加する</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.4rem;">
+          <input id="pt-name"  placeholder="名前" style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="pt-age"   placeholder="年齢" type="number" style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="pt-hba1c" placeholder="HbA1c" type="number" step="0.1" style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="pt-bmi"   placeholder="BMI" type="number" step="0.1" style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+        </div>
+        <button onclick="ptAdd()" style="width:100%;padding:.38rem;background:var(--jsdark);color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-size:.8rem;">患者を追加</button>
+      </div>
+      <div style="display:flex;gap:.4rem;">
+        <button onclick="ptFilter('all')"   class="flt active" id="f-all">全員</button>
+        <button onclick="ptFilter('high')"  class="flt" id="f-high">要管理</button>
+        <button onclick="ptFilter('ok')"    class="flt" id="f-ok">良好</button>
+        <button onclick="ptJSON()"          class="flt" id="f-json" style="margin-left:auto;background:#1a2d2d;border-color:#4ade80;color:#4ade80;">JSON出力</button>
+      </div>
+      <div id="pt-list" style="display:flex;flex-direction:column;gap:.4rem;overflow-y:auto;max-height:180px;"></div>
+      <div id="pt-stats" style="font-family:'JetBrains Mono',monospace;font-size:.76rem;color:#94a3b8;"></div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.55rem;">
+      <div class="card-dark">
+        <div style="font-size:.76rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">このデモで使った概念</div>
+        <ul class="bl" style="font-size:.75rem;">
+          <li><code>push()</code> で配列に追加</li>
+          <li><code>filter()</code> で絞り込み表示</li>
+          <li><code>map()</code> でカード表示に変換</li>
+          <li><code>reduce()</code> で平均計算</li>
+          <li><code>JSON.stringify()</code> で出力</li>
+        </ul>
+      </div>
+      <div id="pt-json-out" style="display:none;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:.7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:#4ade80;overflow-y:auto;max-height:160px;white-space:pre;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S16: 配列とオブジェクトの選び方
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s16">
+  <span class="tag tag-teal an">Ch.2 補足</span>
+  <h2 class="stitle an">データ構造の選び方 ― 配列 vs オブジェクト</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="g2 an" style="gap:.7rem;align-items:start;">
+      <div>
+        <div style="font-size:.82rem;font-weight:900;color:var(--navy);margin-bottom:.5rem;">📋 配列 [ ] を使う場面</div>
+        <div class="cr" style="margin-bottom:.4rem;"><div class="cr-lbl" style="background:var(--teal);min-width:80px;">順序あり</div><div class="cr-arr">→</div><div class="cr-body">HbA1cの測定値リスト<br>来院順の患者リスト</div></div>
+        <div class="cr" style="margin-bottom:.4rem;"><div class="cr-lbl" style="background:var(--teal);min-width:80px;">同種データ</div><div class="cr-arr">→</div><div class="cr-body">数値の集合<br>名前の一覧</div></div>
+        <div class="cr"><div class="cr-lbl" style="background:var(--teal);min-width:80px;">繰り返し</div><div class="cr-arr">→</div><div class="cr-body">map/filterで一括処理したい<br>for...of でループしたい</div></div>
+      </div>
+      <div>
+        <div style="font-size:.82rem;font-weight:900;color:var(--navy);margin-bottom:.5rem;">🗂 オブジェクト { } を使う場面</div>
+        <div class="cr" style="margin-bottom:.4rem;"><div class="cr-lbl" style="background:var(--amber);min-width:80px;">名前付き</div><div class="cr-arr">→</div><div class="cr-body">患者の各属性<br>（名前・年齢・検査値）</div></div>
+        <div class="cr" style="margin-bottom:.4rem;"><div class="cr-lbl" style="background:var(--amber);min-width:80px;">異種データ</div><div class="cr-arr">→</div><div class="cr-body">文字列・数値・真偽値<br>を一つにまとめたい</div></div>
+        <div class="cr"><div class="cr-lbl" style="background:var(--amber);min-width:80px;">キー検索</div><div class="cr-arr">→</div><div class="cr-body">名前でアクセスしたい<br><code>patient.hba1c</code></div></div>
+      </div>
+    </div>
+    <div class="cb an" style="margin-top:.2rem;">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">実務ではオブジェクトの配列が最もよく使われる</span></div>
+      <div class="cb-body" style="font-size:.78rem;"><code><span class="cm">// オブジェクト配列 ← 最も実用的な構造</span>
+<span class="kw">const</span> <span class="vr">patients</span> = [
+  { <span class="vr">name</span>:<span class="str">"山田"</span>, <span class="vr">hba1c</span>:<span class="num">6.5</span> },  <span class="cm">// 配列の各要素がオブジェクト</span>
+  { <span class="vr">name</span>:<span class="str">"鈴木"</span>, <span class="vr">hba1c</span>:<span class="num">8.2</span> },  <span class="cm">// → Excel の表と同じ発想</span>
+];</code></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S17: よくあるミスと注意点
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s17">
+  <span class="tag tag-red an">よくあるミスと注意点</span>
+  <h2 class="stitle an">配列・オブジェクトでハマりがちな落とし穴</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">① 参照渡しの罠（浅いコピー）</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="kw">const</span> <span class="vr">a</span> = { <span class="vr">name</span>: <span class="str">"山田"</span>, <span class="vr">hba1c</span>: <span class="num">6.5</span> };
+<span class="kw">const</span> <span class="vr">b</span> = <span class="vr">a</span>;        <span class="cm">// ❌ コピーでなく同じ参照</span>
+<span class="vr">b</span>.<span class="vr">hba1c</span> = <span class="num">9.0</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">a</span>.<span class="vr">hba1c</span>); <span class="cm">// 9.0 ← a も変わってしまう！</span>
+
+<span class="cm">// ✅ スプレッドでコピーする</span>
+<span class="kw">const</span> <span class="vr">c</span> = { ...<span class="vr">a</span> };   <span class="cm">// 独立したコピー</span>
+<span class="vr">c</span>.<span class="vr">hba1c</span> = <span class="num">9.0</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">a</span>.<span class="vr">hba1c</span>); <span class="cm">// 6.5 ← a は変わらない</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">② sort() の罠 ＋ map の返り値忘れ</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// sort はデフォルトで文字列比較</span>
+[<span class="num">10</span>, <span class="num">9</span>, <span class="num">2</span>, <span class="num">100</span>].<span class="fn">sort</span>();           <span class="cm">// [10,100,2,9] ← 意図しない</span>
+[<span class="num">10</span>, <span class="num">9</span>, <span class="num">2</span>, <span class="num">100</span>].<span class="fn">sort</span>((<span class="vr">a</span>,<span class="vr">b</span>)=><span class="vr">a</span>-<span class="vr">b</span>); <span class="cm">// [2,9,10,100] ← 正解</span>
+
+<span class="cm">// map で return を忘れるとすべて undefined</span>
+<span class="kw">const</span> <span class="vr">bad</span> = [<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>].<span class="fn">map</span>(<span class="vr">n</span> <span class="op">=></span> { <span class="vr">n</span> * <span class="num">2</span> }); <span class="cm">// [undef,undef,undef]</span>
+<span class="kw">const</span> <span class="vr">ok</span>  = [<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>].<span class="fn">map</span>(<span class="vr">n</span> <span class="op">=></span>   <span class="vr">n</span> * <span class="num">2</span>  ); <span class="cm">// [2,4,6]</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.88;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">③ JSON.parse のエラー処理</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="cm">// 不正な JSON は SyntaxError</span>
+<span class="kw">try</span> {
+  <span class="kw">const</span> <span class="vr">d</span> = <span class="fn">JSON</span>.<span class="fn">parse</span>(<span class="str">"壊れたJSON"</span>);
+} <span class="kw">catch</span> (<span class="vr">e</span>) {
+  <span class="fn">console</span>.<span class="fn">error</span>(<span class="str">"parse失敗"</span>, <span class="vr">e</span>);
+}</code></div>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#fbbf24;margin-bottom:.35rem;">④ const 配列への push は可能</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="kw">const</span> <span class="vr">arr</span> = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];
+<span class="vr">arr</span>.<span class="fn">push</span>(<span class="num">4</span>); <span class="cm">// ✅ これは OK</span>
+<span class="vr">arr</span> = [<span class="num">5</span>];   <span class="cm">// ❌ 再代入はダメ</span>
+<span class="cm">// const は「参照」を固定するため</span></code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S18: 実践パターン集
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s18">
+  <span class="tag tag-green an">実践パターン</span>
+  <h2 class="stitle an">医療データ処理のパターン集</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">コピペして使える雛形集</span></div>
+      <div class="cb-body" style="font-size:.76rem;"><code><span class="kw">const</span> <span class="vr">pts</span> = [<span class="cm">/* オブジェクト配列 */</span>];
+
+<span class="cm">// ① 要管理患者を抽出して名前リスト化</span>
+<span class="kw">const</span> <span class="vr">alertNames</span> = <span class="vr">pts</span>
+  .<span class="fn">filter</span>(<span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>)
+  .<span class="fn">map</span>(<span class="vr">p</span>    <span class="op">=></span> <span class="vr">p</span>.<span class="vr">name</span>);
+
+<span class="cm">// ② 全患者の平均 HbA1c</span>
+<span class="kw">const</span> <span class="vr">avg</span> = <span class="vr">pts</span>
+  .<span class="fn">reduce</span>((<span class="vr">s</span>, <span class="vr">p</span>) <span class="op">=></span> <span class="vr">s</span> + <span class="vr">p</span>.<span class="vr">hba1c</span>, <span class="num">0</span>) / <span class="vr">pts</span>.<span class="vr">length</span>;
+
+<span class="cm">// ③ HbA1c が最大の患者</span>
+<span class="kw">const</span> <span class="vr">worst</span> = <span class="vr">pts</span>.<span class="fn">reduce</span>(
+  (<span class="vr">max</span>, <span class="vr">p</span>) <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span> > <span class="vr">max</span>.<span class="vr">hba1c</span> ? <span class="vr">p</span> : <span class="vr">max</span>
+);
+
+<span class="cm">// ④ リスクラベルを全員に付与して JSON 出力</span>
+<span class="kw">const</span> <span class="vr">report</span> = <span class="fn">JSON</span>.<span class="fn">stringify</span>(
+  <span class="vr">pts</span>.<span class="fn">map</span>(<span class="vr">p</span> <span class="op">=></span> ({
+    ...<span class="vr">p</span>,
+    <span class="vr">risk</span>: <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span> ? <span class="str">"高"</span> : <span class="str">"低"</span>
+  })),
+  <span class="kw">null</span>, <span class="num">2</span>
+);</code></div>
+    </div>
+  </div>
+  <div class="hl an">filter → map のチェーンは「絞る→変換」の黄金パターン</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S19: Vol.3 まとめ
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s19">
+  <span class="tag tag-green an">Vol.3 まとめ</span>
+  <h2 class="stitle an">今日学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="sumi an"><div class="sumi-num" style="background:var(--navy);">01</div><div class="sumi-body"><strong>配列の基本</strong>：push/pop/slice でデータを管理。インデックスは 0 始まり</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--teal);">02</div><div class="sumi-body"><strong>map / filter / reduce</strong>：元配列を変えずに「変換・絞込・集計」。チェーンで組み合わせる</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--amber);">03</div><div class="sumi-body"><strong>オブジェクト</strong>：{ キー: 値 } で名前付きデータを管理。ドット記法でアクセス</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--jsdark);">04</div><div class="sumi-body"><strong>分割代入・スプレッド</strong>：<code class="pill-l">const {name, hba1c} = patient</code> で簡潔に取り出す。<code class="pill-l">{...p, risk}</code> で安全にコピー+追加</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--green);">05</div><div class="sumi-body"><strong>JSON</strong>：stringify でオブジェクト→文字列、parse で文字列→オブジェクト。API・保存・連携の共通語</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S20: 今週の課題
+══════════════════════════════════ -->
+<div class="slide slide-dark" id="s20">
+  <span class="tag tag-amber an">今週の課題</span>
+  <h2 class="stitle an">手を動かしてみよう</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Step 1</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">Console で試す</strong>：<code style="color:#a5d6ff;">[5, 7.8, 6.2, 9.0].filter(v => v >= 7.0)</code> を実行して結果を確認</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Step 2</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">自分のデータで</strong>：架空の患者5名をオブジェクト配列で作り、平均 HbA1c を reduce で計算</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--amber);">Step 3</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">map + filter</strong>：患者リストから「bmi >= 25」の患者だけ抽出し、名前と "肥満" ラベルを表示</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--jsdark);color:#1a1a00;">Step 4</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">JSON</strong>：Step 3 の結果を <code style="color:#a5d6ff;">JSON.stringify(result, null, 2)</code> で表示してみる</div></div>
+  </div>
+  <div class="hl an">「filter → map」のチェーンが自然に書けるようになったらVol.3 完全習得</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S21: 次回予告 Vol.4
+══════════════════════════════════ -->
+<div class="slide slide-card" id="s21">
+  <span class="tag tag-teal an">NEXT SESSION</span>
+  <h2 class="stitle an">次回 Vol.4 ― 関数・スコープ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="next-card an">
+      <div class="next-card-title">Vol.4 で学ぶこと</div>
+      <div class="next-card-body">
+        Ch.1　<strong>関数の基本</strong>：function宣言・引数・返り値・デフォルト引数<br>
+        Ch.2　<strong>アロー関数</strong>：<code style="color:var(--js);">v => v * 2</code> の正体を完全理解<br>
+        Ch.3　<strong>スコープ・クロージャ</strong>：変数はどこから見えるか<br>
+        🔧　<strong>ライブデモ</strong>：再利用できるリスク計算関数ライブラリ
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>Vol.3 の内容が使えるか確認</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>map / filter / reduce が書ける</li>
+          <li><code class="pill-l">v => ...</code> の形が読める</li>
+          <li>オブジェクト配列を扱える</li>
+        </ul>
+      </div>
+      <div class="card-green" style="font-size:.8rem;">
+        📚 <strong>予習のヒント</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>map の中の <code class="pill-l">v => v * 2</code> は「関数」だと意識する</li>
+          <li>「関数とは何か」を自分の言葉で説明してみる</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;" class="an">
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.1 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.2 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.3 ✅</span>
+      <span style="background:#1B6CA8;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.4 ← 次回</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.5</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.6</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S22: 締め
+══════════════════════════════════ -->
+<div class="slide slide-dark" id="s22">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.55rem;">
+    <div class="an title-vol" style="font-size:.75rem;">Vol.3 / 6 完了</div>
+    <div class="an title-main" style="font-size:clamp(2rem,5vw,3.8rem);">
+      データは<br>
+      <span style="color:var(--js);">構造を持って</span><br>
+      初めて意味を持つ
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.88rem;line-height:2.1;">
+      患者のデータをオブジェクト配列に入れ<br>
+      filter で絞り、map でラベルをつけ<br>
+      JSON で外に運び出す<br>
+      ― それが「データを扱うプログラム」の骨格
+    </div>
+  </div>
+  <div class="title-author an">
+    大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+    <span style="color:#4ade80;font-size:.76rem;">質問・誤りの指摘、大歓迎です</span>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- footer -->
+<footer style="display:none;">
+  本テキストはAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。
+  医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<style>
+.mvbtn { width:100%; padding:.4rem .7rem; border:none; border-radius:5px; font-family:'JetBrains Mono',monospace; font-size:.76rem; font-weight:700; cursor:pointer; text-align:left; transition:opacity .2s; }
+.mvbtn:hover { opacity:.8; }
+.flt { padding:.32rem .75rem; background:#1a2332; border:1px solid #30363d; color:#8b949e; border-radius:5px; font-family:'Noto Sans JP',sans-serif; font-size:.76rem; font-weight:700; cursor:pointer; transition:background .2s; }
+.flt.active,.flt:hover { background:#1B6CA8; border-color:#60a5fa; color:#fff; }
+</style>
+
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 22</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+/* ── Engine ─────────────────────── */
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+function go(n) {
+  slides[cur].classList.remove('active'); slides[cur].classList.add('prev');
+  const p = cur; setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev'); slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
+}
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft'){e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)dx<0?go(cur+1):go(cur-1);},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
+
+/* ── Quiz helpers ───────────────── */
+function ansQ(id, btn, val, correct, msgOk, msgNg) {
+  document.querySelectorAll(`#${id} .qbtn`).forEach(b=>b.disabled=true);
+  const btns = document.querySelectorAll(`#${id} .qbtn`);
+  const fbEl = document.getElementById(`${id}fb`);
+  if (val===correct) {
+    btn.classList.add('correct');
+    fbEl.textContent = msgOk; fbEl.style.color='#4ade80';
+  } else {
+    btn.classList.add('wrong');
+    btns[correct.charCodeAt(0)-97].classList.add('correct');
+    fbEl.textContent = msgNg; fbEl.style.color='#fbbf24';
+  }
+  fbEl.classList.add('show');
+}
+function ansQ1(btn,val){ansQ('q1',btn,val,'b','✅ 正解！ push で"佐藤"を末尾に追加 → shift で先頭の"山田"を削除 → arr[0] は"鈴木"になる','💡 正解は B。push は末尾追加、shift は先頭削除。山田が消えて鈴木が先頭になる');}
+function ansQ2(btn,val){ansQ('q2',btn,val,'b','✅ 正解！ filter で bmi>=30 の患者を抽出し、map でその名前だけを取り出す。["佐藤"]が結果','💡 正解は B。find は1件しか返さず名前も取れない。正解は filter（絞込）→ map（名前だけ取得）のチェーン');}
+function ansQ3(btn,val){ansQ('q3',btn,val,'c','✅ 正解！ stringify でJSON文字列に変換 → parse でJSオブジェクトに戻る → result.name は元通り"田中"','💡 正解は C。stringify→parse は可逆変換。JSオブジェクト→文字列→JSオブジェクトと戻るので result.name は"田中"');}
+
+/* ── Demo 1: 配列メソッド可視化 ── */
+const mvVals = [6.5, 7.8, 5.9, 9.2, 6.8];
+function mvRun(method) {
+  const el  = document.getElementById('mv-result');
+  const sum = document.getElementById('mv-summary');
+  el.innerHTML = '';
+
+  const inputRow = document.createElement('div');
+  inputRow.innerHTML = `<div class="mstrip"><span style="font-size:.72rem;color:#8b949e;font-weight:700;margin-right:.3rem;">元の配列:</span>${mvVals.map(v=>`<span class="mchip mchip-js">${v}</span>`).join('')}</div>`;
+  el.appendChild(inputRow);
+
+  const arrow = document.createElement('div');
+  arrow.innerHTML = `<div style="color:var(--amber);font-size:1rem;margin:.2rem 0 .2rem 1rem;">.${method}( ) ↓</div>`;
+  el.appendChild(arrow);
+
+  let result, label, chips;
+  if (method === 'map') {
+    result = mvVals.map(v => v >= 7.0 ? `${v} 🔴` : `${v} ✅`);
+    label  = '変換後（同じ長さ）:';
+    chips  = result.map(v => `<span class="mchip mchip-out">${v}</span>`).join('');
+    sum.textContent = `length: ${mvVals.length} → ${result.length}（変化なし）`;
+  } else if (method === 'filter') {
+    result = mvVals.filter(v => v >= 7.0);
+    label  = '絞込後（条件一致のみ）:';
+    chips  = mvVals.map(v => v >= 7.0
+      ? `<span class="mchip mchip-out">${v}</span>`
+      : `<span class="mchip mchip-del">${v}</span>`).join('');
+    sum.textContent = `length: ${mvVals.length} → ${result.length}（条件不一致は除外）`;
+  } else if (method === 'reduce') {
+    result = mvVals.reduce((a,b) => a+b, 0);
+    label  = '集計結果（1つの値）:';
+    chips  = `<span class="mchip mchip-out">sum = ${result.toFixed(1)}</span><span class="mchip mchip-out" style="margin-left:.4rem;">avg = ${(result/mvVals.length).toFixed(1)}</span>`;
+    sum.textContent = `[6.5+7.8+5.9+9.2+6.8] = ${result.toFixed(1)}、平均 = ${(result/mvVals.length).toFixed(1)}`;
+  } else if (method === 'sort') {
+    result = [...mvVals].sort((a,b) => a-b);
+    label  = '昇順ソート後:';
+    chips  = result.map(v => `<span class="mchip mchip-out">${v}</span>`).join('');
+    sum.textContent = `最小: ${result[0]}  最大: ${result[result.length-1]}`;
+  } else if (method === 'find') {
+    result = mvVals.find(v => v >= 9.0);
+    label  = '最初に一致した要素:';
+    chips  = mvVals.map(v => v === result
+      ? `<span class="mchip mchip-out">${v} ← found</span>`
+      : `<span class="mchip" style="background:#1a1a2d;border:1px solid #30363d;color:#8b949e;">${v}</span>`).join('');
+    sum.textContent = `最初に 9.0 以上の値: ${result}（インデックス ${mvVals.findIndex(v=>v>=9.0)}）`;
+  }
+
+  const outRow = document.createElement('div');
+  outRow.innerHTML = `<div class="mstrip"><span style="font-size:.72rem;color:#8b949e;font-weight:700;margin-right:.3rem;">${label}</span>${chips}</div>`;
+  el.appendChild(outRow);
+}
+mvRun('map');
+
+/* ── Demo 2: 患者リスト管理 ──────── */
+let ptData = [
+  { name:'山田', age:65, hba1c:6.5, bmi:24 },
+  { name:'鈴木', age:48, hba1c:8.2, bmi:28 },
+  { name:'田中', age:72, hba1c:5.9, bmi:22 },
+];
+let ptMode = 'all';
+
+function ptRender(mode) {
+  ptMode = mode;
+  ['all','high','ok'].forEach(id => {
+    document.getElementById('f-'+id).classList.toggle('active', id===mode);
+  });
+  const list = document.getElementById('pt-list');
+  const shown = mode==='all' ? ptData
+    : mode==='high' ? ptData.filter(p=>p.hba1c>=7.0||p.bmi>=30)
+    : ptData.filter(p=>p.hba1c<7.0&&p.bmi<30);
+  list.innerHTML = shown.map(p => {
+    const isHigh = p.hba1c >= 7.0 || p.bmi >= 30;
+    const cls = isHigh ? 'alert' : 'ok';
+    return `<div class="pt-card ${cls}">
+      <span style="color:#d2a8ff;font-weight:700;">${p.name}</span>
+      <span style="color:#8b949e;"> ${p.age}歳</span>　
+      HbA1c:<span style="color:${p.hba1c>=7?'#fbbf24':'#4ade80'};">${p.hba1c}</span>　
+      BMI:<span style="color:${p.bmi>=30?'#f87171':p.bmi>=25?'#fbbf24':'#4ade80'};">${p.bmi}</span>　
+      <span style="color:${isHigh?'#f87171':'#4ade80'};font-size:.72rem;">${isHigh?'🔴 要管理':'✅ 良好'}</span>
+    </div>`;
+  }).join('');
+
+  const alertN = ptData.filter(p=>p.hba1c>=7.0||p.bmi>=30).length;
+  const avgH   = ptData.length ? (ptData.reduce((s,p)=>s+p.hba1c,0)/ptData.length).toFixed(1) : '-';
+  document.getElementById('pt-stats').textContent =
+    `全 ${ptData.length} 名 | 要管理 ${alertN} 名 | 平均HbA1c ${avgH}%`;
+  document.getElementById('pt-json-out').style.display = 'none';
+}
+function ptFilter(mode){ ptRender(mode); }
+function ptAdd() {
+  const n = document.getElementById('pt-name').value.trim();
+  const a = parseInt(document.getElementById('pt-age').value);
+  const h = parseFloat(document.getElementById('pt-hba1c').value);
+  const b = parseFloat(document.getElementById('pt-bmi').value);
+  if (!n || isNaN(a) || isNaN(h) || isNaN(b)) return;
+  ptData.push({ name:n, age:a, hba1c:h, bmi:b });
+  ['pt-name','pt-age','pt-hba1c','pt-bmi'].forEach(id=>document.getElementById(id).value='');
+  ptRender(ptMode);
+}
+function ptJSON() {
+  const out = document.getElementById('pt-json-out');
+  out.textContent = JSON.stringify(ptData.map(p=>({...p, risk:p.hba1c>=7.0||p.bmi>=30?'高':'低'})), null, 2);
+  out.style.display = 'block';
+}
+ptRender('all');
+</script>
+</body>
+</html>

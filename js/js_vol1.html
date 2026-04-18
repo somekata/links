@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はじめてのJavaScript Vol.1 ― 変数・型・演算子</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A2342;
+  --teal:   #1B6CA8;
+  --ltblue: #E8F1FA;
+  --amber:  #E8873A;
+  --gray:   #64748B;
+  --lgray:  #F0F4F8;
+  --red:    #C0392B;
+  --green:  #1A7A4A;
+  --text:   #1E293B;
+  --white:  #FFFFFF;
+  --js:     #F7DF1E;
+  --jsdark: #b59a00;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body {
+  width: 100%; height: 100%;
+  background: #0a0f1a;
+  font-family: 'Noto Sans JP', sans-serif;
+  overflow: hidden;
+}
+
+/* ── Slide engine ────────────────────────────────────── */
+.deck { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: 2.2rem 3rem 1.8rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity .45s cubic-bezier(.4,0,.2,1), transform .45s cubic-bezier(.4,0,.2,1);
+  transform: translateX(60px);
+}
+.slide.active  { opacity: 1; pointer-events: all; transform: translateX(0); }
+.slide.prev    { opacity: 0; transform: translateX(-60px); }
+
+/* ── Themes ──────────────────────────────────────────── */
+.slide-dark  { background: var(--navy); }
+.slide-light { background: var(--white); }
+.slide-card  { background: var(--lgray); }
+.slide-code  { background: #0d1117; }
+.slide-quiz  { background: #12100a; }
+
+.slide-dark::before,
+.slide-code::before,
+.slide-quiz::before {
+  content: ''; position: absolute; left: 0; top: 0;
+  width: 6px; height: 100%;
+}
+.slide-dark::before  { background: var(--amber); }
+.slide-code::before  { background: var(--js); }
+.slide-quiz::before  { background: #a855f7; }
+
+/* ── Section tag ─────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+  padding: 3px 12px; border-radius: 2px;
+  color: #fff; margin-bottom: .5rem; align-self: flex-start;
+}
+.tag-teal   { background: var(--teal); }
+.tag-amber  { background: var(--amber); }
+.tag-js     { background: var(--jsdark); }
+.tag-purple { background: #7c3aed; }
+.tag-green  { background: var(--green); }
+.tag-red    { background: var(--red); }
+
+/* ── Slide title ─────────────────────────────────────── */
+.stitle {
+  font-size: clamp(1.35rem, 2.8vw, 2rem);
+  font-weight: 900; line-height: 1.2; margin-bottom: 1rem;
+  border-left: 5px solid var(--amber); padding-left: .7rem;
+}
+.slide-dark  .stitle { color: var(--white); border-color: var(--amber); }
+.slide-light .stitle { color: var(--navy);  border-color: var(--amber); }
+.slide-card  .stitle { color: var(--navy);  border-color: var(--amber); }
+.slide-code  .stitle { color: var(--white); border-color: var(--js); }
+.slide-quiz  .stitle { color: var(--white); border-color: #a855f7; }
+
+/* ── Title slide ─────────────────────────────────────── */
+.title-eyebrow {
+  font-size: .78rem; letter-spacing: .15em; color: var(--jsdark);
+  font-weight: 700; text-align: center; margin-bottom: .5rem;
+}
+.title-main {
+  font-size: clamp(2.5rem, 6.5vw, 4.8rem);
+  font-weight: 900; color: var(--white);
+  letter-spacing: -.02em; line-height: 1.05; text-align: center;
+}
+.title-vol {
+  display: inline-block; background: var(--jsdark);
+  color: #1a1a00; padding: 2px 16px; border-radius: 4px;
+  font-size: clamp(.85rem, 1.8vw, 1.1rem); font-weight: 900;
+  letter-spacing: .06em; margin-bottom: .6rem;
+}
+.title-sub {
+  font-size: clamp(.85rem, 1.6vw, 1.05rem);
+  color: rgba(255,255,255,.55); text-align: center;
+  margin-top: .7rem; line-height: 1.7;
+}
+.title-rule { width: 240px; height: 2px; background: var(--teal); margin: 1rem auto; }
+.title-author {
+  text-align: center; color: rgba(255,255,255,.4);
+  font-size: .78rem; margin-top: auto; padding-bottom: .3rem;
+}
+
+/* ── Code block ──────────────────────────────────────── */
+.cb {
+  background: #0d1117; border-radius: 6px;
+  overflow: hidden; font-family: 'JetBrains Mono', monospace;
+  box-shadow: 0 4px 20px rgba(0,0,0,.45);
+}
+.cb-head {
+  display: flex; align-items: center; gap: .45rem;
+  padding: .45rem 1rem; background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.cb-lang { font-size: .7rem; color: #8b949e; letter-spacing: .06em; margin-left: auto; }
+.cb-body { padding: .85rem 1.2rem; overflow-x: auto; font-size: .8rem; line-height: 1.75; }
+.cb-body code { color: #e6edf3; white-space: pre; }
+
+/* syntax */
+.kw  { color: #ff7b72; }
+.fn  { color: #d2a8ff; }
+.str { color: #a5d6ff; }
+.num { color: #79c0ff; }
+.cm  { color: #8b949e; font-style: italic; }
+.op  { color: #ff7b72; }
+.vr  { color: #ffa657; }
+.tg  { color: #7ee787; }
+.atr { color: #79c0ff; }
+.ok  { color: #4ade80; }
+.er  { color: #f87171; }
+
+/* ── Row item ────────────────────────────────────────── */
+.row {
+  display: flex; align-items: stretch;
+  background: var(--white); border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.08);
+  overflow: hidden; margin-bottom: .55rem;
+}
+.row-lbl {
+  min-width: 2.6rem; display: flex;
+  align-items: center; justify-content: center;
+  font-size: .78rem; font-weight: 700; color: #fff;
+  padding: 0 .7rem; white-space: nowrap;
+}
+.row-body {
+  padding: .5rem .85rem; font-size: .84rem;
+  color: var(--text); line-height: 1.55;
+}
+.row-body strong { color: var(--navy); }
+.row-body code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem; background: #f0f4f8;
+  padding: 1px 5px; border-radius: 3px; color: #c0392b;
+}
+
+/* ── Concept row ─────────────────────────────────────── */
+.cr {
+  display: flex; align-items: stretch;
+  border-radius: 6px; overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12); margin-bottom: .6rem;
+}
+.cr-lbl {
+  min-width: 110px; padding: .65rem .8rem;
+  font-size: .8rem; font-weight: 700; color: #fff;
+  display: flex; align-items: center;
+  justify-content: center; text-align: center;
+}
+.cr-arr {
+  background: #f0f4f8; display: flex;
+  align-items: center; justify-content: center;
+  padding: 0 .5rem; color: var(--gray); font-size: 1rem;
+}
+.cr-body {
+  flex: 1; background: var(--white);
+  padding: .65rem .9rem; font-size: .83rem;
+  color: var(--text); line-height: 1.55;
+}
+.cr-body strong { color: var(--navy); }
+.cr-body code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem; background: #f0f4f8;
+  padding: 1px 5px; border-radius: 3px; color: #c0392b;
+}
+
+/* ── Card ────────────────────────────────────────────── */
+.card {
+  border-radius: 6px; overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,.09);
+}
+.card-dark {
+  background: #161b22; border: 1px solid #30363d;
+  border-radius: 6px; padding: .75rem 1rem;
+}
+.card-warn {
+  background: #FFF3E0; border-radius: 6px;
+  padding: .65rem 1rem;
+}
+.card-blue {
+  background: var(--ltblue); border-radius: 6px;
+  padding: .65rem 1rem;
+}
+.card-green {
+  background: #ECFDF5; border-radius: 6px;
+  padding: .65rem 1rem;
+}
+.card-red {
+  background: #FEF2F2; border-radius: 6px;
+  padding: .65rem 1rem;
+}
+
+/* ── Grids ───────────────────────────────────────────── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .85rem; }
+.fx { display: flex; gap: .85rem; }
+
+/* ── Bullet list ─────────────────────────────────────── */
+ul.bl { list-style: none; }
+ul.bl li {
+  padding: .26rem 0 .26rem 1.3rem; position: relative;
+  font-size: .85rem; color: var(--text); line-height: 1.55;
+}
+ul.bl li::before {
+  content: '▸'; position: absolute; left: 0;
+  color: var(--teal); font-size: .8rem;
+}
+.slide-dark ul.bl li  { color: #e2e8f0; }
+.slide-dark ul.bl li::before { color: var(--amber); }
+.slide-code ul.bl li  { color: #e2e8f0; }
+.slide-code ul.bl li::before { color: var(--js); }
+ul.bl li code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .76rem; background: rgba(255,255,255,.12);
+  padding: 1px 5px; border-radius: 3px; color: #a5d6ff;
+}
+.slide-light ul.bl li code,
+.slide-card  ul.bl li code {
+  background: #f0f4f8; color: #c0392b;
+}
+
+/* ── Summary item ────────────────────────────────────── */
+.sumi {
+  display: flex; align-items: stretch;
+  background: var(--white); border-radius: 6px;
+  box-shadow: 0 1px 8px rgba(0,0,0,.08);
+  overflow: hidden; margin-bottom: .75rem;
+}
+.sumi-num {
+  min-width: 54px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 1.35rem; font-weight: 900; color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+}
+.sumi-body {
+  padding: .65rem .95rem;
+  font-size: .85rem; line-height: 1.6; color: var(--text);
+}
+
+/* ── Quiz ────────────────────────────────────────────── */
+.quiz-q {
+  font-size: clamp(.95rem, 2vw, 1.25rem);
+  font-weight: 700; color: #e2e8f0;
+  margin-bottom: 1.3rem; line-height: 1.5; text-align: center;
+}
+.qopts {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: .8rem; max-width: 680px; margin: 0 auto;
+}
+.qbtn {
+  background: rgba(255,255,255,.07);
+  border: 2px solid rgba(255,255,255,.13);
+  color: #e2e8f0; border-radius: 8px;
+  padding: .85rem 1.1rem;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: .85rem; font-weight: 700;
+  cursor: pointer; text-align: left; line-height: 1.45;
+  transition: background .2s, border-color .2s, transform .15s;
+}
+.qbtn:hover { background: rgba(168,85,247,.22); border-color: #a855f7; transform: translateY(-2px); }
+.qbtn.correct { background: rgba(26,122,74,.35); border-color: #4ade80; color: #4ade80; }
+.qbtn.wrong   { background: rgba(192,57,43,.25); border-color: #f87171; color: #f87171; }
+.qbtn:disabled { cursor: default; }
+.qfb {
+  text-align: center; margin-top: .9rem;
+  font-size: .9rem; font-weight: 700;
+  min-height: 1.4rem; opacity: 0; transition: opacity .3s;
+}
+.qfb.show { opacity: 1; }
+
+/* ── Vote ────────────────────────────────────────────── */
+.vopts { display: flex; flex-direction: column; gap: .65rem; max-width: 580px; margin: 0 auto; width: 100%; }
+.vbtn {
+  display: flex; align-items: center; gap: .75rem;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 6px; padding: .65rem 1rem;
+  cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+  font-size: .85rem; color: #e2e8f0; font-weight: 700;
+  transition: background .2s;
+}
+.vbtn:hover { background: rgba(247,223,30,.15); border-color: var(--jsdark); }
+.vbtn.chosen { background: rgba(247,223,30,.2); border-color: var(--jsdark); }
+
+/* ── Inline code pill ────────────────────────────────── */
+.pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .8rem; background: #161b22;
+  border: 1px solid #30363d;
+  color: #ffa657; padding: 2px 8px; border-radius: 4px;
+}
+.pill-l { background: #f0f4f8; border: 1px solid #dde3ea; color: #c0392b; }
+
+/* ── REPL output strip ───────────────────────────────── */
+.repl {
+  background: #0d1117; border-radius: 6px;
+  padding: .7rem 1rem; font-family: 'JetBrains Mono', monospace;
+  font-size: .8rem; line-height: 1.8;
+  border: 1px solid #30363d;
+}
+.repl-in  { color: #e6edf3; }
+.repl-in::before { content: '> '; color: #8b949e; }
+.repl-out { color: #4ade80; }
+.repl-out::before { content: '← '; color: #8b949e; }
+.repl-err { color: #f87171; }
+.repl-err::before { content: '✗ '; color: #f87171; }
+
+/* ── Highlight ───────────────────────────────────────── */
+.hl {
+  text-align: center; font-size: .92rem; font-weight: 700;
+  font-style: italic; color: var(--teal);
+  margin-top: auto; padding-top: .7rem;
+}
+.slide-dark .hl { color: var(--amber); }
+.slide-code .hl { color: var(--js); }
+.slide-quiz .hl { color: #a855f7; }
+
+/* ── Next-vol card ───────────────────────────────────── */
+.next-card {
+  background: var(--navy); border-radius: 8px;
+  padding: .8rem 1.2rem; border-left: 4px solid var(--amber);
+}
+.next-card-title { font-size: .8rem; color: var(--amber); font-weight: 700; margin-bottom: .3rem; }
+.next-card-body  { font-size: .85rem; color: #e2e8f0; line-height: 1.6; }
+
+/* ── Animations ──────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide.active .an { animation: fadeUp .5s ease both; }
+.slide.active .an:nth-child(1) { animation-delay: .05s; }
+.slide.active .an:nth-child(2) { animation-delay: .12s; }
+.slide.active .an:nth-child(3) { animation-delay: .19s; }
+.slide.active .an:nth-child(4) { animation-delay: .26s; }
+.slide.active .an:nth-child(5) { animation-delay: .33s; }
+.slide.active .an:nth-child(6) { animation-delay: .40s; }
+.slide.active .an:nth-child(7) { animation-delay: .47s; }
+.slide.active .an:nth-child(8) { animation-delay: .54s; }
+
+/* ── Nav ─────────────────────────────────────────────── */
+#nav {
+  position: fixed; bottom: 1.2rem; right: 1.5rem;
+  display: flex; align-items: center; gap: .7rem; z-index: 9999;
+}
+.nbtn {
+  background: rgba(255,255,255,.13); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.22); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  font-size: 1.1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s, transform .15s;
+}
+.nbtn:hover { background: rgba(255,255,255,.28); transform: scale(1.08); }
+#sc {
+  color: rgba(255,255,255,.65); font-size: .76rem;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 52px; text-align: center;
+}
+#bar {
+  position: fixed; bottom: 0; left: 0; height: 3px;
+  background: var(--js); transition: width .35s ease; z-index: 9999;
+}
+#hint {
+  position: fixed; bottom: 1.25rem; left: 1.5rem;
+  color: rgba(255,255,255,.3); font-size: .67rem;
+  font-family: 'JetBrains Mono', monospace; pointer-events: none;
+}
+
+/* ── Util ────────────────────────────────────────────── */
+.mb1 { margin-bottom: .55rem; }
+.mb2 { margin-bottom: 1rem; }
+.center { text-align: center; }
+.small  { font-size: .75rem; color: var(--gray); }
+.mono   { font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════════════════════════
+  S1: タイトル
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.3rem;">
+    <div class="an" style="background:var(--jsdark);color:#1a1a00;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">はじめてのJavaScript</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 1 / 6</div>
+    <div class="an title-main">変数・型・<span style="color:var(--js);">演算子</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">
+      データの名前のつけ方から<br>
+      文字列・数値・真偽値の扱いまで
+    </div>
+  </div>
+  <div class="title-author an">大阪公立大学 医学部 細菌学講座　金子幸弘</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S2: 全6回ロードマップ
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">COURSE MAP</span>
+  <h2 class="stitle an">全6回のロードマップ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="row an" style="border-left:4px solid var(--jsdark);">
+      <div class="row-lbl" style="background:var(--jsdark);color:#1a1a00;min-width:3.5rem;">Vol.1</div>
+      <div class="row-body"><strong>変数・型・演算子</strong>　← 今日はここ<br><span class="small">let / const・データ型・テンプレートリテラル</span></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#555;">Vol.2</div>
+      <div class="row-body"><strong>条件分岐・ループ</strong><br><span class="small">if / else・三項演算子・for / while</span></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#555;">Vol.3</div>
+      <div class="row-body"><strong>配列・オブジェクト</strong><br><span class="small">配列操作・map / filter・JSON</span></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#555;">Vol.4</div>
+      <div class="row-body"><strong>関数・スコープ</strong><br><span class="small">function・アロー関数・クロージャ</span></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#555;">Vol.5</div>
+      <div class="row-body"><strong>DOM・イベント</strong><br><span class="small">HTML操作・addEventListener・フォーム</span></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#555;">Vol.6</div>
+      <div class="row-body"><strong>実践：医療ミニアプリ制作</strong><br><span class="small">BMIリスク判定ツールをゼロから作る</span></div>
+    </div>
+  </div>
+  <div class="hl an">「全部覚えなくていい。手を動かしながら慣れていく」</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S3: Vol.1 でやること
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-js an">Vol.1 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--navy);">Ch.1 変数</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body"><strong>データに名前をつける</strong>：<code>let</code> と <code>const</code> の使い分け・命名規則</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">Ch.2 データ型</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body"><strong>データの種類を知る</strong>：数値・文字列・真偽値・null / undefined・<code>typeof</code></div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);">Ch.3 演算子</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body"><strong>データを計算・比較する</strong>：算術・文字列結合・比較・論理演算子</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--jsdark);">Ch.4 テンプレート</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body"><strong>文字列に変数を埋め込む</strong>：テンプレートリテラル <code>${ }</code> の活用</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--green);">🔧 デモ×2</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">型チェッカー・BMI計算ツール ― <strong>その場で動かしながら学ぶ</strong></div>
+    </div>
+  </div>
+  <div class="hl an">まずはブラウザで F12 → Console を開いてみよう</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S4: QUIZ 1（投票）― プログラムのイメージ
+══════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s4">
+  <span class="tag tag-purple an">QUIZ 1 ― ウォームアップ</span>
+  <h2 class="stitle an">まず聞かせてください</h2>
+  <div class="quiz-q an">プログラムとは何をするものだと思いますか？</div>
+  <div class="qopts an" id="q1">
+    <button class="qbtn" onclick="vote1(this,'a')">🤖 コンピュータへの命令書</button>
+    <button class="qbtn" onclick="vote1(this,'b')">🧮 計算をするだけのもの</button>
+    <button class="qbtn" onclick="vote1(this,'c')">🌐 Webページを作るもの</button>
+    <button class="qbtn" onclick="vote1(this,'d')">🤷 正直よくわからない</button>
+  </div>
+  <div class="qfb an" id="q1fb"></div>
+  <div class="hl an">全部ある意味で正解。今日終わる頃には自分の言葉で答えられる</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S5: 変数とは何か
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s5">
+  <span class="tag tag-amber an">Ch.1 — 変数</span>
+  <h2 class="stitle an">変数とは ― データに「名前」をつける</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#1B6CA8;">アナロジー</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;">変数は「ラベル付きの箱」。中身（値）を入れておき、名前で呼び出せる。<br>患者の体重を毎回 <strong style="color:var(--js);">70</strong> と書く代わりに <strong style="color:var(--js);">weight</strong> と名前をつける</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#1B6CA8;">医療例</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;">患者ID・体重・HbA1c・診断名 ― すべてプログラムの中では<strong style="color:var(--amber);">変数</strong>として扱う</div>
+    </div>
+    <div class="cb an">
+      <div class="cb-head">
+        <div class="dot" style="background:#ff5f56;"></div>
+        <div class="dot" style="background:#ffbd2e;"></div>
+        <div class="dot" style="background:#27c93f;"></div>
+        <span class="cb-lang">JavaScript — はじめての変数</span>
+      </div>
+      <div class="cb-body"><code><span class="cm">// 変数を宣言して値を代入する</span>
+<span class="kw">let</span> <span class="vr">patientName</span> = <span class="str">"山田太郎"</span>;
+<span class="kw">let</span> <span class="vr">weight</span>      = <span class="num">70</span>;
+<span class="kw">let</span> <span class="vr">hba1c</span>       = <span class="num">7.2</span>;
+<span class="kw">let</span> <span class="vr">isDiabetic</span>  = <span class="kw">true</span>;
+
+<span class="cm">// 名前で呼び出す</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">patientName</span>);  <span class="cm">// → "山田太郎"</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">weight</span>);       <span class="cm">// → 70</span></code></div>
+    </div>
+  </div>
+  <div class="hl an">変数名は「中身が何かわかる名前」にする ― これが読みやすいコードの第一歩</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S6: let vs const vs var
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s6">
+  <span class="tag tag-js an">Ch.1 — 変数宣言</span>
+  <h2 class="stitle an"><span class="pill">let</span> と <span class="pill">const</span> ― どちらを使うか</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1;display:flex;flex-direction:column;gap:.6rem;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">let ― 再代入あり</span></div>
+        <div class="cb-body"><code><span class="kw">let</span> <span class="vr">temperature</span> = <span class="num">37.0</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">temperature</span>);  <span class="cm">// 37</span>
+
+<span class="cm">// 値を書き換えられる</span>
+<span class="vr">temperature</span> = <span class="num">38.5</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">temperature</span>);  <span class="cm">// 38.5</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">const ― 再代入なし（定数）</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">HOSPITAL</span> = <span class="str">"大阪公立大学病院"</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">HOSPITAL</span>);  <span class="cm">// OK</span>
+
+<span class="cm">// 書き換えようとするとエラー ↓</span>
+<span class="vr">HOSPITAL</span> = <span class="str">"他の病院"</span>;
+<span class="cm">// ✗ TypeError: Assignment to constant</span></code></div>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 使い分けの鉄則</div>
+        <ul class="bl" style="font-size:.8rem;">
+          <li><span class="pill" style="font-size:.72rem;">const</span> を<strong style="color:#4ade80;">デフォルトで使う</strong></li>
+          <li>値が変わる必要があるときだけ <span class="pill" style="font-size:.72rem;">let</span></li>
+          <li><span class="pill" style="font-size:.72rem;">var</span> は古い書き方 ― 新規では<strong style="color:#f87171;">使わない</strong></li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">💡 命名規則 ― camelCase</div>
+        <div class="repl">
+          <div class="repl-in" style="color:#4ade80;">// ✅ 良い例（camelCase）</div>
+          <div class="repl-in" style="color:#e6edf3;">patientAge, bloodPressure, isHospitalized</div>
+          <div style="margin-top:.4rem;"></div>
+          <div class="repl-in" style="color:#f87171;">// ❌ 悪い例</div>
+          <div class="repl-in" style="color:#e6edf3;">PatientAge, blood_pressure, 体温</div>
+        </div>
+      </div>
+      <div class="card-warn" style="font-size:.8rem;">
+        ⚠ 変数名に使えない文字：数字始まり・スペース・<code class="pill-l">-</code>（ハイフン）<br>
+        使えるのは英数字・<code class="pill-l">_</code>・<code class="pill-l">$</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S7: データ型① ― 全体像
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s7">
+  <span class="tag tag-teal an">Ch.2 — データ型</span>
+  <h2 class="stitle an">データ型 ― 値には「種類」がある</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="row an">
+      <div class="row-lbl" style="background:#b59a00;color:#1a1a00;min-width:5.5rem;font-size:.75rem;">number</div>
+      <div class="row-body"><strong>数値</strong>（整数・小数どちらも同じ型）<br>
+        <code>let age = 25</code>　　<code>let hba1c = 7.2</code>　　<code>let pi = 3.14</code></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:var(--teal);min-width:5.5rem;font-size:.75rem;">string</div>
+      <div class="row-body"><strong>文字列</strong>（クォートで囲む）<br>
+        <code>"山田太郎"</code>　<code>'糖尿病'</code>　<code>`HbA1c: ${hba1c}%`</code></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:var(--green);min-width:5.5rem;font-size:.75rem;">boolean</div>
+      <div class="row-body"><strong>真偽値</strong>（<code>true</code> か <code>false</code> の2択）<br>
+        <code>let isDiabetic = true</code>　　<code>let isFasting = false</code></div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:var(--gray);min-width:5.5rem;font-size:.75rem;">null</div>
+      <div class="row-body"><strong>意図的な「空」</strong>（値がないと明示する）<br>
+        <code>let nextAppointment = null</code>　← まだ決まっていない</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:#374151;min-width:5.5rem;font-size:.75rem;">undefined</div>
+      <div class="row-body"><strong>未定義</strong>（宣言だけして値を入れていない）<br>
+        <code>let diagnosis;</code>　← 宣言のみ → 自動的に <code>undefined</code></div>
+    </div>
+  </div>
+  <div class="hl an">医療データにも「未記入（null）」と「項目なし（undefined）」は別概念 ― 型で表現できる</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S8: typeof 演算子
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s8">
+  <span class="tag tag-js an">Ch.2 — typeof</span>
+  <h2 class="stitle an"><span class="pill">typeof</span> ― 型を調べる演算子</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">JavaScript</span></div>
+        <div class="cb-body"><code><span class="fn">console</span>.<span class="fn">log</span>( <span class="kw">typeof</span> <span class="num">7.2</span> );           <span class="cm">// "number"</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="kw">typeof</span> <span class="str">"山田太郎"</span> );     <span class="cm">// "string"</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="kw">typeof</span> <span class="kw">true</span> );          <span class="cm">// "boolean"</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="kw">typeof</span> <span class="kw">null</span> );          <span class="cm">// "object" ← 有名なバグ！</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="kw">typeof</span> <span class="kw">undefined</span> );    <span class="cm">// "undefined"</span>
+
+<span class="kw">const</span> <span class="vr">age</span> = <span class="num">25</span>;
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="kw">typeof</span> <span class="vr">age</span> );           <span class="cm">// "number"</span>
+
+<span class="cm">// 型を確認してから処理する（実務的な使い方）</span>
+<span class="kw">if</span> (<span class="kw">typeof</span> <span class="vr">age</span> === <span class="str">"number"</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"年齢は数値です"</span>);
+}</code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">⚠ JSの有名な罠</div>
+        <div class="repl">
+          <div class="repl-in">typeof null</div>
+          <div class="repl-out">"object"</div>
+        </div>
+        <div style="font-size:.76rem;color:#94a3b8;margin-top:.4rem;line-height:1.5;">
+          null は「オブジェクト型」と表示されるが、これはJSの初期設計ミス。<code style="font-size:.72rem;color:#a5d6ff;">null</code> を本当に確認したいときは <code style="font-size:.72rem;color:#a5d6ff;">=== null</code> で比較する
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">🔧 デモ：Console で試す</div>
+        <div style="font-size:.78rem;color:#e2e8f0;line-height:1.7;">
+          F12 → Console を開いて<br>
+          <span class="pill" style="font-size:.72rem;">typeof "hello"</span> と入力 → Enter<br>
+          結果が <span style="color:#4ade80;">"string"</span> と返ってくる
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">型を把握することがバグを防ぐ第一歩</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S9: 型変換と == vs ===
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s9">
+  <span class="tag tag-js an">Ch.2 — 型変換</span>
+  <h2 class="stitle an">型変換の罠 ― <span class="pill">==</span> と <span class="pill">===</span> の違い</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">== （緩い比較・型変換あり）</span></div>
+        <div class="cb-body"><code><span class="fn">console</span>.<span class="fn">log</span>( <span class="num">5</span>  <span class="op">==</span>  <span class="str">"5"</span> );   <span class="cm">// true  ← 数値と文字列が等しい!?</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="num">0</span>  <span class="op">==</span>  <span class="kw">false</span> ); <span class="cm">// true  ← 0とfalseが等しい!?</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="str">""</span> <span class="op">==</span>  <span class="kw">false</span> ); <span class="cm">// true  ← 空文字とfalseが等しい!?</span>
+<span class="cm">// JSが自動で型を変換するので直感に反する結果になる</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">=== （厳格な比較・型変換なし）</span></div>
+        <div class="cb-body"><code><span class="fn">console</span>.<span class="fn">log</span>( <span class="num">5</span>  <span class="op">===</span> <span class="str">"5"</span> );   <span class="cm">// false ← 型が違うので false</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="num">0</span>  <span class="op">===</span> <span class="kw">false</span> ); <span class="cm">// false ← number と boolean は別</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="num">5</span>  <span class="op">===</span> <span class="num">5</span> );     <span class="cm">// true  ← 値も型も同じなら true</span>
+<span class="cm">// 型まで含めて比較する → 予測しやすい</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.85;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.8rem;font-weight:700;color:#f87171;margin-bottom:.4rem;">❌ == は使わない</div>
+        <div style="font-size:.78rem;color:#e2e8f0;line-height:1.6;">型変換が暗黙的に起きて、<br>バグの温床になる</div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.8rem;font-weight:700;color:#4ade80;margin-bottom:.4rem;">✅ === を常に使う</div>
+        <div style="font-size:.78rem;color:#e2e8f0;line-height:1.6;">「値も型も同じ」のときだけ true。<br>予測しやすく安全</div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">同様に != より !== を使う</div>
+        <div class="repl" style="font-size:.76rem;">
+          <div class="repl-in"><span class="num">5</span> !== <span class="str">"5"</span></div>
+          <div class="repl-out">true</div>
+          <div class="repl-in"><span class="num">5</span> !== <span class="num">5</span></div>
+          <div class="repl-out">false</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">JSでは == を使うのは悪習慣。常に === を使う</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S10: QUIZ 2 ― 型クイズ
+══════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s10">
+  <span class="tag tag-purple an">QUIZ 2</span>
+  <h2 class="stitle an">型を見分けよう</h2>
+  <div class="quiz-q an">
+    次のコードの出力は何になる？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.9rem;background:rgba(255,255,255,.08);padding:.5rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.8;">
+      const x = "42";<br>
+      const y = 42;<br>
+      console.log(x === y);<br>
+      console.log(typeof x === typeof y);
+    </span>
+  </div>
+  <div class="qopts an" id="q2">
+    <button class="qbtn" onclick="ansQ2(this,'a')">A. true と true</button>
+    <button class="qbtn" onclick="ansQ2(this,'b')">B. false と false ← どちらも型が違う</button>
+    <button class="qbtn" onclick="ansQ2(this,'c')">C. false と true ← xは文字、yは数値</button>
+    <button class="qbtn" onclick="ansQ2(this,'d')">D. true と false</button>
+  </div>
+  <div class="qfb an" id="q2fb"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S11: 🔧 デモ① 型チェッカー
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s11">
+  <span class="tag tag-js an">🔧 ライブデモ①</span>
+  <h2 class="stitle an">型チェッカー ― 値の型をリアルタイムで確認</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.05;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">JavaScript — 内部コード（参考）</span></div>
+        <div class="cb-body" style="font-size:.76rem;"><code><span class="kw">function</span> <span class="fn">checkType</span>(<span class="vr">input</span>) {
+  <span class="cm">// 入力文字列を JavaScript の値に変換して判定</span>
+  <span class="kw">let</span> <span class="vr">val</span>;
+
+  <span class="kw">if</span>      (<span class="vr">input</span> === <span class="str">"true"</span>)  <span class="vr">val</span> = <span class="kw">true</span>;
+  <span class="kw">else if</span> (<span class="vr">input</span> === <span class="str">"false"</span>) <span class="vr">val</span> = <span class="kw">false</span>;
+  <span class="kw">else if</span> (<span class="vr">input</span> === <span class="str">"null"</span>)  <span class="vr">val</span> = <span class="kw">null</span>;
+  <span class="kw">else if</span> (<span class="vr">input</span> === <span class="str">""</span>)      <span class="vr">val</span> = <span class="kw">undefined</span>;
+  <span class="kw">else if</span> (!<span class="fn">isNaN</span>(<span class="vr">input</span>))    <span class="vr">val</span> = <span class="fn">Number</span>(<span class="vr">input</span>);
+  <span class="kw">else</span>                        <span class="vr">val</span> = <span class="vr">input</span>;
+
+  <span class="kw">return</span> <span class="kw">typeof</span> <span class="vr">val</span>;
+}</code></div>
+      </div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.65rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.9rem;">
+        <div style="font-size:.78rem;color:#8b949e;font-weight:700;margin-bottom:.65rem;">▶ 値を入力して型を確認する</div>
+        <input id="tc-in" placeholder="例: 42 / &quot;hello&quot; / true / null"
+          style="width:100%;padding:.45rem .7rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-family:'JetBrains Mono',monospace;font-size:.82rem;outline:none;margin-bottom:.5rem;">
+        <button onclick="runTC()" style="width:100%;padding:.45rem;background:var(--jsdark);color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;">typeof で型を調べる</button>
+        <div id="tc-out" style="margin-top:.65rem;font-family:'JetBrains Mono',monospace;font-size:.88rem;min-height:2rem;"></div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.76rem;color:#94a3b8;line-height:1.7;">
+          試してみよう：<br>
+          <span class="pill" style="font-size:.7rem;">42</span> → <span style="color:#4ade80;">number</span><br>
+          <span class="pill" style="font-size:.7rem;">hello</span> → <span style="color:#4ade80;">string</span><br>
+          <span class="pill" style="font-size:.7rem;">true</span> → <span style="color:#4ade80;">boolean</span><br>
+          <span class="pill" style="font-size:.7rem;">null</span> → <span style="color:#fbbf24;">object（罠！）</span><br>
+          <span class="pill" style="font-size:.7rem;">（空欄）</span> → <span style="color:#4ade80;">undefined</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S12: 算術演算子
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s12">
+  <span class="tag tag-amber an">Ch.3 — 演算子</span>
+  <h2 class="stitle an">算術演算子 ― 数値を計算する</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="g2 an" style="gap:.6rem;">
+      <div class="row"><div class="row-lbl" style="background:var(--navy);font-size:1rem;font-family:monospace;">+</div><div class="row-body"><strong>加算</strong>：<code>weight + 5</code> → 75<br><span class="small">文字列に使うと「結合」になる（後述）</span></div></div>
+      <div class="row"><div class="row-lbl" style="background:var(--navy);font-size:1rem;font-family:monospace;">-</div><div class="row-body"><strong>減算</strong>：<code>100 - weight</code> → 30</div></div>
+      <div class="row"><div class="row-lbl" style="background:var(--teal);font-size:1rem;font-family:monospace;">*</div><div class="row-body"><strong>乗算</strong>：<code>height * height</code> → 身長²</div></div>
+      <div class="row"><div class="row-lbl" style="background:var(--teal);font-size:1rem;font-family:monospace;">/</div><div class="row-body"><strong>除算</strong>：<code>weight / (height ** 2)</code> → BMI</div></div>
+      <div class="row"><div class="row-lbl" style="background:var(--amber);font-size:1rem;font-family:monospace;">%</div><div class="row-body"><strong>剰余（余り）</strong>：<code>10 % 3</code> → 1<br><span class="small">偶数・奇数判定に使う：<code>n % 2 === 0</code></span></div></div>
+      <div class="row"><div class="row-lbl" style="background:var(--amber);font-size:.85rem;font-family:monospace;">**</div><div class="row-body"><strong>べき乗</strong>：<code>height ** 2</code> → height²<br><span class="small">BMI計算でよく使う</span></div></div>
+    </div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">算術演算子の実例</span></div>
+      <div class="cb-body"><code><span class="kw">const</span> <span class="vr">weight</span> = <span class="num">70</span>;    <span class="cm">// kg</span>
+<span class="kw">const</span> <span class="vr">height</span> = <span class="num">1.75</span>;  <span class="cm">// m</span>
+<span class="kw">const</span> <span class="vr">bmi</span>    = <span class="vr">weight</span> / (<span class="vr">height</span> ** <span class="num">2</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">bmi</span>.<span class="fn">toFixed</span>(<span class="num">1</span>));  <span class="cm">// "22.9"（小数1桁に丸める）</span></code></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S13: 比較演算子・論理演算子
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s13">
+  <span class="tag tag-js an">Ch.3 — 比較・論理</span>
+  <h2 class="stitle an">比較演算子と論理演算子</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">比較演算子 ― boolean を返す</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">hba1c</span> = <span class="num">7.2</span>;
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="vr">hba1c</span> <span class="op">&gt;</span>  <span class="num">7.0</span> );  <span class="cm">// true  （より大きい）</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="vr">hba1c</span> <span class="op">&gt;=</span> <span class="num">7.0</span> );  <span class="cm">// true  （以上）</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="vr">hba1c</span> <span class="op">&lt;</span>  <span class="num">7.0</span> );  <span class="cm">// false （より小さい）</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="vr">hba1c</span> <span class="op">===</span> <span class="num">7.2</span> ); <span class="cm">// true  （厳格な等値）</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="vr">hba1c</span> <span class="op">!==</span> <span class="num">7.0</span> ); <span class="cm">// true  （不等値）</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">論理演算子 ― 条件を組み合わせる</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">bmi</span>  = <span class="num">28</span>;
+<span class="kw">const</span> <span class="vr">age</span>  = <span class="num">55</span>;
+<span class="kw">const</span> <span class="vr">smok</span> = <span class="kw">true</span>;
+
+<span class="cm">// && (AND)：両方 true のとき true</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="vr">bmi</span> <span class="op">&gt;=</span> <span class="num">25</span> <span class="op">&&</span> <span class="vr">age</span> <span class="op">&gt;=</span> <span class="num">50</span> ); <span class="cm">// true</span>
+
+<span class="cm">// || (OR)：どちらか true のとき true</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="vr">bmi</span> <span class="op">&gt;=</span> <span class="num">30</span> <span class="op">||</span> <span class="vr">smok</span> );     <span class="cm">// true</span>
+
+<span class="cm">// !  (NOT)：真偽を反転</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="op">!</span><span class="vr">smok</span> );                  <span class="cm">// false</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.85;display:flex;flex-direction:column;gap:.6rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">🩺 医療での使い方</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.75rem;"><code><span class="cm">// 生活習慣病リスク判定</span>
+<span class="kw">const</span> <span class="vr">highRisk</span> =
+  (<span class="vr">bmi</span>  <span class="op">&gt;=</span> <span class="num">25</span>) <span class="op">&&</span>
+  (<span class="vr">age</span>  <span class="op">&gt;=</span> <span class="num">50</span>) <span class="op">&&</span>
+  (<span class="vr">smok</span> <span class="op">===</span> <span class="kw">true</span>);
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">highRisk</span>); <span class="cm">// true</span></code></div>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">🔑 演算子の優先順位（抜粋）</div>
+        <div style="font-size:.76rem;color:#e2e8f0;line-height:1.8;">
+          <span class="pill" style="font-size:.7rem;">**</span> → 高<br>
+          <span class="pill" style="font-size:.7rem;">* / %</span><br>
+          <span class="pill" style="font-size:.7rem;">+ -</span><br>
+          <span class="pill" style="font-size:.7rem;">&gt; &gt;= &lt; &lt;=</span><br>
+          <span class="pill" style="font-size:.7rem;">=== !==</span><br>
+          <span class="pill" style="font-size:.7rem;">&amp;&amp;</span><br>
+          <span class="pill" style="font-size:.7rem;">||</span> → 低<br>
+          迷ったら <span class="pill" style="font-size:.7rem;">( )</span> で明示
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S14: 文字列操作
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s14">
+  <span class="tag tag-teal an">Ch.3 — 文字列</span>
+  <h2 class="stitle an">文字列の操作 ― よく使うメソッド</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="row an"><div class="row-lbl" style="background:var(--navy);font-size:.7rem;min-width:5rem;">.length</div><div class="row-body"><strong>文字数を返す</strong>：<code>"山田太郎".length</code> → <code>4</code></div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--navy);font-size:.7rem;min-width:5rem;">.toUpperCase</div><div class="row-body"><strong>大文字変換</strong>：<code>"hba1c".toUpperCase()</code> → <code>"HBA1C"</code></div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--teal);font-size:.7rem;min-width:5rem;">.includes</div><div class="row-body"><strong>含むか判定</strong>：<code>"糖尿病性腎症".includes("腎症")</code> → <code>true</code></div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--teal);font-size:.7rem;min-width:5rem;">.startsWith</div><div class="row-body"><strong>始まりを判定</strong>：<code>"E11.9".startsWith("E")</code> → <code>true</code><br><span class="small">ICD-10コードの判定に使える</span></div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--amber);font-size:.7rem;min-width:5rem;">.replace</div><div class="row-body"><strong>文字を置換</strong>：<code>"体重:70kg".replace("70", "72")</code> → <code>"体重:72kg"</code></div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--amber);font-size:.7rem;min-width:5rem;">.trim</div><div class="row-body"><strong>前後の空白除去</strong>：<code>"  山田  ".trim()</code> → <code>"山田"</code><br><span class="small">フォーム入力のクリーニングに必須</span></div></div>
+    <div class="cb an" style="margin-top:.2rem;">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">文字列結合（+ は古い書き方）</span></div>
+      <div class="cb-body" style="font-size:.76rem;"><code><span class="kw">const</span> <span class="vr">name</span>  = <span class="str">"山田太郎"</span>;
+<span class="kw">const</span> <span class="vr">age</span>   = <span class="num">65</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"患者名："</span> + <span class="vr">name</span> + <span class="str">"　年齢："</span> + <span class="vr">age</span>); <span class="cm">// 古い書き方 ← 読みにくい</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`患者名：${<span class="vr">name</span>}　年齢：${<span class="vr">age</span>}`</span>);      <span class="cm">// テンプレートリテラル ← こちらを使う</span></code></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S15: テンプレートリテラル
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s15">
+  <span class="tag tag-js an">Ch.4 — テンプレートリテラル</span>
+  <h2 class="stitle an">テンプレートリテラル ― 文字列と変数を混ぜる</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">バッククォート ` で囲む → ${ } で変数を展開</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">name</span>  = <span class="str">"山田太郎"</span>;
+<span class="kw">const</span> <span class="vr">age</span>   = <span class="num">65</span>;
+<span class="kw">const</span> <span class="vr">hba1c</span> = <span class="num">7.2</span>;
+
+<span class="cm">// ${ } の中には変数だけでなく式も書ける</span>
+<span class="kw">const</span> <span class="vr">msg</span> = <span class="str">`患者：${<span class="vr">name</span>}（${<span class="vr">age</span>}歳）
+HbA1c：${<span class="vr">hba1c</span>}%　${<span class="vr">hba1c</span> >= <span class="num">7.0</span> ? <span class="str">"要管理"</span> : <span class="str">"良好"</span>}
+BMI：${(<span class="num">70</span> / <span class="num">1.75</span> ** <span class="num">2</span>).<span class="fn">toFixed</span>(<span class="num">1</span>)}`</span>;
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">msg</span>);
+<span class="cm">// 患者：山田太郎（65歳）</span>
+<span class="cm">// HbA1c：7.2%　要管理</span>
+<span class="cm">// BMI：22.9</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">式を埋め込む ― ${} の中で計算できる</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">w</span> = <span class="num">70</span>, <span class="vr">h</span> = <span class="num">1.75</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`BMI = ${(<span class="vr">w</span>/<span class="vr">h</span>**<span class="num">2</span>).<span class="fn">toFixed</span>(<span class="num">1</span>)}`</span>); <span class="cm">// "BMI = 22.9"</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`今は ${<span class="kw">new</span> <span class="fn">Date</span>().<span class="fn">getFullYear</span>()} 年`</span>); <span class="cm">// "今は 2025 年"</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">🔑 3種類のクォートの違い</div>
+        <div style="font-size:.78rem;color:#e2e8f0;line-height:1.9;">
+          <code style="color:#a5d6ff;">"..."</code>　ダブルクォート（普通の文字列）<br>
+          <code style="color:#a5d6ff;">'...'</code>　シングルクォート（同上）<br>
+          <code style="color:var(--js);">` ... `</code>　バッククォート ← <strong style="color:var(--js);">テンプレートリテラル</strong><br>
+          <span style="font-size:.74rem;color:#94a3b8;">改行も <code style="color:#a5d6ff;">\n</code> なしでそのまま書ける</span>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 よく使うパターン</div>
+        <div class="repl" style="font-size:.76rem;">
+          <div class="repl-in"><span class="str">`${x.toFixed(2)} mg/dL`</span></div>
+          <div class="repl-out">"7.20 mg/dL"</div>
+          <div class="repl-in"><span class="str">`${a} + ${b} = ${a+b}`</span></div>
+          <div class="repl-out">"3 + 4 = 7"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">テンプレートリテラルは「報告文の自動生成」に強い ― 医療記録フォーマットにも応用できる</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S16: インクリメント・代入演算子
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s16">
+  <span class="tag tag-teal an">Ch.3 — 代入演算子</span>
+  <h2 class="stitle an">代入演算子 ― 変数を更新するショートカット</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="g2 an" style="gap:.5rem;align-items:start;">
+      <div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);margin-bottom:.3rem;">複合代入演算子</div>
+        <div class="row mb1"><div class="row-lbl" style="background:var(--navy);font-family:monospace;">+=</div><div class="row-body"><code>count += 1</code>　→　<code>count = count + 1</code></div></div>
+        <div class="row mb1"><div class="row-lbl" style="background:var(--navy);font-family:monospace;">-=</div><div class="row-body"><code>score -= 5</code>　→　<code>score = score - 5</code></div></div>
+        <div class="row mb1"><div class="row-lbl" style="background:var(--teal);font-family:monospace;">*=</div><div class="row-body"><code>dose *= 2</code>　→　<code>dose = dose * 2</code></div></div>
+        <div class="row"><div class="row-lbl" style="background:var(--teal);font-family:monospace;">/=</div><div class="row-body"><code>total /= n</code>　→　<code>total = total / n</code></div></div>
+      </div>
+      <div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy);margin-bottom:.3rem;">インクリメント・デクリメント</div>
+        <div class="row mb1"><div class="row-lbl" style="background:var(--amber);font-family:monospace;">++</div><div class="row-body"><code>count++</code>　→　1ずつ増やす（患者カウントなど）</div></div>
+        <div class="row"><div class="row-lbl" style="background:var(--amber);font-family:monospace;">--</div><div class="row-body"><code>remaining--</code>　→　1ずつ減らす（残薬カウントなど）</div></div>
+      </div>
+    </div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">実例 ― 外来患者カウンター</span></div>
+      <div class="cb-body"><code><span class="kw">let</span> <span class="vr">visitCount</span> = <span class="num">0</span>;  <span class="cm">// 本日の来院数</span>
+
+<span class="vr">visitCount</span>++;           <span class="cm">// 患者1人来院 → 1</span>
+<span class="vr">visitCount</span>++;           <span class="cm">// 患者2人来院 → 2</span>
+<span class="vr">visitCount</span> += <span class="num">3</span>;       <span class="cm">// 3人まとめて処理 → 5</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`本日の来院数：${<span class="vr">visitCount</span>} 人`</span>); <span class="cm">// "本日の来院数：5 人"</span></code></div>
+    </div>
+  </div>
+  <div class="hl an">++ は for ループ（Vol.2）で毎回使う ― 今のうちに慣れておこう</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S17: QUIZ 3 ― 演算子
+══════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s17">
+  <span class="tag tag-purple an">QUIZ 3</span>
+  <h2 class="stitle an">演算子の出力を当てよう</h2>
+  <div class="quiz-q an">
+    以下のコードの出力は？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.88rem;background:rgba(255,255,255,.08);padding:.5rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.9;">
+      let x = 10;<br>
+      x += 5;<br>
+      x *= 2;<br>
+      console.log(`結果：${x}`);
+    </span>
+  </div>
+  <div class="qopts an" id="q3">
+    <button class="qbtn" onclick="ansQ3(this,'a')">A. 結果：25</button>
+    <button class="qbtn" onclick="ansQ3(this,'b')">B. 結果：30 ← (10+5)×2</button>
+    <button class="qbtn" onclick="ansQ3(this,'c')">C. 結果：20</button>
+    <button class="qbtn" onclick="ansQ3(this,'d')">D. 結果：15</button>
+  </div>
+  <div class="qfb an" id="q3fb"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S18: 🔧 デモ② BMI計算ツール
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s18">
+  <span class="tag tag-js an">🔧 ライブデモ②</span>
+  <h2 class="stitle an">BMI計算ツール ― 変数・演算子・テンプレートリテラルを総動員</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.05;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">今日学んだことだけで書ける</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ── 変数（Ch.1）─────────────────</span>
+<span class="kw">const</span> <span class="vr">weight</span> = <span class="fn">parseFloat</span>(<span class="cm">/* 入力値 */</span>);
+<span class="kw">const</span> <span class="vr">height</span> = <span class="fn">parseFloat</span>(<span class="cm">/* 入力値 */</span>) / <span class="num">100</span>;
+
+<span class="cm">// ── 演算子（Ch.3）───────────────</span>
+<span class="kw">const</span> <span class="vr">bmi</span>    = <span class="vr">weight</span> / (<span class="vr">height</span> ** <span class="num">2</span>);
+<span class="kw">const</span> <span class="vr">bmiStr</span> = <span class="vr">bmi</span>.<span class="fn">toFixed</span>(<span class="num">1</span>);
+
+<span class="cm">// ── 型・比較演算子（Ch.2・3）────</span>
+<span class="kw">const</span> <span class="vr">category</span> =
+  <span class="vr">bmi</span> <span class="op">&gt;=</span> <span class="num">35</span>   ? <span class="str">"高度肥満"</span> :
+  <span class="vr">bmi</span> <span class="op">&gt;=</span> <span class="num">30</span>   ? <span class="str">"肥満2度"</span>  :
+  <span class="vr">bmi</span> <span class="op">&gt;=</span> <span class="num">25</span>   ? <span class="str">"肥満1度"</span>  :
+  <span class="vr">bmi</span> <span class="op">&gt;=</span> <span class="num">18.5</span> ? <span class="str">"普通体重"</span> : <span class="str">"低体重"</span>;
+
+<span class="cm">// ── テンプレートリテラル（Ch.4）─</span>
+<span class="kw">const</span> <span class="vr">report</span> = <span class="str">`BMI: ${<span class="vr">bmiStr</span>} → ${<span class="vr">category</span>}`</span>;</code></div>
+      </div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.6rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.9rem;">
+        <div style="font-size:.76rem;color:#8b949e;font-weight:700;margin-bottom:.6rem;">▶ 実際に動かす</div>
+        <div style="display:flex;flex-direction:column;gap:.45rem;">
+          <input id="d2-w" placeholder="体重 (kg)" type="number"
+            style="padding:.42rem .7rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-family:'JetBrains Mono',monospace;font-size:.82rem;outline:none;">
+          <input id="d2-h" placeholder="身長 (cm)" type="number"
+            style="padding:.42rem .7rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-family:'JetBrains Mono',monospace;font-size:.82rem;outline:none;">
+          <button onclick="runBMI()" style="padding:.45rem;background:var(--jsdark);color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;">BMI を計算する</button>
+          <div id="d2-out" style="font-size:.85rem;font-weight:700;min-height:1.4rem;margin-top:.1rem;font-family:'JetBrains Mono',monospace;"></div>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.76rem;color:#94a3b8;line-height:1.7;">
+          <strong style="color:var(--js);">このコードで使った概念</strong><br>
+          ✅ <code style="font-size:.72rem;color:#a5d6ff;">const</code> で変数宣言（Ch.1）<br>
+          ✅ <code style="font-size:.72rem;color:#a5d6ff;">**</code> べき乗演算子（Ch.3）<br>
+          ✅ <code style="font-size:.72rem;color:#a5d6ff;">&gt;=</code> 比較演算子（Ch.3）<br>
+          ✅ 三項演算子 <code style="font-size:.72rem;color:#a5d6ff;">? :</code>（Ch.3）<br>
+          ✅ テンプレートリテラル（Ch.4）
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S19: 数値⇔文字列 の変換
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s19">
+  <span class="tag tag-amber an">Ch.2 補足 — 型変換</span>
+  <h2 class="stitle an">明示的な型変換 ― 数値 ↔ 文字列</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">文字列 → 数値</span></div>
+      <div class="cb-body"><code><span class="cm">// フォームの入力値は必ず「文字列」で来る → 計算前に変換が必要</span>
+<span class="kw">const</span> <span class="vr">raw</span>    = <span class="str">"70"</span>;                   <span class="cm">// type: string</span>
+<span class="kw">const</span> <span class="vr">num1</span>   = <span class="fn">Number</span>(<span class="vr">raw</span>);             <span class="cm">// 70 (number)</span>
+<span class="kw">const</span> <span class="vr">num2</span>   = <span class="fn">parseInt</span>(<span class="vr">raw</span>);           <span class="cm">// 70 (整数)</span>
+<span class="kw">const</span> <span class="vr">num3</span>   = <span class="fn">parseFloat</span>(<span class="str">"7.2kg"</span>);   <span class="cm">// 7.2 (小数・単位も除去)</span>
+<span class="kw">const</span> <span class="vr">bad</span>    = <span class="fn">Number</span>(<span class="str">"山田"</span>);          <span class="cm">// NaN（変換失敗）</span>
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="fn">isNaN</span>(<span class="vr">bad</span>) );             <span class="cm">// true ← NaN チェック</span></code></div>
+    </div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">数値 → 文字列</span></div>
+      <div class="cb-body"><code><span class="kw">const</span> <span class="vr">bmi</span>  = <span class="num">22.857</span>;
+<span class="kw">const</span> <span class="vr">s1</span>   = <span class="fn">String</span>(<span class="vr">bmi</span>);          <span class="cm">// "22.857"</span>
+<span class="kw">const</span> <span class="vr">s2</span>   = <span class="vr">bmi</span>.<span class="fn">toFixed</span>(<span class="num">1</span>);       <span class="cm">// "22.9"（丸めて文字列）</span>
+<span class="kw">const</span> <span class="vr">s3</span>   = <span class="vr">bmi</span>.<span class="fn">toString</span>();       <span class="cm">// "22.857"</span></code></div>
+    </div>
+    <div class="card-warn an" style="font-size:.82rem;margin-top:.1rem;">
+      ⚠ <strong>NaN（Not a Number）</strong>：変換できなかった数値の表現。<code>isNaN()</code> で確認できる。演算に NaN が混ざると結果がすべて NaN になるので要注意
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S20: よくあるミスとデバッグ
+══════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s20">
+  <span class="tag tag-red an">よくあるミスとデバッグ</span>
+  <h2 class="stitle an">エラーは敵でなく「道しるべ」</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">よくあるエラー ① ― 変数の再宣言</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">age</span> = <span class="num">25</span>;
+<span class="kw">const</span> <span class="vr">age</span> = <span class="num">30</span>; <span class="cm">// ✗ SyntaxError: 再宣言不可</span>
+
+<span class="cm">// 解決 → let を使うか変数名を変える</span>
+<span class="kw">let</span> <span class="vr">age</span> = <span class="num">25</span>;
+<span class="vr">age</span> = <span class="num">30</span>;      <span class="cm">// ✅ let なら再代入 OK</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">よくあるエラー ② ― 文字列の足し算</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">w</span> = <span class="str">"70"</span>;  <span class="cm">// string（フォーム入力はstring!）</span>
+<span class="kw">const</span> <span class="vr">h</span> = <span class="num">1.75</span>; <span class="cm">// number</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">w</span> + <span class="vr">h</span>);          <span class="cm">// ✗ "701.75"（文字列結合になる）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">Number</span>(<span class="vr">w</span>) + <span class="vr">h</span>); <span class="cm">// ✅ 71.75（数値として加算）</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.6rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">🔧 デバッグの基本手順</div>
+        <ul class="bl" style="font-size:.78rem;">
+          <li>エラーメッセージを<strong style="color:#4ade80;">読む</strong>（翻訳して理解する）</li>
+          <li><code>console.log(変数名)</code> で値を確認</li>
+          <li><code>typeof 変数名</code> で型を確認</li>
+          <li>1行ずつコメントアウトして絞り込む</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 エラーメッセージ対訳</div>
+        <div style="font-size:.75rem;color:#e2e8f0;line-height:1.8;">
+          <span style="color:#f87171;">ReferenceError</span>：変数名が見つからない<br>
+          <span style="color:#f87171;">TypeError</span>：型が違う操作をした<br>
+          <span style="color:#f87171;">SyntaxError</span>：文法が間違っている<br>
+          <span style="color:#fbbf24;">NaN</span>：数値変換に失敗した
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">エラーを出した数だけ上達する ― 消えないエラーはない</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S21: console.log 活用法
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s21">
+  <span class="tag tag-teal an">開発のコツ</span>
+  <h2 class="stitle an"><span class="pill-l">console.log()</span> を使いこなす</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56;"></div><div class="dot" style="background:#ffbd2e;"></div><div class="dot" style="background:#27c93f;"></div><span class="cb-lang">console のバリエーション</span></div>
+      <div class="cb-body"><code><span class="cm">// 基本：値を表示する</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"体重:"</span>, <span class="vr">weight</span>, <span class="str">"kg"</span>);   <span class="cm">// 複数引数を並べて表示</span>
+
+<span class="cm">// 変数名と値をラベル付きで表示（デバッグに便利）</span>
+<span class="fn">console</span>.<span class="fn">log</span>({ <span class="vr">weight</span>, <span class="vr">height</span>, <span class="vr">bmi</span> }); <span class="cm">// { weight: 70, height: 1.75, bmi: 22.8 }</span>
+
+<span class="cm">// 警告・エラー（Console で色が変わる）</span>
+<span class="fn">console</span>.<span class="fn">warn</span>(<span class="str">"HbA1c が高めです"</span>);       <span class="cm">// 黄色で表示</span>
+<span class="fn">console</span>.<span class="fn">error</span>(<span class="str">"データが不正です"</span>);      <span class="cm">// 赤で表示</span>
+
+<span class="cm">// テーブル形式で表示</span>
+<span class="kw">const</span> <span class="vr">patients</span> = [
+  { <span class="vr">name</span>: <span class="str">"山田"</span>, <span class="vr">bmi</span>: <span class="num">22.9</span> },
+  { <span class="vr">name</span>: <span class="str">"鈴木"</span>, <span class="vr">bmi</span>: <span class="num">27.3</span> }
+];
+<span class="fn">console</span>.<span class="fn">table</span>(<span class="vr">patients</span>);              <span class="cm">// 表形式で見やすく</span></code></div>
+    </div>
+    <div class="card-blue an" style="font-size:.82rem;">
+      💡 <strong>F12 → Console タブ</strong> を開けば今すぐ試せる。<code>console.table()</code> は特に見やすくておすすめ
+    </div>
+  </div>
+  <div class="hl an">console.log はプログラマーの「聴診器」― 内部状態を可視化する</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S22: Vol.1 まとめ
+══════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s22">
+  <span class="tag tag-green an">Vol.1 まとめ</span>
+  <h2 class="stitle an">今日学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="sumi an"><div class="sumi-num" style="background:var(--navy);">01</div><div class="sumi-body"><strong>変数</strong>：<code class="pill-l">let</code> と <code class="pill-l">const</code> でデータに名前をつける。基本は <code class="pill-l">const</code>、変わるなら <code class="pill-l">let</code></div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--teal);">02</div><div class="sumi-body"><strong>データ型</strong>：number・string・boolean・null・undefined の5種類。<code class="pill-l">typeof</code> で確認できる</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--amber);">03</div><div class="sumi-body"><strong>演算子</strong>：算術（<code class="pill-l">+ - * / % **</code>）・比較（<code class="pill-l">=== !==</code>）・論理（<code class="pill-l">&amp;&amp; || !</code>）。<code class="pill-l">==</code> は使わず <code class="pill-l">===</code> を使う</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--jsdark);">04</div><div class="sumi-body"><strong>テンプレートリテラル</strong>：バッククォート <code class="pill-l">` `</code> で文字列を作り、<code class="pill-l">${ }</code> で変数・式を埋め込む</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--green);">05</div><div class="sumi-body"><strong>型変換</strong>：<code class="pill-l">Number()</code>・<code class="pill-l">parseFloat()</code> で文字列→数値。フォーム入力は必ず変換してから計算</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S23: 今週の課題
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s23">
+  <span class="tag tag-amber an">今週の課題</span>
+  <h2 class="stitle an">最初の30行チャレンジ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">Step 1</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">F12 → Console</strong> を開いて、<code style="color:#a5d6ff;">typeof "hello"</code> を入力して Enter<br>→ <span style="color:#4ade80;">"string"</span> が返ってくることを確認する</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">Step 2</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">Console に貼り付けて実行</strong>：<br><code style="font-size:.76rem;color:#a5d6ff;">const name = "あなたの名前"; console.log(`こんにちは、${name}！`);</code></div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);">Step 3</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">自分のBMIを計算する</strong>：<br>実際の身長・体重を使って <code style="color:#a5d6ff;">const bmi = weight / (height ** 2)</code> を実行</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--jsdark);color:#1a1a00;">Step 4</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">わからないことは Claude / ChatGPT に聞く</strong>：<br>「JavaScriptでBMI計算するコードを書いて、コメントで説明もつけて」</div>
+    </div>
+  </div>
+  <div class="hl an">「動いた」体験が次の学習への原動力になる</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S24: 次回予告 Vol.2
+══════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s24">
+  <span class="tag tag-teal an">NEXT SESSION</span>
+  <h2 class="stitle an">次回 Vol.2 ― 条件分岐・ループ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="next-card an">
+      <div class="next-card-title">Vol.2 で学ぶこと</div>
+      <div class="next-card-body">
+        Ch.1　<strong>条件分岐</strong>：if / else if / else・三項演算子・switch<br>
+        Ch.2　<strong>ループ</strong>：for / while / for...of・break / continue<br>
+        🔧　<strong>ライブデモ</strong>：HbA1c 判定器 ＋ 患者カウンター
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-blue" style="font-size:.82rem;">
+        💡 <strong>Vol.1 の内容が使えるか確認しておこう</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li><code class="pill-l">let</code> と <code class="pill-l">const</code> の使い分け</li>
+          <li><code class="pill-l">===</code> で比較する（<code class="pill-l">==</code> は使わない）</li>
+          <li>テンプレートリテラル <code class="pill-l">${ }</code></li>
+        </ul>
+      </div>
+      <div class="card-green" style="font-size:.82rem;">
+        📚 <strong>予習しておくと楽になること</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>MDN Web Docs で "if...else" を検索</li>
+          <li>「フローチャート」の概念を思い出す</li>
+          <li>医療での条件判定の例を3つ考える</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;" class="an">
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">js_vol1.html ✅</span>
+      <span style="background:var(--jsdark);color:#1a1a00;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">js_vol2.html ← 次回</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">js_vol3.html</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">js_vol4.html</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">js_vol5.html</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">js_vol6.html</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+  S25: 締め
+══════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s25">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.55rem;">
+    <div class="an title-vol" style="font-size:.75rem;">Vol.1 / 6 完了</div>
+    <div class="an title-main" style="font-size:clamp(2rem,5vw,3.8rem);">
+      変数は<br>
+      <span style="color:var(--js);">世界に名前をつける</span><br>
+      行為だ
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.88rem;line-height:2;">
+      今日 F12 を開いたあなたは<br>
+      もうプログラマーの入口に立っている
+    </div>
+  </div>
+  <div class="title-author an">
+    大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+    <span style="color:#4ade80;font-size:.76rem;">質問・誤りの指摘、大歓迎です</span>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ── Nav ──────────────────────────────────── -->
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 25</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+/* ── Engine ─────────────────────────── */
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  const p = cur;
+  setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev');
+  slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
+}
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft') {e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) dx<0?go(cur+1):go(cur-1);
+},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
+
+/* ── Quiz 1: 投票（正解なし）─────── */
+function vote1(btn, val) {
+  document.querySelectorAll('#q1 .qbtn').forEach(b=>b.disabled=true);
+  btn.style.background='rgba(247,223,30,.18)';
+  btn.style.borderColor='var(--jsdark)';
+  const m = {
+    a:'💡 正解！プログラムとはコンピュータへの命令書。でも実は b・c・d も全部含む',
+    b:'🔍 計算もプログラムの重要な仕事。でも今日の後半には「それだけじゃない」とわかる',
+    c:'🌐 Webページも作れる！でも JSはWebだけでなく、もっと広い場所で動く',
+    d:'😊 正直でいい出発点！今日終わる頃には「命令書のようなもの」とうまく言えるはず'
+  };
+  const fb = document.getElementById('q1fb');
+  fb.textContent = m[val];
+  fb.style.color = '#4ade80';
+  fb.classList.add('show');
+}
+
+/* ── Quiz 2: typeof ─────────────── */
+function ansQ2(btn, val) {
+  document.querySelectorAll('#q2 .qbtn').forEach(b=>b.disabled=true);
+  const correct = 'c';
+  if (val===correct) {
+    btn.classList.add('correct');
+    document.getElementById('q2fb').textContent =
+      '✅ 正解！ x は string、y は number → x===y は false。typeof x は"string"、typeof y は"number" → typeof x === typeof y も false';
+    document.getElementById('q2fb').style.color='#4ade80';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[2].classList.add('correct');
+    document.getElementById('q2fb').textContent =
+      '💡 正解は C。=== は型まで比較する。"42"（string）と 42（number）は型が違うので false。typeof "42" は "string"、typeof 42 は "number" なので異なる';
+    document.getElementById('q2fb').style.color='#fbbf24';
+  }
+  document.getElementById('q2fb').classList.add('show');
+}
+
+/* ── Quiz 3: 代入演算子 ─────────── */
+function ansQ3(btn, val) {
+  document.querySelectorAll('#q3 .qbtn').forEach(b=>b.disabled=true);
+  const correct = 'b';
+  if (val===correct) {
+    btn.classList.add('correct');
+    document.getElementById('q3fb').textContent =
+      '✅ 正解！ x=10 → x+=5 で x=15 → x*=2 で x=30。テンプレートリテラルで "結果：30" と表示される';
+    document.getElementById('q3fb').style.color='#4ade80';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q3 .qbtn')[1].classList.add('correct');
+    document.getElementById('q3fb').textContent =
+      '💡 正解は B（30）。x=10 → +5 → 15 → ×2 → 30。代入演算子は1つずつ順番に実行される';
+    document.getElementById('q3fb').style.color='#fbbf24';
+  }
+  document.getElementById('q3fb').classList.add('show');
+}
+
+/* ── Demo 1: 型チェッカー ───────── */
+function runTC() {
+  const raw = document.getElementById('tc-in').value;
+  let val;
+  if      (raw === 'true')  val = true;
+  else if (raw === 'false') val = false;
+  else if (raw === 'null')  val = null;
+  else if (raw === '')      val = undefined;
+  else if (!isNaN(raw) && raw.trim() !== '') val = Number(raw);
+  else val = raw;
+
+  const t = typeof val;
+  const colMap = {
+    number:    '#79c0ff',
+    string:    '#a5d6ff',
+    boolean:   '#4ade80',
+    undefined: '#8b949e',
+    object:    '#fbbf24',
+  };
+  const col = colMap[t] || '#e6edf3';
+  const note = (raw === 'null') ? '　（⚠ JSの歴史的バグ：nullなのにobjectと返る）' : '';
+  document.getElementById('tc-out').innerHTML =
+    `<span style="color:#8b949e;">typeof</span> <span style="color:#e6edf3;">${raw||'（空欄）'}</span> <span style="color:#8b949e;">=&gt;</span> <span style="color:${col};font-weight:700;">"${t}"</span>${note}`;
+}
+document.getElementById('tc-in').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runTC();
+});
+
+/* ── Demo 2: BMI計算 ─────────────── */
+function runBMI() {
+  const w  = parseFloat(document.getElementById('d2-w').value);
+  const hc = parseFloat(document.getElementById('d2-h').value);
+  const el = document.getElementById('d2-out');
+  if (isNaN(w) || isNaN(hc) || hc <= 0) {
+    el.textContent = '⚠ 正しい数値を入力してください';
+    el.style.color = '#f87171';
+    return;
+  }
+  const h   = hc / 100;
+  const bmi = w / (h ** 2);
+  const s   = bmi.toFixed(1);
+  const cat =
+    bmi >= 35   ? '高度肥満（3度）' :
+    bmi >= 30   ? '肥満（2度）' :
+    bmi >= 25   ? '肥満（1度）' :
+    bmi >= 18.5 ? '普通体重' : '低体重';
+  const col =
+    bmi >= 30   ? '#f87171' :
+    bmi >= 25   ? '#fbbf24' :
+    bmi < 18.5  ? '#60a5fa' : '#4ade80';
+  el.innerHTML = `<span style="color:#8b949e;">BMI =</span> <span style="color:${col};font-size:1.05rem;">${s}</span> <span style="color:#8b949e;">→</span> <span style="color:${col};">${cat}</span>`;
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement &&
+      (document.activeElement.id === 'd2-w' || document.activeElement.id === 'd2-h')) {
+    runBMI();
+  }
+});
+</script>
+</body>
+</html>

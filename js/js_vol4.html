@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はじめてのJavaScript Vol.4 ― 関数・スコープ</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:#0A2342; --teal:#1B6CA8; --ltblue:#E8F1FA; --amber:#E8873A;
+  --gray:#64748B; --lgray:#F0F4F8; --red:#C0392B; --green:#1A7A4A;
+  --text:#1E293B; --white:#FFFFFF; --js:#F7DF1E; --jsdark:#b59a00;
+}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+html,body{width:100%;height:100%;background:#0a0f1a;font-family:'Noto Sans JP',sans-serif;overflow:hidden;}
+.deck{width:100vw;height:100vh;position:relative;overflow:hidden;}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:2.2rem 3rem 1.8rem;opacity:0;pointer-events:none;transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);transform:translateX(60px);}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0);}
+.slide.prev{opacity:0;transform:translateX(-60px);}
+.slide-dark{background:var(--navy);}
+.slide-light{background:var(--white);}
+.slide-card{background:var(--lgray);}
+.slide-code{background:#0d1117;}
+.slide-quiz{background:#12100a;}
+.slide-dark::before,.slide-code::before,.slide-quiz::before{content:'';position:absolute;left:0;top:0;width:6px;height:100%;}
+.slide-dark::before{background:var(--amber);}
+.slide-code::before{background:var(--js);}
+.slide-quiz::before{background:#a855f7;}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.08em;padding:3px 12px;border-radius:2px;color:#fff;margin-bottom:.5rem;align-self:flex-start;}
+.tag-teal{background:var(--teal);} .tag-amber{background:var(--amber);} .tag-js{background:var(--jsdark);} .tag-purple{background:#7c3aed;} .tag-green{background:var(--green);} .tag-red{background:var(--red);}
+.stitle{font-size:clamp(1.35rem,2.8vw,2rem);font-weight:900;line-height:1.2;margin-bottom:1rem;border-left:5px solid var(--amber);padding-left:.7rem;}
+.slide-dark .stitle{color:var(--white);border-color:var(--amber);}
+.slide-light .stitle{color:var(--navy);border-color:var(--amber);}
+.slide-card .stitle{color:var(--navy);border-color:var(--amber);}
+.slide-code .stitle{color:var(--white);border-color:var(--js);}
+.slide-quiz .stitle{color:var(--white);border-color:#a855f7;}
+.title-main{font-size:clamp(2.5rem,6.5vw,4.8rem);font-weight:900;color:var(--white);letter-spacing:-.02em;line-height:1.05;text-align:center;}
+.title-vol{display:inline-block;background:var(--jsdark);color:#1a1a00;padding:2px 16px;border-radius:4px;font-size:clamp(.85rem,1.8vw,1.1rem);font-weight:900;letter-spacing:.06em;margin-bottom:.6rem;}
+.title-sub{font-size:clamp(.85rem,1.6vw,1.05rem);color:rgba(255,255,255,.55);text-align:center;margin-top:.7rem;line-height:1.7;}
+.title-rule{width:240px;height:2px;background:var(--teal);margin:1rem auto;}
+.title-author{text-align:center;color:rgba(255,255,255,.4);font-size:.78rem;margin-top:auto;padding-bottom:.3rem;}
+.cb{background:#0d1117;border-radius:6px;overflow:hidden;font-family:'JetBrains Mono',monospace;box-shadow:0 4px 20px rgba(0,0,0,.45);}
+.cb-head{display:flex;align-items:center;gap:.45rem;padding:.45rem 1rem;background:#161b22;border-bottom:1px solid #30363d;}
+.dot{width:11px;height:11px;border-radius:50%;}
+.cb-lang{font-size:.7rem;color:#8b949e;letter-spacing:.06em;margin-left:auto;}
+.cb-body{padding:.85rem 1.2rem;overflow-x:auto;font-size:.8rem;line-height:1.75;}
+.cb-body code{color:#e6edf3;white-space:pre;}
+.kw{color:#ff7b72;} .fn{color:#d2a8ff;} .str{color:#a5d6ff;} .num{color:#79c0ff;} .cm{color:#8b949e;font-style:italic;} .op{color:#ff7b72;} .vr{color:#ffa657;}
+.row{display:flex;align-items:stretch;background:var(--white);border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;margin-bottom:.55rem;}
+.row-lbl{min-width:2.6rem;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;padding:0 .7rem;white-space:nowrap;}
+.row-body{padding:.5rem .85rem;font-size:.84rem;color:var(--text);line-height:1.55;}
+.row-body strong{color:var(--navy);}
+.row-body code{font-family:'JetBrains Mono',monospace;font-size:.78rem;background:#f0f4f8;padding:1px 5px;border-radius:3px;color:#c0392b;}
+.cr{display:flex;align-items:stretch;border-radius:6px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.12);margin-bottom:.6rem;}
+.cr-lbl{min-width:110px;padding:.65rem .8rem;font-size:.8rem;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;}
+.cr-arr{background:#f0f4f8;display:flex;align-items:center;justify-content:center;padding:0 .5rem;color:var(--gray);font-size:1rem;}
+.cr-body{flex:1;background:var(--white);padding:.65rem .9rem;font-size:.83rem;color:var(--text);line-height:1.55;}
+.cr-body strong{color:var(--navy);}
+.cr-body code{font-family:'JetBrains Mono',monospace;font-size:.78rem;background:#f0f4f8;padding:1px 5px;border-radius:3px;color:#c0392b;}
+.card-dark{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:.75rem 1rem;}
+.card-warn{background:#FFF3E0;border-radius:6px;padding:.65rem 1rem;}
+.card-blue{background:var(--ltblue);border-radius:6px;padding:.65rem 1rem;}
+.card-green{background:#ECFDF5;border-radius:6px;padding:.65rem 1rem;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;}
+.fx{display:flex;gap:.85rem;}
+ul.bl{list-style:none;}
+ul.bl li{padding:.26rem 0 .26rem 1.3rem;position:relative;font-size:.85rem;color:var(--text);line-height:1.55;}
+ul.bl li::before{content:'▸';position:absolute;left:0;color:var(--teal);font-size:.8rem;}
+.slide-dark ul.bl li{color:#e2e8f0;} .slide-dark ul.bl li::before{color:var(--amber);}
+.slide-code ul.bl li{color:#e2e8f0;} .slide-code ul.bl li::before{color:var(--js);}
+ul.bl li code{font-family:'JetBrains Mono',monospace;font-size:.76rem;background:rgba(255,255,255,.12);padding:1px 5px;border-radius:3px;color:#a5d6ff;}
+.slide-light ul.bl li code,.slide-card ul.bl li code{background:#f0f4f8;color:#c0392b;}
+.sumi{display:flex;align-items:stretch;background:var(--white);border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.08);overflow:hidden;margin-bottom:.75rem;}
+.sumi-num{min-width:54px;display:flex;align-items:center;justify-content:center;font-size:1.35rem;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace;}
+.sumi-body{padding:.65rem .95rem;font-size:.85rem;line-height:1.6;color:var(--text);}
+.quiz-q{font-size:clamp(.92rem,1.9vw,1.2rem);font-weight:700;color:#e2e8f0;margin-bottom:1.2rem;line-height:1.5;text-align:center;}
+.qopts{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;max-width:680px;margin:0 auto;}
+.qbtn{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.13);color:#e2e8f0;border-radius:8px;padding:.82rem 1.05rem;font-family:'Noto Sans JP',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;text-align:left;line-height:1.45;transition:background .2s,border-color .2s,transform .15s;}
+.qbtn:hover{background:rgba(168,85,247,.22);border-color:#a855f7;transform:translateY(-2px);}
+.qbtn.correct{background:rgba(26,122,74,.35);border-color:#4ade80;color:#4ade80;}
+.qbtn.wrong{background:rgba(192,57,43,.25);border-color:#f87171;color:#f87171;}
+.qbtn:disabled{cursor:default;}
+.qfb{text-align:center;margin-top:.9rem;font-size:.88rem;font-weight:700;min-height:1.4rem;opacity:0;transition:opacity .3s;line-height:1.5;}
+.qfb.show{opacity:1;}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.8rem;background:#161b22;border:1px solid #30363d;color:#ffa657;padding:2px 8px;border-radius:4px;}
+.pill-l{font-family:'JetBrains Mono',monospace;font-size:.8rem;background:#f0f4f8;border:1px solid #dde3ea;color:#c0392b;padding:2px 8px;border-radius:4px;}
+.repl{background:#0d1117;border-radius:6px;padding:.7rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.9;border:1px solid #30363d;}
+.repl-in::before{content:'> ';color:#8b949e;}
+.repl-out{color:#4ade80;}
+.repl-out::before{content:'← ';color:#8b949e;}
+/* scope box */
+.scope-box{border-radius:8px;padding:.6rem .9rem;margin-bottom:.5rem;position:relative;}
+.scope-label{font-size:.68rem;font-weight:700;letter-spacing:.06em;margin-bottom:.3rem;}
+/* fn trace */
+.trace-step{display:flex;align-items:center;gap:.6rem;padding:.38rem .6rem;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:.76rem;margin-bottom:.3rem;transition:background .3s;}
+.trace-step.active-trace{background:rgba(247,223,30,.12);border:1px solid var(--jsdark);}
+.trace-arrow{color:var(--amber);}
+.hl{text-align:center;font-size:.92rem;font-weight:700;font-style:italic;color:var(--teal);margin-top:auto;padding-top:.7rem;}
+.slide-dark .hl{color:var(--amber);} .slide-code .hl{color:var(--js);} .slide-quiz .hl{color:#a855f7;}
+.next-card{background:var(--navy);border-radius:8px;padding:.8rem 1.2rem;border-left:4px solid var(--amber);}
+.next-card-title{font-size:.8rem;color:var(--amber);font-weight:700;margin-bottom:.3rem;}
+.next-card-body{font-size:.84rem;color:#e2e8f0;line-height:1.65;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.slide.active .an{animation:fadeUp .5s ease both;}
+.slide.active .an:nth-child(1){animation-delay:.05s} .slide.active .an:nth-child(2){animation-delay:.12s}
+.slide.active .an:nth-child(3){animation-delay:.19s} .slide.active .an:nth-child(4){animation-delay:.26s}
+.slide.active .an:nth-child(5){animation-delay:.33s} .slide.active .an:nth-child(6){animation-delay:.40s}
+.slide.active .an:nth-child(7){animation-delay:.47s} .slide.active .an:nth-child(8){animation-delay:.54s}
+#nav{position:fixed;bottom:1.2rem;right:1.5rem;display:flex;align-items:center;gap:.7rem;z-index:9999;}
+.nbtn{background:rgba(255,255,255,.13);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22);color:#fff;width:40px;height:40px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s;}
+.nbtn:hover{background:rgba(255,255,255,.28);transform:scale(1.08);}
+#sc{color:rgba(255,255,255,.65);font-size:.76rem;font-family:'JetBrains Mono',monospace;min-width:52px;text-align:center;}
+#bar{position:fixed;bottom:0;left:0;height:3px;background:var(--js);transition:width .35s ease;z-index:9999;}
+#hint{position:fixed;bottom:1.25rem;left:1.5rem;color:rgba(255,255,255,.3);font-size:.67rem;font-family:'JetBrains Mono',monospace;pointer-events:none;}
+.mb1{margin-bottom:.55rem} .small{font-size:.75rem;color:var(--gray);}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- S1: タイトル -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.3rem;">
+    <div class="an" style="background:var(--jsdark);color:#1a1a00;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">はじめてのJavaScript</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 4 / 6</div>
+    <div class="an title-main">関数・<span style="color:var(--js);">スコープ</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">function宣言・アロー関数・スコープ・クロージャ<br>map/filter に出てきた <code style="color:var(--js);">v => ...</code> の正体を完全理解</div>
+  </div>
+  <div class="title-author an">大阪公立大学 医学部 細菌学講座　金子幸弘</div>
+</div>
+
+<!-- S2: Vol.1–3 復習 -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">Vol.1–3 復習</span>
+  <h2 class="stitle an">ここまでのポイント確認</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="row an"><div class="row-lbl" style="background:var(--navy);min-width:5rem;font-size:.7rem;">Vol.1</div><div class="row-body"><code>const</code>/<code>let</code>・型・<code>===</code>・テンプレートリテラル・型変換</div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--teal);min-width:5rem;font-size:.7rem;">Vol.2</div><div class="row-body"><code>if/else</code>・三項演算子・<code>for</code>/<code>while</code>/<code>for...of</code>・<code>break</code>/<code>continue</code></div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--amber);min-width:5rem;font-size:.7rem;">Vol.3</div><div class="row-body">配列・<code>map/filter/reduce</code>・オブジェクト・分割代入・JSON</div></div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">Vol.3 に何度も出てきた「謎の記法」← 今日これを完全理解する</span></div>
+      <div class="cb-body" style="font-size:.78rem;"><code><span class="vr">values</span>.<span class="fn">map</span>( <span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> * <span class="num">2</span> );           <span class="cm">// これは何？</span>
+<span class="vr">patients</span>.<span class="fn">filter</span>( <span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span> ); <span class="cm">// アロー関数！ → 今日の主役</span></code></div>
+    </div>
+  </div>
+  <div class="hl an">「関数」がわかると、これまでのコードが2倍速く読めるようになる</div>
+</div>
+
+<!-- S3: Vol.4 概要 -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-js an">Vol.4 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--navy);">Ch.1<br>関数の基本</div><div class="cr-arr">→</div><div class="cr-body"><strong>処理をまとめて名前をつける</strong>：function宣言・引数・返り値・デフォルト引数<br>🔧 デモ：関数の動き可視化</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Ch.2<br>アロー関数</div><div class="cr-arr">→</div><div class="cr-body"><strong>関数の省略記法</strong>：<code>v => v * 2</code> の読み方・書き方<br>function との使い分け・map/filter の中身を完全理解</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--amber);">Ch.3<br>スコープ</div><div class="cr-arr">→</div><div class="cr-body"><strong>変数はどこから見えるか</strong>：ブロックスコープ・関数スコープ・グローバル<br>var が危険な理由</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--green);">Ch.4<br>クロージャ</div><div class="cr-arr">→</div><div class="cr-body"><strong>関数が変数を「記憶する」仕組み</strong>：カウンター・設定を持つ関数<br>🔧 デモ：リスク計算ライブラリ</div></div>
+  </div>
+  <div class="card-blue an" style="font-size:.82rem;margin-top:.3rem;">💡 <strong>今日のゴール</strong>：関数を自分で定義し、map/filter/reduce に渡せるようになる。クロージャで「状態を持つ関数」が書ける</div>
+</div>
+
+<!-- S4: 関数とは -->
+<div class="slide slide-dark" id="s4">
+  <span class="tag tag-amber an">Ch.1 — 関数とは</span>
+  <h2 class="stitle an">関数 ― 処理に「名前」をつけて再利用する</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">なぜ必要？</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;">同じ処理を何度も書かずに済む。バグを直すのも1か所だけ。コードが読みやすくなる</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">医療の例</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;">「BMI計算」「HbA1c判定」「リスクスコア計算」を関数にすれば、何人の患者データにも使い回せる</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--amber);">アナロジー</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;">関数 = 「クリニカルパス」。入力（患者情報）を受け取り → 処理して → 結果（判断・指示）を返す</div></div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">関数の3要素：入力（引数）・処理・出力（返り値）</span></div>
+      <div class="cb-body"><code>        入力         処理           出力
+          ↓            ↓              ↓
+<span class="kw">function</span> <span class="fn">calcBMI</span>(<span class="vr">weight</span>, <span class="vr">height</span>) {
+  <span class="kw">const</span> <span class="vr">bmi</span> = <span class="vr">weight</span> / (<span class="vr">height</span> ** <span class="num">2</span>);
+  <span class="kw">return</span> <span class="vr">bmi</span>.<span class="fn">toFixed</span>(<span class="num">1</span>);  <span class="cm">// ← return で結果を返す</span>
+}
+
+<span class="fn">calcBMI</span>(<span class="num">70</span>, <span class="num">1.75</span>);  <span class="cm">// → "22.9"</span>
+<span class="fn">calcBMI</span>(<span class="num">55</span>, <span class="num">1.60</span>);  <span class="cm">// → "21.5"（同じ関数を使い回す）</span></code></div>
+    </div>
+  </div>
+</div>
+
+<!-- S5: function宣言の詳細 -->
+<div class="slide slide-code" id="s5">
+  <span class="tag tag-js an">Ch.1 — function 宣言</span>
+  <h2 class="stitle an">function 宣言 ― 基本の書き方と細かいルール</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">引数・返り値・デフォルト引数・早期 return</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ① 基本形</span>
+<span class="kw">function</span> <span class="fn">greet</span>(<span class="vr">name</span>) {
+  <span class="kw">return</span> <span class="str">`こんにちは、${<span class="vr">name</span>}さん`</span>;
+}
+
+<span class="cm">// ② デフォルト引数（引数が省略されたときの初期値）</span>
+<span class="kw">function</span> <span class="fn">judgeHbA1c</span>(<span class="vr">value</span>, <span class="vr">threshold</span> = <span class="num">7.0</span>) {
+  <span class="kw">return</span> <span class="vr">value</span> <span class="op">>=</span> <span class="vr">threshold</span> ? <span class="str">"要管理"</span> : <span class="str">"良好"</span>;
+}
+<span class="fn">judgeHbA1c</span>(<span class="num">7.2</span>);         <span class="cm">// "要管理"（threshold=7.0）</span>
+<span class="fn">judgeHbA1c</span>(<span class="num">7.2</span>, <span class="num">8.0</span>);     <span class="cm">// "良好"（threshold=8.0）</span>
+
+<span class="cm">// ③ 早期 return（バリデーション）</span>
+<span class="kw">function</span> <span class="fn">calcBMI</span>(<span class="vr">weight</span>, <span class="vr">height</span>) {
+  <span class="kw">if</span> (<span class="fn">isNaN</span>(<span class="vr">weight</span>) <span class="op">||</span> <span class="fn">isNaN</span>(<span class="vr">height</span>) <span class="op">||</span> <span class="vr">height</span> <= <span class="num">0</span>) {
+    <span class="kw">return</span> <span class="kw">null</span>;  <span class="cm">// 不正な入力 → 即終了</span>
+  }
+  <span class="kw">return</span> <span class="vr">weight</span> / (<span class="vr">height</span> ** <span class="num">2</span>);
+}
+
+<span class="cm">// ④ return がない関数 → undefined を返す</span>
+<span class="kw">function</span> <span class="fn">logResult</span>(<span class="vr">val</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`結果: ${<span class="vr">val</span>}`</span>);  <span class="cm">// 副作用のみ</span>
+}</code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 return のルール</div>
+        <ul class="bl" style="font-size:.78rem;">
+          <li><code>return</code> に達した時点で関数が終了する</li>
+          <li>返り値がない場合は <code>undefined</code> が返る</li>
+          <li>複数の <code>return</code> を持てる（早期 return）</li>
+          <li><code>return;</code>（値なし）も書ける</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 巻き上げ（Hoisting）</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="cm">// function宣言は宣言前に呼べる</span>
+<span class="fn">greet</span>(<span class="str">"山田"</span>); <span class="cm">// ✅ エラーにならない</span>
+<span class="kw">function</span> <span class="fn">greet</span>(<span class="vr">n</span>) { <span class="kw">return</span> <span class="str">`こんにちは`</span>; }</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S6: アロー関数 -->
+<div class="slide slide-code" id="s6">
+  <span class="tag tag-js an">Ch.2 — アロー関数</span>
+  <h2 class="stitle an">アロー関数 <span class="pill">=&gt;</span> ― 関数の省略記法</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">function → アロー関数 への変換</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ❶ function 宣言（長い）</span>
+<span class="kw">function</span> <span class="fn">double</span>(<span class="vr">n</span>) {
+  <span class="kw">return</span> <span class="vr">n</span> * <span class="num">2</span>;
+}
+
+<span class="cm">// ❷ 関数式（変数に代入）</span>
+<span class="kw">const</span> <span class="vr">double</span> = <span class="kw">function</span>(<span class="vr">n</span>) {
+  <span class="kw">return</span> <span class="vr">n</span> * <span class="num">2</span>;
+};
+
+<span class="cm">// ❸ アロー関数（{ } と return を省略）</span>
+<span class="kw">const</span> <span class="vr">double</span> = (<span class="vr">n</span>) <span class="op">=></span> {
+  <span class="kw">return</span> <span class="vr">n</span> * <span class="num">2</span>;
+};
+
+<span class="cm">// ❹ 式が1つなら { } と return も省略</span>
+<span class="kw">const</span> <span class="vr">double</span> = <span class="vr">n</span> <span class="op">=></span> <span class="vr">n</span> * <span class="num">2</span>;  <span class="cm">// ← 最短形</span>
+
+<span class="cm">// 引数が0個や2個以上のとき ( ) は必要</span>
+<span class="kw">const</span> <span class="vr">greet</span>  = ()         <span class="op">=></span> <span class="str">"こんにちは"</span>;
+<span class="kw">const</span> <span class="vr">add</span>    = (<span class="vr">a</span>, <span class="vr">b</span>)   <span class="op">=></span> <span class="vr">a</span> + <span class="vr">b</span>;</code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 省略ルールまとめ</div>
+        <div style="font-size:.76rem;color:#e2e8f0;line-height:1.9;">
+          引数が1つ → <code style="color:#a5d6ff;">( )</code> 省略可<br>
+          本体が1式 → <code style="color:#a5d6ff;">{ }</code> と <code style="color:#a5d6ff;">return</code> 省略可<br>
+          オブジェクトを返すとき → <code style="color:#a5d6ff;">( )</code> でくくる<br>
+          <code style="color:#ffa657;">n => ({ bmi: n })</code>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 map に渡す関数 ← これが正体</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="cm">// この v => ... はアロー関数！</span>
+[<span class="num">6.5</span>, <span class="num">7.8</span>].<span class="fn">map</span>(<span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">>=</span> <span class="num">7</span> ? <span class="str">"🔴"</span>:<span class="str">"✅"</span>)
+<span class="cm">// 同じ意味：</span>
+[<span class="num">6.5</span>, <span class="num">7.8</span>].<span class="fn">map</span>(<span class="kw">function</span>(<span class="vr">v</span>) {
+  <span class="kw">return</span> <span class="vr">v</span> <span class="op">>=</span> <span class="num">7</span> ? <span class="str">"🔴"</span> : <span class="str">"✅"</span>;
+});</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">アロー関数 = 「使い捨ての小さな関数」を書くための省略記法</div>
+</div>
+
+<!-- S7: 関数は値（高階関数） -->
+<div class="slide slide-light" id="s7">
+  <span class="tag tag-teal an">Ch.2 — 高階関数</span>
+  <h2 class="stitle an">関数は「値」― 変数に入れて、引数に渡す</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">関数を引数に渡す ― コールバック関数</span></div>
+      <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// 関数を変数に代入できる</span>
+<span class="kw">const</span> <span class="vr">isHighRisk</span> = <span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>;
+<span class="kw">const</span> <span class="vr">getName</span>    = <span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">name</span>;
+<span class="kw">const</span> <span class="vr">addLabel</span>   = <span class="vr">p</span> <span class="op">=></span> ({ ...<span class="vr">p</span>, <span class="vr">risk</span>: <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span> ? <span class="str">"高"</span> : <span class="str">"低"</span> });
+
+<span class="cm">// 関数を引数として渡す（コールバック）</span>
+<span class="kw">const</span> <span class="vr">patients</span> = [
+  { <span class="vr">name</span>:<span class="str">"山田"</span>, <span class="vr">hba1c</span>:<span class="num">6.5</span> },
+  { <span class="vr">name</span>:<span class="str">"鈴木"</span>, <span class="vr">hba1c</span>:<span class="num">8.2</span> },
+];
+
+<span class="kw">const</span> <span class="vr">alerts</span>  = <span class="vr">patients</span>.<span class="fn">filter</span>(<span class="vr">isHighRisk</span>);  <span class="cm">// [鈴木]</span>
+<span class="kw">const</span> <span class="vr">names</span>   = <span class="vr">patients</span>.<span class="fn">map</span>(<span class="vr">getName</span>);         <span class="cm">// ["山田","鈴木"]</span>
+<span class="kw">const</span> <span class="vr">labeled</span> = <span class="vr">patients</span>.<span class="fn">map</span>(<span class="vr">addLabel</span>);        <span class="cm">// リスクラベル付き</span>
+
+<span class="cm">// 関数を返す関数（高階関数）</span>
+<span class="kw">function</span> <span class="fn">makeThreshold</span>(<span class="vr">threshold</span>) {
+  <span class="kw">return</span> <span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">>=</span> <span class="vr">threshold</span>;  <span class="cm">// 関数を返す！</span>
+}
+<span class="kw">const</span> <span class="vr">isOver7</span>  = <span class="fn">makeThreshold</span>(<span class="num">7.0</span>);
+<span class="kw">const</span> <span class="vr">isOver10</span> = <span class="fn">makeThreshold</span>(<span class="num">10.0</span>);
+<span class="vr">patients</span>.<span class="fn">filter</span>(<span class="vr">isOver7</span>);  <span class="cm">// HbA1c ≥ 7.0 の患者</span></code></div>
+    </div>
+    <div class="card-blue an" style="font-size:.8rem;margin-top:.2rem;">
+      💡 <strong>高階関数</strong>：「関数を引数に受け取る」か「関数を返す」関数。<code class="pill-l">map / filter / reduce</code> はすべて高階関数。自分で関数を渡せると設計の幅が広がる
+    </div>
+  </div>
+</div>
+
+<!-- S8: 🔧 デモ① 関数可視化 -->
+<div class="slide slide-code" id="s8">
+  <span class="tag tag-js an">🔧 ライブデモ①</span>
+  <h2 class="stitle an">関数の動き可視化 ― 引数→処理→返り値を追う</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.05;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">実行する関数</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="kw">function</span> <span class="fn">riskScore</span>(<span class="vr">hba1c</span>, <span class="vr">bmi</span>, <span class="vr">age</span>) {
+  <span class="kw">let</span> <span class="vr">score</span> = <span class="num">0</span>;
+  <span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>) <span class="vr">score</span> += <span class="num">3</span>;
+  <span class="kw">if</span> (<span class="vr">bmi</span>   <span class="op">>=</span> <span class="num">25</span>)  <span class="vr">score</span> += <span class="num">2</span>;
+  <span class="kw">if</span> (<span class="vr">age</span>   <span class="op">>=</span> <span class="num">50</span>)  <span class="vr">score</span> += <span class="num">1</span>;
+  <span class="kw">return</span> <span class="vr">score</span>;
+}</code></div>
+      </div>
+      <div id="fn-trace" style="display:flex;flex-direction:column;gap:.3rem;"></div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.6rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.9rem;">
+        <div style="font-size:.75rem;color:#8b949e;font-weight:700;margin-bottom:.55rem;">▶ 値を入力して riskScore() を呼ぶ</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.5rem;">
+          <input id="fn-hba"  type="number" step="0.1" placeholder="HbA1c"  style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="fn-bmi"  type="number" step="0.1" placeholder="BMI"    style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="fn-age"  type="number"             placeholder="年齢"   style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+        </div>
+        <button onclick="runTrace()" style="width:100%;padding:.42rem;background:var(--jsdark);color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-size:.82rem;">riskScore() を実行</button>
+        <div id="fn-out" style="font-family:'JetBrains Mono',monospace;font-size:.85rem;margin-top:.55rem;min-height:1.2rem;font-weight:700;"></div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.76rem;color:#94a3b8;line-height:1.7;">
+          <strong style="color:var(--js);">スコア基準</strong><br>
+          HbA1c ≥ 7.0 → +3点<br>
+          BMI ≥ 25 → +2点<br>
+          年齢 ≥ 50 → +1点<br>
+          合計 <span style="color:#4ade80;">0</span> / <span style="color:#fbbf24;">2</span> / <span style="color:#fb923c;">4</span> / <span style="color:#f87171;">6</span> 点
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S9: QUIZ 1 -->
+<div class="slide slide-quiz" id="s9">
+  <span class="tag tag-purple an">QUIZ 1</span>
+  <h2 class="stitle an">アロー関数の出力を当てよう</h2>
+  <div class="quiz-q an">
+    以下のコードの出力は？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;background:rgba(255,255,255,.08);padding:.55rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.85;text-align:left;">
+      const add = (a, b) => a + b;<br>
+      const double = n => n * 2;<br>
+      console.log(double(add(3, 4)));
+    </span>
+  </div>
+  <div class="qopts an" id="q1">
+    <button class="qbtn" onclick="ansQ1(this,'a')">A. 10</button>
+    <button class="qbtn" onclick="ansQ1(this,'b')">B. 14 ← add(3,4)=7, double(7)=14</button>
+    <button class="qbtn" onclick="ansQ1(this,'c')">C. 7</button>
+    <button class="qbtn" onclick="ansQ1(this,'d')">D. エラー</button>
+  </div>
+  <div class="qfb an" id="q1fb"></div>
+</div>
+
+<!-- S10: スコープ -->
+<div class="slide slide-code" id="s10">
+  <span class="tag tag-js an">Ch.3 — スコープ</span>
+  <h2 class="stitle an">スコープ ― 変数が「見える」範囲</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">3種類のスコープ</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ① グローバルスコープ：どこからでも見える</span>
+<span class="kw">const</span> <span class="vr">HOSPITAL</span> = <span class="str">"大阪公立大学病院"</span>;  <span class="cm">// グローバル</span>
+
+<span class="kw">function</span> <span class="fn">checkPatient</span>(<span class="vr">hba1c</span>) {
+
+  <span class="cm">// ② 関数スコープ：関数の中だけ見える</span>
+  <span class="kw">const</span> <span class="vr">msg</span> = <span class="str">`${<span class="vr">HOSPITAL</span>} 判定`</span>;  <span class="cm">// グローバルは見える</span>
+
+  <span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>) {
+
+    <span class="cm">// ③ ブロックスコープ：{ } の中だけ（let/const）</span>
+    <span class="kw">const</span> <span class="vr">alert</span> = <span class="str">"要管理"</span>;
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">alert</span>);  <span class="cm">// ✅ ここでは見える</span>
+  }
+
+  <span class="cm">// console.log(alert);  // ❌ ブロック外 → ReferenceError</span>
+}
+
+<span class="cm">// console.log(msg);    // ❌ 関数外 → ReferenceError</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div style="border:2px solid #30363d;border-radius:8px;overflow:hidden;">
+        <div style="background:#1a1a2d;padding:.5rem .8rem;font-size:.72rem;font-weight:700;color:#a5d6ff;">🌍 グローバル</div>
+        <div style="padding:.5rem .8rem;">
+          <div style="background:#1a2d1a;border-radius:6px;padding:.45rem .7rem;margin-bottom:.4rem;">
+            <div style="font-size:.7rem;color:#4ade80;font-weight:700;margin-bottom:.2rem;">📦 関数スコープ</div>
+            <div style="background:#2d2a1a;border-radius:5px;padding:.4rem .6rem;">
+              <div style="font-size:.68rem;color:#fbbf24;font-weight:700;">🔒 ブロックスコープ（if/for）</div>
+              <div style="font-size:.7rem;color:#94a3b8;margin-top:.2rem;font-family:monospace;">const alert = "要管理"</div>
+            </div>
+          </div>
+          <div style="font-size:.7rem;color:#94a3b8;font-family:monospace;">const HOSPITAL = "..."</div>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">⚠ var が危険な理由</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.73rem;"><code><span class="kw">if</span> (<span class="kw">true</span>) {
+  <span class="kw">var</span>   <span class="vr">x</span> = <span class="num">1</span>; <span class="cm">// ❌ ブロック外でも見える</span>
+  <span class="kw">const</span> <span class="vr">y</span> = <span class="num">2</span>; <span class="cm">// ✅ ブロック内のみ</span>
+}
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">x</span>); <span class="cm">// 1（意図しない漏れ）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">y</span>); <span class="cm">// ReferenceError</span></code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">スコープを理解すると「なぜ変数が見えないか」がわかる</div>
+</div>
+
+<!-- S11: QUIZ 2 スコープ -->
+<div class="slide slide-quiz" id="s11">
+  <span class="tag tag-purple an">QUIZ 2</span>
+  <h2 class="stitle an">スコープの問題</h2>
+  <div class="quiz-q an">
+    以下のコードを実行すると何が起きる？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;background:rgba(255,255,255,.08);padding:.55rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.85;text-align:left;">
+      function outer() {<br>
+      &nbsp;&nbsp;const x = 10;<br>
+      &nbsp;&nbsp;function inner() {<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;console.log(x);<br>
+      &nbsp;&nbsp;}<br>
+      &nbsp;&nbsp;inner();<br>
+      }<br>
+      outer();
+    </span>
+  </div>
+  <div class="qopts an" id="q2">
+    <button class="qbtn" onclick="ansQ2(this,'a')">A. エラー（inner は x を見られない）</button>
+    <button class="qbtn" onclick="ansQ2(this,'b')">B. undefined が表示される</button>
+    <button class="qbtn" onclick="ansQ2(this,'c')">C. 10 が表示される ← 内側は外側を参照できる</button>
+    <button class="qbtn" onclick="ansQ2(this,'d')">D. 0 が表示される</button>
+  </div>
+  <div class="qfb an" id="q2fb"></div>
+</div>
+
+<!-- S12: クロージャ -->
+<div class="slide slide-code" id="s12">
+  <span class="tag tag-js an">Ch.4 — クロージャ</span>
+  <h2 class="stitle an">クロージャ ― 関数が変数を「記憶する」</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">カウンター ― クロージャの典型例</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// makeCounter を呼ぶたびに独立したカウンターが生まれる</span>
+<span class="kw">function</span> <span class="fn">makeCounter</span>(<span class="vr">label</span>) {
+  <span class="kw">let</span> <span class="vr">count</span> = <span class="num">0</span>;  <span class="cm">// この変数が「記憶される」</span>
+
+  <span class="kw">return</span> <span class="kw">function</span>() {
+    <span class="vr">count</span>++;
+    <span class="kw">return</span> <span class="str">`${<span class="vr">label</span>}: ${<span class="vr">count</span>} 件`</span>;
+  };
+}
+
+<span class="cm">// 2つの独立したカウンター</span>
+<span class="kw">const</span> <span class="vr">visitCount</span> = <span class="fn">makeCounter</span>(<span class="str">"外来来院"</span>);
+<span class="kw">const</span> <span class="vr">admitCount</span> = <span class="fn">makeCounter</span>(<span class="str">"入院受付"</span>);
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">visitCount</span>());  <span class="cm">// "外来来院: 1 件"</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">visitCount</span>());  <span class="cm">// "外来来院: 2 件"</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">admitCount</span>());  <span class="cm">// "入院受付: 1 件"（別カウント）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">visitCount</span>());  <span class="cm">// "外来来院: 3 件"</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 クロージャとは</div>
+        <ul class="bl" style="font-size:.78rem;">
+          <li>内側の関数が、外側の変数を<strong style="color:#4ade80;">「閉じ込めて」覚え続ける</strong></li>
+          <li>外から <code>count</code> に直接アクセスできない → <strong style="color:#4ade80;">安全</strong></li>
+          <li><code>makeCounter</code> を呼ぶたびに<strong style="color:#4ade80;">独立した</strong> count が生まれる</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 医療での使い方</div>
+        <ul class="bl" style="font-size:.76rem;">
+          <li>患者ごとのカウンター</li>
+          <li>設定値（閾値）を内包した判定関数</li>
+          <li>累積スコアを持つリスク評価器</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">クロージャ = 「プライベートな変数」を持つ関数の仕組み</div>
+</div>
+
+<!-- S13: クロージャ応用 -->
+<div class="slide slide-light" id="s13">
+  <span class="tag tag-teal an">Ch.4 — クロージャ応用</span>
+  <h2 class="stitle an">設定を「記憶する」関数 ― クロージャの実践</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">閾値を設定で変えられる判定器</span></div>
+      <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// 閾値を「記憶する」判定関数ファクトリ</span>
+<span class="kw">function</span> <span class="fn">makeJudge</span>(<span class="vr">name</span>, <span class="vr">threshold</span>) {
+  <span class="kw">return</span> (<span class="vr">value</span>) <span class="op">=></span> ({
+    <span class="vr">label</span>: <span class="vr">name</span>,
+    <span class="vr">value</span>,
+    <span class="vr">flag</span>:  <span class="vr">value</span> <span class="op">>=</span> <span class="vr">threshold</span>,
+    <span class="vr">msg</span>:   <span class="vr">value</span> <span class="op">>=</span> <span class="vr">threshold</span>
+             ? <span class="str">`${<span class="vr">name</span>} ${<span class="vr">value</span>} ≥ ${<span class="vr">threshold</span>} → 🔴 要管理`</span>
+             : <span class="str">`${<span class="vr">name</span>} ${<span class="vr">value</span>} &lt; ${<span class="vr">threshold</span>} → ✅ 良好`</span>
+  });
+}
+
+<span class="cm">// それぞれの閾値を覚えた専用関数を生成</span>
+<span class="kw">const</span> <span class="vr">judgeHbA1c</span> = <span class="fn">makeJudge</span>(<span class="str">"HbA1c"</span>, <span class="num">7.0</span>);
+<span class="kw">const</span> <span class="vr">judgeBMI</span>   = <span class="fn">makeJudge</span>(<span class="str">"BMI"</span>,   <span class="num">25.0</span>);
+<span class="kw">const</span> <span class="vr">judgeBP</span>    = <span class="fn">makeJudge</span>(<span class="str">"収縮期血圧"</span>, <span class="num">140</span>);
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">judgeHbA1c</span>(<span class="num">7.8</span>).<span class="vr">msg</span>); <span class="cm">// "HbA1c 7.8 ≥ 7.0 → 🔴 要管理"</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">judgeBMI</span>(<span class="num">22</span>).<span class="vr">msg</span>);   <span class="cm">// "BMI 22 &lt; 25.0 → ✅ 良好"</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">judgeBP</span>(<span class="num">155</span>).<span class="vr">msg</span>);   <span class="cm">// "収縮期血圧 155 ≥ 140 → 🔴 要管理"</span></code></div>
+    </div>
+    <div class="card-blue an" style="font-size:.8rem;margin-top:.2rem;">
+      💡 <code class="pill-l">makeJudge</code> を一度定義すれば、どんな指標・どんな閾値にも使い回せる。これが「関数を返す関数」の力
+    </div>
+  </div>
+  <div class="hl an">「設定を覚えた関数を量産する」― それがクロージャの真価</div>
+</div>
+
+<!-- S14: QUIZ 3 -->
+<div class="slide slide-quiz" id="s14">
+  <span class="tag tag-purple an">QUIZ 3</span>
+  <h2 class="stitle an">クロージャの出力を当てよう</h2>
+  <div class="quiz-q an">
+    以下のコードの出力は？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.83rem;background:rgba(255,255,255,.08);padding:.55rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.85;text-align:left;">
+      function makeAdder(x) {<br>
+      &nbsp;&nbsp;return n => x + n;<br>
+      }<br>
+      const add5 = makeAdder(5);<br>
+      const add10 = makeAdder(10);<br>
+      console.log(add5(3));<br>
+      console.log(add10(3));
+    </span>
+  </div>
+  <div class="qopts an" id="q3">
+    <button class="qbtn" onclick="ansQ3(this,'a')">A. 8 と 13 ← add5はx=5を記憶、add10はx=10を記憶</button>
+    <button class="qbtn" onclick="ansQ3(this,'b')">B. 8 と 8（両方同じ）</button>
+    <button class="qbtn" onclick="ansQ3(this,'c')">C. 3 と 3（xが無視される）</button>
+    <button class="qbtn" onclick="ansQ3(this,'d')">D. エラーになる</button>
+  </div>
+  <div class="qfb an" id="q3fb"></div>
+</div>
+
+<!-- S15: 🔧 デモ② リスク計算ライブラリ -->
+<div class="slide slide-code" id="s15">
+  <span class="tag tag-js an">🔧 ライブデモ②</span>
+  <h2 class="stitle an">リスク計算ライブラリ ― クロージャで作る再利用可能な関数群</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.85rem;">
+    <div style="flex:1.05;display:flex;flex-direction:column;gap:.5rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.8rem;">
+        <div style="font-size:.74rem;color:#8b949e;font-weight:700;margin-bottom:.5rem;">▶ 患者データを入力して総合リスク判定</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.45rem;">
+          <input id="lib-name"  placeholder="名前"     style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="lib-age"   placeholder="年齢"   type="number" style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="lib-hba1c" placeholder="HbA1c"  type="number" step="0.1" style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="lib-bmi"   placeholder="BMI"    type="number" step="0.1" style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;">
+          <input id="lib-bp"    placeholder="収縮期血圧(mmHg)" type="number" style="padding:.38rem .6rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:.8rem;outline:none;grid-column:1/-1;">
+        </div>
+        <button onclick="runLib()" style="width:100%;padding:.42rem;background:var(--jsdark);color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-size:.82rem;">総合リスク判定</button>
+      </div>
+      <div id="lib-out" style="display:flex;flex-direction:column;gap:.35rem;overflow-y:auto;"></div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.55rem;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">内部コード（クロージャで構築）</span></div>
+        <div class="cb-body" style="font-size:.72rem;"><code><span class="cm">// クロージャで判定器を生成</span>
+<span class="kw">const</span> <span class="fn">makeJudge</span> = (<span class="vr">name</span>, <span class="vr">thr</span>) <span class="op">=></span>
+  <span class="vr">v</span> <span class="op">=></span> ({
+    <span class="vr">name</span>, <span class="vr">value</span>: <span class="vr">v</span>,
+    <span class="vr">ok</span>: <span class="vr">v</span> <span class="op">&lt;</span> <span class="vr">thr</span>,
+    <span class="vr">msg</span>: <span class="str">`${<span class="vr">name</span>}: ${<span class="vr">v</span>} ${<span class="vr">v</span> <span class="op">>=</span> <span class="vr">thr</span>?<span class="str">"🔴"</span>:<span class="str">"✅"</span>}`</span>
+  });
+
+<span class="cm">// 各指標の判定器（閾値を記憶）</span>
+<span class="kw">const</span> <span class="vr">judges</span> = [
+  <span class="fn">makeJudge</span>(<span class="str">"HbA1c"</span>, <span class="num">7.0</span>),
+  <span class="fn">makeJudge</span>(<span class="str">"BMI"</span>,   <span class="num">25.0</span>),
+  <span class="fn">makeJudge</span>(<span class="str">"血圧"</span>,  <span class="num">140</span>),
+];</code></div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.76rem;color:#94a3b8;line-height:1.7;">
+          <strong style="color:var(--js);">使ったテクニック</strong><br>
+          ✅ クロージャで閾値を記憶<br>
+          ✅ アロー関数の入れ子<br>
+          ✅ map で一括判定<br>
+          ✅ filter でリスク項目を抽出<br>
+          ✅ reduce でスコア集計
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S16: function vs アロー の使い分け -->
+<div class="slide slide-light" id="s16">
+  <span class="tag tag-teal an">Ch.2 補足</span>
+  <h2 class="stitle an">function 宣言 vs アロー関数 ― 使い分けの基準</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="g2 an" style="gap:.7rem;align-items:start;">
+      <div>
+        <div style="font-size:.82rem;font-weight:900;color:var(--navy);margin-bottom:.5rem;">📌 function 宣言を使う場面</div>
+        <div class="cr" style="margin-bottom:.4rem;"><div class="cr-lbl" style="background:var(--navy);min-width:90px;font-size:.76rem;">名前のある<br>メイン関数</div><div class="cr-arr">→</div><div class="cr-body"><code>calcBMI()</code>・<code>judgeRisk()</code> など、プログラムの主要処理。どこからでも呼べる（巻き上げ有効）</div></div>
+        <div class="cr" style="margin-bottom:.4rem;"><div class="cr-lbl" style="background:var(--navy);min-width:90px;font-size:.76rem;">再帰関数</div><div class="cr-arr">→</div><div class="cr-body">自分自身を呼ぶ関数。function宣言なら名前で自己参照できる</div></div>
+        <div class="cr"><div class="cr-lbl" style="background:var(--navy);min-width:90px;font-size:.76rem;">this が<br>必要なとき</div><div class="cr-arr">→</div><div class="cr-body">オブジェクトのメソッド（Vol.5 以降）</div></div>
+      </div>
+      <div>
+        <div style="font-size:.82rem;font-weight:900;color:var(--navy);margin-bottom:.5rem;">⚡ アロー関数を使う場面</div>
+        <div class="cr" style="margin-bottom:.4rem;"><div class="cr-lbl" style="background:var(--jsdark);color:#1a1a00;min-width:90px;font-size:.76rem;">コールバック</div><div class="cr-arr">→</div><div class="cr-body">map/filter/reduce に渡す関数。短く書けるのが強み</div></div>
+        <div class="cr" style="margin-bottom:.4rem;"><div class="cr-lbl" style="background:var(--jsdark);color:#1a1a00;min-width:90px;font-size:.76rem;">1〜2行の<br>変換処理</div><div class="cr-arr">→</div><div class="cr-body"><code>v => v * 2</code> のようなシンプルな変換</div></div>
+        <div class="cr"><div class="cr-lbl" style="background:var(--jsdark);color:#1a1a00;min-width:90px;font-size:.76rem;">クロージャ<br>ファクトリ</div><div class="cr-arr">→</div><div class="cr-body">関数を返す関数の返り値部分</div></div>
+      </div>
+    </div>
+    <div class="card-blue an" style="font-size:.81rem;margin-top:.3rem;">
+      💡 <strong>迷ったら</strong>：処理が2行以上で名前をつけたい → function宣言。map/filterに渡す・1行で書ける → アロー関数
+    </div>
+  </div>
+</div>
+
+<!-- S17: よくあるミス -->
+<div class="slide slide-code" id="s17">
+  <span class="tag tag-red an">よくあるミスと注意点</span>
+  <h2 class="stitle an">関数・スコープでハマりがちな落とし穴</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">① return を忘れる → undefined</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ❌ { } を使うと return が必要</span>
+<span class="kw">const</span> <span class="vr">double</span> = <span class="vr">n</span> <span class="op">=></span> { <span class="vr">n</span> * <span class="num">2</span>; };   <span class="cm">// undefined</span>
+
+<span class="cm">// ✅ return を書く</span>
+<span class="kw">const</span> <span class="vr">double</span> = <span class="vr">n</span> <span class="op">=></span> { <span class="kw">return</span> <span class="vr">n</span> * <span class="num">2</span>; };
+
+<span class="cm">// ✅ または { } を省略</span>
+<span class="kw">const</span> <span class="vr">double</span> = <span class="vr">n</span> <span class="op">=></span> <span class="vr">n</span> * <span class="num">2</span>;</code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">② オブジェクトを返すとき ( ) が必要</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ❌ { } をブロックと解釈してしまう</span>
+<span class="kw">const</span> <span class="vr">mk</span> = <span class="vr">n</span> <span class="op">=></span> { <span class="vr">value</span>: <span class="vr">n</span> };   <span class="cm">// SyntaxError</span>
+
+<span class="cm">// ✅ ( ) でオブジェクトリテラルをくくる</span>
+<span class="kw">const</span> <span class="vr">mk</span> = <span class="vr">n</span> <span class="op">=></span> ({ <span class="vr">value</span>: <span class="vr">n</span> }); <span class="cm">// OK</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.88;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">③ 関数式は巻き上げされない</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="fn">greet</span>();  <span class="cm">// ✅ function宣言はOK</span>
+<span class="kw">function</span> <span class="fn">greet</span>() { <span class="kw">return</span> <span class="str">"hello"</span>; }
+
+<span class="fn">bye</span>();    <span class="cm">// ❌ ReferenceError</span>
+<span class="kw">const</span> <span class="vr">bye</span> = () <span class="op">=></span> <span class="str">"bye"</span>;</code></div>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#fbbf24;margin-bottom:.35rem;">④ 引数の数が違っても動く</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="kw">function</span> <span class="fn">add</span>(<span class="vr">a</span>, <span class="vr">b</span>) { <span class="kw">return</span> <span class="vr">a</span> + <span class="vr">b</span>; }
+<span class="fn">add</span>(<span class="num">1</span>);      <span class="cm">// NaN（b=undefined）</span>
+<span class="fn">add</span>(<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>);  <span class="cm">// 3（余分な引数は無視）</span></code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S18: 純粋関数 -->
+<div class="slide slide-light" id="s18">
+  <span class="tag tag-green an">設計の考え方</span>
+  <h2 class="stitle an">純粋関数 ― 「同じ入力 → 同じ出力」を目指す</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">純粋関数 vs 副作用のある関数</span></div>
+      <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ❌ 副作用あり：外部の変数を変える（テスト困難）</span>
+<span class="kw">let</span> <span class="vr">totalRisk</span> = <span class="num">0</span>;
+<span class="kw">function</span> <span class="fn">addRisk</span>(<span class="vr">score</span>) {
+  <span class="vr">totalRisk</span> += <span class="vr">score</span>;  <span class="cm">// 外部変数を変更 ← 副作用</span>
+}
+
+<span class="cm">// ✅ 純粋関数：引数だけを使って結果を返す（テスト容易）</span>
+<span class="kw">function</span> <span class="fn">calcRisk</span>(<span class="vr">hba1c</span>, <span class="vr">bmi</span>, <span class="vr">age</span>) {
+  <span class="kw">let</span> <span class="vr">score</span> = <span class="num">0</span>;
+  <span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>) <span class="vr">score</span> += <span class="num">3</span>;
+  <span class="kw">if</span> (<span class="vr">bmi</span>   <span class="op">>=</span> <span class="num">25</span>)  <span class="vr">score</span> += <span class="num">2</span>;
+  <span class="kw">if</span> (<span class="vr">age</span>   <span class="op">>=</span> <span class="num">50</span>)  <span class="vr">score</span> += <span class="num">1</span>;
+  <span class="kw">return</span> <span class="vr">score</span>;  <span class="cm">// 外に影響しない</span>
+}
+
+<span class="cm">// 純粋関数は必ず同じ結果になる → テストが簡単</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">calcRisk</span>(<span class="num">7.2</span>, <span class="num">28</span>, <span class="num">55</span>));  <span class="cm">// 常に 6</span></code></div>
+    </div>
+    <div class="g2 an" style="gap:.6rem;margin-top:.2rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>純粋関数のメリット</strong><br>
+        <ul class="bl" style="margin-top:.3rem;font-size:.78rem;">
+          <li>テストが簡単（入力→出力だけ確認）</li>
+          <li>再利用しやすい</li>
+          <li>バグが起きにくい</li>
+          <li>map/filter に渡せる</li>
+        </ul>
+      </div>
+      <div class="card-warn" style="font-size:.8rem;">
+        ⚠ <strong>副作用が必要な場面もある</strong><br>
+        画面更新・ファイル保存・API呼び出しは副作用。<br>ただしコアのロジックは純粋関数で書くのがベスト
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S19: 実践パターン集 -->
+<div class="slide slide-code" id="s19">
+  <span class="tag tag-green an">実践パターン</span>
+  <h2 class="stitle an">コピペして使える関数パターン集</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">医療アプリで使えるパターン</span></div>
+        <div class="cb-body" style="font-size:.76rem;"><code><span class="cm">// ① バリデーション付き計算関数</span>
+<span class="kw">const</span> <span class="fn">calcBMI</span> = (<span class="vr">w</span>, <span class="vr">hCm</span>) <span class="op">=></span> {
+  <span class="kw">if</span> ([<span class="vr">w</span>, <span class="vr">hCm</span>].<span class="fn">some</span>(<span class="fn">isNaN</span>) <span class="op">||</span> <span class="vr">hCm</span> <= <span class="num">0</span>) <span class="kw">return</span> <span class="kw">null</span>;
+  <span class="kw">return</span> +(<span class="vr">w</span> / (<span class="vr">hCm</span>/<span class="num">100</span>)**<span class="num">2</span>).<span class="fn">toFixed</span>(<span class="num">1</span>);
+};
+
+<span class="cm">// ② 閾値ファクトリ（クロージャ）</span>
+<span class="kw">const</span> <span class="fn">mkJudge</span> = (<span class="vr">label</span>, <span class="vr">thr</span>) <span class="op">=></span> <span class="vr">v</span> <span class="op">=></span>
+  <span class="vr">v</span> <span class="op">==</span> <span class="kw">null</span> ? <span class="str">"未測定"</span>
+  : <span class="vr">v</span> <span class="op">>=</span> <span class="vr">thr</span> ? <span class="str">`${<span class="vr">label</span>} 🔴`</span> : <span class="str">`${<span class="vr">label</span>} ✅`</span>;
+
+<span class="cm">// ③ 患者リストの一括スクリーニング</span>
+<span class="kw">const</span> <span class="fn">screenPatients</span> = (<span class="vr">pts</span>, <span class="vr">checks</span>) <span class="op">=></span>
+  <span class="vr">pts</span>.<span class="fn">map</span>(<span class="vr">p</span> <span class="op">=></span> ({
+    ...<span class="vr">p</span>,
+    <span class="vr">results</span>: <span class="vr">checks</span>.<span class="fn">map</span>(<span class="vr">fn</span> <span class="op">=></span> <span class="fn">fn</span>(<span class="vr">p</span>))
+  }));
+
+<span class="cm">// 使い方</span>
+<span class="kw">const</span> <span class="vr">checks</span> = [
+  <span class="fn">mkJudge</span>(<span class="str">"HbA1c"</span>, <span class="num">7.0</span>)(<span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span>),
+];
+<span class="cm">// Vol.5のDOM操作と組み合わせると完成形になる</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.85;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#4ade80;margin-bottom:.35rem;">✅ Vol.4 で身についた力</div>
+        <ul class="bl" style="font-size:.77rem;">
+          <li>処理を関数にまとめられる</li>
+          <li>アロー関数を自在に書ける</li>
+          <li>map/filter に渡す関数が書ける</li>
+          <li>スコープを意識してバグを防げる</li>
+          <li>クロージャで「設定を記憶した関数」を作れる</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">→ 次回 Vol.5 で</div>
+        <div style="font-size:.76rem;color:#94a3b8;line-height:1.6;">この関数を HTML に繋いで実際に動く Web ツールを作る。<strong style="color:#4ade80;">DOM操作・イベント</strong>が加わると「見えて・動く」アプリが完成する</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S20: Vol.4 まとめ -->
+<div class="slide slide-light" id="s20">
+  <span class="tag tag-green an">Vol.4 まとめ</span>
+  <h2 class="stitle an">今日学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="sumi an"><div class="sumi-num" style="background:var(--navy);">01</div><div class="sumi-body"><strong>function 宣言</strong>：引数・返り値・デフォルト引数・早期 return。巻き上げで宣言前から呼べる</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--teal);">02</div><div class="sumi-body"><strong>アロー関数</strong>：<code class="pill-l">n => n * 2</code> は関数の省略形。map/filter に渡す「コールバック」の正体</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--amber);">03</div><div class="sumi-body"><strong>高階関数</strong>：関数を引数に取る・返す関数。map/filter/reduce はすべて高階関数。自分でも作れる</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--jsdark);">04</div><div class="sumi-body"><strong>スコープ</strong>：ブロック・関数・グローバルの3層。<code class="pill-l">const/let</code> はブロックスコープ。<code class="pill-l">var</code> は使わない</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--green);">05</div><div class="sumi-body"><strong>クロージャ</strong>：内側の関数が外側の変数を記憶する。「設定を持った関数を量産する」ファクトリパターン</div></div>
+  </div>
+</div>
+
+<!-- S21: 今週の課題 -->
+<div class="slide slide-dark" id="s21">
+  <span class="tag tag-amber an">今週の課題</span>
+  <h2 class="stitle an">手を動かしてみよう</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Step 1</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">変換</strong>：Vol.2 で書いた if 文を関数にまとめる。<code style="color:#a5d6ff;">function judgeHbA1c(v) { ... }</code></div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Step 2</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">アロー化</strong>：Step 1 の関数をアロー関数で書き直す。<code style="color:#a5d6ff;">const judgeHbA1c = v => ...</code></div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--amber);">Step 3</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">組み合わせ</strong>：Vol.3 の患者配列に <code style="color:#a5d6ff;">.map(judgeHbA1c)</code> を適用して全員の判定を一行で出力</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--jsdark);color:#1a1a00;">Step 4</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">クロージャ</strong>：<code style="color:#a5d6ff;">makeJudge("HbA1c", 7.0)</code> を自分で実装して動かしてみる</div></div>
+  </div>
+  <div class="hl an">「関数に切り出す」習慣が、長いコードを読みやすくする</div>
+</div>
+
+<!-- S22: 次回予告 Vol.5 -->
+<div class="slide slide-card" id="s22">
+  <span class="tag tag-teal an">NEXT SESSION</span>
+  <h2 class="stitle an">次回 Vol.5 ― DOM・イベント</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="next-card an">
+      <div class="next-card-title">Vol.5 で学ぶこと</div>
+      <div class="next-card-body">
+        Ch.1　<strong>DOM操作</strong>：getElementById / querySelector・textContent / innerHTML・要素の作成<br>
+        Ch.2　<strong>イベント</strong>：addEventListener・click / input / keydown・フォームの値を取得<br>
+        Ch.3　<strong>スタイル操作</strong>：classList・style でCSSを動的に変える<br>
+        🔧　<strong>ライブデモ</strong>：Vol.1–4 の関数をHTMLに繋いで動くリスク判定ツール完成
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>Vol.4 の内容が使えるか確認</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>アロー関数が書ける</li>
+          <li>引数・返り値を持つ関数が作れる</li>
+          <li>クロージャで閾値を記憶できる</li>
+        </ul>
+      </div>
+      <div class="card-green" style="font-size:.8rem;">
+        📚 <strong>予習のヒント</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>ブラウザで F12 → Elements タブを眺める</li>
+          <li>HTML の id 属性に注目する</li>
+          <li>ボタンを押したら何かが変わるサイトを想像する</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;" class="an">
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.1 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.2 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.3 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.4 ✅</span>
+      <span style="background:#1B6CA8;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.5 ← 次回</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.6</span>
+    </div>
+  </div>
+</div>
+
+<!-- S23: 締め -->
+<div class="slide slide-dark" id="s23">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.55rem;">
+    <div class="an title-vol" style="font-size:.75rem;">Vol.4 / 6 完了</div>
+    <div class="an title-main" style="font-size:clamp(2rem,5vw,3.8rem);">
+      関数は<br>
+      <span style="color:var(--js);">思考を整理する</span><br>
+      道具だ
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.88rem;line-height:2.1;">
+      処理に名前をつけて<br>
+      引数で汎用化して<br>
+      クロージャで設定を持たせる<br>
+      ― それだけで、複雑な問題が整理できる
+    </div>
+  </div>
+  <div class="title-author an">
+    大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+    <span style="color:#4ade80;font-size:.76rem;">質問・誤りの指摘、大歓迎です</span>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<footer style="display:none;">
+本テキストはAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 23</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+/* ── Engine ─────────────────────── */
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+function go(n) {
+  slides[cur].classList.remove('active'); slides[cur].classList.add('prev');
+  const p = cur; setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev'); slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
+}
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft'){e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)dx<0?go(cur+1):go(cur-1);},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
+
+/* ── Quiz helpers ───────────────── */
+function ansQ(id, btn, val, correct, msgOk, msgNg) {
+  document.querySelectorAll(`#${id} .qbtn`).forEach(b=>b.disabled=true);
+  const btns = document.querySelectorAll(`#${id} .qbtn`);
+  const fbEl = document.getElementById(`${id}fb`);
+  if (val===correct) {
+    btn.classList.add('correct'); fbEl.textContent=msgOk; fbEl.style.color='#4ade80';
+  } else {
+    btn.classList.add('wrong'); btns[correct.charCodeAt(0)-97].classList.add('correct');
+    fbEl.textContent=msgNg; fbEl.style.color='#fbbf24';
+  }
+  fbEl.classList.add('show');
+}
+function ansQ1(btn,val){ ansQ('q1',btn,val,'b','✅ 正解！ add(3,4)=7、それを double() に渡すと 7*2=14','💡 正解は B。関数の戻り値を別の関数の引数に渡せる。内側から評価：add(3,4)=7 → double(7)=14'); }
+function ansQ2(btn,val){ ansQ('q2',btn,val,'c','✅ 正解！ 内側の関数は外側のスコープを参照できる（レキシカルスコープ）。inner は outer の x=10 を見られる','💡 正解は C。JSは内側から外側のスコープを参照できる。これを「レキシカルスコープ」という。クロージャの基礎'); }
+function ansQ3(btn,val){ ansQ('q3',btn,val,'a','✅ 正解！ add5 は x=5 を記憶（クロージャ）、add10 は x=10 を記憶。それぞれ独立しているので 5+3=8、10+3=13','💡 正解は A（8と13）。makeAdder を呼ぶたびに独立したクロージャが生まれる。add5とadd10はそれぞれ別のxを記憶している'); }
+
+/* ── Demo 1: 関数トレース ─────── */
+function riskScore(hba1c, bmi, age) {
+  let score = 0;
+  const steps = [];
+  steps.push({ txt:`引数受け取り: hba1c=${hba1c}, bmi=${bmi}, age=${age}`, score:0 });
+  if (hba1c >= 7.0) { score += 3; steps.push({ txt:`HbA1c ${hba1c} ≥ 7.0 → +3点`, score }); }
+  else              { steps.push({ txt:`HbA1c ${hba1c} < 7.0 → +0点`, score }); }
+  if (bmi >= 25)    { score += 2; steps.push({ txt:`BMI ${bmi} ≥ 25 → +2点`, score }); }
+  else              { steps.push({ txt:`BMI ${bmi} < 25 → +0点`, score }); }
+  if (age >= 50)    { score += 1; steps.push({ txt:`年齢 ${age} ≥ 50 → +1点`, score }); }
+  else              { steps.push({ txt:`年齢 ${age} < 50 → +0点`, score }); }
+  steps.push({ txt:`return ${score}`, score, final:true });
+  return { score, steps };
+}
+function runTrace() {
+  const hba1c = parseFloat(document.getElementById('fn-hba').value);
+  const bmi   = parseFloat(document.getElementById('fn-bmi').value);
+  const age   = parseFloat(document.getElementById('fn-age').value);
+  const el    = document.getElementById('fn-trace');
+  const outEl = document.getElementById('fn-out');
+  if ([hba1c,bmi,age].some(isNaN)) {
+    outEl.textContent='⚠ 全て入力してください'; outEl.style.color='#f87171'; return;
+  }
+  const { score, steps } = riskScore(hba1c, bmi, age);
+  el.innerHTML = '';
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'trace-step' + (s.final ? ' active-trace' : '');
+      const col = s.score >= 5 ? '#f87171' : s.score >= 3 ? '#fbbf24' : '#4ade80';
+      row.innerHTML = `<span class="trace-arrow">▸</span><span style="color:#e2e8f0;font-size:.76rem;">${s.txt}</span><span style="margin-left:auto;color:${col};font-weight:700;">${s.score}pt</span>`;
+      el.appendChild(row);
+    }, i * 280);
+  });
+  const col = score >= 5 ? '#f87171' : score >= 3 ? '#fbbf24' : score >= 1 ? '#60a5fa' : '#4ade80';
+  const lbl = score >= 5 ? '高リスク' : score >= 3 ? '中リスク' : score >= 1 ? '低リスク' : 'リスクなし';
+  setTimeout(() => {
+    outEl.innerHTML = `<span style="color:#8b949e;">返り値 =</span> <span style="color:${col};font-size:1.05rem;">${score}点</span> <span style="color:${col};">→ ${lbl}</span>`;
+  }, steps.length * 280 + 100);
+}
+
+/* ── Demo 2: リスク計算ライブラリ ─ */
+const mkJudge = (name, thr) => v => ({
+  name, value: v, ok: v < thr,
+  msg: v == null ? `${name}: 未入力` : `${name}: ${v} ${v >= thr ? '🔴' : '✅'}`
+});
+const judgesLib = [
+  { fn: mkJudge('HbA1c(%)', 7.0),   key: 'hba1c' },
+  { fn: mkJudge('BMI',      25.0),   key: 'bmi' },
+  { fn: mkJudge('血圧(mmHg)', 140),  key: 'bp' },
+];
+function runLib() {
+  const name  = document.getElementById('lib-name').value.trim() || '患者';
+  const age   = parseFloat(document.getElementById('lib-age').value);
+  const hba1c = parseFloat(document.getElementById('lib-hba1c').value);
+  const bmi   = parseFloat(document.getElementById('lib-bmi').value);
+  const bp    = parseFloat(document.getElementById('lib-bp').value);
+  const vals  = { hba1c, bmi, bp };
+  const results = judgesLib.map(j => j.fn(isNaN(vals[j.key]) ? null : vals[j.key]));
+  const alertN  = results.filter(r => !r.ok && r.value != null).length;
+  const score   = results.reduce((s,r) => s + (r.ok || r.value==null ? 0 : 1), 0);
+  const overallColor = score >= 3 ? '#f87171' : score >= 2 ? '#fbbf24' : score >= 1 ? '#60a5fa' : '#4ade80';
+  const overallLabel = score >= 3 ? '高リスク' : score >= 2 ? '中リスク' : score >= 1 ? '要注意' : '良好';
+  const out = document.getElementById('lib-out');
+  out.innerHTML = `
+    <div style="background:#1a2332;border:1px solid #30363d;border-radius:6px;padding:.6rem .9rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;">
+      <div style="color:#d2a8ff;font-weight:700;margin-bottom:.4rem;">${name} ${isNaN(age)?'':age+'歳'} — 判定結果</div>
+      ${results.map(r=>`<div style="color:${r.value==null?'#8b949e':r.ok?'#4ade80':'#fbbf24'};">${r.msg}</div>`).join('')}
+      <div style="margin-top:.5rem;padding-top:.4rem;border-top:1px solid #30363d;color:${overallColor};font-weight:700;">総合: ${score}項目要管理 → ${overallLabel}</div>
+    </div>`;
+}
+</script>
+</body>
+</html>

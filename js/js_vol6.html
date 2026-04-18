@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はじめてのJavaScript Vol.6 ― 非同期処理・API連携</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0F172A;
+  --blue:   #3B82F6;
+  --cyan:   #06B6D4;
+  --purple: #8B5CF6;
+  --pink:   #EC4899;
+  --white:  #FFFFFF;
+  --slate:  #1E293B;
+  --js:     #F7DF1E;
+  --code-bg: #010409;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body { width:100%; height:100%; background:#020617; font-family:'Noto Sans JP',sans-serif; overflow:hidden; }
+
+.deck { width:100vw; height:100vh; position:relative; overflow:hidden; }
+.slide {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  padding:2.5rem 4rem; opacity:0; pointer-events:none;
+  transition:opacity .5s ease, transform .5s ease;
+  transform:scale(0.98);
+}
+.slide.active { opacity:1; pointer-events:all; transform:scale(1); }
+
+/* Themes */
+.slide-dark  { background:var(--navy); color: var(--white); }
+.slide-light { background:var(--white); color: var(--slate); }
+.slide-code  { background:var(--code-bg); color: #e6edf3; }
+.slide-quiz  { background:#1e1b4b; color: var(--white); }
+
+.stitle { font-size:clamp(1.5rem, 3.2vw, 2.2rem); font-weight:900; line-height:1.2; margin-bottom:1.5rem; border-left:8px solid var(--cyan); padding-left:1.2rem; }
+.tag { display:inline-block; font-size:.75rem; font-weight:700; padding:4px 12px; border-radius:4px; margin-bottom:1rem; align-self:flex-start; }
+.tag-cyan { background:var(--cyan); color: #000; }
+.tag-purple { background:var(--purple); color: #fff; }
+
+/* Code Block */
+.cb { background:#0d1117; border-radius:12px; border:1px solid #30363d; font-family:'JetBrains Mono',monospace; margin-bottom: 1.2rem; }
+.cb-body { padding:1.2rem; overflow-x:auto; font-size:.9rem; line-height:1.6; }
+.kw { color:#ff7b72; } .fn { color:#d2a8ff; } .str { color:#a5d6ff; } .num { color:#79c0ff; } .op { color:#ff7b72; }
+
+/* Visual Components */
+.wait-box { border: 2px dashed var(--cyan); border-radius:10px; padding:1.5rem; text-align:center; position:relative; }
+.loading-spinner { width:40px; height:40px; border:4px solid rgba(6,182,212,0.1); border-top:4px solid var(--cyan); border-radius:50%; animation:spin 1s linear infinite; margin:10px auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.g2 { display:grid; grid-template-columns: 1fr 1fr; gap:2rem; }
+ul.bl li { padding:.5rem 0 .5rem 1.8rem; position:relative; list-style:none; }
+ul.bl li::before { content:'▶'; position:absolute; left:0; color:var(--cyan); }
+
+.qbtn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; padding:1.2rem; cursor:pointer; text-align:left; transition:0.2s; }
+.qbtn:hover { background:rgba(255,255,255,0.15); border-color:var(--cyan); }
+.correct { background:#059669 !important; border-color:#059669 !important; }
+.wrong { background:#dc2626 !important; border-color:#dc2626 !important; }
+
+#nav { position:fixed; bottom:1.5rem; right:2.5rem; display:flex; align-items:center; gap:1.2rem; z-index:9999; }
+.nbtn { background:var(--cyan); color:#000; border:none; width:50px; height:50px; border-radius:50%; cursor:pointer; font-size:1.4rem; font-weight:bold; display:flex; align-items:center; justify-content:center; }
+.npage { color:#64748b; font-family:'JetBrains Mono'; font-weight:700; }
+
+@keyframes fadeInUp { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+.slide.active .an { animation:fadeInUp .4s ease both; }
+.slide.active .an:nth-child(1){animation-delay:.1s}
+.slide.active .an:nth-child(2){animation-delay:.2s}
+.slide.active .an:nth-child(3){animation-delay:.3s}
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <section class="slide slide-dark active">
+    <div style="margin:auto; text-align:center;">
+      <div class="tag tag-cyan an">JavaScript Vol.6</div>
+      <h1 style="font-size:3.5rem; font-weight:900;" class="an">非同期処理とAPI連携</h1>
+      <p style="font-size:1.4rem; opacity:0.8; margin-top:1.5rem;" class="an">〜「待ち時間」をスマートに扱う〜</p>
+      <div style="width:100px; height:4px; background:var(--cyan); margin:2rem auto;" class="an"></div>
+    </div>
+  </section>
+
+  <section class="slide slide-light">
+    <div class="tag tag-cyan an">Concept</div>
+    <h2 class="stitle an">なぜ「非同期」が必要か？</h2>
+    <p class="an">通常のプログラムは、1つずつ順番に処理が終わるのを待ちます。しかし...</p>
+    <div class="g2 an" style="margin-top:2rem;">
+      <div style="background:#f1f5f9; padding:1.5rem; border-radius:12px;">
+        <h3 style="color:var(--slate);">同期処理（通常）</h3>
+        <p style="font-size:0.9rem;">通信が終わるまで画面がフリーズ。ユーザーは何も操作できません。</p>
+      </div>
+      <div style="background:#ecfeff; padding:1.5rem; border-radius:12px; border:2px solid var(--cyan);">
+        <h3 style="color:var(--cyan);">非同期処理</h3>
+        <p style="font-size:0.9rem;">通信の完了を待ちつつ、画面の他の操作を可能にします。裏側で処理を進めるイメージです。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide slide-dark">
+    <div class="tag tag-purple an">API</div>
+    <h2 class="stitle an">APIとは何か？</h2>
+    <p class="an">Application Programming Interface。簡単に言うと、<b>「外部サーバーにあるデータや機能を使わせてもらうための窓口」</b>です。</p>
+    <ul class="bl an" style="margin-top:2rem;">
+      <li>「郵便番号を送ると、住所を返してくれる」</li>
+      <li>「緯度経度を送ると、今の天気を返してくれる」</li>
+    </ul>
+    <p class="an" style="margin-top:1rem; color:var(--cyan);">現代のWebアプリは、これらを組み合わせて作られています。</p>
+  </section>
+
+  <section class="slide slide-code">
+    <div class="tag tag-cyan an">Basic</div>
+    <h2 class="stitle an">Promise（約束）</h2>
+    <p class="an">非同期処理の結果を「将来返すこと」を約束するオブジェクトです。</p>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="cm">// 3つの状態があります</span>
+<span class="num">1.</span> Pending   (保留中：処理が終わるのを待っている)
+<span class="num">2.</span> Fulfilled (成功：約束を果たした)
+<span class="num">3.</span> Rejected  (失敗：エラーが起きた)</code></div>
+    </div>
+    <p class="an" style="font-size:0.9rem;">昔はこの <code>.then()</code> を繋げて書いていましたが、今はもっと良い書き方があります。</p>
+  </section>
+
+  <section class="slide slide-light">
+    <div class="tag tag-cyan an">Modern JS</div>
+    <h2 class="stitle an">async / await の基本</h2>
+    <p class="an">非同期処理を「まるで上から下に順番に動いている」かのように書ける魔法の構文です。</p>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="kw">async function</span> <span class="fn">fetchData</span>() {
+  <span class="kw">const</span> result = <span class="kw">await</span> 処理; <span class="cm">// 終わるまでここで一時停止</span>
+  console.<span class="fn">log</span>(result);      <span class="cm">// 終わってから実行される</span>
+}</code></div>
+    </div>
+    <ul class="bl an">
+      <li><code>await</code> を使う関数には <code>async</code> を付けます。</li>
+    </ul>
+  </section>
+
+  <section class="slide slide-code">
+    <div class="tag tag-cyan an">Fetch</div>
+    <h2 class="stitle an">データを取得する fetch()</h2>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="kw">async function</span> <span class="fn">getWeather</span>() {
+  <span class="cm">// 1. サーバーにリクエストを送る</span>
+  <span class="kw">const</span> response = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">"https://api.example.com/weather"</span>);
+  
+  <span class="cm">// 2. レスポンスをJSON形式に変換する</span>
+  <span class="kw">const</span> data = <span class="kw">await</span> response.<span class="fn">json</span>();
+  
+  console.<span class="fn">log</span>(data);
+}</code></div>
+    </div>
+    <p class="an" style="color:var(--cyan);"><code>fetch</code> と <code>.json()</code>、どちらも時間がかかるので <code>await</code> が必要です。</p>
+  </section>
+
+  <section class="slide slide-dark">
+    <div class="tag tag-cyan an">Practice</div>
+    <h2 class="stitle an">実践：PubMed風検索（イメージ）</h2>
+    <div class="cb an">
+      <div class="cb-body" style="font-size:0.85rem;"><code><span class="kw">async function</span> <span class="fn">searchArticles</span>(keyword) {
+  <span class="kw">const</span> url = <span class="str">`https://api.pubmed.example/search?term=<span class="op">${</span>keyword<span class="op">}</span>`</span>;
+  
+  <span class="kw">try</span> {
+    <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(url);
+    <span class="kw">const</span> results = <span class="kw">await</span> res.<span class="fn">json</span>();
+    <span class="fn">renderList</span>(results);
+  } <span class="kw">catch</span> (error) {
+    console.<span class="fn">error</span>(<span class="str">"通信に失敗しました"</span>, error);
+  }
+}</code></div>
+    </div>
+  </section>
+
+  <section class="slide slide-light">
+    <div class="tag tag-purple an">Try-Catch</div>
+    <h2 class="stitle an">try...catch：失敗への備え</h2>
+    <p class="an">インターネット通信は必ずしも成功しません。失敗した時の処理を必ず書きます。</p>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="kw">try</span> {
+  <span class="cm">// 成功するはずの処理</span>
+  <span class="kw">const</span> data = <span class="kw">await</span> <span class="fn">fetch</span>(...);
+} <span class="kw">catch</span> (err) {
+  <span class="cm">// ネットワークエラーなどが起きた時にここに来る</span>
+  alert(<span class="str">"データの取得に失敗しました"</span>);
+}</code></div>
+    </div>
+  </section>
+
+  <section class="slide slide-light">
+    <div class="tag tag-cyan an">UX</div>
+    <h2 class="stitle an">「ロード中」を表示する</h2>
+    <p class="an">通信がいつ終わるかユーザーは不安です。視覚的なフィードバックを与えましょう。</p>
+    <div class="cb an">
+      <div class="cb-body"><code>loadingElement.style.display = <span class="str">"block"</span>; <span class="cm">// 表示</span>
+
+<span class="kw">await</span> <span class="fn">fetchData</span>(); <span class="cm">// 通信</span>
+
+loadingElement.style.display = <span class="str">"none"</span>;  <span class="cm">// 消去</span></code></div>
+    </div>
+    <div class="wait-box an" style="margin-top:1rem;">
+      <div class="loading-spinner"></div>
+      <p style="font-size:0.8rem; color:var(--cyan);">読み込み中...</p>
+    </div>
+  </section>
+
+  <section class="slide slide-quiz">
+    <div class="tag tag-purple an">Quiz</div>
+    <h2 class="stitle an">awaitのルール</h2>
+    <p class="an" style="margin-bottom:2rem;"><code>await</code> を使う際に、その外側の関数に付ける必要があるキーワードは？</p>
+    <div class="g2 an">
+      <button class="qbtn" onclick="check(this, true, 1)">A: async</button>
+      <button class="qbtn" onclick="check(this, false, 1)">B: wait</button>
+      <button class="qbtn" onclick="check(this, false, 1)">C: promise</button>
+      <button class="qbtn" onclick="check(this, false, 1)">D: timeout</button>
+    </div>
+    <p id="q1-fb" style="margin-top:1.5rem; font-weight:bold; min-height:1.5rem;"></p>
+  </section>
+
+  <section class="slide slide-code">
+    <div class="tag tag-cyan an">Data Format</div>
+    <h2 class="stitle an">JSON形式とは？</h2>
+    <p class="an">JavaScriptのオブジェクトそっくりのデータ形式です。世界中で使われています。</p>
+    <div class="cb an">
+      <div class="cb-body"><code>{
+  <span class="str">"id"</span>: <span class="num">101</span>,
+  <span class="str">"name"</span>: <span class="str">"Acinetobacter"</span>,
+  <span class="str">"type"</span>: [<span class="str">"Gram-negative"</span>, <span class="str">"Coccobacilli"</span>]
+}</code></div>
+    </div>
+    <p class="an" style="font-size:0.9rem;">キーも値も <code>" "</code> (ダブルクォート) で囲むのがルールです。</p>
+  </section>
+
+  <section class="slide slide-dark">
+    <div class="tag tag-purple an">DevTools</div>
+    <h2 class="stitle an">開発者ツールの「Network」</h2>
+    <p class="an">通信の様子は、ブラウザのデベロッパーツールで丸見えです。</p>
+    <ul class="bl an" style="margin-top:1rem;">
+      <li>どのURLに送ったか？</li>
+      <li>どんなデータが返ってきたか？</li>
+      <li>何秒かかったか？</li>
+    </ul>
+    <p class="an" style="margin-top:1rem; border:1px solid #444; padding:1rem; border-radius:8px; font-size:0.85rem;">F12キーを押して「Network」タブを開き、Fetch/XHR フィルタを確認する習慣をつけましょう。</p>
+  </section>
+
+  <section class="slide slide-light">
+    <div class="tag tag-cyan an">Advanced</div>
+    <h2 class="stitle an">タイムアウトの設定</h2>
+    <p class="an">あまりに遅い通信は、途中で諦める設定が必要です。</p>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="kw">const</span> controller = <span class="kw">new</span> <span class="fn">AbortController</span>();
+<span class="fn">setTimeout</span>(() => controller.<span class="fn">abort</span>(), <span class="num">5000</span>); <span class="cm">// 5秒で中断</span>
+
+<span class="kw">try</span> {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(url, { signal: controller.signal });
+} <span class="kw">catch</span>(e) { ... }</code></div>
+    </div>
+  </section>
+
+  <section class="slide slide-code">
+    <div class="tag tag-cyan an">Syntax</div>
+    <h2 class="stitle an">URLパラメータを作る</h2>
+    <p class="an">検索条件をURLに含める正しい作り方です。</p>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="kw">const</span> params = <span class="kw">new</span> <span class="fn">URLSearchParams</span>({
+  apiKey: <span class="str">"12345"</span>,
+  city: <span class="str">"osaka"</span>,
+  lang: <span class="str">"ja"</span>
+});
+
+<span class="kw">const</span> fullUrl = <span class="str">"https://api.com/v1?"</span> + params.<span class="fn">toString</span>();</code></div>
+    </div>
+    <p class="an">スペースや日本語が含まれても、自動的に「安全なURL用文字列」に変換してくれます。</p>
+  </section>
+
+  <section class="slide slide-light">
+    <div class="tag tag-cyan an">Optimization</div>
+    <h2 class="stitle an">並列実行（Promise.all）</h2>
+    <p class="an">2つのデータを取得する際、1つずつ待つより同時に送った方が速いです。</p>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="cm">// 同時にスタート！</span>
+<span class="kw">const</span> [user, post] = <span class="kw">await</span> Promise.<span class="fn">all</span>([
+  <span class="fn">fetch</span>(<span class="str">"/user"</span>).<span class="fn">then</span>(r => r.<span class="fn">json</span>()),
+  <span class="fn">fetch</span>(<span class="str">"/post"</span>).<span class="fn">then</span>(r => r.<span class="fn">json</span>())
+]);</code></div>
+    </div>
+    <p class="an">どちらも完了したタイミングで結果が返ってきます。</p>
+  </section>
+
+  <section class="slide slide-dark">
+    <div class="tag tag-purple an">Security</div>
+    <h2 class="stitle an">APIキーの扱い</h2>
+    <p class="an">多くのAPIは「APIキー（合言葉）」を必要とします。</p>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="fn">fetch</span>(url, {
+  headers: {
+    <span class="str">"Authorization"</span>: <span class="str">"Bearer YOUR_API_KEY"</span>
+  }
+});</code></div>
+    </div>
+    <p class="an" style="color:var(--pink); font-weight:bold;">※ APIキーをGitHubなどにそのまま公開してはいけません！</p>
+  </section>
+
+  <section class="slide slide-code">
+    <div class="tag tag-cyan an">Methods</div>
+    <h2 class="stitle an">データを送る（POST送信）</h2>
+    <p class="an">取得(GET)ではなく、サーバーに情報を保存(POST)する時の書き方です。</p>
+    <div class="cb an">
+      <div class="cb-body" style="font-size:0.8rem;"><code><span class="fn">fetch</span>(url, {
+  method: <span class="str">"POST"</span>,
+  headers: { <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span> },
+  body: JSON.<span class="fn">stringify</span>({ name: <span class="str">"金子"</span>, score: <span class="num">100</span> })
+});</code></div>
+    </div>
+  </section>
+
+  <section class="slide slide-light">
+    <div class="tag tag-purple an">Troubleshooting</div>
+    <h2 class="stitle an">最大の敵：CORSエラー</h2>
+    <p class="an">セキュリティ上の理由で、ブラウザが勝手なサイト間通信をブロックすることがあります。</p>
+    <div style="background:#fef2f2; border-left:4px solid #ef4444; padding:1rem; margin-top:1rem;">
+      <p style="color:#b91c1c; font-size:0.85rem;">Access to fetch at '...' from origin '...' has been blocked by CORS policy...</p>
+    </div>
+    <p class="an" style="margin-top:1rem; font-size:0.9rem;">これは「サーバー側の設定」で許可されていないと解決できません。自作サーバーの場合は注意が必要です。</p>
+  </section>
+
+  <section class="slide slide-quiz">
+    <div class="tag tag-purple an">Quiz</div>
+    <h2 class="stitle an">JSONの扱い</h2>
+    <p class="an" style="margin-bottom:2rem;">JavaScriptのオブジェクトを、送信用の「JSON文字列」に変換するメソッドは？</p>
+    <div class="g2 an">
+      <button class="qbtn" onclick="check(this, false, 2)">A: JSON.parse()</button>
+      <button class="qbtn" onclick="check(this, true, 2)">B: JSON.stringify()</button>
+      <button class="qbtn" onclick="check(this, false, 2)">C: JSON.toString()</button>
+      <button class="qbtn" onclick="check(this, false, 2)">D: JSON.encode()</button>
+    </div>
+    <p id="q2-fb" style="margin-top:1.5rem; font-weight:bold; min-height:1.5rem;"></p>
+  </section>
+
+  <section class="slide slide-dark">
+    <div class="tag tag-cyan an">Library</div>
+    <h2 class="stitle an">Axios (アキシオス)</h2>
+    <p class="an"><code>fetch</code> をもっと便利に使いやすくしたライブラリです。現場ではよく使われます。</p>
+    <div class="cb an">
+      <div class="cb-body"><code><span class="kw">const</span> res = <span class="kw">await</span> axios.<span class="fn">get</span>(url);
+console.<span class="fn">log</span>(res.data); <span class="cm">// 最初からパースされている！</span></code></div>
+    </div>
+  </section>
+
+  <section class="slide slide-light">
+    <div class="tag tag-cyan an">Review</div>
+    <h2 class="stitle an">まとめ：非同期処理の流れ</h2>
+    <ul class="bl an">
+      <li><strong>async / await</strong> をセットで使うのが基本。</li>
+      <li><strong>fetch()</strong> で通信し、<strong>.json()</strong> でデータ化する。</li>
+      <li>どちらも時間がかかるので <code>await</code> を付ける。</li>
+      <li>失敗に備えて <strong>try...catch</strong> で囲む。</li>
+    </ul>
+  </section>
+
+  <section class="slide slide-code">
+    <div class="tag tag-cyan an">Advice</div>
+    <h2 class="stitle an">開発効率を上げるコツ</h2>
+    <ul class="bl an">
+      <li><strong>ダミーデータを用意する</strong>: 通信がなくても開発できるよう <code>const dummy = {...}</code> を作っておく。</li>
+      <li><strong>console.log(data)</strong>: 取得した中身の階層（配列かオブジェクトか）を必ず確認する。</li>
+    </ul>
+  </section>
+
+  <section class="slide slide-dark">
+    <div class="tag tag-purple an">Next Steps</div>
+    <h2 class="stitle an">何が作れるようになる？</h2>
+    <ul class="bl an">
+      <li>世界中の最新天気予報を表示するサイト。</li>
+      <li>Google Mapsを使った場所検索アプリ。</li>
+      <li>ChatGPT APIを使った自動応答ボット。</li>
+    </ul>
+    <p class="an" style="margin-top:1rem; color:var(--cyan);">夢が広がりますね！</p>
+  </section>
+
+  <section class="slide slide-quiz">
+    <div class="tag tag-purple an">Self Check</div>
+    <h2 class="stitle an">理解度は？</h2>
+    <div class="qopts an" style="display:flex; flex-direction:column; gap:0.8rem;">
+      <button class="qbtn" onclick="this.classList.add('correct')">async/await はなんとなく分かった！</button>
+      <button class="qbtn" onclick="this.classList.add('correct')">fetchでデータを取る仕組みが見えてきた</button>
+      <button class="qbtn" onclick="this.classList.add('correct')">JSONの構造がまだ少し不安</button>
+    </div>
+  </section>
+
+  <section class="slide slide-dark">
+    <div style="margin:auto; text-align:center;">
+      <h2 style="font-size:3.5rem; font-weight:900;" class="an">Congratulations!</h2>
+      <p class="an" style="margin-top:1.5rem; opacity:.8;">Vol.6 非同期処理・API連携 完了</p>
+      <div style="margin-top:3rem;">
+        <button class="nbtn" style="width:auto; padding:0 3rem; border-radius:30px;" onclick="go(-24)">最初に戻る</button>
+      </div>
+      <p class="an" style="margin-top:2rem; font-size:.9rem; color:#64748b;">お疲れ様でした。これでJavaScriptの主要な扉はすべて開けました！</p>
+    </div>
+  </section>
+
+  <nav id="nav">
+    <button class="nbtn" onclick="go(-1)">←</button>
+    <span class="npage" id="page-idx">1 / 25</span>
+    <button class="nbtn" onclick="go(1)">→</button>
+  </nav>
+
+</div>
+
+<script>
+let cur = 0;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+
+function go(n) {
+  const next = Math.max(0, Math.min(total - 1, cur + n));
+  if (next === cur) return;
+  
+  slides[cur].classList.remove('active');
+  cur = next;
+  slides[cur].classList.add('active');
+  
+  document.getElementById('page-idx').textContent = `${cur + 1} / ${total}`;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') go(1);
+  if (e.key === 'ArrowLeft') go(-1);
+});
+
+function check(btn, isCorrect, qid) {
+  const fb = document.getElementById(`q${qid}-fb`);
+  const opts = btn.parentElement.querySelectorAll('.qbtn');
+  opts.forEach(b => b.disabled = true);
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    fb.textContent = "✅ 正解！ async/awaitの概念を完璧に把握しています。";
+    fb.style.color = "var(--cyan)";
+  } else {
+    btn.classList.add('wrong');
+    fb.textContent = "❌ 残念！ 非同期関数を定義するキーワードを見直しましょう。";
+    fb.style.color = "#fb7185";
+  }
+}
+</script>
+</body>
+</html>

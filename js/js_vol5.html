@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はじめてのJavaScript Vol.5 ― DOM・イベント</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:#0A2342; --teal:#1B6CA8; --ltblue:#E8F1FA; --amber:#E8873A;
+  --gray:#64748B; --lgray:#F0F4F8; --red:#C0392B; --green:#1A7A4A;
+  --text:#1E293B; --white:#FFFFFF; --js:#F7DF1E; --jsdark:#b59a00;
+}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+html,body{width:100%;height:100%;background:#0a0f1a;font-family:'Noto Sans JP',sans-serif;overflow:hidden;}
+.deck{width:100vw;height:100vh;position:relative;overflow:hidden;}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:2.2rem 3rem 1.8rem;opacity:0;pointer-events:none;transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);transform:translateX(60px);}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0);}
+.slide.prev{opacity:0;transform:translateX(-60px);}
+.slide-dark{background:var(--navy);} .slide-light{background:var(--white);} .slide-card{background:var(--lgray);} .slide-code{background:#0d1117;} .slide-quiz{background:#12100a;}
+.slide-dark::before,.slide-code::before,.slide-quiz::before{content:'';position:absolute;left:0;top:0;width:6px;height:100%;}
+.slide-dark::before{background:var(--amber);} .slide-code::before{background:var(--js);} .slide-quiz::before{background:#a855f7;}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.08em;padding:3px 12px;border-radius:2px;color:#fff;margin-bottom:.5rem;align-self:flex-start;}
+.tag-teal{background:var(--teal);} .tag-amber{background:var(--amber);} .tag-js{background:var(--jsdark);} .tag-purple{background:#7c3aed;} .tag-green{background:var(--green);} .tag-red{background:var(--red);}
+.stitle{font-size:clamp(1.35rem,2.8vw,2rem);font-weight:900;line-height:1.2;margin-bottom:1rem;border-left:5px solid var(--amber);padding-left:.7rem;}
+.slide-dark .stitle{color:var(--white);border-color:var(--amber);}
+.slide-light .stitle{color:var(--navy);border-color:var(--amber);}
+.slide-card .stitle{color:var(--navy);border-color:var(--amber);}
+.slide-code .stitle{color:var(--white);border-color:var(--js);}
+.slide-quiz .stitle{color:var(--white);border-color:#a855f7;}
+.title-main{font-size:clamp(2.5rem,6.5vw,4.8rem);font-weight:900;color:var(--white);letter-spacing:-.02em;line-height:1.05;text-align:center;}
+.title-vol{display:inline-block;background:var(--jsdark);color:#1a1a00;padding:2px 16px;border-radius:4px;font-size:clamp(.85rem,1.8vw,1.1rem);font-weight:900;letter-spacing:.06em;margin-bottom:.6rem;}
+.title-sub{font-size:clamp(.85rem,1.6vw,1.05rem);color:rgba(255,255,255,.55);text-align:center;margin-top:.7rem;line-height:1.7;}
+.title-rule{width:240px;height:2px;background:var(--teal);margin:1rem auto;}
+.title-author{text-align:center;color:rgba(255,255,255,.4);font-size:.78rem;margin-top:auto;padding-bottom:.3rem;}
+.cb{background:#0d1117;border-radius:6px;overflow:hidden;font-family:'JetBrains Mono',monospace;box-shadow:0 4px 20px rgba(0,0,0,.45);}
+.cb-head{display:flex;align-items:center;gap:.45rem;padding:.45rem 1rem;background:#161b22;border-bottom:1px solid #30363d;}
+.dot{width:11px;height:11px;border-radius:50%;}
+.cb-lang{font-size:.7rem;color:#8b949e;letter-spacing:.06em;margin-left:auto;}
+.cb-body{padding:.85rem 1.2rem;overflow-x:auto;font-size:.8rem;line-height:1.75;}
+.cb-body code{color:#e6edf3;white-space:pre;}
+.kw{color:#ff7b72;} .fn{color:#d2a8ff;} .str{color:#a5d6ff;} .num{color:#79c0ff;} .cm{color:#8b949e;font-style:italic;} .op{color:#ff7b72;} .vr{color:#ffa657;} .tg{color:#7ee787;} .atr{color:#79c0ff;}
+.row{display:flex;align-items:stretch;background:var(--white);border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;margin-bottom:.55rem;}
+.row-lbl{min-width:2.6rem;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;padding:0 .7rem;white-space:nowrap;}
+.row-body{padding:.5rem .85rem;font-size:.84rem;color:var(--text);line-height:1.55;}
+.row-body strong{color:var(--navy);}
+.row-body code{font-family:'JetBrains Mono',monospace;font-size:.78rem;background:#f0f4f8;padding:1px 5px;border-radius:3px;color:#c0392b;}
+.cr{display:flex;align-items:stretch;border-radius:6px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.12);margin-bottom:.6rem;}
+.cr-lbl{min-width:110px;padding:.65rem .8rem;font-size:.8rem;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;}
+.cr-arr{background:#f0f4f8;display:flex;align-items:center;justify-content:center;padding:0 .5rem;color:var(--gray);font-size:1rem;}
+.cr-body{flex:1;background:var(--white);padding:.65rem .9rem;font-size:.83rem;color:var(--text);line-height:1.55;}
+.cr-body strong{color:var(--navy);}
+.cr-body code{font-family:'JetBrains Mono',monospace;font-size:.78rem;background:#f0f4f8;padding:1px 5px;border-radius:3px;color:#c0392b;}
+.card-dark{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:.75rem 1rem;}
+.card-warn{background:#FFF3E0;border-radius:6px;padding:.65rem 1rem;}
+.card-blue{background:var(--ltblue);border-radius:6px;padding:.65rem 1rem;}
+.card-green{background:#ECFDF5;border-radius:6px;padding:.65rem 1rem;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;}
+.fx{display:flex;gap:.85rem;}
+ul.bl{list-style:none;}
+ul.bl li{padding:.26rem 0 .26rem 1.3rem;position:relative;font-size:.85rem;color:var(--text);line-height:1.55;}
+ul.bl li::before{content:'▸';position:absolute;left:0;color:var(--teal);font-size:.8rem;}
+.slide-dark ul.bl li{color:#e2e8f0;} .slide-dark ul.bl li::before{color:var(--amber);}
+.slide-code ul.bl li{color:#e2e8f0;} .slide-code ul.bl li::before{color:var(--js);}
+ul.bl li code{font-family:'JetBrains Mono',monospace;font-size:.76rem;background:rgba(255,255,255,.12);padding:1px 5px;border-radius:3px;color:#a5d6ff;}
+.slide-light ul.bl li code,.slide-card ul.bl li code{background:#f0f4f8;color:#c0392b;}
+.sumi{display:flex;align-items:stretch;background:var(--white);border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.08);overflow:hidden;margin-bottom:.75rem;}
+.sumi-num{min-width:54px;display:flex;align-items:center;justify-content:center;font-size:1.35rem;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace;}
+.sumi-body{padding:.65rem .95rem;font-size:.85rem;line-height:1.6;color:var(--text);}
+.quiz-q{font-size:clamp(.92rem,1.9vw,1.2rem);font-weight:700;color:#e2e8f0;margin-bottom:1.2rem;line-height:1.5;text-align:center;}
+.qopts{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;max-width:680px;margin:0 auto;}
+.qbtn{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.13);color:#e2e8f0;border-radius:8px;padding:.82rem 1.05rem;font-family:'Noto Sans JP',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;text-align:left;line-height:1.45;transition:background .2s,border-color .2s,transform .15s;}
+.qbtn:hover{background:rgba(168,85,247,.22);border-color:#a855f7;transform:translateY(-2px);}
+.qbtn.correct{background:rgba(26,122,74,.35);border-color:#4ade80;color:#4ade80;}
+.qbtn.wrong{background:rgba(192,57,43,.25);border-color:#f87171;color:#f87171;}
+.qbtn:disabled{cursor:default;}
+.qfb{text-align:center;margin-top:.9rem;font-size:.88rem;font-weight:700;min-height:1.4rem;opacity:0;transition:opacity .3s;line-height:1.5;}
+.qfb.show{opacity:1;}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.8rem;background:#161b22;border:1px solid #30363d;color:#ffa657;padding:2px 8px;border-radius:4px;}
+.pill-l{font-family:'JetBrains Mono',monospace;font-size:.8rem;background:#f0f4f8;border:1px solid #dde3ea;color:#c0392b;padding:2px 8px;border-radius:4px;}
+/* DOM tree */
+.dom-node{font-family:'JetBrains Mono',monospace;font-size:.76rem;padding:.3rem .6rem;border-radius:4px;margin-bottom:.3rem;border-left:3px solid transparent;transition:background .3s,border-color .3s;}
+.dom-node.hl{background:rgba(247,223,30,.15);border-color:var(--js);}
+.dom-tree-line{color:#30363d;margin-right:.4rem;}
+/* event badge */
+.ev-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:4px;margin:.15rem .2rem;}
+.ev-mouse{background:#1a2d1a;color:#4ade80;border:1px solid #4ade80;}
+.ev-kb{background:#1a1a2d;color:#79c0ff;border:1px solid #79c0ff;}
+.ev-form{background:#2d1a1a;color:#ffa657;border:1px solid #ffa657;}
+.ev-page{background:#2d1a2d;color:#d2a8ff;border:1px solid #d2a8ff;}
+.hl{text-align:center;font-size:.92rem;font-weight:700;font-style:italic;color:var(--teal);margin-top:auto;padding-top:.7rem;}
+.slide-dark .hl{color:var(--amber);} .slide-code .hl{color:var(--js);} .slide-quiz .hl{color:#a855f7;}
+.next-card{background:var(--navy);border-radius:8px;padding:.8rem 1.2rem;border-left:4px solid var(--amber);}
+.next-card-title{font-size:.8rem;color:var(--amber);font-weight:700;margin-bottom:.3rem;}
+.next-card-body{font-size:.84rem;color:#e2e8f0;line-height:1.65;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.slide.active .an{animation:fadeUp .5s ease both;}
+.slide.active .an:nth-child(1){animation-delay:.05s} .slide.active .an:nth-child(2){animation-delay:.12s}
+.slide.active .an:nth-child(3){animation-delay:.19s} .slide.active .an:nth-child(4){animation-delay:.26s}
+.slide.active .an:nth-child(5){animation-delay:.33s} .slide.active .an:nth-child(6){animation-delay:.40s}
+.slide.active .an:nth-child(7){animation-delay:.47s} .slide.active .an:nth-child(8){animation-delay:.54s}
+#nav{position:fixed;bottom:1.2rem;right:1.5rem;display:flex;align-items:center;gap:.7rem;z-index:9999;}
+.nbtn{background:rgba(255,255,255,.13);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22);color:#fff;width:40px;height:40px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s;}
+.nbtn:hover{background:rgba(255,255,255,.28);transform:scale(1.08);}
+#sc{color:rgba(255,255,255,.65);font-size:.76rem;font-family:'JetBrains Mono',monospace;min-width:52px;text-align:center;}
+#bar{position:fixed;bottom:0;left:0;height:3px;background:var(--js);transition:width .35s ease;z-index:9999;}
+#hint{position:fixed;bottom:1.25rem;left:1.5rem;color:rgba(255,255,255,.3);font-size:.67rem;font-family:'JetBrains Mono',monospace;pointer-events:none;}
+.mb1{margin-bottom:.55rem} .small{font-size:.75rem;color:var(--gray);}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- S1: タイトル -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.3rem;">
+    <div class="an" style="background:var(--jsdark);color:#1a1a00;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">はじめてのJavaScript</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 5 / 6</div>
+    <div class="an title-main">DOM・<span style="color:var(--js);">イベント</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">JavaScript で HTML を動かす<br>getElementById・addEventListener・フォーム操作</div>
+  </div>
+  <div class="title-author an">大阪公立大学 医学部 細菌学講座　金子幸弘</div>
+</div>
+
+<!-- S2: Vol.1–4 復習 -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">Vol.1–4 復習</span>
+  <h2 class="stitle an">ここまでのポイント確認</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="row an"><div class="row-lbl" style="background:var(--navy);min-width:5rem;font-size:.7rem;">Vol.1–2</div><div class="row-body">変数・型・演算子・条件分岐・ループ</div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--teal);min-width:5rem;font-size:.7rem;">Vol.3</div><div class="row-body">配列・オブジェクト・map/filter/reduce・JSON</div></div>
+    <div class="row an"><div class="row-lbl" style="background:var(--amber);min-width:5rem;font-size:.7rem;">Vol.4</div><div class="row-body">function宣言・アロー関数・スコープ・クロージャ</div></div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">ここまでのコードは「Console に出力するだけ」だった</span></div>
+      <div class="cb-body" style="font-size:.78rem;"><code><span class="cm">// Vol.1–4 のコード：結果はConsoleにしか出なかった</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"BMI: 22.9"</span>);       <span class="cm">// ← 画面には何も表示されない</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"要管理: 鈴木・佐藤"</span>); <span class="cm">// ← ユーザーには見えない</span>
+
+<span class="cm">// Vol.5 から：結果を HTML に直接書き込む</span>
+<span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"result"</span>).<span class="vr">textContent</span> = <span class="str">"BMI: 22.9"</span>;
+<span class="cm">// ↑ これで画面に「BMI: 22.9」が表示される！</span></code></div>
+    </div>
+  </div>
+  <div class="hl an">今日から「見えて動く」Webツールが作れるようになる</div>
+</div>
+
+<!-- S3: Vol.5 概要 -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-js an">Vol.5 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--navy);">Ch.1<br>DOMとは</div><div class="cr-arr">→</div><div class="cr-body"><strong>HTMLとJSの橋渡し</strong>：DOMツリーの概念・要素の取得（getElementById / querySelector）</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Ch.2<br>DOM操作</div><div class="cr-arr">→</div><div class="cr-body"><strong>要素を読み書きする</strong>：textContent / innerHTML・属性・style・要素の作成・削除<br>🔧 デモ①：DOM操作ステップ可視化</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--amber);">Ch.3<br>イベント</div><div class="cr-arr">→</div><div class="cr-body"><strong>ユーザー操作に反応する</strong>：addEventListener・click / input / keydown<br>イベントオブジェクト・フォームの値を取得</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--green);">Ch.4<br>実践統合</div><div class="cr-arr">→</div><div class="cr-body"><strong>Vol.1–4 の関数 × DOM × イベント</strong>を組み合わせる<br>🔧 デモ②：インタラクティブ問診フォーム（完全動作）</div></div>
+  </div>
+  <div class="card-blue an" style="font-size:.82rem;margin-top:.3rem;">💡 <strong>今日のゴール</strong>：ボタンを押したら結果が画面に表示される。入力値を取得してリアルタイムに判定できる。HTML と JS を繋ぐ全体像をつかむ</div>
+</div>
+
+<!-- S4: DOM とは -->
+<div class="slide slide-dark" id="s4">
+  <span class="tag tag-amber an">Ch.1 — DOM</span>
+  <h2 class="stitle an">DOM ― ブラウザが HTML を「ツリー」として管理する仕組み</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">DOM とは</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">Document Object Model</strong>。ブラウザが HTML を解釈して作る「木構造のオブジェクト」。JS はこのツリーを通じて HTML を読み書きする</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">なぜ重要？</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;">ブラウザ上で「文字を書き換える」「要素を追加する」「色を変える」はすべて DOM 操作。<strong style="color:var(--amber);">このスライドのナビも DOM + JS</strong></div></div>
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">HTML → DOMツリーのイメージ</span></div>
+      <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">/* HTML */</span>                    <span class="cm">/* DOM ツリー */</span>
+<span class="tg">&lt;body&gt;</span>                       document
+  <span class="tg">&lt;div</span> <span class="atr">id=</span><span class="str">"app"</span><span class="tg">&gt;</span>              └── body
+    <span class="tg">&lt;h1&gt;</span>結果<span class="tg">&lt;/h1&gt;</span>                   └── div#app
+    <span class="tg">&lt;p</span> <span class="atr">id=</span><span class="str">"out"</span><span class="tg">&gt;&lt;/p&gt;</span>                  ├── h1 "結果"
+  <span class="tg">&lt;/div&gt;</span>                             └── p#out ""
+<span class="tg">&lt;/body&gt;</span>
+
+<span class="cm">// JS からアクセス</span>
+<span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"out"</span>)  <span class="cm">// p#out を取得</span>
+<span class="fn">document</span>.<span class="fn">querySelector</span>(<span class="str">"#app h1"</span>) <span class="cm">// h1 を取得</span></code></div>
+    </div>
+  </div>
+  <div class="hl an">F12 → Elements タブ = DOMツリーをブラウザでリアルタイムに見られる</div>
+</div>
+
+<!-- S5: 要素の取得 -->
+<div class="slide slide-code" id="s5">
+  <span class="tag tag-js an">Ch.1 — 要素の取得</span>
+  <h2 class="stitle an">要素を取得する ― getElementById と querySelector</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">取得メソッドの使い分け</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ① getElementById ― id で1つ取得（最速・最多用）</span>
+<span class="kw">const</span> <span class="vr">outEl</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"result"</span>);
+
+<span class="cm">// ② querySelector ― CSSセレクタで1つ取得</span>
+<span class="kw">const</span> <span class="vr">btn</span>   = <span class="fn">document</span>.<span class="fn">querySelector</span>(<span class="str">"button"</span>);
+<span class="kw">const</span> <span class="vr">inp</span>   = <span class="fn">document</span>.<span class="fn">querySelector</span>(<span class="str">"#weight"</span>);    <span class="cm">// id</span>
+<span class="kw">const</span> <span class="vr">warn</span>  = <span class="fn">document</span>.<span class="fn">querySelector</span>(<span class="str">".warning"</span>);   <span class="cm">// class</span>
+<span class="kw">const</span> <span class="vr">hba</span>   = <span class="fn">document</span>.<span class="fn">querySelector</span>(<span class="str">"input[type=number]"</span>);
+
+<span class="cm">// ③ querySelectorAll ― 複数取得（NodeList で返る）</span>
+<span class="kw">const</span> <span class="vr">cards</span>  = <span class="fn">document</span>.<span class="fn">querySelectorAll</span>(<span class="str">".patient-card"</span>);
+<span class="vr">cards</span>.<span class="fn">forEach</span>(<span class="vr">card</span> <span class="op">=></span> <span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">card</span>.<span class="vr">textContent</span>));
+
+<span class="cm">// ④ 子要素の中から探す</span>
+<span class="kw">const</span> <span class="vr">form</span>   = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"form"</span>);
+<span class="kw">const</span> <span class="vr">inputs</span> = <span class="vr">form</span>.<span class="fn">querySelectorAll</span>(<span class="str">"input"</span>); <span class="cm">// form内のinputのみ</span>
+
+<span class="cm">// 取得できなかった場合は null → 事前チェックが重要</span>
+<span class="kw">if</span> (<span class="vr">outEl</span>) { <span class="vr">outEl</span>.<span class="vr">textContent</span> = <span class="str">"表示"</span>; }</code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 使い分けの目安</div>
+        <div style="font-size:.77rem;color:#e2e8f0;line-height:1.9;">
+          <code style="color:#a5d6ff;">getElementById</code><br>→ id が決まってる・速い・最多用<br><br>
+          <code style="color:#a5d6ff;">querySelector</code><br>→ class・属性・複合セレクタ<br><br>
+          <code style="color:#a5d6ff;">querySelectorAll</code><br>→ 同じ種類の要素を複数まとめて
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">⚠ null チェックを忘れずに</div>
+        <div style="font-size:.76rem;color:#94a3b8;line-height:1.6;">id が存在しない場合は <code style="color:#a5d6ff;">null</code> が返る。<br><code style="color:#f87171;">null.textContent</code> はエラーになる。<br>取得後は必ず存在確認を</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S6: DOM 読み書き -->
+<div class="slide slide-code" id="s6">
+  <span class="tag tag-js an">Ch.2 — DOM 読み書き</span>
+  <h2 class="stitle an">要素を読み書きする ― textContent / innerHTML / value</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">テキスト・HTML・入力値の読み書き</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="kw">const</span> <span class="vr">p</span>   = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"output"</span>);
+<span class="kw">const</span> <span class="vr">inp</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"weight"</span>);
+
+<span class="cm">// ── 書き込み ─────────────────────────────</span>
+<span class="vr">p</span>.<span class="vr">textContent</span> = <span class="str">"BMI: 22.9"</span>;   <span class="cm">// テキストのみ（XSS安全）</span>
+<span class="vr">p</span>.<span class="vr">innerHTML</span>   = <span class="str">"&lt;strong&gt;BMI: 22.9&lt;/strong&gt;"</span>; <span class="cm">// HTML も書ける</span>
+<span class="vr">p</span>.<span class="vr">innerHTML</span>   = <span class="str">""</span>;             <span class="cm">// 中身を空にする</span>
+
+<span class="cm">// ── 読み取り ─────────────────────────────</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">p</span>.<span class="vr">textContent</span>);    <span class="cm">// 現在のテキストを取得</span>
+<span class="kw">const</span> <span class="vr">w</span> = <span class="fn">parseFloat</span>(<span class="vr">inp</span>.<span class="vr">value</span>); <span class="cm">// input の値（必ず文字列）</span>
+
+<span class="cm">// ── 属性 ──────────────────────────────────</span>
+<span class="vr">inp</span>.<span class="fn">setAttribute</span>(<span class="str">"placeholder"</span>, <span class="str">"体重(kg)"</span>);
+<span class="vr">inp</span>.<span class="fn">getAttribute</span>(<span class="str">"type"</span>);              <span class="cm">// "number"</span>
+<span class="vr">inp</span>.<span class="vr">disabled</span> = <span class="kw">true</span>;                   <span class="cm">// 無効化</span>
+
+<span class="cm">// ── スタイル ───────────────────────────────</span>
+<span class="vr">p</span>.<span class="vr">style</span>.<span class="vr">color</span>      = <span class="str">"#f87171"</span>;   <span class="cm">// 文字色を赤に</span>
+<span class="vr">p</span>.<span class="vr">style</span>.<span class="vr">display</span>    = <span class="str">"none"</span>;      <span class="cm">// 非表示</span>
+<span class="vr">p</span>.<span class="vr">style</span>.<span class="vr">fontWeight</span> = <span class="str">"700"</span>;       <span class="cm">// 太字</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 textContent vs innerHTML</div>
+        <ul class="bl" style="font-size:.78rem;">
+          <li><code>textContent</code>：テキストのみ。タグは文字として表示。<strong style="color:#4ade80;">XSSに安全</strong></li>
+          <li><code>innerHTML</code>：HTMLとして解釈。<strong style="color:#f87171;">ユーザー入力を直接渡すと危険</strong></li>
+          <li>ユーザー入力の表示は必ず <code>textContent</code></li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 classList でクラスを操作</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#e2e8f0;line-height:1.8;">
+          <code style="color:#ffa657;">el.classList.add("active")</code><br>
+          <code style="color:#ffa657;">el.classList.remove("hidden")</code><br>
+          <code style="color:#ffa657;">el.classList.toggle("open")</code><br>
+          <code style="color:#ffa657;">el.classList.contains("error")</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S7: 要素の作成・追加・削除 -->
+<div class="slide slide-light" id="s7">
+  <span class="tag tag-teal an">Ch.2 — 要素の作成</span>
+  <h2 class="stitle an">要素を作って追加・削除する</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">患者カードを動的に生成する</span></div>
+      <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// 要素を作成</span>
+<span class="kw">const</span> <span class="vr">card</span> = <span class="fn">document</span>.<span class="fn">createElement</span>(<span class="str">"div"</span>);
+<span class="vr">card</span>.<span class="vr">className</span>   = <span class="str">"patient-card"</span>;
+<span class="vr">card</span>.<span class="vr">textContent</span> = <span class="str">"山田太郎 | HbA1c: 7.2%"</span>;
+
+<span class="cm">// 親要素に追加</span>
+<span class="kw">const</span> <span class="vr">list</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"patient-list"</span>);
+<span class="vr">list</span>.<span class="fn">appendChild</span>(<span class="vr">card</span>);    <span class="cm">// 末尾に追加</span>
+<span class="vr">list</span>.<span class="fn">prepend</span>(<span class="vr">card</span>);        <span class="cm">// 先頭に追加</span>
+
+<span class="cm">// innerHTML でまとめて生成（患者リストを配列から）</span>
+<span class="kw">const</span> <span class="vr">patients</span> = [
+  { <span class="vr">name</span>:<span class="str">"山田"</span>, <span class="vr">hba1c</span>:<span class="num">6.5</span> },
+  { <span class="vr">name</span>:<span class="str">"鈴木"</span>, <span class="vr">hba1c</span>:<span class="num">8.2</span> },
+];
+<span class="vr">list</span>.<span class="vr">innerHTML</span> = <span class="vr">patients</span>.<span class="fn">map</span>(<span class="vr">p</span> <span class="op">=></span>
+  <span class="str">`&lt;div class="card ${<span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7</span> ? <span class="str">'alert'</span> : <span class="str">'ok'</span>}"&gt;
+    ${<span class="vr">p</span>.<span class="vr">name</span>}: ${<span class="vr">p</span>.<span class="vr">hba1c</span>}%
+  &lt;/div&gt;`</span>
+).<span class="fn">join</span>(<span class="str">""</span>);
+
+<span class="cm">// 要素を削除</span>
+<span class="vr">card</span>.<span class="fn">remove</span>();               <span class="cm">// 要素自身を削除</span>
+<span class="vr">list</span>.<span class="vr">innerHTML</span> = <span class="str">""</span>;         <span class="cm">// 子要素を全消去</span></code></div>
+    </div>
+    <div class="card-blue an" style="font-size:.8rem;margin-top:.3rem;">
+      💡 <strong>innerHTML + map().join("") パターン</strong>：配列データから HTML リストを一気に生成する最もよく使われる手法。Vol.3 の map と組み合わせて使う
+    </div>
+  </div>
+</div>
+
+<!-- S8: 🔧 デモ① DOM操作可視化 -->
+<div class="slide slide-code" id="s8">
+  <span class="tag tag-js an">🔧 ライブデモ①</span>
+  <h2 class="stitle an">DOM操作 ステップ可視化 ― 変化をリアルタイムで見る</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.05;display:flex;flex-direction:column;gap:.5rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.8rem;">
+        <div style="font-size:.74rem;color:#8b949e;font-weight:700;margin-bottom:.5rem;">▶ DOM操作を1つずつ実行する</div>
+        <div style="display:flex;flex-direction:column;gap:.35rem;">
+          <button onclick="domStep(0)" class="dsbtn">① 要素を取得する（getElementById）</button>
+          <button onclick="domStep(1)" class="dsbtn">② テキストを書き込む（textContent）</button>
+          <button onclick="domStep(2)" class="dsbtn">③ スタイルを変える（style.color）</button>
+          <button onclick="domStep(3)" class="dsbtn">④ クラスを追加する（classList.add）</button>
+          <button onclick="domStep(4)" class="dsbtn">⑤ 新しい要素を追加する（appendChild）</button>
+          <button onclick="domStep(5)" class="dsbtn" style="background:#3a1a1a;border-color:#f87171;color:#f87171;">⑥ 要素を削除する（remove）</button>
+          <button onclick="domReset()" class="dsbtn" style="background:#1a2332;border-color:#60a5fa;color:#60a5fa;margin-top:.2rem;">リセット</button>
+        </div>
+      </div>
+      <div id="ds-log" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#8b949e;max-height:80px;overflow-y:auto;line-height:1.7;"></div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.5rem;">
+      <div style="font-size:.74rem;color:#8b949e;font-weight:700;">▶ この要素が変化する</div>
+      <div style="background:#f8fafc;border-radius:8px;padding:1rem;min-height:140px;border:2px solid #e2e8f0;position:relative;">
+        <div id="ds-target" style="font-family:'Noto Sans JP',sans-serif;font-size:.9rem;color:#1e293b;padding:.4rem .6rem;border-radius:5px;font-weight:700;">患者データ</div>
+        <div id="ds-added" style="display:none;margin-top:.5rem;font-size:.8rem;color:var(--teal);padding:.3rem .6rem;background:var(--ltblue);border-radius:5px;">🆕 追加された要素</div>
+        <div style="position:absolute;top:.5rem;right:.6rem;font-size:.65rem;color:#94a3b8;font-family:monospace;">#ds-target</div>
+      </div>
+      <div class="card-dark">
+        <div id="ds-code" style="font-family:'JetBrains Mono',monospace;font-size:.73rem;color:#ffa657;min-height:1.2rem;line-height:1.7;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S9: イベントとは -->
+<div class="slide slide-dark" id="s9">
+  <span class="tag tag-amber an">Ch.3 — イベント</span>
+  <h2 class="stitle an">イベント ― ユーザーの操作に反応する</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">イベントとは</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;">ユーザーが「クリック・入力・スクロール」した瞬間にブラウザが発火させる通知。JS はこれを「リスンして」関数を実行する</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--amber);">医療での例</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;">「判定ボタンを押す」→ HbA1c判定実行<br>「体重を入力する」→ リアルタイムBMI計算<br>「Enter キー」→ フォーム送信</div></div>
+    <div class="an" style="display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;">
+      <span style="font-size:.75rem;color:#8b949e;margin-right:.3rem;">よく使うイベント：</span>
+      <span class="ev-badge ev-mouse">click</span>
+      <span class="ev-badge ev-mouse">dblclick</span>
+      <span class="ev-badge ev-mouse">mouseover</span>
+      <span class="ev-badge ev-kb">keydown</span>
+      <span class="ev-badge ev-kb">keyup</span>
+      <span class="ev-badge ev-form">input</span>
+      <span class="ev-badge ev-form">change</span>
+      <span class="ev-badge ev-form">submit</span>
+      <span class="ev-badge ev-form">focus</span>
+      <span class="ev-badge ev-form">blur</span>
+      <span class="ev-badge ev-page">DOMContentLoaded</span>
+      <span class="ev-badge ev-page">resize</span>
+      <span class="ev-badge ev-page">scroll</span>
+    </div>
+  </div>
+  <div class="hl an">イベント駆動 = 「何かが起きたら何かをする」― Webアプリの根本原理</div>
+</div>
+
+<!-- S10: addEventListener -->
+<div class="slide slide-code" id="s10">
+  <span class="tag tag-js an">Ch.3 — addEventListener</span>
+  <h2 class="stitle an"><span class="pill">addEventListener</span> ― イベントを「聴く」</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">クリック・入力・キーボードイベント</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ① クリック：ボタンを押したら計算する</span>
+<span class="kw">const</span> <span class="vr">btn</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"calcBtn"</span>);
+<span class="vr">btn</span>.<span class="fn">addEventListener</span>(<span class="str">"click"</span>, () <span class="op">=></span> {
+  <span class="kw">const</span> <span class="vr">w</span> = <span class="fn">parseFloat</span>(<span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"weight"</span>).<span class="vr">value</span>);
+  <span class="kw">const</span> <span class="vr">h</span> = <span class="fn">parseFloat</span>(<span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"height"</span>).<span class="vr">value</span>) / <span class="num">100</span>;
+  <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"result"</span>).<span class="vr">textContent</span> =
+    <span class="str">`BMI: ${(<span class="vr">w</span>/<span class="vr">h</span>**<span class="num">2</span>).<span class="fn">toFixed</span>(<span class="num">1</span>)}`</span>;
+});
+
+<span class="cm">// ② input：入力のたびにリアルタイム処理</span>
+<span class="kw">const</span> <span class="vr">inp</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"hba1c"</span>);
+<span class="vr">inp</span>.<span class="fn">addEventListener</span>(<span class="str">"input"</span>, (<span class="vr">e</span>) <span class="op">=></span> {
+  <span class="kw">const</span> <span class="vr">v</span>   = <span class="fn">parseFloat</span>(<span class="vr">e</span>.<span class="vr">target</span>.<span class="vr">value</span>); <span class="cm">// e.target = 入力要素</span>
+  <span class="kw">const</span> <span class="vr">msg</span> = <span class="vr">v</span> <span class="op">>=</span> <span class="num">7.0</span> ? <span class="str">"🔴 要管理"</span> : <span class="str">"✅ 良好"</span>;
+  <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"judge"</span>).<span class="vr">textContent</span> = <span class="fn">isNaN</span>(<span class="vr">v</span>) ? <span class="str">""</span> : <span class="vr">msg</span>;
+});
+
+<span class="cm">// ③ keydown：Enter キーで実行</span>
+<span class="vr">inp</span>.<span class="fn">addEventListener</span>(<span class="str">"keydown"</span>, (<span class="vr">e</span>) <span class="op">=></span> {
+  <span class="kw">if</span> (<span class="vr">e</span>.<span class="vr">key</span> === <span class="str">"Enter"</span>) <span class="fn">calculate</span>();
+});</code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 構文の形</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#e2e8f0;line-height:1.7;">
+          <code style="color:#ffa657;">要素</code>.<code style="color:#d2a8ff;">addEventListener</code>(<br>
+          &nbsp;&nbsp;<code style="color:#a5d6ff;">"イベント名"</code>,<br>
+          &nbsp;&nbsp;<code style="color:#4ade80;">コールバック関数</code><br>
+          );
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 イベントオブジェクト e</div>
+        <ul class="bl" style="font-size:.76rem;">
+          <li><code>e.target</code>：イベントが起きた要素</li>
+          <li><code>e.target.value</code>：input の値</li>
+          <li><code>e.key</code>：押されたキー名</li>
+          <li><code>e.preventDefault()</code>：デフォルト動作を止める</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S11: QUIZ 1 -->
+<div class="slide slide-quiz" id="s11">
+  <span class="tag tag-purple an">QUIZ 1</span>
+  <h2 class="stitle an">DOM操作の出力を当てよう</h2>
+  <div class="quiz-q an">
+    以下の HTML と JS がある。ボタンを押したときに <code style="background:rgba(255,255,255,.1);padding:1px 6px;border-radius:3px;">#msg</code> に表示されるテキストは？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:rgba(255,255,255,.08);padding:.5rem 1.1rem;border-radius:6px;display:inline-block;line-height:1.85;text-align:left;">
+      &lt;p id="msg"&gt;初期値&lt;/p&gt;<br>
+      &lt;button id="btn"&gt;変更&lt;/button&gt;<br>
+      <br>
+      const p = document.getElementById("msg");<br>
+      document.getElementById("btn")<br>
+      &nbsp;&nbsp;.addEventListener("click", () =&gt; {<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;p.textContent = p.textContent + "!";<br>
+      &nbsp;&nbsp;});
+    </span>
+  </div>
+  <div class="qopts an" id="q1">
+    <button class="qbtn" onclick="ansQ1(this,'a')">A. "初期値"（変化しない）</button>
+    <button class="qbtn" onclick="ansQ1(this,'b')">B. "!" だけになる</button>
+    <button class="qbtn" onclick="ansQ1(this,'c')">C. "初期値!" ← 現在のテキストに"!"を追加</button>
+    <button class="qbtn" onclick="ansQ1(this,'d')">D. エラーになる</button>
+  </div>
+  <div class="qfb an" id="q1fb"></div>
+</div>
+
+<!-- S12: フォーム操作 -->
+<div class="slide slide-code" id="s12">
+  <span class="tag tag-js an">Ch.3 — フォーム</span>
+  <h2 class="stitle an">フォームの値を取得・バリデーション・クリア</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">問診フォームの値を取得・検証する</span></div>
+        <div class="cb-body" style="font-size:.76rem;"><code><span class="cm">// 各フォーム要素から値を取得</span>
+<span class="kw">const</span> <span class="vr">name</span>  = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"name"</span>).<span class="vr">value</span>.<span class="fn">trim</span>();
+<span class="kw">const</span> <span class="vr">age</span>   = <span class="fn">parseInt</span>(<span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"age"</span>).<span class="vr">value</span>);
+<span class="kw">const</span> <span class="vr">hba1c</span> = <span class="fn">parseFloat</span>(<span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"hba1c"</span>).<span class="vr">value</span>);
+<span class="kw">const</span> <span class="vr">smok</span>  = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"smoking"</span>).<span class="vr">checked</span>; <span class="cm">// checkbox</span>
+<span class="kw">const</span> <span class="vr">sex</span>   = <span class="fn">document</span>.<span class="fn">querySelector</span>(
+  <span class="str">'input[name="sex"]:checked'</span>).<span class="vr">value</span>; <span class="cm">// radio</span>
+<span class="kw">const</span> <span class="vr">ward</span>  = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"ward"</span>).<span class="vr">value</span>; <span class="cm">// select</span>
+
+<span class="cm">// バリデーション（入力チェック）</span>
+<span class="kw">function</span> <span class="fn">validate</span>() {
+  <span class="kw">const</span> <span class="vr">errs</span> = [];
+  <span class="kw">if</span> (!<span class="vr">name</span>)            <span class="vr">errs</span>.<span class="fn">push</span>(<span class="str">"名前を入力してください"</span>);
+  <span class="kw">if</span> (<span class="fn">isNaN</span>(<span class="vr">age</span>))       <span class="vr">errs</span>.<span class="fn">push</span>(<span class="str">"年齢を数値で入力してください"</span>);
+  <span class="kw">if</span> (<span class="fn">isNaN</span>(<span class="vr">hba1c</span>))     <span class="vr">errs</span>.<span class="fn">push</span>(<span class="str">"HbA1cを入力してください"</span>);
+  <span class="kw">return</span> <span class="vr">errs</span>;
+}
+
+<span class="cm">// フォームをクリア</span>
+<span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"form"</span>).<span class="fn">reset</span>();</code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 フォーム要素の .value</div>
+        <div style="font-size:.77rem;color:#e2e8f0;line-height:1.9;">
+          <code style="color:#a5d6ff;">input[text]</code> → <code>.value</code>（string）<br>
+          <code style="color:#a5d6ff;">input[number]</code> → <code>.value</code>（string！）<br>
+          <code style="color:#a5d6ff;">input[checkbox]</code> → <code>.checked</code>（boolean）<br>
+          <code style="color:#a5d6ff;">input[radio]</code> → <code>querySelector(':checked').value</code><br>
+          <code style="color:#a5d6ff;">select</code> → <code>.value</code>（選択中の値）
+        </div>
+      </div>
+      <div class="card-warn" style="font-size:.8rem;">
+        ⚠ <strong>input[number] の .value は必ず文字列</strong><br>
+        計算前に必ず <code class="pill-l">parseFloat()</code> か <code class="pill-l">parseInt()</code> で変換する
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S13: QUIZ 2 -->
+<div class="slide slide-quiz" id="s13">
+  <span class="tag tag-purple an">QUIZ 2</span>
+  <h2 class="stitle an">イベントの種類を当てよう</h2>
+  <div class="quiz-q an">「テキストボックスに文字を入力するたびに、文字数をリアルタイムで表示したい」<br>使うべきイベントはどれ？</div>
+  <div class="qopts an" id="q2">
+    <button class="qbtn" onclick="ansQ2(this,'a')">A. "click"（クリックしたとき）</button>
+    <button class="qbtn" onclick="ansQ2(this,'b')">B. "input" ← 入力のたびに発火する</button>
+    <button class="qbtn" onclick="ansQ2(this,'c')">C. "change"（フォーカスが外れたとき）</button>
+    <button class="qbtn" onclick="ansQ2(this,'d')">D. "keydown"（キーを押した瞬間）</button>
+  </div>
+  <div class="qfb an" id="q2fb"></div>
+</div>
+
+<!-- S14: classList とスタイル制御 -->
+<div class="slide slide-light" id="s14">
+  <span class="tag tag-teal an">Ch.3 — スタイル操作</span>
+  <h2 class="stitle an">classList でスタイルを動的に切り替える</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">検査値に応じて警告スタイルを切り替える</span></div>
+      <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">/* CSS（あらかじめ定義しておく） */</span>
+.<span class="tg">result-good</span>  { <span class="vr">color</span>: <span class="str">#4ade80</span>; <span class="vr">font-weight</span>: <span class="str">700</span>; }
+.<span class="tg">result-warn</span>  { <span class="vr">color</span>: <span class="str">#fbbf24</span>; <span class="vr">font-weight</span>: <span class="str">700</span>; }
+.<span class="tg">result-alert</span> { <span class="vr">color</span>: <span class="str">#f87171</span>; <span class="vr">font-weight</span>: <span class="str">700</span>; }
+.<span class="tg">hidden</span>       { <span class="vr">display</span>: <span class="str">none</span>; }
+
+<span class="cm">// JS でクラスを切り替える</span>
+<span class="kw">function</span> <span class="fn">applyStyle</span>(<span class="vr">el</span>, <span class="vr">hba1c</span>) {
+  <span class="cm">// まず全部外す</span>
+  <span class="vr">el</span>.<span class="vr">classList</span>.<span class="fn">remove</span>(<span class="str">"result-good"</span>, <span class="str">"result-warn"</span>, <span class="str">"result-alert"</span>);
+
+  <span class="cm">// 値に応じて付ける</span>
+  <span class="kw">if</span>      (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">8.0</span>) <span class="vr">el</span>.<span class="vr">classList</span>.<span class="fn">add</span>(<span class="str">"result-alert"</span>);
+  <span class="kw">else if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>) <span class="vr">el</span>.<span class="vr">classList</span>.<span class="fn">add</span>(<span class="str">"result-warn"</span>);
+  <span class="kw">else</span>                   <span class="vr">el</span>.<span class="vr">classList</span>.<span class="fn">add</span>(<span class="str">"result-good"</span>);
+}
+
+<span class="cm">// toggle：あれば外す・なければ付ける</span>
+<span class="vr">panel</span>.<span class="vr">classList</span>.<span class="fn">toggle</span>(<span class="str">"hidden"</span>); <span class="cm">// 表示・非表示を切り替え</span></code></div>
+    </div>
+    <div class="g2 an" style="gap:.6rem;margin-top:.3rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>style直書きより classList が推奨</strong><br>
+        スタイルは CSS で管理、制御は JS で切り替えるだけ。保守しやすい
+      </div>
+      <div class="card-green" style="font-size:.8rem;">
+        ✅ <strong>よく使うパターン</strong><br>
+        <code class="pill-l">classList.toggle("active")</code> でメニュー開閉<br>
+        <code class="pill-l">classList.remove(...all)</code> → <code class="pill-l">add(one)</code> で排他切り替え
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S15: HTML + JS の全体構造 -->
+<div class="slide slide-code" id="s15">
+  <span class="tag tag-js an">Ch.4 — 全体構造</span>
+  <h2 class="stitle an">HTML + JS の連携パターン ― 正しい書き方</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">推奨パターン：HTML → JS の順で書く</span></div>
+        <div class="cb-body" style="font-size:.76rem;"><code><span class="tg">&lt;!-- HTML（構造）--&gt;</span>
+<span class="tg">&lt;body&gt;</span>
+  <span class="tg">&lt;input</span> <span class="atr">id=</span><span class="str">"hba1c"</span> <span class="atr">type=</span><span class="str">"number"</span> <span class="atr">step=</span><span class="str">"0.1"</span> <span class="atr">placeholder=</span><span class="str">"HbA1c"</span><span class="tg">&gt;</span>
+  <span class="tg">&lt;button</span> <span class="atr">id=</span><span class="str">"judgeBtn"</span><span class="tg">&gt;</span>判定<span class="tg">&lt;/button&gt;</span>
+  <span class="tg">&lt;p</span> <span class="atr">id=</span><span class="str">"result"</span><span class="tg">&gt;&lt;/p&gt;</span>
+
+  <span class="cm">&lt;!-- JS は &lt;/body&gt; 直前に置く（DOMが先に読み込まれるため）--&gt;</span>
+  <span class="tg">&lt;script&gt;</span>
+    <span class="cm">// ① 要素を取得</span>
+    <span class="kw">const</span> <span class="vr">inp</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"hba1c"</span>);
+    <span class="kw">const</span> <span class="vr">btn</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"judgeBtn"</span>);
+    <span class="kw">const</span> <span class="vr">out</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"result"</span>);
+
+    <span class="cm">// ② ロジック関数を定義（Vol.4 の純粋関数）</span>
+    <span class="kw">const</span> <span class="fn">judge</span> = <span class="vr">v</span> <span class="op">=></span> <span class="vr">v</span> <span class="op">>=</span> <span class="num">7.0</span> ? <span class="str">"🔴 要管理"</span> : <span class="str">"✅ 良好"</span>;
+
+    <span class="cm">// ③ イベントリスナーで繋ぐ</span>
+    <span class="vr">btn</span>.<span class="fn">addEventListener</span>(<span class="str">"click"</span>, () <span class="op">=></span> {
+      <span class="kw">const</span> <span class="vr">v</span> = <span class="fn">parseFloat</span>(<span class="vr">inp</span>.<span class="vr">value</span>);
+      <span class="vr">out</span>.<span class="vr">textContent</span> = <span class="fn">isNaN</span>(<span class="vr">v</span>) ? <span class="str">"数値を入力"</span> : <span class="fn">judge</span>(<span class="vr">v</span>);
+    });
+  <span class="tg">&lt;/script&gt;</span>
+<span class="tg">&lt;/body&gt;</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 3段構成の鉄則</div>
+        <div style="font-size:.77rem;color:#e2e8f0;line-height:1.9;">
+          <strong style="color:#79c0ff;">① 要素を取得</strong><br>
+          getElementById / querySelector<br><br>
+          <strong style="color:#d2a8ff;">② ロジック関数を定義</strong><br>
+          純粋関数（Vol.4）でビジネスロジック<br><br>
+          <strong style="color:#4ade80;">③ イベントで繋ぐ</strong><br>
+          addEventListener で ① と ② を繋ぐ
+        </div>
+      </div>
+      <div class="card-warn" style="font-size:.8rem;">
+        ⚠ <strong>script は body の末尾に</strong><br>
+        head に書くと DOM が読み込まれる前に実行されて null エラーになる
+      </div>
+    </div>
+  </div>
+  <div class="hl an">取得 → ロジック → イベント接続。この3段が Web ツールの骨格</div>
+</div>
+
+<!-- S16: QUIZ 3 -->
+<div class="slide slide-quiz" id="s16">
+  <span class="tag tag-purple an">QUIZ 3</span>
+  <h2 class="stitle an">DOM と イベントの組み合わせ</h2>
+  <div class="quiz-q an">
+    input イベントで「入力値が空のときは結果エリアを非表示、値があれば表示」したい。<br>最も適切なコードは？
+  </div>
+  <div class="qopts an" id="q3">
+    <button class="qbtn" onclick="ansQ3(this,'a')">A. out.style.display = e.target.value ? "block" : "none"</button>
+    <button class="qbtn" onclick="ansQ3(this,'b')">B. out.remove() で要素を削除する</button>
+    <button class="qbtn" onclick="ansQ3(this,'c')">C. out.textContent = "" で中身を消す</button>
+    <button class="qbtn" onclick="ansQ3(this,'d')">D. out.value = "" を使う</button>
+  </div>
+  <div class="qfb an" id="q3fb"></div>
+</div>
+
+<!-- S17: 🔧 デモ② 問診フォーム -->
+<div class="slide slide-code" id="s17">
+  <span class="tag tag-js an">🔧 ライブデモ②</span>
+  <h2 class="stitle an">インタラクティブ問診フォーム ― Vol.1–4 の集大成</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.85rem;">
+    <div style="flex:1;display:flex;flex-direction:column;gap:.45rem;">
+      <div style="background:#f8fafc;border-radius:8px;padding:.85rem;border:1px solid #e2e8f0;">
+        <div style="font-size:.76rem;font-weight:700;color:var(--navy);margin-bottom:.55rem;">患者情報を入力してください</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.4rem;">
+          <input id="q-name"  placeholder="名前" style="padding:.4rem .6rem;border-radius:5px;border:1px solid #cbd5e1;font-size:.82rem;outline:none;font-family:'Noto Sans JP',sans-serif;">
+          <input id="q-age"   placeholder="年齢" type="number" style="padding:.4rem .6rem;border-radius:5px;border:1px solid #cbd5e1;font-size:.82rem;outline:none;">
+          <input id="q-hba1c" placeholder="HbA1c (%)" type="number" step="0.1" style="padding:.4rem .6rem;border-radius:5px;border:1px solid #cbd5e1;font-size:.82rem;outline:none;">
+          <input id="q-bmi"   placeholder="BMI" type="number" step="0.1" style="padding:.4rem .6rem;border-radius:5px;border:1px solid #cbd5e1;font-size:.82rem;outline:none;">
+          <input id="q-bp"    placeholder="収縮期血圧 (mmHg)" type="number" style="padding:.4rem .6rem;border-radius:5px;border:1px solid #cbd5e1;font-size:.82rem;outline:none;grid-column:1/-1;">
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;font-size:.8rem;">
+          <label style="display:flex;align-items:center;gap:.3rem;"><input id="q-smoke" type="checkbox"><span>喫煙あり</span></label>
+          <label style="display:flex;align-items:center;gap:.3rem;"><input id="q-dm" type="checkbox"><span>糖尿病あり</span></label>
+        </div>
+        <button onclick="runQForm()" style="width:100%;padding:.45rem;background:var(--jsdark);color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-size:.83rem;">問診票を生成・判定する</button>
+      </div>
+      <div id="q-errors" style="font-size:.76rem;color:#f87171;min-height:.9rem;font-family:'JetBrains Mono',monospace;"></div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.5rem;">
+      <div id="q-out" style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.8rem;font-family:'JetBrains Mono',monospace;font-size:.76rem;color:#e2e8f0;min-height:200px;line-height:1.8;display:none;"></div>
+      <div class="card-dark" style="font-size:.75rem;">
+        <strong style="color:var(--js);">使ったVol.1–4の技術</strong><br>
+        <span style="color:#94a3b8;line-height:1.8;">
+          Vol.1: parseFloat・テンプレートリテラル<br>
+          Vol.2: if/else 多段判定<br>
+          Vol.3: オブジェクト・map・filter<br>
+          Vol.4: アロー関数・クロージャ判定器<br>
+          Vol.5: DOM取得・イベント・classList
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S18: イベント委任 -->
+<div class="slide slide-light" id="s18">
+  <span class="tag tag-teal an">Ch.3 応用</span>
+  <h2 class="stitle an">イベント委任 ― 動的に追加した要素にもイベントを効かせる</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">動的リストへのイベント登録</span></div>
+      <div class="cb-body" style="font-size:.77rem;"><code><span class="cm">// ❌ 問題：appendChild で追加した要素にはリスナーが効かない</span>
+<span class="fn">document</span>.<span class="fn">querySelectorAll</span>(<span class="str">".patient-card"</span>)
+  .<span class="fn">forEach</span>(<span class="vr">el</span> <span class="op">=></span> <span class="vr">el</span>.<span class="fn">addEventListener</span>(<span class="str">"click"</span>, <span class="fn">handler</span>));
+<span class="cm">// 後から追加したカードにはリスナーが付いていない！</span>
+
+<span class="cm">// ✅ 解決：親要素でリスンして子を判別する（イベント委任）</span>
+<span class="kw">const</span> <span class="vr">list</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"patient-list"</span>);
+
+<span class="vr">list</span>.<span class="fn">addEventListener</span>(<span class="str">"click"</span>, (<span class="vr">e</span>) <span class="op">=></span> {
+  <span class="cm">// e.target：実際にクリックされた要素</span>
+  <span class="kw">if</span> (<span class="vr">e</span>.<span class="vr">target</span>.<span class="vr">classList</span>.<span class="fn">contains</span>(<span class="str">"patient-card"</span>)) {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`${<span class="vr">e</span>.<span class="vr">target</span>.<span class="vr">textContent</span>} を選択`</span>);
+  }
+  <span class="kw">if</span> (<span class="vr">e</span>.<span class="vr">target</span>.<span class="vr">classList</span>.<span class="fn">contains</span>(<span class="str">"delete-btn"</span>)) {
+    <span class="vr">e</span>.<span class="vr">target</span>.<span class="vr">closest</span>(<span class="str">".patient-card"</span>).<span class="fn">remove</span>();
+  }
+});
+<span class="cm">// 後から追加したカードにも自動で効く！</span></code></div>
+    </div>
+    <div class="g2 an" style="gap:.6rem;margin-top:.3rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>e.target vs e.currentTarget</strong><br>
+        <code class="pill-l">e.target</code>：実際にクリックされた要素<br>
+        <code class="pill-l">e.currentTarget</code>：リスナーが登録された要素（list）<br>
+        委任では <code class="pill-l">e.target</code> を使う
+      </div>
+      <div class="card-green" style="font-size:.8rem;">
+        ✅ <strong>e.target.closest()</strong><br>
+        <code class="pill-l">.closest(".card")</code> は自分か祖先で最初に条件に一致する要素を返す。「削除ボタン」の親カードを取得するのに便利
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S19: よくあるミス -->
+<div class="slide slide-code" id="s19">
+  <span class="tag tag-red an">よくあるミスと対処</span>
+  <h2 class="stitle an">DOM・イベントでハマりがちな落とし穴</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">① script の位置（最頻出エラー）</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="tg">&lt;head&gt;</span>
+  <span class="tg">&lt;script&gt;</span>
+    <span class="cm">// ❌ DOMが読まれる前に実行 → null エラー</span>
+    <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"btn"</span>).<span class="fn">addEventListener</span>(…);
+  <span class="tg">&lt;/script&gt;</span>
+<span class="tg">&lt;/head&gt;</span>
+
+<span class="tg">&lt;body&gt;</span>
+  <span class="tg">&lt;button</span> <span class="atr">id=</span><span class="str">"btn"</span><span class="tg">&gt;</span>…<span class="tg">&lt;/button&gt;</span>
+
+  <span class="tg">&lt;script&gt;</span>
+    <span class="cm">// ✅ body末尾ならDOMは読み込み済み</span>
+    <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"btn"</span>).<span class="fn">addEventListener</span>(…);
+  <span class="tg">&lt;/script&gt;</span>
+<span class="tg">&lt;/body&gt;</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">② input の値は必ず文字列 → 変換忘れ</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="kw">const</span> <span class="vr">v</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"hba1c"</span>).<span class="vr">value</span>;
+<span class="cm">// ❌ "7.2" + 1 = "7.21" （文字列結合になる！）</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">v</span> + <span class="num">1</span>);
+
+<span class="cm">// ✅ parseFloat してから計算</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">parseFloat</span>(<span class="vr">v</span>) + <span class="num">1</span>); <span class="cm">// 8.2</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.88;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">③ innerHTML に直接ユーザー入力を渡す</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.73rem;"><code><span class="cm">// ❌ XSSリスク！ユーザーがスクリプトを注入できる</span>
+<span class="vr">out</span>.<span class="vr">innerHTML</span> = <span class="vr">userInput</span>;
+
+<span class="cm">// ✅ テキストだけなら textContent を使う</span>
+<span class="vr">out</span>.<span class="vr">textContent</span> = <span class="vr">userInput</span>;</code></div>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#fbbf24;margin-bottom:.35rem;">④ null チェック忘れ</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.73rem;"><code><span class="cm">// ❌ id が存在しない場合</span>
+<span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"xyz"</span>)
+  .<span class="vr">textContent</span> = <span class="str">"…"</span>; <span class="cm">// TypeError: null</span>
+
+<span class="cm">// ✅ 取得後に存在チェック</span>
+<span class="kw">const</span> <span class="vr">el</span> = <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"xyz"</span>);
+<span class="kw">if</span> (<span class="vr">el</span>) <span class="vr">el</span>.<span class="vr">textContent</span> = <span class="str">"…"</span>;</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S20: Vol.5 まとめ -->
+<div class="slide slide-light" id="s20">
+  <span class="tag tag-green an">Vol.5 まとめ</span>
+  <h2 class="stitle an">今日学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="sumi an"><div class="sumi-num" style="background:var(--navy);">01</div><div class="sumi-body"><strong>DOM</strong>：ブラウザが HTML を管理するオブジェクトツリー。<code class="pill-l">getElementById</code> / <code class="pill-l">querySelector</code> で要素を取得</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--teal);">02</div><div class="sumi-body"><strong>読み書き</strong>：<code class="pill-l">textContent</code> でテキスト、<code class="pill-l">value</code> で入力値、<code class="pill-l">style</code> / <code class="pill-l">classList</code> でスタイルを操作</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--amber);">03</div><div class="sumi-body"><strong>要素の作成</strong>：<code class="pill-l">createElement</code> + <code class="pill-l">appendChild</code>。または <code class="pill-l">innerHTML = map().join("")</code> パターン</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--jsdark);">04</div><div class="sumi-body"><strong>イベント</strong>：<code class="pill-l">addEventListener("click", fn)</code> でユーザー操作に反応。<code class="pill-l">input</code> でリアルタイム処理</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--green);">05</div><div class="sumi-body"><strong>3段構成</strong>：①要素取得 → ②ロジック関数（純粋関数）→ ③addEventListener で繋ぐ。これが Webツールの骨格</div></div>
+  </div>
+</div>
+
+<!-- S21: 今週の課題 -->
+<div class="slide slide-dark" id="s21">
+  <span class="tag tag-amber an">今週の課題</span>
+  <h2 class="stitle an">手を動かしてみよう</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Step 1</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">F12 で試す</strong>：Console で <code style="color:#a5d6ff;">document.body.style.background = "red"</code> を実行してページが赤くなることを確認</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--teal);">Step 2</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">最小HTMLを作る</strong>：input・button・p を並べて、ボタンで入力値を p に表示する HTMLファイルを作る</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--amber);">Step 3</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">BMI判定ツール</strong>：体重・身長を入力してボタンでBMIと判定を表示。classList で色を変える</div></div>
+    <div class="cr an"><div class="cr-lbl" style="background:var(--jsdark);color:#1a1a00;">Step 4</div><div class="cr-arr" style="background:#1a2332;">→</div><div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">Vol.3 の患者リスト × DOM</strong>：filter で絞った患者を innerHTML + map でリスト表示する</div></div>
+  </div>
+  <div class="hl an">Step 2 の最小構成が書けたら Vol.6 の準備完了</div>
+</div>
+
+<!-- S22: 次回予告 Vol.6 -->
+<div class="slide slide-card" id="s22">
+  <span class="tag tag-teal an">NEXT SESSION</span>
+  <h2 class="stitle an">次回 Vol.6 ― 実践：医療ミニアプリ制作</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="next-card an">
+      <div class="next-card-title">Vol.6 で作るもの</div>
+      <div class="next-card-body">
+        <strong>BMI + 生活習慣リスク判定ツール</strong>をゼロから完成まで<br><br>
+        Step 1　HTML 骨格を作る<br>
+        Step 2　CSS でスタイルを整える<br>
+        Step 3　Vol.1–4 のロジック関数を実装<br>
+        Step 4　DOM・イベントで繋ぐ（Vol.5）<br>
+        Step 5　患者リスト管理機能を追加<br>
+        Step 6　<strong>GitHub Pages で公開する</strong>
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>Vol.5 の内容が使えるか確認</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>getElementById が使える</li>
+          <li>addEventListener が書ける</li>
+          <li>input の値を parseFloat できる</li>
+          <li>結果を textContent に表示できる</li>
+        </ul>
+      </div>
+      <div class="card-green" style="font-size:.8rem;">
+        📚 <strong>最終回に向けて</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>GitHub アカウントを作っておく</li>
+          <li>VS Code をインストールしておく</li>
+          <li>作りたいツールのイメージを考えてみる</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;" class="an">
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.1 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.2 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.3 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.4 ✅</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.5 ✅</span>
+      <span style="background:#1B6CA8;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.6 ← 次回・最終回</span>
+    </div>
+  </div>
+</div>
+
+<!-- S23: 締め -->
+<div class="slide slide-dark" id="s23">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.55rem;">
+    <div class="an title-vol" style="font-size:.75rem;">Vol.5 / 6 完了</div>
+    <div class="an title-main" style="font-size:clamp(2rem,5vw,3.8rem);">
+      コードが<br>
+      <span style="color:var(--js);">画面で動く</span><br>
+      瞬間
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.88rem;line-height:2.1;">
+      getElementById で要素をつかみ<br>
+      addEventListener で命令を待ち<br>
+      textContent で結果を届ける<br>
+      ― これが Web アプリの心臓部
+    </div>
+  </div>
+  <div class="title-author an">
+    大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+    <span style="color:#4ade80;font-size:.76rem;">質問・誤りの指摘、大歓迎です</span>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<footer style="display:none;">
+本テキストはAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<style>
+.dsbtn{width:100%;padding:.35rem .7rem;background:#1a2332;border:1px solid #30363d;color:#8b949e;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:.72rem;cursor:pointer;text-align:left;transition:background .15s,color .15s;}
+.dsbtn:hover{background:#1f3a5f;color:#e2e8f0;}
+</style>
+
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 23</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+/* ── Engine ─────────────────────── */
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+function go(n) {
+  slides[cur].classList.remove('active'); slides[cur].classList.add('prev');
+  const p = cur; setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev'); slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
+}
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft'){e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)dx<0?go(cur+1):go(cur-1);},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
+
+/* ── Quiz ───────────────────────── */
+function ansQ(id, btn, val, correct, ok, ng) {
+  document.querySelectorAll(`#${id} .qbtn`).forEach(b=>b.disabled=true);
+  const btns = document.querySelectorAll(`#${id} .qbtn`);
+  const fb   = document.getElementById(`${id}fb`);
+  if (val===correct) { btn.classList.add('correct'); fb.textContent=ok; fb.style.color='#4ade80'; }
+  else { btn.classList.add('wrong'); btns[correct.charCodeAt(0)-97].classList.add('correct'); fb.textContent=ng; fb.style.color='#fbbf24'; }
+  fb.classList.add('show');
+}
+function ansQ1(b,v){ ansQ('q1',b,v,'c','✅ 正解！ p.textContent は現在のテキストを返す。"初期値" + "!" = "初期値!" が表示される。クリックするたびに ! が増える','💡 正解は C。textContent は読み取り（現在値の取得）にも使える。代入すれば書き込みになる'); }
+function ansQ2(b,v){ ansQ('q2',b,v,'b','✅ 正解！ "input" イベントは文字を入力するたびにリアルタイムで発火する。"change" はフォーカスが外れたとき、"keydown" はキーを押した瞬間（変換前でも発火）','💡 正解は B。リアルタイム処理には "input" が最適。"change" は入力が確定してフォーカスが外れたときのみ発火するので遅い'); }
+function ansQ3(b,v){ ansQ('q3',b,v,'a','✅ 正解！ style.display を条件で切り替えるのが最も適切。三項演算子 e.target.value ? "block" : "none" で入力あり→表示、空→非表示になる','💡 正解は A。remove() は完全削除で元に戻せない。textContent を消しても要素自体は残り、スペースが生じる可能性がある。display の切り替えが正解'); }
+
+/* ── Demo 1: DOM操作ステップ ──── */
+const dsSteps = [
+  {
+    code: 'const el = document.getElementById("ds-target");',
+    log:  '① getElementById("ds-target") → 要素を取得',
+    fn: () => { document.getElementById('ds-target').style.outline = '2px solid #F7DF1E'; }
+  },
+  {
+    code: 'el.textContent = "HbA1c: 7.8% → 🔴 要管理";',
+    log:  '② textContent に新しいテキストを代入',
+    fn: () => { document.getElementById('ds-target').textContent = 'HbA1c: 7.8% → 🔴 要管理'; }
+  },
+  {
+    code: 'el.style.color = "#f87171";',
+    log:  '③ style.color でテキスト色を赤に変更',
+    fn: () => { document.getElementById('ds-target').style.color = '#f87171'; }
+  },
+  {
+    code: 'el.classList.add("alert-box");  // background変更',
+    log:  '④ classList.add でクラスを付与',
+    fn: () => {
+      const el = document.getElementById('ds-target');
+      el.style.background = 'rgba(248,113,113,.15)';
+      el.style.padding = '6px 10px';
+      el.style.borderRadius = '5px';
+      el.style.border = '1px solid #f87171';
+    }
+  },
+  {
+    code: 'list.appendChild(newEl);  // 新要素を追加',
+    log:  '⑤ createElement + appendChild で新要素追加',
+    fn: () => { document.getElementById('ds-added').style.display = 'block'; }
+  },
+  {
+    code: 'document.getElementById("ds-added").remove();',
+    log:  '⑥ remove() で追加した要素を削除',
+    fn: () => { document.getElementById('ds-added').style.display = 'none'; }
+  }
+];
+function domStep(i) {
+  dsSteps[i].fn();
+  const log = document.getElementById('ds-log');
+  log.innerHTML += `<div style="color:#4ade80;">▸ ${dsSteps[i].log}</div>`;
+  log.scrollTop = log.scrollHeight;
+  document.getElementById('ds-code').textContent = dsSteps[i].code;
+}
+function domReset() {
+  const el = document.getElementById('ds-target');
+  el.textContent    = '患者データ';
+  el.style.color    = '#1e293b';
+  el.style.background = '';
+  el.style.padding  = '';
+  el.style.border   = '';
+  el.style.borderRadius = '';
+  el.style.outline  = '';
+  document.getElementById('ds-added').style.display = 'none';
+  document.getElementById('ds-log').innerHTML = '';
+  document.getElementById('ds-code').textContent = '';
+}
+
+/* ── Demo 2: 問診フォーム ──────── */
+const mkJudge = (label, thr) => v =>
+  v == null ? null : { label, ok: v < thr, msg: `${label}: ${v} ${v >= thr ? '🔴' : '✅'}` };
+
+function runQForm() {
+  const name  = document.getElementById('q-name').value.trim();
+  const age   = parseInt(document.getElementById('q-age').value);
+  const hba1c = parseFloat(document.getElementById('q-hba1c').value);
+  const bmi   = parseFloat(document.getElementById('q-bmi').value);
+  const bp    = parseFloat(document.getElementById('q-bp').value);
+  const smoke = document.getElementById('q-smoke').checked;
+  const dm    = document.getElementById('q-dm').checked;
+
+  const errs = [];
+  if (!name)      errs.push('名前を入力してください');
+  if (isNaN(age)) errs.push('年齢を入力してください');
+  document.getElementById('q-errors').textContent = errs.join(' / ');
+  if (errs.length) return;
+
+  const judges = [
+    mkJudge('HbA1c(%)', 7.0)(isNaN(hba1c) ? null : hba1c),
+    mkJudge('BMI',      25.0)(isNaN(bmi)   ? null : bmi),
+    mkJudge('血圧(mmHg)', 140)(isNaN(bp)   ? null : bp),
+  ].filter(Boolean);
+
+  const alerts   = judges.filter(j => !j.ok);
+  const score    = alerts.length + (smoke ? 1 : 0) + (dm ? 1 : 0);
+  const riskLbl  = score >= 4 ? '🔴 高リスク' : score >= 2 ? '🟡 中リスク' : score >= 1 ? '🔵 要注意' : '✅ 低リスク';
+  const riskCol  = score >= 4 ? '#f87171' : score >= 2 ? '#fbbf24' : score >= 1 ? '#60a5fa' : '#4ade80';
+
+  const lines = [
+    `患者名：${name}（${age}歳）`,
+    `─────────────────────────`,
+    ...judges.map(j => j.msg),
+    ...(smoke ? ['喫煙：あり ⚠'] : []),
+    ...(dm    ? ['糖尿病既往：あり ⚠'] : []),
+    `─────────────────────────`,
+    `総合リスク：${riskLbl}`,
+    `リスクスコア：${score} / 5`,
+  ];
+
+  const out = document.getElementById('q-out');
+  out.style.display  = 'block';
+  out.innerHTML = lines.map((l, i) =>
+    `<div style="color:${i === lines.length-1 ? riskCol : i === lines.length-2 ? '#94a3b8' : l.includes('🔴') ? '#f87171' : l.includes('⚠') ? '#fbbf24' : '#e2e8f0'};">${l}</div>`
+  ).join('');
+}
+</script>
+</body>
+</html>

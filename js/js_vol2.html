@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はじめてのJavaScript Vol.2 ― 条件分岐・ループ</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A2342;
+  --teal:   #1B6CA8;
+  --ltblue: #E8F1FA;
+  --amber:  #E8873A;
+  --gray:   #64748B;
+  --lgray:  #F0F4F8;
+  --red:    #C0392B;
+  --green:  #1A7A4A;
+  --text:   #1E293B;
+  --white:  #FFFFFF;
+  --js:     #F7DF1E;
+  --jsdark: #b59a00;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body { width:100%; height:100%; background:#0a0f1a; font-family:'Noto Sans JP',sans-serif; overflow:hidden; }
+
+.deck { width:100vw; height:100vh; position:relative; overflow:hidden; }
+.slide {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  padding:2.2rem 3rem 1.8rem; opacity:0; pointer-events:none;
+  transition:opacity .45s cubic-bezier(.4,0,.2,1), transform .45s cubic-bezier(.4,0,.2,1);
+  transform:translateX(60px);
+}
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.prev   { opacity:0; transform:translateX(-60px); }
+
+.slide-dark  { background:var(--navy); }
+.slide-light { background:var(--white); }
+.slide-card  { background:var(--lgray); }
+.slide-code  { background:#0d1117; }
+.slide-quiz  { background:#12100a; }
+
+.slide-dark::before,.slide-code::before,.slide-quiz::before {
+  content:''; position:absolute; left:0; top:0; width:6px; height:100%;
+}
+.slide-dark::before  { background:var(--amber); }
+.slide-code::before  { background:var(--js); }
+.slide-quiz::before  { background:#a855f7; }
+
+/* tag */
+.tag {
+  display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.08em;
+  padding:3px 12px; border-radius:2px; color:#fff;
+  margin-bottom:.5rem; align-self:flex-start;
+}
+.tag-teal   { background:var(--teal); }
+.tag-amber  { background:var(--amber); }
+.tag-js     { background:var(--jsdark); }
+.tag-purple { background:#7c3aed; }
+.tag-green  { background:var(--green); }
+.tag-red    { background:var(--red); }
+.tag-navy   { background:var(--navy); }
+
+/* slide title */
+.stitle {
+  font-size:clamp(1.35rem,2.8vw,2rem); font-weight:900; line-height:1.2;
+  margin-bottom:1rem; border-left:5px solid var(--amber); padding-left:.7rem;
+}
+.slide-dark  .stitle { color:var(--white); border-color:var(--amber); }
+.slide-light .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-card  .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-code  .stitle { color:var(--white); border-color:var(--js); }
+.slide-quiz  .stitle { color:var(--white); border-color:#a855f7; }
+
+/* title slide */
+.title-main  { font-size:clamp(2.5rem,6.5vw,4.8rem); font-weight:900; color:var(--white); letter-spacing:-.02em; line-height:1.05; text-align:center; }
+.title-vol   { display:inline-block; background:var(--jsdark); color:#1a1a00; padding:2px 16px; border-radius:4px; font-size:clamp(.85rem,1.8vw,1.1rem); font-weight:900; letter-spacing:.06em; margin-bottom:.6rem; }
+.title-sub   { font-size:clamp(.85rem,1.6vw,1.05rem); color:rgba(255,255,255,.55); text-align:center; margin-top:.7rem; line-height:1.7; }
+.title-rule  { width:240px; height:2px; background:var(--teal); margin:1rem auto; }
+.title-author{ text-align:center; color:rgba(255,255,255,.4); font-size:.78rem; margin-top:auto; padding-bottom:.3rem; }
+
+/* code block */
+.cb { background:#0d1117; border-radius:6px; overflow:hidden; font-family:'JetBrains Mono',monospace; box-shadow:0 4px 20px rgba(0,0,0,.45); }
+.cb-head { display:flex; align-items:center; gap:.45rem; padding:.45rem 1rem; background:#161b22; border-bottom:1px solid #30363d; }
+.dot { width:11px; height:11px; border-radius:50%; }
+.cb-lang { font-size:.7rem; color:#8b949e; letter-spacing:.06em; margin-left:auto; }
+.cb-body { padding:.85rem 1.2rem; overflow-x:auto; font-size:.8rem; line-height:1.75; }
+.cb-body code { color:#e6edf3; white-space:pre; }
+
+/* syntax */
+.kw  { color:#ff7b72; }
+.fn  { color:#d2a8ff; }
+.str { color:#a5d6ff; }
+.num { color:#79c0ff; }
+.cm  { color:#8b949e; font-style:italic; }
+.op  { color:#ff7b72; }
+.vr  { color:#ffa657; }
+.tg  { color:#7ee787; }
+
+/* row item */
+.row { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.55rem; }
+.row-lbl { min-width:2.6rem; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:700; color:#fff; padding:0 .7rem; white-space:nowrap; }
+.row-body { padding:.5rem .85rem; font-size:.84rem; color:var(--text); line-height:1.55; }
+.row-body strong { color:var(--navy); }
+.row-body code { font-family:'JetBrains Mono',monospace; font-size:.78rem; background:#f0f4f8; padding:1px 5px; border-radius:3px; color:#c0392b; }
+
+/* concept row */
+.cr { display:flex; align-items:stretch; border-radius:6px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.12); margin-bottom:.6rem; }
+.cr-lbl { min-width:110px; padding:.65rem .8rem; font-size:.8rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; text-align:center; }
+.cr-arr { background:#f0f4f8; display:flex; align-items:center; justify-content:center; padding:0 .5rem; color:var(--gray); font-size:1rem; }
+.cr-body { flex:1; background:var(--white); padding:.65rem .9rem; font-size:.83rem; color:var(--text); line-height:1.55; }
+.cr-body strong { color:var(--navy); }
+.cr-body code { font-family:'JetBrains Mono',monospace; font-size:.78rem; background:#f0f4f8; padding:1px 5px; border-radius:3px; color:#c0392b; }
+
+/* cards */
+.card-dark  { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:.75rem 1rem; }
+.card-warn  { background:#FFF3E0; border-radius:6px; padding:.65rem 1rem; }
+.card-blue  { background:var(--ltblue); border-radius:6px; padding:.65rem 1rem; }
+.card-green { background:#ECFDF5; border-radius:6px; padding:.65rem 1rem; }
+.card-red   { background:#FEF2F2; border-radius:6px; padding:.65rem 1rem; }
+
+/* grids */
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.85rem; }
+.fx { display:flex; gap:.85rem; }
+
+/* bullets */
+ul.bl { list-style:none; }
+ul.bl li { padding:.26rem 0 .26rem 1.3rem; position:relative; font-size:.85rem; color:var(--text); line-height:1.55; }
+ul.bl li::before { content:'▸'; position:absolute; left:0; color:var(--teal); font-size:.8rem; }
+.slide-dark ul.bl li { color:#e2e8f0; }
+.slide-dark ul.bl li::before { color:var(--amber); }
+.slide-code ul.bl li { color:#e2e8f0; }
+.slide-code ul.bl li::before { color:var(--js); }
+ul.bl li code { font-family:'JetBrains Mono',monospace; font-size:.76rem; background:rgba(255,255,255,.12); padding:1px 5px; border-radius:3px; color:#a5d6ff; }
+.slide-light ul.bl li code, .slide-card ul.bl li code { background:#f0f4f8; color:#c0392b; }
+
+/* summary */
+.sumi { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 8px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.75rem; }
+.sumi-num { min-width:54px; display:flex; align-items:center; justify-content:center; font-size:1.35rem; font-weight:900; color:#fff; font-family:'JetBrains Mono',monospace; }
+.sumi-body { padding:.65rem .95rem; font-size:.85rem; line-height:1.6; color:var(--text); }
+
+/* quiz */
+.quiz-q { font-size:clamp(.92rem,1.9vw,1.2rem); font-weight:700; color:#e2e8f0; margin-bottom:1.2rem; line-height:1.5; text-align:center; }
+.qopts  { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; max-width:680px; margin:0 auto; }
+.qbtn {
+  background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.13);
+  color:#e2e8f0; border-radius:8px; padding:.82rem 1.05rem;
+  font-family:'Noto Sans JP',sans-serif; font-size:.84rem; font-weight:700;
+  cursor:pointer; text-align:left; line-height:1.45;
+  transition:background .2s, border-color .2s, transform .15s;
+}
+.qbtn:hover   { background:rgba(168,85,247,.22); border-color:#a855f7; transform:translateY(-2px); }
+.qbtn.correct { background:rgba(26,122,74,.35); border-color:#4ade80; color:#4ade80; }
+.qbtn.wrong   { background:rgba(192,57,43,.25); border-color:#f87171; color:#f87171; }
+.qbtn:disabled{ cursor:default; }
+.qfb { text-align:center; margin-top:.9rem; font-size:.88rem; font-weight:700; min-height:1.4rem; opacity:0; transition:opacity .3s; line-height:1.5; }
+.qfb.show { opacity:1; }
+
+/* vote */
+.vopts { display:flex; flex-direction:column; gap:.6rem; max-width:580px; margin:0 auto; width:100%; }
+.vbtn  { display:flex; align-items:center; gap:.75rem; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); border-radius:6px; padding:.62rem 1rem; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-size:.85rem; color:#e2e8f0; font-weight:700; transition:background .2s; }
+.vbtn:hover { background:rgba(247,223,30,.15); border-color:var(--jsdark); }
+
+/* flowchart */
+.flow-box  { background:var(--white); border-radius:6px; padding:.5rem .9rem; font-size:.8rem; font-weight:700; color:var(--navy); text-align:center; box-shadow:0 1px 6px rgba(0,0,0,.1); }
+.flow-diamond { background:var(--ltblue); border-radius:6px; padding:.5rem .9rem; font-size:.78rem; font-weight:700; color:var(--navy); text-align:center; box-shadow:0 1px 6px rgba(0,0,0,.1); border:2px solid var(--teal); }
+.flow-arr  { text-align:center; color:var(--amber); font-size:1.1rem; line-height:1.4; }
+
+/* loop visualizer */
+.lv-row { display:flex; gap:.4rem; align-items:center; margin-bottom:.4rem; font-family:'JetBrains Mono',monospace; font-size:.8rem; }
+.lv-idx { min-width:28px; text-align:center; background:#161b22; color:#8b949e; border-radius:4px; padding:2px 4px; }
+.lv-val { background:#1f2d3d; color:#79c0ff; border-radius:4px; padding:2px 10px; border:1px solid #30363d; transition:background .3s, color .3s; }
+.lv-val.active { background:#1B6CA8; color:#fff; border-color:#60a5fa; }
+.lv-val.done   { background:#1a3a2a; color:#4ade80; border-color:#4ade80; }
+.lv-arrow { color:var(--amber); }
+
+/* inline code */
+.pill   { font-family:'JetBrains Mono',monospace; font-size:.8rem; background:#161b22; border:1px solid #30363d; color:#ffa657; padding:2px 8px; border-radius:4px; }
+.pill-l { font-family:'JetBrains Mono',monospace; font-size:.8rem; background:#f0f4f8; border:1px solid #dde3ea; color:#c0392b; padding:2px 8px; border-radius:4px; }
+
+/* repl */
+.repl { background:#0d1117; border-radius:6px; padding:.7rem 1rem; font-family:'JetBrains Mono',monospace; font-size:.78rem; line-height:1.9; border:1px solid #30363d; }
+.repl-in  { color:#e6edf3; }
+.repl-in::before  { content:'> '; color:#8b949e; }
+.repl-out { color:#4ade80; }
+.repl-out::before { content:'← '; color:#8b949e; }
+
+/* highlight */
+.hl { text-align:center; font-size:.92rem; font-weight:700; font-style:italic; color:var(--teal); margin-top:auto; padding-top:.7rem; }
+.slide-dark .hl { color:var(--amber); }
+.slide-code .hl { color:var(--js); }
+.slide-quiz .hl { color:#a855f7; }
+
+/* next card */
+.next-card { background:var(--navy); border-radius:8px; padding:.8rem 1.2rem; border-left:4px solid var(--amber); }
+.next-card-title { font-size:.8rem; color:var(--amber); font-weight:700; margin-bottom:.3rem; }
+.next-card-body  { font-size:.84rem; color:#e2e8f0; line-height:1.65; }
+
+/* animations */
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+.slide.active .an { animation:fadeUp .5s ease both; }
+.slide.active .an:nth-child(1){animation-delay:.05s}
+.slide.active .an:nth-child(2){animation-delay:.12s}
+.slide.active .an:nth-child(3){animation-delay:.19s}
+.slide.active .an:nth-child(4){animation-delay:.26s}
+.slide.active .an:nth-child(5){animation-delay:.33s}
+.slide.active .an:nth-child(6){animation-delay:.40s}
+.slide.active .an:nth-child(7){animation-delay:.47s}
+.slide.active .an:nth-child(8){animation-delay:.54s}
+
+/* nav */
+#nav { position:fixed; bottom:1.2rem; right:1.5rem; display:flex; align-items:center; gap:.7rem; z-index:9999; }
+.nbtn { background:rgba(255,255,255,.13); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.22); color:#fff; width:40px; height:40px; border-radius:50%; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s,transform .15s; }
+.nbtn:hover { background:rgba(255,255,255,.28); transform:scale(1.08); }
+#sc  { color:rgba(255,255,255,.65); font-size:.76rem; font-family:'JetBrains Mono',monospace; min-width:52px; text-align:center; }
+#bar { position:fixed; bottom:0; left:0; height:3px; background:var(--js); transition:width .35s ease; z-index:9999; }
+#hint{ position:fixed; bottom:1.25rem; left:1.5rem; color:rgba(255,255,255,.3); font-size:.67rem; font-family:'JetBrains Mono',monospace; pointer-events:none; }
+
+.mb1{margin-bottom:.55rem} .mb2{margin-bottom:1rem}
+.center{text-align:center} .small{font-size:.75rem;color:var(--gray)}
+.mono{font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════════════
+  S1: タイトル
+══════════════════════════════════ -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.3rem;">
+    <div class="an" style="background:var(--jsdark);color:#1a1a00;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">はじめてのJavaScript</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 2 / 6</div>
+    <div class="an title-main">条件分岐・<span style="color:var(--js);">ループ</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">if / else・三項演算子・switch<br>for・while・for...of</div>
+  </div>
+  <div class="title-author an">大阪公立大学 医学部 細菌学講座　金子幸弘</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S2: Vol.1 復習（1枚）
+══════════════════════════════════ -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">Vol.1 復習</span>
+  <h2 class="stitle an">前回（Vol.1）のポイント確認</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="row an">
+      <div class="row-lbl" style="background:var(--navy);min-width:5rem;font-size:.72rem;">let / const</div>
+      <div class="row-body"><code>const</code> を基本に。値が変わるときだけ <code>let</code>。<code>var</code> は使わない</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:var(--teal);min-width:5rem;font-size:.72rem;">データ型</div>
+      <div class="row-body">number・string・boolean・null・undefined。<code>typeof</code> で型を確認</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:var(--amber);min-width:5rem;font-size:.72rem;">===</div>
+      <div class="row-body"><code>==</code> は使わず <code>===</code> を使う（型まで含めた厳格な比較）</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:var(--jsdark);color:#1a1a00;min-width:5rem;font-size:.72rem;">テンプレート</div>
+      <div class="row-body">バッククォート <code>`...${変数}...`</code> で変数・式を文字列に埋め込む</div>
+    </div>
+    <div class="row an">
+      <div class="row-lbl" style="background:var(--green);min-width:5rem;font-size:.72rem;">型変換</div>
+      <div class="row-body"><code>Number()</code>・<code>parseFloat()</code> で文字列→数値。フォーム入力は必ず変換</div>
+    </div>
+  </div>
+  <div class="hl an">今日はこれらを「判断・繰り返し」に組み合わせる</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S3: Vol.2 でやること
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-js an">Vol.2 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--navy);">Ch.1<br>条件分岐</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body"><strong>「もし〜なら」を書く</strong>：<code>if / else if / else</code>・三項演算子・<code>switch</code><br>🔧 デモ：HbA1c 判定器</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">Ch.2<br>ループ</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body"><strong>「繰り返し」を書く</strong>：<code>for</code>・<code>while</code>・<code>for...of</code>・<code>break / continue</code><br>🔧 デモ：ループ可視化ツール</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);">Ch.3<br>組み合わせ</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body"><strong>条件分岐 × ループ</strong>：患者リストを絞り込む・集計する<br>実務の「データ処理」が書けるようになる</div>
+    </div>
+  </div>
+  <div class="card-blue an" style="font-size:.83rem;margin-top:.3rem;">
+    💡 <strong>今日のゴール</strong>：「もし HbA1c が 7.0 以上なら警告を出す」「100人の患者データを順に処理する」が書けるようになる
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S4: QUIZ 1（投票）
+══════════════════════════════════ -->
+<div class="slide slide-quiz" id="s4">
+  <span class="tag tag-purple an">QUIZ 1 ― ウォームアップ</span>
+  <h2 class="stitle an">条件分岐って何に使う？</h2>
+  <div class="quiz-q an">「プログラムの中で条件分岐（if 文）が一番使われる場面はどれだと思う？」</div>
+  <div class="qopts an" id="q1">
+    <button class="qbtn" onclick="vote1(this,'a')">🔐 ログイン認証（正しいパスワードなら通す）</button>
+    <button class="qbtn" onclick="vote1(this,'b')">🩺 医療判定（検査値が閾値を超えたら警告）</button>
+    <button class="qbtn" onclick="vote1(this,'c')">🛒 ECサイト（在庫があれば購入ボタン表示）</button>
+    <button class="qbtn" onclick="vote1(this,'d')">🤔 全部ほぼ同じくらい使う</button>
+  </div>
+  <div class="qfb an" id="q1fb"></div>
+  <div class="hl an">正解は D ― if 文はあらゆるプログラムの基礎中の基礎</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S5: if / else if / else 基本
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s5">
+  <span class="tag tag-js an">Ch.1 — if / else</span>
+  <h2 class="stitle an"><span class="pill">if / else if / else</span> ― 条件分岐の基本形</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">HbA1c 判定 ― if / else if / else</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">hba1c</span> = <span class="num">7.8</span>;
+
+<span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">10.0</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"⚠ 重篤：即時介入が必要"</span>);
+
+} <span class="kw">else if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">8.0</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"🔴 不良：治療強化を検討"</span>);
+
+} <span class="kw">else if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"🟡 要管理：生活指導を継続"</span>);
+
+} <span class="kw">else</span> {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"✅ 良好：現在の治療を継続"</span>);
+}
+
+<span class="cm">// hba1c = 7.8 なので → "🟡 要管理：生活指導を継続"</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 構造のポイント</div>
+        <ul class="bl" style="font-size:.78rem;">
+          <li><span class="pill" style="font-size:.72rem;">if</span> の条件が true → そのブロックを実行して終了</li>
+          <li>上から順に評価し、最初に true になった箇所だけ実行</li>
+          <li><span class="pill" style="font-size:.72rem;">else</span> は「それ以外すべて」のキャッチオール</li>
+          <li>条件は <code style="color:#a5d6ff;">{ }</code> のブロックで囲む</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">⚠ よくあるミス</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="cm">// = は代入、== は比較（使わない）、=== が正解</span>
+<span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">=</span> <span class="num">7.0</span>) { <span class="cm">// ❌ 代入になってしまう！</span>
+<span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">==</span> <span class="num">7.0</span>) { <span class="cm">// ⚠ 動くが推奨しない</span>
+<span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">===</span> <span class="num">7.0</span>) { <span class="cm">// ✅ 厳格比較</span></code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S6: 三項演算子
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s6">
+  <span class="tag tag-js an">Ch.1 — 三項演算子</span>
+  <h2 class="stitle an">三項演算子 ― 1行で書ける if / else</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">構文：条件 ? 真のとき : 偽のとき</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">hba1c</span> = <span class="num">7.2</span>;
+
+<span class="cm">// if / else で書くと ↓</span>
+<span class="kw">let</span> <span class="vr">status</span>;
+<span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>) {
+  <span class="vr">status</span> = <span class="str">"要管理"</span>;
+} <span class="kw">else</span> {
+  <span class="vr">status</span> = <span class="str">"良好"</span>;
+}
+
+<span class="cm">// 三項演算子で書くと ↓（同じ意味）</span>
+<span class="kw">const</span> <span class="vr">status2</span> = <span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span> ? <span class="str">"要管理"</span> : <span class="str">"良好"</span>;
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`HbA1c ${<span class="vr">hba1c</span>}% → ${<span class="vr">status2</span>}`</span>);
+<span class="cm">// → "HbA1c 7.2% → 要管理"</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">ネスト（入れ子）― 多段階判定</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">bmi</span> = <span class="num">28</span>;
+<span class="kw">const</span> <span class="vr">grade</span> =
+  <span class="vr">bmi</span> <span class="op">>=</span> <span class="num">35</span>   ? <span class="str">"高度肥満"</span> :
+  <span class="vr">bmi</span> <span class="op">>=</span> <span class="num">30</span>   ? <span class="str">"肥満2度"</span>  :
+  <span class="vr">bmi</span> <span class="op">>=</span> <span class="num">25</span>   ? <span class="str">"肥満1度"</span>  :
+  <span class="vr">bmi</span> <span class="op">>=</span> <span class="num">18.5</span> ? <span class="str">"普通体重"</span> : <span class="str">"低体重"</span>;
+<span class="cm">// bmi=28 → "肥満1度"</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">🔑 使い分けの目安</div>
+        <ul class="bl" style="font-size:.78rem;">
+          <li><strong style="color:#4ade80;">三項演算子</strong>：シンプルな2択・値を変数に代入したいとき</li>
+          <li><strong style="color:#4ade80;">if / else</strong>：3択以上・処理が複数行・読みやすさ優先</li>
+          <li>ネストしすぎると読みにくくなる → 3段以上は if / else に</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 テンプレートリテラルと相性抜群</div>
+        <div class="repl" style="font-size:.74rem;">
+          <div class="repl-in"><span class="str">`結果：${<span class="vr">bmi</span> >= <span class="num">25</span> ? <span class="str">"肥満"</span> : <span class="str">"正常"</span>}`</span></div>
+          <div class="repl-out">"結果：肥満1度"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">三項演算子は「値の選択」に使う ― 処理の分岐には if / else を使う</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S7: 複合条件・論理演算子
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s7">
+  <span class="tag tag-teal an">Ch.1 — 複合条件</span>
+  <h2 class="stitle an">複合条件 ― && と || で条件を組み合わせる</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">生活習慣病リスク判定 ― 複数条件</span></div>
+      <div class="cb-body"><code><span class="kw">const</span> <span class="vr">bmi</span>      = <span class="num">27</span>;
+<span class="kw">const</span> <span class="vr">hba1c</span>    = <span class="num">6.8</span>;
+<span class="kw">const</span> <span class="vr">smoking</span>  = <span class="kw">true</span>;
+<span class="kw">const</span> <span class="vr">age</span>      = <span class="num">58</span>;
+
+<span class="cm">// && ： 全部 true のとき true</span>
+<span class="kw">if</span> (<span class="vr">bmi</span> <span class="op">>=</span> <span class="num">25</span> <span class="op">&&</span> <span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">6.5</span> <span class="op">&&</span> <span class="vr">age</span> <span class="op">>=</span> <span class="num">50</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"🔴 高リスク：精密検査を推奨"</span>);
+}
+
+<span class="cm">// || ： どれか1つでも true なら true</span>
+<span class="kw">if</span> (<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">10</span> <span class="op">||</span> <span class="vr">bmi</span> <span class="op">>=</span> <span class="num">35</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"🚨 即時介入が必要"</span>);
+}
+
+<span class="cm">// ! ： 真偽を反転</span>
+<span class="kw">if</span> (<span class="op">!</span><span class="vr">smoking</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"非喫煙者"</span>);
+} <span class="kw">else</span> {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"喫煙あり：禁煙指導を検討"</span>);  <span class="cm">// ← これが出力</span>
+}</code></div>
+    </div>
+    <div class="g2 an" style="gap:.6rem;margin-top:.3rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>短絡評価（Short-circuit）</strong><br>
+        <code class="pill-l">A && B</code>：A が false なら B は評価しない<br>
+        <code class="pill-l">A || B</code>：A が true なら B は評価しない<br>
+        <span class="small">処理速度の最適化と副作用防止に使われる</span>
+      </div>
+      <div class="card-warn" style="font-size:.8rem;">
+        ⚠ <strong>括弧で優先順位を明示する</strong><br>
+        <code class="pill-l">(bmi>=25 && age>=50) || smoking</code><br>
+        複雑な条件は <code class="pill-l">( )</code> で意図を明確に
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S8: switch 文
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s8">
+  <span class="tag tag-js an">Ch.1 — switch</span>
+  <h2 class="stitle an"><span class="pill">switch</span> ― 値が一致したケースを実行する</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">血液型判定 ― switch の典型例</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">bloodType</span> = <span class="str">"A"</span>;
+
+<span class="kw">switch</span> (<span class="vr">bloodType</span>) {
+  <span class="kw">case</span> <span class="str">"A"</span>:
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A型：A または O 型が輸血可"</span>);
+    <span class="kw">break</span>;  <span class="cm">// ← break を忘れると次の case も実行される！</span>
+
+  <span class="kw">case</span> <span class="str">"B"</span>:
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B型：B または O 型が輸血可"</span>);
+    <span class="kw">break</span>;
+
+  <span class="kw">case</span> <span class="str">"AB"</span>:
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"AB型：全血液型から輸血可能"</span>);
+    <span class="kw">break</span>;
+
+  <span class="kw">case</span> <span class="str">"O"</span>:
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"O型：O型からのみ輸血可"</span>);
+    <span class="kw">break</span>;
+
+  <span class="kw">default</span>:  <span class="cm">// どれにも一致しない場合</span>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"不明な血液型"</span>);
+}</code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 switch の使いどころ</div>
+        <ul class="bl" style="font-size:.78rem;">
+          <li>同じ変数を複数の<strong style="color:#4ade80;">固定値</strong>と比較するとき</li>
+          <li>if / else if が4つ以上続くなら switch を検討</li>
+          <li><span class="pill" style="font-size:.72rem;">break</span> を<strong style="color:#f87171;">忘れると次のcaseも実行される</strong></li>
+          <li><span class="pill" style="font-size:.72rem;">default</span> はどれにも一致しない場合のフォールバック</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#fbbf24;margin-bottom:.35rem;">⚠ fall-through の罠</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="kw">case</span> <span class="str">"A"</span>:
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A型"</span>);
+  <span class="cm">// break を忘れると↓も実行！</span>
+<span class="kw">case</span> <span class="str">"B"</span>:
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B型"</span>); <span class="cm">// A型でも出る</span></code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S9: 🔧 デモ① HbA1c判定器
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s9">
+  <span class="tag tag-js an">🔧 ライブデモ①</span>
+  <h2 class="stitle an">HbA1c 判定器 ― 条件分岐の総合デモ</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.05;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">JavaScript ― 使った概念</span></div>
+        <div class="cb-body" style="font-size:.76rem;"><code><span class="kw">function</span> <span class="fn">judgeHbA1c</span>(<span class="vr">val</span>) {
+  <span class="cm">// parseFloat で文字列→数値（Vol.1）</span>
+  <span class="kw">const</span> <span class="vr">v</span> = <span class="fn">parseFloat</span>(<span class="vr">val</span>);
+
+  <span class="cm">// NaN チェック（Vol.1）</span>
+  <span class="kw">if</span> (<span class="fn">isNaN</span>(<span class="vr">v</span>)) <span class="kw">return</span> <span class="str">"⚠ 数値を入力してください"</span>;
+
+  <span class="cm">// 多段階 if / else if（今日）</span>
+  <span class="kw">if</span>      (<span class="vr">v</span> <span class="op">>=</span> <span class="num">10.0</span>) <span class="kw">return</span> <span class="str">"🚨 重篤（≥10.0）：即時介入"</span>;
+  <span class="kw">else if</span> (<span class="vr">v</span> <span class="op">>=</span>  <span class="num">8.0</span>) <span class="kw">return</span> <span class="str">"🔴 不良（8.0〜9.9）：治療強化"</span>;
+  <span class="kw">else if</span> (<span class="vr">v</span> <span class="op">>=</span>  <span class="num">7.0</span>) <span class="kw">return</span> <span class="str">"🟡 要管理（7.0〜7.9）"</span>;
+  <span class="kw">else if</span> (<span class="vr">v</span> <span class="op">>=</span>  <span class="num">6.0</span>) <span class="kw">return</span> <span class="str">"🟢 ほぼ良好（6.0〜6.9）"</span>;
+  <span class="kw">else</span>                 <span class="kw">return</span> <span class="str">"✅ 良好（&lt;6.0）"</span>;
+}</code></div>
+      </div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.6rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.9rem;">
+        <div style="font-size:.76rem;color:#8b949e;font-weight:700;margin-bottom:.6rem;">▶ HbA1c 値を入力して判定</div>
+        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
+          <input id="hba-in" type="number" step="0.1" min="0" max="20" placeholder="例: 7.8"
+            style="flex:1;padding:.42rem .7rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-family:'JetBrains Mono',monospace;font-size:.85rem;outline:none;">
+          <button onclick="runHbA1c()" style="padding:.42rem .9rem;background:var(--jsdark);color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;white-space:nowrap;">判定</button>
+        </div>
+        <div id="hba-out" style="font-size:.9rem;font-weight:700;min-height:1.5rem;font-family:'JetBrains Mono',monospace;"></div>
+        <div style="margin-top:.7rem;display:flex;flex-wrap:wrap;gap:.35rem;" id="hba-quick">
+          <button onclick="quickHbA1c('5.5')" class="qk">5.5</button>
+          <button onclick="quickHbA1c('6.5')" class="qk">6.5</button>
+          <button onclick="quickHbA1c('7.2')" class="qk">7.2</button>
+          <button onclick="quickHbA1c('8.5')" class="qk">8.5</button>
+          <button onclick="quickHbA1c('11.0')" class="qk">11.0</button>
+        </div>
+      </div>
+      <div class="card-dark" style="font-size:.76rem;color:#94a3b8;line-height:1.7;">
+        <strong style="color:var(--js);">このデモで使った概念</strong><br>
+        ✅ <code style="color:#a5d6ff;">parseFloat()</code>　型変換（Vol.1）<br>
+        ✅ <code style="color:#a5d6ff;">isNaN()</code>　NaNチェック（Vol.1）<br>
+        ✅ <code style="color:#a5d6ff;">if / else if</code>　多段階分岐（今日）<br>
+        ✅ <code style="color:#a5d6ff;">return</code>　関数の早期返却（Vol.4 で詳しく）
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S10: QUIZ 2
+══════════════════════════════════ -->
+<div class="slide slide-quiz" id="s10">
+  <span class="tag tag-purple an">QUIZ 2</span>
+  <h2 class="stitle an">条件分岐の出力を当てよう</h2>
+  <div class="quiz-q an">
+    以下のコードの出力は？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;background:rgba(255,255,255,.08);padding:.55rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.85;text-align:left;">
+      const score = 75;<br>
+      if (score >= 90) {<br>
+      &nbsp;&nbsp;console.log("A");<br>
+      } else if (score >= 70) {<br>
+      &nbsp;&nbsp;console.log("B");<br>
+      } else if (score >= 60) {<br>
+      &nbsp;&nbsp;console.log("C");<br>
+      } else {<br>
+      &nbsp;&nbsp;console.log("D");<br>
+      }
+    </span>
+  </div>
+  <div class="qopts an" id="q2">
+    <button class="qbtn" onclick="ansQ2(this,'a')">A. "A"</button>
+    <button class="qbtn" onclick="ansQ2(this,'b')">B. "B" ← 75 は 70以上</button>
+    <button class="qbtn" onclick="ansQ2(this,'c')">C. "C"</button>
+    <button class="qbtn" onclick="ansQ2(this,'d')">D. "B" と "C" の両方</button>
+  </div>
+  <div class="qfb an" id="q2fb"></div>
+</div>
+
+<!-- ══════════════════════════════════
+  S11: for ループ基本
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s11">
+  <span class="tag tag-js an">Ch.2 — for ループ</span>
+  <h2 class="stitle an"><span class="pill">for</span> ループ ― 決まった回数を繰り返す</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">構文：for (初期化; 条件; 更新)</span></div>
+        <div class="cb-body"><code><span class="cm">//  ①初期化  ②条件    ③更新</span>
+<span class="kw">for</span> (<span class="kw">let</span> <span class="vr">i</span> = <span class="num">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="num">5</span>; <span class="vr">i</span>++) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`患者番号 ${<span class="vr">i</span> + <span class="num">1</span>} を処理中`</span>);
+}
+<span class="cm">// → 患者番号 1 を処理中</span>
+<span class="cm">// → 患者番号 2 を処理中</span>
+<span class="cm">// → 患者番号 3 を処理中</span>
+<span class="cm">// → 患者番号 4 を処理中</span>
+<span class="cm">// → 患者番号 5 を処理中</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">for × if の組み合わせ</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">hba1cList</span> = [<span class="num">6.5</span>, <span class="num">7.8</span>, <span class="num">5.9</span>, <span class="num">9.2</span>, <span class="num">6.8</span>];
+<span class="kw">let</span>   <span class="vr">alertCount</span>  = <span class="num">0</span>;
+
+<span class="kw">for</span> (<span class="kw">let</span> <span class="vr">i</span> = <span class="num">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="vr">hba1cList</span>.<span class="vr">length</span>; <span class="vr">i</span>++) {
+  <span class="kw">if</span> (<span class="vr">hba1cList</span>[<span class="vr">i</span>] <span class="op">>=</span> <span class="num">7.0</span>) {
+    <span class="vr">alertCount</span>++;
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`⚠ 患者${<span class="vr">i</span>+<span class="num">1</span>}: HbA1c ${<span class="vr">hba1cList</span>[<span class="vr">i</span>]}%`</span>);
+  }
+}
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`要管理: ${<span class="vr">alertCount</span>} 名`</span>); <span class="cm">// → "要管理: 2 名"</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 for ループの3つの部分</div>
+        <div style="font-size:.78rem;color:#e2e8f0;line-height:1.9;">
+          <code style="color:#ffa657;">let i = 0</code>　　① 開始値（i を 0 に）<br>
+          <code style="color:#ffa657;">i &lt; 5</code>　　　 ② 継続条件（i が 5 未満の間）<br>
+          <code style="color:#ffa657;">i++</code>　　　　 ③ 更新（毎回 i を 1 増やす）
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 .length で配列の長さを取得</div>
+        <div class="repl" style="font-size:.74rem;">
+          <div class="repl-in">[6.5, 7.8, 5.9]<span class="op">.</span><span class="fn">length</span></div>
+          <div class="repl-out">3</div>
+        </div>
+        <div style="font-size:.74rem;color:#94a3b8;margin-top:.3rem;">配列の要素数 = ループの回数</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S12: while ループ
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s12">
+  <span class="tag tag-js an">Ch.2 — while</span>
+  <h2 class="stitle an"><span class="pill">while</span> ― 条件が true の間ずっと繰り返す</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">while ― 薬の残数カウントダウン</span></div>
+        <div class="cb-body"><code><span class="kw">let</span> <span class="vr">pills</span> = <span class="num">5</span>;  <span class="cm">// 残薬 5 錠</span>
+
+<span class="kw">while</span> (<span class="vr">pills</span> <span class="op">></span> <span class="num">0</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`💊 服薬 → 残り ${<span class="vr">pills</span> - <span class="num">1</span>} 錠`</span>);
+  <span class="vr">pills</span>--;  <span class="cm">// ← これがないと無限ループ！</span>
+}
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"薬がなくなりました。処方を依頼してください"</span>);
+<span class="cm">// → 💊 服薬 → 残り 4 錠</span>
+<span class="cm">// → 💊 服薬 → 残り 3 錠  ... (省略)</span>
+<span class="cm">// → 薬がなくなりました。処方を依頼してください</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">for vs while ― 使い分け</span></div>
+        <div class="cb-body"><code><span class="cm">// 繰り返し回数が決まっている → for</span>
+<span class="kw">for</span> (<span class="kw">let</span> <span class="vr">i</span> = <span class="num">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="num">10</span>; <span class="vr">i</span>++) { … }
+
+<span class="cm">// 条件が満たされるまで → while</span>
+<span class="kw">while</span> (<span class="vr">血圧</span> <span class="op">></span> <span class="num">140</span>) {
+  <span class="cm">// 投薬・再測定を繰り返す</span>
+}</code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">⚠ 無限ループに注意</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="kw">while</span> (<span class="kw">true</span>) {
+  <span class="cm">// 更新がないと永遠に回る</span>
+  <span class="cm">// ブラウザがフリーズする！</span>
+}</code></div>
+        </div>
+        <div style="font-size:.74rem;color:#94a3b8;margin-top:.35rem;">必ず条件が false になる更新を忘れずに</div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">💡 do...while（後判定）</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="kw">do</span> {
+  <span class="cm">// 最低1回は必ず実行</span>
+} <span class="kw">while</span> (条件);</code></div>
+        </div>
+        <div style="font-size:.74rem;color:#94a3b8;margin-top:.3rem;">「問診票を最低1回は表示する」などに使う</div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">for → 回数決まってる、while → 条件で終わる</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S13: for...of
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s13">
+  <span class="tag tag-teal an">Ch.2 — for...of</span>
+  <h2 class="stitle an"><span class="pill-l">for...of</span> ― 配列の要素を順に取り出す</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">for vs for...of の比較</span></div>
+      <div class="cb-body"><code><span class="kw">const</span> <span class="vr">patients</span> = [<span class="str">"山田"</span>, <span class="str">"鈴木"</span>, <span class="str">"田中"</span>, <span class="str">"佐藤"</span>];
+
+<span class="cm">// 旧来の for ループ（インデックスが必要なとき）</span>
+<span class="kw">for</span> (<span class="kw">let</span> <span class="vr">i</span> = <span class="num">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="vr">patients</span>.<span class="vr">length</span>; <span class="vr">i</span>++) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">i</span>, <span class="vr">patients</span>[<span class="vr">i</span>]);
+}
+
+<span class="cm">// for...of （要素だけ取り出す、シンプル）</span>
+<span class="kw">for</span> (<span class="kw">const</span> <span class="vr">name</span> <span class="kw">of</span> <span class="vr">patients</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`患者：${<span class="vr">name</span>}さん`</span>);
+}
+<span class="cm">// → 患者：山田さん / 鈴木さん / 田中さん / 佐藤さん</span>
+
+<span class="cm">// インデックスも欲しいとき → entries()</span>
+<span class="kw">for</span> (<span class="kw">const</span> [<span class="vr">i</span>, <span class="vr">name</span>] <span class="kw">of</span> <span class="vr">patients</span>.<span class="fn">entries</span>()) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`${<span class="vr">i</span>+<span class="num">1</span>}番：${<span class="vr">name</span>}`</span>);
+}</code></div>
+    </div>
+    <div class="g2 an" style="gap:.6rem;margin-top:.3rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>使い分けの目安</strong><br>
+        <code class="pill-l">for (let i=0...)</code>：インデックスが必要 / 逆順 / 飛ばしたい<br>
+        <code class="pill-l">for...of</code>：全要素を順に処理するだけ（こちらが読みやすい）
+      </div>
+      <div class="card-green" style="font-size:.8rem;">
+        ✅ <strong>Vol.3（次回）で学ぶ配列メソッド</strong><br>
+        <code class="pill-l">.forEach()</code>・<code class="pill-l">.map()</code>・<code class="pill-l">.filter()</code> を使うとさらに簡潔になる
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S14: break / continue
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s14">
+  <span class="tag tag-js an">Ch.2 — break / continue</span>
+  <h2 class="stitle an"><span class="pill">break</span> と <span class="pill">continue</span> ― ループを制御する</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">break ― ループを途中で抜ける</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">hba1cList</span> = [<span class="num">6.2</span>, <span class="num">6.8</span>, <span class="num">9.5</span>, <span class="num">7.1</span>, <span class="num">8.0</span>];
+
+<span class="cm">// 重篤な患者を見つけたら即座に通知して終了</span>
+<span class="kw">for</span> (<span class="kw">const</span> <span class="vr">v</span> <span class="kw">of</span> <span class="vr">hba1cList</span>) {
+  <span class="kw">if</span> (<span class="vr">v</span> <span class="op">>=</span> <span class="num">9.0</span>) {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`🚨 緊急 HbA1c ${<span class="vr">v</span>} → ループ終了`</span>);
+    <span class="kw">break</span>;  <span class="cm">// ← ここでループを抜ける</span>
+  }
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`✅ ${<span class="vr">v</span>} 正常範囲`</span>);
+}
+<span class="cm">// 6.2, 6.8 は表示 → 9.5 で break</span></code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">continue ― その回だけスキップ</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">data</span> = [<span class="num">6.5</span>, <span class="kw">null</span>, <span class="num">7.2</span>, <span class="kw">null</span>, <span class="num">8.1</span>];
+
+<span class="cm">// null（未記入）をスキップして処理</span>
+<span class="kw">for</span> (<span class="kw">const</span> <span class="vr">v</span> <span class="kw">of</span> <span class="vr">data</span>) {
+  <span class="kw">if</span> (<span class="vr">v</span> <span class="op">===</span> <span class="kw">null</span>) <span class="kw">continue</span>;  <span class="cm">// スキップ</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`処理: HbA1c ${<span class="vr">v</span>}`</span>);
+}
+<span class="cm">// → 6.5 / 7.2 / 8.1 のみ処理（null は飛ばす）</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.9;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.4rem;">🔑 まとめ</div>
+        <div style="font-size:.78rem;color:#e2e8f0;line-height:1.9;">
+          <span class="pill" style="font-size:.72rem;">break</span>　　ループ全体を<strong style="color:#f87171;">終了</strong><br>
+          <span class="pill" style="font-size:.72rem;">continue</span>　その回だけ<strong style="color:#fbbf24;">スキップ</strong>して次へ<br>
+          <span class="pill" style="font-size:.72rem;">return</span>　　関数ごと終了（Vol.4 で詳しく）
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">🩺 医療データ処理での使い方</div>
+        <ul class="bl" style="font-size:.76rem;">
+          <li><strong>break</strong>：緊急度の高い患者を発見したら即通知</li>
+          <li><strong>continue</strong>：欠損値（null / undefined）をスキップ</li>
+          <li><strong>continue</strong>：測定範囲外の値を除外して集計</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S15: 🔧 デモ② ループ可視化
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s15">
+  <span class="tag tag-js an">🔧 ライブデモ②</span>
+  <h2 class="stitle an">ループ可視化ツール ― for ループが「動く」のを見る</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.05;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">実行するコード</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="kw">const</span> <span class="vr">patients</span> = [
+  <span class="str">"山田"</span>, <span class="str">"鈴木"</span>, <span class="str">"田中"</span>,
+  <span class="str">"佐藤"</span>, <span class="str">"伊藤"</span>
+];
+
+<span class="kw">for</span> (<span class="kw">let</span> <span class="vr">i</span> = <span class="num">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="vr">patients</span>.<span class="vr">length</span>; <span class="vr">i</span>++) {
+  <span class="cm">// 現在の i 番目を処理</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`i=${<span class="vr">i</span>}: ${<span class="vr">patients</span>[<span class="vr">i</span>]}さん`</span>);
+}</code></div>
+      </div>
+    </div>
+    <div style="flex:.95;display:flex;flex-direction:column;gap:.6rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.9rem;">
+        <div style="font-size:.76rem;color:#8b949e;font-weight:700;margin-bottom:.6rem;">▶ ループの動きを 1 ステップずつ確認する</div>
+        <div id="lv-list" style="margin-bottom:.6rem;"></div>
+        <div style="display:flex;gap:.5rem;">
+          <button onclick="lvStep()" id="lv-step" style="flex:1;padding:.42rem;background:var(--jsdark);color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:.8rem;">▶ 次のステップ（i++）</button>
+          <button onclick="lvReset()" style="padding:.42rem .8rem;background:#30363d;color:#e6edf3;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:.8rem;">リセット</button>
+        </div>
+        <div id="lv-msg" style="margin-top:.55rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;min-height:1.2rem;color:#4ade80;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S16: QUIZ 3
+══════════════════════════════════ -->
+<div class="slide slide-quiz" id="s16">
+  <span class="tag tag-purple an">QUIZ 3</span>
+  <h2 class="stitle an">ループの出力を当てよう</h2>
+  <div class="quiz-q an">
+    以下のコードは何を出力する？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;background:rgba(255,255,255,.08);padding:.55rem 1.2rem;border-radius:6px;display:inline-block;line-height:1.85;text-align:left;">
+      let total = 0;<br>
+      for (let i = 1; i &lt;= 5; i++) {<br>
+      &nbsp;&nbsp;if (i % 2 === 0) continue;<br>
+      &nbsp;&nbsp;total += i;<br>
+      }<br>
+      console.log(total);
+    </span>
+  </div>
+  <div class="qopts an" id="q3">
+    <button class="qbtn" onclick="ansQ3(this,'a')">A. 15（1〜5 の合計）</button>
+    <button class="qbtn" onclick="ansQ3(this,'b')">B. 9（1+3+5、奇数のみ）</button>
+    <button class="qbtn" onclick="ansQ3(this,'c')">C. 6（2+4、偶数のみ）</button>
+    <button class="qbtn" onclick="ansQ3(this,'d')">D. 0</button>
+  </div>
+  <div class="qfb an" id="q3fb"></div>
+</div>
+
+<!-- ══════════════════════════════════
+  S17: 条件分岐 × ループ（組み合わせ）
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s17">
+  <span class="tag tag-js an">Ch.3 — 組み合わせ</span>
+  <h2 class="stitle an">条件分岐 × ループ ― 患者データを集計する</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1.15;">
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">5人の患者データを分析する</span></div>
+        <div class="cb-body" style="font-size:.77rem;"><code><span class="kw">const</span> <span class="vr">patients</span> = [
+  { <span class="vr">name</span>: <span class="str">"山田"</span>, <span class="vr">hba1c</span>: <span class="num">6.5</span>, <span class="vr">bmi</span>: <span class="num">24</span> },
+  { <span class="vr">name</span>: <span class="str">"鈴木"</span>, <span class="vr">hba1c</span>: <span class="num">8.2</span>, <span class="vr">bmi</span>: <span class="num">28</span> },
+  { <span class="vr">name</span>: <span class="str">"田中"</span>, <span class="vr">hba1c</span>: <span class="num">5.9</span>, <span class="vr">bmi</span>: <span class="num">22</span> },
+  { <span class="vr">name</span>: <span class="str">"佐藤"</span>, <span class="vr">hba1c</span>: <span class="num">9.5</span>, <span class="vr">bmi</span>: <span class="num">31</span> },
+  { <span class="vr">name</span>: <span class="str">"伊藤"</span>, <span class="vr">hba1c</span>: <span class="num">7.1</span>, <span class="vr">bmi</span>: <span class="num">26</span> },
+];
+
+<span class="kw">let</span> <span class="vr">alertList</span> = [];  <span class="cm">// 要管理患者の名前リスト</span>
+<span class="kw">let</span> <span class="vr">totalHbA1c</span> = <span class="num">0</span>; <span class="cm">// 合計（平均を計算するため）</span>
+
+<span class="kw">for</span> (<span class="kw">const</span> <span class="vr">p</span> <span class="kw">of</span> <span class="vr">patients</span>) {
+  <span class="vr">totalHbA1c</span> += <span class="vr">p</span>.<span class="vr">hba1c</span>;
+
+  <span class="kw">if</span> (<span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span> <span class="op">||</span> <span class="vr">p</span>.<span class="vr">bmi</span> <span class="op">>=</span> <span class="num">30</span>) {
+    <span class="vr">alertList</span>.<span class="fn">push</span>(<span class="vr">p</span>.<span class="vr">name</span>);
+  }
+}
+
+<span class="kw">const</span> <span class="vr">avg</span> = (<span class="vr">totalHbA1c</span> / <span class="vr">patients</span>.<span class="vr">length</span>).<span class="fn">toFixed</span>(<span class="num">1</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`平均 HbA1c: ${<span class="vr">avg</span>}%`</span>);         <span class="cm">// "7.4%"</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`要管理: ${<span class="vr">alertList</span>.<span class="fn">join</span>(<span class="str">"・"</span>)}`</span>); <span class="cm">// "鈴木・佐藤・伊藤"</span></code></div>
+      </div>
+    </div>
+    <div style="flex:.85;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:var(--js);margin-bottom:.35rem;">📌 新しく登場した概念</div>
+        <ul class="bl" style="font-size:.77rem;">
+          <li><code style="color:#a5d6ff;">{ name, hba1c, bmi }</code>：オブジェクト（Vol.3 で詳しく）</li>
+          <li><code style="color:#a5d6ff;">p.hba1c</code>：ドット記法でプロパティを取得</li>
+          <li><code style="color:#a5d6ff;">[].push()</code>：配列に要素を追加</li>
+          <li><code style="color:#a5d6ff;">.join("・")</code>：配列を文字列に変換</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#4ade80;margin-bottom:.35rem;">✅ これで何ができるか</div>
+        <div style="font-size:.77rem;color:#e2e8f0;line-height:1.7;">
+          100人の患者データを<br>
+          ループで一括処理 →<br>
+          条件分岐で要管理者を抽出 →<br>
+          <strong style="color:#4ade80;">データ分析の基礎が完成</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S18: ネストしたループ
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s18">
+  <span class="tag tag-teal an">Ch.3 — ネスト</span>
+  <h2 class="stitle an">ネストしたループ ― ループの中にループ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">週 × 曜日 ― 2重ループ</span></div>
+      <div class="cb-body"><code><span class="kw">const</span> <span class="vr">weeks</span>    = [<span class="str">"第1週"</span>, <span class="str">"第2週"</span>];
+<span class="kw">const</span> <span class="vr">weekdays</span> = [<span class="str">"月"</span>, <span class="str">"水"</span>, <span class="str">"金"</span>];  <span class="cm">// 外来診察日</span>
+
+<span class="kw">for</span> (<span class="kw">const</span> <span class="vr">week</span> <span class="kw">of</span> <span class="vr">weeks</span>) {
+  <span class="kw">for</span> (<span class="kw">const</span> <span class="vr">day</span> <span class="kw">of</span> <span class="vr">weekdays</span>) {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`${<span class="vr">week</span>} ${<span class="vr">day</span>}曜日 外来`</span>);
+  }
+}
+<span class="cm">// → 第1週 月曜日 外来</span>
+<span class="cm">// → 第1週 水曜日 外来</span>
+<span class="cm">// → 第1週 金曜日 外来</span>
+<span class="cm">// → 第2週 月曜日 外来 ...</span></code></div>
+    </div>
+    <div class="g2 an" style="gap:.6rem;margin-top:.3rem;">
+      <div class="card-warn" style="font-size:.8rem;">
+        ⚠ <strong>ネストは2〜3重まで</strong><br>
+        深くなるほど読みにくく処理も遅くなる。<br>
+        4重以上は関数に切り出す（Vol.4 で学ぶ）
+      </div>
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>計算量に注意</strong><br>
+        外側 n 回 × 内側 m 回 = <code class="pill-l">n × m</code> 回実行される<br>
+        1000×1000 = 100万回 → ブラウザが遅くなる
+      </div>
+    </div>
+  </div>
+  <div class="hl an">ネストは便利だが、深さには要注意</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S19: よくあるループのミス
+══════════════════════════════════ -->
+<div class="slide slide-code" id="s19">
+  <span class="tag tag-red an">よくあるミスと対処</span>
+  <h2 class="stitle an">ループ・分岐でハマりがちなミス</h2>
+  <div class="fx an" style="flex:1;align-items:start;gap:.9rem;">
+    <div style="flex:1;">
+      <div class="cb mb1">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">① off-by-one（境界値ミス）</span></div>
+        <div class="cb-body"><code><span class="kw">const</span> <span class="vr">arr</span> = [<span class="str">"a"</span>, <span class="str">"b"</span>, <span class="str">"c"</span>]; <span class="cm">// 要素は 0,1,2</span>
+
+<span class="cm">// ❌ i <= arr.length は範囲外アクセス</span>
+<span class="kw">for</span> (<span class="kw">let</span> <span class="vr">i</span>=<span class="num">0</span>; <span class="vr">i</span> <span class="op">&lt;=</span> <span class="vr">arr</span>.<span class="vr">length</span>; <span class="vr">i</span>++) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">arr</span>[<span class="vr">i</span>]); <span class="cm">// 最後は undefined</span>
+}
+<span class="cm">// ✅ i < arr.length が正解</span>
+<span class="kw">for</span> (<span class="kw">let</span> <span class="vr">i</span>=<span class="num">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="vr">arr</span>.<span class="vr">length</span>; <span class="vr">i</span>++) { … }</code></div>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">② 条件の = vs ==/ === の混同</span></div>
+        <div class="cb-body"><code><span class="kw">let</span> <span class="vr">flag</span> = <span class="kw">false</span>;
+
+<span class="cm">// ❌ = は代入。条件が常に true になる</span>
+<span class="kw">if</span> (<span class="vr">flag</span> <span class="op">=</span> <span class="kw">true</span>) { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"常に実行"</span>); }
+
+<span class="cm">// ✅ === で比較する</span>
+<span class="kw">if</span> (<span class="vr">flag</span> <span class="op">===</span> <span class="kw">true</span>) { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"正しい比較"</span>); }</code></div>
+      </div>
+    </div>
+    <div style="flex:.88;display:flex;flex-direction:column;gap:.65rem;">
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">③ switch の break 忘れ</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="kw">case</span> <span class="str">"A"</span>:
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A型"</span>);
+  <span class="cm">// break を書かないと</span>
+<span class="kw">case</span> <span class="str">"B"</span>:
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B型"</span>); <span class="cm">// ← A型でも出る</span></code></div>
+        </div>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:.78rem;font-weight:700;color:#f87171;margin-bottom:.35rem;">④ while の無限ループ</div>
+        <div class="cb" style="margin-top:.2rem;">
+          <div class="cb-body" style="font-size:.74rem;"><code><span class="kw">let</span> <span class="vr">i</span> = <span class="num">0</span>;
+<span class="kw">while</span> (<span class="vr">i</span> <span class="op">&lt;</span> <span class="num">5</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="vr">i</span>);
+  <span class="cm">// i++ を忘れると無限ループ！</span>
+}</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">エラーが出たら「境界値・= vs ===・break・更新処理」を確認</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S20: 実践パターン集
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s20">
+  <span class="tag tag-green an">実践パターン</span>
+  <h2 class="stitle an">よく使うパターン ― コピペして使える雛形</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="cb an">
+      <div class="cb-head"><div class="dot" style="background:#ff5f56"></div><div class="dot" style="background:#ffbd2e"></div><div class="dot" style="background:#27c93f"></div><span class="cb-lang">医療でよく使うパターン集</span></div>
+      <div class="cb-body" style="font-size:.76rem;"><code><span class="cm">// ① 配列の合計・平均</span>
+<span class="kw">const</span> <span class="vr">sum</span> = <span class="vr">values</span>.<span class="fn">reduce</span>((<span class="vr">a</span>, <span class="vr">b</span>) <span class="op">=></span> <span class="vr">a</span> + <span class="vr">b</span>, <span class="num">0</span>);
+<span class="kw">const</span> <span class="vr">avg</span> = <span class="vr">sum</span> / <span class="vr">values</span>.<span class="vr">length</span>;
+
+<span class="cm">// ② 配列から条件に合う要素を取り出す（filter）</span>
+<span class="kw">const</span> <span class="vr">highRisk</span> = <span class="vr">patients</span>.<span class="fn">filter</span>(<span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>);
+
+<span class="cm">// ③ 最大値・最小値</span>
+<span class="kw">const</span> <span class="vr">maxHbA1c</span> = <span class="fn">Math</span>.<span class="fn">max</span>(...<span class="vr">values</span>);
+<span class="kw">const</span> <span class="vr">minHbA1c</span> = <span class="fn">Math</span>.<span class="fn">min</span>(...<span class="vr">values</span>);
+
+<span class="cm">// ④ 特定の要素が存在するか</span>
+<span class="kw">const</span> <span class="vr">hasCritical</span> = <span class="vr">patients</span>.<span class="fn">some</span>(<span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">>=</span> <span class="num">10</span>);
+
+<span class="cm">// ⑤ 全員が条件を満たすか</span>
+<span class="kw">const</span> <span class="vr">allGood</span> = <span class="vr">patients</span>.<span class="fn">every</span>(<span class="vr">p</span> <span class="op">=></span> <span class="vr">p</span>.<span class="vr">hba1c</span> <span class="op">&lt;</span> <span class="num">7.0</span>);</code></div>
+    </div>
+    <div class="card-blue an" style="font-size:.8rem;margin-top:.2rem;">
+      💡 <code class="pill-l">filter</code>・<code class="pill-l">some</code>・<code class="pill-l">every</code>・<code class="pill-l">reduce</code> は<strong>配列メソッド</strong>。for ループを内部で持ち、1行で処理できる。Vol.3 で詳しく学ぶ
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S21: Vol.2 まとめ
+══════════════════════════════════ -->
+<div class="slide slide-light" id="s21">
+  <span class="tag tag-green an">Vol.2 まとめ</span>
+  <h2 class="stitle an">今日学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="sumi an"><div class="sumi-num" style="background:var(--navy);">01</div><div class="sumi-body"><strong>if / else if / else</strong>：上から順に評価。最初に true になった箇所だけ実行する</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--teal);">02</div><div class="sumi-body"><strong>三項演算子</strong>：<code class="pill-l">条件 ? 真 : 偽</code> で1行に。シンプルな2択の値の選択に使う</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--amber);">03</div><div class="sumi-body"><strong>switch</strong>：同じ変数を複数の固定値と比較するとき。<code class="pill-l">break</code> を忘れずに</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--jsdark);">04</div><div class="sumi-body"><strong>for / while / for...of</strong>：回数が決まってるなら for、条件で終わるなら while、配列を順に処理するなら for...of</div></div>
+    <div class="sumi an"><div class="sumi-num" style="background:var(--green);">05</div><div class="sumi-body"><strong>break / continue</strong>：break でループを終了、continue でその回をスキップ。欠損値除外や緊急検知に使う</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S22: 今週の課題
+══════════════════════════════════ -->
+<div class="slide slide-dark" id="s22">
+  <span class="tag tag-amber an">今週の課題</span>
+  <h2 class="stitle an">手を動かしてみよう</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">Step 1</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">Console で試す</strong>：F12 を開いて、自分の HbA1c（架空でOK）を変数に入れて if 文で判定する</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--teal);">Step 2</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">for ループ</strong>：1〜10 の数字を console.log で表示する。慣れたら偶数だけ・奇数だけにしてみる</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--amber);">Step 3</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">組み合わせ</strong>：5人の架空の患者データ配列を作り、HbA1c ≥ 7.0 の人だけ名前を表示する</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--jsdark);color:#1a1a00;">Step 4</div>
+      <div class="cr-arr" style="background:#1a2332;">→</div>
+      <div class="cr-body" style="background:#1a2332;color:#e2e8f0;"><strong style="color:var(--js);">発展</strong>：Step 3 に「平均 HbA1c を計算して表示する」を追加してみよう</div>
+    </div>
+  </div>
+  <div class="hl an">まずコピーして動かす → 少し変えてみる → 自分で書いてみる</div>
+</div>
+
+<!-- ══════════════════════════════════
+  S23: 次回予告 Vol.3
+══════════════════════════════════ -->
+<div class="slide slide-card" id="s23">
+  <span class="tag tag-teal an">NEXT SESSION</span>
+  <h2 class="stitle an">次回 Vol.3 ― 配列・オブジェクト</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.75rem;">
+    <div class="next-card an">
+      <div class="next-card-title">Vol.3 で学ぶこと</div>
+      <div class="next-card-body">
+        Ch.1　<strong>配列</strong>：push / pop / slice・map / filter / reduce<br>
+        Ch.2　<strong>オブジェクト</strong>：{ } によるデータ構造・ドット記法・分割代入<br>
+        Ch.3　<strong>JSON</strong>：データ交換フォーマット・API連携への入口<br>
+        🔧　<strong>ライブデモ</strong>：患者リスト管理ツール
+      </div>
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-blue" style="font-size:.8rem;">
+        💡 <strong>Vol.2 の内容が使えるか確認</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>if / else で多段階判定できる</li>
+          <li>for...of で配列を順に処理できる</li>
+          <li>continue で欠損値をスキップできる</li>
+        </ul>
+      </div>
+      <div class="card-green" style="font-size:.8rem;">
+        📚 <strong>予習のヒント</strong><br>
+        <ul class="bl" style="margin-top:.3rem;">
+          <li>MDN で "Array.prototype.map" を検索</li>
+          <li>JSON とは何かを調べてみる</li>
+          <li>患者データを表形式で想像してみる</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;" class="an">
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.1 ✅</span>
+      <span style="background:var(--jsdark);color:#1a1a00;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.2 ✅</span>
+      <span style="background:#1B6CA8;color:#fff;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.3 ← 次回</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.4</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.5</span>
+      <span style="background:#30363d;color:#8b949e;border-radius:4px;padding:2px 12px;font-size:.74rem;font-family:monospace;">Vol.6</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  S24: 締め
+══════════════════════════════════ -->
+<div class="slide slide-dark" id="s24">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.55rem;">
+    <div class="an title-vol" style="font-size:.75rem;">Vol.2 / 6 完了</div>
+    <div class="an title-main" style="font-size:clamp(2rem,5vw,3.8rem);">
+      コードは<br>
+      <span style="color:var(--js);">判断と繰り返し</span>で<br>
+      できている
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.88rem;line-height:2.1;">
+      if でコンピュータに「考えさせ」<br>
+      for でコンピュータに「働かせる」<br>
+      この2つがあれば<br>
+      医療データの分析が書けるようになる
+    </div>
+  </div>
+  <div class="title-author an">
+    大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+    <span style="color:#4ade80;font-size:.76rem;">質問・誤りの指摘、大歓迎です</span>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<style>
+.qk {
+  padding: 3px 10px; background: #30363d; color: #8b949e;
+  border: none; border-radius: 4px; font-family: 'JetBrains Mono', monospace;
+  font-size: .76rem; cursor: pointer; transition: background .2s;
+}
+.qk:hover { background: #444d56; color: #e6edf3; }
+</style>
+
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 24</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+/* ── Engine ─────────────────────── */
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  const p = cur;
+  setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev');
+  slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
+}
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft'){e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) dx<0?go(cur+1):go(cur-1);
+},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
+
+/* ── Quiz 1: 投票 ─────────────── */
+function vote1(btn, val) {
+  document.querySelectorAll('#q1 .qbtn').forEach(b=>b.disabled=true);
+  btn.style.background='rgba(247,223,30,.18)';
+  btn.style.borderColor='var(--jsdark)';
+  const m = {
+    a: '✅ 大正解！ ログイン認証は if 文の超典型例',
+    b: '✅ 大正解！ HbA1c閾値判定はまさに今日やること',
+    c: '✅ 大正解！ 在庫チェックも if 文',
+    d: '✅ 完璧！ 全部同じくらい使う。if 文はあらゆるプログラムの基礎'
+  };
+  const fb = document.getElementById('q1fb');
+  fb.textContent = m[val];
+  fb.style.color = '#4ade80';
+  fb.classList.add('show');
+}
+
+/* ── Quiz 2: if / else if ──────── */
+function ansQ2(btn, val) {
+  document.querySelectorAll('#q2 .qbtn').forEach(b=>b.disabled=true);
+  if (val==='b') {
+    btn.classList.add('correct');
+    document.getElementById('q2fb').textContent =
+      '✅ 正解！ score=75 は 90未満なので最初の条件は偽。70以上なので2番目が真 → "B" が表示される。3番目以降は評価されない';
+    document.getElementById('q2fb').style.color='#4ade80';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[1].classList.add('correct');
+    document.getElementById('q2fb').textContent =
+      '💡 正解は B。if/else if は上から順に評価し、最初に true になった1箇所だけ実行する。75 は 70以上なので "B"';
+    document.getElementById('q2fb').style.color='#fbbf24';
+  }
+  document.getElementById('q2fb').classList.add('show');
+}
+
+/* ── Quiz 3: break/continue ────── */
+function ansQ3(btn, val) {
+  document.querySelectorAll('#q3 .qbtn').forEach(b=>b.disabled=true);
+  if (val==='b') {
+    btn.classList.add('correct');
+    document.getElementById('q3fb').textContent =
+      '✅ 正解！ i%2===0 （偶数）のとき continue でスキップ → 加算されるのは奇数の 1, 3, 5 のみ → 合計 9';
+    document.getElementById('q3fb').style.color='#4ade80';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q3 .qbtn')[1].classList.add('correct');
+    document.getElementById('q3fb').textContent =
+      '💡 正解は B（9）。continue は偶数のとき total += i をスキップする。奇数 1+3+5=9 が答え';
+    document.getElementById('q3fb').style.color='#fbbf24';
+  }
+  document.getElementById('q3fb').classList.add('show');
+}
+
+/* ── Demo 1: HbA1c 判定器 ──────── */
+function judgeHbA1c(val) {
+  const v = parseFloat(val);
+  if (isNaN(v)) return { text: '⚠ 数値を入力してください', color: '#8b949e' };
+  if (v >= 10.0) return { text: `🚨 重篤（${v}%）：即時介入が必要`, color: '#f87171' };
+  if (v >=  8.0) return { text: `🔴 不良（${v}%）：治療の強化を検討`, color: '#fb923c' };
+  if (v >=  7.0) return { text: `🟡 要管理（${v}%）：生活指導を継続`, color: '#fbbf24' };
+  if (v >=  6.0) return { text: `🟢 ほぼ良好（${v}%）：現状維持`, color: '#4ade80' };
+  return           { text: `✅ 良好（${v}%）：目標達成`, color: '#4ade80' };
+}
+function runHbA1c() {
+  const val = document.getElementById('hba-in').value;
+  const r   = judgeHbA1c(val);
+  const el  = document.getElementById('hba-out');
+  el.textContent = r.text;
+  el.style.color  = r.color;
+}
+function quickHbA1c(v) {
+  document.getElementById('hba-in').value = v;
+  runHbA1c();
+}
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && document.activeElement?.id==='hba-in') runHbA1c();
+});
+
+/* ── Demo 2: ループ可視化 ──────── */
+const lvPatients = ['山田','鈴木','田中','佐藤','伊藤'];
+let lvCur = -1;
+
+function lvRender() {
+  const list = document.getElementById('lv-list');
+  list.innerHTML = '';
+  lvPatients.forEach((name, i) => {
+    const row  = document.createElement('div');
+    row.className = 'lv-row';
+    const idx  = document.createElement('span');
+    idx.className = 'lv-idx';
+    idx.textContent = `i=${i}`;
+    const val  = document.createElement('span');
+    val.className = 'lv-val' + (i === lvCur ? ' active' : i < lvCur ? ' done' : '');
+    val.textContent = name + 'さん';
+    const arr  = document.createElement('span');
+    arr.className = 'lv-arrow';
+    arr.textContent = i < lvCur ? ' ✅' : i === lvCur ? ' ← 処理中' : '';
+    row.append(idx, val, arr);
+    list.appendChild(row);
+  });
+}
+function lvStep() {
+  if (lvCur >= lvPatients.length - 1) return;
+  lvCur++;
+  lvRender();
+  const msg = document.getElementById('lv-msg');
+  if (lvCur < lvPatients.length) {
+    msg.textContent = `i=${lvCur}: patients[${lvCur}] = "${lvPatients[lvCur]}" を処理`;
+  }
+  if (lvCur === lvPatients.length - 1) {
+    document.getElementById('lv-step').disabled = true;
+    document.getElementById('lv-step').style.opacity = '.4';
+    setTimeout(() => {
+      document.getElementById('lv-msg').textContent = '✅ ループ完了！ i < 5 の条件が false になった';
+    }, 400);
+  }
+}
+function lvReset() {
+  lvCur = -1;
+  lvRender();
+  document.getElementById('lv-msg').textContent = '';
+  const btn = document.getElementById('lv-step');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+}
+lvRender();
+</script>
+</body>
+</html>

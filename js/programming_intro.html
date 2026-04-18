@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はじめてのプログラミング ― 医学部生のための言語入門</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A2342;
+  --teal:   #1B6CA8;
+  --ltblue: #E8F1FA;
+  --amber:  #E8873A;
+  --gray:   #64748B;
+  --lgray:  #F0F4F8;
+  --red:    #C0392B;
+  --green:  #1A7A4A;
+  --text:   #1E293B;
+  --white:  #FFFFFF;
+  --purple: #6D28D9;
+  --pink:   #BE185D;
+  --orange: #D97706;
+
+  /* language colors */
+  --js:     #F7DF1E;
+  --r:      #276DC3;
+  --py:     #3776AB;
+  --html:   #E44D26;
+  --css:    #264DE4;
+  --sql:    #CC2927;
+  --c:      #A8B9CC;
+  --cs:     #512BD4;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Serif+JP:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+html, body {
+  width: 100%; height: 100%;
+  background: #0a0f1a;
+  font-family: 'Noto Sans JP', sans-serif;
+  overflow: hidden;
+}
+
+/* ── Slideshow Engine ────────────────────────────────── */
+.deck {
+  width: 100vw; height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 2.4rem 3.2rem 2rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(.4,0,.2,1), transform 0.45s cubic-bezier(.4,0,.2,1);
+  transform: translateX(60px);
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(0);
+}
+.slide.prev {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+/* ── Slide Themes ────────────────────────────────────── */
+.slide-dark  { background: var(--navy); }
+.slide-light { background: var(--white); }
+.slide-card  { background: var(--lgray); }
+.slide-code  { background: #0d1117; }
+.slide-quiz  { background: #1a0a2e; }
+
+.slide-dark::before {
+  content:'';
+  position: absolute;
+  left: 0; top: 0;
+  width: 6px; height: 100%;
+  background: var(--amber);
+}
+.slide-code::before {
+  content:'';
+  position: absolute;
+  left: 0; top: 0;
+  width: 6px; height: 100%;
+  background: var(--js);
+}
+.slide-quiz::before {
+  content:'';
+  position: absolute;
+  left: 0; top: 0;
+  width: 6px; height: 100%;
+  background: #a855f7;
+}
+
+/* ── Section Tag ─────────────────────────────────────── */
+.section-tag {
+  display: inline-block;
+  background: var(--teal);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  padding: 3px 12px;
+  border-radius: 2px;
+  margin-bottom: 0.5rem;
+  align-self: flex-start;
+}
+.section-tag.amber  { background: var(--amber); }
+.section-tag.red    { background: var(--red); }
+.section-tag.green  { background: var(--green); }
+.section-tag.purple { background: var(--purple); }
+.section-tag.js     { background: #b59a00; color: #fff; }
+.section-tag.r-tag  { background: var(--r); }
+
+/* ── Slide Title ─────────────────────────────────────── */
+.slide-title {
+  font-size: clamp(1.4rem, 3vw, 2.1rem);
+  font-weight: 900;
+  color: var(--navy);
+  line-height: 1.2;
+  margin-bottom: 1.2rem;
+  border-left: 5px solid var(--amber);
+  padding-left: 0.7rem;
+}
+.slide-dark .slide-title  { color: var(--white); border-color: var(--amber); }
+.slide-card .slide-title  { color: var(--navy); }
+.slide-code .slide-title  { color: var(--white); border-color: var(--js); }
+.slide-quiz .slide-title  { color: var(--white); border-color: #a855f7; }
+
+/* ── Title slide ─────────────────────────────────────── */
+.title-main {
+  font-size: clamp(2.8rem, 7vw, 5rem);
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -.02em;
+  line-height: 1.05;
+  text-align: center;
+  margin-top: 1.5rem;
+}
+.title-sub {
+  font-size: clamp(0.9rem, 1.8vw, 1.15rem);
+  color: var(--amber);
+  font-style: italic;
+  text-align: center;
+  margin-top: 0.9rem;
+  font-weight: 400;
+}
+.title-rule {
+  width: 280px; height: 2px;
+  background: var(--teal);
+  margin: 1.1rem auto;
+}
+.title-en {
+  text-align: center;
+  color: #8BAECF;
+  font-size: 0.85rem;
+  letter-spacing: .12em;
+}
+.title-author {
+  text-align: center;
+  color: #8BAECF;
+  font-size: 0.82rem;
+  margin-top: auto;
+  padding-bottom: 0.5rem;
+}
+
+/* ── Cards ───────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.09);
+  overflow: hidden;
+}
+.card-header {
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: .04em;
+}
+.card-body {
+  padding: 0.8rem 1rem;
+}
+.card-warn  { background: #FFF3E0; }
+.card-blue  { background: var(--ltblue); }
+.card-green { background: #ECFDF5; }
+.card-dark  { background: #1a2332; border: 1px solid #2a3a52; }
+.card-dark .card-body { color: #e2e8f0; }
+
+/* ── Grid helpers ────────────────────────────────────── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.8rem; }
+.flex-row { display: flex; gap: 1rem; }
+
+/* ── Bullet list ─────────────────────────────────────── */
+ul.bullets { list-style: none; }
+ul.bullets li {
+  padding: 0.28rem 0 0.28rem 1.3rem;
+  position: relative;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+ul.bullets li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--teal);
+  font-size: 0.8rem;
+}
+.slide-dark ul.bullets li { color: #e2e8f0; }
+.slide-dark ul.bullets li::before { color: var(--amber); }
+.slide-code ul.bullets li { color: #e2e8f0; }
+.slide-code ul.bullets li::before { color: var(--js); }
+
+/* ── Row items ───────────────────────────────────────── */
+.row-item {
+  display: flex;
+  align-items: stretch;
+  background: var(--white);
+  border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  overflow: hidden;
+  margin-bottom: 0.6rem;
+}
+.row-label {
+  min-width: 2.4rem;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: var(--white);
+  padding: 0 0.7rem;
+  white-space: nowrap;
+}
+.row-content {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+.row-content strong { color: var(--navy); }
+
+/* ── Code block ──────────────────────────────────────── */
+.code-block {
+  background: #0d1117;
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+.code-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+.code-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+}
+.code-lang {
+  font-size: 0.72rem;
+  color: #8b949e;
+  letter-spacing: .06em;
+  margin-left: auto;
+}
+.code-body {
+  padding: 0.9rem 1.2rem;
+  overflow-x: auto;
+}
+.code-body code {
+  color: #e6edf3;
+  white-space: pre;
+}
+/* syntax colors */
+.kw  { color: #ff7b72; }   /* keywords */
+.fn  { color: #d2a8ff; }   /* functions */
+.str { color: #a5d6ff; }   /* strings */
+.num { color: #79c0ff; }   /* numbers */
+.cm  { color: #8b949e; font-style: italic; } /* comments */
+.op  { color: #ff7b72; }   /* operators */
+.var { color: #ffa657; }   /* variables */
+.tag { color: #7ee787; }   /* html tags */
+.atr { color: #79c0ff; }   /* attributes */
+
+/* ── Lang badges ─────────────────────────────────────── */
+.lang-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.badge-js  { background: var(--js);   color: #1a1a00; }
+.badge-r   { background: var(--r);    color: #fff; }
+.badge-py  { background: var(--py);   color: #fff; }
+.badge-html{ background: var(--html); color: #fff; }
+.badge-css { background: var(--css);  color: #fff; }
+.badge-sql { background: var(--sql);  color: #fff; }
+.badge-c   { background: #555;        color: #fff; }
+.badge-cs  { background: var(--cs);   color: #fff; }
+
+/* ── Lang card (landscape overview) ─────────────────── */
+.lang-card {
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.09);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.lang-card-top {
+  padding: 0.6rem 0.8rem 0.5rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.lang-icon {
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 900; color: #fff;
+  flex-shrink: 0;
+}
+.lang-name { font-size: 0.92rem; font-weight: 900; color: var(--navy); }
+.lang-card-body {
+  padding: 0 0.8rem 0.7rem;
+  font-size: 0.78rem;
+  color: var(--gray);
+  line-height: 1.5;
+  flex: 1;
+}
+.lang-use {
+  margin-top: 0.4rem;
+  display: flex; flex-wrap: wrap; gap: 0.3rem;
+}
+.use-tag {
+  font-size: 0.66rem;
+  background: var(--ltblue);
+  color: var(--teal);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+/* ── Code compare ────────────────────────────────────── */
+.compare-block {
+  flex: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+}
+.compare-header {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.compare-body {
+  background: #0d1117;
+  padding: 0.8rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: #e6edf3;
+  white-space: pre;
+}
+
+/* ── Quiz slide ──────────────────────────────────────── */
+.quiz-q {
+  font-size: clamp(1rem, 2.2vw, 1.4rem);
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 1.5rem;
+  line-height: 1.45;
+  text-align: center;
+}
+.quiz-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.quiz-btn {
+  background: rgba(255,255,255,.08);
+  border: 2px solid rgba(255,255,255,.15);
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 0.9rem 1.2rem;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, transform .15s;
+  text-align: left;
+  line-height: 1.4;
+}
+.quiz-btn:hover { background: rgba(168,85,247,.25); border-color: #a855f7; transform: translateY(-2px); }
+.quiz-btn.correct { background: rgba(26,122,74,.35); border-color: #4ade80; color: #4ade80; }
+.quiz-btn.wrong   { background: rgba(192,57,43,.25); border-color: #f87171; color: #f87171; }
+.quiz-feedback {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  min-height: 1.5rem;
+  color: #4ade80;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.quiz-feedback.show { opacity: 1; }
+
+/* ── Vote slide ──────────────────────────────────────── */
+.vote-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+.vote-btn {
+  display: flex; align-items: center; gap: 0.8rem;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: background .2s;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.88rem;
+  color: #e2e8f0;
+  font-weight: 700;
+}
+.vote-btn:hover { background: rgba(27,108,168,.3); border-color: var(--teal); }
+.vote-bar-wrap {
+  flex: 1;
+  background: rgba(255,255,255,.1);
+  border-radius: 3px;
+  height: 8px;
+  overflow: hidden;
+  display: none;
+}
+.vote-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--teal);
+  transition: width .6s ease;
+  width: 0%;
+}
+.vote-pct {
+  min-width: 40px;
+  text-align: right;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  display: none;
+}
+
+/* ── Concept strip ───────────────────────────────────── */
+.concept-row {
+  display: flex; align-items: stretch; gap: 0;
+  border-radius: 6px; overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12);
+  margin-bottom: 0.65rem;
+}
+.concept-label {
+  min-width: 120px;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.8rem; font-weight: 700; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+}
+.concept-arrow {
+  background: #f0f4f8;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 0.5rem;
+  color: var(--gray); font-size: 1rem;
+}
+.concept-content {
+  flex: 1;
+  background: var(--white);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.83rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+.concept-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  background: #f8f8f8;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #c0392b;
+}
+
+/* ── Summary / Takeaway ──────────────────────────────── */
+.summary-item {
+  display: flex; align-items: stretch;
+  background: var(--white);
+  border-radius: 6px;
+  box-shadow: 0 1px 8px rgba(0,0,0,.07);
+  overflow: hidden;
+  margin-bottom: 0.85rem;
+}
+.summary-num {
+  min-width: 56px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 900; color: var(--white);
+  font-family: 'JetBrains Mono', monospace;
+}
+.summary-text {
+  padding: 0.7rem 1rem;
+  font-size: 0.86rem; line-height: 1.65; color: var(--text);
+}
+
+/* ── Flowchart (language picker) ─────────────────────── */
+.flow-node {
+  background: var(--white);
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.8rem; font-weight: 700; color: var(--navy);
+  text-align: center;
+  box-shadow: 0 1px 6px rgba(0,0,0,.1);
+}
+.flow-arrow {
+  text-align: center;
+  color: var(--amber);
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+/* ── Highlight ───────────────────────────────────────── */
+.highlight {
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--teal);
+  margin-top: auto;
+  padding-top: 0.8rem;
+}
+.slide-dark .highlight  { color: var(--amber); }
+.slide-quiz .highlight  { color: #a855f7; }
+.slide-code .highlight  { color: var(--js); }
+
+/* ── Table ───────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.data-table th {
+  background: var(--navy);
+  color: var(--white);
+  padding: 0.45rem 0.8rem;
+  text-align: left;
+  font-weight: 700;
+}
+.data-table td {
+  padding: 0.42rem 0.8rem;
+  border: 1px solid #ddd;
+  color: var(--text);
+}
+.data-table tr:nth-child(even) td { background: var(--lgray); }
+
+/* ── Animations ──────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.slide.active .anim {
+  animation: fadeUp .5s ease both;
+}
+.slide.active .anim:nth-child(1) { animation-delay: .05s; }
+.slide.active .anim:nth-child(2) { animation-delay: .12s; }
+.slide.active .anim:nth-child(3) { animation-delay: .19s; }
+.slide.active .anim:nth-child(4) { animation-delay: .26s; }
+.slide.active .anim:nth-child(5) { animation-delay: .33s; }
+.slide.active .anim:nth-child(6) { animation-delay: .40s; }
+.slide.active .anim:nth-child(7) { animation-delay: .47s; }
+.slide.active .anim:nth-child(8) { animation-delay: .54s; }
+
+/* ── Nav controls ────────────────────────────────────── */
+#nav {
+  position: fixed;
+  bottom: 1.2rem; right: 1.5rem;
+  display: flex; align-items: center; gap: 0.7rem;
+  z-index: 9999;
+}
+.nav-btn {
+  background: rgba(255,255,255,.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.25);
+  color: var(--white);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s, transform .15s;
+}
+.nav-btn:hover { background: rgba(255,255,255,.3); transform: scale(1.08); }
+#slide-counter {
+  color: rgba(255,255,255,.7);
+  font-size: 0.78rem;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 52px; text-align: center;
+}
+#progress {
+  position: fixed;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: var(--amber);
+  transition: width .35s ease;
+  z-index: 9999;
+}
+#hint {
+  position: fixed;
+  bottom: 1.25rem; left: 1.5rem;
+  color: rgba(255,255,255,.35);
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  pointer-events: none;
+}
+
+/* ── Utility ─────────────────────────────────────────── */
+.mb1 { margin-bottom: 0.6rem; }
+.mb2 { margin-bottom: 1rem; }
+.center { text-align: center; }
+.small  { font-size: 0.76rem; color: var(--gray); }
+.bold   { font-weight: 700; }
+.teal   { color: var(--teal); }
+.amber  { color: var(--amber); }
+.white  { color: var(--white); }
+.mono   { font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 1: タイトル
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+    <div style="display:flex;gap:0.5rem;margin-bottom:1.2rem;" class="anim">
+      <span class="lang-badge badge-js">JS</span>
+      <span class="lang-badge badge-r">R</span>
+      <span class="lang-badge badge-py">Python</span>
+      <span class="lang-badge badge-html">HTML</span>
+      <span class="lang-badge badge-sql">SQL</span>
+      <span class="lang-badge badge-c">C</span>
+      <span class="lang-badge badge-cs">C#</span>
+    </div>
+    <div class="title-main anim">はじめての<br><span style="color:var(--amber);">プログラミング</span></div>
+    <div class="title-sub anim">― 医学部生のための言語入門・60分完全版 ―</div>
+    <div class="title-rule anim"></div>
+    <div class="title-en anim">Introduction to Programming for Medical Students</div>
+  </div>
+  <div class="title-author anim">大阪公立大学 医学部 細菌学講座　金子幸弘</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 2: アジェンダ
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s2">
+  <span class="section-tag anim">OVERVIEW</span>
+  <h2 class="slide-title anim">今日の60分で何を学ぶか</h2>
+  <div class="grid2 anim" style="flex:1;align-content:center;gap:0.75rem;">
+    <div class="row-item"><div class="row-label" style="background:var(--navy);">0</div><div class="row-content"><strong>なぜ今プログラミングが必要か</strong><br><span class="small">医師・研究者の武器として</span></div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--teal);">1</div><div class="row-content"><strong>言語の「地図」を把握する</strong><br><span class="small">8言語の用途・特性を俯瞰</span></div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--amber);">2</div><div class="row-content"><strong>プログラミングの共通概念</strong><br><span class="small">変数・条件分岐・ループ・関数</span></div></div>
+    <div class="row-item"><div class="row-label" style="background:#b59a00;">JS</div><div class="row-content"><strong>JavaScript を動かしてみる</strong><br><span class="small">ブラウザで即実行・医療デモ</span></div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--r);">R</div><div class="row-content"><strong>R で統計・グラフを描く</strong><br><span class="small">医学研究の実践言語</span></div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--green);">∑</div><div class="row-content"><strong>まとめ・次のステップ</strong><br><span class="small">自分の「最初の30行」を決める</span></div></div>
+  </div>
+  <div class="highlight anim">「コードを書く人」より「コードを読める人」になることがまず目標</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 3: なぜ今プログラミングか（クイズ前振り）
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s3">
+  <span class="section-tag purple anim">QUIZ 1</span>
+  <h2 class="slide-title anim" style="margin-bottom:0.6rem;">まず聞かせてください</h2>
+  <div class="quiz-q anim">あなたが「プログラミング」と聞いて最初に思うのは？</div>
+  <div class="quiz-options anim" id="q1-opts">
+    <button class="quiz-btn" onclick="voteQ1(this,'a')">🤯 難しそう・私には無理</button>
+    <button class="quiz-btn" onclick="voteQ1(this,'b')">🤔 何に使うのか謎</button>
+    <button class="quiz-btn" onclick="voteQ1(this,'c')">🔥 ちょっと興味ある</button>
+    <button class="quiz-btn" onclick="voteQ1(this,'d')">😎 すでに少し触ったことがある</button>
+  </div>
+  <div class="quiz-feedback anim" id="q1-fb"></div>
+  <div class="highlight anim">どれも正解です。今日終わったら必ず「c」か「d」になっている</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 4: なぜ医師にプログラミングが必要か
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s4">
+  <span class="section-tag anim">Chapter 0</span>
+  <h2 class="slide-title anim">医師×プログラミング：3つの現実</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0.75rem;">
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#1B6CA8;">📊 研究データ</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">Excel で限界を感じたとき。1万件の患者データ、100本の文献データを手で処理できますか？<br><strong>Python / R / SQL が解放してくれる</strong></div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#E8873A;">🌐 情報発信</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">市民向け健康情報・教育教材・学会スライドをWebで公開したい。<br><strong>HTML / CSS / JavaScript でできる（このスライドもそう）</strong></div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#6D28D9;">🤖 AI時代</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">Claude・ChatGPTに正確な指示を出すにも、出力を読み解くにも、基礎的なコード理解が必要。<br><strong>プロンプトエンジニアリング = 新しいプログラミング</strong></div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#1A7A4A;">🏥 医療DX</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">電子カルテのデータ解析・医療機器開発・テレメディシン。すべてコードで動いている。<br><strong>「作れない」でも「読める・相談できる」は武器</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 5: 言語の世界地図
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s5">
+  <span class="section-tag anim">Chapter 1</span>
+  <h2 class="slide-title anim">プログラミング言語の「世界地図」</h2>
+  <div class="grid4 anim" style="flex:1;align-content:center;">
+
+    <div class="lang-card">
+      <div class="lang-card-top">
+        <div class="lang-icon" style="background:#b59a00;">JS</div>
+        <div class="lang-name">JavaScript</div>
+      </div>
+      <div class="lang-card-body">Webブラウザで動く唯一の言語。このスライドもJSで動いている。
+        <div class="lang-use">
+          <span class="use-tag">Webアプリ</span><span class="use-tag">教材</span><span class="use-tag">可視化</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lang-card">
+      <div class="lang-card-top">
+        <div class="lang-icon" style="background:var(--r);">R</div>
+        <div class="lang-name">R</div>
+      </div>
+      <div class="lang-card-body">統計解析専用設計。医学論文の図の多くはRで描かれている。
+        <div class="lang-use">
+          <span class="use-tag">統計</span><span class="use-tag">グラフ</span><span class="use-tag">バイオ情報</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lang-card">
+      <div class="lang-card-top">
+        <div class="lang-icon" style="background:var(--py);">Py</div>
+        <div class="lang-name">Python</div>
+      </div>
+      <div class="lang-card-body">現代で最も汎用的。AI・機械学習・データ分析のデファクト。
+        <div class="lang-use">
+          <span class="use-tag">AI/ML</span><span class="use-tag">自動化</span><span class="use-tag">解析</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lang-card">
+      <div class="lang-card-top">
+        <div class="lang-icon" style="background:var(--sql);">SQL</div>
+        <div class="lang-name">SQL</div>
+      </div>
+      <div class="lang-card-body">データベースの言語。電子カルテのデータも裏ではSQLで管理。
+        <div class="lang-use">
+          <span class="use-tag">DB</span><span class="use-tag">電子カルテ</span><span class="use-tag">集計</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lang-card">
+      <div class="lang-card-top">
+        <div class="lang-icon" style="background:var(--html);">&lt;/&gt;</div>
+        <div class="lang-name">HTML / CSS</div>
+      </div>
+      <div class="lang-card-body">Webページの骨格と見た目。厳密にはプログラミング言語ではないが必須知識。
+        <div class="lang-use">
+          <span class="use-tag">Web文書</span><span class="use-tag">スライド</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lang-card">
+      <div class="lang-card-top">
+        <div class="lang-icon" style="background:#555;">C</div>
+        <div class="lang-name">C / C++</div>
+      </div>
+      <div class="lang-card-body">高速・低レベル。医療機器・MRI制御・組込みシステムの世界。
+        <div class="lang-use">
+          <span class="use-tag">医療機器</span><span class="use-tag">高速計算</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lang-card">
+      <div class="lang-card-top">
+        <div class="lang-icon" style="background:var(--cs);">C#</div>
+        <div class="lang-name">C#</div>
+      </div>
+      <div class="lang-card-body">Microsoftのエコシステム。Unity（医療シミュ）や.NETアプリ。
+        <div class="lang-use">
+          <span class="use-tag">Unity</span><span class="use-tag">医療シミュ</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lang-card" style="background:var(--ltblue);border:2px solid var(--teal);">
+      <div class="lang-card-top">
+        <div class="lang-icon" style="background:var(--teal);">?</div>
+        <div class="lang-name" style="color:var(--teal);">今日の重点</div>
+      </div>
+      <div class="lang-card-body" style="color:var(--navy);font-weight:700;">
+        <strong>JS・R を深く</strong><br>Pythonは比較参照<br>他は参考知識として
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 6: Hello World ツアー（比較）
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s6">
+  <span class="section-tag anim" style="background:#b59a00;">Chapter 1</span>
+  <h2 class="slide-title anim">Hello World ツアー ― 全言語を並べてみる</h2>
+  <div class="grid2 anim" style="flex:1;align-content:start;gap:0.65rem;overflow:hidden;">
+
+    <div class="compare-block">
+      <div class="compare-header" style="background:#b59a00;color:#1a1a00;"><span class="lang-badge badge-js" style="font-size:0.68rem;padding:2px 6px;">JS</span> JavaScript</div>
+      <div class="compare-body"><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello, World!"</span>);</div>
+    </div>
+
+    <div class="compare-block">
+      <div class="compare-header" style="background:var(--r);color:#fff;"><span class="lang-badge badge-r" style="font-size:0.68rem;padding:2px 6px;">R</span> R</div>
+      <div class="compare-body"><span class="fn">print</span>(<span class="str">"Hello, World!"</span>)</div>
+    </div>
+
+    <div class="compare-block">
+      <div class="compare-header" style="background:var(--py);color:#fff;"><span class="lang-badge badge-py" style="font-size:0.68rem;padding:2px 6px;">Py</span> Python</div>
+      <div class="compare-body"><span class="fn">print</span>(<span class="str">"Hello, World!"</span>)</div>
+    </div>
+
+    <div class="compare-block">
+      <div class="compare-header" style="background:var(--sql);color:#fff;"><span class="lang-badge badge-sql" style="font-size:0.68rem;padding:2px 6px;">SQL</span> SQL</div>
+      <div class="compare-body"><span class="kw">SELECT</span> <span class="str">'Hello, World!'</span>;</div>
+    </div>
+
+    <div class="compare-block">
+      <div class="compare-header" style="background:var(--html);color:#fff;"><span style="font-size:0.7rem;">&lt;/&gt;</span> HTML</div>
+      <div class="compare-body"><span class="tag">&lt;p&gt;</span>Hello, World!<span class="tag">&lt;/p&gt;</span></div>
+    </div>
+
+    <div class="compare-block">
+      <div class="compare-header" style="background:#555;color:#fff;"><span class="lang-badge badge-c" style="font-size:0.68rem;padding:2px 6px;">C</span> C言語</div>
+      <div class="compare-body"><span class="kw">#include</span> <span class="str">&lt;stdio.h&gt;</span>
+<span class="kw">int</span> <span class="fn">main</span>() {
+  <span class="fn">printf</span>(<span class="str">"Hello, World!\n"</span>);
+  <span class="kw">return</span> <span class="num">0</span>;
+}</div>
+    </div>
+
+  </div>
+  <div class="highlight anim">コードの「見た目」は違っても、やっていることは同じ</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 7: クイズ2 インタープリタ vs コンパイラ
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s7">
+  <span class="section-tag purple anim">QUIZ 2</span>
+  <h2 class="slide-title anim">少し考えてみましょう</h2>
+  <div class="quiz-q anim">C言語のHello Worldだけ行数が多い。なぜでしょう？</div>
+  <div class="quiz-options anim" id="q2-opts">
+    <button class="quiz-btn" onclick="answerQ2(this,'a')">A. C言語が古いから</button>
+    <button class="quiz-btn" onclick="answerQ2(this,'b')">B. コンパイルが必要で、型や構造を厳密に書く必要があるから</button>
+    <button class="quiz-btn" onclick="answerQ2(this,'c')">C. プログラマーが長く書くのを好むから</button>
+    <button class="quiz-btn" onclick="answerQ2(this,'d')">D. バグ防止のためにあえて冗長にしているから</button>
+  </div>
+  <div class="quiz-feedback anim" id="q2-fb"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 8: インタープリタ vs コンパイラ（解説）
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s8">
+  <span class="section-tag anim">Chapter 1 解説</span>
+  <h2 class="slide-title anim">2種類の言語：インタープリタ vs コンパイラ</h2>
+  <div class="flex-row anim" style="flex:1;align-items:stretch;">
+    <div style="flex:1;background:var(--ltblue);border-radius:8px;padding:1.2rem;">
+      <div style="font-size:1rem;font-weight:900;color:var(--teal);margin-bottom:0.7rem;">🔄 インタープリタ型</div>
+      <ul class="bullets">
+        <li>コードを書いたらすぐ実行できる</li>
+        <li>翻訳しながら動く（その場で解釈）</li>
+        <li>起動が速い・試しやすい</li>
+        <li>代表：<strong>JavaScript・Python・R</strong></li>
+      </ul>
+      <div style="margin-top:0.8rem;background:var(--white);border-radius:6px;padding:0.6rem 0.9rem;">
+        <div style="font-size:0.72rem;color:var(--gray);margin-bottom:0.3rem;">ブラウザの開発者ツールで即実行</div>
+        <div class="compare-body" style="background:#f0f4f8;border-radius:4px;font-size:0.78rem;padding:0.5rem 0.8rem;color:#1a2332;">
+          &gt; <span class="num" style="color:#276dc3;">1</span> + <span class="num" style="color:#276dc3;">1</span><br>
+          <span style="color:#1a7a4a;">← 2</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 0.8rem;font-size:1.5rem;color:var(--gray);">vs</div>
+    <div style="flex:1;background:#FFF3E0;border-radius:8px;padding:1.2rem;">
+      <div style="font-size:1rem;font-weight:900;color:var(--amber);margin-bottom:0.7rem;">⚙️ コンパイル型</div>
+      <ul class="bullets">
+        <li>実行前に機械語に「翻訳」が必要</li>
+        <li>翻訳済みなので動作が非常に速い</li>
+        <li>型・構造を厳密に宣言する必要あり</li>
+        <li>代表：<strong>C・C++・C#</strong></li>
+      </ul>
+      <div style="margin-top:0.8rem;background:var(--white);border-radius:6px;padding:0.6rem 0.9rem;">
+        <div style="font-size:0.72rem;color:var(--gray);margin-bottom:0.3rem;">コンパイル → 実行ファイル生成</div>
+        <div style="font-size:0.78rem;color:var(--gray);font-family:'JetBrains Mono',monospace;background:#f0f4f8;border-radius:4px;padding:0.5rem 0.8rem;">
+          $ gcc hello.c -o hello<br>$ ./hello
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="highlight anim">医学部生が最初に学ぶなら→インタープリタ型がおすすめ</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 9: 共通概念①　変数・型
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s9">
+  <span class="section-tag anim">Chapter 2</span>
+  <h2 class="slide-title anim">共通概念①　変数と型 ― データの「名前と種類」</h2>
+  <div class="anim" style="flex:1;display:flex;flex-direction:column;gap:0.55rem;justify-content:center;">
+    <div class="concept-row">
+      <div class="concept-label" style="background:var(--navy);">変数とは</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">データに名前をつけて保存するための「箱」。<br>患者ID・体重・診断名 ― すべてプログラムでは変数として扱う</div>
+    </div>
+    <div style="background:var(--white);border-radius:6px;padding:0.6rem 1rem;box-shadow:0 1px 6px rgba(0,0,0,.07);" class="anim">
+      <table class="data-table">
+        <thead><tr><th>型の名前</th><th>何を入れるか</th><th>JS の例</th><th>R の例</th><th>Python の例</th></tr></thead>
+        <tbody>
+          <tr><td><strong>数値（整数）</strong></td><td>年齢・件数</td><td><span style="font-family:monospace;">let age = 25</span></td><td><span style="font-family:monospace;">age &lt;- 25L</span></td><td><span style="font-family:monospace;">age = 25</span></td></tr>
+          <tr><td><strong>数値（小数）</strong></td><td>体重・HbA1c</td><td><span style="font-family:monospace;">let hba1c = 7.2</span></td><td><span style="font-family:monospace;">hba1c &lt;- 7.2</span></td><td><span style="font-family:monospace;">hba1c = 7.2</span></td></tr>
+          <tr><td><strong>文字列</strong></td><td>名前・診断名</td><td><span style="font-family:monospace;">let dx = "糖尿病"</span></td><td><span style="font-family:monospace;">dx &lt;- "糖尿病"</span></td><td><span style="font-family:monospace;">dx = "糖尿病"</span></td></tr>
+          <tr><td><strong>真偽値</strong></td><td>あり / なし</td><td><span style="font-family:monospace;">let dm = true</span></td><td><span style="font-family:monospace;">dm &lt;- TRUE</span></td><td><span style="font-family:monospace;">dm = True</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-blue card anim" style="padding:0.6rem 1rem;">
+      <span style="font-size:0.83rem;color:var(--navy);">💡 <strong>Rの特徴</strong>：代入に <span style="font-family:monospace;color:var(--r);">&lt;-</span> を使う（ = も使えるが慣習的に &lt;- が好まれる）</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 10: 共通概念②　条件分岐
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s10">
+  <span class="section-tag anim" style="background:var(--teal);">Chapter 2</span>
+  <h2 class="slide-title anim">共通概念②　条件分岐 ― if / else</h2>
+  <div class="flex-row anim" style="flex:1;align-items:start;gap:0.9rem;">
+
+    <div style="flex:1;display:flex;flex-direction:column;gap:0.6rem;">
+      <div style="color:#8b949e;font-size:0.8rem;font-weight:700;margin-bottom:-0.2rem;">お題：HbA1c 7.0以上なら「要管理」</div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dot" style="background:#ff5f56;"></div>
+          <div class="code-dot" style="background:#ffbd2e;"></div>
+          <div class="code-dot" style="background:#27c93f;"></div>
+          <span class="code-lang">JavaScript</span>
+        </div>
+        <div class="code-body"><code><span class="kw">const</span> <span class="var">hba1c</span> = <span class="num">7.2</span>;
+
+<span class="kw">if</span> (<span class="var">hba1c</span> >= <span class="num">7.0</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"要管理"</span>);
+} <span class="kw">else</span> {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"良好"</span>);
+}</code></div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dot" style="background:#ff5f56;"></div>
+          <div class="code-dot" style="background:#ffbd2e;"></div>
+          <div class="code-dot" style="background:#27c93f;"></div>
+          <span class="code-lang">R</span>
+        </div>
+        <div class="code-body"><code><span class="var">hba1c</span> <span class="op">&lt;-</span> <span class="num">7.2</span>
+
+<span class="kw">if</span> (<span class="var">hba1c</span> <span class="op">>=</span> <span class="num">7.0</span>) {
+  <span class="fn">print</span>(<span class="str">"要管理"</span>)
+} <span class="kw">else</span> {
+  <span class="fn">print</span>(<span class="str">"良好"</span>)
+}</code></div>
+      </div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;gap:0.6rem;">
+      <div style="color:#8b949e;font-size:0.8rem;font-weight:700;margin-bottom:-0.2rem;">Python（比較参照）</div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dot" style="background:#ff5f56;"></div>
+          <div class="code-dot" style="background:#ffbd2e;"></div>
+          <div class="code-dot" style="background:#27c93f;"></div>
+          <span class="code-lang">Python</span>
+        </div>
+        <div class="code-body"><code><span class="var">hba1c</span> = <span class="num">7.2</span>
+
+<span class="kw">if</span> <span class="var">hba1c</span> >= <span class="num">7.0</span>:
+    <span class="fn">print</span>(<span class="str">"要管理"</span>)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="str">"良好"</span>)
+
+<span class="cm"># ※ {} の代わりにインデント（字下げ）で構造を表す</span></code></div>
+      </div>
+      <div class="card-dark card">
+        <div class="card-body">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--js);margin-bottom:0.4rem;">🔑 3言語の共通点と違い</div>
+          <ul class="bullets" style="font-size:0.78rem;">
+            <li><span class="kw" style="color:#ff7b72;">if / else</span> という構造はどれも同じ</li>
+            <li>JS・R はブロックを <code style="color:var(--js);">{ }</code> で囲む</li>
+            <li>Python はインデント（字下げ）が文法</li>
+            <li>R の代入は <code style="color:#79c0ff;">&lt;-</code>、JS は <code style="color:#79c0ff;">const</code>/<code style="color:#79c0ff;">let</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 11: 共通概念③　ループ
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s11">
+  <span class="section-tag anim" style="background:var(--teal);">Chapter 2</span>
+  <h2 class="slide-title anim">共通概念③　ループ ― 繰り返し処理</h2>
+  <div class="flex-row anim" style="flex:1;align-items:start;gap:0.9rem;">
+
+    <div style="flex:1;display:flex;flex-direction:column;gap:0.6rem;">
+      <div style="color:#8b949e;font-size:0.8rem;font-weight:700;">お題：5人の患者名を順に表示する</div>
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">JavaScript</span></div>
+        <div class="code-body"><code><span class="kw">const</span> <span class="var">patients</span> = [
+  <span class="str">"山田"</span>, <span class="str">"鈴木"</span>, <span class="str">"田中"</span>, <span class="str">"佐藤"</span>, <span class="str">"伊藤"</span>
+];
+
+<span class="kw">for</span> (<span class="kw">const</span> <span class="var">name</span> <span class="kw">of</span> <span class="var">patients</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="var">name</span>);
+}
+<span class="cm">// → 山田、鈴木、田中… と順に表示</span></code></div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">R</span></div>
+        <div class="code-body"><code><span class="var">patients</span> <span class="op">&lt;-</span> <span class="fn">c</span>(<span class="str">"山田"</span>, <span class="str">"鈴木"</span>, <span class="str">"田中"</span>,
+              <span class="str">"佐藤"</span>, <span class="str">"伊藤"</span>)
+
+<span class="kw">for</span> (<span class="var">name</span> <span class="kw">in</span> <span class="var">patients</span>) {
+  <span class="fn">print</span>(<span class="var">name</span>)
+}
+<span class="cm"># R のベクトルは c() で作る</span></code></div>
+      </div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;gap:0.6rem;">
+      <div style="color:#8b949e;font-size:0.8rem;font-weight:700;">Python（比較参照）</div>
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">Python</span></div>
+        <div class="code-body"><code><span class="var">patients</span> = [
+  <span class="str">"山田"</span>, <span class="str">"鈴木"</span>, <span class="str">"田中"</span>,
+  <span class="str">"佐藤"</span>, <span class="str">"伊藤"</span>
+]
+
+<span class="kw">for</span> <span class="var">name</span> <span class="kw">in</span> <span class="var">patients</span>:
+    <span class="fn">print</span>(<span class="var">name</span>)</code></div>
+      </div>
+
+      <div class="card-dark card">
+        <div class="card-body">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--js);margin-bottom:0.4rem;">🔑 Rが特に得意なこと</div>
+          <ul class="bullets" style="font-size:0.78rem;">
+            <li>Rはループより<strong style="color:var(--js);">ベクトル演算</strong>が本領</li>
+            <li><code style="color:#a5d6ff;">patients[1:3]</code> で先頭3人を一気に取得</li>
+            <li>100人分のBMIを一行で計算できる</li>
+            <li>forループを書かなくて済む場面が多い</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="highlight anim">「繰り返し作業の自動化」はプログラミングの最強の武器</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 12: 共通概念④　関数
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s12">
+  <span class="section-tag anim" style="background:var(--teal);">Chapter 2</span>
+  <h2 class="slide-title anim">共通概念④　関数 ― 処理をまとめて再利用</h2>
+  <div class="flex-row anim" style="flex:1;align-items:start;gap:0.9rem;">
+
+    <div style="flex:1;display:flex;flex-direction:column;gap:0.55rem;">
+      <div style="color:#8b949e;font-size:0.8rem;font-weight:700;">お題：BMI を計算する関数を作る</div>
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">JavaScript</span></div>
+        <div class="code-body"><code><span class="kw">function</span> <span class="fn">calcBMI</span>(<span class="var">weight</span>, <span class="var">height</span>) {
+  <span class="cm">// height は メートル単位</span>
+  <span class="kw">return</span> <span class="var">weight</span> / (<span class="var">height</span> ** <span class="num">2</span>);
+}
+
+<span class="fn">console</span>.<span class="fn">log</span>( <span class="fn">calcBMI</span>(<span class="num">70</span>, <span class="num">1.75</span>) );
+<span class="cm">// → 22.857…</span></code></div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">R</span></div>
+        <div class="code-body"><code><span class="fn">calcBMI</span> <span class="op">&lt;-</span> <span class="kw">function</span>(<span class="var">weight</span>, <span class="var">height</span>) {
+  <span class="var">weight</span> / <span class="var">height</span>^<span class="num">2</span>
+  <span class="cm"># Rは最後の評価式が自動的に返り値になる</span>
+}
+
+<span class="fn">calcBMI</span>(<span class="num">70</span>, <span class="num">1.75</span>)  <span class="cm"># → 22.857…</span>
+
+<span class="cm"># ベクトル化：一度に複数患者を計算</span>
+<span class="var">w</span> <span class="op">&lt;-</span> <span class="fn">c</span>(<span class="num">70</span>, <span class="num">55</span>, <span class="num">90</span>)
+<span class="var">h</span> <span class="op">&lt;-</span> <span class="fn">c</span>(<span class="num">1.75</span>, <span class="num">1.60</span>, <span class="num">1.80</span>)
+<span class="fn">calcBMI</span>(<span class="var">w</span>, <span class="var">h</span>)  <span class="cm"># 3人分まとめて計算！</span></code></div>
+      </div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;gap:0.55rem;'>
+      <div style="color:#8b949e;font-size:0.8rem;font-weight:700;">Python（比較参照）</div>
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">Python</span></div>
+        <div class="code-body"><code><span class="kw">def</span> <span class="fn">calc_bmi</span>(<span class="var">weight</span>, <span class="var">height</span>):
+    <span class="kw">return</span> <span class="var">weight</span> / (<span class="var">height</span> ** <span class="num">2</span>)
+
+<span class="fn">print</span>( <span class="fn">calc_bmi</span>(<span class="num">70</span>, <span class="num">1.75</span>) )
+<span class="cm"># → 22.857…</span></code></div>
+      </div>
+
+      <div class="card-dark card">
+        <div class="card-body">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--js);margin-bottom:0.4rem;">🔑 JS と R の関数の違い</div>
+          <ul class="bullets" style="font-size:0.78rem;">
+            <li>JS：<code style="color:#ff7b72;">function</code> キーワード + <code style="color:#ff7b72;">return</code></li>
+            <li>R：<code style="color:#ff7b72;">function</code>() を変数に代入、returnは省略可</li>
+            <li><strong style="color:var(--js);">R最大の強み</strong>：関数にベクトルを渡すと全要素に自動適用</li>
+            <li>100人分も1行で処理できる = 医学研究向き</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card-warn card">
+        <div class="card-body" style="font-size:0.78rem;">
+          💡 <strong>エラーは敵ではなく道しるべ</strong><br>
+          <code style="color:var(--red);">Error: could not find function</code> → タイポを疑う<br>
+          <code style="color:var(--red);">unexpected '}' </code> → 括弧の対応を確認
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 13: JavaScript 深掘り①　ブラウザとJSの関係
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s13">
+  <span class="section-tag amber anim">Chapter 3 — JavaScript</span>
+  <h2 class="slide-title anim">JavaScript ― ブラウザを動かす唯一の言語</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0.75rem;">
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#b59a00;">なぜJS？</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">インストール不要。ブラウザを開けばすぐ実行できる。開発者ツール（F12）→ Console で今すぐ体験可能</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#b59a00;">HTML連携</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">HTML要素を「つかんで」動かせる。ボタンを押したら計算・結果を表示・グラフを描く ― <strong>このスライドのナビボタンもJS</strong></div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#b59a00;">医学教育</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">インタラクティブな教材・問診シミュ・リスク計算ツールを<strong>ゼロコスト・ゼロサーバー</strong>でGitHub Pagesに公開できる</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#b59a00;">サーバーも</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">Node.js でサーバーサイドも動く。フロント・バックエンド両方を1言語で書ける（フルスタック）</div>
+    </div>
+  </div>
+  <div class="highlight anim">「動く教材」を作りたいなら JS が最短ルート</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 14: JavaScript 深掘り②　DOM操作ライブデモ
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s14">
+  <span class="section-tag anim" style="background:#b59a00;">Chapter 3 — JavaScript</span>
+  <h2 class="slide-title anim">JS × HTML ― インタラクティブ BMI 判定ツール</h2>
+  <div class="flex-row anim" style="flex:1;gap:0.9rem;align-items:start;">
+    <div style="flex:1.1;">
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">HTML + JavaScript</span></div>
+        <div class="code-body" style="font-size:0.75rem;"><code><span class="tag">&lt;input</span> <span class="atr">id=</span><span class="str">"weight"</span> <span class="atr">placeholder=</span><span class="str">"体重(kg)"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;input</span> <span class="atr">id=</span><span class="str">"height"</span> <span class="atr">placeholder=</span><span class="str">"身長(cm)"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;button</span> <span class="atr">onclick=</span><span class="str">"checkBMI()"</span><span class="tag">&gt;</span>判定<span class="tag">&lt;/button&gt;</span>
+<span class="tag">&lt;p</span> <span class="atr">id=</span><span class="str">"result"</span><span class="tag">&gt;&lt;/p&gt;</span>
+
+<span class="tag">&lt;script&gt;</span>
+<span class="kw">function</span> <span class="fn">checkBMI</span>() {
+  <span class="kw">const</span> <span class="var">w</span> = <span class="fn">parseFloat</span>(<span class="fn">document</span>
+    .<span class="fn">getElementById</span>(<span class="str">"weight"</span>).<span class="var">value</span>);
+  <span class="kw">const</span> <span class="var">h</span> = <span class="fn">parseFloat</span>(<span class="fn">document</span>
+    .<span class="fn">getElementById</span>(<span class="str">"height"</span>).<span class="var">value</span>) / <span class="num">100</span>;
+  <span class="kw">const</span> <span class="var">bmi</span> = (w / h**<span class="num">2</span>).<span class="fn">toFixed</span>(<span class="num">1</span>);
+
+  <span class="kw">let</span> <span class="var">judge</span> = <span class="var">bmi</span> >= <span class="num">25</span> ? <span class="str">"肥満"</span>
+             : <span class="var">bmi</span> >= <span class="num">18.5</span> ? <span class="str">"普通体重"</span>
+             : <span class="str">"低体重"</span>;
+
+  <span class="fn">document</span>.<span class="fn">getElementById</span>(<span class="str">"result"</span>)
+    .<span class="var">textContent</span> = <span class="str">`BMI: ${bmi} → ${judge}`</span>;
+}
+<span class="tag">&lt;/script&gt;</span></code></div>
+      </div>
+    </div>
+    <div style="flex:0.9;display:flex;flex-direction:column;gap:0.7rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:1rem;">
+        <div style="font-size:0.8rem;color:#8b949e;margin-bottom:0.8rem;font-weight:700;">▶ 実際に動かしてみる</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <input id="bmi-w" placeholder="体重 (kg)" style="padding:0.45rem 0.7rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-family:'Noto Sans JP',sans-serif;font-size:0.85rem;outline:none;">
+          <input id="bmi-h" placeholder="身長 (cm)" style="padding:0.45rem 0.7rem;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-family:'Noto Sans JP',sans-serif;font-size:0.85rem;outline:none;">
+          <button onclick="liveBMI()" style="padding:0.5rem 1rem;background:#b59a00;color:#1a1a00;border:none;border-radius:5px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:0.85rem;">BMI を判定する</button>
+          <div id="bmi-result" style="font-size:1rem;font-weight:700;color:#4ade80;min-height:1.5rem;margin-top:0.2rem;"></div>
+        </div>
+      </div>
+      <div class="card-dark card">
+        <div class="card-body">
+          <div style="font-size:0.78rem;color:#e2e8f0;line-height:1.6;">
+            <strong style="color:var(--js);">ポイント：DOM操作</strong><br>
+            <code style="color:#a5d6ff;">getElementById()</code> でHTML要素を取得<br>
+            <code style="color:#a5d6ff;">.value</code> で入力値を読む<br>
+            <code style="color:#a5d6ff;">.textContent</code> で結果を書き込む<br>
+            <br>
+            <strong style="color:var(--js);">テンプレートリテラル</strong><br>
+            <code style="color:#a5d6ff;">`BMI: ${bmi}`</code> → 変数を文字列に埋め込める
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 15: クイズ3 JS
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s15">
+  <span class="section-tag purple anim">QUIZ 3</span>
+  <h2 class="slide-title anim">JavaScript クイズ</h2>
+  <div class="quiz-q anim">以下のコードを実行すると、コンソールには何が表示される？<br><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:0.95rem;background:rgba(255,255,255,.08);padding:0.6rem 1.2rem;border-radius:6px;display:inline-block;">
+      const x = 5;<br>
+      const y = "5";<br>
+      console.log(x == y);<br>
+      console.log(x === y);
+    </span>
+  </div>
+  <div class="quiz-options anim" id="q3-opts">
+    <button class="quiz-btn" onclick="answerQ3(this,'a')">A. true と true</button>
+    <button class="quiz-btn" onclick="answerQ3(this,'b')">B. true と false ← JSの型変換の罠</button>
+    <button class="quiz-btn" onclick="answerQ3(this,'c')">C. false と false</button>
+    <button class="quiz-btn" onclick="answerQ3(this,'d')">D. エラーになる</button>
+  </div>
+  <div class="quiz-feedback anim" id="q3-fb"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 16: R 深掘り①　なぜRか
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s16">
+  <span class="section-tag r-tag anim">Chapter 4 — R</span>
+  <h2 class="slide-title anim">R ― 医学統計のデファクト言語</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0.75rem;">
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:var(--r);">統計特化</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">t検定・ANOVA・回帰分析・生存分析が<strong>数行で書ける</strong>。統計学者が設計した言語</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:var(--r);">ggplot2</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">論文品質のグラフを生成するライブラリ。<em>Lancet</em>・<em>NEJM</em>の図の多くはRで描かれている</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:var(--r);">Bioconductor</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">ゲノム解析・バイオインフォマティクスの専用パッケージ群。ヒトゲノムを扱うならRが必須</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:var(--r);">tidyverse</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content"><code class="concept-code">dplyr</code>・<code class="concept-code">tidyr</code>・<code class="concept-code">ggplot2</code>を束ねたパッケージ群。データ整形→解析→可視化を一貫して書ける</div>
+    </div>
+  </div>
+  <div class="highlight anim">「医学研究を本気でやるなら R を避けて通れない」</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 17: R 深掘り②　統計コード
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s17">
+  <span class="section-tag anim" style="background:var(--r);">Chapter 4 — R</span>
+  <h2 class="slide-title anim">R でデータ解析 ― 一気通貫の例</h2>
+  <div class="flex-row anim" style="flex:1;gap:0.8rem;align-items:start;">
+    <div style="flex:1.1;">
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">R — 糖尿病患者データ解析</span></div>
+        <div class="code-body" style="font-size:0.76rem;"><code><span class="cm"># ── 1. パッケージ読み込み ──────────</span>
+<span class="fn">library</span>(<span class="var">tidyverse</span>)
+
+<span class="cm"># ── 2. データ作成（架空の患者10名）──</span>
+<span class="var">df</span> <span class="op">&lt;-</span> <span class="fn">tibble</span>(
+  id     = <span class="num">1</span>:<span class="num">10</span>,
+  group  = <span class="fn">c</span>(<span class="fn">rep</span>(<span class="str">"治療群"</span>, <span class="num">5</span>), <span class="fn">rep</span>(<span class="str">"対照群"</span>, <span class="num">5</span>)),
+  hba1c  = <span class="fn">c</span>(<span class="num">6.8</span>, <span class="num">7.1</span>, <span class="num">6.5</span>, <span class="num">7.3</span>, <span class="num">6.9</span>,
+             <span class="num">8.1</span>, <span class="num">8.5</span>, <span class="num">7.9</span>, <span class="num">8.3</span>, <span class="num">8.0</span>)
+)
+
+<span class="cm"># ── 3. グループ別平均 ─────────────</span>
+<span class="var">df</span> <span class="op">|&gt;</span>
+  <span class="fn">group_by</span>(<span class="var">group</span>) <span class="op">|&gt;</span>
+  <span class="fn">summarise</span>(mean_hba1c = <span class="fn">mean</span>(<span class="var">hba1c</span>))
+
+<span class="cm"># ── 4. t 検定 ─────────────────────</span>
+<span class="fn">t.test</span>(<span class="var">hba1c</span> <span class="op">~</span> <span class="var">group</span>, <span class="var">data</span> = <span class="var">df</span>)
+
+<span class="cm"># ── 5. ggplot2 で箱ひげ図 ─────────</span>
+<span class="fn">ggplot</span>(<span class="var">df</span>, <span class="fn">aes</span>(<span class="var">x</span>=<span class="var">group</span>, <span class="var">y</span>=<span class="var">hba1c</span>,
+               <span class="var">fill</span>=<span class="var">group</span>)) +
+  <span class="fn">geom_boxplot</span>() +
+  <span class="fn">labs</span>(<span class="var">title</span>=<span class="str">"HbA1c 治療比較"</span>,
+       <span class="var">y</span>=<span class="str">"HbA1c (%)"</span>) +
+  <span class="fn">theme_bw</span>()</code></div>
+      </div>
+    </div>
+    <div style="flex:0.9;display:flex;flex-direction:column;gap:0.6rem;">
+      <div class="card-dark card">
+        <div class="card-body">
+          <div style="font-size:0.8rem;font-weight:700;color:#79c0ff;margin-bottom:0.4rem;">📌 読み解きポイント</div>
+          <ul class="bullets" style="font-size:0.76rem;">
+            <li><code style="color:#a5d6ff;">tibble()</code>：Rのデータフレーム（Excelのシートに相当）</li>
+            <li><code style="color:#a5d6ff;">|&gt;</code>：パイプ演算子。前の結果を次の関数に渡す</li>
+            <li><code style="color:#a5d6ff;">group_by → summarise</code>：グループ集計（SQL の GROUP BY と同じ発想）</li>
+            <li><code style="color:#a5d6ff;">t.test()</code>：t検定が1行で完結</li>
+            <li><code style="color:#a5d6ff;">ggplot2</code>：レイヤーを <code style="color:#a5d6ff;">+</code> でつなぐ独自文法</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-dark card">
+        <div class="card-body">
+          <div style="font-size:0.78rem;color:#e2e8f0;line-height:1.6;">
+            <strong style="color:#79c0ff;">この5ステップで何ができるか</strong><br><br>
+            ① データ整形<br>
+            ② 記述統計<br>
+            ③ 統計検定<br>
+            ④ 論文用グラフ生成<br><br>
+            <strong style="color:#4ade80;">ExcelでやるとVBA必須の作業が<br>Rなら10行以下で書ける</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 18: R 深掘り③ ggplot2 で何が作れるか
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s18">
+  <span class="section-tag r-tag anim">Chapter 4 — R / ggplot2</span>
+  <h2 class="slide-title anim">ggplot2 ― 論文用グラフを自在に描く</h2>
+  <div class="grid2 anim" style="flex:1;align-content:center;gap:0.75rem;">
+
+    <div class="row-item"><div class="row-label" style="background:var(--r);">散布図</div><div class="row-content"><code style="font-size:0.78rem;">geom_point()</code><br>BMI vs HbA1c 相関・回帰直線の描画</div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--r);">箱ひげ</div><div class="row-content"><code style="font-size:0.78rem;">geom_boxplot()</code><br>治療群 vs 対照群の中央値・四分位範囲</div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--r);">カプラン</div><div class="row-content"><code style="font-size:0.78rem;">survfit() + ggsurvplot()</code><br>生存曲線（Kaplan-Meier）を数行で描画</div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--r);">フォレスト</div><div class="row-content"><code style="font-size:0.78rem;">meta パッケージ</code><br>メタ解析のフォレストプロット自動生成</div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--r);">ヒートマップ</div><div class="row-content"><code style="font-size:0.78rem;">geom_tile()</code><br>遺伝子発現量・相関行列の可視化</div></div>
+    <div class="row-item"><div class="row-label" style="background:var(--r);">ファセット</div><div class="row-content"><code style="font-size:0.78rem;">facet_wrap()</code><br>性別・年齢層ごとに自動でグラフを分割</div></div>
+
+  </div>
+  <div class="card-blue card anim" style="padding:0.6rem 1rem;margin-top:0.5rem;">
+    <span style="font-size:0.83rem;color:var(--navy);">💡 <strong>テーマ設定1行</strong>で雑誌スタイルに：<code>theme_bw()</code>・<code>theme_classic()</code>・<code>theme_minimal()</code></span>
+  </div>
+  <div class="highlight anim">「グラフを見せれば、Rを学ぶ意欲が湧く」― ggplot2から入る学習法もあり</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 19: SQL ― 電子カルテのデータベース
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-code" id="s19">
+  <span class="section-tag anim" style="background:var(--sql);">Chapter 5 — SQL</span>
+  <h2 class="slide-title anim">SQL ― 電子カルテは全部データベース</h2>
+  <div class="flex-row anim" style="flex:1;gap:0.9rem;align-items:start;">
+    <div style="flex:1.1;">
+      <div class="code-block">
+        <div class="code-header"><div class="code-dot" style="background:#ff5f56;"></div><div class="code-dot" style="background:#ffbd2e;"></div><div class="code-dot" style="background:#27c93f;"></div><span class="code-lang">SQL</span></div>
+        <div class="code-body"><code><span class="cm">-- HbA1c > 7.0 の患者を抽出</span>
+<span class="kw">SELECT</span> patient_id, name, hba1c
+<span class="kw">FROM</span>   patients
+<span class="kw">WHERE</span>  hba1c <span class="op">&gt;</span> <span class="num">7.0</span>;
+
+<span class="cm">-- 診断ごとの平均 HbA1c を集計</span>
+<span class="kw">SELECT</span>   diagnosis,
+         <span class="fn">AVG</span>(hba1c) <span class="kw">AS</span> mean_hba1c,
+         <span class="fn">COUNT</span>(*) <span class="kw">AS</span> n
+<span class="kw">FROM</span>     patients
+<span class="kw">GROUP BY</span> diagnosis
+<span class="kw">ORDER BY</span> mean_hba1c <span class="kw">DESC</span>;
+
+<span class="cm">-- 処方テーブルと結合</span>
+<span class="kw">SELECT</span> p.name, p.hba1c, rx.drug
+<span class="kw">FROM</span>   patients p
+<span class="kw">JOIN</span>   prescriptions rx
+<span class="kw">ON</span>     p.patient_id = rx.patient_id
+<span class="kw">WHERE</span>  rx.drug = <span class="str">'メトホルミン'</span>;</code></div>
+      </div>
+    </div>
+    <div style="flex:0.9;display:flex;flex-direction:column;gap:0.6rem;">
+      <div class="card-dark card">
+        <div class="card-body">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--sql);margin-bottom:0.4rem;">📌 SQL の4大命令</div>
+          <div style="font-size:0.78rem;color:#e2e8f0;line-height:1.9;">
+            <code style="color:#ff7b72;font-size:0.82rem;">SELECT</code> ── 読む（最重要）<br>
+            <code style="color:#ff7b72;font-size:0.82rem;">WHERE</code>　 ── 条件を絞る<br>
+            <code style="color:#ff7b72;font-size:0.82rem;">GROUP BY</code> ── 集計する<br>
+            <code style="color:#ff7b72;font-size:0.82rem;">JOIN</code>　　 ── テーブルを結合する
+          </div>
+        </div>
+      </div>
+      <div class="card-dark card">
+        <div class="card-body">
+          <div style="font-size:0.78rem;color:#e2e8f0;line-height:1.6;">
+            <strong style="color:#4ade80;">医師が SQL を知ると何が変わるか</strong><br><br>
+            電子カルテからのデータ抽出依頼を「自分で書ける」→ IT担当への依頼待ちゼロ<br><br>
+            R・Python と組み合わせれば大規模データの解析パイプラインが完成
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 20: クイズ4 ― R × SQL
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s20">
+  <span class="section-tag purple anim">QUIZ 4</span>
+  <h2 class="slide-title anim">実践クイズ</h2>
+  <div class="quiz-q anim">「外来患者1,000名のBMIを計算して、25以上の人数を数えたい」<br>どの言語の組み合わせが最も実務的ですか？</div>
+  <div class="quiz-options anim" id="q4-opts">
+    <button class="quiz-btn" onclick="answerQ4(this,'a')">A. Excel だけで十分</button>
+    <button class="quiz-btn" onclick="answerQ4(this,'b')">B. SQL でDB抽出 → R で集計・可視化</button>
+    <button class="quiz-btn" onclick="answerQ4(this,'c')">C. C言語で高速プログラムを書く</button>
+    <button class="quiz-btn" onclick="answerQ4(this,'d')">D. JavaScript で計算する</button>
+  </div>
+  <div class="quiz-feedback anim" id="q4-fb"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 21: HTML/CSS/JS の三位一体
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s21">
+  <span class="section-tag anim">Chapter 6 — Web三兄弟</span>
+  <h2 class="slide-title anim">HTML・CSS・JS ― Webを作る三位一体</h2>
+  <div class="flex-row anim" style="flex:1;align-items:stretch;gap:1rem;">
+
+    <div style="flex:1;border-radius:8px;overflow:hidden;box-shadow:0 3px 15px rgba(0,0,0,.1);">
+      <div style="background:var(--html);color:#fff;padding:0.7rem 1rem;font-weight:900;font-size:1rem;">🦴 HTML ― 骨格</div>
+      <div style="padding:0.8rem 1rem;background:#fff8f5;flex:1;">
+        <ul class="bullets">
+          <li>コンテンツの<strong>構造</strong>を定義</li>
+          <li>見出し・段落・リスト・表・リンク</li>
+          <li>プログラミングではなく<strong>マークアップ</strong></li>
+          <li><code style="font-size:0.78rem;">&lt;h1&gt;</code>〜<code style="font-size:0.78rem;">&lt;p&gt;</code>〜<code style="font-size:0.78rem;">&lt;table&gt;</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:1;border-radius:8px;overflow:hidden;box-shadow:0 3px 15px rgba(0,0,0,.1);">
+      <div style="background:var(--css);color:#fff;padding:0.7rem 1rem;font-weight:900;font-size:1rem;">🎨 CSS ― 見た目</div>
+      <div style="padding:0.8rem 1rem;background:#f5f5ff;flex:1;">
+        <ul class="bullets">
+          <li>色・フォント・余白・レイアウト</li>
+          <li>アニメーション・レスポンシブ対応</li>
+          <li><strong>このスライドのデザインもCSS</strong></li>
+          <li><code style="font-size:0.78rem;">color: #1B6CA8; font-size: 1rem;</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:1;border-radius:8px;overflow:hidden;box-shadow:0 3px 15px rgba(0,0,0,.1);">
+      <div style="background:#b59a00;color:#1a1a00;padding:0.7rem 1rem;font-weight:900;font-size:1rem;">⚡ JS ― 動き</div>
+      <div style="padding:0.8rem 1rem;background:#fffdf0;flex:1;">
+        <ul class="bullets">
+          <li>ユーザー操作への反応</li>
+          <li>データの計算・表示の更新</li>
+          <li><strong>このスライドのナビもJS</strong></li>
+          <li><code style="font-size:0.78rem;">button.onclick = () => go(next)</code></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+  <div class="card-blue card anim" style="padding:0.65rem 1rem;margin-top:0.6rem;">
+    <span style="font-size:0.85rem;">💡 <strong>実践のヒント：</strong>ブラウザで F12 → Elements タブで骨格・スタイルを覗ける。このスライドで試してみよう！</span>
+  </div>
+  <div class="highlight anim">「このスライド自体がHTML+CSS+JS製」― 今あなたが見ているものがサンプルコード</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 22: C系言語・C# ― 参考知識として
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s22">
+  <span class="section-tag anim">Chapter 7 — C / C++ / C#</span>
+  <h2 class="slide-title anim">C 系言語 ― 知っておくと世界が広がる</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0.7rem;">
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#555;">C言語</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">1972年生まれの大先輩。コンピュータの基礎を作った言語。<br><strong>医療機器（MRI・人工呼吸器）の組込み制御</strong>に今も現役</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#777;">C++</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">Cを発展させオブジェクト指向を追加。<br><strong>高速数値計算・画像処理・ロボット制御。</strong> RやPythonの「中身」もC/C++で書かれている</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:var(--cs);">C#</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content">Microsoftが設計した現代的言語。<strong>Unity（ゲームエンジン）</strong>が C# を採用 → 医療シミュレーション・解剖VRが作れる</div>
+    </div>
+    <div class="card-warn card anim" style="padding:0.65rem 1rem;">
+      <span style="font-size:0.83rem;color:var(--text);">🎓 <strong>医学部生へのアドバイス：</strong>C系は「最初の言語」にするより、JS・R・Python を習得した後に「こういう世界もある」と知る程度で十分。必要になったときに学べばよい</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 23: AI × プログラミング
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s23">
+  <span class="section-tag purple anim">Chapter 8</span>
+  <h2 class="slide-title anim">AI 時代のプログラミング ― 変わること・変わらないこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0.7rem;">
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#6D28D9;">変わること</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content"><strong>コードを書く速度</strong>は劇的に上がった。GitHub Copilot・Claude でコードを補完・生成できる。<br>「全部暗記」は不要になりつつある</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#6D28D9;">変わらない</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content"><strong>コードを「読んで・判断する」能力</strong>はAIに代替されない。<br>AIが生成したコードの誤りを見抜けるかどうかは、あなた次第</div>
+    </div>
+    <div class="concept-row anim">
+      <div class="concept-label" style="background:#6D28D9;">新しく必要</div>
+      <div class="concept-arrow">→</div>
+      <div class="concept-content"><strong>「正確なプロンプト」を書く力</strong>。<br>"Rでt検定をして箱ひげ図を描くコードを書いて" → 基礎知識があれば要求が明確になる</div>
+    </div>
+  </div>
+  <div class="highlight anim">「AIにコードを書かせる人」と「AIが書いたコードを理解できる人」― 同じではない</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 24: クイズ5 ― 総合
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-quiz" id="s24">
+  <span class="section-tag purple anim">QUIZ 5 ― 最終問題</span>
+  <h2 class="slide-title anim">今日の総仕上げ</h2>
+  <div class="quiz-q anim">あなたが卒業後に最初に使いそうな言語はどれですか？<br><span style="font-size:0.82rem;color:#94a3b8;">(正解なし！ 理由を考えてみてください)</span></div>
+  <div id="final-vote" class="vote-options anim">
+    <button class="vote-btn" onclick="finalVote(this,'js')"><span class="lang-badge badge-js" style="font-size:0.72rem;padding:2px 7px;">JS</span> JavaScript ― インタラクティブな教材・ツール作成</button>
+    <button class="vote-btn" onclick="finalVote(this,'r')"><span class="lang-badge badge-r" style="font-size:0.72rem;padding:2px 7px;">R</span> R ― 研究・統計解析・論文グラフ</button>
+    <button class="vote-btn" onclick="finalVote(this,'py')"><span class="lang-badge badge-py" style="font-size:0.72rem;padding:2px 7px;">Py</span> Python ― AI・自動化・幅広く</button>
+    <button class="vote-btn" onclick="finalVote(this,'sql')"><span class="lang-badge badge-sql" style="font-size:0.72rem;padding:2px 7px;">SQL</span> SQL ― 電子カルテ・データ抽出</button>
+  </div>
+  <div id="final-result" style="margin-top:0.8rem;text-align:center;font-size:0.88rem;color:#94a3b8;min-height:1.5rem;"></div>
+  <div class="highlight anim">どれを選んでも、今日学んだ「共通の骨格」は使える</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 25: 言語選択フローチャート
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-card" id="s25">
+  <span class="section-tag anim">Chapter 9 まとめ</span>
+  <h2 class="slide-title anim">「最初の言語」を決めるフローチャート</h2>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0.15rem;width:100%;max-width:700px;" class="anim">
+
+      <div class="flow-node" style="background:var(--navy);color:#fff;padding:0.6rem 2rem;">🎯 何をしたい？</div>
+      <div class="flow-arrow">↓</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.6rem;width:100%;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem;">
+          <div class="flow-node" style="background:#FFF3E0;font-size:0.75rem;padding:0.4rem 0.5rem;width:100%;text-align:center;">📊 統計・論文グラフ</div>
+          <div class="flow-arrow" style="font-size:0.9rem;">↓</div>
+          <div class="flow-node" style="background:var(--r);color:#fff;font-size:0.85rem;padding:0.4rem 0.5rem;width:100%;text-align:center;font-weight:900;">R</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem;">
+          <div class="flow-node" style="background:#FFF3E0;font-size:0.75rem;padding:0.4rem 0.5rem;width:100%;text-align:center;">🌐 Web・教材作成</div>
+          <div class="flow-arrow" style="font-size:0.9rem;">↓</div>
+          <div class="flow-node" style="background:#b59a00;color:#fff;font-size:0.85rem;padding:0.4rem 0.5rem;width:100%;text-align:center;font-weight:900;">JavaScript</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem;">
+          <div class="flow-node" style="background:#FFF3E0;font-size:0.75rem;padding:0.4rem 0.5rem;width:100%;text-align:center;">🤖 AI・自動化</div>
+          <div class="flow-arrow" style="font-size:0.9rem;">↓</div>
+          <div class="flow-node" style="background:var(--py);color:#fff;font-size:0.85rem;padding:0.4rem 0.5rem;width:100%;text-align:center;font-weight:900;">Python</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem;">
+          <div class="flow-node" style="background:#FFF3E0;font-size:0.75rem;padding:0.4rem 0.5rem;width:100%;text-align:center;">🏥 電子カルテDB</div>
+          <div class="flow-arrow" style="font-size:0.9rem;">↓</div>
+          <div class="flow-node" style="background:var(--sql);color:#fff;font-size:0.85rem;padding:0.4rem 0.5rem;width:100%;text-align:center;font-weight:900;">SQL</div>
+        </div>
+      </div>
+
+      <div class="flow-arrow" style="margin-top:0.3rem;">↓</div>
+      <div class="flow-node" style="background:var(--green);color:#fff;padding:0.5rem 1.5rem;">どれでも「共通概念（変数・条件・ループ・関数）」は同じ ✓</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node" style="background:var(--amber);color:#fff;padding:0.5rem 1.5rem;font-size:0.88rem;">2言語目は1言語目を学んだ後に自然と身につく</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 26: 最初の30行チャレンジ
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s26">
+  <span class="section-tag anim">Chapter 9 まとめ</span>
+  <h2 class="slide-title anim">「最初の30行」チャレンジ ― 今週やること</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0.7rem;">
+
+    <div class="row-item anim"><div class="row-label" style="background:#b59a00;">JS</div><div class="row-content"><strong>ブラウザでできる JS 入門</strong>：F12 → Console を開いて <code>1 + 1</code> と入力して Enter。次に <code>alert("やった！")</code><br><span class="small">所要時間：5分</span></div></div>
+
+    <div class="row-item anim"><div class="row-label" style="background:var(--r);">R</div><div class="row-content"><strong>RStudio Cloud（無料）</strong>：ブラウザだけでR環境が使える。<br><code style="font-size:0.78rem;">x &lt;- c(1,2,3,4,5); mean(x); hist(x)</code> の3行を実行してみよう<br><span class="small">posit.cloud でアカウント作成 → 新規プロジェクト</span></div></div>
+
+    <div class="row-item anim"><div class="row-label" style="background:var(--py);">Py</div><div class="row-content"><strong>Google Colab（無料・インストール不要）</strong>：colab.research.google.com<br>BMI計算のコードをそのまま貼り付けて実行<br><span class="small">Googleアカウントがあれば今日から使える</span></div></div>
+
+    <div class="row-item anim"><div class="row-label" style="background:var(--teal);">ALL</div><div class="row-content"><strong>Claude / ChatGPT に聞く</strong>：「Rで糖尿病患者10人のHbA1cをグラフにするコードを書いて」<br>→ 出てきたコードを RStudio Cloud に貼って実行してみよう<br><span class="small">わからないことはどんどん AI に聞いていい</span></div></div>
+
+  </div>
+  <div class="highlight anim">「完璧に理解してから始める」より「動かしてから理解する」がプログラミングの鉄則</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 27: まとめ
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-light" id="s27">
+  <span class="section-tag anim">まとめ</span>
+  <h2 class="slide-title anim">今日の60分で学んだこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0.8rem;">
+    <div class="summary-item anim"><div class="summary-num" style="background:var(--navy);">01</div><div class="summary-text">プログラミング言語は<strong>用途で選ぶ</strong>。医学研究なら R、Web・教材なら JS、AI・汎用なら Python<br>— C系は「存在を知っておく」で十分</div></div>
+    <div class="summary-item anim"><div class="summary-num" style="background:var(--teal);">02</div><div class="summary-text">どの言語も<strong>変数・条件分岐・ループ・関数</strong>という共通概念を持つ<br>— 1つ習得すれば2言語目は半分の時間で学べる</div></div>
+    <div class="summary-item anim"><div class="summary-num" style="background:#b59a00;">03</div><div class="summary-text">JS は<strong>ブラウザで今すぐ動かせる</strong>。R は<strong>統計が数行で書ける</strong><br>— どちらも「医師の武器」になる</div></div>
+    <div class="summary-item anim"><div class="summary-num" style="background:var(--green);">04</div><div class="summary-text">AI（Claude・Copilot）は強力な助っ人だが、<strong>コードを「読んで判断する」力は自分が持つ</strong>必要がある<br>— 基礎を持つ人とAIの組み合わせが最強</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  SLIDE 28: 締め
+═══════════════════════════════════════════════════════════ -->
+<div class="slide slide-dark" id="s28">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:0.6rem;">
+    <div class="anim" style="font-size:clamp(2rem,5vw,3.5rem);font-weight:900;color:var(--white);line-height:1.2;">
+      コードは、道具だ。<br>
+      <span style="color:var(--amber);">使いこなすのはあなただ。</span>
+    </div>
+    <div class="title-rule anim"></div>
+    <div class="anim" style="color:#8BAECF;font-size:0.9rem;line-height:2.2;">
+      このスライドの URL を共有します<br>
+      F12 → Elements でソースを覗いてみてください<br>
+      それがあなたの最初の「コードリーディング」です
+    </div>
+    <div class="anim" style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap;justify-content:center;">
+      <span class="lang-badge badge-js">JavaScript</span>
+      <span class="lang-badge badge-r">R</span>
+      <span class="lang-badge badge-py">Python</span>
+      <span class="lang-badge badge-html">HTML</span>
+      <span class="lang-badge badge-sql">SQL</span>
+      <span class="lang-badge badge-c">C / C++</span>
+      <span class="lang-badge badge-cs">C#</span>
+    </div>
+  </div>
+  <div class="title-author anim">大阪公立大学 医学部 細菌学講座　金子幸弘<br><span style="color:#4ade80;font-size:0.78rem;">質問・間違いの指摘、大歓迎です</span></div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ── Nav ──────────────────────────────────────────────── -->
+<div id="nav">
+  <button class="nav-btn" id="prevBtn" title="前へ (←)">‹</button>
+  <span id="slide-counter">1 / 28</span>
+  <button class="nav-btn" id="nextBtn" title="次へ (→)">›</button>
+</div>
+<div id="progress"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
+<script>
+/* ── Slide engine ─────────────────────────────── */
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  const prev = cur;
+  setTimeout(() => slides[prev].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev');
+  slides[cur].classList.add('active');
+  document.getElementById('slide-counter').textContent = (cur+1) + ' / ' + total;
+  document.getElementById('progress').style.width = ((cur+1)/total*100) + '%';
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => go(cur+1));
+document.getElementById('prevBtn').addEventListener('click', () => go(cur-1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(cur+1); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); go(cur-1); }
+  if (e.key === 'f' || e.key === 'F') {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => tx = e.touches[0].clientX, {passive:true});
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) dx < 0 ? go(cur+1) : go(cur-1);
+}, {passive:true});
+
+document.getElementById('progress').style.width = (1/total*100) + '%';
+
+/* ── Live BMI demo (slide 14) ─────────────────── */
+function liveBMI() {
+  const w = parseFloat(document.getElementById('bmi-w').value);
+  const h = parseFloat(document.getElementById('bmi-h').value) / 100;
+  const el = document.getElementById('bmi-result');
+  if (isNaN(w) || isNaN(h) || h <= 0) { el.textContent = '⚠ 正しい数値を入力してください'; el.style.color='#f87171'; return; }
+  const bmi = (w / h**2).toFixed(1);
+  const judge = bmi >= 35 ? '高度肥満（3度）' : bmi >= 30 ? '肥満（2度）' : bmi >= 25 ? '肥満（1度）' : bmi >= 18.5 ? '普通体重' : '低体重';
+  el.textContent = `BMI: ${bmi} → ${judge}`;
+  el.style.color = bmi >= 25 ? '#fbbf24' : bmi < 18.5 ? '#60a5fa' : '#4ade80';
+}
+
+/* ── Quiz 1: 投票（正解なし、結果表示のみ）────── */
+function voteQ1(btn, val) {
+  const opts = document.querySelectorAll('#q1-opts .quiz-btn');
+  opts.forEach(b => b.disabled = true);
+  btn.style.background = 'rgba(27,108,168,.4)';
+  btn.style.borderColor = '#60a5fa';
+  const msgs = {
+    a: '😊 「難しそう」→ 今日終わったら変わります！',
+    b: '🔍 「何に使うか」→ 今日答えが出ますよ',
+    c: '🔥 すでに興味あり！ 最高のスタート地点',
+    d: '😎 経験者！ ぜひ今日の比較を楽しんでください'
+  };
+  const fb = document.getElementById('q1-fb');
+  fb.textContent = msgs[val];
+  fb.classList.add('show');
+}
+
+/* ── Quiz 2: コンパイラ vs インタープリタ ─────── */
+function answerQ2(btn, val) {
+  const opts = document.querySelectorAll('#q2-opts .quiz-btn');
+  opts.forEach(b => b.disabled = true);
+  if (val === 'b') {
+    btn.classList.add('correct');
+    document.getElementById('q2-fb').textContent = '✅ 正解！ コンパイル型は実行前に型・構造の宣言が必要。その分、実行速度は圧倒的に速い';
+  } else {
+    btn.classList.add('wrong');
+    opts[1].classList.add('correct');
+    document.getElementById('q2-fb').textContent = '💡 正解は B。コンパイル型は厳密な構造宣言が必要なため行数が増える';
+  }
+  document.getElementById('q2-fb').classList.add('show');
+}
+
+/* ── Quiz 3: == vs === ────────────────────────── */
+function answerQ3(btn, val) {
+  const opts = document.querySelectorAll('#q3-opts .quiz-btn');
+  opts.forEach(b => b.disabled = true);
+  if (val === 'b') {
+    btn.classList.add('correct');
+    document.getElementById('q3-fb').textContent = '✅ 正解！ == は型変換あり（5 == "5" → true）、=== は型も厳密比較（5 === "5" → false）。実務では === を使うのが鉄則';
+  } else {
+    btn.classList.add('wrong');
+    opts[1].classList.add('correct');
+    document.getElementById('q3-fb').textContent = '💡 正解は B。JS の == はこっそり型変換する。これが有名なJSの「罠」。=== で厳密比較しよう';
+  }
+  document.getElementById('q3-fb').classList.add('show');
+}
+
+/* ── Quiz 4: SQL + R ─────────────────────────── */
+function answerQ4(btn, val) {
+  const opts = document.querySelectorAll('#q4-opts .quiz-btn');
+  opts.forEach(b => b.disabled = true);
+  if (val === 'b') {
+    btn.classList.add('correct');
+    document.getElementById('q4-fb').textContent = '✅ 正解！ DBからSQLで抽出 → RやPythonで集計・可視化 が現場の標準的なパイプライン';
+  } else {
+    btn.classList.add('wrong');
+    opts[1].classList.add('correct');
+    document.getElementById('q4-fb').textContent = '💡 正解は B。1,000件以上はExcelより SQL+R の方が圧倒的に速くて正確';
+  }
+  document.getElementById('q4-fb').classList.add('show');
+}
+
+/* ── Final vote (slide 24) ────────────────────── */
+const finalVotes = { js: 0, r: 0, py: 0, sql: 0 };
+let finalTotal = 0;
+function finalVote(btn, lang) {
+  finalVotes[lang]++;
+  finalTotal++;
+  const btns = document.querySelectorAll('#final-vote .vote-btn');
+  btns.forEach(b => b.disabled = true);
+  btn.style.background = 'rgba(27,108,168,.4)';
+  btn.style.borderColor = '#60a5fa';
+  const names = { js:'JavaScript', r:'R', py:'Python', sql:'SQL' };
+  document.getElementById('final-result').textContent =
+    `「${names[lang]}」を選びました ✓ 　講義後もこの選択を思い出してみてください`;
+}
+</script>
+</body>
+</html>
