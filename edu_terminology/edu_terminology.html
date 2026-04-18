@@ -4,206 +4,559 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AIを活用した医学論文語彙学習ガイド</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --intro-color: #e3f2fd;
-            --intro-border: #2196f3;
-            --methods-color: #e8f5e9;
-            --methods-border: #4caf50;
-            --results-color: #fffde7;
-            --results-border: #fbc02d;
-            --discussion-color: #ffebee;
-            --discussion-border: #f44336;
-            --code-bg: #f8f9fa;
+            --washi: #f5f1e8;
+            --washi-light: #fdfaf3;
+            --washi-dark: #ede8da;
+            --ink: #1a1612;
+            --ink-soft: #3d3530;
+            --ink-muted: #7a6f64;
+            --ink-faint: #b0a898;
+
+            --accent-blue: #2d6a8f;
+            --accent-blue-light: #deeef7;
+            --accent-blue-border: #7db8d8;
+
+            --accent-green: #3a7d52;
+            --accent-green-light: #dff0e6;
+            --accent-green-border: #82c49e;
+
+            --accent-amber: #a0700a;
+            --accent-amber-light: #fdf3d8;
+            --accent-amber-border: #d4a843;
+
+            --accent-rose: #8f3040;
+            --accent-rose-light: #f9e5e8;
+            --accent-rose-border: #d47a8a;
+
+            --border: #d8d0c0;
+            --shadow: rgba(26,22,18,0.08);
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
+            font-family: 'Noto Serif JP', serif;
+            background-color: var(--washi);
+            color: var(--ink-soft);
+            line-height: 1.8;
+            min-height: 100vh;
+        }
+
+        /* Texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
             max-width: 900px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f7f9;
+            padding: 40px 24px 60px;
         }
 
+        /* ── HEADER ── */
         header {
             text-align: center;
-            padding: 40px 0;
-            background: linear-gradient(135deg, #2c3e50, #4ca1af);
-            color: white;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        h1 { margin: 0; font-size: 2rem; }
-        h2 { border-left: 5px solid var(--primary-color); padding-left: 15px; margin-top: 40px; }
-
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .intro-box { background-color: white; border-top: 5px solid var(--intro-border); }
-        
-        .prompt-container {
+            padding: 56px 40px 48px;
+            background: var(--ink);
+            color: var(--washi);
+            border-radius: 4px;
+            margin-bottom: 48px;
             position: relative;
-            background-color: var(--code-bg);
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px),
+                repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px);
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-amber), var(--accent-rose));
+        }
+
+        header h1 {
+            font-family: 'Zen Antique', serif;
+            font-size: clamp(1.4rem, 3.5vw, 2rem);
+            font-weight: 400;
+            letter-spacing: 0.08em;
+            position: relative;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        header p {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 300;
+            color: var(--ink-faint);
+            letter-spacing: 0.12em;
+            position: relative;
+        }
+
+        /* ── SECTION HEADING ── */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            margin-top: 48px;
+        }
+
+        .section-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--ink-faint);
+            letter-spacing: 0.1em;
+            padding: 3px 8px;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            background: var(--washi-light);
+            flex-shrink: 0;
+        }
+
+        h2 {
+            font-family: 'Zen Antique', serif;
+            font-size: 1.2rem;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            color: var(--ink);
+        }
+
+        .section-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--washi-light);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 28px 32px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 12px var(--shadow), 0 1px 0 rgba(255,255,255,0.8) inset;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            color: var(--ink-soft);
+            margin-bottom: 14px;
+        }
+
+        .card p:last-child { margin-bottom: 0; }
+
+        .card ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 8px;
+        }
+
+        .card ul li {
+            font-size: 0.92rem;
+            padding: 6px 0 6px 20px;
+            position: relative;
+            border-bottom: 1px dashed var(--washi-dark);
+            color: var(--ink-soft);
+        }
+
+        .card ul li:last-child { border-bottom: none; }
+
+        .card ul li::before {
+            content: '·';
+            position: absolute;
+            left: 4px;
+            color: var(--ink-faint);
+            font-size: 1.2rem;
+            line-height: 1.4;
+        }
+
+        .card ul li strong {
+            color: var(--ink);
+            font-weight: 500;
+        }
+
+        /* ── PROMPT BOX ── */
+        .prompt-wrapper {
             margin: 20px 0;
         }
 
-        .copy-button-ui {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #2c3e50;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
+        .prompt-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: var(--ink);
+            border-radius: 4px 4px 0 0;
         }
 
-        code {
+        .prompt-lang {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--ink-faint);
+            letter-spacing: 0.08em;
+        }
+
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.6);
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            border-color: rgba(255,255,255,0.4);
+            color: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .copy-btn.copied {
+            border-color: var(--accent-green-border);
+            color: #82c49e;
+        }
+
+        .copy-btn svg {
+            width: 13px; height: 13px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .prompt-body {
+            background: #1a1612;
+            border: 1px solid #3d3530;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            padding: 22px 24px;
+            overflow-x: auto;
+        }
+
+        .prompt-body code {
             display: block;
             white-space: pre-wrap;
-            color: #d63384;
-            font-family: 'Consolas', 'Monaco', monospace;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.75;
+            color: #c9bfb0;
         }
 
+        .prompt-body code .c-heading   { color: #7db8d8; font-weight: 500; }
+        .prompt-body code .c-number    { color: #d4a843; }
+        .prompt-body code .c-bracket   { color: #82c49e; }
+        .prompt-body code .c-emphasis  { color: #d47a8a; }
+
+        /* ── BADGE GRID ── */
         .badge-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
         }
 
         .badge {
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid transparent;
+            padding: 16px 14px;
+            border-radius: 4px;
+            border: 1px solid;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 500;
+            line-height: 1.5;
         }
 
-        .b-intro { background: var(--intro-color); border-color: var(--intro-border); color: #0d47a1; }
-        .b-methods { background: var(--methods-color); border-color: var(--methods-border); color: #1b5e20; }
-        .b-results { background: var(--results-color); border-color: var(--results-border); color: #f57f17; }
-        .b-discussion { background: var(--discussion-color); border-color: var(--discussion-border); color: #b71c1c; }
+        .badge small {
+            display: block;
+            font-weight: 300;
+            font-size: 0.78rem;
+            margin-top: 4px;
+            opacity: 0.85;
+        }
 
+        .b-intro    { background: var(--accent-blue-light);  border-color: var(--accent-blue-border);  color: var(--accent-blue); }
+        .b-methods  { background: var(--accent-green-light); border-color: var(--accent-green-border); color: var(--accent-green); }
+        .b-results  { background: var(--accent-amber-light); border-color: var(--accent-amber-border); color: var(--accent-amber); }
+        .b-discussion{ background: var(--accent-rose-light); border-color: var(--accent-rose-border);  color: var(--accent-rose); }
+
+        /* ── TIPS ── */
         .tips {
-            background-color: #fff9c4;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 5px solid #fbc02d;
+            background: var(--accent-amber-light);
+            border-left: 3px solid var(--accent-amber-border);
+            border-radius: 0 4px 4px 0;
+            padding: 14px 18px;
+            margin-top: 20px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.88rem;
+            color: var(--accent-amber);
         }
 
+        .tips strong { font-weight: 600; }
+
+        /* ── SECTION DIVIDER ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 40px 0 0;
+            color: var(--ink-faint);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── FOOTER ── */
         footer {
+            margin-top: 64px;
+            padding: 28px 32px;
+            background: var(--washi-light);
+            border: 1px solid var(--border);
+            border-top: 3px solid var(--ink);
+            border-radius: 4px;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        .footer-disclaimer {
+            font-size: 0.78rem;
+            color: var(--ink-muted);
+            line-height: 1.9;
+        }
+
+        .footer-disclaimer strong {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            color: var(--ink-faint);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .footer-copy {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--border);
+            font-size: 0.75rem;
+            color: var(--ink-faint);
             text-align: center;
-            font-size: 0.9rem;
-            color: #777;
-            margin-top: 50px;
-            padding-bottom: 20px;
+            letter-spacing: 0.05em;
+        }
+
+        h3 {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin: 22px 0 10px;
+            letter-spacing: 0.04em;
+        }
+
+        @media (max-width: 600px) {
+            .page-wrapper { padding: 20px 14px 40px; }
+            .card { padding: 20px 18px; }
+            header { padding: 36px 20px 32px; }
         }
     </style>
 </head>
 <body>
+<div class="page-wrapper">
 
-<header>
-    <h1>医学論文 語彙抽出プロンプト・マスターガイド</h1>
-    <p>AIを「最強の家庭教師」に変えるプロンプト技術を学ぶ</p>
-</header>
+    <header>
+        <h1>医学論文 語彙抽出<br>プロンプト・マスターガイド</h1>
+        <p>AIを「最強の家庭教師」に変えるプロンプト技術</p>
+    </header>
 
-<div class="card intro-box">
-    <h2>1. なぜ「プロンプト」が重要なのか？</h2>
-    <p>AI（Gemini等）は、単に「論文を読んで」と頼むだけでは、一般的な要約しか返してくれません。しかし、<strong>役割</strong>、<strong>条件</strong>、<strong>出力形式</strong>を明確に指定することで、AIは一流の言語アナリストに変わります。</p>
-    <ul>
-        <li><strong>網羅性:</strong> セクションごとの特殊な言い回しを逃さず抽出できます。</li>
-        <li><strong>構造化:</strong> 類義語や対義語を整理させることで、語彙を「点」ではなく「線」で覚えることができます。</li>
-        <li><strong>再現性:</strong> 一度良いプロンプトを作れば、新しい論文を読むたびに自分専用の単語帳が自動生成されます。</li>
-    </ul>
-</div>
+    <!-- Section 1 -->
+    <div class="section-label">
+        <span class="section-num">01</span>
+        <h2>なぜ「プロンプト」が重要なのか？</h2>
+        <div class="section-line"></div>
+    </div>
 
-<div class="card">
-    <h2>2. 実践！そのまま使える「最強プロンプト」</h2>
-    <p>以下のコードをコピーして、10個程度のPDFファイルをアップロードしたAIチャットに入力してください。</p>
-    
-    <div class="prompt-container">
-        <div class="copy-button-ui">Copy Template</div>
-        <code># 役割
+    <div class="card">
+        <p>AI（Gemini 等）は、単に「論文を読んで」と頼むだけでは一般的な要約しか返してくれません。しかし、<strong>役割</strong>・<strong>条件</strong>・<strong>出力形式</strong>を明確に指定することで、AIは一流の言語アナリストに変わります。</p>
+        <ul>
+            <li><strong>網羅性：</strong>セクションごとの特殊な言い回しを逃さず抽出できます。</li>
+            <li><strong>構造化：</strong>類義語や対義語を整理させることで、語彙を「点」ではなく「線」で覚えることができます。</li>
+            <li><strong>再現性：</strong>一度良いプロンプトを作れば、新しい論文を読むたびに自分専用の単語帳が自動生成されます。</li>
+        </ul>
+    </div>
+
+    <!-- Section 2 -->
+    <div class="section-label">
+        <span class="section-num">02</span>
+        <h2>実践！そのまま使える「最強プロンプト」</h2>
+        <div class="section-line"></div>
+    </div>
+
+    <div class="card">
+        <p>以下のテンプレートをコピーして、10個程度の PDF ファイルをアップロードした AI チャットに入力してください。</p>
+
+        <div class="prompt-wrapper">
+            <div class="prompt-header">
+                <span class="prompt-lang">prompt · ja</span>
+                <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">
+                    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    <span id="copyLabel">コピー</span>
+                </button>
+            </div>
+            <div class="prompt-body">
+                <code id="promptText"><span class="c-heading"># 役割</span>
 あなたは医学英語とコーパス言語学の専門家です。アップロードされた複数の医学論文を横断的に解析し、医学生や若手研究者が論文を「書く」際にそのまま活用できる実戦的な語彙・フレーズリストを作成してください。
 
-# 解析・抽出指示
+<span class="c-heading"># 解析・抽出指示</span>
 IMRaD（Introduction, Methods, Results, Discussion）の各セクションについて、以下の項目に従って解析してください。
 
-1. 【語彙・フレーズ抽出】
+<span class="c-number">1.</span> <span class="c-bracket">【語彙・フレーズ抽出】</span>
    - 各セクションで頻出する動詞、名詞、形容詞、副詞を特定してください。
    - 専門用語（特定の病名や菌名）よりも、論理を構成するための「アカデミック・フレーズ」を優先してください。
-   
-2. 【類義語グループと対義語ペア】
+
+<span class="c-number">2.</span> <span class="c-bracket">【類義語グループと対義語ペア】</span>
    - 各セクション内で意味の近い「類義語グループ」を作成してください（例: increase, elevate, rise）。
    - 論文内で対比としてよく使われる「対義語ペア」を特定してください（例: significant vs negligible）。
 
-3. 【詳細解析（テーブル形式）】
+<span class="c-number">3.</span> <span class="c-bracket">【詳細解析（テーブル形式）】</span>
    特に有用なキーフレーズについて、以下の要素を含む詳細なテーブルを作成してください。
-   - 【語彙・フレーズ】: 抽出された表現
-   - 【文脈・意味】: 論文内でのニュアンス（例：先行研究の否定、知識の欠落の提示、結果の強調など）
-   - 【根拠（ソース）】: 該当するファイル名とページ数（またはセクション名）
-   - 【言い換え（Paraphrase）】: 意味を変えずにより丁寧、または簡潔に表現できる代替案
-   - 【用例（Example）】: 論文中の文章を一部改変し、学生がそのまま使える「型（Template）」にしたもの
+   - <span class="c-emphasis">【語彙・フレーズ】</span>: 抽出された表現
+   - <span class="c-emphasis">【文脈・意味】</span>: 論文内でのニュアンス（例：先行研究の否定、知識の欠落の提示、結果の強調など）
+   - <span class="c-emphasis">【根拠（ソース）】</span>: 該当するファイル名とページ数（またはセクション名）
+   - <span class="c-emphasis">【言い換え（Paraphrase）】</span>: 意味を変えずにより丁寧、または簡潔に表現できる代替案
+   - <span class="c-emphasis">【用例（Example）】</span>: 論文中の文章を一部改変し、学生がそのまま使える「型（Template）」にしたもの
 
-# 出力形式
-1. セクション（Introduction / Methods / Results / Discussion）ごとに章立てして出力してください。
-2. 上記の「語彙・フレーズ抽出」「類義語・対義語」「詳細解析テーブル」を各章に含めてください。
-3. 最後に、全体を総括して「この論文セット特有の表現の傾向」を日本語で解説してください。
+<span class="c-heading"># 出力形式</span>
+<span class="c-number">1.</span> セクション（Introduction / Methods / Results / Discussion）ごとに章立てして出力してください。
+<span class="c-number">2.</span> 上記の「語彙・フレーズ抽出」「類義語・対義語」「詳細解析テーブル」を各章に含めてください。
+<span class="c-number">3.</span> 最後に、全体を総括して「この論文セット特有の表現の傾向」を日本語で解説してください。
 
-# 留意事項
-- 数値の示し方、統計的有意性の述べ方、限界事項（Limitation）の認め方など、医学論文特有の「作法」が反映された表現を重点的に抽出してください。           
-        </code>
+<span class="c-heading"># 留意事項</span>
+数値の示し方、統計的有意性の述べ方、限界事項（Limitation）の認め方など、医学論文特有の「作法」が反映された表現を重点的に抽出してください。</code>
+            </div>
+        </div>
     </div>
+
+    <!-- Section 3 -->
+    <div class="section-label">
+        <span class="section-num">03</span>
+        <h2>プロンプトの構造解説</h2>
+        <div class="section-line"></div>
+    </div>
+
+    <div class="card">
+        <p>このプロンプトが「最強」である理由は、以下の 3 つの要素が組み込まれているからです。</p>
+        <div class="badge-grid">
+            <div class="badge b-intro">役割 (Role)<small>「医学英語の専門家」と定義することで、カジュアルな語彙を除外し、学術的なトーンに集中させます。</small></div>
+            <div class="badge b-methods">条件 (Constraints)<small>品詞の指定、類義・対義のグループ化など、思考の枠組みを強制し、質の高い回答を引き出します。</small></div>
+            <div class="badge b-discussion">形式 (Format)<small>「セクションごとの表」と指定することで、後から見返した時にどこで使う単語か一目で分かるようにします。</small></div>
+        </div>
+    </div>
+
+    <!-- Section 4 -->
+    <div class="section-label">
+        <span class="section-num">04</span>
+        <h2>学習活用ガイド：論理展開を「盗む」</h2>
+        <div class="section-line"></div>
+    </div>
+
+    <div class="card">
+        <p>AI が出力したリストを使って、以下のポイントを意識して学習しましょう。</p>
+
+        <h3>A. セクションごとの「武器」を使い分ける</h3>
+        <div class="badge-grid">
+            <div class="badge b-intro">Introduction<small>不足・必要性<br>lack / remain / clarify</small></div>
+            <div class="badge b-methods">Methods<small>手順・厳密性<br>conduct / assess / adjust</small></div>
+            <div class="badge b-results">Results<small>事実・有意性<br>reveal / significant / trend</small></div>
+            <div class="badge b-discussion">Discussion<small>解釈・限界<br>suggest / likely / limitation</small></div>
+        </div>
+
+        <h3>B. 類義語の「グラデーション」を学ぶ</h3>
+        <p>AI が提示した類義語グループ（例：show, indicate, suggest）を見てください。「事実」を述べているのか「推測」を述べているのか、その強弱の差を論文の文脈で確認するのが最も効果的な勉強法です。</p>
+
+        <div class="tips">
+            <strong>💡 アドバイス：</strong>AI に「これらの単語を使った例文を、この論文のテーマで作って」と追加で頼むと、さらに理解が深まります。
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-disclaimer">
+            <strong>免責事項 · Disclaimer</strong>
+            本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+        </div>
+        <div class="footer-copy">© 2026 医学英語教育プロンプトエンジニアリング・ガイド</div>
+    </footer>
+
 </div>
 
-<div class="card">
-    <h2>3. プロンプトの構造解説</h2>
-    <p>このプロンプトが「最強」である理由は、以下の3つの要素が組み込まれているからです。</p>
-    <div class="badge-grid">
-        <div class="badge b-intro">役割 (Role)<br><small>「医学英語の専門家」と定義することで、カジュアルな語彙を除外し、学術的なトーンに集中させます。</small></div>
-        <div class="badge b-methods">条件 (Constraints)<br><small>品詞の指定、類義・対義のグループ化など、思考の枠組みを強制し、質の高い回答を引き出します。</small></div>
-        <div class="badge b-discussion">形式 (Format)<br><small>「セクションごとの表」と指定することで、後から見返した時にどこで使う単語か一目で分かるようにします。</small></div>
-    </div>
-</div>
+<script>
+function copyPrompt() {
+    const btn = document.getElementById('copyBtn');
+    const label = document.getElementById('copyLabel');
 
-<div class="card">
-    <h2>4. 学習活用ガイド：論理展開を「盗む」</h2>
-    <p>AIが出力したリストを使って、以下のポイントを意識して学習しましょう。</p>
-    
-    <h3>A. セクションごとの「武器」を使い分ける</h3>
-    <div class="badge-grid">
-        <div class="badge b-intro">Intro: 不足・必要性<br>(lack, remain, clarify)</div>
-        <div class="badge b-methods">Methods: 手順・厳密性<br>(conduct, assess, adjust)</div>
-        <div class="badge b-results">Results: 事実・有意性<br>(reveal, significant, trend)</div>
-        <div class="badge b-discussion">Discussion: 解釈・限界<br>(suggest, likely, limitation)</div>
-    </div>
+    // Extract plain text from the code block (strip span tags)
+    const codeEl = document.getElementById('promptText');
+    const plainText = codeEl.innerText || codeEl.textContent;
 
-    <h3 style="margin-top:20px;">B. 類義語の「グラデーション」を学ぶ</h3>
-    <p>AIが提示した類義語グループ（例：show, indicate, suggest）を見てください。「事実」を述べているのか「推測」を述べているのか、その強弱の差を論文の文脈で確認するのが最も効果的な勉強法です。</p>
-
-    <div class="tips">
-        <strong>アドバイス：</strong> AIに「これらの単語を使った例文を、この論文のテーマで作って」と追加で頼むと、さらに理解が深まります。
-    </div>
-</div>
-
-<footer>
-    <p>© 2026 医学英語教育プロンプトエンジニアリング・ガイド</p>
-</footer>
-
+    navigator.clipboard.writeText(plainText).then(() => {
+        btn.classList.add('copied');
+        label.textContent = 'コピー完了';
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            label.textContent = 'コピー';
+        }, 2000);
+    }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = plainText;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.classList.add('copied');
+        label.textContent = 'コピー完了';
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            label.textContent = 'コピー';
+        }, 2000);
+    });
+}
+</script>
 </body>
 </html>

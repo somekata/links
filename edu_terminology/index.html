@@ -1,234 +1,565 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical English Master</title>
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --bg: #f4f7f6;
-            --verb: #3498db;
-            --adj: #f1c40f;
-            --adv: #2ecc71;
-            --phrase: #9b59b6;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Vocabulary Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --washi:       #f5f1e8;
+      --washi-light: #fdfaf3;
+      --washi-dark:  #ede8da;
+      --ink:         #1a1612;
+      --ink-soft:    #3d3530;
+      --ink-muted:   #7a6f64;
+      --ink-faint:   #b0a898;
+      --border:      #d8d0c0;
+      --shadow:      rgba(26,22,18,.08);
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 0;
-            color: var(--primary);
-        }
+      --verb:    #2d6a8f;  --verb-bg:    #deeef7;  --verb-bd:    #7db8d8;
+      --adj:     #a0700a;  --adj-bg:     #fdf3d8;  --adj-bd:     #d4a843;
+      --adv:     #3a7d52;  --adv-bg:     #dff0e6;  --adv-bd:     #82c49e;
+      --phrase:  #6b3fa0;  --phrase-bg:  #f0eafa;  --phrase-bd:  #b08fd4;
 
-        .header {
-            background: linear-gradient(135deg, #2c3e50, #2980b9);
-            color: white;
-            padding: 40px 20px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+      --basic:        #3a7d52; --basic-bg:  #dff0e6;
+      --intermediate: #a0700a; --intermediate-bg: #fdf3d8;
+      --advanced:     #8f3040; --advanced-bg: #f9e5e8;
 
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+      --modal-bg: rgba(26,22,18,.55);
+    }
 
-        .search-container {
-            position: sticky;
-            top: 20px;
-            z-index: 1000;
-            margin-bottom: 30px;
-        }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        #searchInput {
-            width: 100%;
-            padding: 15px 25px;
-            font-size: 1.1rem;
-            border-radius: 50px;
-            border: 2px solid var(--secondary);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            outline: none;
-        }
+    body {
+      font-family: 'Noto Serif JP', serif;
+      background: var(--washi);
+      color: var(--ink-soft);
+      line-height: 1.75;
+      min-height: 100vh;
+    }
 
-        .filter-tabs {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
+    /* paper texture */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
 
-        .tab {
-            padding: 8px 20px;
-            border-radius: 20px;
-            background: white;
-            cursor: pointer;
-            border: 1px solid #ddd;
-            transition: 0.3s;
-            font-size: 0.9rem;
-        }
+    /* ── Header ── */
+    header {
+      background: var(--ink);
+      color: var(--washi);
+      padding: 52px 24px 44px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,.025) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,.025) 40px);
+    }
+    header::after {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--verb-bd), var(--adj-bd), var(--adv-bd), var(--phrase-bd));
+    }
+    header h1 {
+      font-family: 'Zen Antique', serif;
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      font-weight: 400;
+      letter-spacing: .1em;
+      position: relative;
+      margin-bottom: 8px;
+    }
+    header p {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: .88rem;
+      font-weight: 300;
+      color: var(--ink-faint);
+      letter-spacing: .12em;
+      position: relative;
+    }
 
-        .tab.active {
-            background: var(--secondary);
-            color: white;
-            border-color: var(--secondary);
-        }
+    /* ── Layout ── */
+    .page { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 32px 20px 64px; }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
+    /* ── Sticky controls ── */
+    .controls {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(245,241,232,.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0 10px;
+      margin-bottom: 24px;
+    }
+    .search-wrap { position: relative; margin-bottom: 10px; }
+    .search-wrap svg {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px;
+      stroke: var(--ink-faint); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+      pointer-events: none;
+    }
+    #searchInput {
+      width: 100%; padding: 11px 18px 11px 42px;
+      font-family: 'Noto Sans JP', sans-serif; font-size: .93rem;
+      background: var(--washi-light); color: var(--ink-soft);
+      border: 1px solid var(--border); border-radius: 4px;
+      outline: none; transition: border-color .2s;
+    }
+    #searchInput:focus { border-color: var(--ink-muted); }
 
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border-top: 6px solid #ccc;
-            display: flex;
-            flex-direction: column;
-        }
+    .filter-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .tab {
+      padding: 4px 14px;
+      font-family: 'Noto Sans JP', sans-serif; font-size: .78rem; font-weight: 500;
+      border: 1px solid var(--border); border-radius: 3px;
+      background: var(--washi-light); color: var(--ink-muted);
+      cursor: pointer; transition: all .2s; user-select: none;
+    }
+    .tab:hover { border-color: var(--ink-muted); color: var(--ink-soft); }
+    .tab.active { background: var(--ink); color: var(--washi); border-color: var(--ink); }
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 20px rgba(0,0,0,0.1);
-        }
+    .tab[data-type="verb"].active   { background: var(--verb);   border-color: var(--verb);   }
+    .tab[data-type="adj"].active    { background: var(--adj);    border-color: var(--adj);    }
+    .tab[data-type="adv"].active    { background: var(--adv);    border-color: var(--adv);    }
+    .tab[data-type="phrase"].active { background: var(--phrase); border-color: var(--phrase); }
 
-        .card.verb { border-top-color: var(--verb); }
-        .card.adj { border-top-color: var(--adj); }
-        .card.adv { border-top-color: var(--adv); }
-        .card.phrase { border-top-color: var(--phrase); }
+    .tab[data-level="basic"].active        { background: var(--basic);        border-color: var(--basic);        }
+    .tab[data-level="intermediate"].active { background: var(--intermediate); border-color: var(--intermediate); }
+    .tab[data-level="advanced"].active     { background: var(--advanced);     border-color: var(--advanced);     }
 
-        .term {
-            font-size: 1.25rem;
-            font-weight: 800;
-            margin-bottom: 8px;
-            color: #333;
-        }
+    .divider-line { width: 1px; height: 20px; background: var(--border); align-self: center; }
 
-        .meaning {
-            font-size: 1rem;
-            color: #666;
-            margin-bottom: 15px;
-            flex-grow: 1;
-        }
+    /* ── Stats ── */
+    .stats {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem; color: var(--ink-faint);
+      letter-spacing: .06em;
+      margin-bottom: 18px;
+    }
 
-        .footer-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.75rem;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        }
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
 
-        .badge {
-            padding: 2px 8px;
-            border-radius: 4px;
-            background: #f0f0f0;
-            color: #888;
-        }
+    /* ── Card ── */
+    .card {
+      background: var(--washi-light);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--border);
+      border-radius: 4px;
+      padding: 18px 20px 14px;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      display: flex; flex-direction: column;
+      box-shadow: 0 2px 8px var(--shadow), 0 1px 0 rgba(255,255,255,.7) inset;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px var(--shadow);
+    }
+    .card.verb   { border-top-color: var(--verb);   }
+    .card.adj    { border-top-color: var(--adj);    }
+    .card.adv    { border-top-color: var(--adv);    }
+    .card.phrase { border-top-color: var(--phrase); }
 
-        .stats {
-            text-align: center;
-            margin-bottom: 20px;
-            font-weight: bold;
-            color: #7f8c8d;
-        }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
 
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: 1fr; }
-        }
-    </style>
+    .term {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem; font-weight: 500;
+      color: var(--ink); line-height: 1.4; flex: 1;
+    }
+
+    .level-badge {
+      flex-shrink: 0;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: .65rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 2px;
+      letter-spacing: .06em;
+    }
+    .level-badge.basic        { background: var(--basic-bg);        color: var(--basic);        }
+    .level-badge.intermediate { background: var(--intermediate-bg); color: var(--intermediate); }
+    .level-badge.advanced     { background: var(--advanced-bg);     color: var(--advanced);     }
+
+    .meaning {
+      font-size: .88rem; color: var(--ink-muted);
+      flex-grow: 1; margin-bottom: 12px; line-height: 1.6;
+    }
+
+    .card-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      border-top: 1px dashed var(--washi-dark); padding-top: 9px;
+      font-family: 'Noto Sans JP', sans-serif; font-size: .72rem;
+    }
+
+    .type-badge {
+      padding: 2px 8px; border-radius: 2px; border: 1px solid;
+      font-weight: 500;
+    }
+    .verb   .type-badge { color: var(--verb);   background: var(--verb-bg);   border-color: var(--verb-bd);   }
+    .adj    .type-badge { color: var(--adj);    background: var(--adj-bg);    border-color: var(--adj-bd);    }
+    .adv    .type-badge { color: var(--adv);    background: var(--adv-bg);    border-color: var(--adv-bd);    }
+    .phrase .type-badge { color: var(--phrase); background: var(--phrase-bg); border-color: var(--phrase-bd); }
+
+    .imrad-tags { display: flex; gap: 4px; }
+    .imrad-tag {
+      font-size: .65rem; padding: 1px 6px; border-radius: 2px;
+      background: var(--washi-dark); color: var(--ink-muted);
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: var(--modal-bg);
+      z-index: 1000;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--washi-light);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      max-width: 640px; width: 100%;
+      max-height: 88vh; overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(26,22,18,.3);
+      animation: modalIn .2s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-top {
+      padding: 22px 24px 18px;
+      border-bottom: 3px solid var(--border);
+      position: relative;
+    }
+    .modal-top.verb   { border-bottom-color: var(--verb);   }
+    .modal-top.adj    { border-bottom-color: var(--adj);    }
+    .modal-top.adv    { border-bottom-color: var(--adv);    }
+    .modal-top.phrase { border-bottom-color: var(--phrase); }
+
+    .modal-term {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem; font-weight: 500;
+      color: var(--ink); margin-bottom: 6px;
+    }
+    .modal-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; cursor: pointer;
+      color: var(--ink-faint); font-size: 1.2rem; line-height: 1;
+      padding: 4px;
+    }
+    .modal-close:hover { color: var(--ink); }
+
+    .modal-body { padding: 20px 24px 24px; }
+
+    .modal-section { margin-bottom: 18px; }
+    .modal-section:last-child { margin-bottom: 0; }
+
+    .modal-section-title {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: .72rem; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--washi-dark);
+    }
+
+    .modal-meaning {
+      font-size: .95rem; color: var(--ink-soft); line-height: 1.8;
+    }
+
+    .modal-nuance {
+      font-size: .88rem; color: var(--ink-muted); line-height: 1.8;
+    }
+
+    .modal-example {
+      background: var(--ink);
+      border-radius: 4px;
+      padding: 14px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem; color: #c9bfb0;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .syn-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      padding: 3px 10px; border-radius: 3px; border: 1px solid var(--verb-bd);
+      background: var(--verb-bg); color: var(--verb);
+    }
+    .ant-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      padding: 3px 10px; border-radius: 3px; border: 1px solid var(--advanced-bg);
+      background: var(--advanced-bg); color: var(--advanced);
+    }
+    .imrad-modal-tag {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: .75rem; font-weight: 500;
+      padding: 3px 10px; border-radius: 3px;
+      background: var(--washi-dark); color: var(--ink-muted);
+    }
+
+    /* ── Empty state ── */
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center; padding: 60px 20px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: .9rem; color: var(--ink-faint);
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 64px;
+      padding: 24px 28px;
+      background: var(--washi-light);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--ink);
+      border-radius: 4px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .footer-disclaimer {
+      font-size: .78rem; color: var(--ink-muted); line-height: 1.9;
+    }
+    .footer-disclaimer strong {
+      display: block; font-size: .7rem; font-weight: 700;
+      letter-spacing: .12em; color: var(--ink-faint);
+      margin-bottom: 5px; text-transform: uppercase;
+    }
+    .footer-copy {
+      margin-top: 14px; padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      font-size: .74rem; color: var(--ink-faint); text-align: center;
+      letter-spacing: .05em;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+      .modal-term { font-size: 1.1rem; }
+      header { padding: 36px 16px 30px; }
+    }
+  </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>Medical Vocabulary Master</h1>
-    <p>医学論文の執筆をよりスマートに、より楽しく。</p>
+<header>
+  <h1>Medical Vocabulary Master</h1>
+  <p>医学論文の執筆をよりスマートに、より楽しく。</p>
+</header>
+
+<div class="page">
+  <div class="controls">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="単語・意味・カテゴリで検索…">
+    </div>
+    <div class="filter-row" id="filterRow">
+      <div class="tab active" data-type="all">すべて</div>
+      <div class="tab" data-type="verb">動詞</div>
+      <div class="tab" data-type="adj">形容詞</div>
+      <div class="tab" data-type="adv">副詞</div>
+      <div class="tab" data-type="phrase">熟語</div>
+      <div class="divider-line"></div>
+      <div class="tab active" data-level="all">全レベル</div>
+      <div class="tab" data-level="basic">初級</div>
+      <div class="tab" data-level="intermediate">中級</div>
+      <div class="tab" data-level="advanced">上級</div>
+    </div>
+  </div>
+
+  <div id="stats" class="stats"></div>
+  <div id="grid" class="grid"></div>
+
+  <footer>
+    <div class="footer-disclaimer">
+      <strong>免責事項 · Disclaimer</strong>
+      本ツールは AI（Claude, Anthropic）を用いて作成されました。掲載された語彙・用例・ニュアンス解説には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </div>
+    <div class="footer-copy">© 2026 Medical Vocabulary Master — somekata.github.io</div>
+  </footer>
 </div>
 
-<div class="container">
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="単語、意味、カテゴリで自由検索...">
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-top" id="modalTop">
+      <div class="modal-term" id="modalTerm"></div>
+      <div class="modal-badges" id="modalBadges"></div>
+      <button class="modal-close" onclick="closeModalBtn()">✕</button>
     </div>
-
-    <div class="filter-tabs" id="filterTabs">
-        <div class="tab active" data-type="all">すべて</div>
-        <div class="tab" data-type="verb">動詞</div>
-        <div class="tab" data-type="adj">形容詞</div>
-        <div class="tab" data-type="adv">副詞</div>
-        <div class="tab" data-type="phrase">熟語</div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">日本語訳・意味</div>
+        <div class="modal-meaning" id="modalMeaning"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">ニュアンス解説</div>
+        <div class="modal-nuance" id="modalNuance"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">使うセクション (IMRaD)</div>
+        <div class="tag-list" id="modalImrad"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">類義語</div>
+        <div class="tag-list" id="modalSynonyms"></div>
+      </div>
+      <div class="modal-section" id="modalAntSection">
+        <div class="modal-section-title">対義語</div>
+        <div class="tag-list" id="modalAntonyms"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">用例文 (Example)</div>
+        <div class="modal-example" id="modalExample"></div>
+      </div>
     </div>
-
-    <div id="stats" class="stats"></div>
-    <div id="grid" class="grid"></div>
+  </div>
 </div>
 
 <script src="data.js"></script>
-
 <script>
+  const LEVEL_LABEL = { basic: '初級', intermediate: '中級', advanced: '上級' };
+  const TYPE_LABEL  = { verb: '動詞', adj: '形容詞', adv: '副詞', phrase: '熟語' };
+
+  let activeType  = 'all';
+  let activeLevel = 'all';
+
+  // ── Tabs ──
+  document.querySelectorAll('.tab[data-type]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab[data-type]').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeType = tab.dataset.type;
+      render();
+    });
+  });
+  document.querySelectorAll('.tab[data-level]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab[data-level]').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeLevel = tab.dataset.level;
+      render();
+    });
+  });
+
+  // ── Search ──
+  document.getElementById('searchInput').addEventListener('input', render);
+
+  // ── Render ──
+  function render() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const filtered = medicalData.filter(item => {
+      const matchType  = activeType  === 'all' || item.type  === activeType;
+      const matchLevel = activeLevel === 'all' || item.level === activeLevel;
+      const matchQuery = !q ||
+        item.term.toLowerCase().includes(q) ||
+        item.meaning.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        (item.nuance   && item.nuance.toLowerCase().includes(q)) ||
+        (item.synonyms && item.synonyms.some(s => s.toLowerCase().includes(q)));
+      return matchType && matchLevel && matchQuery;
+    });
+
     const grid = document.getElementById('grid');
-    const searchInput = document.getElementById('searchInput');
-    const stats = document.getElementById('stats');
-    const tabs = document.querySelectorAll('.tab');
-    
-    let currentFilter = 'all';
+    document.getElementById('stats').textContent = `${filtered.length} 件を表示中`;
 
-    function init() {
-        renderCards(medicalData);
-        
-        searchInput.addEventListener('input', () => filterContent());
-        
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentFilter = tab.dataset.type;
-                filterContent();
-            });
-        });
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="empty">該当する語彙が見つかりませんでした。</div>';
+      return;
     }
 
-    function renderCards(data) {
-        grid.innerHTML = '';
-        data.forEach(item => {
-            const card = document.createElement('div');
-            card.className = `card ${item.type}`;
-            card.innerHTML = `
-                <div class="term">${item.term}</div>
-                <div class="meaning">${item.meaning}</div>
-                <div class="footer-info">
-                    <span class="badge">${item.category}</span>
-                    <span style="color: #bbb;">${item.type.toUpperCase()}</span>
-                </div>
-            `;
-            grid.appendChild(card);
-        });
-        stats.textContent = `${data.length} 件のフレーズを表示中`;
+    grid.innerHTML = filtered.map((item, i) => `
+      <div class="card ${item.type}" onclick="openModal(${medicalData.indexOf(item)})"
+           style="animation-delay:${Math.min(i * 18, 300)}ms">
+        <div class="card-header">
+          <div class="term">${item.term}</div>
+          <div class="level-badge ${item.level}">${LEVEL_LABEL[item.level]}</div>
+        </div>
+        <div class="meaning">${item.meaning}</div>
+        <div class="card-footer">
+          <span class="type-badge">${TYPE_LABEL[item.type]}</span>
+          <div class="imrad-tags">
+            ${(item.imrad || []).map(s => `<span class="imrad-tag">${s}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Modal ──
+  function openModal(idx) {
+    const item = medicalData[idx];
+    const top  = document.getElementById('modalTop');
+    top.className = `modal-top ${item.type}`;
+
+    document.getElementById('modalTerm').textContent = item.term;
+
+    document.getElementById('modalBadges').innerHTML = `
+      <span class="level-badge ${item.level}">${LEVEL_LABEL[item.level]}</span>
+      <span class="type-badge ${item.type}" style="font-family:'Noto Sans JP',sans-serif;font-size:.72rem;padding:2px 8px;border-radius:2px;border:1px solid;">${TYPE_LABEL[item.type]}</span>
+      <span class="imrad-modal-tag">${item.category}</span>
+    `;
+
+    document.getElementById('modalMeaning').textContent = item.meaning;
+    document.getElementById('modalNuance').textContent  = item.nuance || '—';
+    document.getElementById('modalExample').textContent = item.example || '—';
+
+    document.getElementById('modalImrad').innerHTML =
+      (item.imrad || []).map(s => `<span class="imrad-modal-tag">${s}</span>`).join('') || '<span style="color:var(--ink-faint);font-size:.8rem">—</span>';
+
+    document.getElementById('modalSynonyms').innerHTML =
+      (item.synonyms && item.synonyms.length)
+        ? item.synonyms.map(s => `<span class="syn-tag">${s}</span>`).join('')
+        : '<span style="color:var(--ink-faint);font-size:.8rem">—</span>';
+
+    const antSection = document.getElementById('modalAntSection');
+    if (item.antonyms && item.antonyms.length) {
+      antSection.style.display = '';
+      document.getElementById('modalAntonyms').innerHTML =
+        item.antonyms.map(s => `<span class="ant-tag">${s}</span>`).join('');
+    } else {
+      antSection.style.display = 'none';
     }
 
-    function filterContent() {
-        const query = searchInput.value.toLowerCase();
-        const filtered = medicalData.filter(item => {
-            const matchesSearch = item.term.toLowerCase().includes(query) || 
-                                 item.meaning.toLowerCase().includes(query) ||
-                                 item.category.toLowerCase().includes(query);
-            const matchesTab = currentFilter === 'all' || item.type === currentFilter;
-            return matchesSearch && matchesTab;
-        });
-        renderCards(filtered);
-    }
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
 
-    // 初期化実行
-    window.onload = init;
+  function closeModal(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModalBtn();
+  }
+  function closeModalBtn() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalBtn(); });
+
+  // ── Init ──
+  render();
 </script>
-
 </body>
 </html>
