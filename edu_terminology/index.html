@@ -1,1 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical English Master</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --bg: #f4f7f6;
+            --verb: #3498db;
+            --adj: #f1c40f;
+            --adv: #2ecc71;
+            --phrase: #9b59b6;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: var(--primary);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #2980b9);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .search-container {
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+            margin-bottom: 30px;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            border: 2px solid var(--secondary);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            outline: none;
+        }
+
+        .filter-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 8px 20px;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .tab.active {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border-top: 6px solid #ccc;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+        }
+
+        .card.verb { border-top-color: var(--verb); }
+        .card.adj { border-top-color: var(--adj); }
+        .card.adv { border-top-color: var(--adv); }
+        .card.phrase { border-top-color: var(--phrase); }
+
+        .term {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .meaning {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 15px;
+            flex-grow: 1;
+        }
+
+        .footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #f0f0f0;
+            color: #888;
+        }
+
+        .stats {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Medical Vocabulary Master</h1>
+    <p>医学論文の執筆をよりスマートに、より楽しく。</p>
+</div>
+
+<div class="container">
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="単語、意味、カテゴリで自由検索...">
+    </div>
+
+    <div class="filter-tabs" id="filterTabs">
+        <div class="tab active" data-type="all">すべて</div>
+        <div class="tab" data-type="verb">動詞</div>
+        <div class="tab" data-type="adj">形容詞</div>
+        <div class="tab" data-type="adv">副詞</div>
+        <div class="tab" data-type="phrase">熟語</div>
+    </div>
+
+    <div id="stats" class="stats"></div>
+    <div id="grid" class="grid"></div>
+</div>
+
+<script src="data.js"></script>
+
+<script>
+    const grid = document.getElementById('grid');
+    const searchInput = document.getElementById('searchInput');
+    const stats = document.getElementById('stats');
+    const tabs = document.querySelectorAll('.tab');
+    
+    let currentFilter = 'all';
+
+    function init() {
+        renderCards(medicalData);
+        
+        searchInput.addEventListener('input', () => filterContent());
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.type;
+                filterContent();
+            });
+        });
+    }
+
+    function renderCards(data) {
+        grid.innerHTML = '';
+        data.forEach(item => {
+            const card = document.createElement('div');
+            card.className = `card ${item.type}`;
+            card.innerHTML = `
+                <div class="term">${item.term}</div>
+                <div class="meaning">${item.meaning}</div>
+                <div class="footer-info">
+                    <span class="badge">${item.category}</span>
+                    <span style="color: #bbb;">${item.type.toUpperCase()}</span>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        stats.textContent = `${data.length} 件のフレーズを表示中`;
+    }
+
+    function filterContent() {
+        const query = searchInput.value.toLowerCase();
+        const filtered = medicalData.filter(item => {
+            const matchesSearch = item.term.toLowerCase().includes(query) || 
+                                 item.meaning.toLowerCase().includes(query) ||
+                                 item.category.toLowerCase().includes(query);
+            const matchesTab = currentFilter === 'all' || item.type === currentFilter;
+            return matchesSearch && matchesTab;
+        });
+        renderCards(filtered);
+    }
+
+    // 初期化実行
+    window.onload = init;
+</script>
+
+</body>
+</html>
