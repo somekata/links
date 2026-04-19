@@ -1,1 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedPhrase Analyzer — Phase 2</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
 
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-mark">Rx</span>
+      <div class="logo-text">
+        <span class="logo-title">MedPhrase Analyzer</span>
+        <span class="logo-sub">Phase 2 — TF-IDF · n-gram · AWL</span>
+      </div>
+    </div>
+    <div class="phase-badge">Phase 2 / 4</div>
+  </div>
+</header>
+
+<main>
+  <!-- Upload Zone -->
+  <section class="upload-section">
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="8" width="48" height="48" rx="4" stroke="currentColor" stroke-width="2"/>
+          <path d="M32 20v16M24 28l8-8 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 44h24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="upload-main">PDF / TXT ファイルをドロップ</p>
+      <p class="upload-sub">または <label for="fileInput" class="file-label">ファイルを選択</label></p>
+      <p class="upload-note">複数ファイル同時対応 · ブラウザ完結（サーバー送信なし）</p>
+      <input type="file" id="fileInput" multiple accept=".pdf,.txt" hidden>
+    </div>
+  </section>
+
+  <!-- File List -->
+  <section class="file-list-section" id="fileListSection" style="display:none">
+    <div class="section-header">
+      <h2>読み込みファイル</h2>
+      <button class="btn-clear" id="clearAllBtn">すべて削除</button>
+    </div>
+    <div class="file-list" id="fileList"></div>
+  </section>
+
+  <!-- Progress -->
+  <div class="progress-bar-wrap" id="progressWrap" style="display:none">
+    <div class="progress-bar" id="progressBar"></div>
+    <span class="progress-label" id="progressLabel">処理中…</span>
+  </div>
+
+  <!-- Results -->
+  <section class="results-section" id="resultsSection" style="display:none">
+
+    <!-- Top-level view toggle -->
+    <div class="view-toggle-bar">
+      <button class="view-toggle-btn active" data-view="text">📄 テキスト表示</button>
+      <button class="view-toggle-btn" data-view="analysis">📊 フレーズ解析</button>
+    </div>
+
+    <!-- ═══ TEXT VIEW ═══ -->
+    <div id="viewText">
+      <div class="section-header">
+        <h2>IMRaD セクション抽出結果</h2>
+        <div class="result-controls">
+          <button class="btn-secondary" id="exportTxtBtn">TXT エクスポート</button>
+          <select id="fileSelector" class="file-selector"></select>
+        </div>
+      </div>
+      <div class="stats-bar" id="statsBar"></div>
+      <div class="imrad-tabs" id="imradTabsText">
+        <button class="tab-btn active" data-section="introduction">Introduction</button>
+        <button class="tab-btn" data-section="methods">Methods</button>
+        <button class="tab-btn" data-section="results">Results</button>
+        <button class="tab-btn" data-section="discussion">Discussion</button>
+        <button class="tab-btn" data-section="other">Other</button>
+      </div>
+      <div class="imrad-content" id="imradContent"></div>
+    </div>
+
+    <!-- ═══ ANALYSIS VIEW ═══ -->
+    <div id="viewAnalysis" style="display:none">
+      <div class="section-header">
+        <h2>フレーズ解析</h2>
+        <div class="result-controls">
+          <button class="btn-secondary" id="exportCsvBtn">CSV エクスポート</button>
+          <button class="btn-primary" id="runAnalysisBtn">▶ 解析実行</button>
+        </div>
+      </div>
+
+      <!-- Analysis controls -->
+      <div class="analysis-controls">
+        <div class="control-group">
+          <label class="control-label">対象セクション</label>
+          <div class="imrad-tabs small" id="imradTabsAnalysis">
+            <button class="tab-btn active" data-section="introduction">Introduction</button>
+            <button class="tab-btn" data-section="methods">Methods</button>
+            <button class="tab-btn" data-section="results">Results</button>
+            <button class="tab-btn" data-section="discussion">Discussion</button>
+            <button class="tab-btn" data-section="all">ALL</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <div class="control-group">
+            <label class="control-label">n-gram</label>
+            <div class="toggle-group">
+              <label class="toggle-item"><input type="checkbox" name="ngram" value="1" checked> Unigram</label>
+              <label class="toggle-item"><input type="checkbox" name="ngram" value="2" checked> Bigram</label>
+              <label class="toggle-item"><input type="checkbox" name="ngram" value="3" checked> Trigram</label>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">最小頻度</label>
+            <input type="number" id="minFreq" value="2" min="1" max="20" class="num-input">
+          </div>
+          <div class="control-group">
+            <label class="control-label">表示件数 (上位)</label>
+            <input type="number" id="topN" value="50" min="10" max="300" class="num-input">
+          </div>
+          <div class="control-group">
+            <label class="control-label">AWL フィルタ</label>
+            <label class="toggle-item"><input type="checkbox" id="awlOnly"> AWL 語のみ表示</label>
+          </div>
+          <div class="control-group">
+            <label class="control-label">ストップワード除去</label>
+            <label class="toggle-item"><input type="checkbox" id="stopRemove" checked> 除去する</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis output -->
+      <div id="analysisOutput">
+        <div class="section-empty">「解析実行」ボタンを押してください</div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>本ツールはブラウザ完結型です。ファイルはサーバーに送信されません。</p>
+  <p class="footer-notice">本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>
+</footer>
+
+<!-- ═══ PHRASE DETAIL MODAL ═══ -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalPhraseLabel">
+  <div class="modal" id="phraseModal">
+    <div class="modal-header">
+      <div class="modal-phrase-wrap">
+        <div class="modal-phrase" id="modalPhraseLabel"></div>
+        <div class="modal-badges" id="modalBadges"></div>
+      </div>
+      <button class="modal-close" id="modalCloseBtn" aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script src="awl.js"></script>
+<script src="phrase_db.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
