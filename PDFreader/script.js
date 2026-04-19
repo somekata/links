@@ -267,15 +267,41 @@ function splitIMRaD(text) {
 //  Phase 2: NLP Engine
 // ══════════════════════════════════════════════
 
-/** テキストをトークン配列に変換 */
-function tokenize(text) {
+/**
+ * テキストを前処理（URL・DOI・ゴミデータ除去）してから
+ * トークン配列に変換
+ */
+function cleanText(text) {
   return text
+    // ── Step1: URL/DOIをまず空白に（記号ごと完全除去）──
+    // http(s):// または // を含む塊ごと除去
+    .replace(/https?:\/\/[^\s]*/gi, ' __REMOVED__ ')
+    .replace(/\/\/[^\s]*/g,         ' __REMOVED__ ')
+    // www. から始まるドメイン
+    .replace(/www\.[^\s]*/gi,       ' __REMOVED__ ')
+    // DOI: 10.数字/... 形式
+    .replace(/10\.\d{4,}[^\s]*/gi,' __REMOVED__ ')
+    // ── Step2: 記号を空白化（英数字・スペース・ハイフン以外を除去）──
+    .replace(/[^\w\s\-]/g, ' ')
+    // ── Step3: __REMOVED__ プレースホルダと残滓トークンを除去 ──
+    // __REMOVED__ とそれに連なる英数字断片
+    .replace(/__REMOVED__\s*\w*/g, ' ')
+    // ttp / ttps / http / https 等のプロトコル断片（単語として残った場合）
+    .replace(/(https?|ttps?|ttp|doi|www)/gi, ' ')
+    // 2文字以下の数字混じりトークン（参照番号断片）
+    .replace(/[\w]*\d[\w]*/g, ' ')
+    // ── Step4: 連続空白を正規化 ──
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function tokenize(text) {
+  return cleanText(text)
     .toLowerCase()
-    .replace(/[''`]/g, "'")            // curly quotes
-    .replace(/[^a-z0-9'\-\s]/g, ' ')  // 記号除去（'-'は保持）
+    .replace(/[\u2018\u2019`]/g, "'")  // curly quotes
     .split(/\s+/)
-    .map(t => t.replace(/^['\-]+|['\-]+$/g, ''))  // 両端の'-を除去
-    .filter(t => t.length >= 2);
+    .map(t => t.replace(/^['\-]+|['\-]+$/g, ''))
+    .filter(t => t.length >= 2 && !/^\d+$/.test(t) && !/^h?t{0,2}tps?$/.test(t));
 }
 
 /** n-gram 生成 */
@@ -329,7 +355,23 @@ function computeTFIDF(docTokenArrays, ngramN) {
     }
   }
 
-  return { totalFreq, tfidf, df };
+  // ── Parent-Child マップ構築 ──
+  // unigram → そのunigramを含むbigram/trigramの頻度上位リスト
+  const parentMap = new Map(); // word -> [{phrase, freq}]
+  for (const [phrase, freq] of totalFreq) {
+    const words = phrase.split(' ');
+    if (words.length < 2) continue;          // bigram以上のみ
+    for (const w of words) {
+      if (!parentMap.has(w)) parentMap.set(w, []);
+      parentMap.get(w).push({ phrase, freq });
+    }
+  }
+  // 頻度降順ソート・上位5件に絞る
+  for (const [w, arr] of parentMap) {
+    parentMap.set(w, arr.sort((a,b) => b.freq - a.freq).slice(0, 5));
+  }
+
+  return { totalFreq, tfidf, df, parentMap };
 }
 
 /**
@@ -393,7 +435,8 @@ function runAnalysis() {
       const results = {};
 
       for (const n of ngramVals) {
-        const { totalFreq, tfidf, df } = computeTFIDF(docTokenArrays, n);
+        const { totalFreq, tfidf, df, parentMap } = computeTFIDF(docTokenArrays, n);
+        if (n === 1) state._tmpParentMap = parentMap; // unigram時のparentMapを保存
         const D = docs.length;
 
         // フィルタリング
@@ -413,6 +456,8 @@ function runAnalysis() {
             docs: df.get(phrase),
             awl: hasAWL(phrase),
             awlTokens: phrase.split(' ').filter(t => isAWL(t)),
+            // unigramの場合：このwordを含む上位bigram/trigramリスト
+            parentPhrases: n === 1 ? (parentMap.get(phrase) || []) : [],
           }))
           .sort((a, b) => b.tfidf - a.tfidf)   // TF-IDFでソート
           .slice(0, topN);
@@ -420,6 +465,8 @@ function runAnalysis() {
         results[n] = entries;
       }
 
+      // parentMap を unigram解析分から取得してstateに保存
+      state.unigramParentMap = state._tmpParentMap || new Map();
       state.lastAnalysisResult = { results, section, docs: docs.map(d => d.name) };
       renderAnalysis(results, docs.length);
     } catch (err) {
@@ -494,9 +541,14 @@ function renderAnalysis(results, docCount) {
                 const hasEntry = !!lookupPhrase(e.phrase);
                 const dictMark = hasEntry ? '<span class="awl-mark" style="background:rgba(255,183,77,0.12);color:#ffb74d;border-color:rgba(255,183,77,0.3)" title="辞書登録あり">辞書</span>' : '';
                 return `
-                  <tr class="phrase-row" data-phrase="${escHtml(e.phrase)}" data-freq="${e.freq}" data-tfidf="${e.tfidf}" data-awl="${e.awl}">
+                  <tr class="phrase-row" data-phrase="${escHtml(e.phrase)}" data-freq="${e.freq}" data-tfidf="${e.tfidf}" data-awl="${e.awl}" data-parents="${escHtml(JSON.stringify(e.parentPhrases || []))}">
                     <td style="color:var(--text-faint);width:36px">${i+1}</td>
-                    <td class="cell-phrase">${escHtml(e.phrase)}${awlMark}${dictMark}</td>
+                    <td class="cell-phrase">
+                      ${escHtml(e.phrase)}${awlMark}${dictMark}
+                      ${e.parentPhrases && e.parentPhrases.length
+                        ? `<span class="parent-hint" title="${escHtml(e.parentPhrases.map(p=>p.phrase).join(' / '))}">▲${e.parentPhrases.length}</span>`
+                        : ''}
+                    </td>
                     <td class="cell-freq">${e.freq}</td>
                     <td>
                       <div class="freq-bar-wrap">
@@ -520,11 +572,12 @@ function renderAnalysis(results, docCount) {
   // ── 行クリック → モーダル ──
   document.querySelectorAll('.phrase-row').forEach(tr => {
     tr.addEventListener('click', () => {
-      const phrase = tr.dataset.phrase;
-      const freq   = parseInt(tr.dataset.freq);
-      const tfidf  = parseFloat(tr.dataset.tfidf);
-      const awl    = tr.dataset.awl === 'true';
-      openPhraseModal(phrase, { freq, tfidf, awl });
+      const phrase        = tr.dataset.phrase;
+      const freq          = parseInt(tr.dataset.freq);
+      const tfidf         = parseFloat(tr.dataset.tfidf);
+      const awl           = tr.dataset.awl === 'true';
+      const parentPhrases = JSON.parse(tr.dataset.parents || '[]');
+      openPhraseModal(phrase, { freq, tfidf, awl, parentPhrases });
     });
   });
 
@@ -734,10 +787,26 @@ function closeModal() {
 /**
  * モーダルを開く
  * @param {string} phrase   - 表示フレーズ
- * @param {object} stats    - { freq, tfidf, awl }
+ * @param {object} stats    - { freq, tfidf, awl, parentPhrases }
  */
 function openPhraseModal(phrase, stats) {
-  const entry = lookupPhrase(phrase);
+  // ── 多層辞書引き（新構造対応）──
+  const lookup  = lookupPhrase(phrase);
+  // 完全一致があればエントリ本体あり、なければnull
+  const entry   = lookup && lookup.matched === phrase.toLowerCase().trim() ? lookup : null;
+  // 関連フレーズ（部分一致・上位概念）
+  const related = lookup ? (lookup.relatedPhrases || []) : [];
+
+  // 複合語の場合：構成トークンを個別に辞書引き
+  const tokens = phrase.split(' ');
+  const componentEntries = tokens.length > 1
+    ? tokens.map(t => {
+        const te = lookupPhrase(t);
+        // 構成トークンは完全一致のみ採用
+        if (!te || te.matched !== t.toLowerCase().trim()) return null;
+        return { token: t, entry: te };
+      }).filter(Boolean)
+    : [];
 
   // ── ヘッダー ──
   modalPhrase.textContent = phrase;
@@ -827,10 +896,65 @@ function openPhraseModal(phrase, stats) {
       </div>`;
   }
 
-  // 6. 外部辞書リンク
+  // 6. 構成要素の意味（複合語の場合）＋ 関連フレーズ（partial match）
+  if (componentEntries.length) {
+    const rows = componentEntries.map(({ token, entry: ce }) => `
+      <div class="comp-row">
+        <span class="comp-token">${escHtml(token)}</span>
+        <span class="comp-arrow">→</span>
+        <span class="comp-ja">${escHtml(ce.ja)}</span>
+      </div>`).join('');
+    body += `
+      <div class="modal-section">
+        <div class="modal-section-label">🔤 構成要素の意味</div>
+        ${rows}
+      </div>`;
+  }
+
+  // 6b. 関連フレーズ（辞書の部分一致 — 上位概念・下位概念）
+  if (related.length) {
+    const relRows = related.map(r => {
+      const typeLabel = r.matchType === 'super'
+        ? '<span class="rel-type super">含まれる複合語</span>'
+        : '<span class="rel-type sub">構成フレーズ</span>';
+      return `
+        <div class="parent-row" data-phrase="${escHtml(r.key)}">
+          ${typeLabel}
+          <span class="parent-phrase">${escHtml(r.key)}</span>
+          <span class="parent-ja">${escHtml(r.ja)}</span>
+        </div>`;
+    }).join('');
+    body += `
+      <div class="modal-section">
+        <div class="modal-section-label">🔗 関連フレーズ（辞書）</div>
+        <div class="parent-list">${relRows}</div>
+      </div>`;
+  }
+
+  // 7. 上位フレーズ（Parent-Child）
+  const parentPhrases = stats.parentPhrases || [];
+  if (parentPhrases.length) {
+    const parentRows = parentPhrases.map(p => {
+      const pe = lookupPhrase(p.phrase);
+      const jaSnippet = pe ? `<span class="parent-ja">${escHtml(pe.ja)}</span>` : '';
+      return `
+        <div class="parent-row" data-phrase="${escHtml(p.phrase)}" title="クリックでこのフレーズを検索">
+          <span class="parent-phrase">${escHtml(p.phrase)}</span>
+          <span class="parent-freq">×${p.freq}</span>
+          ${jaSnippet}
+        </div>`;
+    }).join('');
+    body += `
+      <div class="modal-section">
+        <div class="modal-section-label">▲ 上位フレーズ（この単語を含む複合語）</div>
+        <div class="parent-list">${parentRows}</div>
+      </div>`;
+  }
+
+  // 8. 外部辞書リンク
   body += buildExternalLinks(phrase);
 
-  // 7. KWIC（文中での使い方）
+  // 9. KWIC（文中での使い方）
   body += `
     <div class="modal-section">
       <div class="modal-section-label">📄 文中での使い方（アップロード論文より）</div>
@@ -851,9 +975,20 @@ function openPhraseModal(phrase, stats) {
     });
   });
 
-  // タグクリック → 同フレーズ検索（将来拡張のフック）
-  modalBody.querySelectorAll('.modal-tag.synonym').forEach(tag => {
-    tag.title = 'クリックで別フレーズを検索（将来実装）';
+  // parent-row クリック → そのフレーズのモーダルを開く
+  modalBody.querySelectorAll('.parent-row').forEach(row => {
+    row.addEventListener('click', e => {
+      e.stopPropagation();
+      const p = row.dataset.phrase;
+      // 頻度情報はparentPhrasesから取得
+      const found = parentPhrases.find(x => x.phrase === p);
+      openPhraseModal(p, {
+        freq:          found ? found.freq : 0,
+        tfidf:         0,
+        awl:           hasAWL(p),
+        parentPhrases: [],
+      });
+    });
   });
 
   // 開く

@@ -1654,32 +1654,72 @@ const PHRASE_DB = {
 ════════════════════════════════════════════ */
 
 /**
- * フレーズを辞書で検索
- * 1. 完全一致
- * 2. DBキーがフレーズに含まれる（長いフレーズの中に登録キーがある）
- * 3. フレーズがDBキーに含まれる（登録キーの一部がフレーズ）
+ * lookupPhrase — 完全一致優先・部分一致は「関連フレーズ」として分離返却
+ *
+ * 返り値の構造:
+ *   {
+ *     matched     : string          // マッチしたDBキー（完全一致時 = phrase）
+ *     ja, note, section, ...        // 辞書エントリ本体（完全一致時のみ）
+ *     relatedPhrases: [             // 部分一致した関連フレーズ（補足情報）
+ *       { key, ja, matchType }      // matchType: 'sub'(keyがphrase内) | 'super'(phraseがkey内)
+ *     ]
+ *   }
+ *   完全一致なし かつ 関連なし → null
+ *
+ * ルール:
+ *   1. 完全一致のみ → DBエントリをそのまま返す（relatedPhrasesは空）
+ *   2. 部分一致のみ → entry本体はnull相当（ja/noteなし）、relatedPhrasesのみ返す
+ *   3. 完全一致あり → entry本体 + 関連フレーズも付加
+ *
+ * ※ 単語レベル（unigram）の includes() 誤判定を防ぐため、
+ *   部分一致は「単語境界」を考慮した照合に限定する。
  * @param {string} phrase
  * @returns {object|null}
  */
 function lookupPhrase(phrase) {
   const key = phrase.toLowerCase().trim();
 
-  // 1. 完全一致
-  if (PHRASE_DB[key]) return { ...PHRASE_DB[key], matched: key };
+  // ── ヘルパー：単語境界付き部分一致 ──
+  // "blood" が "bloodstream" にヒットしないよう、
+  // マッチ前後が単語構成文字でないことを確認する
+  function wordBoundaryIncludes(haystack, needle) {
+    const idx = haystack.indexOf(needle);
+    if (idx === -1) return false;
+    const before = idx === 0             || !/\w/.test(haystack[idx - 1]);
+    const after  = idx + needle.length === haystack.length || !/\w/.test(haystack[idx + needle.length]);
+    return before && after;
+  }
 
-  // 2. DBキーがフレーズ内に含まれる（最長マッチを優先）
-  let bestKey = null, bestLen = 0;
-  for (const k of Object.keys(PHRASE_DB)) {
-    if (key.includes(k) && k.length > bestLen) {
-      bestKey = k; bestLen = k.length;
+  // ── 1. 完全一致 ──
+  const exactEntry = PHRASE_DB[key];
+
+  // ── 2. 部分一致（関連フレーズ収集）──
+  //   a. DBキーがフレーズに含まれる（sub: keyはphraseの部分）
+  //   b. フレーズがDBキーに含まれる（super: phraseはkeyの部分）
+  const related = [];
+  for (const [k, v] of Object.entries(PHRASE_DB)) {
+    if (k === key) continue; // 完全一致は除外
+    if (wordBoundaryIncludes(key, k)) {
+      // phrase が k を含む → kはsubphrase
+      related.push({ key: k, ja: v.ja, matchType: 'sub' });
+    } else if (wordBoundaryIncludes(k, key)) {
+      // k が phrase を含む → phraseはkのsubword
+      related.push({ key: k, ja: v.ja, matchType: 'super' });
     }
   }
-  if (bestKey) return { ...PHRASE_DB[bestKey], matched: bestKey };
+  // 関連フレーズは長い順に並べる（より具体的なものを上位に）
+  related.sort((a, b) => b.key.length - a.key.length);
 
-  // 3. フレーズがDBキーに含まれる
-  for (const [k, v] of Object.entries(PHRASE_DB)) {
-    if (k.includes(key)) return { ...v, matched: k };
+  // ── 返却 ──
+  if (exactEntry) {
+    // 完全一致あり：エントリ本体 + 関連フレーズ
+    return { ...exactEntry, matched: key, relatedPhrases: related };
   }
-
+  if (related.length > 0) {
+    // 部分一致のみ：エントリ本体なし、関連フレーズのみ返す
+    return { matched: null, ja: null, note: null, section: [],
+             synonyms: [], antonyms: [], paraphrase: [], templates: [],
+             relatedPhrases: related };
+  }
   return null;
 }
