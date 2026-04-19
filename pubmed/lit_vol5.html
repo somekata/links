@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>文献検索入門 Vol.5 ― データベースの統合と使い分けの極意</title>
+<title>文献検索入門 Vol.5 ― その他のDB・完全まとめ</title>
 <style>
-/* ── lit_vol1.html から完全継承したベースCSS ────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -19,308 +18,1638 @@
   --green:  #1A7A4A;
   --text:   #1E293B;
   --white:  #FFFFFF;
-  /* Vol.5 統合カラー：知性を象徴するシルバーグレー */
-  --summary: #475569;
-  --sumlt:   #F1F5F9;
-  --sumdk:   #1E293B;
+  /* Vol.5 カラー：ゴールド・シャンパン系 */
+  --v5:     #92680A;
+  --v5lt:   #FEF9EC;
+  --v5dk:   #2D1F00;
+  --v5med:  #F59E0B;
+  /* 各Volカラー参照 */
+  --c1: #336699;  /* PubMed */
+  --c2: #2E7D32;  /* 医中誌 */
+  --c3: #6B21A8;  /* UpToDate */
+  --c4: #D4500A;  /* Scopus */
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 
-html, body {
-  width: 100%; height: 100%;
-  background: #0a0f1a;
-  font-family: 'Noto Sans JP', sans-serif;
-  overflow: hidden;
-}
+html, body { width:100%; height:100%; background:#0a0f1a; font-family:'Noto Sans JP',sans-serif; overflow:hidden; }
 
-/* ── スライドアニメーション ────────────────────────────────────── */
-.deck { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
-
+.deck { width:100vw; height:100vh; position:relative; overflow:hidden; }
 .slide {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  padding: 2.2rem 3rem 1.8rem;
-  opacity: 0; pointer-events: none;
-  transition: opacity .45s cubic-bezier(.4,0,.2,1), transform .45s cubic-bezier(.4,0,.2,1);
-  transform: translateX(60px);
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  padding:2.2rem 3rem 1.8rem;
+  opacity:0; pointer-events:none;
+  transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);
+  transform:translateX(60px);
 }
-.slide.active  { opacity: 1; pointer-events: all; transform: translateX(0); }
-.slide.prev    { opacity: 0; transform: translateX(-60px); }
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.prev   { opacity:0; transform:translateX(-60px); }
 
-/* ── Vol.1 準拠のテーマスタイル ────────────────────────────────── */
-.slide-dark  { background: var(--navy); }
-.slide-light { background: var(--white); }
-.slide-card  { background: var(--lgray); }
+.slide-dark  { background:var(--navy); }
+.slide-light { background:var(--white); }
+.slide-card  { background:var(--lgray); }
+.slide-code  { background:#0d1117; }
+.slide-quiz  { background:#1a1400; }
+.slide-v5    { background:var(--v5dk); }
 
-/* 装飾アクセント */
-.slide-dark::before {
-  content: ''; position: absolute; left: 0; top: 0;
-  width: 6px; height: 100%; background: var(--amber);
+.slide-dark::before,.slide-code::before,.slide-quiz::before,.slide-v5::before {
+  content:''; position:absolute; left:0; top:0; width:6px; height:100%;
 }
-
-.title-vol {
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 700; font-size: 1.1rem; color: var(--amber);
-  display: block; margin-bottom: 0.5rem;
-}
-.title-main {
-  font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.1; color: var(--white);
-}
-.title-rule {
-  width: 80px; height: 6px; background: var(--amber); margin: 1.5rem 0;
-}
-.title-sub {
-  font-size: 1.2rem; opacity: 0.9; line-height: 1.6; max-width: 750px; color: var(--white);
-}
-.title-author {
-  position: absolute; bottom: 2rem; left: 3rem;
-  font-size: 0.9rem; font-weight: 700; color: var(--white); opacity: 0.7;
-}
-
-.stitle {
-  font-size: clamp(1.35rem, 2.8vw, 1.8rem);
-  font-weight: 900; color: var(--navy); line-height: 1.2;
-  margin-bottom: 1.2rem; padding-left: .8rem; border-left: 6px solid var(--summary);
-}
+.slide-dark::before  { background:var(--amber); }
+.slide-code::before  { background:var(--v5); }
+.slide-quiz::before  { background:var(--v5med); }
+.slide-v5::before    { background:var(--v5med); }
 
 .tag {
-  display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .08em;
-  padding: 3px 12px; border-radius: 2px; color: #fff; margin-bottom: .8rem;
-  background: var(--summary); align-self: flex-start;
+  display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.08em;
+  padding:3px 12px; border-radius:2px; color:#fff; margin-bottom:.5rem; align-self:flex-start;
+}
+.tag-teal   { background:var(--teal); }
+.tag-amber  { background:var(--amber); }
+.tag-v5     { background:var(--v5); }
+.tag-purple { background:#7c3aed; }
+.tag-green  { background:var(--green); }
+.tag-red    { background:var(--red); }
+.tag-gray   { background:var(--gray); }
+
+.stitle {
+  font-size:clamp(1.35rem,2.8vw,2rem); font-weight:900; line-height:1.2; margin-bottom:1rem;
+  border-left:5px solid var(--amber); padding-left:.7rem;
+}
+.slide-dark  .stitle { color:var(--white); border-color:var(--amber); }
+.slide-v5    .stitle { color:var(--white); border-color:var(--v5med); }
+.slide-light .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-card  .stitle { color:var(--navy);  border-color:var(--amber); }
+.slide-code  .stitle { color:var(--white); border-color:var(--v5); }
+.slide-quiz  .stitle { color:var(--white); border-color:var(--v5med); }
+
+.title-main { font-size:clamp(2.5rem,6.5vw,4.8rem); font-weight:900; color:var(--white); letter-spacing:-.02em; line-height:1.05; text-align:center; }
+.title-vol  { display:inline-block; background:var(--v5); color:#fff; padding:2px 16px; border-radius:4px; font-size:clamp(.85rem,1.8vw,1.1rem); font-weight:900; letter-spacing:.06em; margin-bottom:.6rem; }
+.title-sub  { font-size:clamp(.85rem,1.6vw,1.05rem); color:rgba(255,255,255,.55); text-align:center; margin-top:.7rem; line-height:1.7; }
+.title-rule { width:240px; height:2px; background:var(--teal); margin:1rem auto; }
+
+.row { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.5rem; }
+.row-lbl { min-width:2.6rem; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:700; color:#fff; padding:0 .7rem; white-space:nowrap; }
+.row-body { padding:.5rem .85rem; font-size:.83rem; color:var(--text); line-height:1.55; }
+.row-body strong { color:var(--navy); }
+
+.cr { display:flex; align-items:stretch; border-radius:6px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.12); margin-bottom:.55rem; }
+.cr-lbl { min-width:110px; padding:.6rem .8rem; font-size:.78rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; text-align:center; }
+.cr-arr { background:#f0f4f8; display:flex; align-items:center; justify-content:center; padding:0 .5rem; color:var(--gray); font-size:1rem; }
+.cr-body { flex:1; background:var(--white); padding:.6rem .9rem; font-size:.82rem; color:var(--text); line-height:1.55; }
+.cr-body strong { color:var(--navy); }
+
+.card-dark  { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:.75rem 1rem; }
+.card-warn  { background:#FFF3E0; border-radius:6px; padding:.65rem 1rem; }
+.card-blue  { background:var(--ltblue); border-radius:6px; padding:.65rem 1rem; }
+.card-green { background:#ECFDF5; border-radius:6px; padding:.65rem 1rem; }
+.card-red   { background:#FEF2F2; border-radius:6px; padding:.65rem 1rem; }
+.card-v5    { background:var(--v5lt); border-radius:6px; padding:.65rem 1rem; }
+
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.8rem; }
+
+ul.bl { list-style:none; }
+ul.bl li { padding:.24rem 0 .24rem 1.3rem; position:relative; font-size:.83rem; color:var(--text); line-height:1.55; }
+ul.bl li::before { content:'▸'; position:absolute; left:0; color:var(--teal); font-size:.8rem; }
+.slide-dark ul.bl li  { color:#e2e8f0; }
+.slide-dark ul.bl li::before { color:var(--amber); }
+.slide-v5   ul.bl li  { color:#e2e8f0; }
+.slide-v5   ul.bl li::before { color:var(--v5med); }
+.slide-quiz ul.bl li  { color:#e2e8f0; }
+.slide-quiz ul.bl li::before { color:var(--v5med); }
+ul.bl li code { font-family:'JetBrains Mono',monospace; font-size:.75rem; background:rgba(255,255,255,.12); padding:1px 5px; border-radius:3px; color:#a5d6ff; }
+.slide-light ul.bl li code,.slide-card ul.bl li code { background:#f0f4f8; color:#c0392b; }
+
+.sumi { display:flex; align-items:stretch; background:var(--white); border-radius:6px; box-shadow:0 1px 8px rgba(0,0,0,.08); overflow:hidden; margin-bottom:.55rem; }
+.sumi-num { min-width:54px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:900; color:#fff; font-family:'JetBrains Mono',monospace; }
+.sumi-body { padding:.55rem .9rem; font-size:.83rem; line-height:1.6; color:var(--text); }
+.sumi-body strong { color:var(--navy); }
+
+.quiz-q { font-size:clamp(.95rem,2vw,1.2rem); font-weight:700; color:#e2e8f0; margin-bottom:1.2rem; line-height:1.6; text-align:center; }
+.qopts { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; max-width:680px; margin:0 auto; }
+.qbtn {
+  background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.13);
+  color:#e2e8f0; border-radius:8px; padding:.85rem 1.1rem;
+  font-family:'Noto Sans JP',sans-serif; font-size:.85rem; font-weight:700;
+  cursor:pointer; text-align:left; line-height:1.45;
+  transition:background .2s,border-color .2s,transform .15s;
+}
+.qbtn:hover { background:rgba(245,158,11,.2); border-color:var(--v5med); transform:translateY(-2px); }
+.qbtn.correct { background:rgba(26,122,74,.35); border-color:#4ade80; color:#4ade80; }
+.qbtn.wrong   { background:rgba(192,57,43,.25); border-color:#f87171; color:#f87171; }
+.qbtn:disabled { cursor:default; transform:none; }
+.qfb { text-align:center; margin-top:.9rem; font-size:.88rem; font-weight:700; min-height:1.4rem; opacity:0; transition:opacity .3s; line-height:1.6; }
+.qfb.show { opacity:1; }
+
+.hl { text-align:center; font-size:.92rem; font-weight:700; font-style:italic; color:var(--teal); margin-top:auto; padding-top:.7rem; }
+.slide-dark .hl { color:var(--amber); }
+.slide-v5   .hl { color:var(--v5med); }
+.slide-quiz .hl { color:var(--v5med); }
+
+.pill-l { font-family:'JetBrains Mono',monospace; font-size:.78rem; background:#f0f4f8; border:1px solid #dde3ea; color:#c0392b; padding:2px 7px; border-radius:4px; }
+
+.step-flow { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin:.5rem 0; }
+.step-box  { background:var(--navy); color:#fff; border-radius:6px; padding:.38rem .75rem; font-size:.77rem; font-weight:700; white-space:nowrap; }
+.step-arrow { color:var(--amber); font-size:1.1rem; font-weight:900; }
+
+/* DB カード */
+.db-card {
+  border-radius:8px; overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,.1);
+  display:flex; flex-direction:column;
+}
+.db-card-head {
+  padding:.5rem .85rem; display:flex; align-items:center; gap:.5rem;
+}
+.db-card-body {
+  background:var(--white); padding:.55rem .85rem; font-size:.78rem;
+  color:var(--text); line-height:1.55; flex:1;
+}
+.db-card-body strong { color:var(--navy); }
+.db-badge {
+  font-size:.62rem; font-weight:700; padding:1px 7px; border-radius:10px;
+  white-space:nowrap;
 }
 
-/* ── Vol.5 専用コンテンツパーツ（強化版） ────────────────────────── */
-.table-container { 
-  overflow-x: auto; background: white; border-radius: 8px; 
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 0.5rem;
+/* リンクグリッド */
+.link-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:.55rem;
 }
-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-th, td { padding: 0.8rem; border: 1px solid #e2e8f0; text-align: left; }
-th { background: var(--sumlt); color: var(--navy); font-weight: 900; white-space: nowrap; }
-.db-name { font-weight: 900; color: var(--teal); }
+.link-item {
+  display:flex; align-items:stretch; border-radius:7px; overflow:hidden;
+  box-shadow:0 1px 6px rgba(0,0,0,.1); text-decoration:none;
+  transition:transform .15s, box-shadow .15s;
+}
+.link-item:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,.15); }
+.link-color { width:6px; flex-shrink:0; }
+.link-body  { background:var(--white); padding:.5rem .75rem; flex:1; }
+.link-name  { font-size:.82rem; font-weight:700; color:var(--navy); }
+.link-desc  { font-size:.7rem; color:var(--gray); margin-top:.1rem; line-height:1.4; }
+.link-url   { font-size:.65rem; color:var(--teal); font-family:'JetBrains Mono',monospace; margin-top:.15rem; display:block; word-break:break-all; }
+.link-tags  { display:flex; gap:.3rem; flex-wrap:wrap; margin-top:.25rem; }
+.link-tag   { font-size:.6rem; font-weight:700; padding:1px 6px; border-radius:8px; }
 
+/* 比較テーブル */
+.cmp-table { width:100%; border-collapse:collapse; font-size:.73rem; }
+.cmp-table th { background:var(--navy); color:#fff; padding:.4rem .55rem; text-align:left; font-weight:700; font-size:.72rem; }
+.cmp-table td { padding:.38rem .55rem; border-bottom:1px solid #e2e8f0; color:var(--text); vertical-align:top; line-height:1.45; }
+.cmp-table tr:nth-child(even) td { background:#f8fafc; }
+.cmp-table td:first-child { font-weight:700; color:var(--navy); white-space:nowrap; font-size:.72rem; }
+
+/* フローチャートボックス */
 .flow-box {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;
+  border-radius:8px; padding:.55rem .9rem; font-size:.8rem; font-weight:700;
+  text-align:center; margin:.2rem 0;
 }
-.flow-card {
-  background: white; padding: 1rem; border-radius: 8px; border-top: 4px solid var(--summary);
-  position: relative; display: flex; flex-direction: column; gap: 0.5rem;
+.flow-diamond {
+  border-radius:4px; padding:.5rem .9rem; font-size:.78rem; font-weight:700;
+  text-align:center; transform:skewX(-4deg); margin:.2rem 0;
 }
-.flow-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
-.flow-label { font-size: 0.7rem; font-weight: 700; color: var(--amber); }
-.flow-title { font-weight: 900; font-size: 0.9rem; color: var(--navy); }
-.flow-desc { font-size: 0.75rem; color: var(--gray); line-height: 1.4; }
 
-.summary-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;
-}
-.summary-item {
-  background: white; padding: 1.2rem; border-radius: 10px; border-left: 5px solid var(--amber);
-  display: flex; flex-direction: column; gap: 0.4rem;
-}
-.summary-h { font-weight: 900; font-size: 1rem; color: var(--navy); }
-.summary-b { font-size: 0.85rem; color: var(--text); line-height: 1.5; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
+.slide.active .an { animation:fadeUp .5s ease both; }
+.slide.active .an:nth-child(1){animation-delay:.05s;}
+.slide.active .an:nth-child(2){animation-delay:.12s;}
+.slide.active .an:nth-child(3){animation-delay:.19s;}
+.slide.active .an:nth-child(4){animation-delay:.26s;}
+.slide.active .an:nth-child(5){animation-delay:.33s;}
+.slide.active .an:nth-child(6){animation-delay:.40s;}
+.slide.active .an:nth-child(7){animation-delay:.47s;}
+.slide.active .an:nth-child(8){animation-delay:.54s;}
 
-/* ── 共通ナビゲーション ────────────────────────────────────────── */
-.nav {
-  position: absolute; bottom: 1.8rem; right: 3rem;
-  display: flex; align-items: center; gap: 1.5rem;
-}
-.btn {
-  background: none; border: none; color: var(--gray);
-  cursor: pointer; font-family: 'JetBrains Mono', monospace;
-  font-weight: 700; font-size: .85rem; transition: color .2s;
-}
-.btn:hover { color: var(--amber); }
-.progress { color: var(--gray); font-size: .75rem; font-weight: 700; letter-spacing: .2em; }
-.slide-dark .btn { color: rgba(255,255,255,0.6); }
-.slide-dark .progress { color: rgba(255,255,255,0.4); }
+#nav { position:fixed; bottom:1.2rem; right:1.5rem; display:flex; align-items:center; gap:.7rem; z-index:9999; }
+.nbtn { background:rgba(255,255,255,.13); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.22); color:#fff; width:40px; height:40px; border-radius:50%; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s,transform .15s; }
+.nbtn:hover { background:rgba(255,255,255,.28); transform:scale(1.08); }
+#sc { color:rgba(255,255,255,.65); font-size:.76rem; font-family:'JetBrains Mono',monospace; min-width:52px; text-align:center; }
+#bar { position:fixed; bottom:0; left:0; height:3px; background:var(--v5med); transition:width .35s ease; z-index:9999; }
+#hint { position:fixed; bottom:1.25rem; left:1.5rem; color:rgba(255,255,255,.3); font-size:.67rem; font-family:'JetBrains Mono',monospace; pointer-events:none; }
+
+#volnav { position:fixed; top:0; left:0; right:0; display:flex; align-items:center; gap:.3rem; padding:.4rem 1rem; background:rgba(10,15,26,.82); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,255,255,.08); z-index:9998; }
+#volnav a { font-size:.68rem; font-weight:700; letter-spacing:.06em; padding:2px 10px; border-radius:3px; text-decoration:none; color:rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.1); transition:all .2s; }
+#volnav a:hover { color:#fff; border-color:rgba(255,255,255,.3); }
+#volnav a.current { color:#fff; background:var(--v5); border-color:var(--v5); }
+#volnav .series-label { font-size:.65rem; color:rgba(255,255,255,.3); letter-spacing:.1em; margin-right:.4rem; }
+
+.small { font-size:.75rem; color:var(--gray); }
+.mono  { font-family:'JetBrains Mono',monospace; }
 </style>
 </head>
 <body>
 
-<div class="deck">
-  <section class="slide slide-dark active">
-    <div style="margin-top: auto; margin-bottom: auto;">
-      <span class="title-vol">Vol.5 - Final Stage</span>
-      <h1 class="title-main">文献検索入門<br>統合と使い分けの極意</h1>
-      <div class="title-rule"></div>
-      <p class="title-sub">
-        PubMed, 医中誌, UpToDate, Scopus。<br>
-        個別のツール習得を超え、目的から最適な経路を逆算する「真の検索技術」へ。
-      </p>
-    </div>
-    <p class="title-author">Created by Shimekata Shiro</p>
-  </section>
+<div id="volnav">
+  <span class="series-label">文献検索入門</span>
+  <a href="lit_vol1.html">Vol.1 PubMed</a>
+  <a href="lit_vol2.html">Vol.2 医中誌</a>
+  <a href="lit_vol3.html">Vol.3 UpToDate</a>
+  <a href="lit_vol4.html">Vol.4 Scopus</a>
+  <a href="lit_vol5.html" class="current">Vol.5 まとめ</a>
+</div>
 
-  <section class="slide slide-light">
-    <span class="tag">COMPARISON MATRIX</span>
-    <h2 class="stitle">4大データベース横断比較</h2>
-    <div class="table-container">
-      <table>
+<div class="deck" id="deck">
+
+<!-- ══ S1: タイトル ══ -->
+<div class="slide slide-dark active" id="s1">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4rem;margin-top:1.5rem;">
+    <div class="an" style="background:var(--v5);color:#fff;font-size:.72rem;font-weight:900;letter-spacing:.12em;padding:3px 18px;border-radius:3px;">文献検索入門シリーズ 最終回</div>
+    <div class="an title-vol" style="margin-top:.5rem;">Vol. 5 / 5</div>
+    <div class="an title-main">その他の<span style="color:var(--v5med);">DB</span><br><span style="font-size:55%;color:rgba(255,255,255,.7);">&amp; 完全まとめ</span></div>
+    <div class="an title-rule"></div>
+    <div class="an title-sub">
+      Cochrane・EMBASE・CINAHL・ClinicalTrials…<br>
+      11のDBを<span style="color:var(--amber);">使い分ける</span>完全戦略
+    </div>
+    <div class="an" style="margin-top:.6rem;display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;">
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">🏁 最終回</span>
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">📖 30スライド</span>
+      <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:4px;padding:3px 12px;font-size:.72rem;">🗺️ 完全使い分け戦略</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S2: シリーズ振り返り ══ -->
+<div class="slide slide-card" id="s2">
+  <span class="tag tag-teal an">SERIES REVIEW</span>
+  <h2 class="stitle an">5回シリーズ：ここまでの旅路</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.48rem;">
+    <div class="row an" style="border-left:4px solid var(--c1);">
+      <div class="row-lbl" style="background:var(--c1);">Vol.1</div>
+      <div class="row-body"><strong>PubMed</strong>：MeSH・検索式・Advanced Search・Alert・ORCID ✅</div>
+    </div>
+    <div class="row an" style="border-left:4px solid var(--c2);">
+      <div class="row-lbl" style="background:var(--c2);">Vol.2</div>
+      <div class="row-body"><strong>医中誌Web</strong>：シソーラス・日本語論文・PubMedとの並行検索 ✅</div>
+    </div>
+    <div class="row an" style="border-left:4px solid var(--c3);">
+      <div class="row-lbl" style="background:var(--c3);">Vol.3</div>
+      <div class="row-body"><strong>UpToDate</strong>：臨床意思決定支援・GRADE・一次文献へのブリッジ ✅</div>
+    </div>
+    <div class="row an" style="border-left:4px solid var(--c4);">
+      <div class="row-lbl" style="background:var(--c4);">Vol.4</div>
+      <div class="row-body"><strong>Scopus</strong>：被引用数・h-index・CiteScore・前方引用追跡 ✅</div>
+    </div>
+    <div class="row an" style="border-left:4px solid var(--v5med);">
+      <div class="row-lbl" style="background:var(--v5);">Vol.5</div>
+      <div class="row-body"><strong>その他のDB + 完全まとめ</strong>：残り7つのDB + 場面別使い分け戦略 ← 今日</div>
+    </div>
+    <div class="card-v5 an" style="font-size:.82rem;margin-top:.2rem;">
+      🎯 <strong>最終回のゴール</strong>：11のDBを「道具箱」として使いこなし、どんな文献調査にも対応できる「完全な検索力」を身につける。
+    </div>
+  </div>
+</div>
+
+<!-- ══ S3: 今日学ぶこと ══ -->
+<div class="slide slide-light" id="s3">
+  <span class="tag tag-v5 an">Vol.5 OVERVIEW</span>
+  <h2 class="stitle an">今日学ぶこと</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.58rem;">
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--navy);">① Cochrane</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">SRとメタ解析の聖地・エビデンスの頂点・CENTRAL（試験登録DB）</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#B91C1C;">② EMBASE</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">欧州中心・薬剤・副作用・SRの補完に必須のDB</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#0369A1;">③ CINAHL / 看護索引</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">看護・コメディカルの専門DB・日本の最新看護索引Web</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:#0F766E;">④ MEDLINE</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">PubMedの中核・正式なMEDLINE収録の意味・使い分け</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--green);">⑤ ClinicalTrials</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">進行中・未発表の臨床試験データへのアクセス</div>
+    </div>
+    <div class="cr an">
+      <div class="cr-lbl" style="background:var(--v5);">⑥ 完全まとめ</div>
+      <div class="cr-arr">→</div>
+      <div class="cr-body">11DB 一覧リンク集・場面別フローチャート・四刀流から多刀流へ</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S4: Cochrane入門 ══ -->
+<div class="slide slide-dark" id="s4">
+  <span class="tag tag-amber an">Cochrane Library</span>
+  <h2 class="stitle an">Cochrane Library：エビデンスの頂点</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="an" style="font-size:.87rem;color:#e2e8f0;line-height:1.7;">
+      <strong style="color:#fbbf24;">Cochrane Library</strong>：国際的な研究者集団「Cochrane」が作成・管理する、<strong>システマティックレビュー（SR）専門のデータベース</strong>。エビデンスピラミッドの最上位に位置する。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-dark" style="border-color:#fbbf24;font-size:.8rem;">
+        <strong style="color:#fbbf24;">📚 収録コンテンツ</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li><strong>Cochrane Reviews</strong>：PRISMA準拠の最高品質SR。厳格な方法論で作成</li>
+          <li><strong>CENTRAL</strong>：Cochrane Central Register of Controlled Trials。RCT・対照試験のレジストリ</li>
+          <li><strong>Clinical Answers</strong>：SRから抽出したQ&A形式の要約</li>
+        </ul>
+      </div>
+      <div class="card-dark" style="border-color:#fbbf24;font-size:.8rem;">
+        <strong style="color:#fbbf24;">✅ こんな場面で使う</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>「○○の治療は効果があるか？」という問いへの最高品質の答えを探す</li>
+          <li>SRを自分で行うときの参考・重複チェック</li>
+          <li>ガイドラインの根拠を確認する</li>
+          <li>CENTRAL で試験を網羅的に検索（SRの方法セクションに記載必須）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card-dark an" style="border-color:var(--amber);font-size:.82rem;color:white;">
+      🌐 <strong style="color:var(--amber);">URL</strong>：<span class="mono" style="color:#fbbf24;font-size:.8rem;">https://www.cochranelibrary.com/</span>　→　<strong>基本無料</strong>でアクセス可（一部フルテキストは機関契約が必要）
+    </div>
+    <div class="hl an">「Cochrane Review があれば、まずそれを読む」——それがEBMの基本姿勢</div>
+  </div>
+</div>
+
+<!-- ══ S5: EMBASE ══ -->
+<div class="slide slide-v5" id="s5">
+  <span class="tag an" style="background:#B91C1C;">EMBASE</span>
+  <h2 class="stitle an">EMBASE：欧州・薬剤情報の専門DB</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-dark" style="border-color:#ef4444;font-size:.8rem;">
+        <strong style="color:#f87171;">🇪🇺 EMBASEとは</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>Elsevier が提供（Scopus と同じ会社）</li>
+          <li>約3,500万件収録、PubMedの約2倍の欧州誌カバー</li>
+          <li>1974年〜のデータを収録</li>
+          <li><strong>薬剤・副作用・毒性情報が特に充実</strong></li>
+          <li>Emtree（統制語彙）を使った高精度検索が可能</li>
+        </ul>
+      </div>
+      <div class="card-dark" style="border-color:#ef4444;font-size:.8rem;">
+        <strong style="color:#f87171;">✅ こんな場面で使う</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>薬剤の副作用・安全性情報を徹底的に調査するとき</li>
+          <li>欧州の臨床試験・ガイドラインを調べるとき</li>
+          <li>SR・MAで検索の網羅性を確保するとき（PubMed + EMBASE で医学SRの標準）</li>
+          <li>PubMed未収録の欧州誌論文を探すとき</li>
+        </ul>
+      </div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#B91C1C;min-width:5rem;font-size:.7rem;">PubMed+EMBASE</div>
+      <div class="row-body" style="color:#e2e8f0;font-size:.81rem;">システマティックレビューの国際標準検索戦略。<strong style="color:#f87171;">「PubMed だけ」では許容されない</strong>国際誌も増えている。Cochrane Handbook も両方の検索を推奨</div>
+    </div>
+    <div class="row an" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+      <div class="row-lbl" style="background:#92400e;min-width:5rem;font-size:.7rem;">費用・URL</div>
+      <div class="row-body" style="color:#e2e8f0;font-size:.81rem;">有料（機関契約）。<span class="mono" style="font-size:.77rem;color:#fca5a5;">https://www.embase.com/</span>　多くの医学系大学・研究機関が契約</div>
+    </div>
+  </div>
+  <div class="hl an">PubMed + EMBASE = SR検索の世界標準コンビ</div>
+</div>
+
+<!-- ══ S6: MEDLINE の正体 ══ -->
+<div class="slide slide-light" id="s6">
+  <span class="tag an" style="background:#0F766E;color:#fff;">MEDLINE</span>
+  <h2 class="stitle an">MEDLINE とは何か：PubMed との関係</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-v5 an" style="font-size:.84rem;">
+      🤔 <strong>「PubMed と MEDLINE って何が違うの？」</strong>——よくある疑問に答える。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📗 MEDLINE の正体</strong><br>
+          NLM が管理する医学文献の「<strong>コアデータベース</strong>」。厳格な審査を通過した約5,600誌の約3,200万件を収録。MeSH付与の対象。<br><br>
+          PubMed = MEDLINE + 追加コンテンツ（PMC・ahead-of-print・author manuscripts など）
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ MEDLINE で「だけ」検索する意味</strong><br>
+          SR・MA では「MEDLINE を検索した」と明記する。OvidやEBSCOから MEDLINE に接続すると、PubMed より詳細な検索フィルターが使える場合がある。
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>🗺️ 関係性まとめ</strong>
+          <div style="text-align:center;padding:.5rem 0;">
+            <div style="background:#E8F1FA;border:2px solid #1B6CA8;border-radius:8px;padding:.5rem;font-size:.78rem;">
+              <strong style="color:#1B6CA8;">PubMed</strong>（全体）<br>
+              <div style="background:#ECFDF5;border:1px solid #1A7A4A;border-radius:5px;padding:.3rem;margin:.3rem 0;font-size:.74rem;">
+                <strong style="color:#1A7A4A;">MEDLINE</strong>（コア・MeSH付き）
+              </div>
+              <div style="font-size:.7rem;color:var(--gray);">+ PMC・ahead-of-print etc.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>💡 実践的な使い方</strong><br>
+          日常の文献検索 → <strong>PubMed</strong>（MEDLINE を含む）<br>
+          SR・MA の検索 → 「MEDLINE（via PubMed）を検索した」と論文に記載<br>
+          高度な検索構文 → Ovid MEDLINE を使う研究機関もある
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S7: CINAHL ══ -->
+<div class="slide slide-card" id="s7">
+  <span class="tag an" style="background:#0369A1;color:#fff;">CINAHL Plus</span>
+  <h2 class="stitle an">CINAHL Plus with Full Text：看護・医療職の専門DB</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-blue an" style="font-size:.84rem;">
+      👩‍⚕️ <strong>CINAHL</strong>（Cumulative Index to Nursing and Allied Health Literature）：<strong>看護学・コメディカル（理学療法士・作業療法士・臨床検査技師・放射線技師・栄養士など）</strong>の専門DB。EBSCOが提供。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📊 収録内容</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>約8,000誌を収録（1981年〜）</li>
+            <li>看護・リハビリ・栄養・臨床検査の専門誌</li>
+            <li><strong>Full Text</strong> 版では全文が直接読める論文を多数収録</li>
+            <li>CINAHL Headings（統制語彙）あり：MeSHに相当</li>
+          </ul>
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ こんな場面で使う</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>看護ケア・患者教育の文献調査</li>
+            <li>リハビリテーション・理学療法の研究</li>
+            <li>栄養管理・臨床栄養の文献検索</li>
+            <li>コメディカル分野のSR・卒業論文</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ PubMedだけでは不十分な理由</strong><br>
+          看護・コメディカルの専門誌の多くは PubMed に収録されていない。看護系の SR では「PubMed + CINAHL の検索が必須」が国際標準になっている。
+        </div>
+        <div class="card-v5" style="font-size:.8rem;">
+          <strong>🔗 費用・アクセス</strong><br>
+          有料（機関契約）。看護系大学・医療職養成機関で多く契約されている。<br>
+          <span class="mono" style="font-size:.75rem;color:var(--v5);">https://www.ebsco.com/products/research-databases/cinahl-plus-full-text</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S8: 最新看護索引 Web ══ -->
+<div class="slide slide-light" id="s8">
+  <span class="tag an" style="background:#0369A1;color:#fff;">最新看護索引 Web</span>
+  <h2 class="stitle an">最新看護索引 Web：日本の看護文献の専門DB</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-blue an" style="font-size:.84rem;">
+      🇯🇵 <strong>最新看護索引 Web</strong>：（公社）日本看護協会図書館が提供する<strong>日本語看護文献専門DB</strong>。医中誌の看護特化版のような位置づけ。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📊 収録内容</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>日本の看護系雑誌約300誌を収録</li>
+            <li>1987年〜の論文を収録（約50万件）</li>
+            <li>看護・保健・助産・介護分野に特化</li>
+            <li>学会誌・協会誌・病院雑誌も含む</li>
+          </ul>
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ こんな場面で使う</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>日本の看護実践・看護教育の文献調査</li>
+            <li>看護師・助産師・保健師の卒業論文</li>
+            <li>日本の看護ケアの実態把握</li>
+            <li>医中誌では拾えない看護専門誌の論文</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>📌 医中誌との関係</strong><br>
+          医中誌 Web も看護論文を収録しているが、最新看護索引 Web の方が看護専門誌のカバレッジが高い場合がある。看護系の文献調査は<strong>両方の使用を推奨</strong>。
+        </div>
+        <div class="card-v5" style="font-size:.8rem;">
+          <strong>🔗 費用・アクセス</strong><br>
+          有料（機関・個人契約）。看護系大学・病院で契約が多い。<br>
+          <span class="mono" style="font-size:.75rem;color:var(--v5);">https://www.nurse.or.jp/nursing/library/sansaku/</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">看護の文献調査は「医中誌 + 最新看護索引 + CINAHL」の三本柱</div>
+</div>
+
+<!-- ══ S9: ClinicalTrials.gov ══ -->
+<div class="slide slide-dark" id="s9">
+  <span class="tag an" style="background:var(--green);color:#fff;">ClinicalTrials.gov</span>
+  <h2 class="stitle an">ClinicalTrials.gov：「進行中の科学」を見る</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.7rem;">
+    <div class="an" style="font-size:.87rem;color:#e2e8f0;line-height:1.7;">
+      <strong style="color:#4ade80;">ClinicalTrials.gov</strong>：米国NIHが運営する<strong>臨床試験登録データベース</strong>。現在進行中・完了済みの世界中の臨床試験が登録されている。<strong>論文になる前のデータ</strong>にアクセスできる。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-dark" style="border-color:var(--green);font-size:.8rem;">
+        <strong style="color:#4ade80;">✅ こんな場面で使う</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>現在進行中の試験を確認 → 「近い将来に結果が出るか」の把握</li>
+          <li>試験プロトコル・デザインの確認</li>
+          <li>出版バイアス評価：試験は登録されたが論文化されていないケースを探す</li>
+          <li>SR・MA の試験網羅性の確認（方法セクションに検索必須）</li>
+        </ul>
+      </div>
+      <div class="card-dark" style="border-color:var(--green);font-size:.8rem;">
+        <strong style="color:#4ade80;">🔍 検索のポイント</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>疾患名・薬剤名・介入方法でフリーワード検索</li>
+          <li>Status（Recruiting / Completed / Active）で絞り込み</li>
+          <li>Phase（試験相）でフィルター：Phase 3 = 大規模試験</li>
+          <li>結果付き試験（Results）は summary results を確認可能</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card-dark an" style="border-color:var(--amber);font-size:.82rem;color:white;">
+      🌐 <strong style="color:var(--amber);">URL</strong>：<span class="mono" style="color:#4ade80;font-size:.8rem;">https://clinicaltrials.gov/</span>　→　<strong style="color:#4ade80;">完全無料</strong>。登録数は50万件以上（2025年時点）
+    </div>
+    <div class="hl an">論文になる前の「生きた科学」を追えるのが ClinicalTrials.gov の価値</div>
+  </div>
+</div>
+
+<!-- ══ S10: Google Scholar ══ -->
+<div class="slide slide-card" id="s10">
+  <span class="tag tag-gray an">Google Scholar</span>
+  <h2 class="stitle an">Google Scholar：最強の「当たり検索」ツール</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-v5 an" style="font-size:.84rem;">
+      🔍 <strong>Google Scholar</strong>：Googleが提供する無料の学術文献検索エンジン。論文・学位論文・書籍・テクニカルレポートを横断検索。<strong>まず試す道具</strong>として最強。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ Google Scholar が得意なこと</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>キーワードで幅広く素早く検索</li>
+            <li>被引用数・前方引用（Cited by）の確認</li>
+            <li>プレプリント（bioRxiv・medRxiv）も拾う</li>
+            <li>全文リンク（無料PDFへの自動リンク）</li>
+            <li>著者の全論文一覧（Google Scholar Profile）</li>
+          </ul>
+        </div>
+        <div class="card-red" style="font-size:.8rem;">
+          <strong>❌ Google Scholar が苦手なこと</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>統制語彙（MeSH相当）がない → 見落としリスク</li>
+            <li>収録基準が不透明（査読なし論文・誤情報も混在）</li>
+            <li>再現性のある検索式が組みにくい（SR では使えない）</li>
+            <li>詳細なフィルター機能が弱い</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>🎯 正しい使い方</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>「まず全体像をざっと掴む」当たり検索に</li>
+            <li>テーマの key papers を素早く特定する</li>
+            <li>Unpaywall 等と組み合わせて無料全文を入手</li>
+            <li>SR・MA の「補完的検索」に（メインには使わない）</li>
+          </ul>
+        </div>
+        <div class="card-v5" style="font-size:.8rem;">
+          <strong>🌐 アクセス</strong><br>
+          完全無料。<br>
+          <span class="mono" style="font-size:.78rem;color:var(--v5);">https://scholar.google.com/</span><br><br>
+          Google Scholar Profile（著者ページ）も無料で作成可。ORCID と相互連携できる。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S11: クイズ1 ══ -->
+<div class="slide slide-quiz" id="s11">
+  <span class="tag an" style="background:var(--v5med);color:#1a1000;">QUIZ 1</span>
+  <h2 class="stitle an" style="border-color:var(--v5med);">DB選択クイズ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;" id="q1">
+    <div class="quiz-q an">
+      看護学部4年生が「がん患者へのスピリチュアルケアの効果」について<br>
+      卒業論文を書く。最も適切なDB（複数）の組み合わせはどれか？
+    </div>
+    <div class="qopts an">
+      <button class="qbtn" onclick="ansQ1(this,'a')">A）PubMed のみ</button>
+      <button class="qbtn" onclick="ansQ1(this,'b')">B）Scopus のみ</button>
+      <button class="qbtn" onclick="ansQ1(this,'c')">C）PubMed ＋ CINAHL ＋ 医中誌 ＋ 最新看護索引</button>
+      <button class="qbtn" onclick="ansQ1(this,'d')">D）Google Scholar のみ</button>
+    </div>
+    <div class="qfb an" id="q1fb"></div>
+  </div>
+</div>
+
+<!-- ══ S12: 11DB 一覧リンク集 ══ -->
+<div class="slide slide-light" id="s12">
+  <span class="tag tag-v5 an">DB リンク集 1/2</span>
+  <h2 class="stitle an">データベース一覧：医学・生命科学系</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="link-grid an">
+      <!-- PubMed -->
+      <a href="https://pubmed.ncbi.nlm.nih.gov/" target="_blank" class="link-item">
+        <div class="link-color" style="background:var(--c1);"></div>
+        <div class="link-body">
+          <div class="link-name">PubMed</div>
+          <div class="link-desc">英語医学論文3,600万件。MeSH・検索式</div>
+          <span class="link-url">pubmed.ncbi.nlm.nih.gov</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#dbeafe;color:#1e40af;">無料</span>
+            <span class="link-tag" style="background:#f0fdf4;color:#166534;">MeSH</span>
+          </div>
+        </div>
+      </a>
+      <!-- MEDLINE -->
+      <a href="https://www.nlm.nih.gov/medline/medline_overview.html" target="_blank" class="link-item">
+        <div class="link-color" style="background:#0F766E;"></div>
+        <div class="link-body">
+          <div class="link-name">MEDLINE（NLM公式情報）</div>
+          <div class="link-desc">PubMedの中核。SRで「MEDLINE検索」と記載</div>
+          <span class="link-url">nlm.nih.gov/medline</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#dbeafe;color:#1e40af;">無料(via PubMed)</span>
+            <span class="link-tag" style="background:#f0fdf4;color:#166534;">MeSH</span>
+          </div>
+        </div>
+      </a>
+      <!-- Cochrane -->
+      <a href="https://www.cochranelibrary.com/" target="_blank" class="link-item">
+        <div class="link-color" style="background:#92400e;"></div>
+        <div class="link-body">
+          <div class="link-name">Cochrane Library</div>
+          <div class="link-desc">SR・メタ解析の聖地。CENTRAL収録</div>
+          <span class="link-url">cochranelibrary.com</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#dbeafe;color:#1e40af;">基本無料</span>
+            <span class="link-tag" style="background:#fef9c3;color:#92400e;">SR最高品質</span>
+          </div>
+        </div>
+      </a>
+      <!-- Scopus -->
+      <a href="https://www.scopus.com/" target="_blank" class="link-item">
+        <div class="link-color" style="background:var(--c4);"></div>
+        <div class="link-body">
+          <div class="link-name">Scopus</div>
+          <div class="link-desc">引用分析・h-index・CiteScore・前方引用</div>
+          <span class="link-url">scopus.com</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#fee2e2;color:#991b1b;">機関契約</span>
+            <span class="link-tag" style="background:#fff7ed;color:#9a3412;">引用分析</span>
+          </div>
+        </div>
+      </a>
+      <!-- EMBASE -->
+      <a href="https://www.embase.com/" target="_blank" class="link-item">
+        <div class="link-color" style="background:#B91C1C;"></div>
+        <div class="link-body">
+          <div class="link-name">EMBASE</div>
+          <div class="link-desc">欧州・薬剤副作用・SR補完に必須</div>
+          <span class="link-url">embase.com</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#fee2e2;color:#991b1b;">機関契約</span>
+            <span class="link-tag" style="background:#fef3c7;color:#92400e;">薬剤情報</span>
+          </div>
+        </div>
+      </a>
+      <!-- ClinicalTrials -->
+      <a href="https://clinicaltrials.gov/" target="_blank" class="link-item">
+        <div class="link-color" style="background:var(--green);"></div>
+        <div class="link-body">
+          <div class="link-name">ClinicalTrials.gov</div>
+          <div class="link-desc">臨床試験登録DB。進行中・未発表試験</div>
+          <span class="link-url">clinicaltrials.gov</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#dbeafe;color:#1e40af;">無料</span>
+            <span class="link-tag" style="background:#f0fdf4;color:#166534;">試験登録</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S13: 11DB 一覧リンク集 2/2 ══ -->
+<div class="slide slide-light" id="s13">
+  <span class="tag tag-v5 an">DB リンク集 2/2</span>
+  <h2 class="stitle an">データベース一覧：日本語・看護・臨床支援系</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5rem;">
+    <div class="link-grid an">
+      <!-- 医中誌 -->
+      <a href="https://search.jamas.or.jp/" target="_blank" class="link-item">
+        <div class="link-color" style="background:var(--c2);"></div>
+        <div class="link-body">
+          <div class="link-name">医中誌 Web</div>
+          <div class="link-desc">日本語医学論文1,300万件。シソーラス</div>
+          <span class="link-url">search.jamas.or.jp</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#fee2e2;color:#991b1b;">機関契約</span>
+            <span class="link-tag" style="background:#f0fdf4;color:#166534;">シソーラス</span>
+          </div>
+        </div>
+      </a>
+      <!-- CINAHL -->
+      <a href="https://www.ebsco.com/products/research-databases/cinahl-plus-full-text" target="_blank" class="link-item">
+        <div class="link-color" style="background:#0369A1;"></div>
+        <div class="link-body">
+          <div class="link-name">CINAHL Plus with Full Text</div>
+          <div class="link-desc">看護・コメディカルの国際専門DB</div>
+          <span class="link-url">ebsco.com / CINAHL</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#fee2e2;color:#991b1b;">機関契約</span>
+            <span class="link-tag" style="background:#dbeafe;color:#1e40af;">看護専門</span>
+          </div>
+        </div>
+      </a>
+      <!-- 最新看護索引 -->
+      <a href="https://www.nurse.or.jp/nursing/library/sansaku/" target="_blank" class="link-item">
+        <div class="link-color" style="background:#0369A1;"></div>
+        <div class="link-body">
+          <div class="link-name">最新看護索引 Web</div>
+          <div class="link-desc">日本の看護文献専門DB。約50万件</div>
+          <span class="link-url">nurse.or.jp / sansaku</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#fee2e2;color:#991b1b;">機関/個人契約</span>
+            <span class="link-tag" style="background:#dbeafe;color:#1e40af;">日本語看護</span>
+          </div>
+        </div>
+      </a>
+      <!-- UpToDate -->
+      <a href="https://www.uptodate.com/" target="_blank" class="link-item">
+        <div class="link-color" style="background:var(--c3);"></div>
+        <div class="link-body">
+          <div class="link-name">UpToDate</div>
+          <div class="link-desc">臨床意思決定支援。GRADE評価付き推奨</div>
+          <span class="link-url">uptodate.com</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#fee2e2;color:#991b1b;">機関契約</span>
+            <span class="link-tag" style="background:#f3e8ff;color:#6b21a8;">GRADE</span>
+          </div>
+        </div>
+      </a>
+      <!-- Google Scholar -->
+      <a href="https://scholar.google.com/" target="_blank" class="link-item">
+        <div class="link-color" style="background:#4285F4;"></div>
+        <div class="link-body">
+          <div class="link-name">Google Scholar</div>
+          <div class="link-desc">無料・広範囲。当たり検索・被引用確認</div>
+          <span class="link-url">scholar.google.com</span>
+          <div class="link-tags">
+            <span class="link-tag" style="background:#dbeafe;color:#1e40af;">無料</span>
+            <span class="link-tag" style="background:#fef9c3;color:#92400e;">当たり検索</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="card-v5 an" style="font-size:.78rem;margin-top:.3rem;">
+      💡 <strong>リンクをクリックして直接アクセスできます。</strong> 機関契約DBは学内ネットワーク / VPN 接続が必要です。
+    </div>
+  </div>
+</div>
+
+<!-- ══ S14: 11DB 全体比較表 ══ -->
+<div class="slide slide-card" id="s14">
+  <span class="tag tag-v5 an">全DB比較</span>
+  <h2 class="stitle an">11DB 全体比較表</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="an" style="overflow-x:auto;">
+      <table class="cmp-table">
         <thead>
           <tr>
-            <th>項目</th>
-            <th><span class="db-name">PubMed</span></th>
-            <th><span class="db-name">医中誌Web</span></th>
-            <th><span class="db-name">UpToDate</span></th>
-            <th><span class="db-name">Scopus</span></th>
+            <th>DB名</th>
+            <th>分野</th>
+            <th>言語</th>
+            <th>費用</th>
+            <th>統制語彙</th>
+            <th>強み</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>主な収録範囲</strong></td>
-            <td>世界の生物医学論文</td>
-            <td>国内の医学・歯学・薬学</td>
-            <td>二次情報（エビデンス要約）</td>
-            <td>全分野の科学論文・引用</td>
+            <td style="color:var(--c1);">PubMed</td>
+            <td>医学全般</td>
+            <td>英語中心</td>
+            <td style="color:var(--green);font-weight:700;">無料</td>
+            <td>MeSH ✅</td>
+            <td>網羅性・無料・標準</td>
           </tr>
           <tr>
-            <td><strong>検索言語</strong></td>
-            <td>英語</td>
+            <td style="color:#0F766E;">MEDLINE</td>
+            <td>医学全般</td>
+            <td>英語中心</td>
+            <td style="color:var(--green);font-weight:700;">無料(via PubMed)</td>
+            <td>MeSH ✅</td>
+            <td>コアDB・SR記載用</td>
+          </tr>
+          <tr>
+            <td style="color:var(--c2);">医中誌</td>
+            <td>医学全般</td>
             <td>日本語</td>
-            <td>英語（自動翻訳可）</td>
-            <td>英語（一部多言語）</td>
+            <td>機関契約</td>
+            <td>シソーラス ✅</td>
+            <td>日本語論文・症例報告</td>
           </tr>
           <tr>
-            <td><strong>統制語</strong></td>
-            <td>MeSH</td>
-            <td>医中誌シソーラス</td>
-            <td>（なし）</td>
-            <td>（複数分野対応）</td>
+            <td style="color:#92400e;">Cochrane</td>
+            <td>医学全般</td>
+            <td>英語</td>
+            <td style="color:var(--green);font-weight:700;">基本無料</td>
+            <td>なし</td>
+            <td>SR・メタ解析の最高品質</td>
           </tr>
           <tr>
-            <td><strong>臨床的推奨</strong></td>
-            <td>△ (論文から判断)</td>
-            <td>△ (症例報告が豊富)</td>
-            <td>◎ (専門家による推奨)</td>
-            <td>× (分析・トレンド重視)</td>
+            <td style="color:#B91C1C;">EMBASE</td>
+            <td>医学・薬学</td>
+            <td>英語中心</td>
+            <td>機関契約</td>
+            <td>Emtree ✅</td>
+            <td>欧州誌・薬剤副作用</td>
           </tr>
           <tr>
-            <td><strong>強み</strong></td>
-            <td>世界のデファクト</td>
-            <td>日本の臨床現場に強い</td>
-            <td>意思決定の速さ</td>
-            <td>引用の繋がりを可視化</td>
+            <td style="color:#0369A1;">CINAHL</td>
+            <td>看護・医療職</td>
+            <td>英語</td>
+            <td>機関契約</td>
+            <td>CINAHL ✅</td>
+            <td>看護・リハビリ専門</td>
+          </tr>
+          <tr>
+            <td style="color:#0369A1;">最新看護索引</td>
+            <td>看護</td>
+            <td>日本語</td>
+            <td>機関/個人</td>
+            <td>なし</td>
+            <td>日本語看護文献専門</td>
+          </tr>
+          <tr>
+            <td style="color:var(--c4);">Scopus</td>
+            <td>全学術分野</td>
+            <td>多言語</td>
+            <td>機関契約</td>
+            <td>なし</td>
+            <td>引用分析・h-index</td>
+          </tr>
+          <tr>
+            <td style="color:var(--c3);">UpToDate</td>
+            <td>臨床医学</td>
+            <td>英語</td>
+            <td>機関契約</td>
+            <td>—</td>
+            <td>臨床意思決定支援・GRADE</td>
+          </tr>
+          <tr>
+            <td style="color:var(--green);">ClinicalTrials</td>
+            <td>臨床試験</td>
+            <td>英語</td>
+            <td style="color:var(--green);font-weight:700;">無料</td>
+            <td>なし</td>
+            <td>進行中試験・未発表データ</td>
+          </tr>
+          <tr>
+            <td style="color:#4285F4;">Google Scholar</td>
+            <td>全学術分野</td>
+            <td>多言語</td>
+            <td style="color:var(--green);font-weight:700;">無料</td>
+            <td>なし</td>
+            <td>広範・プレプリント・当たり</td>
           </tr>
         </tbody>
       </table>
     </div>
-  </section>
-
-  <section class="slide slide-light">
-    <span class="tag">DECISION FLOW</span>
-    <h2 class="stitle">「何から開くか？」目的別フロー</h2>
-    <div class="flow-box">
-      <div class="flow-card">
-        <span class="flow-icon">⚡</span>
-        <span class="flow-label">CLINICAL</span>
-        <h3 class="flow-title">今すぐ治療方針を</h3>
-        <p class="flow-desc">患者の前でエビデンスを知りたいなら <strong>UpToDate</strong>。GRADEを確認。</p>
-      </div>
-      <div class="flow-card">
-        <span class="flow-icon">🔬</span>
-        <span class="flow-label">GLOBAL RESEARCH</span>
-        <h3 class="flow-title">世界標準を知る</h3>
-        <p class="flow-desc">RCTやメタ分析を探すなら <strong>PubMed</strong>。MeSHで精緻に絞り込む。</p>
-      </div>
-      <div class="flow-card">
-        <span class="flow-icon">🗾</span>
-        <span class="flow-label">LOCAL JAPAN</span>
-        <h3 class="flow-title">日本での実態を</h3>
-        <p class="flow-desc">保険適用や国内の珍しい症例なら <strong>医中誌Web</strong>。副キーワードを活用。</p>
-      </div>
-      <div class="flow-card">
-        <span class="flow-icon">📈</span>
-        <span class="flow-label">ACADEMIC IMPACT</span>
-        <h3 class="flow-title">研究の発展性を</h3>
-        <p class="flow-desc">注目文献の被引用やh-index、新分野の概観なら <strong>Scopus</strong>。</p>
-      </div>
-    </div>
-    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--ltblue); border-radius: 6px; font-size: 0.85rem; line-height: 1.5;">
-      <strong>💡 最強の検索リレー：</strong><br>
-      ① <strong>UpToDate</strong> で全体像と推奨を確認 ➔ ② キー論文を <strong>PubMed</strong> で精読 ➔ ③ <strong>Scopus</strong> でその後の発展を追う
-    </div>
-  </section>
-
-  <section class="slide slide-card">
-    <span class="tag">SUMMARY CARDS</span>
-    <h2 class="stitle">全5回：文献検索の「黄金律」</h2>
-    <div class="summary-grid">
-      <div class="summary-item">
-        <div class="summary-h">MeSH & Thesaurus</div>
-        <div class="summary-b">概念で検索せよ。表記の揺れを恐れず、統制語（MeSH/医中誌）で網羅性を担保する。</div>
-      </div>
-      <div class="summary-item" style="border-left-color: var(--teal);">
-        <div class="summary-h">Advanced Search</div>
-        <div class="summary-b">検索窓1つで済ませない。タグ（[Mesh]等）と論理演算（AND/OR）で式をビルドする。</div>
-      </div>
-      <div class="summary-item" style="border-left-color: var(--green);">
-        <div class="summary-h">Evidence Level</div>
-        <div class="summary-b">全ての論文は平等ではない。UpToDateの推奨度やGRADEを批判的吟味の指標にする。</div>
-      </div>
-      <div class="summary-item" style="border-left-color: var(--red);">
-        <div class="summary-h">Citation Network</div>
-        <div class="summary-b">「点」ではなく「線」で捉える。Scopusで引用関係を辿り、研究の「未来」と「過去」を繋ぐ。</div>
-      </div>
-    </div>
-  </section>
-
-  <section class="slide slide-dark">
-    <div style="margin-top: auto; margin-bottom: auto; text-align: center;">
-      <h2 style="color: var(--white); font-size: 3rem; font-weight: 900; margin-bottom: 1.5rem;">Happy Searching!</h2>
-      <p style="color: var(--white); font-size: 1.25rem; opacity: 0.8; line-height: 1.8;">
-        エビデンスを自在に操る力は、<br>目の前の患者と、医学の未来を救う力になります。
-      </p>
-      <div style="margin-top: 3rem;">
-        <p style="color: var(--amber); font-family: 'JetBrains Mono', monospace; font-weight: 700;">- MISSION COMPLETE -</p>
-      </div>
-    </div>
-    <p class="title-author">文献検索入門シリーズ 完</p>
-  </section>
-
-  <div class="nav">
-    <button class="btn" onclick="prevSlide()">PREV</button>
-    <span class="progress" id="progress">1 / 5</span>
-    <button class="btn" onclick="nextSlide()">NEXT</button>
   </div>
 </div>
 
+<!-- ══ S15: 場面別使い分けフロー（臨床） ══ -->
+<div class="slide slide-dark" id="s15">
+  <span class="tag tag-amber an">使い分け①</span>
+  <h2 class="stitle an">場面別フロー：臨床・研修医編</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="cr">
+        <div class="cr-lbl" style="background:#6B21A8;min-width:105px;font-size:.75rem;">急ぎの臨床判断</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#a855f7;">UpToDate</strong>：Summary and Recommendations をまず読む。5分で方針確立</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#336699;min-width:105px;font-size:.75rem;">根拠を深掘りしたい</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#66aadd;">UpToDate → References → PubMed</strong>：一次文献へ遡って批判的吟味</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#92400e;min-width:105px;font-size:.75rem;">最高品質のSRを探す</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#fbbf24;">Cochrane Library</strong>：そのテーマのCochrane Review があれば最優先で読む</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#B91C1C;min-width:105px;font-size:.75rem;">薬剤副作用を調べる</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#f87171;">PubMed + EMBASE</strong>：副作用・安全性情報は両方で検索。EMBASE が欠かせない</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--green);min-width:105px;font-size:.75rem;">最新試験を確認</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#4ade80;">ClinicalTrials.gov</strong>：論文化されていない最新試験の結果・プロトコルを確認</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#2E7D32;min-width:105px;font-size:.75rem;">日本の実態を知る</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#81c784;">医中誌Web</strong>：国内の症例報告・疫学・ガイドラインの根拠を確認</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S16: 場面別フロー（研究・卒論） ══ -->
+<div class="slide slide-light" id="s16">
+  <span class="tag tag-v5 an">使い分け②</span>
+  <h2 class="stitle an">場面別フロー：卒業論文・研究編</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--navy);min-width:110px;font-size:.75rem;">テーマの全体像把握</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong>Google Scholar</strong> or <strong>UpToDate</strong>：まずざっと全体を把握。landmark paper を特定</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--c1);min-width:110px;font-size:.75rem;">国際文献を網羅</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#66aadd;">PubMed（MEDLINE）</strong>：MeSH + フリーワードで精密検索。SR・MA必須</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#B91C1C;min-width:110px;font-size:.75rem;">SRの網羅性確保</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#f87171;">PubMed + EMBASE（+ Cochrane CENTRAL）</strong>：SR論文の国際標準検索。3DB は最低限</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--c2);min-width:110px;font-size:.75rem;">日本語文献調査</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#81c784;">医中誌Web</strong>（+ 看護なら最新看護索引 + CINAHL）：PubMedと並行必須</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--c4);min-width:110px;font-size:.75rem;">重要論文の特定</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#f97316;">Scopus</strong>：被引用数順ソート・前方引用でスノーボール法を完成させる</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:var(--green);min-width:110px;font-size:.75duration:75px;font-size:.75rem;">試験登録確認</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#4ade80;">ClinicalTrials.gov</strong>：出版バイアス評価・未発表試験の確認（SR・MA では必須）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S17: 場面別フロー（看護・コメディカル） ══ -->
+<div class="slide slide-card" id="s17">
+  <span class="tag an" style="background:#0369A1;color:#fff;">使い分け③</span>
+  <h2 class="stitle an">場面別フロー：看護・コメディカル編</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="card-blue an" style="font-size:.82rem;">
+      👩‍⚕️ <strong>看護・コメディカルの文献調査は「4DB体制」が理想</strong>：CINAHL + 最新看護索引 + PubMed + 医中誌。それぞれカバレッジが異なるため組み合わせが必須。
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="cr">
+        <div class="cr-lbl" style="background:#0369A1;min-width:110px;font-size:.75rem;">国際的な看護エビデンス</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#60a5fa;">CINAHL Plus</strong>：看護専門誌の国際DB。英語論文を網羅的に検索</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#0369A1;min-width:110px;font-size:.75rem;">日本の看護文献</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#60a5fa;">最新看護索引Web</strong>：日本語看護論文専門。国内実践・看護教育の根拠</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#336699;min-width:110px;font-size:.75rem;">医学的根拠の補完</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#66aadd;">PubMed</strong>：看護と連動する医学的エビデンス（疾患・治療）を補完</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#2E7D32;min-width:110px;font-size:.75rem;">日本語医学文献</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#81c784;">医中誌Web</strong>：日本の看護・医療職の論文も収録。最新看護索引と補完関係</div>
+      </div>
+      <div class="cr">
+        <div class="cr-lbl" style="background:#92400e;min-width:110px;font-size:.75rem;">SR・最高品質エビデンス</div>
+        <div class="cr-arr">→</div>
+        <div class="cr-body" style="font-size:.8rem;"><strong style="color:#fbbf24;">Cochrane Library</strong>：看護ケア・リハビリのSRも充実。テーマがあれば最優先で確認</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S18: SR/MAのための検索戦略 ══ -->
+<div class="slide slide-dark" id="s18">
+  <span class="tag tag-amber an">SR・MA の検索</span>
+  <h2 class="stitle an">システマティックレビューの検索戦略：国際標準</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="card-dark an" style="border-color:var(--v5med);font-size:.82rem;color:white;">
+      📋 <strong style="color:var(--v5med);">Cochrane Handbook 推奨の最低限の検索DB</strong>：<br>
+      <strong>MEDLINE（via PubMed）+ EMBASE + Cochrane CENTRAL</strong><br>
+      テーマによってはさらに専門DBを追加（看護 → CINAHL、日本語 → 医中誌 など）
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="row">
+        <div class="row-lbl" style="background:var(--c1);min-width:4rem;font-size:.7rem;">必須</div>
+        <div class="row-body" style="font-size:.8rem;"><strong>MEDLINE（PubMed）</strong>：MeSH付き精密検索。検索式をそのまま論文に掲載</div>
+      </div>
+      <div class="row">
+        <div class="row-lbl" style="background:#B91C1C;min-width:4rem;font-size:.7rem;">必須</div>
+        <div class="row-body" style="font-size:.8rem;"><strong>EMBASE</strong>：PubMed未収録の欧州誌・薬剤関連を補完。Emtreeで検索</div>
+      </div>
+      <div class="row">
+        <div class="row-lbl" style="background:#92400e;min-width:4rem;font-size:.7rem;">必須</div>
+        <div class="row-body" style="font-size:.8rem;"><strong>Cochrane CENTRAL</strong>：RCT・対照試験の専門レジストリ。試験の網羅性確保</div>
+      </div>
+      <div class="row">
+        <div class="row-lbl" style="background:var(--green);min-width:4rem;font-size:.7rem;">推奨</div>
+        <div class="row-body" style="font-size:.8rem;"><strong>ClinicalTrials.gov</strong>：未発表試験・出版バイアスの確認。ICTRP（WHO）も追加推奨</div>
+      </div>
+      <div class="row">
+        <div class="row-lbl" style="background:var(--c2);min-width:4rem;font-size:.7rem;">日本語</div>
+        <div class="row-body" style="font-size:.8rem;"><strong>医中誌Web</strong>：日本語論文の网羅。国際誌に出ない日本の試験を拾う</div>
+      </div>
+    </div>
+    <div class="card-dark an" style="border-color:var(--amber);font-size:.8rem;color:white;">
+      ⚠️ <strong style="color:var(--amber);">重要</strong>：SR・MAでは全検索DBと検索式を論文のMethodsに<strong>完全記載</strong>する義務がある。PRISMA ガイドラインで必須項目とされている。
+    </div>
+  </div>
+</div>
+
+<!-- ══ S19: クイズ2 ══ -->
+<div class="slide slide-quiz" id="s19">
+  <span class="tag an" style="background:var(--v5med);color:#1a1000;">QUIZ 2</span>
+  <h2 class="stitle an" style="border-color:var(--v5med);">SR検索クイズ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem;" id="q2">
+    <div class="quiz-q an">
+      「糖尿病患者の血圧管理」に関するシステマティックレビューを作成する。<br>
+      Cochrane Handbook の推奨に沿った検索DBの組み合わせはどれか？
+    </div>
+    <div class="qopts an">
+      <button class="qbtn" onclick="ansQ2(this,'a')">A）PubMed のみ</button>
+      <button class="qbtn" onclick="ansQ2(this,'b')">B）PubMed + Google Scholar</button>
+      <button class="qbtn" onclick="ansQ2(this,'c')">C）MEDLINE + EMBASE + Cochrane CENTRAL（+ 医中誌）</button>
+      <button class="qbtn" onclick="ansQ2(this,'d')">D）UpToDate + Scopus</button>
+    </div>
+    <div class="qfb an" id="q2fb"></div>
+  </div>
+</div>
+
+<!-- ══ S20: フリーで使えるDB特集 ══ -->
+<div class="slide slide-card" id="s20">
+  <span class="tag tag-green an">無料DB特集</span>
+  <h2 class="stitle an">お金をかけずに使える！無料DBフル活用</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.55rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong style="color:var(--green);">🔵 PubMed</strong>（完全無料）<br>
+          医学文献検索の王様。MeSH・検索式・Alert・MyNCBI も全て無料。これだけで文献検索の8割はカバーできる。
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong style="color:var(--green);">🟡 Cochrane Library</strong>（基本無料）<br>
+          SR の閲覧・検索は無料。フルテキストは一部有料だが、要旨・Conclusions は無料で読める。
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong style="color:var(--green);">🟢 ClinicalTrials.gov</strong>（完全無料）<br>
+          進行中・完了試験、試験結果まで全て無料。SR・MA の必須チェック項目。
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong style="color:var(--green);">🔷 Google Scholar</strong>（完全無料）<br>
+          広範囲・プレプリント・全文リンク。Unpaywall（拡張機能）と組み合わせると有料論文の無料版も見つかる。
+        </div>
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>💡 無料全文入手テクニック</strong>
+          <ul class="bl" style="margin-top:.3rem;">
+            <li><strong>PubMed Central（PMC）</strong>：政府助成研究は義務的OA</li>
+            <li><strong>Unpaywall</strong>（ブラウザ拡張）：有料論文の合法的OA版を自動表示</li>
+            <li><strong>著者へ直接メール</strong>：意外と親切に送ってくれる</li>
+            <li><strong>図書館ILL</strong>：大学図書館の文献複写サービス</li>
+          </ul>
+        </div>
+        <div class="card-v5" style="font-size:.8rem;">
+          <strong>🏫 大学所属なら</strong><br>
+          機関契約で医中誌・Scopus・UpToDate・EMBASE・CINAHL などが使える場合が多い。図書館サイトの「データベース一覧」を必ず確認！<strong>卒業前に使い倒す</strong>のが賢明。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S21: 文献管理ソフト ══ -->
+<div class="slide slide-dark" id="s21">
+  <span class="tag tag-teal an">文献管理</span>
+  <h2 class="stitle an">文献管理ソフト：大量文献時代を生き残る</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an" style="font-size:.87rem;color:#e2e8f0;line-height:1.6;">
+      100本・1,000本の論文を手動で管理するのは不可能。文献管理ソフトは「第二の脳」として必須のツール。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div class="card-dark" style="border-color:var(--teal);font-size:.8rem;">
+        <strong style="color:#66aadd;">🎯 Zotero（推奨・無料）</strong>
+        <ul class="bl" style="margin-top:.4rem;">
+          <li>完全無料・オープンソース</li>
+          <li>PubMed・Scopus・医中誌から1クリックで取り込み</li>
+          <li>Word・Google Docs で自動引用</li>
+          <li>グループライブラリで共同研究も可</li>
+        </ul>
+        <div style="margin-top:.3rem;font-size:.75rem;color:#66aadd;font-family:monospace;">zotero.org（完全無料）</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-dark" style="border-color:#7c3aed;font-size:.8rem;">
+          <strong style="color:#d2a8ff;">Mendeley（無料）</strong>：Elsevier 提供。PDF管理・注釈が得意。Scopus と親和性高い。
+        </div>
+        <div class="card-dark" style="border-color:#c62828;font-size:.8rem;">
+          <strong style="color:#f87171;">EndNote（有料）</strong>：歴史ある定番ツール。高機能。大学が機関ライセンスを持つことが多い。
+        </div>
+        <div class="card-dark" style="border-color:var(--amber);font-size:.8rem;">
+          <strong style="color:var(--amber);">Rayyan（無料）</strong>：SR・MAのスクリーニング専用。複数人で並行作業が可能。
+        </div>
+      </div>
+    </div>
+    <div class="hl an">「まずZoteroを入れる」——これが研究生活の最初の一歩</div>
+  </div>
+</div>
+
+<!-- ══ S22: 批判的吟味の基礎 ══ -->
+<div class="slide slide-light" id="s22">
+  <span class="tag tag-red an">批判的吟味</span>
+  <h2 class="stitle an">論文を「読む」から「吟味する」へ</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-v5 an" style="font-size:.83rem;">
+      🔍 <strong>批判的吟味（Critical Appraisal）</strong>：論文の内容を鵜呑みにせず、研究デザイン・方法・結論の妥当性を評価するスキル。どんなDBを使っても最後はここにたどり着く。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>📊 論文を読むときのチェック</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>P</strong>：対象集団は自分の患者と同質か</li>
+            <li><strong>I/C</strong>：介入・比較対照は適切か</li>
+            <li><strong>O</strong>：アウトカムは臨床的に重要か</li>
+            <li>サンプルサイズは十分か</li>
+            <li>バイアスのリスクは何か</li>
+            <li>資金源・利益相反は何か</li>
+          </ul>
+        </div>
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>🛠️ 役立つツール</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>CASP チェックリスト</strong>：RCT・SR・コホートなど論文種別別の評価ツール（無料）</li>
+            <li><strong>JADAD スコア</strong>：RCTの質評価</li>
+            <li><strong>ROB2・ROBINS-I</strong>：バイアスリスク評価（Cochrane 推奨）</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-warn" style="font-size:.8rem;">
+          <strong>⚠️ よくある見落とし</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>高IF誌 = 正しい論文ではない（撤回例あり）</li>
+            <li>p &lt; 0.05 = 臨床的に意味ある差ではない</li>
+            <li>代替エンドポイント ≠ 患者にとっての真のアウトカム</li>
+            <li>企業資金の試験は陽性結果が多い傾向</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S23: AI と文献検索 ══ -->
+<div class="slide slide-card" id="s23">
+  <span class="tag tag-v5 an">AI と文献検索</span>
+  <h2 class="stitle an">AI ツールと文献検索：現在地と注意点</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="card-v5 an" style="font-size:.83rem;">
+      🤖 近年、AI を活用した文献検索補助ツールが登場している。うまく活用すれば効率が上がるが、限界と注意点を正しく理解することが必須。
+    </div>
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-blue" style="font-size:.8rem;">
+          <strong>🛠️ AI 活用ツールの例</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li><strong>Semantic Scholar</strong>：AI論文推薦・引用分析（無料）</li>
+            <li><strong>Elicit</strong>：自然言語でSRを補助（無料あり）</li>
+            <li><strong>Consensus</strong>：論文ベースの質問応答（無料あり）</li>
+            <li><strong>Research Rabbit</strong>：引用ネットワークの可視化（無料）</li>
+            <li><strong>Claude / ChatGPT</strong>：検索式作成・要約補助</li>
+          </ul>
+        </div>
+        <div class="card-red" style="font-size:.8rem;">
+          <strong>⚠️ AI の限界・注意点</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>「幻覚（hallucination）」：存在しない論文を生成することがある</li>
+            <li>知識のカットオフ：最新論文を知らない場合がある</li>
+            <li>SR・MAでの使用はまだ国際標準化されていない</li>
+            <li>AI の出力は必ず一次文献で検証すること</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div class="card-green" style="font-size:.8rem;">
+          <strong>✅ AI の使い方の原則</strong>
+          <ul class="bl" style="margin-top:.4rem;">
+            <li>「検索の補助」として使う（代替ではない）</li>
+            <li>AI が示した論文は必ず PubMed・Scopus で実在を確認</li>
+            <li>MeSH・検索式の下案を AI に作らせて人間が精査する</li>
+            <li>要約の確認には必ず原著を読む</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S24: シリーズ完全まとめ図 ══ -->
+<div class="slide slide-dark" id="s24">
+  <span class="tag tag-amber an">完全まとめ</span>
+  <h2 class="stitle an">文献検索入門：完全まとめ図</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="an" style="display:flex;flex-direction:column;gap:.35rem;">
+      <!-- 目的ブロック -->
+      <div style="font-size:.72rem;color:rgba(255,255,255,.4);letter-spacing:.08em;margin-bottom:.1rem;">📌 目的で選ぶ</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;">
+        <div style="background:rgba(51,102,153,.3);border:1px solid #336699;border-radius:6px;padding:.45rem .65rem;font-size:.75rem;text-align:center;">
+          <div style="color:#66aadd;font-weight:700;margin-bottom:.2rem;">論文を探す</div>
+          <div style="color:#e2e8f0;font-size:.7rem;">PubMed / 医中誌<br>EMBASE / CINAHL<br>看護索引</div>
+        </div>
+        <div style="background:rgba(107,33,168,.3);border:1px solid #6B21A8;border-radius:6px;padding:.45rem .65rem;font-size:.75rem;text-align:center;">
+          <div style="color:#a855f7;font-weight:700;margin-bottom:.2rem;">答えを得る</div>
+          <div style="color:#e2e8f0;font-size:.7rem;">UpToDate<br>Cochrane<br>Google Scholar</div>
+        </div>
+        <div style="background:rgba(212,80,10,.3);border:1px solid #D4500A;border-radius:6px;padding:.45rem .65rem;font-size:.75rem;text-align:center;">
+          <div style="color:#f97316;font-weight:700;margin-bottom:.2rem;">影響力を測る</div>
+          <div style="color:#e2e8f0;font-size:.7rem;">Scopus<br>Google Scholar<br>Web of Science</div>
+        </div>
+      </div>
+      <!-- 分野ブロック -->
+      <div style="font-size:.72rem;color:rgba(255,255,255,.4);letter-spacing:.08em;margin-top:.4rem;margin-bottom:.1rem;">🗂️ 分野で選ぶ</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;">
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:.42rem .7rem;font-size:.74rem;">
+          <span style="color:#66aadd;font-weight:700;">国際医学：</span><span style="color:#e2e8f0;">PubMed・EMBASE・Cochrane</span>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:.42rem .7rem;font-size:.74rem;">
+          <span style="color:#81c784;font-weight:700;">日本語医学：</span><span style="color:#e2e8f0;">医中誌・CiNii</span>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:.42rem .7rem;font-size:.74rem;">
+          <span style="color:#60a5fa;font-weight:700;">看護・コメディカル：</span><span style="color:#e2e8f0;">CINAHL・最新看護索引・医中誌</span>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:.42rem .7rem;font-size:.74rem;">
+          <span style="color:#4ade80;font-weight:700;">臨床試験：</span><span style="color:#e2e8f0;">ClinicalTrials.gov・CENTRAL</span>
+        </div>
+      </div>
+      <!-- コスト -->
+      <div style="font-size:.72rem;color:rgba(255,255,255,.4);letter-spacing:.08em;margin-top:.4rem;margin-bottom:.1rem;">💰 コストで選ぶ（無料のみで）</div>
+      <div style="background:rgba(26,122,74,.15);border:1px solid var(--green);border-radius:6px;padding:.42rem .9rem;font-size:.77rem;color:#e2e8f0;">
+        <strong style="color:#4ade80;">PubMed + Cochrane + ClinicalTrials.gov + Google Scholar</strong>　→　無料でここまでできる！
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S25: 研究者としての心構え ══ -->
+<div class="slide slide-v5" id="s25">
+  <span class="tag an" style="background:var(--v5med);color:#1a1000;">研究者として</span>
+  <h2 class="stitle an">文献検索を超えて：研究者としての姿勢</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an" style="display:flex;flex-direction:column;gap:.5rem;">
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:var(--v5);min-width:3rem;font-size:1.1rem;">①</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.83rem;"><strong style="color:var(--v5med);">疑問を持つこと</strong>：目の前の患者・データに「なぜ？」と問うことが全ての始まり。DBはその問いに答えるための道具</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#c2410c;min-width:3rem;font-size:1.1rem;">②</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.83rem;"><strong style="color:var(--v5med);">一次文献まで遡ること</strong>：要約・UpToDate・教科書は出発点。重要な判断は必ず原著を確認する習慣を</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#92400e;min-width:3rem;font-size:1.1rem;">③</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.83rem;"><strong style="color:var(--v5med);">継続すること</strong>：Alert・What's new・SDI で「情報が向こうからやってくる」仕組みを作る。一回学んで終わりではなく常にアップデート</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#1565c0;min-width:3rem;font-size:1.1rem;">④</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.83rem;"><strong style="color:var(--v5med);">共有すること</strong>：見つけた知識は患者・チーム・社会に還元する。研究・論文・学会発表がその手段</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">
+        <div class="row-lbl" style="background:#2e7d32;min-width:3rem;font-size:1.1rem;">⑤</div>
+        <div class="row-body" style="color:#e2e8f0;font-size:.83rem;"><strong style="color:var(--v5med);">ORCIDを育てること</strong>：Vol.1 で取得したIDに論文・発表・研究助成を積み上げていく。それがあなたの研究者としての歴史になる</div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">「検索を知ること」は「知識の海に出る航法を身につけること」</div>
+</div>
+
+<!-- ══ S26: 最終チェックリスト ══ -->
+<div class="slide slide-card" id="s26">
+  <span class="tag tag-green an">FINAL CHECKLIST</span>
+  <h2 class="stitle an">シリーズ完全習得チェックリスト</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.45rem;">
+    <div class="g2 an" style="gap:.7rem;">
+      <div style="display:flex;flex-direction:column;gap:.3rem;">
+        <div style="font-size:.75rem;font-weight:700;color:var(--c1);padding-bottom:.25rem;border-bottom:2px solid var(--c1);">Vol.1 PubMed</div>
+        <div style="font-size:.77rem;">☐ MeSH + フリーワードで検索できる</div>
+        <div style="font-size:.77rem;">☐ Advanced Search・History を使える</div>
+        <div style="font-size:.77rem;">☐ Alert を設定した / ORCID を取得した</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--c2);padding-bottom:.25rem;border-bottom:2px solid var(--c2);margin-top:.4rem;">Vol.2 医中誌</div>
+        <div style="font-size:.77rem;">☐ シソーラス + フリーワードで検索できる</div>
+        <div style="font-size:.77rem;">☐ PubMedと並行検索できる</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--c3);padding-bottom:.25rem;border-bottom:2px solid var(--c3);margin-top:.4rem;">Vol.3 UpToDate</div>
+        <div style="font-size:.77rem;">☐ GRADEスコアを読める</div>
+        <div style="font-size:.77rem;">☐ References から PubMed へ遡れる</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;">
+        <div style="font-size:.75rem;font-weight:700;color:var(--c4);padding-bottom:.25rem;border-bottom:2px solid var(--c4);">Vol.4 Scopus</div>
+        <div style="font-size:.77rem;">☐ h-index の計算方法を説明できる</div>
+        <div style="font-size:.77rem;">☐ 前方引用（Cited by）をたどれる</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--v5);padding-bottom:.25rem;border-bottom:2px solid var(--v5);margin-top:.4rem;">Vol.5 その他・まとめ</div>
+        <div style="font-size:.77rem;">☐ Cochrane / EMBASE / CINAHL を説明できる</div>
+        <div style="font-size:.77rem;">☐ ClinicalTrials.gov で試験を検索できる</div>
+        <div style="font-size:.77rem;">☐ 場面別に適切なDBを選択できる</div>
+        <div style="font-size:.77rem;">☐ 文献管理ソフト（Zoteroなど）を導入した</div>
+        <div style="font-size:.77rem;">☐ SR の検索戦略（3DB必須）を説明できる 🎉</div>
+      </div>
+    </div>
+    <div class="card-v5 an" style="font-size:.8rem;margin-top:.3rem;">
+      🏆 <strong>全項目チェックできたあなたは「文献検索の完全な使い手」</strong>。あとは実践あるのみ！
+    </div>
+  </div>
+</div>
+
+<!-- ══ S27: 次のステップ ══ -->
+<div class="slide slide-dark" id="s27">
+  <span class="tag tag-amber an">次のステップ</span>
+  <h2 class="stitle an">文献検索の先にあるもの：あなたの研究者の旅</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.65rem;">
+    <div class="an">
+      <div class="step-flow" style="justify-content:center;flex-direction:column;align-items:flex-start;gap:.5rem;">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <div class="step-box" style="background:var(--c1);min-width:9rem;text-align:center;">PubMed で探す</div>
+          <div class="step-arrow">→</div>
+          <div style="font-size:.8rem;color:#e2e8f0;">文献を<strong style="color:#66aadd;">読める</strong>医療者に</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <div class="step-box" style="background:var(--c3);min-width:9rem;text-align:center;">UpToDate で使う</div>
+          <div class="step-arrow">→</div>
+          <div style="font-size:.8rem;color:#e2e8f0;">エビデンスを<strong style="color:#a855f7;">使える</strong>臨床家に</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <div class="step-box" style="background:#92400e;min-width:9rem;text-align:center;">Cochrane で評価</div>
+          <div class="step-arrow">→</div>
+          <div style="font-size:.8rem;color:#e2e8f0;">SRを<strong style="color:#fbbf24;">批判的に読める</strong>研究者に</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <div class="step-box" style="background:var(--c4);min-width:9rem;text-align:center;">Scopus で発信</div>
+          <div class="step-arrow">→</div>
+          <div style="font-size:.8rem;color:#e2e8f0;">論文を<strong style="color:#f97316;">書ける</strong>研究者に</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <div class="step-box" style="background:var(--v5);min-width:9rem;text-align:center;">全DBを駆使</div>
+          <div class="step-arrow">→</div>
+          <div style="font-size:.8rem;color:#e2e8f0;">知識を<strong style="color:var(--v5med);">世界に届ける</strong>研究者に</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-dark an" style="border-color:var(--v5med);font-size:.82rem;color:white;">
+      🎓 <strong style="color:var(--v5med);">あなたの次のアクション</strong>：<br>
+      ① まだ取得していなければ今日 ORCID を登録<br>
+      ② Zotero を入れて文献を整理し始める<br>
+      ③ 卒業論文・最初の学会発表に向けて文献調査を開始する
+    </div>
+  </div>
+</div>
+
+<!-- ══ S28: シリーズ完了 ══ -->
+<div class="slide slide-v5" id="s28">
+  <span class="tag an" style="background:var(--v5med);color:#1a1000;">シリーズ完了</span>
+  <h2 class="stitle an">文献検索入門シリーズ：全5回 完走！</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;">
+    <div class="an" style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:.3rem;">
+      <span style="background:var(--c1);color:#fff;border-radius:6px;padding:4px 14px;font-size:.78rem;font-weight:700;">Vol.1 PubMed ✅</span>
+      <span style="background:var(--c2);color:#fff;border-radius:6px;padding:4px 14px;font-size:.78rem;font-weight:700;">Vol.2 医中誌 ✅</span>
+      <span style="background:var(--c3);color:#fff;border-radius:6px;padding:4px 14px;font-size:.78rem;font-weight:700;">Vol.3 UpToDate ✅</span>
+      <span style="background:var(--c4);color:#fff;border-radius:6px;padding:4px 14px;font-size:.78rem;font-weight:700;">Vol.4 Scopus ✅</span>
+      <span style="background:var(--v5);color:#fff;border-radius:6px;padding:4px 14px;font-size:.78rem;font-weight:700;">Vol.5 まとめ ✅</span>
+    </div>
+    <div class="an" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div class="row" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);">
+        <div class="row-lbl" style="background:rgba(255,255,255,.25);color:#1a1000;min-width:2rem;">🔵</div>
+        <div class="row-body" style="color:#eeeeee;font-size:.81rem;">PubMed で <strong style="color:yellow;">3,600万件の国際エビデンス</strong>を精密に検索できる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);">
+        <div class="row-lbl" style="background:rgba(255,255,255,.25);color:#1a1000;min-width:2rem;">🟢</div>
+        <div class="row-body" style="color:#eeeeee;font-size:.81rem;">医中誌で <strong style="color:yellow;">日本語論文</strong>を網羅し、PubMedと並行した完全調査ができる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);">
+        <div class="row-lbl" style="background:rgba(255,255,255,.25);color:#1a1000;min-width:2rem;">🟣</div>
+        <div class="row-body" style="color:#eeeeee;font-size:.81rem;">UpToDate で <strong style="color:yellow;">GRADE付き推奨</strong>を素早く引き出し臨床に活かせる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);">
+        <div class="row-lbl" style="background:rgba(255,255,255,.25);color:#1a1000;min-width:2rem;">🟠</div>
+        <div class="row-body" style="color:#eeeeee;font-size:.81rem;">Scopus で <strong style="color:yellow;">論文の影響力</strong>を評価し前方引用でスノーボール法を完成できる</div>
+      </div>
+      <div class="row" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);">
+        <div class="row-lbl" style="background:rgba(255,255,255,.25);color:#1a1000;min-width:2rem;">🏅</div>
+        <div class="row-body" style="color:#eeeeee;font-size:.81rem;">11のDBを <strong style="color:yellow;">場面別に使い分け</strong>、どんな文献調査にも対応できる</div>
+      </div>
+    </div>
+  </div>
+  <div class="hl an">「道具を知る者が知識を制する」——あなたは今日からその「知る者」になった</div>
+</div>
+
+<!-- ══ S29: DB一覧クイックリファレンス ══ -->
+<div class="slide slide-light" id="s29">
+  <span class="tag tag-v5 an">クイックリファレンス</span>
+  <h2 class="stitle an">保存版：DB クイックリファレンスカード</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.4rem;">
+    <div class="an" style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-size:.74rem;">
+      <a href="https://pubmed.ncbi.nlm.nih.gov/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#EFF6FF;border:1px solid var(--c1);border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🔵</span>
+        <div><div style="font-weight:700;color:var(--c1);">PubMed</div><div style="color:var(--gray);font-size:.68rem;">pubmed.ncbi.nlm.nih.gov　無料</div></div>
+      </a>
+      <a href="https://www.cochranelibrary.com/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#FFFBEB;border:1px solid #92400e;border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🟡</span>
+        <div><div style="font-weight:700;color:#92400e;">Cochrane Library</div><div style="color:var(--gray);font-size:.68rem;">cochranelibrary.com　基本無料</div></div>
+      </a>
+      <a href="https://search.jamas.or.jp/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#F0FDF4;border:1px solid var(--c2);border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🟢</span>
+        <div><div style="font-weight:700;color:var(--c2);">医中誌 Web</div><div style="color:var(--gray);font-size:.68rem;">search.jamas.or.jp　機関契約</div></div>
+      </a>
+      <a href="https://www.embase.com/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#FEF2F2;border:1px solid #B91C1C;border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🔴</span>
+        <div><div style="font-weight:700;color:#B91C1C;">EMBASE</div><div style="color:var(--gray);font-size:.68rem;">embase.com　機関契約</div></div>
+      </a>
+      <a href="https://www.uptodate.com/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#FAF5FF;border:1px solid var(--c3);border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🟣</span>
+        <div><div style="font-weight:700;color:var(--c3);">UpToDate</div><div style="color:var(--gray);font-size:.68rem;">uptodate.com　機関契約</div></div>
+      </a>
+      <a href="https://www.scopus.com/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#FFF7ED;border:1px solid var(--c4);border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🟠</span>
+        <div><div style="font-weight:700;color:var(--c4);">Scopus</div><div style="color:var(--gray);font-size:.68rem;">scopus.com　機関契約</div></div>
+      </a>
+      <a href="https://clinicaltrials.gov/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#ECFDF5;border:1px solid var(--green);border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🟩</span>
+        <div><div style="font-weight:700;color:var(--green);">ClinicalTrials.gov</div><div style="color:var(--gray);font-size:.68rem;">clinicaltrials.gov　無料</div></div>
+      </a>
+      <a href="https://www.ebsco.com/products/research-databases/cinahl-plus-full-text" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#EFF6FF;border:1px solid #0369A1;border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🩵</span>
+        <div><div style="font-weight:700;color:#0369A1;">CINAHL Plus</div><div style="color:var(--gray);font-size:.68rem;">EBSCO　機関契約</div></div>
+      </a>
+      <a href="https://www.nurse.or.jp/nursing/library/sansaku/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#EFF6FF;border:1px solid #0369A1;border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">💙</span>
+        <div><div style="font-weight:700;color:#0369A1;">最新看護索引 Web</div><div style="color:var(--gray);font-size:.68rem;">nurse.or.jp　機関/個人契約</div></div>
+      </a>
+      <a href="https://scholar.google.com/" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#F8FAFC;border:1px solid #64748B;border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">⚪</span>
+        <div><div style="font-weight:700;color:#475569;">Google Scholar</div><div style="color:var(--gray);font-size:.68rem;">scholar.google.com　無料</div></div>
+      </a>
+      <a href="https://www.nlm.nih.gov/medline/medline_overview.html" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:.5rem;background:#F0FDFA;border:1px solid #0F766E;border-radius:6px;padding:.4rem .65rem;">
+        <span style="font-size:1rem;">🩶</span>
+        <div><div style="font-weight:700;color:#0F766E;">MEDLINE（NLM情報）</div><div style="color:var(--gray);font-size:.68rem;">nlm.nih.gov　無料(via PubMed)</div></div>
+      </a>
+    </div>
+    <div class="card-v5 an" style="font-size:.75rem;margin-top:.2rem;">
+      💡 各DBをクリックすると直接アクセスできます。機関契約DBは学内ネットワーク/VPN接続が必要です。
+    </div>
+  </div>
+</div>
+
+<!-- ══ S30: 締め ══ -->
+<div class="slide slide-dark" id="s30">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.6rem;">
+    <div class="an" style="display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:.3rem;">
+      <span style="background:var(--c1);color:#fff;border-radius:20px;padding:2px 12px;font-size:.72rem;">Vol.1 PubMed</span>
+      <span style="background:var(--c2);color:#fff;border-radius:20px;padding:2px 12px;font-size:.72rem;">Vol.2 医中誌</span>
+      <span style="background:var(--c3);color:#fff;border-radius:20px;padding:2px 12px;font-size:.72rem;">Vol.3 UpToDate</span>
+      <span style="background:var(--c4);color:#fff;border-radius:20px;padding:2px 12px;font-size:.72rem;">Vol.4 Scopus</span>
+      <span style="background:var(--v5);color:#fff;border-radius:20px;padding:2px 12px;font-size:.72rem;">Vol.5 まとめ</span>
+    </div>
+    <div class="an title-main" style="font-size:clamp(1.8rem,4.5vw,3.5rem);">
+      知識の海に<br>
+      <span style="color:var(--v5med);">羅針盤</span>を持って<br>
+      <span style="color:var(--amber);">漕ぎ出せ</span>
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.5);font-size:.86rem;line-height:2;">
+      11のDBはあなたの道具箱<br>
+      PICOは地図、ORCIDは名前、引用は足跡<br>
+      <span style="color:var(--v5med);font-size:.8rem;">あとは使い続けること——それだけが検索力を本物にする</span>
+    </div>
+    <div class="title-rule an"></div>
+    <div class="an" style="color:rgba(255,255,255,.38);font-size:.8rem;line-height:1.9;">
+      大阪公立大学 医学部 細菌学講座　金子幸弘<br>
+      <span style="font-size:.72rem;">全5回ご参加いただきありがとうございました。質問・誤りの指摘、大歓迎です。</span>
+    </div>
+  </div>
+  <div style="text-align:center;color:rgba(255,255,255,.22);font-size:.62rem;line-height:1.7;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.08);margin-top:.5rem;">
+    本資料はAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+    医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button class="nbtn" id="pb" title="前へ (←)">‹</button>
+  <span id="sc">1 / 30</span>
+  <button class="nbtn" id="nb" title="次へ (→)">›</button>
+</div>
+<div id="bar"></div>
+<div id="hint">← → スペース で操作　　F でフルスクリーン</div>
+
 <script>
-let current = 0;
 const slides = document.querySelectorAll('.slide');
-const progress = document.getElementById('progress');
+const total  = slides.length;
+let cur = 0;
 
-function update() {
-  slides.forEach((s, i) => {
-    s.classList.remove('active', 'prev');
-    if (i === current) s.classList.add('active');
-    if (i < current) s.classList.add('prev');
-  });
-  progress.textContent = `${current + 1} / ${slides.length}`;
+function go(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  const p = cur;
+  setTimeout(() => slides[p].classList.remove('prev'), 460);
+  cur = (n + total) % total;
+  slides[cur].classList.remove('prev');
+  slides[cur].classList.add('active');
+  document.getElementById('sc').textContent  = (cur+1) + ' / ' + total;
+  document.getElementById('bar').style.width = ((cur+1)/total*100) + '%';
 }
-
-function nextSlide() {
-  if (current < slides.length - 1) {
-    current++;
-    update();
-  }
-}
-
-function prevSlide() {
-  if (current > 0) {
-    current--;
-    update();
-  }
-}
-
-// キーボード操作対応
+document.getElementById('nb').addEventListener('click', () => go(cur+1));
+document.getElementById('pb').addEventListener('click', () => go(cur-1));
 document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
-  if (e.key === 'ArrowLeft') prevSlide();
+  if (e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if (e.key==='ArrowLeft') {e.preventDefault();go(cur-1);}
+  if (e.key==='f'||e.key==='F'){
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
 });
-</script>
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) dx<0?go(cur+1):go(cur-1);
+},{passive:true});
+document.getElementById('bar').style.width=(1/total*100)+'%';
 
+/* Quiz 1: DB選択 */
+function ansQ1(btn, val) {
+  document.querySelectorAll('#q1 .qbtn').forEach(b=>b.disabled=true);
+  const fb = document.getElementById('q1fb');
+  if (val==='c') {
+    btn.classList.add('correct');
+    fb.textContent = '✅ 正解！ 看護系の国際文献はCINAHL、日本語は医中誌+最新看護索引が必須。PubMedも医学的根拠の補完に必要。Google Scholarのみは再現性ある検索式が組めず卒論には不十分。';
+    fb.style.color = '#4ade80';
+  } else if (val==='a') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[2].classList.add('correct');
+    fb.textContent = '❌ PubMedは医学論文中心で看護専門誌のカバレッジが低い。また日本語論文を拾えないため、日本の看護実践に関する文献を見落とす。';
+    fb.style.color = '#fbbf24';
+  } else if (val==='b') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[2].classList.add('correct');
+    fb.textContent = '❌ ScopusはMeSH相当の統制語彙がなく、看護専門の検索精度が低い。また日本語論文の収録が限定的で、看護・日本語文献の網羅性が不十分。';
+    fb.style.color = '#fbbf24';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q1 .qbtn')[2].classList.add('correct');
+    fb.textContent = '❌ Google Scholarは再現性のある検索式が組みにくく、SR・卒論の検索記録として不適切。査読なし論文も混在するため信頼性の担保が難しい。';
+    fb.style.color = '#fbbf24';
+  }
+  fb.classList.add('show');
+}
+
+/* Quiz 2: SR検索 */
+function ansQ2(btn, val) {
+  document.querySelectorAll('#q2 .qbtn').forEach(b=>b.disabled=true);
+  const fb = document.getElementById('q2fb');
+  if (val==='c') {
+    btn.classList.add('correct');
+    fb.textContent = '✅ 正解！ Cochrane Handbook は MEDLINE + EMBASE + CENTRAL の3DBを最低限と定めている。日本語論文も関係する場合は医中誌を追加するのが望ましい。';
+    fb.style.color = '#4ade80';
+  } else if (val==='a') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[2].classList.add('correct');
+    fb.textContent = '❌ PubMedのみでは欧州誌・灰色文献が拾えない。国際誌への投稿では「PubMedのみ」の検索は網羅性不足として査読で却下される可能性がある。';
+    fb.style.color = '#fbbf24';
+  } else if (val==='b') {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[2].classList.add('correct');
+    fb.textContent = '❌ Google Scholarは統制語彙がなく再現性のある検索式が組みにくい。SRの補完検索としては使えるが、メインの検索DBには適していない。';
+    fb.style.color = '#fbbf24';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#q2 .qbtn')[2].classList.add('correct');
+    fb.textContent = '❌ UpToDateは臨床意思決定支援ツールであり文献DBではない。ScopusはMeSH相当の統制語彙がなく、医学SR検索の精度がPubMedに劣る。';
+    fb.style.color = '#fbbf24';
+  }
+  fb.classList.add('show');
+}
+</script>
 </body>
 </html>
