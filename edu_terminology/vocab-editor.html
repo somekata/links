@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vocab Editor — Medical Vocabulary Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design tokens（Medical Vocabulary Master統一） ── */
+    :root {
+      --washi:       #f5f1e8;
+      --washi-light: #fdfaf3;
+      --washi-dark:  #ede8da;
+      --ink:         #1a1612;
+      --ink-soft:    #3d3530;
+      --ink-muted:   #7a6f64;
+      --ink-faint:   #b0a898;
+      --border:      #d8d0c0;
+      --shadow:      rgba(26,22,18,.08);
+
+      --verb:    #2d6a8f; --verb-bg:   #deeef7; --verb-bd:   #7db8d8;
+      --noun:    #5a6e3a; --noun-bg:   #eef3e0; --noun-bd:   #a8bf78;
+      --adj:     #a0700a; --adj-bg:    #fdf3d8; --adj-bd:    #d4a843;
+      --adv:     #3a7d52; --adv-bg:    #dff0e6; --adv-bd:    #82c49e;
+      --phrase:  #6b3fa0; --phrase-bg: #f0eafa; --phrase-bd: #b08fd4;
+
+      --basic-c:  #3a7d52; --basic-bg:        #dff0e6;
+      --inter-c:  #a0700a; --intermediate-bg: #fdf3d8;
+      --advc:     #8f3040; --advanced-bg:     #f9e5e8;
+
+      --lock-color:   #8f3040;
+      --unlock-color: #3a7d52;
+      --danger:       #c0392b;
+      --modal-bg: rgba(26,22,18,.6);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--washi);
+      color: var(--ink-soft);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--ink);
+      color: var(--washi);
+      padding: 20px 24px 16px;
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+    }
+    header::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--verb-bd), var(--adj-bd), var(--adv-bd), var(--phrase-bd));
+    }
+    .header-title {
+      display: flex; align-items: baseline; gap: 12px;
+    }
+    .header-title h1 {
+      font-family: 'Zen Antique', serif;
+      font-size: 1.3rem; font-weight: 400; letter-spacing: .08em;
+    }
+    .header-title .subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem; color: var(--ink-faint); letter-spacing: .1em;
+    }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Noto Sans JP', sans-serif; font-size: .78rem; font-weight: 500;
+      padding: 6px 14px; border-radius: 3px; border: 1px solid;
+      cursor: pointer; transition: all .2s; white-space: nowrap; text-decoration: none;
+    }
+    .btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+    .btn-ghost { background: transparent; border-color: rgba(255,255,255,.25); color: rgba(255,255,255,.7); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,.6); color: #fff; }
+
+    .btn-primary { background: var(--ink); border-color: var(--ink); color: var(--washi); }
+    .btn-primary:hover { background: #2d2620; }
+
+    .btn-success { background: var(--unlock-color); border-color: var(--unlock-color); color: #fff; }
+    .btn-success:hover { background: #2d6642; }
+
+    .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #a93226; }
+
+    .btn-lock { background: var(--lock-color); border-color: var(--lock-color); color: #fff; }
+    .btn-lock:hover { background: #7a2836; }
+
+    .btn-unlock { background: transparent; border-color: var(--unlock-color); color: var(--unlock-color); }
+    .btn-unlock:hover { background: var(--basic-bg); }
+
+    .btn:disabled, .btn[disabled] {
+      opacity: .4; cursor: not-allowed; pointer-events: none;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      position: sticky; top: 0; z-index: 90;
+      background: rgba(245,241,232,.93); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    }
+    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
+    .toolbar-search svg {
+      position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; stroke: var(--ink-faint); fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+    }
+    .toolbar-search input {
+      width: 100%; padding: 7px 12px 7px 34px;
+      font-family: 'Noto Sans JP', sans-serif; font-size: .82rem;
+      background: var(--washi-light); color: var(--ink-soft);
+      border: 1px solid var(--border); border-radius: 3px; outline: none;
+      transition: border-color .2s;
+    }
+    .toolbar-search input:focus { border-color: var(--ink-muted); }
+
+    .toolbar-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+
+    .lock-indicator {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+      padding: 5px 11px; border-radius: 3px; border: 1px solid;
+      font-weight: 500; letter-spacing: .06em; transition: all .3s;
+    }
+    .lock-indicator.locked   { color: var(--lock-color);   border-color: var(--lock-color);   background: var(--advanced-bg); }
+    .lock-indicator.unlocked { color: var(--unlock-color); border-color: var(--unlock-color); background: var(--basic-bg);    }
+    .lock-indicator svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    .record-count {
+      font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+      color: var(--ink-faint); letter-spacing: .06em; white-space: nowrap;
+    }
+
+    /* ── Page ── */
+    .page { position: relative; z-index: 1; padding: 16px 20px 60px; max-width: 1300px; margin: 0 auto; }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 6px;
+      padding: 52px 24px;
+      text-align: center;
+      background: var(--washi-light);
+      transition: border-color .2s, background .2s;
+      cursor: pointer;
+    }
+    .drop-zone.drag-over { border-color: var(--verb); background: var(--verb-bg); }
+    .drop-zone-icon { font-size: 2.4rem; margin-bottom: 12px; }
+    .drop-zone h2 {
+      font-family: 'Zen Antique', serif; font-size: 1.1rem; font-weight: 400;
+      color: var(--ink); margin-bottom: 8px;
+    }
+    .drop-zone p { font-size: .82rem; color: var(--ink-muted); line-height: 1.7; }
+    .drop-zone .btn { margin-top: 16px; }
+    #fileInputHidden { display: none; }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--washi-light);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: auto;
+      box-shadow: 0 2px 12px var(--shadow);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    thead tr {
+      background: var(--ink);
+      color: var(--washi);
+      position: sticky; top: 0; z-index: 10;
+    }
+    thead th {
+      padding: 10px 12px;
+      font-family: 'JetBrains Mono', monospace; font-size: .66rem;
+      font-weight: 500; letter-spacing: .1em; text-align: left;
+      white-space: nowrap; user-select: none; cursor: pointer;
+    }
+    thead th:hover { background: #2d2620; }
+    thead th .sort-arrow { margin-left: 4px; opacity: .5; }
+    thead th.sorted .sort-arrow { opacity: 1; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--washi-dark);
+      cursor: pointer; transition: background .15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(45,106,143,.05); }
+    tbody tr.selected { background: rgba(45,106,143,.1); }
+
+    td { padding: 8px 12px; vertical-align: middle; }
+    td.col-num {
+      font-family: 'JetBrains Mono', monospace; font-size: .65rem;
+      color: var(--ink-faint); width: 36px; text-align: right;
+    }
+    td.col-type { width: 70px; }
+    td.col-level { width: 58px; }
+    td.col-term {
+      font-family: 'JetBrains Mono', monospace; font-size: .82rem;
+      font-weight: 500; color: var(--ink); max-width: 200px;
+    }
+    td.col-meaning { color: var(--ink-muted); max-width: 240px; }
+    td.col-category { color: var(--ink-faint); font-size: .75rem; max-width: 120px; }
+    td.col-imrad { max-width: 140px; }
+    td.col-actions { width: 60px; text-align: right; }
+
+    .cell-overflow { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; }
+
+    .type-pill {
+      display: inline-block; padding: 1px 7px; border-radius: 3px;
+      border: 1px solid; font-size: .68rem; font-weight: 600;
+      font-family: 'Noto Sans JP', sans-serif; white-space: nowrap;
+    }
+    .type-pill.verb   { color:var(--verb);   background:var(--verb-bg);   border-color:var(--verb-bd);   }
+    .type-pill.noun   { color:var(--noun);   background:var(--noun-bg);   border-color:var(--noun-bd);   }
+    .type-pill.adj    { color:var(--adj);    background:var(--adj-bg);    border-color:var(--adj-bd);    }
+    .type-pill.adv    { color:var(--adv);    background:var(--adv-bg);    border-color:var(--adv-bd);    }
+    .type-pill.phrase { color:var(--phrase); background:var(--phrase-bg); border-color:var(--phrase-bd); }
+
+    .level-pill {
+      display: inline-block; padding: 1px 7px; border-radius: 3px;
+      font-size: .65rem; font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif; white-space: nowrap;
+    }
+    .level-pill.basic        { background:var(--basic-bg);        color:var(--basic-c); }
+    .level-pill.intermediate { background:var(--intermediate-bg); color:var(--inter-c); }
+    .level-pill.advanced     { background:var(--advanced-bg);     color:var(--advc);    }
+
+    .imrad-pill {
+      display: inline-block; font-size: .62rem; padding: 1px 5px; border-radius: 2px;
+      background: var(--washi-dark); color: var(--ink-muted); margin: 1px 2px 1px 0;
+    }
+
+    .row-del-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--ink-faint); padding: 4px; border-radius: 3px;
+      transition: color .15s, background .15s; line-height: 0;
+    }
+    .row-del-btn:hover { color: var(--danger); background: var(--advanced-bg); }
+    .row-del-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: var(--modal-bg); z-index: 200;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--washi-light);
+      border: 1px solid var(--border); border-radius: 6px;
+      width: 100%; max-width: 700px; max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 28px 70px rgba(26,22,18,.35);
+      animation: modalIn .2s ease;
+    }
+    @keyframes modalIn { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none} }
+
+    .modal-header {
+      padding: 18px 22px 14px;
+      border-bottom: 3px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      position: sticky; top: 0; background: var(--washi-light); z-index: 5;
+    }
+    .modal-header.verb   { border-bottom-color: var(--verb);   }
+    .modal-header.noun   { border-bottom-color: var(--noun);   }
+    .modal-header.adj    { border-bottom-color: var(--adj);    }
+    .modal-header.adv    { border-bottom-color: var(--adv);    }
+    .modal-header.phrase { border-bottom-color: var(--phrase); }
+
+    .modal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem; font-weight: 500; color: var(--ink);
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .modal-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--ink-faint); font-size: 1.1rem; padding: 4px 6px; border-radius: 3px;
+      line-height: 1; transition: color .15s;
+    }
+    .modal-close:hover { color: var(--ink); }
+
+    .modal-body { padding: 20px 22px 24px; }
+    .locked-notice {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--advanced-bg); border: 1px solid var(--lock-color);
+      border-radius: 4px; padding: 10px 14px; margin-bottom: 18px;
+      font-size: .8rem; color: var(--lock-color);
+    }
+    .locked-notice svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+    /* Form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label {
+      font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .form-input, .form-select, .form-textarea {
+      font-family: 'Noto Sans JP', sans-serif; font-size: .85rem;
+      background: var(--washi); color: var(--ink-soft);
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 7px 10px; outline: none;
+      transition: border-color .2s, background .2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--ink-muted); background: var(--washi-light);
+    }
+    .form-input:disabled, .form-select:disabled, .form-textarea:disabled {
+      background: var(--washi-dark); cursor: not-allowed; color: var(--ink-faint);
+    }
+    .form-textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+    .form-hint { font-size: .7rem; color: var(--ink-faint); margin-top: 2px; }
+
+    .imrad-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .imrad-check { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .imrad-check input { cursor: pointer; }
+    .imrad-check span { font-size: .8rem; color: var(--ink-muted); }
+    .imrad-check input:disabled { cursor: not-allowed; }
+    .imrad-check input:disabled + span { color: var(--ink-faint); }
+
+    .modal-footer {
+      padding: 14px 22px;
+      border-top: 1px solid var(--washi-dark);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .modal-footer-left  { display: flex; gap: 8px; }
+    .modal-footer-right { display: flex; gap: 8px; }
+
+    /* ── Add entry row ── */
+    .add-row-hint {
+      padding: 10px 14px;
+      background: var(--washi-dark); border-top: 1px solid var(--border);
+      font-size: .75rem; color: var(--ink-faint); text-align: center;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+      background: var(--ink); color: var(--washi);
+      font-family: 'Noto Sans JP', sans-serif; font-size: .82rem;
+      padding: 10px 22px; border-radius: 4px;
+      box-shadow: 0 8px 24px rgba(26,22,18,.3); z-index: 9999;
+      transition: transform .3s ease, opacity .3s; opacity: 0; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.ok   { background: var(--unlock-color); }
+    .toast.warn { background: var(--lock-color); }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 40px; padding: 18px 24px;
+      background: var(--washi-light); border: 1px solid var(--border);
+      border-top: 3px solid var(--ink); border-radius: 4px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .footer-disclaimer { font-size: .74rem; color: var(--ink-muted); line-height: 1.9; }
+    .footer-disclaimer strong { display: block; font-size: .66rem; font-weight: 700; letter-spacing: .12em; color: var(--ink-faint); margin-bottom: 3px; text-transform: uppercase; }
+    .footer-copy { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: .7rem; color: var(--ink-faint); text-align: center; }
+
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: 1; }
+      header { padding: 14px 14px 12px; }
+      .page { padding: 12px 12px 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">
+    <h1>Vocab Editor</h1>
+    <span class="subtitle">Medical Vocabulary Master — 語彙編集ツール</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="document.getElementById('fileInputHidden').click()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      JSONインポート
+    </button>
+    <button class="btn btn-ghost" id="exportBtn" onclick="exportJSON()" disabled>
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      エクスポート
+    </button>
+    <input type="file" id="fileInputHidden" accept=".json">
+  </div>
+</header>
+
+<div class="toolbar" id="toolbar" style="display:none">
+  <div class="toolbar-search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="term / meaning / category で絞り込み…" oninput="renderTable()">
+  </div>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- type filter -->
+  <select id="typeFilter" onchange="renderTable()" style="font-family:'Noto Sans JP',sans-serif;font-size:.78rem;padding:6px 10px;border:1px solid var(--border);border-radius:3px;background:var(--washi-light);color:var(--ink-soft);outline:none;">
+    <option value="">品詞：すべて</option>
+    <option value="verb">動詞</option>
+    <option value="noun">名詞</option>
+    <option value="adj">形容詞</option>
+    <option value="adv">副詞</option>
+    <option value="phrase">熟語</option>
+  </select>
+  <select id="levelFilter" onchange="renderTable()" style="font-family:'Noto Sans JP',sans-serif;font-size:.78rem;padding:6px 10px;border:1px solid var(--border);border-radius:3px;background:var(--washi-light);color:var(--ink-soft);outline:none;">
+    <option value="">レベル：すべて</option>
+    <option value="basic">初級</option>
+    <option value="intermediate">中級</option>
+    <option value="advanced">上級</option>
+  </select>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- lock indicator -->
+  <div class="lock-indicator locked" id="lockIndicator">
+    <svg id="lockIcon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <span id="lockLabel">編集ロック中</span>
+  </div>
+  <button class="btn btn-unlock" id="lockToggleBtn" onclick="toggleLock()">
+    <svg viewBox="0 0 24 24" id="lockToggleIcon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <span id="lockToggleLabel">アンロック</span>
+  </button>
+
+  <div class="toolbar-divider"></div>
+
+  <button class="btn btn-success" id="addBtn" onclick="openAddModal()" disabled>
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    新規追加
+  </button>
+
+  <span class="record-count" id="recordCount"></span>
+</div>
+
+<div class="page" id="mainPage">
+  <!-- Drop zone (initial state) -->
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInputHidden').click()">
+    <div class="drop-zone-icon">📋</div>
+    <h2>JSONファイルをインポート</h2>
+    <p>Medical Vocabulary Master 形式の JSON ファイルを<br>ドラッグ＆ドロップするか、クリックして選択してください。</p>
+    <button class="btn btn-primary" onclick="event.stopPropagation();document.getElementById('fileInputHidden').click()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      ファイルを選択
+    </button>
+  </div>
+
+  <!-- Table (hidden until data loaded) -->
+  <div id="tableSection" style="display:none">
+    <div class="table-wrap">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th class="col-num" onclick="sortBy('_idx')"># <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('type')">品詞 <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('level')">レベル <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('term')">Term <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('meaning')">意味 <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('category')">カテゴリ <span class="sort-arrow">↕</span></th>
+            <th>IMRaD</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="add-row-hint" id="addRowHint" style="display:none">
+        🔓 アンロック中 — 行をクリックして編集、または「新規追加」ボタンで追加
+      </div>
+    </div>
+  </div>
+
+  <footer id="mainFooter" style="display:none">
+    <div class="footer-disclaimer">
+      <strong>免責事項 · Disclaimer</strong>
+      本ツールは AI（Claude, Anthropic）を用いて作成されました。編集・エクスポートされたデータの内容については利用者が責任を負います。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </div>
+    <div class="footer-copy">© 2026 Vocab Editor — Medical Vocabulary Master</div>
+  </footer>
+</div>
+
+<!-- Edit/Add Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header" id="modalHeader">
+      <div class="modal-title" id="modalTitle">エントリ編集</div>
+      <div class="modal-header-actions">
+        <button class="btn btn-lock" id="modalLockBtn" onclick="toggleLock()" style="display:none">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          ロック
+        </button>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <div class="locked-notice" id="lockedNotice">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        編集ロック中です。ツールバーの「アンロック」ボタンで編集を有効にしてください。
+      </div>
+      <div class="form-grid">
+        <!-- term -->
+        <div class="form-group full">
+          <label class="form-label">Term *</label>
+          <input type="text" class="form-input" id="f_term" placeholder="例: conduct / perform">
+        </div>
+        <!-- type & level -->
+        <div class="form-group">
+          <label class="form-label">Type（品詞）*</label>
+          <select class="form-select" id="f_type">
+            <option value="">選択…</option>
+            <option value="verb">動詞 (verb)</option>
+            <option value="noun">名詞 (noun)</option>
+            <option value="adj">形容詞 (adj)</option>
+            <option value="adv">副詞 (adv)</option>
+            <option value="phrase">熟語 (phrase)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Level（レベル）*</label>
+          <select class="form-select" id="f_level">
+            <option value="">選択…</option>
+            <option value="basic">初級 (basic)</option>
+            <option value="intermediate">中級 (intermediate)</option>
+            <option value="advanced">上級 (advanced)</option>
+          </select>
+        </div>
+        <!-- category -->
+        <div class="form-group full">
+          <label class="form-label">Category（カテゴリ）</label>
+          <input type="text" class="form-input" id="f_category" placeholder="例: 調査・実施">
+        </div>
+        <!-- meaning -->
+        <div class="form-group full">
+          <label class="form-label">Meaning（日本語訳）*</label>
+          <input type="text" class="form-input" id="f_meaning" placeholder="例: 研究や解析を「実施する」">
+        </div>
+        <!-- nuance -->
+        <div class="form-group full">
+          <label class="form-label">Nuance（ニュアンス解説）</label>
+          <textarea class="form-textarea" id="f_nuance" placeholder="使い分けや文脈のニュアンスを記載"></textarea>
+        </div>
+        <!-- imrad -->
+        <div class="form-group full">
+          <label class="form-label">IMRaD（使うセクション）</label>
+          <div class="imrad-checks">
+            <label class="imrad-check"><input type="checkbox" id="im_intro" value="Introduction"><span>Introduction</span></label>
+            <label class="imrad-check"><input type="checkbox" id="im_methods" value="Methods"><span>Methods</span></label>
+            <label class="imrad-check"><input type="checkbox" id="im_results" value="Results"><span>Results</span></label>
+            <label class="imrad-check"><input type="checkbox" id="im_discussion" value="Discussion"><span>Discussion</span></label>
+          </div>
+        </div>
+        <!-- synonyms -->
+        <div class="form-group full">
+          <label class="form-label">Synonyms（類義語）</label>
+          <input type="text" class="form-input" id="f_synonyms" placeholder="カンマ区切りで入力: carry out, undertake, execute">
+          <span class="form-hint">カンマ（,）で区切って複数入力できます</span>
+        </div>
+        <!-- antonyms -->
+        <div class="form-group full">
+          <label class="form-label">Antonyms（対義語）</label>
+          <input type="text" class="form-input" id="f_antonyms" placeholder="カンマ区切りで入力: abandon, halt">
+          <span class="form-hint">カンマ（,）で区切って複数入力できます</span>
+        </div>
+        <!-- example -->
+        <div class="form-group full">
+          <label class="form-label">Example（用例文）</label>
+          <textarea class="form-textarea" id="f_example" placeholder="英文の用例を1文入力してください"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="modal-footer-left">
+        <button class="btn btn-danger" id="deleteBtn" onclick="deleteCurrentEntry()" style="display:none">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          削除
+        </button>
+      </div>
+      <div class="modal-footer-right">
+        <button class="btn btn-primary" onclick="closeModal()" style="border-color:var(--border);background:transparent;color:var(--ink-soft)">キャンセル</button>
+        <button class="btn btn-success" id="saveBtn" onclick="saveEntry()" disabled>
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          保存
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════
+   State
+═══════════════════════════════════════ */
+let data      = [];          // 全エントリ
+let filtered  = [];          // フィルター後
+let isLocked  = true;        // デフォルト：ロック
+let sortKey   = '_idx';
+let sortAsc   = true;
+let editIdx   = -1;          // -1 = 新規, >=0 = 既存インデックス
+let fileName  = 'vocab_export.json';
+
+const TYPE_LABEL  = {verb:'動詞',noun:'名詞',adj:'形容詞',adv:'副詞',phrase:'熟語'};
+const LEVEL_LABEL = {basic:'初級',intermediate:'中級',advanced:'上級'};
+const IMRAD_IDS   = ['im_intro','im_methods','im_results','im_discussion'];
+const IMRAD_VALS  = ['Introduction','Methods','Results','Discussion'];
+
+/* ═══════════════════════════════════════
+   Toast
+═══════════════════════════════════════ */
+let toastTimer;
+function showToast(msg, type='', ms=2600){
+  clearTimeout(toastTimer);
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' '+type : '');
+  toastTimer = setTimeout(() => t.className = 'toast', ms);
+}
+
+/* ═══════════════════════════════════════
+   File input / drag & drop
+═══════════════════════════════════════ */
+document.getElementById('fileInputHidden').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(file){ loadFile(file); }
+  this.value = '';
+});
+
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file && file.name.endsWith('.json')) loadFile(file);
+  else showToast('⚠ .json ファイルを選択してください', 'warn');
+});
+
+function loadFile(file){
+  fileName = file.name.replace(/\.json$/,'') + '_edited.json';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try{
+      let d = JSON.parse(ev.target.result);
+      if(!Array.isArray(d) && d.data) d = d.data;
+      if(!Array.isArray(d)) throw new Error('配列形式ではありません');
+      // メタエントリ（_commentなど）を除去
+      d = d.filter(x => x.term || x.meaning);
+      // _idxを付与
+      d.forEach((x,i) => x._idx = i);
+      data = d;
+      showTableView();
+      renderTable();
+      showToast('✓ ' + file.name + '（' + data.length + '件）を読み込みました', 'ok');
+    } catch(err){
+      showToast('⚠ JSON解析エラー: ' + err.message, 'warn');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showTableView(){
+  document.getElementById('dropZone').style.display    = 'none';
+  document.getElementById('tableSection').style.display = '';
+  document.getElementById('mainFooter').style.display   = '';
+  document.getElementById('toolbar').style.display      = 'flex';
+  updateLockUI();
+}
+
+/* ═══════════════════════════════════════
+   Sort
+═══════════════════════════════════════ */
+function sortBy(key){
+  if(sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
+  renderTable();
+  // ヘッダーアクティブ表示
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+}
+
+/* ═══════════════════════════════════════
+   Render table
+═══════════════════════════════════════ */
+function renderTable(){
+  const q  = document.getElementById('searchInput').value.toLowerCase().trim();
+  const tf = document.getElementById('typeFilter').value;
+  const lf = document.getElementById('levelFilter').value;
+
+  filtered = data.filter(item => {
+    const mt = !tf || item.type  === tf;
+    const ml = !lf || item.level === lf;
+    const mq = !q  ||
+      (item.term     && item.term.toLowerCase().includes(q))    ||
+      (item.meaning  && item.meaning.toLowerCase().includes(q)) ||
+      (item.category && item.category.toLowerCase().includes(q));
+    return mt && ml && mq;
+  });
+
+  // ソート
+  filtered.sort((a,b) => {
+    const av = a[sortKey] ?? '';
+    const bv = b[sortKey] ?? '';
+    return sortAsc
+      ? String(av).localeCompare(String(bv), 'ja')
+      : String(bv).localeCompare(String(av), 'ja');
+  });
+
+  document.getElementById('recordCount').textContent =
+    filtered.length + ' / ' + data.length + ' 件';
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = filtered.map((item, fi) => {
+    const gi = data.indexOf(item); // global index
+    const imradHtml = (item.imrad||[]).map(s=>'<span class="imrad-pill">'+esc(s)+'</span>').join('');
+    return `<tr onclick="openEditModal(${gi})" data-gi="${gi}">
+      <td class="col-num">${item._idx+1}</td>
+      <td class="col-type"><span class="type-pill ${item.type||''}">${TYPE_LABEL[item.type]||item.type||'—'}</span></td>
+      <td class="col-level"><span class="level-pill ${item.level||''}">${LEVEL_LABEL[item.level]||item.level||'—'}</span></td>
+      <td class="col-term"><span class="cell-overflow" style="max-width:190px">${esc(item.term||'')}</span></td>
+      <td class="col-meaning"><span class="cell-overflow" style="max-width:230px">${esc(item.meaning||'')}</span></td>
+      <td class="col-category"><span class="cell-overflow" style="max-width:120px">${esc(item.category||'')}</span></td>
+      <td class="col-imrad">${imradHtml}</td>
+      <td class="col-actions" onclick="event.stopPropagation()">
+        ${!isLocked ? `<button class="row-del-btn" title="削除" onclick="deleteEntry(${gi})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg></button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('addRowHint').style.display = isLocked ? 'none' : '';
+}
+
+/* ═══════════════════════════════════════
+   Lock / Unlock
+═══════════════════════════════════════ */
+function toggleLock(){
+  isLocked = !isLocked;
+  updateLockUI();
+  renderTable();
+  showToast(isLocked ? '🔒 編集をロックしました' : '🔓 編集をアンロックしました', isLocked ? 'warn' : 'ok');
+  // モーダルが開いていれば更新
+  if(document.getElementById('modalOverlay').classList.contains('open')) applyLockToModal();
+}
+
+function updateLockUI(){
+  const ind   = document.getElementById('lockIndicator');
+  const tbBtn = document.getElementById('lockToggleBtn');
+  const tbIco = document.getElementById('lockToggleIcon');
+  const tbLbl = document.getElementById('lockToggleLabel');
+
+  if(isLocked){
+    ind.className  = 'lock-indicator locked';
+    ind.querySelector('svg').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+    document.getElementById('lockLabel').textContent = '編集ロック中';
+    tbBtn.className = 'btn btn-unlock';
+    tbIco.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
+    tbLbl.textContent = 'アンロック';
+    document.getElementById('addBtn').disabled    = true;
+    document.getElementById('exportBtn').disabled = true;
+  } else {
+    ind.className  = 'lock-indicator unlocked';
+    ind.querySelector('svg').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
+    document.getElementById('lockLabel').textContent = 'アンロック中';
+    tbBtn.className = 'btn btn-lock';
+    tbIco.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+    tbLbl.textContent = 'ロック';
+    document.getElementById('addBtn').disabled    = false;
+    document.getElementById('exportBtn').disabled = false;
+  }
+}
+
+function applyLockToModal(){
+  const locked = isLocked;
+  document.getElementById('lockedNotice').style.display = locked ? '' : 'none';
+  document.getElementById('saveBtn').disabled   = locked;
+  document.getElementById('deleteBtn').style.display = (!locked && editIdx >= 0) ? '' : 'none';
+  document.getElementById('modalLockBtn').style.display = locked ? 'none' : '';
+
+  const fields = ['f_term','f_type','f_level','f_category','f_meaning','f_nuance','f_synonyms','f_antonyms','f_example'];
+  fields.forEach(id => { document.getElementById(id).disabled = locked; });
+  IMRAD_IDS.forEach(id => { document.getElementById(id).disabled = locked; });
+}
+
+/* ═══════════════════════════════════════
+   Modal — open (edit)
+═══════════════════════════════════════ */
+function openEditModal(gi){
+  editIdx = gi;
+  const item = data[gi];
+  document.getElementById('modalHeader').className = 'modal-header ' + (item.type||'');
+  document.getElementById('modalTitle').textContent = item.term || '（term未設定）';
+
+  document.getElementById('f_term').value      = item.term      || '';
+  document.getElementById('f_type').value      = item.type      || '';
+  document.getElementById('f_level').value     = item.level     || '';
+  document.getElementById('f_category').value  = item.category  || '';
+  document.getElementById('f_meaning').value   = item.meaning   || '';
+  document.getElementById('f_nuance').value    = item.nuance    || '';
+  document.getElementById('f_example').value   = item.example   || '';
+  document.getElementById('f_synonyms').value  = (item.synonyms  || []).join(', ');
+  document.getElementById('f_antonyms').value  = (item.antonyms  || []).join(', ');
+
+  IMRAD_IDS.forEach((id, i) => {
+    document.getElementById(id).checked = (item.imrad||[]).includes(IMRAD_VALS[i]);
+  });
+
+  applyLockToModal();
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+/* Modal — open (new) */
+function openAddModal(){
+  if(isLocked){ showToast('⚠ 追加するにはアンロックしてください', 'warn'); return; }
+  editIdx = -1;
+  document.getElementById('modalHeader').className = 'modal-header';
+  document.getElementById('modalTitle').textContent = '新規エントリ追加';
+
+  ['f_term','f_type','f_level','f_category','f_meaning','f_nuance','f_synonyms','f_antonyms','f_example']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  IMRAD_IDS.forEach(id => { document.getElementById(id).checked = false; });
+
+  applyLockToModal();
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+/* Modal — close */
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function handleOverlayClick(e){
+  if(e.target.id === 'modalOverlay') closeModal();
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+/* ═══════════════════════════════════════
+   Save entry
+═══════════════════════════════════════ */
+function saveEntry(){
+  if(isLocked) return;
+  const term = document.getElementById('f_term').value.trim();
+  if(!term){ showToast('⚠ Term は必須です', 'warn'); return; }
+
+  const entry = {
+    type:     document.getElementById('f_type').value     || undefined,
+    level:    document.getElementById('f_level').value    || undefined,
+    category: document.getElementById('f_category').value.trim() || undefined,
+    term:     term,
+    meaning:  document.getElementById('f_meaning').value.trim()  || undefined,
+    nuance:   document.getElementById('f_nuance').value.trim()   || undefined,
+    imrad:    IMRAD_IDS.map((id,i) => document.getElementById(id).checked ? IMRAD_VALS[i] : null).filter(Boolean),
+    synonyms: splitTags(document.getElementById('f_synonyms').value),
+    antonyms: splitTags(document.getElementById('f_antonyms').value),
+    example:  document.getElementById('f_example').value.trim() || undefined,
+  };
+  // _idx保持（既存）or 新規付与
+  if(editIdx >= 0){
+    entry._idx = data[editIdx]._idx;
+    data[editIdx] = entry;
+    showToast('✓ 保存しました: ' + term, 'ok');
+  } else {
+    entry._idx = data.length;
+    data.push(entry);
+    showToast('✓ 追加しました: ' + term, 'ok');
+  }
+  closeModal();
+  renderTable();
+}
+
+/* ═══════════════════════════════════════
+   Delete entry
+═══════════════════════════════════════ */
+function deleteEntry(gi){
+  if(isLocked) return;
+  const item = data[gi];
+  if(!confirm('「' + (item.term||'このエントリ') + '」を削除しますか？')) return;
+  data.splice(gi, 1);
+  data.forEach((x,i) => x._idx = i);
+  renderTable();
+  showToast('🗑 削除しました', 'warn');
+}
+
+function deleteCurrentEntry(){
+  if(isLocked || editIdx < 0) return;
+  const item = data[editIdx];
+  if(!confirm('「' + (item.term||'このエントリ') + '」を削除しますか？')) return;
+  data.splice(editIdx, 1);
+  data.forEach((x,i) => x._idx = i);
+  closeModal();
+  renderTable();
+  showToast('🗑 削除しました', 'warn');
+}
+
+/* ═══════════════════════════════════════
+   Export JSON
+═══════════════════════════════════════ */
+function exportJSON(){
+  if(isLocked){ showToast('⚠ エクスポートするにはアンロックしてください', 'warn'); return; }
+
+  // _idx を除いたクリーンなデータを出力
+  const exportData = data.map(item => {
+    const clean = Object.assign({}, item);
+    delete clean._idx;
+    // undefinedフィールドを除去
+    Object.keys(clean).forEach(k => { if(clean[k] === undefined) delete clean[k]; });
+    // imrad/synonyms/antonymsが空配列なら保持（Medical Vocabulary Master互換）
+    if(!clean.imrad)     clean.imrad     = [];
+    if(!clean.synonyms)  clean.synonyms  = [];
+    if(!clean.antonyms)  clean.antonyms  = [];
+    return clean;
+  });
+
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✓ ' + fileName + ' をエクスポートしました（' + exportData.length + '件）', 'ok');
+}
+
+/* ═══════════════════════════════════════
+   Utilities
+═══════════════════════════════════════ */
+function splitTags(str){
+  return str.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function esc(s){
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// type選択でモーダルheaderのborderを更新
+document.getElementById('f_type').addEventListener('change', function(){
+  document.getElementById('modalHeader').className = 'modal-header ' + this.value;
+});
+</script>
+</body>
+</html>

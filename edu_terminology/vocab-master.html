@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Vocabulary Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --washi:#f5f1e8;--washi-light:#fdfaf3;--washi-dark:#ede8da;
+      --ink:#1a1612;--ink-soft:#3d3530;--ink-muted:#7a6f64;--ink-faint:#b0a898;
+      --border:#d8d0c0;--shadow:rgba(26,22,18,.08);
+      --verb:#2d6a8f;--verb-bg:#deeef7;--verb-bd:#7db8d8;
+      --adj:#a0700a;--adj-bg:#fdf3d8;--adj-bd:#d4a843;
+      --adv:#3a7d52;--adv-bg:#dff0e6;--adv-bd:#82c49e;
+      --phrase:#6b3fa0;--phrase-bg:#f0eafa;--phrase-bd:#b08fd4;
+      --noun:#5a6e3a;--noun-bg:#eef3e0;--noun-bd:#a8bf78;
+      --basic-c:#3a7d52;--basic-bg:#dff0e6;
+      --inter-c:#a0700a;--intermediate-bg:#fdf3d8;
+      --advc:#8f3040;--advanced-bg:#f9e5e8;
+      --modal-bg:rgba(26,22,18,.55);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Noto Serif JP',serif;background:var(--washi);color:var(--ink-soft);line-height:1.75;min-height:100vh}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+
+    header{background:var(--ink);color:var(--washi);padding:44px 24px 36px;text-align:center;position:relative;overflow:hidden}
+    header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,.025) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,.025) 40px)}
+    header::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--verb-bd),var(--adj-bd),var(--adv-bd),var(--phrase-bd))}
+    header h1{font-family:'Zen Antique',serif;font-size:clamp(1.4rem,4vw,2rem);font-weight:400;letter-spacing:.1em;position:relative;margin-bottom:6px}
+    header p{font-family:'Noto Sans JP',sans-serif;font-size:.85rem;font-weight:300;color:var(--ink-faint);letter-spacing:.1em;position:relative}
+
+    .db-bar{background:var(--ink-soft);padding:10px 20px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+    .db-bar-label{font-family:'JetBrains Mono',monospace;font-size:.67rem;color:var(--ink-faint);letter-spacing:.14em;flex-shrink:0}
+    .db-select{font-family:'Noto Sans JP',sans-serif;font-size:.82rem;font-weight:500;background:rgba(255,255,255,.09);color:var(--washi);border:1px solid rgba(255,255,255,.22);border-radius:3px;padding:5px 12px;cursor:pointer;outline:none;transition:border-color .2s}
+    .db-select:hover{border-color:rgba(255,255,255,.5)}
+    .db-select option{background:#2a2520;color:var(--washi)}
+    .db-divider{width:1px;height:20px;background:rgba(255,255,255,.15);flex-shrink:0}
+    .bar-btn{display:flex;align-items:center;gap:6px;font-family:'Noto Sans JP',sans-serif;font-size:.78rem;font-weight:500;background:transparent;border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.6);padding:5px 13px;border-radius:3px;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .bar-btn:hover{border-color:rgba(255,255,255,.55);color:rgba(255,255,255,.95)}
+    .bar-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+    #jsonFileInput{display:none}
+    .db-active-badge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:.67rem;color:var(--adj-bd);letter-spacing:.07em}
+
+    .page{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:24px 20px 64px}
+    .controls{position:sticky;top:0;z-index:100;background:rgba(245,241,232,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:12px 0 10px;margin-bottom:18px}
+    .search-wrap{position:relative;margin-bottom:9px}
+    .search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--ink-faint);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+    #searchInput{width:100%;padding:10px 16px 10px 40px;font-family:'Noto Sans JP',sans-serif;font-size:.9rem;background:var(--washi-light);color:var(--ink-soft);border:1px solid var(--border);border-radius:4px;outline:none;transition:border-color .2s}
+    #searchInput:focus{border-color:var(--ink-muted)}
+    .filter-row{display:flex;flex-wrap:wrap;gap:5px}
+    .tab{padding:3px 12px;font-family:'Noto Sans JP',sans-serif;font-size:.75rem;font-weight:500;border:1px solid var(--border);border-radius:3px;background:var(--washi-light);color:var(--ink-muted);cursor:pointer;transition:all .2s;user-select:none}
+    .tab:hover{border-color:var(--ink-muted);color:var(--ink-soft)}
+    .tab.active{background:var(--ink);color:var(--washi);border-color:var(--ink)}
+    .tab[data-type="verb"].active{background:var(--verb);border-color:var(--verb)}
+    .tab[data-type="adj"].active{background:var(--adj);border-color:var(--adj)}
+    .tab[data-type="adv"].active{background:var(--adv);border-color:var(--adv)}
+    .tab[data-type="phrase"].active{background:var(--phrase);border-color:var(--phrase)}
+    .tab[data-level="basic"].active{background:var(--basic-c);border-color:var(--basic-c)}
+    .tab[data-level="intermediate"].active{background:var(--inter-c);border-color:var(--inter-c)}
+    .tab[data-level="advanced"].active{background:var(--advc);border-color:var(--advc)}
+    .tab[data-type="noun"].active{background:var(--noun);border-color:var(--noun)}
+    .filter-divider{width:1px;height:18px;background:var(--border);align-self:center}
+
+    /* top stats */
+    .top-stats{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+    .db-title{font-family:'Zen Antique',serif;font-size:1rem;color:var(--ink);letter-spacing:.06em;margin-right:4px}
+    .stats{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--ink-faint);letter-spacing:.06em}
+    .top-stat-chip{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.66rem;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap}
+    .top-stat-chip .chip-n{font-weight:700}
+
+    /* layout */
+    .content-layout{display:flex;gap:20px;align-items:flex-start}
+    .card-area{flex:1;min-width:0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:15px}
+
+    /* side panel */
+    .side-panel{width:218px;flex-shrink:0;position:sticky;top:120px}
+    .side-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--ink);color:var(--washi);padding:8px 13px;border-radius:4px 4px 0 0;font-family:'Noto Sans JP',sans-serif;font-size:.75rem;font-weight:500;cursor:pointer;user-select:none;letter-spacing:.04em}
+    .side-toggle svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s}
+    .side-panel.collapsed .side-toggle svg{transform:rotate(-90deg)}
+    .side-body{background:var(--washi-light);border:1px solid var(--border);border-top:none;border-radius:0 0 4px 4px;overflow:hidden;transition:max-height .3s ease,opacity .3s;max-height:800px;opacity:1}
+    .side-panel.collapsed .side-body{max-height:0;opacity:0;pointer-events:none}
+    .side-section{padding:11px 13px;border-bottom:1px solid var(--washi-dark)}
+    .side-section:last-child{border-bottom:none}
+    .side-section-title{font-family:'Noto Sans JP',sans-serif;font-size:.63rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px}
+    .bar-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+    .bar-label{width:36px;text-align:right;font-family:'Noto Sans JP',sans-serif;font-size:.7rem;color:var(--ink-muted);flex-shrink:0}
+    .bar-track{flex:1;background:var(--washi-dark);border-radius:2px;height:7px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:2px;transition:width .5s ease}
+    .bar-count{width:24px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--ink-faint);flex-shrink:0}
+    .mini-table{width:100%;border-collapse:collapse;font-family:'Noto Sans JP',sans-serif;font-size:.71rem}
+    .mini-table th{text-align:left;color:var(--ink-faint);font-weight:600;padding:2px 4px;border-bottom:1px solid var(--border)}
+    .mini-table td{padding:3px 4px;color:var(--ink-soft)}
+    .mini-table td:last-child{text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink-muted)}
+    .mini-table tr:nth-child(even) td{background:rgba(0,0,0,.025)}
+    .total-line{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--ink-muted);text-align:right;margin-top:5px}
+
+    @media(max-width:860px){.side-panel{display:none}}
+    .card{background:var(--washi-light);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:4px;padding:16px 18px 13px;cursor:pointer;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;box-shadow:0 2px 8px var(--shadow),0 1px 0 rgba(255,255,255,.7) inset}
+    .card:hover{transform:translateY(-3px);box-shadow:0 8px 20px var(--shadow)}
+    .card.verb{border-top-color:var(--verb)}.card.adj{border-top-color:var(--adj)}.card.adv{border-top-color:var(--adv)}.card.phrase{border-top-color:var(--phrase)}.card.noun{border-top-color:var(--noun)}
+    .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;gap:8px}
+    .term{font-family:'JetBrains Mono',monospace;font-size:.94rem;font-weight:500;color:var(--ink);line-height:1.4;flex:1}
+    .level-badge{flex-shrink:0;font-family:'Noto Sans JP',sans-serif;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:2px;letter-spacing:.05em}
+    .level-badge.basic{background:var(--basic-bg);color:var(--basic-c)}
+    .level-badge.intermediate{background:var(--intermediate-bg);color:var(--inter-c)}
+    .level-badge.advanced{background:var(--advanced-bg);color:var(--advc)}
+    .meaning{font-size:.86rem;color:var(--ink-muted);flex-grow:1;margin-bottom:10px;line-height:1.6}
+    .card-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--washi-dark);padding-top:8px;font-family:'Noto Sans JP',sans-serif;font-size:.7rem}
+    .type-badge{padding:2px 7px;border-radius:2px;border:1px solid;font-weight:500}
+    .verb .type-badge{color:var(--verb);background:var(--verb-bg);border-color:var(--verb-bd)}
+    .adj .type-badge{color:var(--adj);background:var(--adj-bg);border-color:var(--adj-bd)}
+    .adv .type-badge{color:var(--adv);background:var(--adv-bg);border-color:var(--adv-bd)}
+    .phrase .type-badge{color:var(--phrase);background:var(--phrase-bg);border-color:var(--phrase-bd)}
+    .noun .type-badge{color:var(--noun);background:var(--noun-bg);border-color:var(--noun-bd)}
+    .imrad-tags{display:flex;gap:4px;flex-wrap:wrap}
+    .imrad-tag{font-size:.62rem;padding:1px 5px;border-radius:2px;background:var(--washi-dark);color:var(--ink-muted)}
+
+    .empty,.loading{grid-column:1/-1;text-align:center;padding:56px 20px;font-family:'Noto Sans JP',sans-serif;font-size:.88rem;color:var(--ink-faint)}
+    .loading{font-family:'JetBrains Mono',monospace;font-size:.78rem;letter-spacing:.1em;animation:pulse 1.2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:var(--washi);font-family:'Noto Sans JP',sans-serif;font-size:.82rem;padding:10px 22px;border-radius:4px;box-shadow:0 8px 24px rgba(26,22,18,.3);z-index:2000;transition:transform .3s ease,opacity .3s;opacity:0;pointer-events:none}
+    .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+    .modal-overlay{display:none;position:fixed;inset:0;background:var(--modal-bg);z-index:1000;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--washi-light);border:1px solid var(--border);border-radius:6px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(26,22,18,.3);animation:modalIn .2s ease}
+    @keyframes modalIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    .modal-top{padding:20px 22px 16px;border-bottom:3px solid var(--border);position:relative}
+    .modal-top.verb{border-bottom-color:var(--verb)}.modal-top.adj{border-bottom-color:var(--adj)}.modal-top.adv{border-bottom-color:var(--adv)}.modal-top.phrase{border-bottom-color:var(--phrase)}
+    .modal-term{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:500;color:var(--ink);margin-bottom:7px}
+    .modal-badges{display:flex;flex-wrap:wrap;gap:6px}
+    .modal-close{position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:1.1rem;padding:4px}
+    .modal-close:hover{color:var(--ink)}
+    .modal-body{padding:18px 22px 22px}
+    .modal-section{margin-bottom:16px}
+    .modal-section:last-child{margin-bottom:0}
+    .modal-section-title{font-family:'Noto Sans JP',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--washi-dark)}
+    .modal-meaning{font-size:.93rem;color:var(--ink-soft);line-height:1.8}
+    .modal-nuance{font-size:.86rem;color:var(--ink-muted);line-height:1.8}
+    .modal-example{background:#1a1612;border-radius:4px;padding:13px 17px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#c9bfb0;line-height:1.7;white-space:pre-wrap}
+    .tag-list{display:flex;flex-wrap:wrap;gap:6px}
+    .syn-tag{font-family:'JetBrains Mono',monospace;font-size:.75rem;padding:3px 9px;border-radius:3px;border:1px solid var(--verb-bd);background:var(--verb-bg);color:var(--verb)}
+    .ant-tag{font-family:'JetBrains Mono',monospace;font-size:.75rem;padding:3px 9px;border-radius:3px;border:1px solid var(--advanced-bg);background:var(--advanced-bg);color:var(--advc)}
+    .imrad-modal-tag{font-family:'Noto Sans JP',sans-serif;font-size:.73rem;font-weight:500;padding:3px 9px;border-radius:3px;background:var(--washi-dark);color:var(--ink-muted)}
+
+    footer{margin-top:56px;padding:22px 26px;background:var(--washi-light);border:1px solid var(--border);border-top:3px solid var(--ink);border-radius:4px;font-family:'Noto Sans JP',sans-serif}
+    .footer-disclaimer{font-size:.76rem;color:var(--ink-muted);line-height:1.9}
+    .footer-disclaimer strong{display:block;font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--ink-faint);margin-bottom:4px;text-transform:uppercase}
+    .footer-copy{margin-top:12px;padding-top:11px;border-top:1px dashed var(--border);font-size:.72rem;color:var(--ink-faint);text-align:center;letter-spacing:.05em}
+
+    @media(max-width:560px){.grid{grid-template-columns:1fr}.db-active-badge{display:none}}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Medical Vocabulary Master</h1>
+  <p>医学論文の執筆をよりスマートに、より楽しく。</p>
+</header>
+
+<div class="db-bar">
+  <span class="db-bar-label">DATABASE</span>
+  <!--
+    ★ 新しいDBを追加する方法：
+       1. template.json をコピーしてデータを入力
+       2. 下の option を追加（コメントアウト解除）
+       3. 同リポジトリに配置して GitHub Pages に push
+  -->
+  <select class="db-select" id="dbSelect">
+    <option value="data.json"    data-title="医学論文語彙">医学論文語彙</option>
+    <option value="anatomy.json" data-title="解剖学語彙">解剖学</option>
+    <!-- <option value="physiology.json"   data-title="生理学語彙">生理学</option> -->
+    <!-- <option value="bacteriology.json" data-title="細菌学語彙">細菌学</option> -->
+    <!-- <option value="biology.json"      data-title="生物学語彙">生物学</option> -->
+    <!-- <option value="physician.json"    data-title="臨床医学語彙">臨床医学</option> -->
+  </select>
+
+  <div class="db-divider"></div>
+
+  <button class="bar-btn" onclick="document.getElementById('jsonFileInput').click()">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    JSONインポート
+  </button>
+  <input type="file" id="jsonFileInput" accept=".json">
+
+  <button class="bar-btn" onclick="downloadTemplate()">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    テンプレDL
+  </button>
+
+  <span class="db-active-badge" id="dbActiveBadge">● 読み込み中…</span>
+</div>
+
+<div class="page">
+  <div class="controls">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="単語・意味・カテゴリで検索…">
+    </div>
+    <div class="filter-row">
+      <div class="tab active" data-type="all">すべて</div>
+      <div class="tab" data-type="verb">動詞</div>
+      <div class="tab" data-type="noun">名詞</div>
+      <div class="tab" data-type="adj">形容詞</div>
+      <div class="tab" data-type="adv">副詞</div>
+      <div class="tab" data-type="phrase">熟語</div>
+      <div class="filter-divider"></div>
+      <div class="tab active" data-level="all">全レベル</div>
+      <div class="tab" data-level="basic">初級</div>
+      <div class="tab" data-level="intermediate">中級</div>
+      <div class="tab" data-level="advanced">上級</div>
+    </div>
+  </div>
+
+  <!-- top stats -->
+  <div class="top-stats" id="topStats">
+    <span class="db-title" id="dbTitle">読み込み中…</span>
+    <span class="stats" id="stats"></span>
+  </div>
+
+  <!-- main layout: cards + side panel -->
+  <div class="content-layout">
+    <div class="card-area">
+      <div id="grid" class="grid"></div>
+    </div>
+
+    <!-- side panel -->
+    <div class="side-panel" id="sidePanel">
+      <div class="side-toggle" onclick="toggleSide()">
+        <span>📊 データ内訳</span>
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="side-body" id="sideBody">
+        <div class="side-section" id="sideTypeSection"></div>
+        <div class="side-section" id="sideLevelSection"></div>
+        <div class="side-section" id="sideTableSection"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-disclaimer">
+      <strong>免責事項 · Disclaimer</strong>
+      本ツールは AI（Claude, Anthropic）を用いて作成されました。掲載された語彙・用例・ニュアンス解説には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </div>
+    <div class="footer-copy">© 2026 Medical Vocabulary Master — somekata.github.io</div>
+  </footer>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-top" id="modalTop">
+      <div class="modal-term"   id="modalTerm"></div>
+      <div class="modal-badges" id="modalBadges"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">日本語訳・意味</div>
+        <div id="modalMeaning" class="modal-meaning"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">ニュアンス解説</div>
+        <div id="modalNuance"  class="modal-nuance"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">使うセクション (IMRaD)</div>
+        <div id="modalImrad"   class="tag-list"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">類義語</div>
+        <div id="modalSynonyms" class="tag-list"></div>
+      </div>
+      <div class="modal-section" id="modalAntSection">
+        <div class="modal-section-title">対義語</div>
+        <div id="modalAntonyms" class="tag-list"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">用例文 (Example)</div>
+        <div id="modalExample" class="modal-example"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LEVEL_LABEL={basic:'初級',intermediate:'中級',advanced:'上級'};
+const TYPE_LABEL={verb:'動詞',noun:'名詞',adj:'形容詞',adv:'副詞',phrase:'熟語'};
+const TYPE_COLOR={verb:'var(--verb)',noun:'var(--noun)',adj:'var(--adj)',adv:'var(--adv)',phrase:'var(--phrase)'};
+const TYPE_BG   ={verb:'var(--verb-bg)',noun:'var(--noun-bg)',adj:'var(--adj-bg)',adv:'var(--adv-bg)',phrase:'var(--phrase-bg)'};
+const TYPE_BD   ={verb:'var(--verb-bd)',noun:'var(--noun-bd)',adj:'var(--adj-bd)',adv:'var(--adv-bd)',phrase:'var(--phrase-bd)'};
+const LEVEL_COLOR={basic:'var(--basic-c)',intermediate:'var(--inter-c)',advanced:'var(--advc)'};
+let currentData=[],activeType='all',activeLevel='all';
+
+/* Toast */
+function showToast(msg,ms=2600){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+/* fetch DB */
+async function loadDB(filename,title){
+  document.getElementById('dbTitle').textContent=title;
+  document.getElementById('dbActiveBadge').textContent='● '+title;
+  document.getElementById('grid').innerHTML='<div class="loading">読み込み中… '+filename+'</div>';
+  document.getElementById('stats').textContent='';
+  try{
+    const res=await fetch(filename);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    applyData(Array.isArray(data)?data:(data.data||[]),title);
+  }catch(err){
+    document.getElementById('grid').innerHTML=
+      '<div class="empty">⚠ 読み込み失敗: '+esc(err.message)+'<br><small>GitHub Pages か Live Server で開いてください（file://では動作しません）。</small></div>';
+    showToast('⚠ '+filename+' の読み込みに失敗しました');
+  }
+}
+
+function applyData(data,title){
+  currentData=data.filter(d=>d.term||d.meaning);
+  document.getElementById('dbTitle').textContent=title;
+  document.getElementById('dbTitle').dataset.baseTitle=title;
+  document.getElementById('dbActiveBadge').textContent='● '+title;
+  resetFilters();
+  renderStats();
+  render();
+  showToast('✓ '+title+'（'+currentData.length+'件）を読み込みました');
+}
+
+/* ── Stats ── */
+function calcStats(data){
+  const types={},levels={};
+  data.forEach(d=>{
+    const t=d.type||'other'; types[t]=(types[t]||0)+1;
+    const l=d.level||'other'; levels[l]=(levels[l]||0)+1;
+  });
+  return {total:data.length,types,levels};
+}
+
+function renderStats(){
+  const s=calcStats(currentData);
+  const total=s.total;
+
+  /* top chips */
+  const typeOrder=['verb','noun','adj','adv','phrase'];
+  const levelOrder=['basic','intermediate','advanced'];
+  let chips='<span style="font-family:\'JetBrains Mono\',monospace;font-size:.68rem;color:var(--ink-faint)">合計 <b style="color:var(--ink)">'+total+'</b> 件 ·</span>';
+  typeOrder.forEach(t=>{
+    const n=s.types[t]||0; if(!n)return;
+    chips+='<span class="top-stat-chip" style="color:'+TYPE_COLOR[t]+';background:'+TYPE_BG[t]+';border-color:'+TYPE_BD[t]+'">'
+      +(TYPE_LABEL[t]||t)+' <span class="chip-n">'+n+'</span></span>';
+  });
+  chips+='<span style="font-family:\'JetBrains Mono\',monospace;font-size:.66rem;color:var(--ink-faint);margin-left:2px">|</span>';
+  levelOrder.forEach(l=>{
+    const n=s.levels[l]||0; if(!n)return;
+    chips+='<span class="top-stat-chip" style="color:'+LEVEL_COLOR[l]+';border-color:'+LEVEL_COLOR[l]+';background:transparent">'
+      +(LEVEL_LABEL[l]||l)+' <span class="chip-n">'+n+'</span></span>';
+  });
+  document.getElementById('stats').innerHTML=chips;
+
+  /* side: type bar chart */
+  const maxT=Math.max(...typeOrder.map(t=>s.types[t]||0),1);
+  let typeHtml='<div class="side-section-title">品詞別</div>';
+  typeOrder.forEach(t=>{
+    const n=s.types[t]||0; if(!n)return;
+    const pct=Math.round(n/maxT*100);
+    typeHtml+='<div class="bar-row">'
+      +'<span class="bar-label">'+(TYPE_LABEL[t]||t)+'</span>'
+      +'<span class="bar-track"><span class="bar-fill" style="width:'+pct+'%;background:'+TYPE_COLOR[t]+'"></span></span>'
+      +'<span class="bar-count">'+n+'</span></div>';
+  });
+  document.getElementById('sideTypeSection').innerHTML=typeHtml;
+
+  /* side: level bar chart */
+  const maxL=Math.max(...levelOrder.map(l=>s.levels[l]||0),1);
+  let levelHtml='<div class="side-section-title">レベル別</div>';
+  levelOrder.forEach(l=>{
+    const n=s.levels[l]||0; if(!n)return;
+    const pct=Math.round(n/maxL*100);
+    levelHtml+='<div class="bar-row">'
+      +'<span class="bar-label">'+(LEVEL_LABEL[l]||l)+'</span>'
+      +'<span class="bar-track"><span class="bar-fill" style="width:'+pct+'%;background:'+LEVEL_COLOR[l]+'"></span></span>'
+      +'<span class="bar-count">'+n+'</span></div>';
+  });
+  document.getElementById('sideLevelSection').innerHTML=levelHtml;
+
+  /* side: cross table (type × level) */
+  const activeTypes=typeOrder.filter(t=>s.types[t]>0);
+  let tblHtml='<div class="side-section-title">品詞 × レベル</div>'
+    +'<table class="mini-table"><thead><tr><th>品詞</th><th>初</th><th>中</th><th>上</th><th>計</th></tr></thead><tbody>';
+  activeTypes.forEach(t=>{
+    const typeData=currentData.filter(d=>d.type===t);
+    const b=typeData.filter(d=>d.level==='basic').length;
+    const i=typeData.filter(d=>d.level==='intermediate').length;
+    const a=typeData.filter(d=>d.level==='advanced').length;
+    const n=typeData.length;
+    tblHtml+='<tr><td style="color:'+TYPE_COLOR[t]+';font-weight:500">'+(TYPE_LABEL[t]||t)+'</td>'
+      +'<td>'+b+'</td><td>'+i+'</td><td>'+a+'</td><td>'+n+'</td></tr>';
+  });
+  tblHtml+='</tbody></table>'
+    +'<div class="total-line">合計 '+total+'</div>';
+  document.getElementById('sideTableSection').innerHTML=tblHtml;
+}
+
+/* side panel toggle */
+function toggleSide(){
+  document.getElementById('sidePanel').classList.toggle('collapsed');
+}
+
+/* DB select */
+document.getElementById('dbSelect').addEventListener('change',function(){
+  const o=this.options[this.selectedIndex];
+  loadDB(o.value,o.dataset.title);
+});
+
+/* JSON import */
+document.getElementById('jsonFileInput').addEventListener('change',function(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      let data=JSON.parse(ev.target.result);
+      if(!Array.isArray(data)&&data.data)data=data.data;
+      if(!Array.isArray(data))throw new Error('配列形式ではありません');
+      document.getElementById('dbSelect').value='';
+      applyData(data,file.name.replace(/\.json$/,'')+'（インポート）');
+    }catch(err){showToast('⚠ JSON解析エラー: '+err.message);}
+  };
+  reader.readAsText(file);this.value='';
+});
+
+/* template download */
+async function downloadTemplate(){
+  try{
+    const res=await fetch('template.json');
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const text=await res.text();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+    a.download='template.json';a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('✓ template.json をダウンロードしました');
+  }catch(err){showToast('⚠ ダウンロード失敗: '+err.message);}
+}
+
+/* tabs */
+document.querySelectorAll('.tab[data-type]').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab[data-type]').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');activeType=tab.dataset.type;render();
+  });
+});
+document.querySelectorAll('.tab[data-level]').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab[data-level]').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');activeLevel=tab.dataset.level;render();
+  });
+});
+function resetFilters(){
+  activeType='all';activeLevel='all';
+  document.getElementById('searchInput').value='';
+  document.querySelectorAll('.tab[data-type]').forEach(t=>t.classList.toggle('active',t.dataset.type==='all'));
+  document.querySelectorAll('.tab[data-level]').forEach(t=>t.classList.toggle('active',t.dataset.level==='all'));
+}
+document.getElementById('searchInput').addEventListener('input',render);
+
+/* render */
+function render(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  const filtered=currentData.filter(item=>{
+    const mt=activeType==='all'||item.type===activeType;
+    const ml=activeLevel==='all'||item.level===activeLevel;
+    const mq=!q||(item.term&&item.term.toLowerCase().includes(q))||(item.meaning&&item.meaning.toLowerCase().includes(q))||(item.category&&item.category.toLowerCase().includes(q))||(item.nuance&&item.nuance.toLowerCase().includes(q))||(item.synonyms&&item.synonyms.some(s=>s.toLowerCase().includes(q)));
+    return mt&&ml&&mq;
+  });
+  const titleEl=document.getElementById('dbTitle');
+  const base=titleEl.dataset.baseTitle||titleEl.textContent.replace(/（.*）/,'');
+  const showing=filtered.length<currentData.length
+    ?' <span style="font-size:.68rem;color:var(--ink-faint)">（'+filtered.length+' 件表示中）</span>':'';
+  titleEl.innerHTML=esc(base)+showing;
+  const grid=document.getElementById('grid');
+  if(!filtered.length){grid.innerHTML='<div class="empty">該当する語彙が見つかりませんでした。</div>';return;}
+  grid.innerHTML=filtered.map(item=>{
+    const idx=currentData.indexOf(item);
+    return '<div class="card '+(item.type||'')+'" onclick="openModal('+idx+')">'
+      +'<div class="card-header"><div class="term">'+esc(item.term||'')+'</div>'
+      +(item.level?'<div class="level-badge '+item.level+'">'+(LEVEL_LABEL[item.level]||item.level)+'</div>':'')
+      +'</div><div class="meaning">'+esc(item.meaning||'')+'</div>'
+      +'<div class="card-footer"><span class="type-badge">'+(TYPE_LABEL[item.type]||item.type||'—')+'</span>'
+      +'<div class="imrad-tags">'+(item.imrad||[]).map(s=>'<span class="imrad-tag">'+esc(s)+'</span>').join('')+'</div>'
+      +'</div></div>';
+  }).join('');
+}
+
+/* modal */
+function openModal(idx){
+  const item=currentData[idx];if(!item)return;
+  document.getElementById('modalTop').className='modal-top '+(item.type||'');
+  document.getElementById('modalTerm').textContent=item.term||'';
+  document.getElementById('modalBadges').innerHTML=
+    (item.level?'<span class="level-badge '+item.level+'">'+(LEVEL_LABEL[item.level]||item.level)+'</span>':'')+
+    (item.type?'<span class="type-badge" style="font-family:\'Noto Sans JP\',sans-serif;font-size:.7rem;padding:2px 7px;border-radius:2px;border:1px solid;">'+(TYPE_LABEL[item.type]||item.type)+'</span>':'')+
+    (item.category?'<span class="imrad-modal-tag">'+esc(item.category)+'</span>':'');
+  document.getElementById('modalMeaning').textContent=item.meaning||'—';
+  document.getElementById('modalNuance').textContent=item.nuance||'（解説なし）';
+  document.getElementById('modalExample').textContent=item.example||'（用例なし）';
+  document.getElementById('modalImrad').innerHTML=(item.imrad&&item.imrad.length)?item.imrad.map(s=>'<span class="imrad-modal-tag">'+esc(s)+'</span>').join(''):'<span style="color:var(--ink-faint);font-size:.8rem">—</span>';
+  document.getElementById('modalSynonyms').innerHTML=(item.synonyms&&item.synonyms.length)?item.synonyms.map(s=>'<span class="syn-tag">'+esc(s)+'</span>').join(''):'<span style="color:var(--ink-faint);font-size:.8rem">—</span>';
+  const antSec=document.getElementById('modalAntSection');
+  if(item.antonyms&&item.antonyms.length){
+    antSec.style.display='';
+    document.getElementById('modalAntonyms').innerHTML=item.antonyms.map(s=>'<span class="ant-tag">'+esc(s)+'</span>').join('');
+  }else{antSec.style.display='none';}
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function handleOverlayClick(e){if(e.target.id==='modalOverlay')closeModal();}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');document.body.style.overflow='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* init */
+window.addEventListener('DOMContentLoaded',()=>{
+  const o=document.getElementById('dbSelect').options[0];
+  loadDB(o.value,o.dataset.title);
+});
+</script>
+</body>
+</html>
