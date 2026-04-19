@@ -1,1 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PeerReview Proto v0.2</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
 
+<!-- ===== HEADER ===== -->
+<header>
+  <h1>📋 PeerReview Proto</h1>
+  <span class="badge">v0.2 — ブラウザ完結型</span>
+  <div class="header-right">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText" style="font-size:12px;color:var(--text2)">PDFを読み込んでください</span>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<div class="app-layout">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="left-scroll">
+
+      <!-- Upload -->
+      <div class="panel-section">
+        <div class="section-label">① PDF アップロード</div>
+        <div class="upload-zone" id="uploadZone">
+          <div class="icon">📄</div>
+          <p><span>クリック</span>またはドラッグ＆ドロップ</p>
+          <p style="font-size:11px;color:var(--text3);margin-top:4px">ブラウザ内処理・サーバー送信なし</p>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf">
+        <div class="progress-bar" id="progressBar" style="display:none">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div id="fileName"></div>
+      </div>
+
+      <!-- Paper DB (optional) -->
+      <div class="panel-section">
+        <div class="section-label">② 論文DB（任意）</div>
+        <label class="paperdb-zone" for="paperDbInput">
+          <input type="file" id="paperDbInput" accept=".json" style="display:none">
+          <span style="font-size:18px">🗄️</span>
+          <span>paper_db_*.json を読み込む</span>
+        </label>
+        <div id="paperDbLabel" style="font-size:11px;color:var(--text2);margin-top:6px;text-align:center">未読み込み（Figure/Table数比較・キーワード密度チェックが有効になります）</div>
+      </div>
+
+      <!-- Study Type -->
+      <div class="panel-section">
+        <div class="section-label">③ 研究種別</div>
+        <div class="study-types">
+          <button class="study-btn" data-type="case_report">症例報告</button>
+          <button class="study-btn active" data-type="rct">RCT</button>
+          <button class="study-btn" data-type="cohort">コホート</button>
+          <button class="study-btn" data-type="case_control">症例対照</button>
+          <button class="study-btn" data-type="cross_sectional">横断研究</button>
+          <button class="study-btn" data-type="basic">基礎研究</button>
+        </div>
+      </div>
+
+      <!-- Analyze -->
+      <div class="panel-section">
+        <button class="analyze-btn" id="analyzeBtn" disabled>🔍 論文を解析する</button>
+      </div>
+
+      <!-- Results -->
+      <div class="panel-section" id="resultsPanel" style="display:none">
+        <div class="section-label">基本情報</div>
+        <div class="result-row">
+          <span class="label">ページ数</span>
+          <span class="value" id="res-pages">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">総単語数（推定）</span>
+          <span class="value" id="res-words">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">Figure 数</span>
+          <span class="value" id="res-figs">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">Table 数</span>
+          <span class="value" id="res-tables">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">Ethics 記載</span>
+          <span class="value" id="res-ethics">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">Trial Registration</span>
+          <span class="value" id="res-trialreg">—</span>
+        </div>
+
+        <!-- Section detection -->
+        <div style="margin-top:12px">
+          <div class="section-label">セクション検出（実際のテキスト）</div>
+          <div class="section-list" id="sectionList"></div>
+        </div>
+      </div>
+
+    </div><!-- /left-scroll -->
+  </div><!-- /left-panel -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="pdf">📄 PDF ビューア</button>
+      <button class="tab-btn" data-tab="comments">
+        💬 査読コメント
+        <span id="commentCount"
+          style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:10px;margin-left:4px">0</span>
+      </button>
+      <button class="tab-btn" data-tab="export">📤 エクスポート</button>
+    </div>
+
+    <!-- PDF tab -->
+    <div class="tab-content active" id="tab-pdf">
+      <div id="pdf-viewer-area">
+        <div class="pdf-placeholder" id="pdfPlaceholder">
+          <div class="big-icon">📄</div>
+          <div>PDF をアップロードすると表示されます</div>
+          <div style="font-size:11px">テキスト選択でコメントに挿入できます</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comments tab -->
+    <div class="tab-content" id="tab-comments">
+      <div class="comments-area" id="commentsArea">
+        <div class="empty-comments" id="emptyComments">
+          <div style="font-size:32px">💬</div>
+          <div>コメントはまだありません</div>
+          <div style="font-size:11px">解析ボタンを押すか、PDFのテキストを選択してください</div>
+        </div>
+      </div>
+      <!-- Add comment bar — always visible at the bottom of this tab -->
+      <div class="add-comment-bar">
+        <div class="add-bar-left">
+          <select class="type-select" id="manualType">
+            <option value="major">Major</option>
+            <option value="minor" selected>Minor</option>
+            <option value="specific">Specific</option>
+          </select>
+          <button class="add-btn" id="manualAddBtn">追加</button>
+        </div>
+        <textarea class="add-input" id="manualInput"
+          placeholder="コメントを入力… (Ctrl+Enter で追加)"></textarea>
+      </div>
+    </div>
+
+    <!-- Export tab -->
+    <div class="tab-content" id="tab-export">
+      <div class="export-area">
+        <div class="section-label" style="margin-bottom:10px">テキスト出力（コピー用）</div>
+        <div class="export-preview" id="exportPreview">コメントを追加すると出力されます。</div>
+        <button class="export-btn" id="copyBtn">📋 クリップボードにコピー</button>
+      </div>
+    </div>
+
+  </div><!-- /right-panel -->
+</div><!-- /app-layout -->
+
+<!-- Selection toast -->
+<div id="selection-toast">
+  <span>選択：</span>
+  <span class="sel-text" id="toastSelText"></span>
+  <button class="toast-btn" id="toastAddBtn">Specific に追加</button>
+  <button class="toast-btn"
+    style="background:var(--surface2);color:var(--text2)"
+    id="toastDismissBtn">✕</button>
+</div>
+
+<!-- Footer -->
+<footer class="app-footer">
+  <span>本ツールはAI（Claude, Anthropic）を用いて作成されました。内容に誤りが含まれる可能性があります。査読判断には必ず公式ガイドライン・専門家の判断を参照してください。</span>
+  <span style="white-space:nowrap;margin-left:16px">データはブラウザ内のみで処理されます</span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
