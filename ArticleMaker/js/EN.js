@@ -89,7 +89,7 @@ const LANG_EN = {
   refOrderAppearance: "By appearance",
   refOrderManual: "Manual",
   noRefs: "No references. Add manually or import CSV.",
-  csvHelp: "CSV columns: authors (semicolon-separated), year, title, journal, volume, issue, pages, doi, pmid",
+  csvHelp: "Accepts PubMed export CSV (PMID, Title, Authors, Citation, Journal/Book, Publication Year, DOI …) or legacy format (authors;-sep, year, title, journal, volume, issue, pages, doi, pmid).",
   duplicateWarning: "⚠ Possible duplicate",
   refAuthorsPH: "Author1; Author2; ...",
   refYearPH: "Year",
@@ -130,6 +130,17 @@ const LANG_EN = {
   citeDlgInsert: "Insert",
   citeDlgCancel: "Cancel",
   citeDlgNone: "No references found.",
+
+  // Reference format settings
+  refFormatTitle: "Reference Format",
+  refFormatAuthorMax: "Max authors to list",
+  refFormatEtalFrom: "Use et al. when authors exceed",
+  refFormatShowTitle: "Show article title",
+  refFormatJournalItalic: "Journal name style",
+  refFormatVolStyle: "Volume/issue/page format",
+  refFormatShowDoi: "DOI",
+  refFormatShowPmid: "PMID",
+  refFormatFieldOrder: "Field order (use ▲▼ to reorder)",
 
   // Confirm messages
   confirmNewDoc: "Start a new document? Unsaved changes will be lost.",

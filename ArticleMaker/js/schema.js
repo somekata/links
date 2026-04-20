@@ -51,6 +51,16 @@ function createBlankDocument(lang = "en") {
         title: 16,
         body: 12,
         references: 10
+      },
+      ref_format: {
+        author_max: 6,
+        etal_from: 7,
+        journal_italic: false,
+        show_title: true,
+        vol_style: "17(2):21",
+        show_doi: true,
+        show_pmid: false,
+        field_order: ["authors","year","title","journal","locator","doi","pmid"]
       }
     }
   };
@@ -138,28 +148,118 @@ function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-// Format a reference as Vancouver plain text (no HTML)
-// Output is pure text — used for export and display
-function formatReference(ref) {
+// ============================================================
+// REFERENCE FORMATTING — HTML-aware, settings-driven
+// ============================================================
+
+// Returns a settings object with defaults filled in.
+// Accepts either doc.settings.ref_format or a partial override.
+function resolveRefFormat(fmt) {
+  const def = {
+    author_max: 6,
+    etal_from: 7,
+    journal_italic: false,
+    show_title: true,
+    vol_style: "17(2):21",
+    show_doi: true,
+    show_pmid: false,
+    field_order: ["authors","year","title","journal","locator","doi","pmid"]
+  };
+  return Object.assign({}, def, fmt || {});
+}
+
+// Build the locator string (volume/issue/pages) for a ref.
+function buildLocator(ref, vol_style) {
+  const vol   = ref.volume || "";
+  const issue = ref.issue  || "";
+  const pages = ref.pages  || "";
+  if (!vol && !issue && !pages) return "";
+
+  if (vol_style === "17: 21") {
+    // "17: 21-28" (no issue)
+    return [vol, pages ? ": " + pages : ""].join("").trim();
+  }
+  if (vol_style === "Vol.17 No.2 p.21") {
+    const parts = [];
+    if (vol)   parts.push("Vol." + vol);
+    if (issue) parts.push("No."  + issue);
+    if (pages) parts.push("p."   + pages);
+    return parts.join(" ");
+  }
+  // Default: "17(2):21-28"
+  const issuePart = issue ? "(" + issue + ")" : "";
+  const pagesPart = pages ? ":" + pages       : "";
+  return vol + issuePart + pagesPart;
+}
+
+// Format a reference.
+// mode: "text"  — plain text (used for DOCX body, JSON preview card)
+//       "html"  — HTML string with <em> for italic journal (used for HTML export & UI preview)
+//       "runs"  — returns array of {text, italic, bold} segments (used for DOCX runs)
+function formatReference(ref, fmtArg, mode) {
+  mode = mode || "text";
+  const fmt = resolveRefFormat(fmtArg);
+
+  // --- Authors ---
   const authors = Array.isArray(ref.authors) ? ref.authors : [];
   let authorStr = "";
   if (authors.length > 0) {
-    if (authors.length <= 6) {
-      authorStr = authors.join(", ");
+    const max = fmt.author_max === 0 ? authors.length : fmt.author_max;
+    if (authors.length > fmt.etal_from - 1 && fmt.author_max !== 0) {
+      authorStr = authors.slice(0, max).join(", ") + ", et al.";
     } else {
-      authorStr = authors.slice(0, 6).join(", ") + ", et al";
+      authorStr = authors.join(", ");
     }
   }
-  const year  = ref.year   ? ref.year + "."       : "";
-  const title = ref.title  ? ref.title + "."       : "";
-  const jour  = ref.journal ? ref.journal + "."    : "";
-  const vol   = ref.volume  ? ref.volume            : "";
-  const issue = ref.issue   ? "(" + ref.issue + ")" : "";
-  const pages = ref.pages   ? ":" + ref.pages + "." : "";
-  const doi   = ref.doi     ? " doi:" + ref.doi     : "";
-  const pmid  = ref.pmid    ? " PMID:" + ref.pmid   : "";
-  return [authorStr, year, title, jour, vol + issue + pages, doi, pmid]
-    .filter(Boolean).join(" ").replace(/\s{2,}/g, " ").trim();
+
+  // --- Build field segments ---
+  const segments = {}; // key -> { text, italic }
+  segments.authors  = authorStr ? { text: authorStr + ".", italic: false } : null;
+  segments.year     = ref.year  ? { text: ref.year + ".",  italic: false } : null;
+  segments.title    = (fmt.show_title && ref.title)
+                        ? { text: ref.title + ".", italic: false } : null;
+  segments.journal  = ref.journal
+                        ? { text: ref.journal + ".", italic: fmt.journal_italic } : null;
+  segments.locator  = (() => {
+    const loc = buildLocator(ref, fmt.vol_style);
+    return loc ? { text: loc + ".", italic: false } : null;
+  })();
+  segments.doi      = (fmt.show_doi && ref.doi)
+                        ? { text: "doi:" + ref.doi, italic: false } : null;
+  segments.pmid     = (fmt.show_pmid && ref.pmid)
+                        ? { text: "PMID:" + ref.pmid, italic: false } : null;
+
+  const order = fmt.field_order || ["authors","year","title","journal","locator","doi","pmid"];
+
+  if (mode === "runs") {
+    // Return array of run objects for DOCX
+    const runs = [];
+    order.forEach((key, i) => {
+      const seg = segments[key];
+      if (!seg) return;
+      runs.push({ text: (i > 0 ? " " : "") + seg.text, italic: seg.italic });
+    });
+    return runs;
+  }
+
+  if (mode === "html") {
+    const parts = [];
+    order.forEach(key => {
+      const seg = segments[key];
+      if (!seg) return;
+      const escaped = seg.text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      parts.push(seg.italic ? "<em>" + escaped + "</em>" : escaped);
+    });
+    return parts.join(" ").replace(/\s{2,}/g, " ").trim();
+  }
+
+  // Plain text (default)
+  const parts = [];
+  order.forEach(key => {
+    const seg = segments[key];
+    if (seg) parts.push(seg.text);
+  });
+  return parts.join(" ").replace(/\s{2,}/g, " ").trim();
 }
 
 // Renumber references by order of appearance in all paragraphs

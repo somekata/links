@@ -89,7 +89,7 @@ const LANG_JA = {
   refOrderAppearance: "出現順",
   refOrderManual: "手動",
   noRefs: "文献がありません。手動追加またはCSVから読込んでください。",
-  csvHelp: "CSV列：著者（セミコロン区切り）、年、タイトル、雑誌名、巻、号、ページ、DOI、PMID",
+  csvHelp: "PubMed出力CSV（PMID, Title, Authors, Citation, Journal/Book, Publication Year, DOI …）または旧形式（著者セミコロン区切り, 年, タイトル, 雑誌名, 巻, 号, ページ, DOI, PMID）に対応しています。",
   duplicateWarning: "⚠ 重複の可能性",
   refAuthorsPH: "著者1; 著者2; …",
   refYearPH: "年",
@@ -130,6 +130,17 @@ const LANG_JA = {
   citeDlgInsert: "挿入",
   citeDlgCancel: "キャンセル",
   citeDlgNone: "該当する文献がありません。",
+
+  // 文献書式設定
+  refFormatTitle: "文献書式",
+  refFormatAuthorMax: "最大著者表示数",
+  refFormatEtalFrom: "et al. を使う基準（人数超過）",
+  refFormatShowTitle: "タイトルを表示",
+  refFormatJournalItalic: "雑誌名のスタイル",
+  refFormatVolStyle: "巻・号・頁の形式",
+  refFormatShowDoi: "DOI",
+  refFormatShowPmid: "PMID",
+  refFormatFieldOrder: "フィールド順（▲▼で並替）",
 
   // 確認メッセージ
   confirmNewDoc: "新規ドキュメントを作成しますか？未保存の変更は失われます。",

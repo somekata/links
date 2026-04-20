@@ -586,7 +586,7 @@ function renderCiteDialogRefs(query) {
     row.className = "cite-ref-row";
     const num = getDisplayNumber(ref.id);
     row.innerHTML = `<span class="cite-ref-num">${num}.</span>
-      <span class="cite-ref-text">${escHtml(formatReference(ref))}</span>`;
+      <span class="cite-ref-text">${escHtml(formatReference(ref, doc.settings.ref_format, "text"))}</span>`;
     row.addEventListener("click", () => insertCitation(ref.id));
     list.appendChild(row);
   });
@@ -913,7 +913,7 @@ function renderRefList(query) {
 
     const preview = document.createElement("div");
     preview.className = "ref-preview";
-    preview.textContent = formatReference(ref).slice(0, 120) + (formatReference(ref).length > 120 ? "…" : "");
+    preview.textContent = formatReference(ref, doc.settings.ref_format, "text").slice(0, 120) + (formatReference(ref, doc.settings.ref_format, "text").length > 120 ? "…" : "");
     if (isDup) {
       const dupWarn = document.createElement("span");
       dupWarn.className = "dup-warn";
@@ -1001,7 +1001,7 @@ function buildRefForm(ref, formEl, editBtn) {
       const card = formEl.closest(".ref-card");
       const preview = card?.querySelector(".ref-preview");
       if (preview) {
-        preview.textContent = formatReference(ref).slice(0, 120);
+        preview.textContent = formatReference(ref, doc.settings.ref_format, "text").slice(0, 120);
       }
     });
     grid.appendChild(inp);
@@ -1048,28 +1048,122 @@ function triggerCSVImport() {
   input.click();
 }
 
-// Parse CSV: columns authors(;-sep), year, title, journal, volume, issue, pages, doi, pmid
+// Parse CSV — supports two formats automatically:
+//
+// Format A (PubMed export):
+//   Columns: PMID, Title, Authors, Citation, First Author, Journal/Book,
+//            Publication Year, Create Date, PMCID, NIHMS ID, DOI
+//   "Authors" field is comma-separated (e.g. "Smith J, Doe A, Lee B")
+//   "Citation" field encodes volume/issue/pages (e.g. "mBio. 2026 Feb 11;17(2):e0236625.")
+//
+// Format B (legacy ArticleMaker):
+//   Columns (positional): authors(;-sep), year, title, journal, volume, issue, pages, doi, pmid
+
 function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
-  // Detect header
-  const first = lines[0].toLowerCase();
-  const hasHeader = first.includes("author") || first.includes("title") || first.includes("年");
-  const rows = hasHeader ? lines.slice(1) : lines;
+  if (!lines.length) return [];
 
-  return rows.map(line => {
-    const cols = splitCSVLine(line);
-    const ref = createReference(0);
-    ref.authors = (cols[0] || "").split(/;|；/).map(s => s.trim()).filter(Boolean);
-    ref.year    = cols[1] || "";
-    ref.title   = cols[2] || "";
-    ref.journal = cols[3] || "";
-    ref.volume  = cols[4] || "";
-    ref.issue   = cols[5] || "";
-    ref.pages   = cols[6] || "";
-    ref.doi     = cols[7] || "";
-    ref.pmid    = cols[8] || "";
-    return ref;
-  }).filter(r => r.title || r.authors.length);
+  const firstCols = splitCSVLine(lines[0]).map(c => c.toLowerCase().trim());
+
+  // --- Detect PubMed format by header names ---
+  const isPubMed = firstCols.includes("pmid") && firstCols.includes("title") && firstCols.includes("citation");
+
+  if (isPubMed) {
+    // Build column-index map from header
+    const idx = {};
+    firstCols.forEach((col, i) => { idx[col] = i; });
+
+    return lines.slice(1).map(line => {
+      const cols = splitCSVLine(line);
+      const get = key => (cols[idx[key]] || "").trim();
+
+      const ref = createReference(0);
+
+      // PMID
+      ref.pmid = get("pmid");
+
+      // Title
+      ref.title = get("title");
+
+      // Journal
+      ref.journal = get("journal/book");
+
+      // Year
+      ref.year = get("publication year");
+
+      // DOI
+      ref.doi = get("doi");
+
+      // Authors: PubMed uses comma-separated "Last FM" format
+      // Split on ", " but be careful: names contain commas only between last/first
+      // PubMed Authors field: "Smith J, Doe AB, Lee C" — each name is "LastName Initials"
+      const authorsRaw = get("authors");
+      ref.authors = authorsRaw
+        ? authorsRaw.split(",").map(s => s.trim()).filter(Boolean)
+        : [];
+
+      // Parse Citation field for volume, issue, pages
+      // Examples:
+      //   "mBio. 2026 Feb 11;17(2):e0236625. doi:..."
+      //   "J Glob Antimicrob Resist. 2023 Mar;32:21-28. doi:..."
+      //   "Infect Immun. 2015 Apr;83(4):1577-86. doi:..."
+      const citation = get("citation");
+      parseCitation(citation, ref);
+
+      return ref;
+    }).filter(r => r.title || r.authors.length);
+
+  } else {
+    // --- Legacy format (positional columns) ---
+    const hasHeader = firstCols.some(c =>
+      c.includes("author") || c.includes("title") || c.includes("年")
+    );
+    const rows = hasHeader ? lines.slice(1) : lines;
+
+    return rows.map(line => {
+      const cols = splitCSVLine(line);
+      const ref = createReference(0);
+      ref.authors = (cols[0] || "").split(/;|；/).map(s => s.trim()).filter(Boolean);
+      ref.year    = cols[1] || "";
+      ref.title   = cols[2] || "";
+      ref.journal = cols[3] || "";
+      ref.volume  = cols[4] || "";
+      ref.issue   = cols[5] || "";
+      ref.pages   = cols[6] || "";
+      ref.doi     = cols[7] || "";
+      ref.pmid    = cols[8] || "";
+      return ref;
+    }).filter(r => r.title || r.authors.length);
+  }
+}
+
+// Parse PubMed Citation string into volume / issue / pages on a ref object.
+// Handles patterns like:
+//   17(2):e0236625      → vol=17, issue=2, pages=e0236625
+//   32:21-28            → vol=32, issue="", pages=21-28
+//   83(4):1577-86       → vol=83, issue=4, pages=1577-86
+// The citation string starts with "JournalName. Year MonthDay; vol..."
+// We find the semicolon that separates date from volume data.
+function parseCitation(citation, ref) {
+  if (!citation) return;
+
+  // Strip trailing doi / epub notes (everything after " doi:" or " Epub")
+  const clean = citation.replace(/\s+doi:.*/i, "").replace(/\s+Epub.*/i, "").trim();
+
+  // Find the semicolon separating date from vol(issue):pages
+  // Format: "Journal. Year Mon Day;VOL(ISSUE):PAGES."
+  const semiIdx = clean.lastIndexOf(";");
+  if (semiIdx < 0) return;
+
+  const volPart = clean.slice(semiIdx + 1).replace(/\.$/, "").trim();
+  // volPart examples: "17(2):e0236625", "32:21-28", "83(4):1577-86"
+
+  const m = volPart.match(/^(\d+)(?:\(([^)]+)\))?:(.+)$/);
+  if (m) {
+    ref.volume = m[1] || "";
+    ref.issue  = m[2] || "";
+    ref.pages  = m[3] || "";
+  }
 }
 
 function splitCSVLine(line) {
@@ -1097,9 +1191,12 @@ function renderSettingsTab() {
   pane.innerHTML = "";
 
   const s = doc.settings;
+  // Ensure ref_format exists (backward compat with older saved docs)
+  if (!s.ref_format) s.ref_format = resolveRefFormat({});
+  const rf = s.ref_format;
 
   // Citation format
-  const citeGroup = radioGroup(
+  pane.appendChild(radioGroup(
     L.citeFormatLabel,
     [
       { value: "superscript", label: L.citeSuperscript },
@@ -1108,11 +1205,10 @@ function renderSettingsTab() {
     ],
     s.citation_format,
     v => { s.citation_format = v; scheduleAutoSave(); renderEditor(); }
-  );
-  pane.appendChild(citeGroup);
+  ));
 
   // Section numbering
-  const numGroup = radioGroup(
+  pane.appendChild(radioGroup(
     L.numberingLabel,
     [
       { value: "true",  label: L.numberingOn },
@@ -1120,11 +1216,10 @@ function renderSettingsTab() {
     ],
     String(s.numbering),
     v => { s.numbering = v === "true"; scheduleAutoSave(); renderAll(); }
-  );
-  pane.appendChild(numGroup);
+  ));
 
   // Double spacing (DOCX)
-  const dsGroup = radioGroup(
+  pane.appendChild(radioGroup(
     L.doubleSpaceLabel,
     [
       { value: "true",  label: currentLang === "ja" ? "あり" : "On" },
@@ -1132,8 +1227,7 @@ function renderSettingsTab() {
     ],
     String(s.double_spacing),
     v => { s.double_spacing = v === "true"; scheduleAutoSave(); }
-  );
-  pane.appendChild(dsGroup);
+  ));
 
   // Font settings
   ["title", "body", "references"].forEach(type => {
@@ -1144,6 +1238,174 @@ function renderSettingsTab() {
     pane.appendChild(labeledField(label, inp));
   });
 
+  // ---- Reference Format Section ----
+  const rfSection = document.createElement("div");
+  rfSection.className = "meta-section";
+  const rfTitle = document.createElement("h4");
+  rfTitle.textContent = L.refFormatTitle;
+  rfSection.appendChild(rfTitle);
+
+  // author_max
+  rfSection.appendChild(labeledField(
+    L.refFormatAuthorMax,
+    (() => {
+      const sel = document.createElement("select");
+      sel.className = "form-select";
+      const opts = [
+        { v: 0, l: currentLang === "ja" ? "全員" : "All" },
+        ...[1,2,3,4,5,6,7,8,9,10].map(n => ({ v: n, l: String(n) }))
+      ];
+      opts.forEach(o => {
+        const opt = document.createElement("option");
+        opt.value = o.v;
+        opt.textContent = o.l;
+        opt.selected = rf.author_max === o.v;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener("change", e => {
+        rf.author_max = parseInt(e.target.value);
+        scheduleAutoSave(); refreshRefPreview(rfSection);
+      });
+      return sel;
+    })()
+  ));
+
+  // etal_from
+  rfSection.appendChild(labeledField(
+    L.refFormatEtalFrom,
+    (() => {
+      const sel = document.createElement("select");
+      sel.className = "form-select";
+      [2,3,4,5,6,7,8,9,10,99].forEach(n => {
+        const opt = document.createElement("option");
+        opt.value = n;
+        opt.textContent = n === 99
+          ? (currentLang === "ja" ? "使わない" : "Never")
+          : (currentLang === "ja" ? `${n}人超` : `> ${n} authors`);
+        opt.selected = rf.etal_from === n;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener("change", e => {
+        rf.etal_from = parseInt(e.target.value);
+        scheduleAutoSave(); refreshRefPreview(rfSection);
+      });
+      return sel;
+    })()
+  ));
+
+  // show_title
+  rfSection.appendChild(radioGroup(
+    L.refFormatShowTitle,
+    [{ value: "true", label: currentLang === "ja" ? "あり" : "Yes" },
+     { value: "false", label: currentLang === "ja" ? "なし" : "No" }],
+    String(rf.show_title),
+    v => { rf.show_title = v === "true"; scheduleAutoSave(); refreshRefPreview(rfSection); }
+  ));
+
+  // journal_italic
+  rfSection.appendChild(radioGroup(
+    L.refFormatJournalItalic,
+    [{ value: "true",  label: currentLang === "ja" ? "イタリック" : "Italic" },
+     { value: "false", label: currentLang === "ja" ? "通常" : "Normal" }],
+    String(rf.journal_italic),
+    v => { rf.journal_italic = v === "true"; scheduleAutoSave(); refreshRefPreview(rfSection); }
+  ));
+
+  // vol_style
+  rfSection.appendChild(radioGroup(
+    L.refFormatVolStyle,
+    [
+      { value: "17(2):21",       label: "17(2):21-28" },
+      { value: "17: 21",         label: "17: 21-28" },
+      { value: "Vol.17 No.2 p.21", label: "Vol.17 No.2 p.21-28" },
+    ],
+    rf.vol_style,
+    v => { rf.vol_style = v; scheduleAutoSave(); refreshRefPreview(rfSection); }
+  ));
+
+  // show_doi / show_pmid
+  rfSection.appendChild(radioGroup(
+    L.refFormatShowDoi,
+    [{ value: "true", label: currentLang === "ja" ? "表示" : "Show" },
+     { value: "false", label: currentLang === "ja" ? "非表示" : "Hide" }],
+    String(rf.show_doi),
+    v => { rf.show_doi = v === "true"; scheduleAutoSave(); refreshRefPreview(rfSection); }
+  ));
+  rfSection.appendChild(radioGroup(
+    L.refFormatShowPmid,
+    [{ value: "true", label: currentLang === "ja" ? "表示" : "Show" },
+     { value: "false", label: currentLang === "ja" ? "非表示" : "Hide" }],
+    String(rf.show_pmid),
+    v => { rf.show_pmid = v === "true"; scheduleAutoSave(); refreshRefPreview(rfSection); }
+  ));
+
+  // field_order — ↑↓ button reorder
+  const foWrap = document.createElement("div");
+  foWrap.className = "field-group";
+  const foLabel = document.createElement("label");
+  foLabel.className = "field-label";
+  foLabel.textContent = L.refFormatFieldOrder;
+  foWrap.appendChild(foLabel);
+
+  const foList = document.createElement("div");
+  foList.className = "field-order-list";
+  foWrap.appendChild(foList);
+
+  const fieldLabels = {
+    authors: currentLang === "ja" ? "著者" : "Authors",
+    year:    currentLang === "ja" ? "年"   : "Year",
+    title:   currentLang === "ja" ? "タイトル" : "Title",
+    journal: currentLang === "ja" ? "雑誌名" : "Journal",
+    locator: currentLang === "ja" ? "巻・号・頁" : "Vol/Issue/Pages",
+    doi:     "DOI",
+    pmid:    "PMID",
+  };
+
+  function renderFieldOrderList() {
+    foList.innerHTML = "";
+    rf.field_order.forEach((key, idx) => {
+      const row = document.createElement("div");
+      row.className = "fo-row";
+
+      const lbl = document.createElement("span");
+      lbl.className = "fo-label";
+      lbl.textContent = fieldLabels[key] || key;
+      row.appendChild(lbl);
+
+      const up = document.createElement("button");
+      up.className = "btn-icon";
+      up.textContent = "▲";
+      up.disabled = idx === 0;
+      up.addEventListener("click", () => {
+        rf.field_order.splice(idx - 1, 0, rf.field_order.splice(idx, 1)[0]);
+        scheduleAutoSave(); renderFieldOrderList(); refreshRefPreview(rfSection);
+      });
+
+      const dn = document.createElement("button");
+      dn.className = "btn-icon";
+      dn.textContent = "▼";
+      dn.disabled = idx === rf.field_order.length - 1;
+      dn.addEventListener("click", () => {
+        rf.field_order.splice(idx + 1, 0, rf.field_order.splice(idx, 1)[0]);
+        scheduleAutoSave(); renderFieldOrderList(); refreshRefPreview(rfSection);
+      });
+
+      row.append(up, dn);
+      foList.appendChild(row);
+    });
+  }
+  renderFieldOrderList();
+  rfSection.appendChild(foWrap);
+
+  // Live preview
+  const previewWrap = document.createElement("div");
+  previewWrap.className = "ref-preview-box";
+  previewWrap.id = "ref-format-preview";
+  rfSection.appendChild(previewWrap);
+  refreshRefPreview(rfSection);
+
+  pane.appendChild(rfSection);
+
   // Export
   const expSection = document.createElement("div");
   expSection.className = "export-section";
@@ -1151,19 +1413,17 @@ function renderSettingsTab() {
   expTitle.textContent = L.exportTitle;
   expSection.appendChild(expTitle);
 
-  const exportBtns = [
+  [
     { label: L.exportJSON, fn: exportToJSON },
     { label: L.exportHTML, fn: exportToHTML },
     { label: L.exportDOCX, fn: exportToDOCX },
-  ];
-  exportBtns.forEach(({ label, fn }) => {
+  ].forEach(({ label, fn }) => {
     const btn = document.createElement("button");
     btn.className = "btn-export";
     btn.textContent = label;
     btn.addEventListener("click", fn);
     expSection.appendChild(btn);
   });
-
   pane.appendChild(expSection);
 
   // Auto-save indicator
@@ -1171,6 +1431,21 @@ function renderSettingsTab() {
   asi.className = "autosave-indicator";
   asi.textContent = L.autoSaveOn;
   pane.appendChild(asi);
+}
+
+// Refresh the reference format preview using the first reference in the doc
+function refreshRefPreview(container) {
+  const box = container.querySelector("#ref-format-preview");
+  if (!box) return;
+  const rf = doc.settings.ref_format;
+  const sample = doc.references[0] || {
+    authors: ["Smith AB", "Jones CD", "Lee EF", "Brown GH", "White IJ", "Green KL", "Black MN"],
+    year: "2024", title: "Sample article title for preview",
+    journal: "Example Journal", volume: "17", issue: "2", pages: "100-115",
+    doi: "10.1234/example", pmid: "12345678"
+  };
+  box.innerHTML = "<strong>" + (currentLang === "ja" ? "プレビュー：" : "Preview: ") + "</strong>"
+    + formatReference(sample, rf, "html");
 }
 
 // ============================================================
@@ -1291,7 +1566,7 @@ function exportToHTML() {
     html += `<h2>${currentLang === "ja" ? "参考文献" : "References"}</h2>\n`;
     html += `<ol class="ref-list">\n`;
     orderedRefs.forEach((ref, i) => {
-      html += `<li>${escHtml(formatReference(ref))}</li>\n`;
+      html += `<li>${formatReference(ref, doc.settings.ref_format, "html")}</li>\n`;
     });
     html += `</ol>\n</div>\n`;
   }
@@ -1437,11 +1712,15 @@ async function exportToDOCX() {
       spacing
     }));
     orderedRefs.forEach((ref, i) => {
+      const rfmt = s.ref_format || {};
+      const runsData = formatReference(ref, rfmt, "runs");
+      const textRuns = [
+        new TextRun({ text: `${i+1}. `, bold: true, font: refsFont, size: refsSize })
+      ].concat(runsData.map(r =>
+        new TextRun({ text: r.text, italics: r.italic, font: refsFont, size: refsSize })
+      ));
       children.push(new Paragraph({
-        children: [
-          new TextRun({ text: `${i+1}. `, bold: true, font: refsFont, size: refsSize }),
-          new TextRun({ text: formatReference(ref), font: refsFont, size: refsSize }),
-        ],
+        children: textRuns,
         spacing: { after: 80 }
       }));
     });
