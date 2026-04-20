@@ -1,1 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArticleMaker — Academic Writing System</title>
+  <link rel="stylesheet" href="style.css">
 
+  <!--
+    docx.js via CDN — required for DOCX export.
+    Loaded from jsDelivr (reliable, no auth required).
+    Falls back gracefully: exportToDOCX() checks if docx is defined.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
+
+  <!--
+    Language files: both loaded, main.js selects the active one.
+    EN.js exports LANG_EN, JN.js exports LANG_JA (different variable names).
+  -->
+  <script src="js/schema.js"></script>
+  <script src="js/EN.js"></script>
+  <script src="js/JN.js"></script>
+</head>
+
+<body>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header id="app-header">
+  <div class="header-brand">
+    <span id="app-name">ArticleMaker</span>
+    <span id="app-subtitle">Academic Writing System</span>
+  </div>
+
+  <div class="header-sep"></div>
+
+  <button class="header-btn btn-accent" id="btn-lang">日本語</button>
+
+  <div class="header-sep"></div>
+
+  <button class="header-btn" id="btn-new">New</button>
+  <button class="header-btn" id="btn-load">Load JSON</button>
+  <button class="header-btn" id="btn-save">Save JSON</button>
+
+  <div class="header-sep"></div>
+
+  <button class="header-btn" id="btn-undo" disabled>Undo</button>
+  <button class="header-btn" id="btn-redo" disabled>Redo</button>
+
+  <div class="header-spacer"></div>
+  <div class="autosave-dot" title="Auto-save active"></div>
+</header>
+
+
+<!-- ============================================================
+     BODY — 3 COLUMNS
+     ============================================================ -->
+<div id="app-body">
+
+  <!-- ---- LEFT: Outline Navigator ---- -->
+  <nav id="panel-left">
+    <div class="panel-header">
+      <h3 id="outline-title">Outline</h3>
+
+      <div class="struct-switch">
+        <span id="struct-label" style="font-size:0.7rem;color:var(--text-3);align-self:center;">Structure:</span>
+        <button class="struct-btn active" id="struct-imrad">IMRaD</button>
+        <button class="struct-btn" id="struct-free">Free</button>
+      </div>
+    </div>
+
+    <ul id="outline-list"></ul>
+
+    <button id="btn-add-section">+ Add Section</button>
+  </nav>
+
+
+  <!-- ---- CENTER: Smart Editor ---- -->
+  <main id="panel-center">
+    <div id="editor-sections"></div>
+  </main>
+
+
+  <!-- ---- RIGHT: Tabbed Panel ---- -->
+  <aside id="panel-right">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="meta"     id="tab-meta">Metadata</button>
+      <button class="tab-btn"        data-tab="refs"     id="tab-refs">References</button>
+      <button class="tab-btn"        data-tab="settings" id="tab-settings">Settings</button>
+    </div>
+
+    <div class="tab-pane"        id="pane-meta"></div>
+    <div class="tab-pane hidden" id="pane-refs"></div>
+    <div class="tab-pane hidden" id="pane-settings"></div>
+  </aside>
+
+</div><!-- #app-body -->
+
+
+<!-- ============================================================
+     CITATION DIALOG (modal overlay)
+     ============================================================ -->
+<div id="cite-dialog-overlay" class="hidden">
+  <div id="cite-dialog">
+    <div class="cite-dlg-header">
+      <h3 id="dlg-title">Insert Citation</h3>
+      <button class="btn-icon" id="cite-dlg-cancel">✕</button>
+    </div>
+    <input type="text" id="cite-search" placeholder="Search references...">
+    <div id="cite-ref-list"></div>
+    <div class="cite-dlg-footer">
+      <button class="btn-secondary btn-small" id="cite-dlg-cancel-footer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- main.js last — after all dependencies -->
+<script src="js/main.js"></script>
+
+<script>
+  // Wire the footer cancel button in the dialog
+  document.getElementById("cite-dlg-cancel-footer")
+    .addEventListener("click", () => {
+      document.getElementById("cite-dialog-overlay").classList.add("hidden");
+    });
+
+  // Sync structure buttons visual state on load
+  // (main.js handles the logic; this just keeps CSS in sync)
+  document.getElementById("struct-imrad").addEventListener("click", function() {
+    this.classList.add("active");
+    document.getElementById("struct-free").classList.remove("active");
+  });
+  document.getElementById("struct-free").addEventListener("click", function() {
+    this.classList.add("active");
+    document.getElementById("struct-imrad").classList.remove("active");
+  });
+</script>
+
+</body>
+</html>
