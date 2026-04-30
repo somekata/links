@@ -1,1 +1,776 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reference Formatter v3.1 - Professional Edition</title>
+    <style>
+      :root {
+        --primary: #2c3e50;
+        --accent: #3498db;
+        --bg: #f4f7f6;
+      }
+      body {
+        font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+        background: var(--bg);
+        padding: 20px;
+        color: #333;
+        font-size: 14px;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
 
+      .header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      #dropZone {
+        border: 2px dashed var(--accent);
+        padding: 20px;
+        text-align: center;
+        border-radius: 12px;
+        background: #e8f4fd;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-bottom: 20px;
+      }
+      #dropZone:hover {
+        background: #d0e9fb;
+      }
+
+      .explain {
+        margin: 15px 0;
+        padding: 12px;
+        background: #fffbe6;
+        border-left: 4px solid #ffe58f;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        color: #856404;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 25px;
+        border-radius: 12px;
+        width: 80%;
+        max-width: 600px;
+        box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+      .close {
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .nav-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .nav-buttons button {
+        background: var(--primary);
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .nav-buttons button:hover {
+        opacity: 0.8;
+      }
+
+      select,
+      input[type="text"],
+      input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        margin: 8px 0 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+
+      .field-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 6px 12px;
+        border-radius: 6px;
+        margin-bottom: 5px;
+      }
+      .preset-btns {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .preset-btns button {
+        padding: 8px;
+        font-size: 0.85rem;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .preset-btns button:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      #previewList {
+        list-style: none;
+        padding: 0;
+        margin-top: 20px;
+      }
+      .ref-item {
+        background: #fff;
+        border: 1px solid #e1e8ed;
+        margin-bottom: 8px;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+      }
+      .ref-index {
+        font-weight: bold;
+        margin-right: 15px;
+        color: var(--accent);
+        min-width: 25px;
+      }
+      .ref-content {
+        font-family: "Times New Roman", serif;
+        line-height: 1.5;
+        font-size: 1.05rem;
+      }
+
+      .action-bar {
+        position: sticky;
+        bottom: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+        display: flex;
+        gap: 10px;
+      }
+      .btn-copy {
+        background: #7f8c8d !important;
+      }
+      .btn-save {
+        background: #e67e22 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header-flex">
+        <h2 style="margin: 0; color: var(--primary)">
+          Reference Formatter v3.1
+        </h2>
+        <small style="color: #7f8c8d">Bacteriology Research Tools</small>
+      </div>
+
+      <div id="dropZone">
+        <div style="font-size: 1.1rem; color: var(--accent); font-weight: bold">
+          JSONファイルをドロップ または クリック
+        </div>
+        <input
+          type="file"
+          id="fileInput"
+          accept=".json"
+          style="display: none"
+        />
+      </div>
+
+      <div class="explain">
+        <details>
+          <summary>使い方の詳細と注意点</summary>
+          <p style="margin: 0 0 5px 0">
+            💡<strong>使い方:</strong>
+
+            リストはドラッグで順序変更可能。モーダルで書式設定や表示項目をカスタマイズできます。
+          </p>
+          <p style="margin: 0">
+            📁
+            <strong>データ:</strong>
+            アップロードするJSONは、ZoteroのExport機能で生成したもの（CSL-JSON）を使用してください。
+          </p>
+          <p style="margin: 10px 0 0 0">
+            📝 Zoteroエクスポート: 説明文にある通り、必ず「Better BibTeX
+            JSON」ではなく 「CSL JSON」 を選択してエクスポートしてください。
+          </p>
+          <p style="margin: 10px 0 0 0">
+            📝 バックアップ:
+            順序を大幅に入れ替えた後は、「JSON保存」ボタンで状態を保存しておくと、後日再編集する際に便利です。
+          </p>
+        </details>
+      </div>
+
+      <div class="nav-buttons">
+        <button onclick="openModal('modalPreset')">📋 プリセット・順序</button>
+        <button onclick="openModal('modalFormat')">⚙️ 詳細書式</button>
+        <button onclick="openModal('modalAuthor')">👤 著者・et al. 設定</button>
+      </div>
+
+      <ul id="previewList"></ul>
+
+      <div class="action-bar">
+        <button style="flex: 2" onclick="processData()">リストを更新</button>
+        <button class="btn-copy" style="flex: 1" onclick="copyToClipboard()">
+          コピー
+        </button>
+        <button class="btn-save" style="flex: 1" onclick="exportJson()">
+          JSON保存
+        </button>
+      </div>
+    </div>
+
+    <!-- モーダル1: ジャーナル別プリセット -->
+    <div id="modalPreset" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>ジャーナル別プリセット & 順序</h3>
+          <span class="close" onclick="closeModal('modalPreset')">&times;</span>
+        </div>
+        <div id="presetContainer" class="preset-btns"></div>
+        <h4 style="margin-top: 20px">表示項目・区切り文字</h4>
+        <div id="fieldSelector"></div>
+      </div>
+    </div>
+
+    <!-- モーダル2: 詳細書式設定 -->
+    <div id="modalFormat" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>詳細書式設定</h3>
+          <span class="close" onclick="closeModal('modalFormat')">&times;</span>
+        </div>
+        <label>年(Year)のカッコ</label>
+        <select id="yearBracket" onchange="processData()">
+          <option value="none">なし (2024)</option>
+          <option value="round">丸カッコ (2024)</option>
+        </select>
+        <label>雑誌名の形式</label>
+        <select id="journalStyle" onchange="processData()">
+          <option value="short" selected>
+            略記 (mBio / J Infect Chemother)
+          </option>
+          <option value="full">フルネーム (Journal of...)</option>
+        </select>
+        <label>著者名形式</label>
+        <select id="nameFormat" onchange="processData()">
+          <option value="family-g">Family G (Kaneko Y)</option>
+          <option value="g-family">Given Family (Yukihiro Kaneko)</option>
+          <option value="nature-style">Sayers, E. W. (Nature風)</option>
+        </select>
+        <label>DOIの接頭辞</label>
+        <select id="doiStyle" onchange="processData()">
+          <option value="none">なし (10.1038/...)</option>
+          <option value="url">URL形式 (https://doi.org/...)</option>
+          <option value="label">doi: 10.1038/...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- モーダル3: 著者表示人数 -->
+    <div id="modalAuthor" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>著者表示 & et al. 設定</h3>
+          <span class="close" onclick="closeModal('modalAuthor')">&times;</span>
+        </div>
+        <label>et al. モード</label>
+        <select id="etAlMode" onchange="toggleEtAlInput()">
+          <option value="all">全員表示する</option>
+          <option value="limit" selected>指定人数を超えたら et al.</option>
+        </select>
+        <div id="etAlLimitContainer">
+          <label>基準人数 (この人数まで表示)</label>
+          <input
+            type="number"
+            id="etAlLimit"
+            value="3"
+            min="1"
+            onchange="processData()"
+          />
+        </div>
+        <h4 style="margin-top: 20px">著者強調 (太字・下線)</h4>
+        <input
+          type="text"
+          id="highlightAuthors"
+          placeholder="例: Kaneko Y, Shimekata S"
+          oninput="processData()"
+        />
+        <div style="display: flex; gap: 20px">
+          <label
+            ><input
+              type="checkbox"
+              id="useBold"
+              checked
+              onchange="processData()"
+            />
+            太字</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              id="useUnderline"
+              checked
+              onchange="processData()"
+            />
+            下線</label
+          >
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script>
+      const STYLE_PRESETS = {
+        mbio: {
+          label: "mBio / ASM",
+          fieldOrder: [
+            "author",
+            "issued",
+            "title",
+            "container-title",
+            "volume",
+            "page",
+          ],
+          separators: {
+            author: ". ",
+            issued: ". ",
+            title: ". ",
+            "container-title": " ",
+            volume: ":",
+            page: ".",
+            DOI: "",
+          },
+          yearBracket: "none",
+          nameFormat: "family-g",
+          etAlMode: "all",
+          doiStyle: "none",
+        },
+        nature: {
+          label: "Nature",
+          fieldOrder: [
+            "author",
+            "title",
+            "container-title",
+            "volume",
+            "page",
+            "issued",
+          ],
+          separators: {
+            author: ". ",
+            title: ". ",
+            "container-title": " ",
+            volume: ", ",
+            page: " ",
+            issued: ".",
+            DOI: "",
+          },
+          yearBracket: "round",
+          nameFormat: "nature-style",
+          etAlMode: "limit",
+          etAlLimit: 1,
+          doiStyle: "none",
+        },
+        jic: {
+          label: "J Infect Chem (JAR)",
+          fieldOrder: [
+            "author",
+            "title",
+            "container-title",
+            "issued",
+            "volume",
+            "page",
+          ],
+          separators: {
+            author: ". ",
+            title: ". ",
+            "container-title": " ",
+            issued: "; ",
+            volume: ": ",
+            page: ".",
+            DOI: "",
+          },
+          yearBracket: "none",
+          nameFormat: "family-g",
+          etAlMode: "limit",
+          etAlLimit: 3,
+          doiStyle: "none",
+        },
+        pubmed: {
+          label: "PubMed (NLM)",
+          fieldOrder: [
+            "author",
+            "title",
+            "container-title",
+            "issued",
+            "volume",
+            "page",
+            "DOI",
+          ],
+          separators: {
+            author: ". ",
+            title: ". ",
+            "container-title": " ",
+            issued: ";",
+            volume: ":",
+            page: ".",
+            DOI: " ",
+          },
+          yearBracket: "none",
+          nameFormat: "family-g",
+          etAlMode: "all",
+          doiStyle: "label",
+        },
+        eid: {
+          label: "Emerg Infect Dis",
+          fieldOrder: [
+            "author",
+            "title",
+            "container-title",
+            "issued",
+            "volume",
+            "page",
+          ],
+          separators: {
+            author: ". ",
+            title: ". ",
+            "container-title": " ",
+            issued: ";",
+            volume: ":",
+            page: ".",
+            DOI: "",
+          },
+          yearBracket: "none",
+          nameFormat: "family-g",
+          etAlMode: "limit",
+          etAlLimit: 6,
+          doiStyle: "none",
+        },
+        ejcmid: {
+          label: "Eur J Clin Microbiol",
+          fieldOrder: [
+            "author",
+            "issued",
+            "title",
+            "container-title",
+            "volume",
+            "page",
+          ],
+          separators: {
+            author: " ",
+            issued: " ",
+            title: ". ",
+            "container-title": " ",
+            volume: ":",
+            page: ".",
+            DOI: "",
+          },
+          yearBracket: "round",
+          nameFormat: "family-g",
+          etAlMode: "all",
+          doiStyle: "none",
+        },
+      };
+
+      let currentItems = [];
+      let fieldOrder = [
+        "author",
+        "issued",
+        "title",
+        "container-title",
+        "volume",
+        "page",
+      ];
+      let fieldSeparators = {
+        author: ". ",
+        issued: ". ",
+        title: ". ",
+        "container-title": " ",
+        volume: ": ",
+        page: ".",
+        DOI: "",
+      };
+      const fields = [
+        { id: "author", label: "著者" },
+        { id: "issued", label: "年" },
+        { id: "title", label: "タイトル" },
+        { id: "container-title", label: "雑誌名" },
+        { id: "volume", label: "巻(号)" },
+        { id: "page", label: "頁" },
+        { id: "DOI", label: "DOI" },
+      ];
+
+      function init() {
+        renderPresetButtons();
+        renderFieldSelector();
+        Sortable.create(document.getElementById("previewList"), {
+          animation: 150,
+          onEnd: (evt) => {
+            const item = currentItems.splice(evt.oldIndex, 1)[0];
+            currentItems.splice(evt.newIndex, 0, item);
+            updateIndices();
+          },
+        });
+      }
+
+      function openModal(id) {
+        document.getElementById(id).style.display = "block";
+      }
+      function closeModal(id) {
+        document.getElementById(id).style.display = "none";
+      }
+      window.onclick = (e) => {
+        if (e.target.className === "modal") e.target.style.display = "none";
+      };
+
+      function renderPresetButtons() {
+        const container = document.getElementById("presetContainer");
+        for (const key in STYLE_PRESETS) {
+          const btn = document.createElement("button");
+          btn.innerText = STYLE_PRESETS[key].label;
+          btn.onclick = () => {
+            applyPreset(key);
+            closeModal("modalPreset");
+          };
+          container.appendChild(btn);
+        }
+      }
+
+      function renderFieldSelector() {
+        const selector = document.getElementById("fieldSelector");
+        selector.innerHTML = "";
+        fields.forEach((f) => {
+          const isChecked = fieldOrder.includes(f.id) ? "checked" : "";
+          const sep = fieldSeparators[f.id] || ". ";
+          selector.innerHTML += `
+            <div class="field-item">
+              <div style="display:flex; align-items:center; gap:8px">
+                <input type="checkbox" value="${f.id}" ${isChecked} onchange="updateOrder(this)">
+                <span>${f.label}</span>
+              </div>
+              <select style="width:auto; margin:0" data-id="${f.id}" onchange="updateSeparator(this)">
+                <option value=". " ${sep === ". " ? "selected" : ""}>. </option>
+                <option value=", " ${sep === ", " ? "selected" : ""}>, </option>
+                <option value=": " ${sep === ": " ? "selected" : ""}>: </option>
+                <option value="; " ${sep === "; " ? "selected" : ""}>; </option>
+                <option value=" " ${sep === " " ? "selected" : ""}>なし</option>
+              </select>
+            </div>`;
+        });
+      }
+
+      function applyPreset(key) {
+        const s = STYLE_PRESETS[key];
+        fieldOrder = [...s.fieldOrder];
+        fieldSeparators = { ...s.separators };
+        document.getElementById("yearBracket").value = s.yearBracket;
+        document.getElementById("nameFormat").value = s.nameFormat;
+        document.getElementById("etAlMode").value = s.etAlMode;
+        if (s.etAlLimit)
+          document.getElementById("etAlLimit").value = s.etAlLimit;
+        renderFieldSelector();
+        processData();
+      }
+
+      function updateOrder(cb) {
+        if (cb.checked) {
+          if (!fieldOrder.includes(cb.value)) fieldOrder.push(cb.value);
+        } else {
+          fieldOrder = fieldOrder.filter((id) => id !== cb.value);
+        }
+        processData();
+      }
+
+      function updateSeparator(sel) {
+        fieldSeparators[sel.getAttribute("data-id")] = sel.value;
+        processData();
+      }
+
+      function toggleEtAlInput() {
+        document.getElementById("etAlLimitContainer").style.display =
+          document.getElementById("etAlMode").value === "all"
+            ? "none"
+            : "block";
+        processData();
+      }
+
+      function formatAuthor(author, config) {
+        const family = author.family || "";
+        const given = author.given || "";
+        let name = "";
+        if (config.nameFormat === "nature-style") {
+          const initials = given
+            .split(/[\s-]+/)
+            .map((n) => n[0].toUpperCase() + ".")
+            .join(" ");
+          name = `${family}, ${initials}`;
+        } else if (config.nameFormat === "g-family") {
+          name = `${given} ${family}`;
+        } else {
+          const initials = given
+            .split(/[\s-]+/)
+            .map((n) => n[0].toUpperCase())
+            .join("");
+          name = `${family} ${initials}`;
+        }
+        const isHighlight = config.highlights.some(
+          (h) => h.trim() !== "" && name.includes(h.trim()),
+        );
+        if (isHighlight) {
+          if (config.useBold) name = `<b>${name}</b>`;
+          if (config.useUnderline) name = `<u>${name}</u>`;
+        }
+        return name;
+      }
+
+      function processData() {
+        if (currentItems.length === 0) return;
+        const config = {
+          yearBracket: document.getElementById("yearBracket").value,
+          journalStyle: document.getElementById("journalStyle").value,
+          nameFormat: document.getElementById("nameFormat").value,
+          doiStyle: document.getElementById("doiStyle").value,
+          etAlMode: document.getElementById("etAlMode").value,
+          etAlLimit: parseInt(document.getElementById("etAlLimit").value),
+          highlights: document
+            .getElementById("highlightAuthors")
+            .value.split(","),
+          useBold: document.getElementById("useBold").checked,
+          useUnderline: document.getElementById("useUnderline").checked,
+        };
+
+        const listEl = document.getElementById("previewList");
+        listEl.innerHTML = "";
+        currentItems.forEach((item, idx) => {
+          let combined = "";
+          fieldOrder.forEach((fid, oIdx) => {
+            let content = "";
+            if (fid === "author") {
+              let names = (item.author || []).map((a) =>
+                formatAuthor(a, config),
+              );
+              content =
+                config.etAlMode === "limit" && names.length > config.etAlLimit
+                  ? names.slice(0, config.etAlLimit).join(", ") + " et al"
+                  : names.join(", ");
+            } else if (fid === "title") content = item.title;
+            else if (fid === "container-title") {
+              const jName =
+                config.journalStyle === "short"
+                  ? item["container-title-short"] || item["container-title"]
+                  : item["container-title"];
+              content = `<i>${jName}</i>`;
+            } else if (fid === "issued") {
+              const year = item.issued?.["date-parts"]?.[0]?.[0] || "";
+              content = config.yearBracket === "round" ? `(${year})` : year;
+            } else if (fid === "volume")
+              content = item.volume
+                ? `<b>${item.volume}</b>` +
+                  (item.issue ? `(${item.issue})` : "")
+                : "";
+            else if (fid === "page") content = item.page;
+            else if (fid === "DOI" && item.DOI) {
+              if (config.doiStyle === "url")
+                content = `https://doi.org/${item.DOI}`;
+              else if (config.doiStyle === "label")
+                content = `doi: ${item.DOI}`;
+              else content = item.DOI;
+            }
+            if (content)
+              combined +=
+                content +
+                (oIdx === fieldOrder.length - 1 ? "." : fieldSeparators[fid]);
+          });
+          const li = document.createElement("li");
+          li.className = "ref-item";
+          li.innerHTML = `<span class="ref-index">${idx + 1}.</span><div class="ref-content">${combined}</div>`;
+          listEl.appendChild(li);
+        });
+      }
+
+      const fileInput = document.getElementById("fileInput");
+      document.getElementById("dropZone").onclick = () => fileInput.click();
+      fileInput.onchange = (e) => handleFile(e.target.files[0]);
+      document.getElementById("dropZone").ondragover = (e) => {
+        e.preventDefault();
+      };
+      document.getElementById("dropZone").ondrop = (e) => {
+        e.preventDefault();
+        handleFile(e.dataTransfer.files[0]);
+      };
+
+      function handleFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const data = JSON.parse(e.target.result);
+          currentItems = Array.isArray(data) ? data : data.items || [];
+          processData();
+        };
+        reader.readAsText(file);
+      }
+
+      function updateIndices() {
+        document
+          .querySelectorAll(".ref-index")
+          .forEach((el, i) => (el.innerText = `${i + 1}.`));
+      }
+
+      async function copyToClipboard() {
+        const text = Array.from(document.querySelectorAll(".ref-item"))
+          .map((el) => el.innerText.replace(/\n/g, " "))
+          .join("\n");
+        await navigator.clipboard.writeText(text);
+        alert("コピーしました");
+      }
+
+      function exportJson() {
+        const blob = new Blob(
+          [JSON.stringify({ items: currentItems }, null, 4)],
+          { type: "application/json" },
+        );
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `references.json`;
+        link.click();
+      }
+
+      init();
+    </script>
+  </body>
+</html>
