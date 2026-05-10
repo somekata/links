@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCRからシークエンスへ ― 対話で学ぶ分子生物学</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #f5f2eb;
+    --surface:   #fffdf8;
+    --border:    #d8cfc0;
+    --text:      #2a2118;
+    --muted:     #7a6e60;
+    --accent-t:  #1a5276;   /* 教員 */
+    --accent-a:  #1a6b3c;   /* 学生A */
+    --accent-b:  #7d3c98;   /* 学生B */
+    --accent-c:  #b7410e;   /* 学生C */
+    --tag-t:     #dce9f5;
+    --tag-a:     #d9f0e4;
+    --tag-b:     #efe2f8;
+    --tag-c:     #fce8df;
+    --highlight: #fff3cd;
+    --code-bg:   #f0ece3;
+    --shadow:    0 2px 12px rgba(42,33,24,0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.85;
+    font-size: 15px;
+  }
+
+  /* ── Hero ── */
+  header {
+    background: var(--accent-t);
+    color: #fff;
+    padding: 3.5rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent, transparent 18px,
+      rgba(255,255,255,.04) 18px, rgba(255,255,255,.04) 19px
+    );
+  }
+  header h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(1.4rem, 4vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: .05em;
+    position: relative;
+  }
+  header p.subtitle {
+    margin-top: .6rem;
+    font-size: .9rem;
+    opacity: .8;
+    position: relative;
+  }
+
+  /* ── Layout ── */
+  .wrapper {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.2rem 4rem;
+  }
+
+  /* ── TOC ── */
+  nav.toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 2.5rem;
+    box-shadow: var(--shadow);
+  }
+  nav.toc h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    margin-bottom: .8rem;
+    color: var(--muted);
+    letter-spacing: .05em;
+  }
+  nav.toc ol {
+    padding-left: 1.4rem;
+  }
+  nav.toc li { margin: .3rem 0; }
+  nav.toc a {
+    color: var(--accent-t);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  nav.toc a:hover { text-decoration: underline; }
+
+  /* ── Section ── */
+  section.chapter {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .chapter-header {
+    background: var(--accent-t);
+    color: #fff;
+    padding: .9rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+  }
+  .chapter-header .num {
+    font-family: 'Source Code Pro', monospace;
+    font-size: .8rem;
+    background: rgba(255,255,255,.2);
+    border-radius: 4px;
+    padding: .1rem .45rem;
+  }
+  .chapter-header h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .chapter-body {
+    padding: 1.4rem 1.6rem;
+  }
+
+  /* ── Dialogue ── */
+  .dialogue { display: flex; flex-direction: column; gap: .55rem; }
+
+  .line {
+    display: grid;
+    grid-template-columns: 5.2rem 1fr;
+    gap: .5rem;
+    align-items: start;
+  }
+  .line.teacher  { --accent: var(--accent-t); --tag-bg: var(--tag-t); }
+  .line.student-a{ --accent: var(--accent-a); --tag-bg: var(--tag-a); }
+  .line.student-b{ --accent: var(--accent-b); --tag-bg: var(--tag-b); }
+  .line.student-c{ --accent: var(--accent-c); --tag-bg: var(--tag-c); }
+
+  .speaker-tag {
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--tag-bg);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: .2rem .45rem;
+    text-align: center;
+    margin-top: .2rem;
+    white-space: nowrap;
+    letter-spacing: .03em;
+  }
+
+  .bubble {
+    background: var(--bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: .55rem .9rem;
+    font-size: .93rem;
+  }
+  .line.teacher .bubble {
+    background: #eef4fb;
+    border-color: var(--accent-t);
+  }
+
+  /* ── Callout ── */
+  .callout {
+    margin: 1.1rem 0 .4rem;
+    padding: .75rem 1rem;
+    border-radius: 8px;
+    font-size: .88rem;
+    line-height: 1.7;
+  }
+  .callout.key {
+    background: var(--highlight);
+    border-left: 4px solid #e6a817;
+  }
+  .callout.note {
+    background: #e8f4fd;
+    border-left: 4px solid #2980b9;
+  }
+  .callout strong { font-weight: 700; }
+
+  /* ── Term table ── */
+  .term-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .87rem;
+    margin: 1rem 0;
+  }
+  .term-table th {
+    background: var(--code-bg);
+    text-align: left;
+    padding: .45rem .7rem;
+    border: 1px solid var(--border);
+    font-weight: 700;
+  }
+  .term-table td {
+    padding: .4rem .7rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .term-table tr:nth-child(even) td { background: #faf7f1; }
+
+  code {
+    font-family: 'Source Code Pro', monospace;
+    background: var(--code-bg);
+    padding: .1em .35em;
+    border-radius: 3px;
+    font-size: .88em;
+  }
+
+  /* ── Stage diagram ── */
+  .stages {
+    display: flex;
+    gap: .5rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .stage-box {
+    flex: 1; min-width: 130px;
+    border-radius: 8px;
+    padding: .7rem .9rem;
+    text-align: center;
+    font-size: .83rem;
+    line-height: 1.4;
+  }
+  .stage-box .temp {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: .2rem;
+  }
+  .stage-box.denature { background: #fde8e8; border: 1px solid #e74c3c; color: #8b1a1a; }
+  .stage-box.aneal    { background: #e8f4fd; border: 1px solid #2980b9; color: #1a3f6b; }
+  .stage-box.extend   { background: #e8f8e8; border: 1px solid #27ae60; color: #1a5e2a; }
+  .stage-arrow {
+    align-self: center;
+    font-size: 1.4rem;
+    color: var(--muted);
+    line-height: 1;
+  }
+
+  /* ── Tech comparison ── */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: .8rem;
+    margin: 1rem 0;
+  }
+  .tech-card {
+    border-radius: 8px;
+    padding: .9rem 1rem;
+    font-size: .85rem;
+    line-height: 1.6;
+    border: 1px solid var(--border);
+  }
+  .tech-card h4 {
+    font-weight: 700;
+    margin-bottom: .4rem;
+    font-size: .9rem;
+  }
+  .tech-card.sanger  { background: #fef9e7; border-color: #d4ac0d; }
+  .tech-card.short   { background: #eaf4ff; border-color: #2e86c1; }
+  .tech-card.long    { background: #f0faf0; border-color: #27ae60; }
+  .tech-card.nano    { background: #fdf2fb; border-color: #8e44ad; }
+
+  /* ── History banner ── */
+  .history-banner {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: #ecf0f1;
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    font-size: .88rem;
+    line-height: 1.7;
+  }
+  .history-banner strong { color: #f39c12; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: .8rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    font-size: .82rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  /* ── Footer ── */
+  footer {
+    max-width: 860px;
+    margin: 1rem auto 2rem;
+    padding: 1.2rem 1.6rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: .78rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  footer strong { color: var(--text); }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .line { grid-template-columns: 4rem 1fr; }
+    .stage-arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PCRからシークエンスへ</h1>
+  <p class="subtitle">教員と学生3名による対話で学ぶ分子生物学入門</p>
+</header>
+
+<div class="wrapper">
+
+  <!-- 凡例 -->
+  <div class="legend">
+    <span style="font-weight:700;font-size:.82rem;color:var(--muted);">登場人物：</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--accent-t)"></span>教員</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--accent-a)"></span>学生A</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--accent-b)"></span>学生B（写真部）</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--accent-c)"></span>学生C</span>
+  </div>
+
+  <!-- TOC -->
+  <nav class="toc">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#s1">PCRって何？― 名前と略称</a></li>
+      <li><a href="#s2">DNAの基礎 ― ヌクレオチドと塩基対</a></li>
+      <li><a href="#s3">増幅の原理 ― ネガとポジの関係</a></li>
+      <li><a href="#s4">PCRの材料一覧</a></li>
+      <li><a href="#s5">PCRの3ステージと温度制御</a></li>
+      <li><a href="#s6">サーマルサイクラーと反応時間</a></li>
+      <li><a href="#s7">シークエンスとは？― サンガー法</a></li>
+      <li><a href="#s8">ヒトゲノム解読の挑戦</a></li>
+      <li><a href="#s9">次世代シークエンス ― ショートリードとロングリード</a></li>
+      <li><a href="#s10">Oxford Nanopore ― 穴を通るDNA</a></li>
+    </ol>
+  </nav>
+
+  <!-- ───── Section 1 ───── -->
+  <section class="chapter" id="s1">
+    <div class="chapter-header">
+      <span class="num">01</span>
+      <h2>PCRって何？― 名前と略称</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">PCRって何か知ってる？</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">名前は聞いたことがあります。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">コロナの時に一般の人も知るようになったよね。なんの略だと思う？</div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">なんとか chain recycle……？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            <strong>chain reaction</strong>、つまり<strong>連鎖反応</strong>だね。<br>
+            PはPolymerase（ポリメラーゼ）。「ポリマー」の「マー」は分子という意味で、「ポリ」は多い・複数。分子が複数くっついているイメージ。「ase」は<strong>酵素</strong>を意味する接尾辞だよ。だから、分子をつなぐ合成酵素、ということになる。何を作ると思う？
+          </div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">DNAですよね。</div>
+        </div>
+      </div>
+
+      <div class="callout key">
+        <strong>PCR = Polymerase Chain Reaction（ポリメラーゼ連鎖反応）</strong><br>
+        DNAポリメラーゼを使い、特定のDNA領域を連鎖的に増幅する技術。
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── Section 2 ───── -->
+  <section class="chapter" id="s2">
+    <div class="chapter-header">
+      <span class="num">02</span>
+      <h2>DNAの基礎 ― ヌクレオチドと塩基対</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">DNAはなんの略？</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">えっと、リボ核酸……？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            それはRNA（Ribonucleic acid）。DNAは<strong>Deoxyribonucleic acid</strong>、デオキシリボ核酸だよ。リボースについている水酸基が取れた（デオキシ）状態。
+            じゃ、どんな構造をしているか？一つ一つを<strong>ヌクレオチド</strong>と呼んでいるけど、4種類ある。知ってる？
+          </div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">A・T・G・Cですよね。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            そう。ヌクレオチドは「リボース＋リン酸＋塩基」の3つでできていて、塩基の部分だけ4種類で共通でない。
+            アデニン、チミン、グアニン、シトシンといいます。リン酸がないものを<strong>ヌクレオシド</strong>、リン酸がついたものを<strong>ヌクレオチド</strong>というよ。
+          </div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">対になってるんですよね。A-T、G-Cみたいに。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">そう、<strong>水素結合</strong>でくっついている。この相補的な構造がPCR反応で重要になってくる。</div>
+        </div>
+      </div>
+
+      <table class="term-table">
+        <tr>
+          <th>用語</th>
+          <th>意味・補足</th>
+        </tr>
+        <tr><td><strong>ヌクレオチド</strong></td><td>リボース＋リン酸＋塩基。DNAの最小単位</td></tr>
+        <tr><td><strong>ヌクレオシド</strong></td><td>リン酸を除いたもの（リボース＋塩基）</td></tr>
+        <tr><td>塩基対（bp）</td><td>2本鎖DNAの単位。base pair の略</td></tr>
+        <tr><td>一本鎖（ss）</td><td>single strand。プライマーはssで設計する</td></tr>
+        <tr><td>二本鎖（ds）</td><td>double strand。通常のDNA</td></tr>
+        <tr><td>塩基（b）</td><td>一本鎖の長さの単位</td></tr>
+        <tr><td>塩基対（bp）</td><td>二本鎖の長さの単位</td></tr>
+      </table>
+
+      <div class="callout note">
+        <strong>塩基の相補性：</strong> A―T（2本の水素結合）、G―C（3本の水素結合）。
+        この相補性がネガ/ポジのように機能し、PCRによる忠実な複製を可能にする。
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── Section 3 ───── -->
+  <section class="chapter" id="s3">
+    <div class="chapter-header">
+      <span class="num">03</span>
+      <h2>増幅の原理 ― ネガとポジの関係</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">水素結合でくっついている2本鎖の構造がPCR反応で必要。なんでだと思う？</div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">裏表の関係でコピーがとれる。写真のネガみたいな感じですよね。オレ写真部なんで。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            いい例えだね。ネガからポジ、ポジからネガを作る。普段はネガポジが一対になってるけど、コピーするときにこれを2つに分ける。そうすると？
+          </div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">ネガからポジ、ポジからネガを作るから……2対になる？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">そう、それを繰り返すと？</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">2回で4倍、3回で8倍。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">では、10回繰り返すと？</div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">1024！</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">30回繰り返すと？概算でいいよ。1000を3回かけると？</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">10の9乗。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            つまり、<strong>10億倍</strong>だね。PCRが高感度というのは、理論的には1対あれば検出できることを意味する。
+          </div>
+        </div>
+      </div>
+
+      <div class="callout key">
+        <strong>指数関数的増幅：</strong> サイクル数 n 回で 2<sup>n</sup> 倍。
+        30サイクルで ≈ 10億倍。たった1コピーのDNAから検出可能な量へ増幅できる。
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── Section 4 ───── -->
+  <section class="chapter" id="s4">
+    <div class="chapter-header">
+      <span class="num">04</span>
+      <h2>PCRの材料一覧</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">でも、どうやって増やすんですか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">じゃ、材料を考えてみよう。絶対必要なのは鋳型となるDNAだよね。</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">ポリメラーゼ！</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">そう、それも必要。他には？</div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">ヌクレオチド、でしょうか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            そう。他に必要なものは？分かる人いる？いなさそうだね。<strong>プライマー</strong>って聞いたことある？きっかけになる、短いDNAの断片。
+            約20ヌクレオチド（20塩基）。プライマーは対ではなく<strong>一本鎖（ss）</strong>です。
+            そして、これに<strong>バッファー（緩衝液）</strong>を加えます。わかりやすく「魔法の水」としておこう。
+          </div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">適当過ぎませんか（笑）</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            正確には、pHを安定させるための緩衝液と、DNAポリメラーゼに必要な<strong>マグネシウムイオン</strong>などが含まれているよ。まあ、面白いから魔法の水としておこう。
+          </div>
+        </div>
+      </div>
+
+      <table class="term-table">
+        <tr><th>材料</th><th>役割</th></tr>
+        <tr><td><strong>鋳型DNA</strong></td><td>増幅したい目的配列を含むDNA</td></tr>
+        <tr><td><strong>DNAポリメラーゼ</strong></td><td>新しいDNA鎖を合成する酵素（耐熱性のものを使用）</td></tr>
+        <tr><td><strong>dNTPs</strong>（4種のヌクレオチド）</td><td>新鎖の材料：dATP, dTTP, dGTP, dCTP</td></tr>
+        <tr><td><strong>プライマー</strong>（Fwd / Rev）</td><td>増幅領域の両端に相補的な約20bの一本鎖DNA</td></tr>
+        <tr><td><strong>PCRバッファー</strong></td><td>反応環境（pH・Mg²⁺など）を整える緩衝液</td></tr>
+        <tr><td><strong>超純水</strong></td><td>反応液の容量を合わせる</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───── Section 5 ───── -->
+  <section class="chapter" id="s5">
+    <div class="chapter-header">
+      <span class="num">05</span>
+      <h2>PCRの3ステージと温度制御</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">混ぜたら反応が進むんですか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">反応には3つのステージが必要なんだ。どんなステージだと思う？</div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">プライマーって短いんですよね。だから、それが伸びる反応。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            そう、それを<strong>伸長反応（extension）</strong>という。それ以外に、DNAを引き剥がす<strong>変性（denature）</strong>、
+            プライマーがくっつく<strong>アニーリング（annealing）</strong>という3つがあるよ。
+            順番は、denature → annealing → extension。
+          </div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">最も温度が高いのはどれだと思う？勘でいいよ。</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">なんとなく変性が一番高い気がする。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            正解！変性はほぼ100℃で行います。通常は94℃くらい。
+            extensionは酵素の種類によって至適温度が異なり、68〜74℃くらい。
+            annealingはプライマーの配列や長さによって決まるよ。GCが多いと高くなるし、長さが長くても高くなる。でも55〜60℃くらいかな。
+          </div>
+        </div>
+      </div>
+
+      <div class="stages">
+        <div class="stage-box denature">
+          <span class="temp">〜94°C</span>
+          <strong>変性</strong><br>Denaturation<br>
+          <small>2本鎖DNAを<br>1本鎖に解離</small>
+        </div>
+        <div class="stage-arrow">→</div>
+        <div class="stage-box aneal">
+          <span class="temp">55–60°C</span>
+          <strong>アニーリング</strong><br>Annealing<br>
+          <small>プライマーが<br>鋳型に結合</small>
+        </div>
+        <div class="stage-arrow">→</div>
+        <div class="stage-box extend">
+          <span class="temp">68–74°C</span>
+          <strong>伸長</strong><br>Extension<br>
+          <small>DNAポリメラーゼが<br>新鎖を合成</small>
+        </div>
+        <div class="stage-arrow">→</div>
+        <div class="stage-box denature" style="border-style:dashed">
+          <span class="temp">（繰り返し）</span>
+          <strong>次サイクルへ</strong><br>
+          <small>30サイクルで<br>≈10億倍</small>
+        </div>
+      </div>
+
+      <div class="dialogue" style="margin-top:1rem">
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">プライマーってどんな役割ですか？なんで必要なんですか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            DNAを増やすといっても、全部を増やすのではなく、<strong>一部だけを増幅</strong>するんだ。
+            増やしたい部分の両端と同じ配列のDNAを用いると、そこからDNAが合成される。
+            100〜500 bpのPCRが多いかな。特殊な場合は70 bpのような短いものや、10 kbpのような長いものもするけれどね。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── Section 6 ───── -->
+  <section class="chapter" id="s6">
+    <div class="chapter-header">
+      <span class="num">06</span>
+      <h2>サーマルサイクラーと反応時間</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">それが、このマシンだ。<strong>サーマルサイクラー</strong>というよ。「サーマル」は温度、「サイクラー」は繰り返しという意味だね。</div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">こんな小さな機械なんですね。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">昔はとても大きい機械だったんだよ。開発当初は3つの温度のお湯を用意して浸していたんだけど、今は金属プレートの温度を瞬時に変化させることができるようになった。じゃ、反応が終わるのにどれくらいかかると思う？</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">30分……いや、1時間くらいですか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            いい推測だね。昔は1時間だとかなり早い方だった。
+            denature 10秒、annealing 10秒、extension 10秒とすると1回30秒だよね。ただラグがあるから、だいたい<strong>1サイクル1〜2分</strong>。
+            30サイクルで30〜60分。extensionが長い場合は90〜120分くらいかな。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── Section 7 ───── -->
+  <section class="chapter" id="s7">
+    <div class="chapter-header">
+      <span class="num">07</span>
+      <h2>シークエンスとは？― サンガー法</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">シークエンサーって聞いたことある？</div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">沖縄の果物ですか？あ、置物だっけ？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">それはシークワーサーかシーサーかな（笑）。シークエンサーというのはシークエンスを決める機械だよ。</div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">シークエンスってなんですか。競技とかで「なんとかシークエンス」って聞いたことがあるけど。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            シークエンスは<strong>配列</strong>のこと。A・T・G・Cの並びのこと。
+            PCRだけだと塩基配列はわからない。これを決めるのがシークエンサーだ。
+          </div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">どうやって決めるんですか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            昔は<strong>電気泳動</strong>という方法を使っていた。Aで止まるDNA断片、Tで止まるDNA断片……を作って流すと、短いものほど遠くまで流れる。これを目視で読んでいたんだ。<br><br>
+            次にできたのが<strong>キャピラリー（毛細管）電気泳動</strong>。細い管を電気泳動すると順番にDNA断片が出てきて、機械で判定する。これで大幅に高速化したよ。
+            最初はシングルキャピラリーで1つずつ。徐々に4連、8連、16連と増えていった。これを<strong>サンガー法</strong>とも言います。
+          </div>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <strong>サンガー法の特徴：</strong><br>
+        読める長さ：500〜1000 bp / 1回。精度は非常に高く、今でも特定の用途（変異確認など）で使われる。
+        ただしスループット（1回に読める量）が限られる。
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── Section 8 ───── -->
+  <section class="chapter" id="s8">
+    <div class="chapter-header">
+      <span class="num">08</span>
+      <h2>ヒトゲノム解読の挑戦</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">1回で読めるのが500 bpくらいなんですよね。じゃ、ヒトのDNAを全部読むのに数千万回必要ですね。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            そう、ヒトゲノムは30億塩基対あるから、単純計算で600万個。でも「糊代」（オーバーラップ）が必要だからその数倍、全体をカバーするには最低5倍程度は必要と言われているから、<strong>約3000万個</strong>は読む必要がある。
+          </div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">何年かかるかわかりませんね。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            そう、昔は<strong>10年</strong>かかった。<strong>ヒトゲノムプロジェクト（HGP）</strong>だ。米国は力技で何百〜何千台という機械を並べて解析した。日本も協力したよ。世界規模で解析して10年だからね。
+          </div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">今はどれくらいで解析できるんですか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">場合によっては<strong>1日</strong>でできるよ。数日でできるかな。</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">え、それってどうやったらできるんですか？数千キャピラリーでもそんなに早くなりませんよね。単純に考えると36500倍ですもんね。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">そう、だから技術革新があるわけですね。</div>
+        </div>
+      </div>
+
+      <div class="history-banner">
+        <strong>ヒトゲノムプロジェクト（HGP）</strong><br>
+        1990〜2003年、米・英・仏・独・日・中の国際コンソーシアムが解読に挑んだ。
+        最終的なコストは約30億ドル、期間は13年。現在では同等の解析が<strong>数百ドル・数日</strong>で可能。
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── Section 9 ───── -->
+  <section class="chapter" id="s9">
+    <div class="chapter-header">
+      <span class="num">09</span>
+      <h2>次世代シークエンス ― ショートリードとロングリード</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            <strong>次世代シークエンス（NGS：Next-Generation Sequencing）</strong>という言い方をしますが、複数の方法があります。大きく分けると<strong>ショートリード</strong>と<strong>ロングリード</strong>。<br><br>
+            サンガー法は500〜1000 bp。ショートリードは50〜150 bpと短いが、これをものすごい数読みます。カバー率は5倍以上必要。シングルエンドとペアエンドという読み方があります。
+          </div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">短すぎると、一つながりにならないんですね。じゃ、ロングリードはどれくらい？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            数十 kbpくらいはいけるかな。ウルトラロングで1 Mbpも可能と言われています。これくらい長いと、カバー率も少なくて済む。
+          </div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">ということは、ロングだけで十分そうですね。お高いんですか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            高額ということはあります。ただ、長いけど若干不正確なんです。ショートリードは99.9%以上の精度。ロングリードはかつては90%くらいで、今は99%くらいまで向上しているけど、<strong>aaaaaみたいに同じ塩基が続く</strong>と精度が落ちる。
+          </div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">あ、いいこと思いつきました。ショートとロングを組み合わせたら完璧なのでは。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">そうだね。ロングで下地を作っておいて、そこにショートを貼り付ける<strong>マッピング</strong>という方法だね。</div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">でも、仕組みがよくわかりません。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            ショートリードで一般的なのは<strong>合成随時測定法（SBS法：Sequencing by Synthesis）</strong>という方法です。非常に小さな区画の中でPCRをして、合成するときにその中で光らせて撮影する方法です。
+          </div>
+        </div>
+      </div>
+
+      <div class="tech-grid">
+        <div class="tech-card sanger">
+          <h4>🔬 サンガー法（第一世代）</h4>
+          500〜1000 bp / 読み取り<br>
+          精度：非常に高い<br>
+          スループット：低い<br>
+          現在も変異確認などに使用
+        </div>
+        <div class="tech-card short">
+          <h4>⚡ ショートリード NGS</h4>
+          50〜150 bp / 読み取り<br>
+          精度：≥99.9%<br>
+          スループット：非常に高い<br>
+          代表：Illumina（SBS法）
+        </div>
+        <div class="tech-card long">
+          <h4>📏 ロングリード NGS</h4>
+          数十 kbp 〜 1 Mbp<br>
+          精度：≈99%（ウルトラロングはやや低下）<br>
+          繰り返し配列の解析に強い<br>
+          代表：PacBio（SMRT）
+        </div>
+        <div class="tech-card nano">
+          <h4>🔌 ナノポアシークエンス</h4>
+          制限なし（超ロングリード）<br>
+          リアルタイム解析可能<br>
+          装置がポータブル<br>
+          代表：Oxford Nanopore（ONT）
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── Section 10 ───── -->
+  <section class="chapter" id="s10">
+    <div class="chapter-header">
+      <span class="num">10</span>
+      <h2>Oxford Nanopore ― 穴を通るDNA</h2>
+    </div>
+    <div class="chapter-body">
+      <div class="dialogue">
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            ロングリードの方法の一つが<strong>PacBio（Pacific Biosciences）</strong>の技術、<strong>SMRTシークエンス（Single Molecule Real-Time）</strong>。1分子のDNAが合成される瞬間をリアルタイムで動画のように監視する仕組みです。<br><br>
+            もう一つが<strong>ナノポア</strong>という方法で、DNAが通る非常に小さな穴を通るときに電気を遮断する。
+          </div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">えー、そんな小さな穴どうやって。すごい仕組みですね。</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            ナノポア（穴）の正体は、細菌などが持っている<strong>膜貫通タンパク質</strong>です。初期の研究では溶血性連鎖球菌が細胞膜に穴を開けるために使う<strong>α-ヘモリシン</strong>なども使われました。現在のOxford Nanopore製品は、遺伝子工学で改造したカスタムタンパク質を使用しています。
+          </div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">でも、DNAって小さすぎませんか？そんな速さで通ったら読めないのでは？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            いい指摘だね。DNAはそのままでは穴を秒速数百万塩基のスピードで通り抜けてしまう。だから読めない。
+            そこで、DNAの入り口に<strong>ヘリカーゼ</strong>などの酵素を配置するんだ。この酵素が「ラチェット（歯止め）」の役割を果たして、DNAを1段ずつ、読み取りやすい速度で穴に送り込む。天然の穴と天然のモーター酵素を組み合わせたハイブリッド装置というわけだね。
+          </div>
+        </div>
+        <div class="line student-b">
+          <span class="speaker-tag">学生B</span>
+          <div class="bubble">でも複数の塩基が穴に入ってたら信号が混ざりませんか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            鋭い指摘！常に数文字が穴に詰まっているので、信号は確かに複雑になる。これを解決したのが<strong>ディープラーニング（AI）</strong>です。「この波形のパターンはこの塩基配列だ」という膨大な学習データを積み重ねること（ベースコーリング）で、近年の劇的な精度向上を実現した。
+          </div>
+        </div>
+      </div>
+
+      <div class="history-banner">
+        <strong>💡 ナノポア技術のアイデアの起源</strong><br>
+        1980年代後半、アメリカの<strong>デイヴィッド・ディーマー教授</strong>が「ドライブ中に思いついた」と言われています。
+        「細胞膜のチャンネルをDNAが通る時、電流が変わるはずだ」というメモが始まりでした。
+        タンパク質を膜に安定して埋め込む技術や微弱電流を測る半導体技術が合体して、<strong>約30年かけて製品化</strong>されました。
+      </div>
+
+      <div class="dialogue" style="margin-top:1.2rem">
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">
+            ちなみに、昔のシークエンス機械はやや大きめの冷蔵庫並みだよ。PacBioやIlluminaのHiSeqなんかは冷蔵庫くらいの大きさがある。でも、ナノポアはとても小さくなった。どれくらいの大きさだと思う？
+          </div>
+        </div>
+        <div class="line student-c">
+          <span class="speaker-tag">学生C</span>
+          <div class="bubble">（サーマルサイクラーを指さして）このくらいの大きさですか？</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">いい推測だね。でも実はこれくらい（手のひらサイズのジェスチャー）。</div>
+        </div>
+        <div class="line student-a">
+          <span class="speaker-tag">学生A</span>
+          <div class="bubble">えー、めちゃ小さい！</div>
+        </div>
+        <div class="line teacher">
+          <span class="speaker-tag">教員</span>
+          <div class="bubble">技術革新のすごさを感じるよね。</div>
+        </div>
+      </div>
+
+      <div class="callout key" style="margin-top:1.2rem">
+        <strong>まとめ：シークエンス技術の進化</strong><br>
+        サンガー法（キャピラリー電気泳動）→ ショートリードNGS（SBS法 / Illumina）→ ロングリードNGS（SMRT法 / PacBio）→ ナノポアシークエンス（ONT）。
+        スループットは数十年で数百万倍以上に向上し、装置は冷蔵庫サイズから手のひらサイズへと小型化した。
+      </div>
+    </div>
+  </section>
+
+</div><!-- /wrapper -->
+
+<footer>
+  <strong>【注意事項】</strong><br>
+  本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。
+  医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+</body>
+</html>
