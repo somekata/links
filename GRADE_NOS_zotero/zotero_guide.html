@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zotero 実践ガイド</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface2: #f1f3f5;
+    --border: #dee2e6;
+    --accent: #cc0000;
+    --accent-light: #fff0f0;
+    --text: #212529;
+    --text-sub: #6c757d;
+    --green: #2d6a4f;
+    --green-light: #d8f3dc;
+    --blue: #1d3557;
+    --blue-light: #e8f4fd;
+    --tip: #7b2d8b;
+    --tip-light: #f8e8ff;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'BIZ UDPGothic', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    font-size: 16px;
+  }
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+    padding: 48px 24px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 20px);
+  }
+  .header-badge {
+    display: inline-block;
+    background: var(--accent); color: white;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    padding: 4px 12px; border-radius: 20px;
+    margin-bottom: 16px; text-transform: uppercase; position: relative;
+  }
+  header h1 { font-size: clamp(24px,5vw,38px); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; position: relative; }
+  header h1 span { color: #e63946; }
+  header p { font-size: 13px; color: rgba(255,255,255,0.6); letter-spacing: 0.06em; position: relative; }
+  nav {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .nav-inner { max-width: 1000px; margin: 0 auto; display: flex; overflow-x: auto; scrollbar-width: none; }
+  .nav-inner::-webkit-scrollbar { display: none; }
+  .nav-tab {
+    flex-shrink: 0; padding: 13px 16px;
+    font-size: 13px; font-weight: 600; color: var(--text-sub);
+    text-decoration: none; border-bottom: 3px solid transparent;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .nav-tab:hover { color: var(--accent); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  main { max-width: 1000px; margin: 0 auto; padding: 32px 16px 64px; }
+  section { margin-bottom: 56px; scroll-margin-top: 58px; }
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 28px; padding-bottom: 14px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-num {
+    width: 40px; height: 40px;
+    background: var(--accent); color: white;
+    font-size: 16px; font-weight: 700; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 21px; font-weight: 700; }
+  .section-header h2 small { display: block; font-size: 12px; font-weight: 400; color: var(--text-sub); margin-top: 2px; letter-spacing: 0.05em; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 24px;
+    margin-bottom: 20px; box-shadow: var(--shadow);
+  }
+  .card h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h3 .ic { font-size: 18px; }
+  .steps { counter-reset: step; list-style: none; }
+  .steps li { counter-increment: step; display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start; }
+  .steps li::before {
+    content: counter(step);
+    width: 26px; height: 26px;
+    background: var(--blue); color: white;
+    font-size: 12px; font-weight: 700; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 3px;
+  }
+  .steps li p { font-size: 15px; }
+  .steps li strong { color: var(--blue); }
+  .tbl-wrap { overflow-x: auto; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: var(--blue); color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--surface2); }
+  code { background: #f0f0f0; color: var(--accent); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+  th code { background: rgba(255,255,255,0.2); color: white; }
+  .callout {
+    border-radius: var(--radius); padding: 14px 18px; margin: 14px 0;
+    display: flex; gap: 12px; align-items: flex-start; font-size: 14px;
+  }
+  .callout .ci { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .callout.tip  { background: var(--tip-light);  border-left: 4px solid var(--tip); }
+  .callout.warn { background: #fff8e1;            border-left: 4px solid #f59e0b; }
+  .callout.info { background: var(--blue-light); border-left: 4px solid var(--blue); }
+  .callout.good { background: var(--green-light);border-left: 4px solid var(--green); }
+  .callout strong { font-weight: 700; display: block; margin-bottom: 4px; }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 2px 9px; border-radius: 12px; letter-spacing: 0.04em;
+    vertical-align: middle; white-space: nowrap;
+  }
+  .b-connector { background: #e8f5e9; color: #2e7d32; border: 1px solid #81c784; }
+  .b-ris       { background: #e3f2fd; color: #0d47a1; border: 1px solid #64b5f6; }
+  .b-limited   { background: #fff8e1; color: #e65100; border: 1px solid #ffb74d; }
+  .b-workaround{ background: var(--tip-light); color: var(--tip); border: 1px solid #ce93d8; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 16px; margin-bottom: 14px; }
+  .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin: 12px 0; }
+  .plan-card { border: 2px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+  .plan-card.highlight { border-color: var(--accent); }
+  .plan-card .plan-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .plan-card .plan-size { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .plan-card .plan-price { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 2px solid; }
+  .t-inc  { background: #e8f5e9; color: #2e7d32; border-color: #81c784; }
+  .t-exc  { background: #ffebee; color: #c62828; border-color: #e57373; }
+  .t-pend { background: #fff8e1; color: #e65100; border-color: #ffb74d; }
+  .t-ret  { background: var(--blue-light); color: var(--blue); border-color: #90caf9; }
+  kbd { display: inline-block; background: #f0f0f0; border: 1px solid #ccc; border-bottom: 2px solid #aaa; border-radius: 4px; padding: 1px 7px; font-size: 12px; font-family: monospace; }
+  footer { background: #1a1a2e; color: rgba(255,255,255,0.55); font-size: 12px; padding: 28px 24px; text-align: center; line-height: 1.9; }
+  footer a { color: rgba(255,255,255,0.7); }
+  @media (max-width: 600px) { .section-header h2 { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">Reference Manager</div>
+  <h1>Zotero <span>実践ガイド</span></h1>
+  <p>基本操作 / データベース別インポート / 論文執筆 / 引用スタイル / SR/MA活用 / チップス</p>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-tab active" href="#sec1">① セットアップ</a>
+    <a class="nav-tab" href="#sec2">② 文献登録・管理</a>
+    <a class="nav-tab" href="#sec3">③ DBインポート</a>
+    <a class="nav-tab" href="#sec4">④ ストレージ管理</a>
+    <a class="nav-tab" href="#sec5">⑤ 論文執筆・引用</a>
+    <a class="nav-tab" href="#sec6">⑥ 引用スタイル</a>
+    <a class="nav-tab" href="#sec7">⑦ SR/MA活用</a>
+    <a class="nav-tab" href="#sec8">⑧ チップス</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ① セットアップ -->
+<section id="sec1">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <h2>基本セットアップ<small>Installation &amp; Initial Setup</small></h2>
+  </div>
+  <div class="card">
+    <h3><span class="ic">⚙️</span>インストール手順</h3>
+    <ol class="steps">
+      <li><p><a href="https://www.zotero.org/" target="_blank">zotero.org</a> からデスクトップ版（Windows / Mac / Linux）をダウンロード・インストールする。</p></li>
+      <li><p>同サイトでアカウントを作成し、デスクトップ版の <strong>編集 → 設定 → 同期</strong>（Mac: Zotero → 設定 → 同期）でログインする。</p></li>
+      <li><p>ブラウザ拡張 <strong>Zotero Connector</strong> をインストールする（Chrome / Edge / Firefox / Safari 対応）。</p></li>
+      <li><p>デスクトップ版 Zotero を起動した状態でブラウザを使うと、Connector が論文情報を自動取得できる。</p></li>
+    </ol>
+    <div class="callout info">
+      <span class="ci">ℹ️</span>
+      <div><strong>同期について</strong>文献情報（メタデータ）は無料で無制限に同期される。PDFなどの添付ファイルのみがクラウド容量を消費する（→ ④ストレージ管理を参照）。</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🖥️</span>画面構成</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>エリア</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><strong>左ペイン</strong></td><td>ライブラリツリー（My Library・コレクション・タグ・保存検索・ごみ箱）</td></tr>
+          <tr><td><strong>中央ペイン</strong></td><td>文献一覧（タイトル・著者・年・雑誌など）</td></tr>
+          <tr><td><strong>右ペイン</strong></td><td>選択文献の詳細情報・添付ファイル・ノート・タグ・関連文献</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ② 文献登録・管理 -->
+<section id="sec2">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <h2>文献登録・管理<small>Importing &amp; Organizing References</small></h2>
+  </div>
+  <div class="card">
+    <h3><span class="ic">📥</span>文献の登録方法</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>方法</th><th>操作</th><th>備考</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Connector</strong></td><td>PubMed・Scopus等でConnectorアイコンをクリック</td><td>最も便利。複数件を一括インポート可</td></tr>
+          <tr><td><strong>識別子入力</strong></td><td>ツールバーの棒＋マークにDOI / PMID / ISBN を貼り付け</td><td>1件ずつ確実に登録できる</td></tr>
+          <tr><td><strong>PDFドラッグ</strong></td><td>手元のPDFをZoteroにドラッグ＆ドロップ</td><td>メタデータ自動取得（精度は論文による）</td></tr>
+          <tr><td><strong>手動入力</strong></td><td>緑の＋ボタン → 文献タイプ選択</td><td>データベース未収載の文献に</td></tr>
+          <tr><td><strong>RIS / BibTeX</strong></td><td>ファイル → インポート</td><td>他ソフトからの移行・DB一括エクスポート時に</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <span class="ci">⚠️</span>
+      <div><strong>PDF自動ダウンロードに注意</strong>PubMedなどからインポートする際、OA論文はPDFが自動添付されることがある。無料クラウドは300MBのため大量インポート時に圧迫される。対策は「④ストレージ管理」を参照。</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">📁</span>コレクション（フォルダ）管理</h3>
+    <ol class="steps">
+      <li><p>左ペインの「My Library」を右クリック → <strong>新しいコレクション</strong> でフォルダを作成する。</p></li>
+      <li><p>コレクションはネスト（階層化）可能。プロジェクト → DB別 → スクリーニング段階別の構成が有効。</p></li>
+      <li><p>1つの文献を複数コレクションに所属させられる（実体は1つ、コピーではない）。</p></li>
+    </ol>
+    <div class="callout tip">
+      <span class="ci">🔖</span>
+      <div><strong>SR/MAでのコレクション構成例</strong><br>
+        📁 C. auris meta-analysis<br>
+        　├ 📁 Search_PubMed<br>
+        　├ 📁 Search_Embase<br>
+        　├ 📁 Search_Scopus<br>
+        　├ 📁 Included<br>
+        　└ 📁 Excluded
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🏷️</span>タグの活用</h3>
+    <p style="font-size:14px; margin-bottom:12px;">文献にタグを付けることでコレクションをまたいだ横断管理が可能。スクリーニング管理に特に有効。タグに色を設定すると（右クリック → 色を割り当て）文献一覧に色付きドットが表示される（最大9色）。</p>
+    <div class="tag-list">
+      <span class="tag t-inc">✓ include</span>
+      <span class="tag t-exc">✗ exclude</span>
+      <span class="tag t-pend">? pending</span>
+      <span class="tag t-ret">📄 full-text-needed</span>
+      <span class="tag t-inc">extracted</span>
+      <span class="tag t-exc">duplicate</span>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🔍</span>重複文献の検出・統合</h3>
+    <ol class="steps">
+      <li><p>左ペインの <strong>「重複文献」</strong>（Duplicate Items）をクリックする。</p></li>
+      <li><p>重複候補がペアで表示される。右ペインで内容を確認し、<strong>「文献を統合」</strong>（Merge Items）をクリック。</p></li>
+      <li><p>複数DBから収集したSR/MAでは、スクリーニング前に必ず実施する。</p></li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🗒️</span>ノートと関連文献</h3>
+    <div class="grid2">
+      <div>
+        <p style="font-weight:700; margin-bottom:8px; font-size:14px;">📝 ノート（Notes）</p>
+        <ul style="font-size:14px; list-style:disc; padding-left:18px; line-height:2;">
+          <li>文献ごとにメモを追加可能</li>
+          <li>データ抽出・評価メモに活用</li>
+          <li>Wordに引用と一緒にエクスポート可</li>
+          <li>スタンドアロンノートも作成可</li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-weight:700; margin-bottom:8px; font-size:14px;">🔗 関連（Related）</p>
+        <ul style="font-size:14px; list-style:disc; padding-left:18px; line-height:2;">
+          <li>文献同士をリンク可能</li>
+          <li>原著とSRを紐付けるなど</li>
+          <li>エラータ・訂正論文の管理にも有用</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ③ DBインポート -->
+<section id="sec3">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <h2>データベース別インポート方法<small>Importing from Each Database</small></h2>
+  </div>
+  <div class="callout info" style="margin-bottom:20px;">
+    <span class="ci">ℹ️</span>
+    <div>
+      <strong>インポート方法の種類</strong><br>
+      <span class="badge b-connector">Connector対応</span> Connectorアイコンをクリックするだけで取り込み可能&emsp;
+      <span class="badge b-ris">RIS/BibTeX</span> DB側でファイルをエクスポートし、Zoteroにインポート&emsp;
+      <span class="badge b-limited">要注意</span> 件数制限・不安定あり&emsp;
+      <span class="badge b-workaround">要工夫</span> 間接的な手順が必要
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ic">🌐</span>英語系データベース</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>データベース</th><th>方法</th><th>手順・注意点</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>PubMed</strong></td>
+            <td><span class="badge b-connector">Connector対応</span></td>
+            <td>検索結果ページでConnectorアイコン（フォルダ形）をクリック → チェックボックスで選択 → OK。OA論文はPDFも自動添付されることがある（容量注意）。</td>
+          </tr>
+          <tr>
+            <td><strong>Scopus</strong></td>
+            <td><span class="badge b-connector">Connector対応</span> <span class="badge b-ris">RIS可</span></td>
+            <td>Connectorで直接インポート可。大量件数の場合はDB側で「Export → RIS形式」を選択し、ファイルをZoteroにインポートする方が確実。</td>
+          </tr>
+          <tr>
+            <td><strong>Web of Science</strong></td>
+            <td><span class="badge b-connector">Connector対応</span> <span class="badge b-ris">RIS可</span></td>
+            <td>Connectorで取り込み可。500件超の一括エクスポートはDB側でRIS/BibTeX出力が必要。</td>
+          </tr>
+          <tr>
+            <td><strong>Embase</strong></td>
+            <td><span class="badge b-ris">RIS可</span></td>
+            <td>対象文献を選択 → 「Export」→「RIS format (Mendeley, EndNote)」を選択してダウンロード → Zoteroで「ファイル → インポート」。</td>
+          </tr>
+          <tr>
+            <td><strong>Cochrane Library</strong></td>
+            <td><span class="badge b-ris">RIS可</span> <span class="badge b-limited">Connector不安定</span></td>
+            <td>Connectorは個別文献には使えるが複数件は不安定。確実な方法：チェックボックスで選択 →「Export selected citation(s)」→「RIS (Reference Manager)」→ Download → Zoteroにインポート。Reviews / Trials 等のカテゴリごとに別々にエクスポートが必要。</td>
+          </tr>
+          <tr>
+            <td><strong>CINAHL (EBSCOhost)</strong></td>
+            <td><span class="badge b-ris">RIS可</span></td>
+            <td>文献を選択 →「Export」→「Direct Export in RIS Format (EndNote, Zotero等)」を選択。EBSCOhostプラットフォームなので、MEDLINEなど他のEBSCOhostDB でも同様の手順。</td>
+          </tr>
+          <tr>
+            <td><strong>Ovid (MEDLINE / Embase)</strong></td>
+            <td><span class="badge b-ris">RIS可</span></td>
+            <td>結果を選択 →「Export」→「Citation Manager (RIS)」を選択してダウンロード。Ovidプラットフォーム経由で複数DBを同時検索する施設向け。</td>
+          </tr>
+          <tr>
+            <td><strong>Google Scholar</strong></td>
+            <td><span class="badge b-connector">Connector対応</span> <span class="badge b-limited">件数制限あり</span></td>
+            <td>個別論文ページでConnectorを使用。SR/MAの一次検索には再現性が低く不向き。補完的な使用にとどめる。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ic">🇯🇵</span>日本語データベース</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>データベース</th><th>方法</th><th>手順・注意点</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>医学中央雑誌<br>（医中誌Web）</strong></td>
+            <td><span class="badge b-workaround">要工夫</span></td>
+            <td>
+              Zoteroへの<strong>直接ConnectorエクスポートはデフォルトでなHIStoiは非対応</strong>（ダイレクトエクスポート選択肢にZoteroなし）。<br><br>
+              <strong>方法A（試す価値あり）：</strong>医中誌の「ダイレクトエクスポート」→「EndNote」を選択して実行すると、施設・環境によってはZoteroが文献管理ソフトとして認識されZoteroに直接取り込まれることがある。<br><br>
+              <strong>方法B（確実）：</strong>医中誌 →「ダイレクトエクスポート」→「Refworks」または「EndNote XML」でファイルを保存 → Zoteroで「ファイル → インポート」→ 形式を選択してインポート。<br><br>
+              <em>※日本語文献のメタデータ（著者名・雑誌名）が文字化けする場合があるためインポート後に確認・修正を要することがある。</em>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>CiNii Research</strong></td>
+            <td><span class="badge b-connector">Connector対応</span> <span class="badge b-ris">RIS可</span></td>
+            <td>
+              Connectorで個別論文から取り込み可能。または論文ページの「引用」→「RIS形式でエクスポート」を選択してファイルをインポート。<br>
+              <em>※日本人著者名の姓・名が逆になる場合がある（Zotero 7以降のバージョンで改善済みの部分あり）。インポート後に確認推奨。</em>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>J-STAGE</strong></td>
+            <td><span class="badge b-connector">Connector対応</span></td>
+            <td>
+              個別論文ページでConnectorを使用。メタデータとPDF（OA論文）が取り込まれる。<br>
+              <em>※CiNii同様、著者名の姓名順が逆になることがある。</em>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <span class="ci">⚠️</span>
+      <div><strong>日本語文献の著者名について</strong>ZoteroはデフォルトでFamily name / First nameの順で格納する。日本人著者名は「姓 名」なので、CiNiiやJ-STAGEからの取り込みでは姓と名が逆に入力されることがある。インポート後に右ペインの著者欄を確認・修正する習慣をつけると良い。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ic">📋</span>RIS / BibTeX ファイルからのインポート手順（共通）</h3>
+    <ol class="steps">
+      <li><p>各データベース側でRISまたはBibTeX形式のファイルをダウンロードする。</p></li>
+      <li><p>Zoteroデスクトップ版で <strong>ファイル → インポート</strong> を選択する。</p></li>
+      <li><p>「ファイル（BibTeX, RIS…）」を選択し、ダウンロードしたファイルを指定する。</p></li>
+      <li><p>インポートオプション（新規コレクションを作成するかなど）を確認して「次へ」をクリック。</p></li>
+      <li><p>インポート後、左ペインの「重複文献」で重複確認を実施する。</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ④ ストレージ管理 -->
+<section id="sec4">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <h2>ストレージ管理<small>Storage &amp; PDF Management</small></h2>
+  </div>
+  <div class="card">
+    <h3><span class="ic">💾</span>Zoteroクラウドのプラン</h3>
+    <div class="plan-grid">
+      <div class="plan-card highlight">
+        <div class="plan-name">Free</div>
+        <div class="plan-size">300 MB</div>
+        <div class="plan-price">無料</div>
+      </div>
+      <div class="plan-card">
+        <div class="plan-name">2 GB</div>
+        <div class="plan-size">2 GB</div>
+        <div class="plan-price">$20 / 年</div>
+      </div>
+      <div class="plan-card">
+        <div class="plan-name">6 GB</div>
+        <div class="plan-size">6 GB</div>
+        <div class="plan-price">$60 / 年</div>
+      </div>
+      <div class="plan-card">
+        <div class="plan-name">Unlimited</div>
+        <div class="plan-size">∞</div>
+        <div class="plan-price">$120 / 年</div>
+      </div>
+    </div>
+    <div class="callout info">
+      <span class="ci">ℹ️</span>
+      <div><strong>文献情報（メタデータ）は容量を消費しない。</strong>PDFなどの添付ファイルのみが容量を消費する。300MBはPDFを数十〜数百件インポートすると比較的早く圧迫される。</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">⚙️</span>PDF自動ダウンロードをオフにする</h3>
+    <ol class="steps">
+      <li><p><strong>編集 → 設定 → 一般</strong>（Mac: Zotero → 設定 → 一般）を開く。</p></li>
+      <li><p><strong>「文献情報取得時にPDFを自動的に添付する」</strong>のチェックを外す。</p></li>
+      <li><p>以降は必要な文献のみ手動でPDFを添付する運用にする。</p></li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🗑️</span>ごみ箱（Trash）の管理</h3>
+    <div class="callout warn">
+      <span class="ci">⚠️</span>
+      <div><strong>ごみ箱は自動で空にならない</strong>削除した文献はTrashに移動するだけで、<strong>手動で「ごみ箱を空にする」（Empty Trash）するまでクラウド容量は解放されない。</strong>容量不足を感じたらTrashも必ず確認する。左ペインのTrashを右クリック → 「ごみ箱を空にする」。</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">☁️</span>PDFをローカル保存してクラウド容量を節約する</h3>
+    <ol class="steps">
+      <li><p><strong>編集 → 設定 → 同期</strong> を開く。</p></li>
+      <li><p>「<strong>添付ファイルをZoteroストレージで同期する</strong>」のチェックを外す。</p></li>
+      <li><p>PDFを任意のクラウドフォルダ（Dropbox / OneDrive等）に保存し、Zoteroからは「リンク添付ファイル」として参照する。<br><em>（Ctrl+Shift を押しながらPDFをドラッグするとリンク添付になる）</em></p></li>
+    </ol>
+    <div class="callout tip">
+      <span class="ci">💡</span>
+      <div>Zotero 7以降、ZotFileの代替として <strong>Zotmoov</strong> プラグインが推奨されている。PDFの自動リネーム・移動をDropboxなど任意フォルダに対して設定できる。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ⑤ 論文執筆・引用 -->
+<section id="sec5">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <h2>論文執筆・引用<small>Word Integration &amp; Citation Workflow</small></h2>
+  </div>
+  <div class="card">
+    <h3><span class="ic">📝</span>Wordプラグインのセットアップ</h3>
+    <ol class="steps">
+      <li><p>Zoteroをインストールすると、通常はWordプラグインが自動的にインストールされる。Wordを再起動すると「Zotero」タブが表示される。</p></li>
+      <li><p>自動インストールされない場合：<strong>Zotero → 編集 → 設定 → 引用 → ワードプロセッサ</strong> から手動インストール。</p></li>
+      <li><p>Google Docs でも同様に利用可能（Zotero Connector経由）。</p></li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3><span class="ic">✍️</span>引用の挿入ワークフロー</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>操作</th><th>Wordメニュー</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><strong>引用を挿入</strong></td><td>Zotero → Add/Edit Citation</td><td>引用を挿入したい箇所にカーソルを置き、検索バーで文献を選択。複数文献も同時に追加できる。</td></tr>
+          <tr><td><strong>参考文献リストを作成</strong></td><td>Zotero → Add/Edit Bibliography</td><td>文書末尾など任意の位置に参考文献リストを自動生成。引用を追加・削除すると自動更新される。</td></tr>
+          <tr><td><strong>引用スタイルの変更</strong></td><td>Zotero → Document Preferences</td><td>引用スタイルを一括変更。全引用と参考文献リストが自動で再フォーマットされる。</td></tr>
+          <tr><td><strong>フィールドを更新</strong></td><td>Zotero → Refresh</td><td>Zoteroライブラリで文献情報を修正した後、Wordに反映するために実行する。</td></tr>
+          <tr><td><strong>Zoteroリンクを解除</strong></td><td>Zotero → Unlink Citations</td><td>投稿前の最終段階で実行。フィールドコードが普通のテキストに変換される（不可逆・要バックアップ）。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <span class="ci">⚠️</span>
+      <div><strong>Unlink Citationsは不可逆</strong>実行するとZoteroとのリンクが永久に切れる。必ず作業前にファイルをバックアップすること。投稿直前の最終作業として行う。</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">💡</span>効率的な引用挿入のコツ</h3>
+    <ul style="font-size:14px; list-style:disc; padding-left:20px; line-height:2.2;">
+      <li>引用検索バー（Add/Edit Citation）では著者名・タイトル・年で検索可能。部分一致でもよい。</li>
+      <li>確定前にページ番号の追加も可能（書籍引用で有用）。</li>
+      <li>Vancouverスタイル（番号）設定時、番号は参考文献リストの出現順に自動対応する。</li>
+      <li>文献情報の誤りはZoteroライブラリ側で修正し、Wordで「Refresh」を実行すれば全引用に反映される。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ⑥ 引用スタイル -->
+<section id="sec6">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <h2>引用スタイル（CSL）<small>Citation Styles &amp; Journal Formats</small></h2>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🎨</span>引用スタイルとは</h3>
+    <p style="font-size:14px; margin-bottom:12px;">Zoteroは <strong>CSL（Citation Style Language）</strong> という標準形式でスタイルを管理している。11,000以上のジャーナル・機関スタイルが公式リポジトリに登録されており、無料でインストール可能。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>カテゴリ</th><th>代表的なスタイル</th></tr></thead>
+        <tbody>
+          <tr><td><strong>番号形式（Vancouver系）</strong></td><td>Vancouver, ICMJE準拠ジャーナル（Lancet, NEJM, BMJ, JAMA等）</td></tr>
+          <tr><td><strong>著者-年形式</strong></td><td>APA, Harvard, Chicago Author-Date</td></tr>
+          <tr><td><strong>ジャーナル独自</strong></td><td>PLOS ONE, Nature, Science, Emerging Infectious Diseases, Clinical Infectious Diseases, AAC等</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">📦</span>ジャーナルのCSLスタイルをインポートする方法</h3>
+    <p style="font-size:14px; margin-bottom:12px;"><strong>方法A：Zotero Style Repository から検索・インストール（推奨）</strong></p>
+    <ol class="steps">
+      <li><p>Zoteroデスクトップ版で <strong>編集 → 設定 → 引用 → スタイル</strong> を開く。</p></li>
+      <li><p>右下の <strong>「スタイルを追加…」</strong> をクリックする。</p></li>
+      <li><p>Zotero Style Repository のページ（<a href="https://www.zotero.org/styles" target="_blank">zotero.org/styles</a>）が開く。</p></li>
+      <li><p>ジャーナル名を検索（例：「Emerging Infectious Diseases」「Clinical Infectious Diseases」「Antimicrobial Agents and Chemotherapy」）し、目的のスタイルをクリックすると自動インストールされる。</p></li>
+    </ol>
+    <p style="font-size:14px; margin: 14px 0 10px;"><strong>方法B：CSLファイルを手動インポート</strong>（リポジトリにない場合）</p>
+    <ol class="steps">
+      <li><p>ジャーナル公式サイトまたは GitHub（<a href="https://github.com/citation-style-language/styles" target="_blank">citation-style-language/styles</a>）から <code>.csl</code> ファイルをダウンロードする。</p></li>
+      <li><p>Zotero設定 → 引用 → スタイル → <strong>「＋」ボタン</strong> でファイルを選択してインポートする。</p></li>
+    </ol>
+    <div class="callout good">
+      <span class="ci">✅</span>
+      <div><strong>感染症系ジャーナルの検索例</strong><br>
+        <code>Emerging Infectious Diseases</code>（CDC），<code>Clinical Infectious Diseases</code>，<code>Journal of Infection</code>，<code>International Journal of Infectious Diseases</code>，<code>Antimicrobial Agents and Chemotherapy</code>—いずれも Style Repository に収載されている。
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🔄</span>投稿先変更時のスタイル一括変更</h3>
+    <ol class="steps">
+      <li><p>Wordの「Zotero」タブ → <strong>Document Preferences</strong> を開く。</p></li>
+      <li><p>現在のスタイルが表示される。「スタイルを変更…」から新しいスタイルを選択する。</p></li>
+      <li><p>OKをクリックすると、文書内の全引用と参考文献リストが新しいスタイルで自動再フォーマットされる。</p></li>
+    </ol>
+    <div class="callout tip">
+      <span class="ci">💡</span>
+      <div>ジャーナルを変更して再投稿する際も、このステップだけで参考文献を全て書き直す必要がなくなる。Zoteroを使う最大のメリットの一つ。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ⑦ SR/MA活用 -->
+<section id="sec7">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <h2>SR/MA での活用<small>Systematic Review &amp; Meta-Analysis Workflow</small></h2>
+  </div>
+  <div class="card">
+    <h3><span class="ic">📊</span>SR/MAでの活用ポイント一覧</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>場面</th><th>Zoteroでの操作</th></tr></thead>
+        <tbody>
+          <tr><td><strong>検索結果の一次収集</strong></td><td>各DBからConnector / RISでインポート、コレクションをDB別に分ける</td></tr>
+          <tr><td><strong>重複削除</strong></td><td>左ペイン「重複文献」→ Merge Items</td></tr>
+          <tr><td><strong>スクリーニング管理</strong></td><td>タグ（include / exclude / pending）＋色分けで視覚的に管理</td></tr>
+          <tr><td><strong>フルテキスト管理</strong></td><td>PDF手動添付または自動添付（OA論文）</td></tr>
+          <tr><td><strong>GRADEpro への連携</strong></td><td>コレクション右クリック → Export → <strong>EndNote XML</strong> → GRADEproのReferencesからインポート</td></tr>
+          <tr><td><strong>Rayyan / Covidence 連携</strong></td><td>コレクション右クリック → Export → <strong>RIS</strong> 形式でエクスポート</td></tr>
+          <tr><td><strong>論文執筆時の引用</strong></td><td>Wordプラグインで引用挿入・参考文献リスト自動生成</td></tr>
+          <tr><td><strong>検索戦略の記録</strong></td><td>スタンドアロンノートに検索日・検索式・ヒット件数を記録（PRISMA対応）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🔗</span>RSSフィードで新着論文を自動収集</h3>
+    <ol class="steps">
+      <li><p>PubMedで検索を実行し、右上の「Create RSS」をクリックしてRSSのURLを取得する。</p></li>
+      <li><p>Zoteroの <strong>フィード → フィードを追加 → URLから</strong> にRSSのURLを貼り付ける。</p></li>
+      <li><p>新着論文がZoteroのフィードセクションに自動表示される。気になる論文を右クリック →「ライブラリに追加」でコレクションに取り込める。</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ⑧ チップス -->
+<section id="sec8">
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <h2>チップス・上級テクニック<small>Tips &amp; Advanced Features</small></h2>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🔎</span>検索機能の活用</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>種類</th><th>操作</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><strong>クイック検索</strong></td><td>上部の検索バー</td><td>タイトル・著者・年などを横断検索。プルダウンで「フィールドとタグ」「すべて」を切り替え可能。</td></tr>
+          <tr><td><strong>詳細検索</strong></td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>複数条件のAND/OR検索が可能。特定フィールドを指定して検索できる。</td></tr>
+          <tr><td><strong>保存済み検索</strong></td><td>詳細検索 → 「検索を保存」</td><td>条件に一致する文献がリアルタイムに表示される動的フォルダ。例：「2024年以降・タグ=include」の文献を常に表示。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">👥</span>グループライブラリ（共同研究・共有）</h3>
+    <ol class="steps">
+      <li><p>Zotero Webサイト（<a href="https://www.zotero.org/groups/" target="_blank">zotero.org/groups</a>）でグループを作成する。</p></li>
+      <li><p>共同研究者を招待するとライブラリを共有できる（<strong>無料プランで5グループ・25名まで</strong>）。</p></li>
+      <li><p>グループライブラリのPDF添付ファイルはメンバー全員のクラウド容量を消費するため、共有はメタデータのみに絞るか有料プランを検討する。</p></li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3><span class="ic">📱</span>モバイルアプリとWebライブラリ</h3>
+    <div class="grid2">
+      <div>
+        <p style="font-weight:700; font-size:14px; margin-bottom:8px;">📱 モバイルアプリ（iOS / Android）</p>
+        <ul style="font-size:14px; list-style:disc; padding-left:18px; line-height:2;">
+          <li>ライブラリの閲覧・PDFの閲覧が可能</li>
+          <li>メモの追加・タグ管理も可能</li>
+          <li>ISBN / DOI入力での論文追加に対応</li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-weight:700; font-size:14px; margin-bottom:8px;">🌐 Webライブラリ</p>
+        <ul style="font-size:14px; list-style:disc; padding-left:18px; line-height:2;">
+          <li><a href="https://www.zotero.org/mylibrary" target="_blank">zotero.org/mylibrary</a> でブラウザからアクセス</li>
+          <li>デスクトップ版インストール不要の環境で利用可能</li>
+          <li>コレクション・タグの閲覧・基本操作が可能</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🔌</span>便利なプラグイン</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>プラグイン</th><th>機能</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Zotmoov</strong></td><td>PDFを任意フォルダ（Dropbox等）に自動リネーム・移動。Zotero 7対応のZotFile代替。</td></tr>
+          <tr><td><strong>Better BibTeX</strong></td><td>LaTeX / Pandoc 連携のためのBibTeXエクスポートを最適化。引用キーの自動生成。</td></tr>
+          <tr><td><strong>Zotero PDF Translate</strong></td><td>PDFビューア内でテキストを選択して自動翻訳（DeepL / Google翻訳）。英語論文の日本語確認に有用。</td></tr>
+          <tr><td><strong>Notero</strong></td><td>ZoteroのライブラリをNotionのデータベースと一方向同期。Notionで論文管理・メモを行う研究者向け。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout info">
+      <span class="ci">ℹ️</span>
+      <div>プラグインは Zotero 設定 → ツール → プラグイン管理（Add-on Manager）から <code>.xpi</code> ファイルをインストールする。Zotero 7 ではZotero 6以前のプラグインと互換性がない場合があるためバージョン対応を確認すること。</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">⌨️</span>便利なキーボードショートカット</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>操作</th><th>Windows</th><th>Mac</th></tr></thead>
+        <tbody>
+          <tr><td>詳細検索</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td><kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td></tr>
+          <tr><td>新しいコレクション</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd></td><td><kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd></td></tr>
+          <tr><td>識別子から追加（DOI/PMID）</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd></td><td><kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd></td></tr>
+          <tr><td>選択文献をコレクションから除去</td><td><kbd>Del</kbd></td><td><kbd>Backspace</kbd></td></tr>
+          <tr><td>選択文献をごみ箱に移動</td><td><kbd>Ctrl</kbd>+<kbd>Del</kbd></td><td><kbd>⌘</kbd>+<kbd>Del</kbd></td></tr>
+          <tr><td>PDFを開く</td><td><kbd>Enter</kbd></td><td><kbd>Enter</kbd></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">✅</span>論文投稿前チェックリスト</h3>
+    <ul style="font-size:14px; list-style:none; line-height:2.4;">
+      <li>☐ 全引用の文献情報（著者名・雑誌名・年・巻・ページ）を確認・修正した</li>
+      <li>☐ 投稿先ジャーナルのCSLスタイルをZoteroにインストールした</li>
+      <li>☐ Document Preferences で正しいスタイルが設定されていることを確認した</li>
+      <li>☐ Wordで「Refresh」を実行し最新情報を反映した</li>
+      <li>☐ 参考文献リストの体裁をジャーナルの投稿規定と照合した</li>
+      <li>☐ バックアップを保存してから「Unlink Citations」を実行した（最終工程・不可逆）</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+  ソフトウェアのバージョンアップにより画面や操作方法が変更されることがあります。最新情報は <a href="https://www.zotero.org/support/" target="_blank">Zotero公式ドキュメント</a> を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。<br><br>
+  Zotero 実践ガイド ― generated with Claude (Anthropic)
+</footer>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const tabs = document.querySelectorAll('.nav-tab');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        tabs.forEach(t => t.classList.toggle('active', t.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-50% 0px -45% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
