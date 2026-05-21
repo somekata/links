@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人体を考える：細菌とは何か？</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f5f0e8;
+    --accent: #c0392b;
+    --accent2: #2980b9;
+    --accent3: #27ae60;
+    --gold: #d4a017;
+    --muted: #6b6b7a;
+    --border: #c8bfaa;
+    --card-bg: #faf7f2;
+    --highlight: #fff3cd;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.8;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 80px 40px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 39px,
+        rgba(255,255,255,0.04) 40px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 39px,
+        rgba(255,255,255,0.04) 40px
+      );
+  }
+  .hero-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-tag {
+    display: inline-block;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 4px 12px;
+    margin-bottom: 28px;
+  }
+  .hero h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 16px;
+  }
+  .hero h1 em {
+    color: var(--gold);
+    font-style: normal;
+  }
+  .hero-sub {
+    font-size: 15px;
+    color: rgba(245,240,232,0.6);
+    font-weight: 300;
+    margin-bottom: 36px;
+  }
+  .hero-question {
+    background: rgba(255,255,255,0.07);
+    border-left: 3px solid var(--gold);
+    padding: 18px 24px;
+    font-size: 15px;
+    font-style: italic;
+    color: rgba(245,240,232,0.9);
+    max-width: 680px;
+  }
+
+  /* ===== MAIN LAYOUT ===== */
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* ===== SECTION HEADER ===== */
+  .section {
+    margin-bottom: 64px;
+  }
+  .section-num {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .section h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .section p {
+    font-size: 15px;
+    color: #333;
+    margin-bottom: 14px;
+  }
+
+  /* ===== GOALS BOX ===== */
+  .goals {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+    margin-bottom: 32px;
+  }
+  .goals h3 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  .goals ol {
+    list-style: none;
+    counter-reset: goal;
+  }
+  .goals ol li {
+    counter-increment: goal;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: #2c2c3a;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .goals ol li:last-child { border-bottom: none; }
+  .goals ol li::before {
+    content: counter(goal, decimal-leading-zero);
+    font-family: 'Source Code Pro', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* ===== COMPARISON TABLE ===== */
+  .table-wrap { overflow-x: auto; margin: 24px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 18px;
+    text-align: left;
+    font-weight: 500;
+    font-family: 'Noto Serif JP', serif;
+  }
+  thead th:first-child { width: 28%; }
+  tbody tr:nth-child(odd) { background: var(--card-bg); }
+  tbody tr:nth-child(even) { background: #eee9de; }
+  tbody td {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  tbody td:first-child {
+    font-weight: 700;
+    color: var(--accent2);
+    font-family: 'Noto Serif JP', serif;
+  }
+
+  /* ===== DISRUPTOR CARDS ===== */
+  .disruptor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 24px 0;
+  }
+  @media (max-width: 620px) { .disruptor-grid { grid-template-columns: 1fr; } }
+  .disruptor-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 24px;
+    position: relative;
+  }
+  .disruptor-card::before {
+    content: '!';
+    position: absolute;
+    top: -14px;
+    left: 20px;
+    background: var(--accent);
+    color: white;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    border-radius: 50%;
+  }
+  .disruptor-card h3 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+  .disruptor-card .organism {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 10px;
+  }
+  .disruptor-card p {
+    font-size: 13.5px;
+    color: #444;
+    line-height: 1.7;
+  }
+  .disruptor-card .trait {
+    background: #fff3cd;
+    border-left: 3px solid var(--gold);
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-top: 12px;
+    color: #5a4000;
+  }
+
+  /* ===== QUESTION BOX ===== */
+  .question-box {
+    background: #e8f4f8;
+    border: 1px solid #a8d4e8;
+    border-left: 4px solid var(--accent2);
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+    color: #1a3a4a;
+  }
+  .question-box::before {
+    content: '💭 学生への問い';
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent2);
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  /* ===== KEY CONCEPT ===== */
+  .key-concept {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 40px;
+    margin: 32px 0;
+    position: relative;
+  }
+  .key-concept .kc-label {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 16px;
+  }
+  .key-concept h3 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .key-concept h3 em {
+    color: var(--gold);
+    font-style: normal;
+    border-bottom: 1px solid var(--gold);
+  }
+  .vs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 520px) { .vs-grid { grid-template-columns: 1fr; } }
+  .vs-card {
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 20px;
+    background: rgba(255,255,255,0.05);
+  }
+  .vs-card .vs-label {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .vs-card.bacteria .vs-label { color: var(--accent3); }
+  .vs-card.virus .vs-label { color: #e74c3c; }
+  .vs-card p {
+    font-size: 13.5px;
+    color: rgba(245,240,232,0.85);
+    line-height: 1.7;
+  }
+  .vs-card .verdict {
+    margin-top: 12px;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'Noto Serif JP', serif;
+  }
+  .vs-card.bacteria .verdict { color: var(--accent3); }
+  .vs-card.virus .verdict { color: #e74c3c; }
+
+  /* ===== ANALOGY ===== */
+  .analogy-box {
+    background: var(--highlight);
+    border: 1px solid #f0d060;
+    border-left: 4px solid var(--gold);
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 14px;
+    color: #4a3800;
+  }
+  .analogy-box::before {
+    content: '🏭 概念アナロジー';
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #7a5a00;
+  }
+  .analogy-box .analogy-items {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .analogy-item {
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+    padding: 12px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid #e0c030;
+  }
+  .analogy-item .emoji { font-size: 28px; display: block; margin-bottom: 6px; }
+  .analogy-item strong { display: block; font-size: 13px; margin-bottom: 4px; color: #3a2800; }
+  .analogy-item span { font-size: 12px; color: #6a5000; }
+
+  /* ===== TEACHER VOICE ===== */
+  .teacher-quote {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--muted);
+    padding: 18px 24px;
+    margin: 20px 0;
+    font-size: 14px;
+    color: #3a3a4a;
+    font-style: italic;
+    position: relative;
+  }
+  .teacher-quote::before {
+    content: '教員より';
+    display: block;
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  /* ===== ACTIVE LEARNING ===== */
+  .al-box {
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+    background: var(--card-bg);
+    margin: 24px 0;
+  }
+  .al-box h3 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: var(--accent2);
+  }
+  .al-box ul {
+    list-style: none;
+    padding: 0;
+  }
+  .al-box ul li {
+    font-size: 14px;
+    padding: 10px 0 10px 24px;
+    border-bottom: 1px dashed var(--border);
+    position: relative;
+    color: #333;
+  }
+  .al-box ul li:last-child { border-bottom: none; }
+  .al-box ul li::before {
+    content: '▶';
+    position: absolute;
+    left: 0;
+    color: var(--accent2);
+    font-size: 11px;
+    top: 13px;
+  }
+
+  /* ===== REPORT QUESTION ===== */
+  .report-box {
+    background: #f0f0f8;
+    border: 1px solid #c8c8e0;
+    border-left: 4px solid var(--accent);
+    padding: 20px 24px;
+    margin: 24px 0;
+  }
+  .report-box::before {
+    content: '📝 レポート課題';
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .report-box p { font-size: 14px; color: #2a2a3a; line-height: 1.8; }
+
+  /* ===== CLOSING ===== */
+  .closing {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 40px;
+    margin-top: 60px;
+    text-align: center;
+  }
+  .closing .closing-label {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 20px;
+  }
+  .closing blockquote {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 17px;
+    line-height: 1.8;
+    color: rgba(245,240,232,0.9);
+    max-width: 580px;
+    margin: 0 auto;
+    font-style: italic;
+  }
+  .closing blockquote em {
+    color: var(--gold);
+    font-style: normal;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    background: #111;
+    color: #aaa;
+    padding: 28px 24px;
+    font-size: 11px;
+    line-height: 1.8;
+    text-align: center;
+  }
+  footer strong { color: #ccc; }
+
+  /* ===== ITALIC for scientific names ===== */
+  em.sci { font-style: italic; }
+
+  /* ===== SCROLL ANIMATION ===== */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<header class="hero">
+  <div class="hero-inner">
+    <span class="hero-tag">人体を考える — 講義資料</span>
+    <h1>細菌とは何か？<br><em>定義の難しさと生命の境界線</em></h1>
+    <p class="hero-sub">誰もが知っている「細菌」を、誰も定義できない理由</p>
+    <div class="hero-question">
+      「もし宇宙人が『地球の細菌とウイルスの違いを教えてくれ』と言ってきたら、あなたは何と答えますか？」
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===== SECTION 1: 到達目標 ===== -->
+  <section class="section reveal">
+    <span class="section-num">01 — LEARNING OBJECTIVES</span>
+    <h2>講義の到達目標</h2>
+    <div class="goals">
+      <h3>この講義で身につけること</h3>
+      <ol>
+        <li>「自明な定義」の難しさを理解し、物事を論理的に分類する思考力を養う</li>
+        <li>細菌とウイルスの本質的な違いを「サイズ」ではなく<strong>「自己翻訳系（リボソーム）の有無」</strong>として捉え直す</li>
+        <li>人体に共生する細菌（独立した生命体）とシステムに介入するウイルス（情報コード）の違いを学ぶ</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== SECTION 2: 定義の難しさ ===== -->
+  <section class="section reveal">
+    <span class="section-num">02 — DEFINING THE UNDEFINABLE</span>
+    <h2>何かを「定義する」ということの難しさ</h2>
+    <p>言葉を定義しようとすると、その説明にまた別の言葉が必要になります。たとえば……</p>
+    <div class="analogy-box" style="--gold: #c8a800;">
+      <strong style="display:block; margin-bottom:10px; font-size:14px;">定義の無限後退</strong>
+      <div style="font-size:13.5px; color:#4a3800; line-height:2;">
+        「細胞とは？」→「膜に包まれた構造」→「膜とは？」→「脂質二重層」→「脂質とは？」→……
+      </div>
+    </div>
+    <p>行き着く先は <strong>無限後退（定義がキリなく続く）</strong> か、<strong>循環定義（堂々巡り）</strong> の罠です。</p>
+    <div class="teacher-quote">
+      学問や論理には、どこかに「これ以上は分解しない、誰もが自明として認める出発点（公理）」が必要です。では、生物学において細菌を分ける「出発点」はどこにあるのでしょうか？
+    </div>
+  </section>
+
+  <!-- ===== SECTION 3: 比較表 ===== -->
+  <section class="section reveal">
+    <span class="section-num">03 — THE TEXTBOOK VIEW</span>
+    <h2>一般的なイメージ（教科書的な比較）</h2>
+    <p>まず教科書に書かれている「一般的な違い」を確認しましょう。ただし、これはあくまでも<strong>「一般的な」話</strong>です。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>特徴</th>
+            <th>一般的な細菌</th>
+            <th>一般的なウイルス</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>大きさ</td>
+            <td>マイクロメートル（µm）単位<br>光学顕微鏡で観察可能</td>
+            <td>ナノメートル（nm）単位<br>電子顕微鏡が必要</td>
+          </tr>
+          <tr>
+            <td>増殖</td>
+            <td>栄養があれば自ら増える<br>（自己複製）</td>
+            <td>宿主細胞に侵入しないと増えない<br>（偏性細胞内寄生）</td>
+          </tr>
+          <tr>
+            <td>構造</td>
+            <td>細胞膜・DNA・リボソームなど<br>を持つ細胞</td>
+            <td>遺伝子（DNA/RNA）と<br>タンパク質の殻のみ</td>
+          </tr>
+          <tr>
+            <td>抗菌薬</td>
+            <td>多くの細菌に有効</td>
+            <td>効果なし<br>（抗ウイルス薬が必要）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="teacher-quote">
+      自然界はデジタルではなくグラデーション。この境界線をめちゃくちゃにする「曲者」たちがいます——。
+    </div>
+  </section>
+
+  <!-- ===== SECTION 4: 曲者① ===== -->
+  <section class="section reveal">
+    <span class="section-num">04 — BOUNDARY BREAKERS</span>
+    <h2>境界線を揺るがす存在たち</h2>
+    <p>教科書の分類表を揺さぶる、実在する生物・粒子を紹介します。</p>
+
+    <div class="disruptor-grid">
+
+      <div class="disruptor-card">
+        <h3>① 自分で生きられない細菌</h3>
+        <span class="organism"><em class="sci">Chlamydia</em>（クラミジア）<br><em class="sci">Rickettsia</em>（リケッチア）</span>
+        <p>構造は完全に「細菌」（細胞膜・細胞壁あり）。しかしエネルギー（ATP）を自分では作れず、<strong>ヒト細胞内に入り込まないと増殖できない</strong>偏性細胞内寄生細菌です。</p>
+        <div class="trait">⚠ 細胞内寄生はウイルスと同じ……でも構造は細菌。どちら？</div>
+      </div>
+
+      <div class="disruptor-card">
+        <h3>② 細菌より巨大なウイルス</h3>
+        <span class="organism">ミミウイルス（Mimivirus）など巨大ウイルス</span>
+        <p>サイズは数µmに達し、<strong>大腸菌（<em class="sci">Escherichia coli</em>）よりも大きい</strong>。さらに別の小ウイルスに「感染」される。タンパク質合成に関わる遺伝子を一部持つ。</p>
+        <div class="trait">⚠ 細菌より巨大で複雑……それでも「物質（粒子）」なのか？</div>
+      </div>
+
+    </div>
+
+    <div class="question-box">
+      エネルギーを人間に依存し、細胞内でしか生きられないなら、<em class="sci">Chlamydia</em> はウイルスではないのか？<br>
+      一方、細菌より大きく複雑な遺伝子を持つミミウイルスを、単なる「物質（粒子）」と呼んでいいのか？
+    </div>
+  </section>
+
+  <!-- ===== SECTION 5: キーコンセプト ===== -->
+  <section class="section reveal">
+    <span class="section-num">05 — THE AXIOM</span>
+    <h2>現代生物学が引いた防衛線</h2>
+    <p>混迷を極める定義論争に、科学は一つの「割り切り（合意）」を持ち込みました。</p>
+
+    <div class="key-concept">
+      <span class="kc-label">KEY CONCEPT — THE RIBOSOME CRITERION</span>
+      <h3>決定的な違いは<br><em>「自前のリボソーム（タンパク質合成工場）を持っているか」</em></h3>
+
+      <div class="vs-grid">
+        <div class="vs-card bacteria">
+          <span class="vs-label">BACTERIA — 細菌</span>
+          <p>どれだけ他力本願（<em class="sci">Chlamydia</em>）でも、<strong>自分のリボソームで自分のタンパク質を作る</strong>。エネルギー産生能力の有無は問わない。</p>
+          <div class="verdict">→ 「細胞（生物）」</div>
+        </div>
+        <div class="vs-card virus">
+          <span class="vs-label">VIRUS — ウイルス</span>
+          <p>どれだけ巨大（ミミウイルス）でも、<strong>リボソームを持たない</strong>。ヒト細胞（工場）をハッキングして自分のタンパク質を作らせる。</p>
+          <div class="verdict">→ 「非細胞（物質・粒子）」</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-items">
+        <div class="analogy-item">
+          <span class="emoji">🏭</span>
+          <strong>細菌</strong>
+          <span>自前の工場（リボソーム）を持って<br>共生・対立する別個の生命体</span>
+        </div>
+        <div class="analogy-item">
+          <span class="emoji">💾</span>
+          <strong>ウイルス</strong>
+          <span>設計図だけ持って<br>他人の工場をハッキングする情報コード</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION 6: 人体との関係 ===== -->
+  <section class="section reveal">
+    <span class="section-num">06 — IMPLICATIONS FOR THE HUMAN BODY</span>
+    <h2>人体を考える上での「細菌」</h2>
+    <p>「細菌とは何か」という定義は、自然界が引いた線ではありません。人類が論理を進めるために <strong>「リボソームの有無」という位置に引いた人工的な防衛線（公理）</strong> です。</p>
+    <p>この視点で人体を捉えると：</p>
+    <div class="goals">
+      <h3>まとめ</h3>
+      <ol>
+        <li><strong>細菌は「独自の工場を持つ別個の生命体」</strong>として人体と共生・対立する。腸内細菌叢（gut microbiota）はその典型例。</li>
+        <li><strong>ウイルスは「人体の工場をシステムエラーさせる情報コード」</strong>として捉えることができる。</li>
+        <li>境界線上の存在（<em class="sci">Chlamydia</em>、ミミウイルスなど）は、定義が「自然の分類」ではなく「人間の論理的合意」であることを示している。</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== SECTION 7: アクティブラーニング ===== -->
+  <section class="section reveal">
+    <span class="section-num">07 — ACTIVE LEARNING</span>
+    <h2>アクティブラーニングのための展開</h2>
+
+    <div class="al-box">
+      <h3>🎯 最初の10分：アイスブレイク</h3>
+      <ul>
+        <li>比較表を見せる前に「細菌とウイルスの違いをスマホで検索せずに3つ書き出してみて」とペアワーク</li>
+        <li>大半が「大きさ」「抗菌薬が効くかどうか」を出してくる → そこへ「曲者」を突きつける</li>
+        <li><strong>認知の不協和（あ、意外と定義できない！）</strong>を起こすことで後半の集中力が高まる</li>
+      </ul>
+    </div>
+
+    <div class="report-box">
+      リボソームの有無による分類に賛成ですか？ それとも、あなたなら別の特徴（例えばゲノムの大きさや膜の有無など）を「公理」として境界線を引きますか？ 自分の考えを述べよ。
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== CLOSING QUOTE ===== -->
+<div class="closing">
+  <span class="closing-label">FINAL MESSAGE TO STUDENTS</span>
+  <blockquote>
+    「もし将来、自前のリボソームを1つだけ持つウイルスが見つかったら、この講義の定義は崩壊します。その時、皆さんは<em>『生命』の境界線</em>をどこに引き直しますか？」
+  </blockquote>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <strong>【注意事項】</strong><br>
+  本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+  医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
