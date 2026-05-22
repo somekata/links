@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture 05 ― スキルスシミュレーションセンターへようこそ：針と採血</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Lato:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #faf9f7;
+    --paper: #ffffff;
+    --ink: #1a1a1a;
+    --ink-light: #555;
+    --rule: #e0dbd4;
+    --accent1: #b5451b;   /* 赤系：針・採血 */
+    --accent2: #4a7fa5;
+    --accent3: #3a7d5a;
+    --callout-bg: #f5f0eb;
+    --callout-border: #c8b89a;
+    --warn-bg: #fff5f0;
+    --warn-border: #e07050;
+    --tip-bg: #f0f7f4;
+    --tip-border: #5aaa80;
+    --serif: 'Noto Serif JP', serif;
+    --sans: 'Noto Sans JP', sans-serif;
+    --latin: 'Lato', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.9;
+    padding: 0 0 80px;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    background: var(--ink);
+    color: #fff;
+    padding: 56px 40px 44px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 8px,
+      rgba(181,69,27,0.08) 8px,
+      rgba(181,69,27,0.08) 9px
+    );
+  }
+  header .lecture-no {
+    display: inline-block;
+    font-family: var(--latin);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    color: var(--accent1);
+    text-transform: uppercase;
+    border: 1px solid rgba(181,69,27,0.5);
+    padding: 3px 14px;
+    margin-bottom: 1.2rem;
+    position: relative;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 700;
+    line-height: 1.4;
+    position: relative;
+    color: #fff;
+  }
+  header h1 em {
+    display: block;
+    font-size: clamp(14px, 2.5vw, 18px);
+    font-weight: 400;
+    color: #c8bfb5;
+    margin-top: 6px;
+    font-style: normal;
+    font-family: var(--sans);
+    letter-spacing: 0.05em;
+  }
+  header .subtitle {
+    margin-top: 16px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: #888;
+    letter-spacing: 0.1em;
+    position: relative;
+  }
+
+  /* ===== LAYOUT ===== */
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ===== TOC ===== */
+  nav.toc {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent1);
+    margin: 40px auto 0;
+    max-width: 820px;
+    padding: 28px 32px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  nav.toc h2 {
+    font-family: var(--latin);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--accent1);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  nav.toc ol {
+    padding-left: 1.4em;
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 2;
+    color: var(--ink-light);
+  }
+  nav.toc ol li a {
+    color: var(--ink-light);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  nav.toc ol li a:hover { color: var(--accent1); }
+
+  /* ===== SECTION LABEL ===== */
+  .section-label {
+    font-family: var(--latin);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    color: var(--accent1);
+    text-transform: uppercase;
+    margin: 56px 0 6px;
+  }
+
+  /* ===== HEADINGS ===== */
+  h2.topic {
+    font-family: var(--serif);
+    font-size: clamp(18px, 3vw, 24px);
+    font-weight: 700;
+    color: var(--ink);
+    border-bottom: 2px solid var(--rule);
+    padding-bottom: 10px;
+    margin-bottom: 28px;
+  }
+  h3.sub {
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent2);
+    margin: 32px 0 12px;
+    padding-left: 12px;
+    border-left: 3px solid var(--accent2);
+  }
+
+  /* ===== DIALOGUE ===== */
+  .dialogue { margin: 0 0 4px; }
+  .dialogue + .dialogue { margin-top: 0; }
+
+  .line {
+    display: flex;
+    gap: 14px;
+    margin: 10px 0;
+    align-items: flex-start;
+  }
+  .line.teacher { flex-direction: row; }
+  .line.student { flex-direction: row-reverse; }
+
+  .avatar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-top: 2px;
+  }
+  .teacher .avatar { background: #1a1a1a; color: #fff; }
+  .student .avatar { background: #e8e0d8; color: #555; }
+
+  .bubble {
+    max-width: 78%;
+    padding: 12px 16px;
+    border-radius: 2px;
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.8;
+    position: relative;
+  }
+  .teacher .bubble {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--ink);
+  }
+  .student .bubble {
+    background: #f0ece6;
+    border: 1px solid #ddd5c8;
+    border-right: 3px solid var(--accent2);
+    text-align: right;
+  }
+
+  .speaker {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    margin-bottom: 4px;
+    font-family: var(--latin);
+    text-transform: uppercase;
+  }
+  .teacher .speaker { color: var(--ink-light); }
+  .student .speaker { color: var(--accent2); }
+
+  /* ===== CALLOUT BOXES ===== */
+  .callout {
+    background: var(--callout-bg);
+    border: 1px solid var(--callout-border);
+    border-left: 4px solid var(--callout-border);
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-family: var(--sans);
+    font-size: 14.5px;
+    line-height: 1.85;
+  }
+  .callout .callout-title {
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: #7a6040;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-family: var(--latin);
+  }
+  .callout.warn {
+    background: var(--warn-bg);
+    border-color: var(--warn-border);
+  }
+  .callout.warn .callout-title { color: var(--accent1); }
+  .callout.tip {
+    background: var(--tip-bg);
+    border-color: var(--tip-border);
+  }
+  .callout.tip .callout-title { color: #2a7a50; }
+
+  /* ===== TABLE ===== */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 14px;
+    margin: 20px 0;
+  }
+  .data-table th {
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .data-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .data-table tr:nth-child(even) td { background: #f7f4f0; }
+  .data-table .gauge {
+    font-family: var(--latin);
+    font-weight: 700;
+    color: var(--accent1);
+    font-size: 15px;
+  }
+
+  /* ===== STEP BOX ===== */
+  .steps {
+    counter-reset: step;
+    margin: 20px 0;
+  }
+  .step-item {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: var(--accent1);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--latin);
+    font-weight: 700;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .step-content {
+    flex: 1;
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  .step-content strong {
+    display: block;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  /* ===== RULE ===== */
+  hr.section-rule {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 48px 0 0;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    margin-top: 72px;
+    padding: 28px 32px;
+    background: var(--ink);
+    color: #888;
+    font-family: var(--sans);
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: center;
+  }
+  footer p + p { margin-top: 6px; }
+
+  /* ===== MISC ===== */
+  strong { font-weight: 700; }
+  em.term {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--accent1);
+    background: rgba(181,69,27,0.07);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+  .latin { font-family: var(--latin); }
+  .note-small {
+    font-size: 13px;
+    color: var(--ink-light);
+    font-family: var(--sans);
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 40px 20px 32px; }
+    .container { padding: 0 16px; }
+    nav.toc { padding: 20px 16px; }
+    .bubble { max-width: 88%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="lecture-no">Lecture 05</div>
+  <h1>スキルスシミュレーションセンターへようこそ<br>
+    <em>針の種類と採血の基本</em>
+  </h1>
+  <p class="subtitle">初学者向け ― 対話形式テキスト</p>
+</header>
+
+<div class="container">
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#s1">スキルスシミュレーションセンターとは</a></li>
+      <li><a href="#s2">針のゲージ（Gauge）による分類</a></li>
+      <li><a href="#s3">用途による針の使い分け</a></li>
+      <li><a href="#s4">採血の手順 ― 実践ガイド</a></li>
+      <li><a href="#s5">よくあるトラブルと対策</a></li>
+    </ol>
+  </nav>
+</div>
+
+<!-- ============================================================ -->
+<div class="container">
+  <div class="section-label" id="s1">Section 01</div>
+  <h2 class="topic">スキルスシミュレーションセンターとは</h2>
+
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      今日からスキルスシミュレーションセンター（Skills Simulation Center、略して SSC）での実習が始まります。まず基本的な疑問から——SSCって、どんな場所だと思いますか？
+    </div>
+  </div>
+  <div class="line student">
+    <div class="avatar">👤</div>
+    <div class="bubble">
+      <div class="speaker">Student</div>
+      手術や処置の練習をする場所……ですよね？でも、実際に患者さんがいるわけじゃないですよね？
+    </div>
+  </div>
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      その通り。SSCは「安全に失敗できる場所」です。本物の患者さんに初めて針を刺すより、まずシミュレーターで感覚をつかんでおく。航空機パイロットが本機に乗る前にフライトシミュレーターで訓練するのと同じ考え方です。<br><br>
+      ここでできることは大きく3つに分けられます。①手技（採血・点滴・挿管など）、②画像・検査の読み方（エコー・内視鏡）、③緊急対応（AEDや一次救命処置）。今日はまず一番基本の「針」から始めましょう。
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-title">💡 SSC利用のマインドセット</div>
+    シミュレーションでの「失敗」は歓迎です。ここで気づくことが、将来の患者さんを守ります。遠慮せず、どんどん試して、どんどん質問してください。「うまくできなくて恥ずかしい」という感覚は捨てましょう。
+  </div>
+
+  <!-- ============================================================ -->
+  <hr class="section-rule">
+  <div class="section-label" id="s2">Section 02</div>
+  <h2 class="topic">針のゲージ（Gauge）による分類</h2>
+
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      さて、目の前にいろんな色の針が並んでいますね。この「色」に気づきましたか？
+    </div>
+  </div>
+  <div class="line student">
+    <div class="avatar">👤</div>
+    <div class="bubble">
+      <div class="speaker">Student</div>
+      はい、橙色・緑・水色・黄色……色によって何かが違うんですよね？
+    </div>
+  </div>
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      正解。針の太さを表す単位が<em class="term">ゲージ（Gauge、G）</em>です。そして直感に反することがあります——<strong>数字が大きいほど、針は細い</strong>んです。
+    </div>
+  </div>
+  <div class="line student">
+    <div class="avatar">👤</div>
+    <div class="bubble">
+      <div class="speaker">Student</div>
+      えっ、逆なんですか！？なぜですか？
+    </div>
+  </div>
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      歴史的な製造工程の話で、「1インチの金属棒から何本の針が作れるか」という引き抜き回数がゲージに対応しているんです。多く引き抜くほど細くなる——だから回数が多い（= 数字が大きい）ほど細い針になる。覚えにくければ「Gが大きい＝細い＝痛くない」と一言で覚えてください。
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">📏 主な針のゲージと外径</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ゲージ (G)</th>
+          <th>外径 (mm)</th>
+          <th>色（ISO規格）</th>
+          <th>主な用途</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="gauge">14G</td>
+          <td>2.1 mm</td>
+          <td>橙</td>
+          <td>大量輸液・急速輸血</td>
+        </tr>
+        <tr>
+          <td class="gauge">16G</td>
+          <td>1.7 mm</td>
+          <td>灰</td>
+          <td>輸血・手術時輸液</td>
+        </tr>
+        <tr>
+          <td class="gauge">18G</td>
+          <td>1.2 mm</td>
+          <td>緑</td>
+          <td>一般的な点滴、採血（成人）</td>
+        </tr>
+        <tr>
+          <td class="gauge">20G</td>
+          <td>0.9 mm</td>
+          <td>ピンク</td>
+          <td>一般的な点滴・採血（最もよく使う）</td>
+        </tr>
+        <tr>
+          <td class="gauge">22G</td>
+          <td>0.7 mm</td>
+          <td>水色</td>
+          <td>小児・細い血管・皮下注射</td>
+        </tr>
+        <tr>
+          <td class="gauge">24G</td>
+          <td>0.55 mm</td>
+          <td>黄</td>
+          <td>新生児・非常に細い血管</td>
+        </tr>
+        <tr>
+          <td class="gauge">27G</td>
+          <td>0.4 mm</td>
+          <td>灰</td>
+          <td>インスリン注射・皮内テスト</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note-small">※ 色はISO 6009規格に準拠。メーカーにより一部異なる場合があります。</p>
+  </div>
+
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      採血で最もよく使うのは<strong>21G〜22G</strong>です。成人の通常の採血なら21Gか22Gを選べばまず間違いありません。18Gは血管が太い人に使うと早く採れますが、細い血管に無理に使うと血管を傷めます。
+    </div>
+  </div>
+  <div class="line student">
+    <div class="avatar">👤</div>
+    <div class="bubble">
+      <div class="speaker">Student</div>
+      太い針の方が早く採れるから良さそうですが、そういうわけじゃないんですね。
+    </div>
+  </div>
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      そうです。太すぎると、①患者さんの痛みが強い、②細い血管なら貫通してしまう、③溶血（赤血球が壊れる）が起きて検査値が狂う——という問題があります。血液検査でカリウムが異常に高かったら、採血手技の問題を疑うことも重要なんですよ。
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">⚠️ 溶血に注意</div>
+    細い針で無理に吸引したり、シリンジで強引に引きすぎたりすると赤血球が壊れ（溶血）、血清中にカリウムや乳酸脱水素酵素（LDH）が漏れ出します。「K高値」「LDH高値」を見たら、まず採血手技の問題を疑いましょう。再採血で正常になることが多いです。
+  </div>
+
+  <!-- ============================================================ -->
+  <hr class="section-rule">
+  <div class="section-label" id="s3">Section 03</div>
+  <h2 class="topic">用途による針の使い分け</h2>
+
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      「針」には種類があります。形状と目的で大きく分けましょう。
+    </div>
+  </div>
+
+  <h3 class="sub">① 翼状針（ウイング針・バタフライ針）</h3>
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      プラスチックの「翼」が両側についた針です。翼をつまんで固定しやすく、固定中も動きにくい。細い静脈や小児の採血に向いています。ただし、針とチューブの間に死腔（dead space）があるので凝固検査の採血には注意が必要です。
+    </div>
+  </div>
+
+  <h3 class="sub">② 真空採血管用ホルダー＋採血針</h3>
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      現在の病院で最も一般的な採血システムです。ホルダーに採血針を取り付け、真空の採血管を差し込むと自動的に血液が入ります。複数の検査管を連続して採れるのが最大の利点です。
+    </div>
+  </div>
+  <div class="line student">
+    <div class="avatar">👤</div>
+    <div class="bubble">
+      <div class="speaker">Student</div>
+      採血管にも色の違いがありますよね？あれは何ですか？
+    </div>
+  </div>
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      鋭い目ですね。採血管のキャップの色は<strong>入っている薬剤（添加物）の種類</strong>を表しています。代表的なものを覚えておきましょう。
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">🧪 採血管キャップの色と用途</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>キャップ色</th><th>添加物</th><th>主な検査</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong style="color:#c8381a">赤（レッド）</strong></td><td>なし（または凝固促進剤）</td><td>生化学・免疫・血清検査</td></tr>
+        <tr><td><strong style="color:#7040a0">紫（EDTA）</strong></td><td>EDTA（抗凝固）</td><td>血算（CBC）</td></tr>
+        <tr><td><strong style="color:#1a6ea0">水色</strong></td><td>クエン酸Na（抗凝固）</td><td>凝固検査（PT・APTT）</td></tr>
+        <tr><td><strong style="color:#206a40">緑</strong></td><td>ヘパリン</td><td>緊急生化学・血液ガス</td></tr>
+        <tr><td><strong style="color:#c8a800">黄</strong></td><td>SST（ゲル＋凝固促進）</td><td>生化学・ホルモン</td></tr>
+        <tr><td><strong style="color:#606060">灰</strong></td><td>フッ化Na（解糖抑制）</td><td>血糖・乳酸</td></tr>
+      </tbody>
+    </table>
+    <p class="note-small">※ メーカーにより色が異なる場合があります。施設の採血マニュアルを必ず確認してください。</p>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-title">💡 採血順序（Order of draw）</div>
+    複数の採血管を使う場合、<strong>順序が重要</strong>です。誤った順序で採ると、前の管の添加物が混入して検査値が狂います。一般的な順序：<br>
+    ① 血培（無菌が最優先） → ② 凝固（水色） → ③ 血清（赤・黄） → ④ ヘパリン（緑） → ⑤ EDTA（紫） → ⑥ フッ化（灰）<br>
+    施設によって異なるため、必ず自施設のプロトコルを確認してください。
+  </div>
+
+  <!-- ============================================================ -->
+  <hr class="section-rule">
+  <div class="section-label" id="s4">Section 04</div>
+  <h2 class="topic">採血の手順 ― 実践ガイド</h2>
+
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      では実際に採血をやってみましょう。まず全体の流れを確認します。「なぜそうするのか」を考えながら聞いてください。
+    </div>
+  </div>
+
+  <h3 class="sub">ゴムバンド（駆血帯）の使い方</h3>
+
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      駆血帯（くけつたい）——ゴムバンドですが——は採血部位の<strong>中枢側（心臓に近い方）</strong>に巻きます。肘の少し上、だいたい7〜8 cm上です。強さは、<em class="term">動脈は通しつつ静脈を止める</em>強さ。強すぎると血液が押し出されて溶血の原因になります。どう確認するか、わかりますか？
+    </div>
+  </div>
+  <div class="line student">
+    <div class="avatar">👤</div>
+    <div class="bubble">
+      <div class="speaker">Student</div>
+      脈を触る？……橈骨動脈が触れれば、動脈は通っているということですか？
+    </div>
+  </div>
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      その通りです。駆血帯を巻いた後、手首で橈骨動脈の拍動を確認する。拍動があれば適切な強さです。もう一つ重要なこと——駆血帯をつけたまま<strong>1分以上経過させない</strong>こと。長くなると血液が局所にうっ滞して、特にカリウムやラクテートの値が上昇します。
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>患者確認・準備</strong>
+        氏名・生年月日・採血管の一致を確認。アレルギー歴（特にラテックス・消毒薬）を確認する。手洗い・手指消毒。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>体位・血管の選択</strong>
+        肘を伸展させ安楽な姿勢に。肘正中皮静脈（最も一般的）、橈側皮静脈、尺側皮静脈を触診で確認。見えなければ下腕を下げて血管を怒張させる。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>駆血帯装着</strong>
+        刺入予定部位の7〜8 cm上に巻く。橈骨動脈拍動を確認し、適切な強さに調整。時計を確認（1分以内が目安）。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>消毒・乾燥</strong>
+        70%イソプロパノールまたは10%ポビドンヨードで刺入部を中心から外側へ円を描くように消毒。<em class="term">必ず乾燥させる</em>——濡れたまま刺すと溶血や疼痛の原因に。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <strong>針の刺入</strong>
+        皮膚を軽く伸展させ（非利き手の親指で下方に引っ張る）、針の斜面（ベベル）を上にして15〜30°の角度で刺入。血液の逆流（フラッシュバック）を確認したら角度を浅くして血管内へ進める。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <strong>採血管の接続と採血</strong>
+        針を固定しながら採血管を押し込む。必要本数を採血順序通りに採る。最後の管に血液が流入したら<em class="term">駆血帯を外す</em>（忘れると抜針後に出血が多くなる）。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">7</div>
+      <div class="step-content">
+        <strong>抜針・止血</strong>
+        採血管を外してから針を抜く（管をつけたまま抜くと血液が漏れる）。ガーゼで圧迫止血。2〜3分間は肘を曲げずに圧迫してもらう。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">8</div>
+      <div class="step-content">
+        <strong>後処理・記録</strong>
+        針はリキャップせず直接針捨て容器へ。採血管を軽く転倒混和（激しく振らない）。ラベルの再確認後、検体を提出。
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">⚠️ 針刺し事故の予防</div>
+    使用済みの針はリキャップ（キャップを再び被せること）<strong>厳禁</strong>です。針刺し事故の多くがリキャップ時に起きています。やむを得ない場合はワンハンド法（片手でキャップを机に立てかけて差し込む）を用いてください。万が一針刺しが起きたら、流水でよく洗い、すぐに上司・感染担当部門に報告してください。
+  </div>
+
+  <!-- ============================================================ -->
+  <hr class="section-rule">
+  <div class="section-label" id="s5">Section 05</div>
+  <h2 class="topic">よくあるトラブルと対策</h2>
+
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      実際に採血をしてみると、必ず「うまくいかない」場面に直面します。シミュレーターで体験したトラブルを整理しておきましょう。
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">🩸 トラブルシューティング</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>状況</th><th>考えられる原因</th><th>対処</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>血液が逆流しない</td>
+          <td>血管を貫通した・血管外にある</td>
+          <td>針を少し引き戻す。感触を確認しながらゆっくり調整。無理なら抜去して別の部位へ</td>
+        </tr>
+        <tr>
+          <td>途中で血液が止まる</td>
+          <td>血管が虚脱・針が当たっている・駆血帯が外れた</td>
+          <td>駆血帯を確認。針の角度を微調整。血管が細い場合は別の部位を選択</td>
+        </tr>
+        <tr>
+          <td>刺入部が腫れてくる</td>
+          <td>血管外漏出（血管穿破）</td>
+          <td>即座に抜去。ガーゼで圧迫。冷却。皮下血腫を形成しやすいため数分間しっかり圧迫</td>
+        </tr>
+        <tr>
+          <td>患者が気分不良・迷走神経反射</td>
+          <td>疼痛・不安・空腹など</td>
+          <td>即座に水平位（仰臥位）に。顔色・血圧・脈拍を確認。通常数分で改善</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="line teacher">
+    <div class="avatar">🩺</div>
+    <div class="bubble">
+      <div class="speaker">Teacher</div>
+      SSCで何度も練習して、手技を体に染み込ませてください。「どんな感触のときに血管に入ったか」「駆血帯の適切な強さ」——こういった感覚は言葉より体験の積み重ねです。次回は腹腔鏡と内視鏡を体験します。楽しみにしていてください。
+    </div>
+  </div>
+  <div class="line student">
+    <div class="avatar">👤</div>
+    <div class="bubble">
+      <div class="speaker">Student</div>
+      はい！今日だけでもかなり理解が深まりました。早く実際に練習してみます！
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  <p>本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。</p>
+  <p>医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。</p>
+  <p>二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>
+</footer>
+
+</body>
+</html>
