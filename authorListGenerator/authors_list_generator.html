@@ -372,6 +372,9 @@
       <label>
         <input type="checkbox" id="optSorted" checked> 施設番号順に並べる
       </label>
+      <label>
+        <input type="checkbox" id="optAffilFormat"> "Author affiliations" フォーマットを追加出力
+      </label>
     </div>
   </div>
 
@@ -399,6 +402,11 @@
   </div>
 
 </div>
+
+<footer style="max-width:900px;margin:40px auto 0;padding:20px 0 32px;border-top:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.68rem;color:#7a7469;line-height:1.7;">
+  本ツールはAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
 
 <script>
 // ─── State ────────────────────────────────────────────────────────────────
@@ -686,6 +694,75 @@ function generate() {
         html += `<div style="color:var(--muted);font-size:0.72em">${fn} ${ln}: <a href="mailto:${email}" style="color:var(--accent)">${email}</a></div>`;
       }
     });
+  }
+
+  // ─ "Author affiliations" format ──────────────────────────────────────
+  const optAffilFormat = document.getElementById('optAffilFormat').checked;
+  if (optAffilFormat) {
+    // Build: "Last Name Initial. First Name" → "F.N. Last"
+    // Format per spec: First Initial. Last Name  e.g. J.A. Smith
+    function fmtInitialLast(author) {
+      const fn = getKey(author, 'first_name').trim();
+      const ln = getKey(author, 'last_name').trim();
+      // Generate initials from first name (handles middle names too)
+      const initials = fn.split(/[\s\-]+/).filter(Boolean).map(p => p[0].toUpperCase() + '.').join('');
+      return `${initials} ${ln}`;
+    }
+
+    // Build affiliation → [authors in order] map
+    const affilAuthors = {}; // affilNo → [author objects in display order]
+    sorted.forEach(author => {
+      const affilStr = getKey(author, 'affiliation_no', 'affiliation no').toString().trim();
+      const nos = affilStr ? affilStr.split(',').map(n => n.trim()).filter(Boolean) : [];
+      nos.forEach(no => {
+        if (!affilAuthors[no]) affilAuthors[no] = [];
+        affilAuthors[no].push(author);
+      });
+    });
+
+    // Build "Authors:" line with "FirstName LastName" style (e.g. Hisako Kushima)
+    function fmtFirstLast(author) {
+      const fn = getKey(author, 'first_name').trim();
+      const ln = getKey(author, 'last_name').trim();
+      return `${fn} ${ln}`;
+    }
+
+    const authorsLine = 'Authors: ' + sorted.map(a => fmtFirstLast(a)).join(', ');
+
+    // Build "Author affiliations:" line
+    // For each used affiliation (in usedNos order), output: Institution, city, state, country (F.I. Last, ...)
+    const affilParts = usedNos.map(no => {
+      const af = affilMap[no];
+      if (!af) return null;
+      const authors = affilAuthors[no] || [];
+      const authorStr = authors.map(a => fmtInitialLast(a)).join(', ');
+      // Build institution string: name + address if optAddress
+      let instStr = af.name;
+      if (optAddress && af.address) instStr += ', ' + af.address;
+      return `${instStr} (${authorStr})`;
+    }).filter(Boolean);
+
+    const affilLine = 'Author affiliations:\n' + affilParts.join('\n');
+
+    const affilFormatText = authorsLine + '\n\n' + affilLine;
+
+    // Append to plainText
+    plainText += '\n─────────────────────────────────\n';
+    plainText += affilFormatText + '\n';
+
+    // Append to HTML display
+    html += `<span class="sep"></span>`;
+    html += `<div style="color:var(--muted);font-size:0.72em;margin-bottom:4px;font-weight:600">Author affiliations フォーマット</div>`;
+    html += `<div class="affil-line" style="color:var(--text);margin-bottom:6px"><strong>Authors:</strong> ${sorted.map(a => fmtFirstLast(a)).join(', ')}</div>`;
+    html += `<div class="affil-line" style="color:var(--text);line-height:1.9"><strong>Author affiliations:</strong><br>`;
+    html += affilParts.map(p => {
+      const m = p.match(/^(.*?)\s*\(([^)]+)\)$/);
+      if (m) {
+        return `<span>${m[1]} <span style="color:var(--muted)">(${m[2]})</span></span>`;
+      }
+      return `<span>${p}</span>`;
+    }).join('<br>');
+    html += `</div>`;
   }
 
   outputEl.innerHTML = html;
