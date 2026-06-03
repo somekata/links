@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JIC 査読支援ツール</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8;
+  --paper: #fdfaf3;
+  --ink: #1a1410;
+  --ink2: #3d3530;
+  --ink3: #6b5f55;
+  --accent: #8b4513;
+  --accent2: #c06020;
+  --border: #d4c9b8;
+  --border2: #e8dece;
+  --highlight: #fff3cd;
+  --highlight2: #ffeaa0;
+  --green: #2d7a4f;
+  --red: #c0392b;
+  --blue: #2471a3;
+  --panel-w: 420px;
+  --header-h: 56px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--ink); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ── Header ── */
+#header {
+  height: var(--header-h);
+  background: var(--accent);
+  color: #fff;
+  display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+#header h1 { font-family: 'Zen Antique', serif; font-size: 18px; letter-spacing: 0.05em; }
+#header .sep { opacity: 0.4; }
+#load-btn {
+  margin-left: auto;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: #fff; padding: 6px 14px; border-radius: 4px;
+  cursor: pointer; font-size: 13px; font-family: 'Noto Sans JP', sans-serif;
+  transition: background 0.2s;
+}
+#load-btn:hover { background: rgba(255,255,255,0.35); }
+#file-input { display: none; }
+
+/* ── Main layout ── */
+#main { flex: 1; display: flex; overflow: hidden; }
+
+/* ── PDF pane ── */
+#pdf-pane {
+  flex: 1; overflow-y: auto; overflow-x: auto;
+  background: #888; padding: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  position: relative;
+}
+#pdf-pane.drag-over { outline: 4px dashed #fff; }
+#drop-hint {
+  color: #ddd; text-align: center; margin-top: 80px;
+  font-family: 'Zen Antique', serif; font-size: 20px;
+  pointer-events: none;
+}
+.page-wrapper {
+  position: relative; background: white; box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.page-wrapper canvas { display: block; }
+.page-label {
+  position: absolute;
+  top: 6px; right: 6px;
+  z-index: 20;
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 2px; pointer-events: none;
+}
+.page-label-inner {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+}
+.page-num-raw {
+  background: rgba(30,30,30,0.72); color: #fff;
+  font-size: 11px; padding: 2px 7px; border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace; line-height: 1.4;
+  backdrop-filter: blur(2px);
+}
+.page-num-body {
+  background: rgba(139,69,19,0.85); color: #fff;
+  font-size: 11px; padding: 2px 7px; border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace; line-height: 1.4;
+  backdrop-filter: blur(2px);
+  display: none;
+}
+/* Floating page indicator - stays visible while scrolling */
+#page-indicator {
+  position: absolute;
+  top: 12px; right: 12px;
+  z-index: 100;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  pointer-events: none;
+}
+#page-indicator .ind-raw {
+  background: rgba(20,20,20,0.82); color: #fff;
+  font-size: 12px; padding: 3px 10px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; line-height: 1.5;
+  backdrop-filter: blur(4px); box-shadow: 0 1px 6px rgba(0,0,0,0.4);
+}
+#page-indicator .ind-body {
+  background: rgba(139,69,19,0.90); color: #fff;
+  font-size: 12px; padding: 3px 10px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; line-height: 1.5;
+  backdrop-filter: blur(4px); box-shadow: 0 1px 6px rgba(0,0,0,0.4);
+  display: none;
+}
+.text-layer {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  overflow: hidden; pointer-events: none;
+}
+.text-layer span {
+  position: absolute; white-space: pre; color: transparent;
+  transform-origin: 0% 0%; cursor: text; pointer-events: all;
+  user-select: text;
+}
+.text-layer span:hover { background: rgba(255,200,50,0.2); }
+.comment-marker {
+  position: absolute; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); color: white; font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-weight: bold; z-index: 10;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  transform: translate(-9px, -9px);
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.15s;
+}
+.comment-marker:hover { transform: translate(-9px,-9px) scale(1.2); }
+.section-marker {
+  position: absolute; left: 0; width: 100%;
+  height: 2px; background: rgba(36,113,163,0.5);
+  pointer-events: none; z-index: 5;
+}
+.section-pin {
+  position: absolute; left: 0; right: 0;
+  height: 2px; background: rgba(36,113,163,0.55);
+  z-index: 6; cursor: ns-resize;
+  transition: background 0.15s;
+}
+.section-pin:hover { background: rgba(36,113,163,0.9); }
+.section-pin-label {
+  position: absolute; left: 6px; top: -18px;
+  background: var(--blue); color: #fff; font-size: 10px;
+  padding: 2px 7px; border-radius: 3px 3px 3px 0;
+  font-family: 'JetBrains Mono', monospace; white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  cursor: ns-resize; user-select: none;
+}
+.section-pin-del {
+  position: absolute; right: -8px; top: -18px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #c0392b; color: #fff; font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.15s;
+  pointer-events: all;
+}
+.section-pin:hover .section-pin-del,
+.section-pin-label:hover ~ .section-pin-del,
+.section-pin-del:hover { opacity: 1; }
+/* Pin-mode cursor on PDF pane */
+#pdf-pane.pin-mode { cursor: crosshair; }
+#pdf-pane.pin-mode .text-layer span { cursor: crosshair !important; }
+/* Wizard bar */
+#pin-wizard {
+  position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%);
+  background: rgba(20,20,20,0.88); color: #fff;
+  border-radius: 10px; padding: 10px 16px;
+  display: none; flex-direction: column; align-items: center; gap: 6px;
+  z-index: 200; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px); min-width: 260px; pointer-events: all;
+}
+#pin-wizard.active { display: flex; }
+#pin-wizard-name {
+  font-family: 'Zen Antique', serif; font-size: 16px; font-weight: bold;
+  color: #ffd580; letter-spacing: 0.05em;
+}
+#pin-wizard-hint { font-size: 11px; color: #aaa; }
+#pin-wizard-btns { display: flex; gap: 8px; margin-top:2px; }
+.wiz-btn {
+  border: none; border-radius: 6px; padding: 5px 14px;
+  font-size: 12px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+  transition: background 0.15s;
+}
+.wiz-btn.skip { background: rgba(255,255,255,0.15); color: #ccc; }
+.wiz-btn.skip:hover { background: rgba(255,255,255,0.25); }
+.wiz-btn.done { background: #c0392b; color: #fff; }
+.wiz-btn.done:hover { background: #e74c3c; }
+
+/* ── Right panel ── */
+#right-panel {
+  width: var(--panel-w); background: var(--paper); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  overflow: hidden;
+}
+.panel-tabs {
+  display: flex; border-bottom: 2px solid var(--border);
+  flex-shrink: 0;
+}
+.tab-btn {
+  flex: 1; padding: 10px 6px; font-size: 12px; font-weight: 500;
+  border: none; background: none; cursor: pointer; color: var(--ink3);
+  font-family: 'Noto Sans JP', sans-serif;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: color 0.2s;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.tab-btn:hover:not(.active) { color: var(--ink); }
+.tab-content { flex: 1; overflow-y: auto; display: none; padding: 12px; }
+.tab-content.active { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Section setup ── */
+.section-row {
+  display: grid; grid-template-columns: 20px 1fr 64px; gap: 6px; align-items: center;
+}
+.section-detect-note { font-size: 11px; color: var(--ink3); padding: 4px 6px; background: var(--highlight); border-radius: 4px; }
+.small-btn {
+  border: 1px solid var(--border); background: var(--bg); color: var(--ink2);
+  padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  font-family: 'Noto Sans JP', sans-serif; transition: background 0.2s;
+}
+.small-btn:hover { background: var(--border); }
+.small-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.small-btn.primary:hover { background: var(--accent2); }
+
+/* ── Comment form ── */
+#comment-form {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+#comment-form h3 { font-size: 13px; font-family: 'Zen Antique', serif; color: var(--accent); }
+.form-row { display: flex; gap: 6px; align-items: center; }
+.form-row label { font-size: 11px; color: var(--ink3); min-width: 52px; }
+.form-row select, .form-row input[type=text], .form-row input[type=number] {
+  flex: 1; border: 1px solid var(--border); border-radius: 4px;
+  padding: 4px 6px; font-size: 12px; background: white; color: var(--ink);
+  font-family: 'Noto Sans JP', sans-serif;
+}
+.form-row select:focus, .form-row input:focus { outline: none; border-color: var(--accent); }
+#quote-text {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  background: var(--highlight); border: 1px solid var(--border2); border-radius: 4px;
+  padding: 6px; min-height: 40px; max-height: 80px; overflow-y: auto;
+  color: var(--ink2); white-space: pre-wrap; cursor: pointer;
+}
+#quote-text.empty { color: var(--ink3); font-style: italic; }
+textarea#comment-body {
+  border: 1px solid var(--border); border-radius: 4px; padding: 6px;
+  font-size: 12px; resize: vertical; min-height: 80px;
+  font-family: 'Noto Sans JP', sans-serif; background: white; color: var(--ink);
+}
+textarea#comment-body:focus { outline: none; border-color: var(--accent); }
+.form-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+/* ── Comment list ── */
+.comment-card {
+  background: white; border: 1px solid var(--border);
+  border-left: 4px solid var(--accent); border-radius: 6px; padding: 10px;
+  display: flex; flex-direction: column; gap: 6px; cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.comment-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.comment-card.active { border-left-color: var(--accent2); background: #fff8f0; }
+.comment-card.cat-specific { border-left-color: #d97706; }
+.comment-card.cat-general { border-left-color: #7c3aed; }
+.comment-card.cat-major { border-left-color: var(--red); }
+.comment-card.cat-minor { border-left-color: var(--blue); }
+.comment-card-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.comment-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; background: var(--accent); color: white; padding: 1px 6px; border-radius: 10px; }
+.comment-num.cat-specific { background: #d97706; }
+.comment-num.cat-general { background: #7c3aed; }
+.comment-num.cat-major { background: var(--red); }
+.comment-num.cat-minor { background: var(--blue); }
+.comment-loc { font-size: 11px; color: var(--ink3); font-family: 'JetBrains Mono', monospace; }
+.comment-cat-badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; color: white; }
+.cat-badge-specific { background: #d97706; }
+.cat-badge-general { background: #7c3aed; }
+.cat-badge-major { background: var(--red); }
+.cat-badge-minor { background: var(--blue); }
+.comment-quote-preview {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--ink3); background: var(--bg); padding: 3px 6px; border-radius: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.comment-body-preview { font-size: 12px; color: var(--ink2); line-height: 1.5; }
+.comment-card-footer { display: flex; gap: 4px; justify-content: flex-end; }
+.icon-btn { background: none; border: none; cursor: pointer; padding: 3px 6px; border-radius: 3px; font-size: 13px; color: var(--ink3); }
+.icon-btn:hover { background: var(--bg); color: var(--ink); }
+.icon-btn.del:hover { color: var(--red); }
+
+/* ── Drag handle ── */
+.drag-handle {
+  width: 5px; background: var(--border); cursor: col-resize; flex-shrink: 0;
+  transition: background 0.2s;
+}
+.drag-handle:hover { background: var(--accent); }
+
+/* ── Zoom controls ── */
+#zoom-ctrl {
+  position: fixed; bottom: 16px; left: 16px; z-index: 100;
+  display: flex; gap: 4px; background: rgba(0,0,0,0.6); border-radius: 20px; padding: 4px 8px;
+}
+#zoom-ctrl button {
+  background: none; border: none; color: white; cursor: pointer; padding: 2px 8px;
+  font-size: 16px; border-radius: 12px;
+}
+#zoom-ctrl button:hover { background: rgba(255,255,255,0.2); }
+#zoom-val { color: white; font-size: 12px; min-width: 40px; text-align: center; line-height: 28px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── Selection tooltip ── */
+#sel-tooltip {
+  position: fixed; display: none; background: var(--accent); color: white;
+  padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  font-family: 'Noto Sans JP', sans-serif;
+}
+#sel-tooltip:hover { background: var(--accent2); }
+
+/* ── Export bar ── */
+#export-bar {
+  height: 44px; background: var(--ink); display: flex; align-items: center;
+  gap: 10px; padding: 0 16px; flex-shrink: 0;
+}
+#export-bar span { color: #aaa; font-size: 12px; }
+.export-btn {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+  color: white; padding: 5px 14px; border-radius: 4px; cursor: pointer;
+  font-size: 12px; font-family: 'Noto Sans JP', sans-serif; transition: background 0.2s;
+}
+.export-btn:hover { background: rgba(255,255,255,0.3); }
+#status-msg { margin-left: auto; font-size: 12px; color: #88c; }
+
+/* ── Category checkboxes ── */
+.cat-check { cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.cat-check input { display: none; }
+.cat-chip { font-size: 11px; padding: 3px 9px; border-radius: 10px; border: 2px solid transparent; cursor: pointer; transition: all 0.15s; font-weight: 500; }
+.cat-chip.cat-specific { background: #fef3c7; border-color: #d97706; color: #92400e; }
+.cat-chip.cat-general  { background: #ede9fe; border-color: #7c3aed; color: #4c1d95; }
+.cat-chip.cat-major2   { background: #fee2e2; border-color: var(--red); color: var(--red); }
+.cat-chip.cat-minor2   { background: #dbeafe; border-color: var(--blue); color: var(--blue); }
+.cat-check input:checked + .cat-chip.cat-specific { background: #d97706; color: white; }
+.cat-check input:checked + .cat-chip.cat-general  { background: #7c3aed; color: white; }
+.cat-check input:checked + .cat-chip.cat-major2   { background: var(--red); color: white; }
+.cat-check input:checked + .cat-chip.cat-minor2   { background: var(--blue); color: white; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Footer ── */
+#app-footer {
+  background: #2a2320; color: #999; font-size: 10px; padding: 4px 16px;
+  text-align: center; flex-shrink: 0; line-height: 1.6;
+}
+
+h2.section-title {
+  font-family: 'Zen Antique', serif; font-size: 14px; color: var(--accent);
+  border-bottom: 1px solid var(--border2); padding-bottom: 6px;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+  <h1>📄 JIC 査読支援ツール</h1>
+  <span class="sep">|</span>
+  <span id="pdf-name" style="font-size:13px;opacity:0.8;">PDFを読み込んでください</span>
+  <button id="load-btn" onclick="document.getElementById('file-input').click()">📂 PDF を開く</button>
+  <input type="file" id="file-input" accept=".pdf">
+</div>
+
+<!-- Main -->
+<div id="main">
+  <!-- PDF pane -->
+  <div id="pdf-pane" id="pdf-pane">
+    <!-- Floating page indicator (stays visible while scrolling) -->
+    <div id="page-indicator">
+      <div class="ind-raw">p.─</div>
+      <div class="ind-body"></div>
+    </div>
+    <div id="drop-hint">
+      <div style="font-size:48px;margin-bottom:16px;">📄</div>
+      <div>PDFをここにドロップ</div>
+      <div style="font-size:14px;margin-top:8px;opacity:0.7;">または右上の「PDF を開く」ボタン</div>
+    </div>
+  </div>
+
+  <!-- Pin wizard overlay (floats over PDF pane) -->
+  <div id="pin-wizard">
+    <div id="pin-wizard-name">Meta / Title</div>
+    <div id="pin-wizard-hint">クリックでピンを打つ</div>
+    <div id="pin-wizard-btns">
+      <button class="wiz-btn skip" onclick="skipPinSection()">スキップ →</button>
+      <button class="wiz-btn done" onclick="stopPinWizard()">終了</button>
+    </div>
+  </div>
+
+  <!-- Resize handle -->
+  <div class="drag-handle" id="drag-handle"></div>
+
+  <!-- Right panel -->
+  <div id="right-panel">
+    <div class="panel-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-comments')">💬 コメント</button>
+      <button class="tab-btn" onclick="switchTab('tab-sections')">📑 セクション</button>
+      <button class="tab-btn" onclick="switchTab('tab-summary')">📋 一覧</button>
+    </div>
+
+    <!-- Tab: Comments -->
+    <div class="tab-content active" id="tab-comments">
+
+      <!-- Body start page setting at top -->
+      <div id="body-start-box" style="background:var(--highlight);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12px;font-weight:700;color:var(--accent);">本文開始ページ</span>
+        <input type="number" id="body-start-page" min="1" value="1" style="width:56px;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:13px;font-family:'JetBrains Mono',monospace;background:white;color:var(--ink);">
+        <button class="small-btn primary" onclick="applyBodyStart()" style="padding:4px 10px;">セット</button>
+        <span id="body-start-note" style="font-size:11px;color:var(--ink3);">未設定（p.1 = 本文p.1）</span>
+      </div>
+
+      <div id="comment-form">
+        <h3>新しいコメント</h3>
+        <div class="form-row" style="align-items:flex-start;">
+          <label style="margin-top:4px;">種別</label>
+          <div id="f-category-group" style="display:flex;flex-wrap:wrap;gap:6px;">
+            <label class="cat-check"><input type="checkbox" value="specific"><span class="cat-chip cat-specific">Specific</span></label>
+            <label class="cat-check"><input type="checkbox" value="general"><span class="cat-chip cat-general">General</span></label>
+            <label class="cat-check"><input type="checkbox" value="major"><span class="cat-chip cat-major2">Major</span></label>
+            <label class="cat-check"><input type="checkbox" value="minor"><span class="cat-chip cat-minor2">Minor</span></label>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>セクション</label>
+          <select id="f-section">
+            <option value="">─ 未指定 ─</option>
+          </select>
+        </div>
+        <div class="form-row" style="flex-wrap:wrap;gap:6px;">
+          <label>ページ</label>
+          <input type="number" id="f-page" min="1" placeholder="PDF p." style="width:68px;flex:none">
+          <span id="f-page-body-disp" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;align-self:center;min-width:60px;"></span>
+          <label style="margin-left:4px">行</label>
+          <input type="number" id="f-line" min="1" placeholder="─" style="width:60px;flex:none">
+        </div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:2px;">引用テキスト（PDFで文字を選択すると自動入力）</div>
+        <div id="quote-text" class="empty" onclick="clearQuote()">テキストを選択して引用...</div>
+        <textarea id="comment-body" placeholder="コメントを入力してください（英語可）"></textarea>
+        <div class="form-actions">
+          <button class="small-btn" onclick="clearForm()">クリア</button>
+          <button class="small-btn primary" onclick="addComment()">＋ 追加</button>
+        </div>
+      </div>
+
+      <div id="comment-list" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="text-align:center;color:var(--ink3);font-size:12px;padding:20px 0;" id="no-comment-msg">コメントはまだありません</div>
+      </div>
+    </div>
+
+    <!-- Tab: Sections -->
+    <div class="tab-content" id="tab-sections">
+      <h2 class="section-title">セクション設定</h2>
+
+      <!-- Start wizard button -->
+      <div style="background:var(--highlight);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:10px;">
+        <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">
+          PDFの各セクション先頭行をクリックしてピンを打ちます。<br>
+          ウィザードが順番にセクション名を案内します。
+        </div>
+        <button class="small-btn primary" onclick="startPinWizard()" id="start-wizard-btn" style="width:100%;padding:8px;">
+          📌 ピンウィザードを開始
+        </button>
+      </div>
+
+      <!-- Section list -->
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">設定済み（ピンはPDF上でドラッグ移動可・ページ番号は直接編集可）</div>
+      <div id="section-list" style="display:flex;flex-direction:column;gap:2px;"></div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button class="small-btn" onclick="clearAllSections()">全クリア</button>
+      </div>
+    </div>
+
+    <!-- Tab: Summary -->
+    <div class="tab-content" id="tab-summary">
+      <h2 class="section-title">査読コメント一覧</h2>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <button class="small-btn" onclick="filterComments('all')">全て</button>
+        <button class="small-btn" onclick="filterComments('major')" style="border-color:var(--red);color:var(--red)">Major</button>
+        <button class="small-btn" onclick="filterComments('minor')" style="border-color:var(--blue);color:var(--blue)">Minor</button>
+        <button class="small-btn" onclick="filterComments('question')" style="border-color:var(--green);color:var(--green)">Question</button>
+      </div>
+      <div id="summary-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Export bar -->
+<div id="export-bar">
+  <span>出力:</span>
+  <button class="export-btn" onclick="exportHTML()">📋 HTML コピー</button>
+  <button class="export-btn" onclick="exportDOCX()">📄 Word (.docx) ダウンロード</button>
+  <div id="status-msg"></div>
+</div>
+
+<!-- App footer -->
+<div id="app-footer">
+  本ツールはAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療・学術上の判断には必ず公式文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</div>
+
+<!-- Zoom -->
+<div id="zoom-ctrl">
+  <button onclick="setZoom(-0.25)">－</button>
+  <span id="zoom-val">100%</span>
+  <button onclick="setZoom(+0.25)">＋</button>
+</div>
+
+<!-- Selection tooltip -->
+<div id="sel-tooltip" onclick="captureSelection()">✂ 引用として取り込む</div>
+
+<script>
+// ─────────────────────────────────────────────
+// PDF.js setup
+// ─────────────────────────────────────────────
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let pdfDoc = null;
+let zoom = 1.0;
+let comments = [];
+let sections = [];
+let bodyStartPage = 1;
+let editingId = null;
+let selectionData = null;
+let nextId = 1;
+
+
+// ─────────────────────────────────────────────
+// File loading
+// ─────────────────────────────────────────────
+document.getElementById('file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) loadPDF(file);
+});
+
+const pdfPane = document.getElementById('pdf-pane');
+pdfPane.addEventListener('dragover', e => { e.preventDefault(); pdfPane.classList.add('drag-over'); });
+pdfPane.addEventListener('dragleave', () => pdfPane.classList.remove('drag-over'));
+pdfPane.addEventListener('drop', e => {
+  e.preventDefault(); pdfPane.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') loadPDF(file);
+});
+
+async function loadPDF(file) {
+  document.getElementById('pdf-name').textContent = file.name;
+  document.getElementById('drop-hint').style.display = 'none';
+  const buf = await file.arrayBuffer();
+  pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+  initSections();
+  await renderAllPages();
+  setStatus(`読み込み完了 (${pdfDoc.numPages} ページ)`);
+}
+
+// ─────────────────────────────────────────────
+// Render
+// ─────────────────────────────────────────────
+async function renderAllPages() {
+  const pane = document.getElementById('pdf-pane');
+  // Keep only drop-hint, remove old pages
+  [...pane.querySelectorAll('.page-wrapper')].forEach(el => el.remove());
+
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i);
+    const viewport = page.getViewport({ scale: zoom });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'page-wrapper';
+    wrapper.dataset.page = i;
+    wrapper.style.width = viewport.width + 'px';
+    wrapper.style.height = viewport.height + 'px';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    const textLayer = document.createElement('div');
+    textLayer.className = 'text-layer';
+
+    const textContent = await page.getTextContent();
+    textContent.items.forEach(item => {
+      if (!item.str) return;
+      const span = document.createElement('span');
+      const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+      const scaleX = tx[0], scaleY = tx[3], x = tx[4], y = tx[5];
+      const fs = Math.abs(scaleY);
+      span.style.left = x + 'px';
+      span.style.top = (y - fs) + 'px';
+      span.style.fontSize = fs + 'px';
+      span.style.height = fs + 'px';
+      span.style.lineHeight = fs + 'px';
+      if (Math.abs(scaleX) !== fs) span.style.transform = `scaleX(${scaleX / fs})`;
+      span.textContent = item.str;
+      span.dataset.page = i;
+      textLayer.appendChild(span);
+    });
+
+    // Page label: absolute container, sticky inner
+    const label = document.createElement('div');
+    label.className = 'page-label';
+    label.dataset.pageLabel = i;
+    const inner = document.createElement('div');
+    inner.className = 'page-label-inner';
+    const rawSpan = document.createElement('div');
+    rawSpan.className = 'page-num-raw';
+    rawSpan.textContent = 'p.' + i;
+    inner.appendChild(rawSpan);
+    const bodySpan = document.createElement('div');
+    bodySpan.className = 'page-num-body';
+    bodySpan.dataset.rawPage = i;
+    inner.appendChild(bodySpan);
+    label.appendChild(inner);
+
+    wrapper.appendChild(canvas);
+    wrapper.appendChild(textLayer);
+    wrapper.appendChild(label);
+    pane.appendChild(wrapper);
+  }
+
+  renderCommentMarkers();
+  applySections();
+  setupPageIndicator();
+}
+
+function setZoom(delta) {
+  zoom = Math.max(0.5, Math.min(3.0, zoom + delta));
+  document.getElementById('zoom-val').textContent = Math.round(zoom * 100) + '%';
+  if (pdfDoc) renderAllPages();
+}
+
+// ─────────────────────────────────────────────
+// Text selection → quote capture
+// ─────────────────────────────────────────────
+document.addEventListener('mouseup', e => {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) { hideTooltip(); return; }
+  const text = sel.toString().trim();
+  if (!text) { hideTooltip(); return; }
+
+  // Find page from anchor node
+  let node = sel.anchorNode;
+  let page = null;
+  while (node) {
+    if (node.dataset && node.dataset.page) { page = parseInt(node.dataset.page); break; }
+    node = node.parentNode;
+  }
+
+  selectionData = { text, page };
+
+  const tooltip = document.getElementById('sel-tooltip');
+  tooltip.style.display = 'block';
+  tooltip.style.left = (e.clientX - 60) + 'px';
+  tooltip.style.top = (e.clientY - 40) + 'px';
+});
+
+document.addEventListener('mousedown', e => {
+  if (e.target.id !== 'sel-tooltip') hideTooltip();
+});
+
+function hideTooltip() {
+  document.getElementById('sel-tooltip').style.display = 'none';
+}
+
+function captureSelection() {
+  if (!selectionData) return;
+  hideTooltip();
+
+  // --- Feed comment form ---
+  const qt = document.getElementById('quote-text');
+  qt.textContent = selectionData.text;
+  qt.classList.remove('empty');
+  if (selectionData.page) {
+    document.getElementById('f-page').value = selectionData.page;
+    updatePageBodyDisp(selectionData.page);
+    autoFillSection(selectionData.page);
+  }
+
+
+  window.getSelection().removeAllRanges();
+}
+
+function clearQuote() {
+  const qt = document.getElementById('quote-text');
+  qt.textContent = 'テキストを選択して引用...';
+  qt.classList.add('empty');
+  selectionData = null;
+}
+
+function autoFillSection(page) {
+  const sorted = [...sections].sort((a,b) => b.page - a.page);
+  const sec = sorted.find(s => s.page <= page);
+  if (sec) document.getElementById('f-section').value = sec.name;
+}
+
+// ─────────────────────────────────────────────
+// Section system - pin wizard
+// ─────────────────────────────────────────────
+const MASTER_SECTIONS = [
+  { name: 'Meta / Title',          key: 'meta'       },
+  { name: 'Title',                 key: 'title'      },
+  { name: 'Abstract',              key: 'abstract'   },
+  { name: 'Introduction',          key: 'intro'      },
+  { name: 'Case Report',           key: 'case'       },
+  { name: 'Materials and Methods', key: 'methods'    },
+  { name: 'Results',               key: 'results'    },
+  { name: 'Discussion',            key: 'discussion' },
+  { name: 'References',            key: 'refs'       },
+  { name: 'Table',                 key: 'table'      },
+  { name: 'Figure legends',        key: 'figlgd'     },
+  { name: 'Figure',                key: 'figure'     },
+];
+
+let wizardIdx = 0;   // current section being pinned
+let pinMode = false;
+
+// ── page body display helper ─────────────────
+function updatePageBodyDisp(rawPage) {
+  const disp = document.getElementById('f-page-body-disp');
+  if (!disp) return;
+  if (bodyStartPage > 1 && rawPage) {
+    const bp = rawPage - bodyStartPage + 1;
+    disp.textContent = bp > 0 ? '= 本文 p.' + bp : '(本文前)';
+  } else {
+    disp.textContent = '';
+  }
+}
+
+// ── scroll indicator via IntersectionObserver ─
+function setupPageIndicator() {
+  const pane = document.getElementById('pdf-pane');
+  const indRaw = document.querySelector('#page-indicator .ind-raw');
+  const indBody = document.querySelector('#page-indicator .ind-body');
+  if (!indRaw) return;
+
+  // Observe all page wrappers
+  const io = new IntersectionObserver(entries => {
+    // Find the most-visible page
+    let best = null, bestRatio = 0;
+    entries.forEach(e => {
+      if (e.intersectionRatio > bestRatio) { bestRatio = e.intersectionRatio; best = e.target; }
+    });
+    if (!best) return;
+    const rawP = parseInt(best.dataset.page);
+    indRaw.textContent = 'p.' + rawP;
+    if (bodyStartPage > 1) {
+      const bp = rawP - bodyStartPage + 1;
+      if (bp > 0) {
+        indBody.textContent = '本文 p.' + bp;
+        indBody.style.display = '';
+      } else {
+        indBody.style.display = 'none';
+      }
+    } else {
+      indBody.style.display = 'none';
+    }
+  }, {
+    root: pane,
+    threshold: Array.from({length: 21}, (_,i) => i * 0.05)
+  });
+
+  document.querySelectorAll('.page-wrapper').forEach(el => io.observe(el));
+  // Store for re-setup on zoom
+  pane._pageIO = io;
+}
+
+function initSections() {
+  sections = MASTER_SECTIONS.map(ms => ({
+    key: ms.key, name: ms.name, page: null, yPct: 0, enabled: false
+  }));
+  renderSectionList();
+  updateSectionSelect();
+}
+
+// ── Pin Wizard ───────────────────────────────
+function startPinWizard() {
+  wizardIdx = 0;
+  pinMode = true;
+  document.getElementById('pdf-pane').classList.add('pin-mode');
+  document.getElementById('pin-wizard').classList.add('active');
+  advanceWizard();
+  switchTab('tab-comments'); // switch back so PDF is focused
+  // Scroll to top
+  document.getElementById('pdf-pane').scrollTop = 0;
+  setStatus('📌 ピンモード ON — セクション先頭行をクリックしてください');
+}
+
+function advanceWizard() {
+  // Skip already-pinned sections? No — allow re-pin
+  // Find next not-yet-enabled section from wizardIdx
+  while (wizardIdx < sections.length && sections[wizardIdx].enabled) wizardIdx++;
+  if (wizardIdx >= sections.length) { stopPinWizard(); return; }
+  const sec = sections[wizardIdx];
+  document.getElementById('pin-wizard-name').textContent = sec.name;
+  document.getElementById('pin-wizard-hint').textContent = 'クリックでピンを打つ（スキップで次へ）';
+}
+
+function skipPinSection() {
+  wizardIdx++;
+  if (wizardIdx >= sections.length) { stopPinWizard(); return; }
+  advanceWizard();
+}
+
+function stopPinWizard() {
+  pinMode = false;
+  document.getElementById('pdf-pane').classList.remove('pin-mode');
+  document.getElementById('pin-wizard').classList.remove('active');
+  renderSectionList();
+  updateSectionSelect();
+  applySections();
+  switchTab('tab-sections');
+  setStatus('📌 ピン設定完了');
+}
+
+// Handle click on PDF in pin mode
+function handlePinClick(e) {
+  if (!pinMode) return;
+  // Find which page wrapper was clicked
+  let el = e.target;
+  let wrapper = null;
+  while (el && el !== document.getElementById('pdf-pane')) {
+    if (el.classList && el.classList.contains('page-wrapper')) { wrapper = el; break; }
+    el = el.parentElement;
+  }
+  if (!wrapper) return;
+  e.preventDefault(); e.stopPropagation();
+
+  const pageNum = parseInt(wrapper.dataset.page);
+  const rect = wrapper.getBoundingClientRect();
+  const yPx = e.clientY - rect.top;
+  const yPct = yPx / rect.height; // 0–1
+
+  const sec = sections[wizardIdx];
+  sec.page = pageNum;
+  sec.yPct = yPct;
+  sec.enabled = true;
+
+  wizardIdx++;
+  advanceWizard(); // moves to next unenabled or stops
+  renderSectionList();
+  updateSectionSelect();
+  applySections();
+}
+
+// Attach pin click to pdf-pane
+document.getElementById('pdf-pane').addEventListener('click', handlePinClick);
+
+// ── Body start page ──────────────────────────
+function applyBodyStart() {
+  const val = parseInt(document.getElementById('body-start-page').value) || 1;
+  bodyStartPage = val;
+  const note = document.getElementById('body-start-note');
+  note.textContent = val === 1 ? '未設定（p.1 = 本文p.1）' : `本文p.1 = PDF p.${val}`;
+  // Update all page labels
+  document.querySelectorAll('.page-num-body').forEach(el => {
+    const raw = parseInt(el.dataset.rawPage);
+    const body = raw - bodyStartPage + 1;
+    if (body > 0) {
+      el.textContent = '本文 p.' + body;
+      el.style.display = '';
+    } else {
+      el.textContent = '';
+      el.style.display = 'none';
+    }
+  });
+  // Update floating indicator
+  const indBody = document.querySelector('#page-indicator .ind-body');
+  const indRaw = document.querySelector('#page-indicator .ind-raw');
+  if (indRaw && indBody) {
+    const rawP = parseInt(indRaw.textContent.replace('p.','')) || 1;
+    if (val > 1) {
+      const bp = rawP - val + 1;
+      indBody.textContent = bp > 0 ? '本文 p.' + bp : '';
+      indBody.style.display = bp > 0 ? '' : 'none';
+    } else {
+      indBody.style.display = 'none';
+    }
+  }
+  // Update f-page-body-disp if page is filled
+  const fp = parseInt(document.getElementById('f-page').value);
+  if (fp) updatePageBodyDisp(fp);
+  setStatus('本文開始ページを p.' + val + ' に設定しました');
+}
+
+// ── Section list UI ──────────────────────────
+function renderSectionList() {
+  const list = document.getElementById('section-list');
+  list.innerHTML = '';
+  sections.forEach((sec, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:20px 1fr 58px 22px;gap:4px;align-items:center;padding:3px 0;border-bottom:1px solid var(--border2);';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = !!sec.enabled;
+    cb.style.cursor = 'pointer';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = sec.name;
+    nameSpan.style.cssText = 'font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    nameSpan.style.color = sec.enabled ? 'var(--ink2)' : 'var(--ink3)';
+    nameSpan.style.opacity = sec.enabled ? '1' : '0.45';
+
+    const pageInput = document.createElement('input');
+    pageInput.type = 'number'; pageInput.min = 1;
+    pageInput.value = sec.page || '';
+    pageInput.placeholder = 'p.';
+    pageInput.disabled = !sec.enabled;
+    pageInput.style.cssText = 'border:1px solid var(--border);border-radius:3px;padding:2px 4px;font-size:12px;font-family:"JetBrains Mono",monospace;background:var(--bg);color:var(--ink);width:100%;';
+
+    const jumpBtn = document.createElement('button');
+    jumpBtn.textContent = '→';
+    jumpBtn.title = 'PDFで表示';
+    jumpBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:13px;color:var(--ink3);padding:0;';
+    jumpBtn.disabled = !sec.enabled;
+    jumpBtn.addEventListener('click', () => { if (sec.page) scrollToPage(sec.page); });
+
+    function syncEnabled(on) {
+      sections[idx].enabled = on;
+      cb.checked = on;
+      nameSpan.style.color = on ? 'var(--ink2)' : 'var(--ink3)';
+      nameSpan.style.opacity = on ? '1' : '0.45';
+      pageInput.disabled = !on;
+      jumpBtn.disabled = !on;
+      updateSectionSelect();
+      applySections();
+    }
+    cb.addEventListener('change', () => syncEnabled(cb.checked));
+    nameSpan.addEventListener('click', () => {
+      if (sec.enabled && sec.page) scrollToPage(sec.page);
+      else syncEnabled(!cb.checked);
+    });
+    pageInput.addEventListener('input', () => { sections[idx].page = parseInt(pageInput.value) || null; });
+    pageInput.addEventListener('change', () => applySections());
+
+    row.appendChild(cb);
+    row.appendChild(nameSpan);
+    row.appendChild(pageInput);
+    row.appendChild(jumpBtn);
+    list.appendChild(row);
+  });
+}
+
+function applySections() {
+  document.querySelectorAll('.section-pin').forEach(el => el.remove());
+  if (!pdfDoc) return;
+  sections.filter(s => s.enabled && s.page).forEach(sec => {
+    const wrapper = document.querySelector(`.page-wrapper[data-page="${sec.page}"]`);
+    if (!wrapper) return;
+    const wh = wrapper.clientHeight || parseFloat(wrapper.style.height) || 800;
+    const yPx = (sec.yPct || 0) * wh;
+
+    const pin = document.createElement('div');
+    pin.className = 'section-pin';
+    pin.style.top = yPx + 'px';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'section-pin-label';
+    lbl.textContent = sec.name;
+
+    const del = document.createElement('div');
+    del.className = 'section-pin-del';
+    del.textContent = '✕';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.enabled = false; sec.page = null; sec.yPct = 0;
+      renderSectionList(); updateSectionSelect(); applySections();
+    });
+
+    pin.appendChild(lbl);
+    pin.appendChild(del);
+    wrapper.appendChild(pin);
+
+    // Drag to move vertically within or across pages
+    let dragStartY = 0, origYPct = 0;
+    function onDragStart(e) {
+      if (e.target === del) return;
+      e.preventDefault();
+      dragStartY = e.clientY;
+      origYPct = sec.yPct || 0;
+      document.addEventListener('mousemove', onDragMove);
+      document.addEventListener('mouseup', onDragEnd);
+    }
+    function onDragMove(e) {
+      const wRect = wrapper.getBoundingClientRect();
+      const newY = e.clientY - wRect.top;
+      const newPct = Math.max(0, Math.min(1, newY / wRect.height));
+      sec.yPct = newPct;
+      pin.style.top = (newPct * wRect.height) + 'px';
+    }
+    function onDragEnd(e) {
+      document.removeEventListener('mousemove', onDragMove);
+      document.removeEventListener('mouseup', onDragEnd);
+      // Check if moved to a different page wrapper
+      const allWrappers = [...document.querySelectorAll('.page-wrapper')];
+      for (const w of allWrappers) {
+        const r = w.getBoundingClientRect();
+        if (e.clientY >= r.top && e.clientY <= r.bottom) {
+          const newPage = parseInt(w.dataset.page);
+          sec.page = newPage;
+          sec.yPct = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+          // Update page input in list
+          const inp = document.querySelector(`#section-list input[type=number]:nth-of-type(${sections.indexOf(sec)+1})`);
+          break;
+        }
+      }
+      renderSectionList(); updateSectionSelect(); applySections();
+    }
+    pin.addEventListener('mousedown', onDragStart);
+    lbl.addEventListener('mousedown', onDragStart);
+  });
+}
+
+function updateSectionSelect() {
+  const sel = document.getElementById('f-section');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">─ 未指定 ─</option>';
+  sections.filter(s => s.enabled && s.page).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.name; opt.textContent = s.name + ' (p.' + s.page + ')';
+    sel.appendChild(opt);
+  });
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+
+// ─────────────────────────────────────────────
+// Comments
+// ─────────────────────────────────────────────
+function addComment() {
+  const cats = [...document.querySelectorAll('#f-category-group input:checked')].map(el => el.value);
+  const body = document.getElementById('comment-body').value.trim();
+
+  // Validation with visual highlight
+  const errMsgs = [];
+  if (cats.length === 0) errMsgs.push('種別（Specific/General/Major/Minor）を1つ以上チェックしてください');
+  if (!body) errMsgs.push('コメント本文が空です');
+  if (errMsgs.length > 0) {
+    setStatus('⚠ ' + errMsgs.join(' ／ '), true);
+    if (cats.length === 0) document.getElementById('f-category-group').style.outline = '2px solid var(--red)';
+    if (!body) document.getElementById('comment-body').style.outline = '2px solid var(--red)';
+    return;
+  }
+  document.getElementById('f-category-group').style.outline = '';
+  document.getElementById('comment-body').style.outline = '';
+
+  const cat = cats[0];
+  const sec = document.getElementById('f-section').value;
+  const page = parseInt(document.getElementById('f-page').value) || null;
+  const line = parseInt(document.getElementById('f-line').value) || null;
+  const qt = document.getElementById('quote-text');
+  const quote = qt.classList.contains('empty') ? '' : qt.textContent;
+
+  if (editingId !== null) {
+    const idx = comments.findIndex(c => c.id === editingId);
+    if (idx !== -1) {
+      comments[idx] = { ...comments[idx], cat, cats, sec, page, line, quote, body };
+    }
+    editingId = null;
+    document.querySelector('#comment-form h3').textContent = '新しいコメント';
+    document.querySelector('.form-actions .small-btn:last-child').textContent = '＋ 追加';
+  } else {
+    comments.push({ id: nextId++, cat, cats, sec, page, line, quote, body });
+  }
+
+  clearForm();
+  renderCommentList();
+  renderCommentMarkers();
+  renderSummary();
+}
+
+function clearForm() {
+  document.querySelectorAll('#f-category-group input').forEach(cb => cb.checked = false);
+  document.getElementById('f-section').value = '';
+  document.getElementById('f-page').value = '';
+  document.getElementById('f-line').value = '';
+  clearQuote();
+  document.getElementById('comment-body').value = '';
+  editingId = null;
+  document.querySelector('#comment-form h3').textContent = '新しいコメント';
+  const addBtn = document.querySelector('.form-actions .small-btn:last-child');
+  if (addBtn) addBtn.textContent = '＋ 追加';
+}
+
+function editComment(id) {
+  const c = comments.find(c => c.id === id);
+  if (!c) return;
+  editingId = id;
+  document.querySelectorAll('#f-category-group input').forEach(cb => {
+    cb.checked = (c.cats || [c.cat]).includes(cb.value);
+  });
+  document.getElementById('f-section').value = c.sec || '';
+  document.getElementById('f-page').value = c.page || '';
+  document.getElementById('f-line').value = c.line || '';
+  const qt = document.getElementById('quote-text');
+  if (c.quote) { qt.textContent = c.quote; qt.classList.remove('empty'); }
+  else { qt.textContent = 'テキストを選択して引用...'; qt.classList.add('empty'); }
+  document.getElementById('comment-body').value = c.body;
+  document.querySelector('#comment-form h3').textContent = `コメント #${comments.indexOf(c)+1} を編集`;
+  const addBtn = document.querySelector('.form-actions .small-btn:last-child');
+  if (addBtn) addBtn.textContent = '💾 更新';
+  switchTab('tab-comments');
+  document.getElementById('comment-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteComment(id) {
+  if (!confirm('このコメントを削除しますか？')) return;
+  comments = comments.filter(c => c.id !== id);
+  renderCommentList();
+  renderCommentMarkers();
+  renderSummary();
+}
+
+function moveComment(id, dir) {
+  const idx = comments.findIndex(c => c.id === id);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= comments.length) return;
+  [comments[idx], comments[newIdx]] = [comments[newIdx], comments[idx]];
+  renderCommentList();
+  renderSummary();
+}
+
+let currentFilter = 'all';
+
+function filterComments(cat) {
+  currentFilter = cat;
+  renderSummary();
+}
+
+function renderCommentList() {
+  const list = document.getElementById('comment-list');
+  const noMsg = document.getElementById('no-comment-msg');
+  [...list.children].forEach(el => { if (el.id !== 'no-comment-msg') el.remove(); });
+  if (comments.length === 0) { noMsg.style.display = ''; return; }
+  noMsg.style.display = 'none';
+  comments.forEach((c, idx) => list.appendChild(buildCommentCard(c, idx, false)));
+}
+
+function renderSummary() {
+  const list = document.getElementById('summary-list');
+  list.innerHTML = '';
+  const filtered = currentFilter === 'all' ? comments : comments.filter(c => c.cat === currentFilter);
+  filtered.forEach((c, i) => {
+    const card = buildCommentCard(c, comments.indexOf(c), true);
+    list.appendChild(card);
+  });
+}
+
+const catLabels = { specific: 'Specific', general: 'General', major: 'Major', minor: 'Minor' };
+
+function buildCommentCard(c, idx, compact) {
+  const card = document.createElement('div');
+  const primaryCat = (c.cats && c.cats.length > 0) ? c.cats[0] : (c.cat || 'minor');
+  card.className = `comment-card cat-${primaryCat}`;
+  card.dataset.id = c.id;
+
+  const locParts = [];
+  if (c.sec) locParts.push(c.sec);
+  if (c.page) {
+    const bodyPage = c.page - bodyStartPage + 1;
+    locParts.push(`p.${c.page}` + (bodyPage > 0 ? ` (本文p.${bodyPage})` : ''));
+  }
+  if (c.line) locParts.push(`行${c.line}`);
+
+  const catList = c.cats && c.cats.length > 0 ? c.cats : [c.cat || 'minor'];
+  const hdr = document.createElement('div');
+  hdr.className = 'comment-card-header';
+  const numSpan = document.createElement('span');
+  numSpan.className = 'comment-num cat-' + primaryCat;
+  numSpan.textContent = '#' + (idx+1);
+  hdr.appendChild(numSpan);
+  catList.forEach(ct => {
+    const b = document.createElement('span');
+    b.className = 'comment-cat-badge cat-badge-' + ct;
+    b.textContent = catLabels[ct] || ct;
+    hdr.appendChild(b);
+  });
+  if (locParts.length) {
+    const loc = document.createElement('span');
+    loc.className = 'comment-loc';
+    loc.textContent = locParts.join(' › ');
+    hdr.appendChild(loc);
+  }
+  card.appendChild(hdr);
+  if (c.quote) {
+    const qd = document.createElement('div');
+    qd.className = 'comment-quote-preview';
+    qd.textContent = '"' + c.quote.substring(0,80) + (c.quote.length>80?'…':'') + '"';
+    card.appendChild(qd);
+  }
+  const bd = document.createElement('div');
+  bd.className = 'comment-body-preview';
+  bd.textContent = c.body.substring(0,120) + (c.body.length>120?'…':'');
+  card.appendChild(bd);
+  const ft = document.createElement('div');
+  ft.className = 'comment-card-footer';
+  if (!compact) {
+    const ub = document.createElement('button'); ub.className='icon-btn'; ub.title='上へ'; ub.textContent='↑';
+    ub.addEventListener('click', (e) => { e.stopPropagation(); moveComment(c.id, -1); });
+    const db2 = document.createElement('button'); db2.className='icon-btn'; db2.title='下へ'; db2.textContent='↓';
+    db2.addEventListener('click', (e) => { e.stopPropagation(); moveComment(c.id, 1); });
+    ft.appendChild(ub); ft.appendChild(db2);
+  }
+  const vb = document.createElement('button'); vb.className='icon-btn'; vb.title='PDFで表示'; vb.textContent='🔍';
+  vb.addEventListener('click', (e) => { e.stopPropagation(); scrollToPage(c.page||1); });
+  const eb = document.createElement('button'); eb.className='icon-btn'; eb.title='編集'; eb.textContent='✏️';
+  eb.addEventListener('click', (e) => { e.stopPropagation(); editComment(c.id); });
+  const dlb = document.createElement('button'); dlb.className='icon-btn del'; dlb.title='削除'; dlb.textContent='🗑';
+  dlb.addEventListener('click', (e) => { e.stopPropagation(); deleteComment(c.id); });
+  ft.appendChild(vb); ft.appendChild(eb); ft.appendChild(dlb);
+  card.appendChild(ft);
+  return card;
+}
+
+function renderCommentMarkers() {
+  document.querySelectorAll('.comment-marker').forEach(el => el.remove());
+  comments.forEach((c, idx) => {
+    if (!c.page) return;
+    const wrapper = document.querySelector(`.page-wrapper[data-page="${c.page}"]`);
+    if (!wrapper) return;
+    const marker = document.createElement('div');
+    marker.className = `comment-marker cat-${c.cat}`;
+    marker.style.background = c.cat === 'major' ? 'var(--red)' : c.cat === 'minor' ? 'var(--blue)' : c.cat === 'question' ? 'var(--green)' : '#8e44ad';
+    marker.textContent = idx + 1;
+    // Position based on line number roughly
+    const wh = parseFloat(wrapper.style.height) || wrapper.clientHeight;
+    const ww = parseFloat(wrapper.style.width) || wrapper.clientWidth;
+    let yPos = 30;
+    if (c.line) yPos = Math.min(c.line * 12, wh - 20);
+    marker.style.left = (ww - 24) + 'px';
+    marker.style.top = yPos + 'px';
+    marker.title = `#${idx+1}: ${c.body.substring(0,60)}`;
+    marker.onclick = () => editComment(c.id);
+    wrapper.appendChild(marker);
+  });
+}
+
+function scrollToPage(page) {
+  const wrapper = document.querySelector(`.page-wrapper[data-page="${page}"]`);
+  if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─────────────────────────────────────────────
+// Tabs
+// ─────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = ['tab-comments','tab-sections','tab-summary'].indexOf(id);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (id === 'tab-summary') renderSummary();
+}
+
+function clearAllSections() {
+  if (!confirm('全セクション設定をクリアしますか？')) return;
+  sections.forEach(s => { s.enabled = false; s.page = null; s.yPct = 0; });
+  renderSectionList();
+  updateSectionSelect();
+  applySections();
+}
+
+// ─────────────────────────────────────────────
+// Export: HTML copy
+// ─────────────────────────────────────────────
+function buildReviewHTML() {
+  const bySection = {};
+  comments.forEach((c, idx) => {
+    const key = c.sec || 'General';
+    if (!bySection[key]) bySection[key] = [];
+    bySection[key].push({ ...c, num: idx + 1 });
+  });
+
+  let html = `<h1>Peer Review Comments</h1>\n<hr>\n`;
+  const major = comments.filter(c => c.cat === 'major');
+  const minor = comments.filter(c => c.cat === 'minor');
+  html += `<p><strong>Summary:</strong> ${major.length} major, ${minor.length} minor revision(s) requested.</p>\n<hr>\n`;
+
+  Object.entries(bySection).forEach(([sec, coms]) => {
+    html += `<h2>${sec}</h2>\n`;
+    coms.forEach(c => {
+      const locParts = [];
+      if (c.page) {
+        const bodyPage = c.page - bodyStartPage + 1;
+        locParts.push(`Page ${c.page}` + (bodyPage > 0 && bodyPage !== c.page ? ` (manuscript p.${bodyPage})` : ''));
+      }
+      if (c.line) locParts.push(`Line ${c.line}`);
+      const catStr = (c.cats||[c.cat]).map(ct=>catLabels[ct]||ct).join(' / ');
+      html += `<p><strong>[${catStr} #${c.num}]</strong>`;
+      if (locParts.length) html += ` <em>${locParts.join(', ')}</em>`;
+      html += `<br>\n`;
+      if (c.quote) html += `<blockquote>"${c.quote}"</blockquote>\n`;
+      html += `${c.body}</p>\n`;
+    });
+  });
+  return html;
+}
+
+function exportHTML() {
+  const html = buildReviewHTML();
+  navigator.clipboard.writeText(html).then(() => setStatus('HTMLをクリップボードにコピーしました ✓')).catch(() => {
+    const w = window.open('', '_blank');
+    w.document.write('<pre>' + html.replace(/</g,'&lt;') + '</pre>');
+    setStatus('新しいウィンドウに出力しました');
+  });
+}
+
+// ─────────────────────────────────────────────
+// Export: DOCX
+// ─────────────────────────────────────────────
+async function exportDOCX() {
+  if (typeof docx === 'undefined') {
+    setStatus('docx ライブラリを読み込み中...', true);
+    await loadDocxLib();
+  }
+  generateDOCX();
+}
+
+function loadDocxLib() {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/docx@8.5.0/build/index.umd.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function generateDOCX() {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = docx;
+
+  const children = [];
+
+  // Title
+  children.push(new Paragraph({
+    heading: HeadingLevel.TITLE,
+    children: [new TextRun({ text: 'Peer Review Comments', bold: true, size: 36, font: 'Calibri' })]
+  }));
+  children.push(new Paragraph({ children: [new TextRun({ text: new Date().toLocaleDateString('ja-JP'), size: 20, color: '888888' })] }));
+
+  // Summary
+  const major = comments.filter(c => c.cat === 'major');
+  const minor = comments.filter(c => c.cat === 'minor');
+  children.push(new Paragraph({ children: [new TextRun({ text: `Summary: ${major.length} major, ${minor.length} minor revision(s) requested.`, size: 22 })], spacing: { before: 200, after: 200 } }));
+
+  // Horizontal rule
+  children.push(new Paragraph({
+    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '8B4513' } },
+    spacing: { before: 100, after: 100 }
+  }));
+
+  // Group by section
+  const bySection = {};
+  comments.forEach((c, idx) => {
+    const key = c.sec || 'General';
+    if (!bySection[key]) bySection[key] = [];
+    bySection[key].push({ ...c, num: idx + 1 });
+  });
+
+  Object.entries(bySection).forEach(([sec, coms]) => {
+    children.push(new Paragraph({
+      heading: HeadingLevel.HEADING_1,
+      children: [new TextRun({ text: sec, bold: true, size: 28, font: 'Calibri', color: '1a5276' })]
+    }));
+
+    coms.forEach(c => {
+      const locParts = [];
+      if (c.page) {
+        const bodyPage = c.page - bodyStartPage + 1;
+        locParts.push(`Page ${c.page}` + (bodyPage > 0 && bodyPage !== c.page ? ` (manuscript p.${bodyPage})` : ''));
+      }
+      if (c.line) locParts.push(`Line ${c.line}`);
+
+      const catColors = { specific: 'b45309', general: '6d28d9', major: 'c0392b', minor: '2471a3' };
+      const catStr = (c.cats||[c.cat]).map(ct=>catLabels[ct]||ct).join(' / ');
+      const color = catColors[c.cat] || '444444';
+
+      children.push(new Paragraph({
+        children: [
+          new TextRun({ text: `[${catStr} #${c.num}]`, bold: true, size: 22, color, font: 'Calibri' }),
+          locParts.length ? new TextRun({ text: `  ${locParts.join(', ')}`, size: 20, color: '888888', italics: true, font: 'Calibri' }) : new TextRun(''),
+        ],
+        spacing: { before: 240, after: 80 }
+      }));
+
+      if (c.quote) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `"${c.quote}"`, italics: true, size: 19, color: '555555', font: 'Calibri' })],
+          indent: { left: 720 },
+          spacing: { before: 60, after: 80 }
+        }));
+      }
+
+      children.push(new Paragraph({
+        children: [new TextRun({ text: c.body, size: 22, font: 'Calibri' })],
+        spacing: { before: 60, after: 200 }
+      }));
+    });
+  });
+
+  // Footer note
+  children.push(new Paragraph({ border: { top: { style: BorderStyle.SINGLE, size: 4, color: 'cccccc' } }, spacing: { before: 400 } }));
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'These review comments were prepared independently by the reviewer. No AI tools were used in the evaluation of this manuscript.', size: 16, color: '999999', font: 'Calibri', italics: true })]
+  }));
+
+  const doc = new Document({
+    styles: {
+      default: { document: { run: { font: 'Calibri', size: 22 } } },
+      paragraphStyles: [
+        { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+          run: { size: 28, bold: true, font: 'Calibri', color: '1a5276' },
+          paragraph: { spacing: { before: 300, after: 120 }, outlineLevel: 0 } }
+      ]
+    },
+    sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }]
+  });
+
+  Packer.toBlob(doc).then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'review_comments.docx';
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus('Word ファイルをダウンロードしました ✓');
+  });
+}
+
+// ─────────────────────────────────────────────
+// Resize panel
+// ─────────────────────────────────────────────
+const handle = document.getElementById('drag-handle');
+let dragging = false;
+handle.addEventListener('mousedown', e => { dragging = true; e.preventDefault(); });
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const main = document.getElementById('main');
+  const rect = main.getBoundingClientRect();
+  const newW = rect.right - e.clientX;
+  const w = Math.max(320, Math.min(600, newW));
+  document.getElementById('right-panel').style.width = w + 'px';
+});
+document.addEventListener('mouseup', () => { dragging = false; });
+
+// ─────────────────────────────────────────────
+// f-page live update
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const fp = document.getElementById('f-page');
+  if (fp) fp.addEventListener('input', () => updatePageBodyDisp(parseInt(fp.value) || null));
+});
+
+// ─────────────────────────────────────────────
+// Status
+// ─────────────────────────────────────────────
+let statusTimer;
+function setStatus(msg, err) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.style.color = err ? '#f88' : '#88c';
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => { el.textContent = ''; }, 4000);
+}
+</script>
+</body>
+</html>
