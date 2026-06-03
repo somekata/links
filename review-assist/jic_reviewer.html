@@ -59,6 +59,17 @@ body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: va
   display: flex; flex-direction: column; align-items: center; gap: 12px;
   position: relative;
 }
+/* Sticky marker rail: height:0 so it doesn't affect layout,
+   position:sticky so it stays at top of visible area */
+#marker-rail {
+  position: sticky;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 50;
+  pointer-events: none;
+  align-self: flex-start; /* don't stretch in flex column */
+}
 #pdf-pane.drag-over { outline: 4px dashed #fff; }
 #drop-hint {
   color: #ddd; text-align: center; margin-top: 80px;
@@ -123,17 +134,27 @@ body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: va
   user-select: text;
 }
 .text-layer span:hover { background: rgba(255,200,50,0.2); }
+/* Marker overlay: sits above pdf-pane, pointer-events pass through except markers */
+#marker-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 50;
+  overflow: hidden;
+}
 .comment-marker {
-  position: absolute; width: 18px; height: 18px; border-radius: 50%;
+  position: absolute;
+  width: 20px; height: 20px; border-radius: 50%;
   background: var(--accent); color: white; font-size: 10px;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-weight: bold; z-index: 10;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-  transform: translate(-9px, -9px);
+  cursor: pointer; font-weight: bold;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.5);
   font-family: 'JetBrains Mono', monospace;
   transition: transform 0.15s;
+  pointer-events: all;
+  transform: translateY(-50%); /* center vertically on the line */
 }
-.comment-marker:hover { transform: translate(-9px,-9px) scale(1.2); }
+.comment-marker:hover { transform: translateY(-50%) scale(1.2); }
 .section-marker {
   position: absolute; left: 0; width: 100%;
   height: 2px; background: rgba(36,113,163,0.5);
@@ -654,15 +675,25 @@ document.addEventListener('mouseup', e => {
   const text = sel.toString().trim();
   if (!text) { hideTooltip(); return; }
 
-  // Find page from anchor node
+  // Find page and anchor Y from the actual span
   let node = sel.anchorNode;
   let page = null;
   while (node) {
     if (node.dataset && node.dataset.page) { page = parseInt(node.dataset.page); break; }
     node = node.parentNode;
   }
-
-  selectionData = { text, page };
+  // Get Y directly from PDF.js span's style.top (page-relative px, scroll-independent)
+  let anchorY = null;
+  let anchorSpan = sel.anchorNode && sel.anchorNode.nodeType === 3
+    ? sel.anchorNode.parentElement : sel.anchorNode;
+  // Walk up to find the .text-layer span that has style.top set by PDF.js
+  while (anchorSpan && !anchorSpan.style?.top) {
+    anchorSpan = anchorSpan.parentElement;
+  }
+  if (anchorSpan && anchorSpan.style && anchorSpan.style.top) {
+    anchorY = parseFloat(anchorSpan.style.top); // already page-relative px
+  }
+  selectionData = { text, page, anchorY };
 
   const tooltip = document.getElementById('sel-tooltip');
   tooltip.style.display = 'block';
@@ -691,6 +722,9 @@ function captureSelection() {
     updatePageBodyDisp(selectionData.page);
     autoFillSection(selectionData.page);
   }
+  // Store anchorY for marker placement
+  document.getElementById('comment-form').dataset.anchorY =
+    selectionData.anchorY !== null ? selectionData.anchorY : '';
 
 
   window.getSelection().removeAllRanges();
@@ -1056,6 +1090,7 @@ function addComment() {
     return;
   }
   document.getElementById('f-category-group').style.outline = '';
+  document.getElementById('comment-form').dataset.anchorY = '';
   document.getElementById('comment-body').style.outline = '';
 
   const cat = cats[0];
@@ -1068,13 +1103,17 @@ function addComment() {
   if (editingId !== null) {
     const idx = comments.findIndex(c => c.id === editingId);
     if (idx !== -1) {
-      comments[idx] = { ...comments[idx], cat, cats, sec, page, line, quote, body };
+      const anchorYe = parseFloat(document.getElementById('comment-form').dataset.anchorY);
+      comments[idx] = { ...comments[idx], cat, cats, sec, page, line, quote, body,
+        anchorY: isNaN(anchorYe) ? comments[idx].anchorY : anchorYe };
     }
     editingId = null;
     document.querySelector('#comment-form h3').textContent = '新しいコメント';
     document.querySelector('.form-actions .small-btn:last-child').textContent = '＋ 追加';
   } else {
-    comments.push({ id: nextId++, cat, cats, sec, page, line, quote, body });
+    const anchorY = parseFloat(document.getElementById('comment-form').dataset.anchorY);
+    comments.push({ id: nextId++, cat, cats, sec, page, line, quote, body,
+      anchorY: isNaN(anchorY) ? null : anchorY });
   }
 
   clearForm();
@@ -1228,24 +1267,84 @@ function buildCommentCard(c, idx, compact) {
 
 function renderCommentMarkers() {
   document.querySelectorAll('.comment-marker').forEach(el => el.remove());
+
+  const pane = document.getElementById('pdf-pane');
+  const paneRect = pane.getBoundingClientRect();
+  const scrollTop = pane.scrollTop;
+  const scrollLeft = pane.scrollLeft;
+  const MARKER_SIZE = 20;
+  const MARGIN = 8;
+
+  // Track used Y per page to offset overlapping markers
+  const usedY = {};
+
   comments.forEach((c, idx) => {
     if (!c.page) return;
     const wrapper = document.querySelector(`.page-wrapper[data-page="${c.page}"]`);
     if (!wrapper) return;
+
+    const ww = wrapper.clientWidth || parseFloat(wrapper.style.width) || 600;
+    const wh = wrapper.clientHeight || parseFloat(wrapper.style.height) || 800;
+
+    // Y within the page-wrapper
+    let pageY = null;
+
+    // 1. anchorY from PDF.js span style.top (most accurate)
+    if (c.anchorY !== null && c.anchorY !== undefined) {
+      pageY = c.anchorY;
+    }
+    // 2. line number → scan spans
+    else if (c.line) {
+      const spans = [...wrapper.querySelectorAll('.text-layer span')];
+      if (spans.length > 0) {
+        const ys = [...new Set(
+          spans.map(s => parseFloat(s.style.top)).filter(v => !isNaN(v))
+        )].sort((a, b) => a - b);
+        // group within 3px
+        const lineYs = [];
+        ys.forEach(y => {
+          if (!lineYs.length || y - lineYs[lineYs.length-1] > 3) lineYs.push(y);
+        });
+        const li = c.line - 1;
+        pageY = lineYs[li] ?? lineYs[lineYs.length - 1] ?? MARKER_SIZE;
+      }
+    }
+
+    // 3. fallback: stack
+    if (pageY === null) {
+      if (!usedY[c.page]) usedY[c.page] = [];
+      let cand = MARKER_SIZE;
+      while (usedY[c.page].some(y => Math.abs(y - cand) < MARKER_SIZE + 3)) cand += MARKER_SIZE + 3;
+      pageY = Math.min(cand, wh - MARKER_SIZE);
+    }
+
+    if (!usedY[c.page]) usedY[c.page] = [];
+    usedY[c.page].push(pageY);
+
+    // Convert pageY (within wrapper) to absolute position within pane
+    // wrapper.offsetTop is relative to pane's scroll content
+    const wrapperTop = wrapper.offsetTop;  // px from pane scroll-top origin
+    const wrapperLeft = wrapper.offsetLeft;
+
+    // Absolute top within pane content (not viewport)
+    const absTop = wrapperTop + pageY;
+    const absLeft = wrapperLeft + ww - MARGIN; // right edge of page
+
+    const catColors = {
+      specific: '#b45309', general: '#7c3aed', major: 'var(--red)', minor: 'var(--blue)'
+    };
+    const primaryCat = (c.cats && c.cats.length) ? c.cats[0] : (c.cat || 'minor');
+    const bg = catColors[primaryCat] || 'var(--accent)';
+
     const marker = document.createElement('div');
-    marker.className = `comment-marker cat-${c.cat}`;
-    marker.style.background = c.cat === 'major' ? 'var(--red)' : c.cat === 'minor' ? 'var(--blue)' : c.cat === 'question' ? 'var(--green)' : '#8e44ad';
+    marker.className = 'comment-marker';
+    // Place directly in pane using absolute coords in scroll-content space
+    marker.style.cssText = `background:${bg};position:absolute;left:${absLeft}px;top:${absTop}px;`;
     marker.textContent = idx + 1;
-    // Position based on line number roughly
-    const wh = parseFloat(wrapper.style.height) || wrapper.clientHeight;
-    const ww = parseFloat(wrapper.style.width) || wrapper.clientWidth;
-    let yPos = 30;
-    if (c.line) yPos = Math.min(c.line * 12, wh - 20);
-    marker.style.left = (ww - 24) + 'px';
-    marker.style.top = yPos + 'px';
-    marker.title = `#${idx+1}: ${c.body.substring(0,60)}`;
-    marker.onclick = () => editComment(c.id);
-    wrapper.appendChild(marker);
+    marker.title = `#${idx+1} ${c.page ? 'p.'+c.page : ''}${c.line ? ' 行'+c.line : ''}: ${c.body.substring(0, 60)}`;
+    marker.addEventListener('click', () => editComment(c.id));
+    // Append to pane directly (not wrapper) so z-index is not clipped
+    pane.appendChild(marker);
   });
 }
 
