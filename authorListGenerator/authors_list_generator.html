@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Authors List Generator</title>
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
 
@@ -346,7 +347,7 @@
         <input type="file" id="fileAffil" accept=".csv">
         <div class="icon">🏛</div>
         <p><strong>affiliationlist.csv をドロップ</strong>クリックして選択</p>
-        <p style="margin-top:6px;font-size:0.68rem;">列: no, affiliation, address</p>
+        <p style="margin-top:6px;font-size:0.68rem;">列: no, affiliation, address_detail, prefecture, zip, country</p>
       </div>
       <div class="file-status" id="statusAffil"></div>
       <div id="previewAffil"></div>
@@ -366,9 +367,20 @@
       <label>
         <input type="checkbox" id="optSuperscript" checked> 上付き番号<sup class="superscript-demo">1,2</sup>（HTMLコピー用）
       </label>
-      <label>
-        <input type="checkbox" id="optAddress" checked> 住所を表示
-      </label>
+      <div style="margin:4px 0 4px 0;">
+        <div style="font-size:0.78rem;margin-bottom:4px;color:var(--text)">住所表示</div>
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <input type="radio" name="addrFormat" id="addrNone" value="none"> 非表示
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <input type="radio" name="addrFormat" id="addrSimple" value="simple" checked> 簡易版
+          <span style="font-size:0.68rem;color:var(--muted)">施設名, 都道府県, 国</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px">
+          <input type="radio" name="addrFormat" id="addrFull" value="full"> 詳細版
+          <span style="font-size:0.68rem;color:var(--muted)">施設名, 番地〜市, 都道府県, 〒, 国</span>
+        </label>
+      </div>
       <label>
         <input type="checkbox" id="optSorted" checked> 施設番号順に並べる
       </label>
@@ -383,6 +395,8 @@
     <button class="btn-primary" id="btnGenerate" disabled>▶ Authors List を生成</button>
     <button class="btn-secondary" id="btnCopyPlain">📋 プレーンテキストをコピー</button>
     <button class="btn-secondary" id="btnCopyHtml">🔤 HTMLをコピー</button>
+    <button class="btn-secondary" id="btnDlHtml">⬇ HTMLで保存</button>
+    <button class="btn-secondary" id="btnDlDocx">⬇ Wordで保存</button>
     <button class="btn-danger" id="btnReset">↺ リセット</button>
   </div>
 
@@ -545,17 +559,34 @@ function generate() {
   const optOrcid = document.getElementById('optOrcid').checked;
   const optEmail = document.getElementById('optEmail').checked;
   const optSuperscript = document.getElementById('optSuperscript').checked;
-  const optAddress = document.getElementById('optAddress').checked;
+  const addrFormat = document.querySelector('input[name="addrFormat"]:checked').value; // 'none'|'simple'|'full'
   const optSorted = document.getElementById('optSorted').checked;
 
-  // Build affiliation map: no → {affiliation, address}
+  // Helper: build address string from affiliation object
+  function buildAddr(af) {
+    if (addrFormat === 'none') return '';
+    const det  = af.address_detail || '';
+    const pref = af.prefecture     || '';
+    const zip  = af.zip            || '';
+    const cty  = af.country        || '';
+    if (addrFormat === 'simple') {
+      return [pref, cty].filter(Boolean).join(', ');
+    } else { // full
+      return [det, pref, zip, cty].filter(Boolean).join(', ');
+    }
+  }
+
+  // Build affiliation map: no → {name, address_detail, prefecture, zip, country}
   const affilMap = {};
   affiliationsData.forEach(row => {
     const no = getKey(row, 'no').toString().trim();
     if (no) {
       affilMap[no] = {
-        name: getKey(row, 'affiliation').trim(),
-        address: getKey(row, 'address').trim()
+        name:           getKey(row, 'affiliation').trim(),
+        address_detail: getKey(row, 'address_detail').trim(),
+        prefecture:     getKey(row, 'prefecture').trim(),
+        zip:            getKey(row, 'zip').trim(),
+        country:        getKey(row, 'country').trim()
       };
     }
   });
@@ -618,8 +649,8 @@ function generate() {
     const idx = affilIndex[no];
     const af = affilMap[no];
     if (!af) return;
-    const addr = optAddress && af.address ? ` ${af.address}` : '';
-    plainText += `${idx}. ${af.name}.${addr}\n`;
+    const addr = buildAddr(af);
+    plainText += `${idx}. ${af.name}${addr ? ', ' + addr : ''}.\n`;
   });
 
   if (optOrcid) {
@@ -663,11 +694,11 @@ function generate() {
     const idx = affilIndex[no];
     const af = affilMap[no];
     if (!af) return;
-    const addr = optAddress && af.address ? ` ${af.address}` : '';
+    const addr = buildAddr(af);
     const sup = optSuperscript
       ? `<sup style="color:var(--accent);font-size:0.75em">${idx}</sup>`
       : `<span style="color:var(--accent)">${idx}.</span>`;
-    html += `<div class="affil-line">${sup} ${af.name}.${addr}</div>`;
+    html += `<div class="affil-line">${sup} ${af.name}${addr ? ', ' + addr : ''}.</div>`;
   });
 
   if (optOrcid) {
@@ -736,9 +767,10 @@ function generate() {
       if (!af) return null;
       const authors = affilAuthors[no] || [];
       const authorStr = authors.map(a => fmtInitialLast(a)).join(', ');
-      // Build institution string: name + address if optAddress
+      // Build institution string using shared buildAddr helper
       let instStr = af.name;
-      if (optAddress && af.address) instStr += ', ' + af.address;
+      const addr = buildAddr(af);
+      if (addr) instStr += ', ' + addr;
       return `${instStr} (${authorStr})`;
     }).filter(Boolean);
 
@@ -802,6 +834,139 @@ document.getElementById('btnCopyHtml').addEventListener('click', () => {
       showMsg('success', '✓ テキストをコピーしました（HTML形式非対応ブラウザ）');
     });
   });
+});
+
+// ─── Download: HTML ───────────────────────────────────────────────────────
+document.getElementById('btnDlHtml').addEventListener('click', () => {
+  const output = document.getElementById('output');
+  if (!output.innerHTML.trim()) { showMsg('error', '先にリストを生成してください。'); return; }
+
+  const htmlContent = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authors List</title>
+<style>
+  body { font-family: 'Georgia', serif; max-width: 860px; margin: 40px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.8; }
+  sup { font-size: 0.72em; color: #2a6496; }
+  .affil-line { margin: 2px 0; }
+  .sep { display: block; border-top: 1px solid #ddd; margin: 12px 0; }
+  footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 0.68rem; color: #888; }
+</style>
+</head>
+<body>
+${output.innerHTML}
+<footer>本ファイルはAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</footer>
+</body>
+</html>`;
+
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'authors_list.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showMsg('success', '✓ HTMLファイルをダウンロードしました');
+});
+
+// ─── Download: DOCX ───────────────────────────────────────────────────────
+document.getElementById('btnDlDocx').addEventListener('click', async () => {
+  const output = document.getElementById('output');
+  if (!output.innerHTML.trim()) { showMsg('error', '先にリストを生成してください。'); return; }
+  if (typeof docx === 'undefined') { showMsg('error', 'docxライブラリの読み込みに失敗しました。ネット接続を確認してください。'); return; }
+
+  const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
+
+  // Parse output HTML into structured paragraphs
+  const paragraphs = [];
+
+  // Helper: strip HTML tags and decode entities
+  function stripHtml(html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.innerText || tmp.textContent || '';
+  }
+
+  // Helper: build a TextRun array from an element's childNodes (preserving <sup>)
+  function parseInlineNodes(el) {
+    const runs = [];
+    el.childNodes.forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const t = node.textContent;
+        if (t) runs.push(new TextRun({ text: t, size: 24, font: 'Times New Roman' }));
+      } else if (node.nodeName === 'SUP') {
+        const t = node.textContent;
+        if (t) runs.push(new TextRun({ text: t, size: 18, font: 'Times New Roman', superScript: true }));
+      } else if (node.nodeName === 'SPAN' || node.nodeName === 'STRONG' || node.nodeName === 'DIV') {
+        parseInlineNodes(node).forEach(r => runs.push(r));
+      } else {
+        const t = node.textContent;
+        if (t) runs.push(new TextRun({ text: t, size: 24, font: 'Times New Roman' }));
+      }
+    });
+    return runs;
+  }
+
+  // Walk child nodes of output
+  output.childNodes.forEach(node => {
+    // Skip separator spans
+    if (node.nodeName === 'SPAN' && node.classList && node.classList.contains('sep')) {
+      paragraphs.push(new Paragraph({ children: [new TextRun({ text: '', size: 24 })], spacing: { before: 120, after: 120 } }));
+      return;
+    }
+    if (node.nodeType === Node.TEXT_NODE) {
+      const t = node.textContent.trim();
+      if (t) paragraphs.push(new Paragraph({ children: [new TextRun({ text: t, size: 24, font: 'Times New Roman' })], spacing: { after: 80 } }));
+      return;
+    }
+    if (node.nodeName === 'DIV' || node.nodeName === 'P') {
+      const runs = parseInlineNodes(node);
+      if (runs.length > 0) {
+        paragraphs.push(new Paragraph({ children: runs, spacing: { after: 80 } }));
+      }
+      return;
+    }
+    // Fallback
+    const t = node.textContent ? node.textContent.trim() : '';
+    if (t) paragraphs.push(new Paragraph({ children: [new TextRun({ text: t, size: 24, font: 'Times New Roman' })], spacing: { after: 80 } }));
+  });
+
+  // Footer paragraph
+  paragraphs.push(new Paragraph({ children: [new TextRun({ text: '', size: 20 })], spacing: { before: 480 } }));
+  paragraphs.push(new Paragraph({
+    children: [new TextRun({
+      text: '本ファイルはAI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。',
+      size: 16, color: '888888', font: 'Arial'
+    })],
+    spacing: { before: 120 }
+  }));
+
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: {
+          size: { width: 11906, height: 16838 }, // A4
+          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+        }
+      },
+      children: paragraphs
+    }]
+  });
+
+  try {
+    const buffer = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(buffer);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'authors_list.docx';
+    a.click();
+    URL.revokeObjectURL(url);
+    showMsg('success', '✓ Wordファイルをダウンロードしました');
+  } catch (e) {
+    showMsg('error', 'docx生成エラー: ' + e.message);
+  }
 });
 
 // ─── Reset ────────────────────────────────────────────────────────────────
