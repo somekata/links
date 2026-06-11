@@ -49,11 +49,12 @@ body{
 
 /* 容疑者エリア */
 .suspect-area{text-align:center;margin-bottom:1.25rem;min-height:130px}
-.suspect-img{font-size:72px;line-height:1;display:inline-block;filter:brightness(0);transition:filter 1.2s ease}
-.suspect-img.reveal-25{filter:brightness(0.2) sepia(.2)}
-.suspect-img.reveal-50{filter:brightness(0.45) sepia(.4)}
-.suspect-img.reveal-75{filter:brightness(0.72)}
-.suspect-img.reveal-full{filter:brightness(1)}
+.suspect-img-wrap{position:relative;display:inline-block;width:100px;height:100px}
+.suspect-img-sil,.suspect-img-chara{position:absolute;top:0;left:0;width:100px;height:100px;object-fit:contain}
+.suspect-img-sil{opacity:1;transition:opacity 1.2s ease}
+.suspect-img-chara{opacity:0;transition:opacity 1.2s ease}
+.suspect-img-wrap.revealed .suspect-img-sil{opacity:0}
+.suspect-img-wrap.revealed .suspect-img-chara{opacity:1}
 .suspect-label{font-size:12px;color:#888;margin-top:.4rem}
 
 /* ヒントカード */
@@ -117,6 +118,7 @@ body{
 .next-btn{width:100%;padding:11px;background:#1a1a1a;color:#fff;border:none;border-radius:12px;font-size:15px;cursor:pointer;font-weight:700;margin-top:.4rem;line-height:1.8}
 .next-btn:hover{background:#333}
 .hidden{display:none !important}
+@keyframes popIn{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
 
 /* フィードバックボックス */
 .feedback-box{background:#fff8e1;border:1px solid #fbbf24;border-radius:12px;padding:.8rem 1rem;margin-bottom:.9rem;font-size:13px;line-height:1.85;color:#78350f;animation:slideIn .3s ease}
@@ -160,8 +162,11 @@ footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e5eaf0;font-size:1
     <span>ヒント</span><span class="hint-count-val" id="hint-count-disp">1</span><span><ruby>枚<rt>まい</rt></ruby><ruby>目<rt>め</rt></ruby></span>
   </div>
   <div class="suspect-area">
-    <div class="suspect-img" id="suspect-img">❓</div>
-    <div class="suspect-label"><ruby>犯人<rt>はんにん</rt></ruby>はだれだ…？</div>
+    <div class="suspect-img-wrap" id="suspect-img-wrap">
+      <img class="suspect-img-sil" id="suspect-img-sil" src="" alt="シルエット">
+      <img class="suspect-img-chara" id="suspect-img-chara" src="" alt="キャラクター">
+    </div>
+    <div class="suspect-label" id="suspect-label"><ruby>犯人<rt>はんにん</rt></ruby>はだれだ…？</div>
   </div>
   <div class="hint-area" id="hint-area"></div>
   <button class="next-hint-btn" id="next-hint-btn" onclick="showNextHint()">
@@ -234,6 +239,9 @@ footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e5eaf0;font-size:1
     <div class="title-name" id="title-name"></div>
     <div class="result-title" id="result-title"></div>
     <div class="result-sub" id="result-sub"></div>
+    <div style="text-align:center;margin:1rem 0">
+      <img id="result-chara-img" src="" alt="キャラクター" style="width:110px;height:110px;object-fit:contain;animation:popIn .6s ease">
+    </div>
     <div class="culprit-reveal" id="culprit-reveal"></div>
     <button class="replay-btn" onclick="startGame()">もう<ruby>一度<rt>いちど</rt></ruby>あそぶ</button>
   </div>
@@ -249,6 +257,7 @@ footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e5eaf0;font-size:1
 const SCENARIOS = [
   {
     id: 'flu', emoji: '🤧',
+    silSrc: 'PNG/influ_sil.png', charaSrc: 'PNG/influ.png',
     name: 'インフルエンザ',
     nameKana: 'インフルエンザウイルス',
     hints: [
@@ -264,6 +273,7 @@ const SCENARIOS = [
   },
   {
     id: 'covid', emoji: '😷',
+    silSrc: 'PNG/sarsV2_sil.png', charaSrc: 'PNG/sarsV2.png',
     name: 'コロナ',
     nameKana: '<ruby>新型<rt>しんがた</rt></ruby>コロナウイルス（SARS-CoV-2）',
     hints: [
@@ -279,6 +289,7 @@ const SCENARIOS = [
   },
   {
     id: 'strep', emoji: '🦠',
+    silSrc: 'PNG/GAS_sil.png', charaSrc: 'PNG/GAS.png',
     name: '溶連菌',
     nameKana: 'A<ruby>群溶血性<rt>ぐんようけつせい</rt></ruby>レンサ<ruby>球菌<rt>きゅうきん</rt></ruby>',
     hints: [
@@ -294,6 +305,7 @@ const SCENARIOS = [
   },
   {
     id: 'myco', emoji: '🌀',
+    silSrc: 'PNG/mycoplasma_sil.png', charaSrc: 'PNG/mycoplasma.png',
     name: 'マイコプラズマ',
     nameKana: 'マイコプラズマ<ruby>肺炎<rt>はいえん</rt></ruby>',
     hints: [
@@ -303,9 +315,32 @@ const SCENARIOS = [
       '<ruby>学校<rt>がっこう</rt></ruby>でも<ruby>同<rt>おな</rt></ruby>じような<ruby>症状<rt>しょうじょう</rt></ruby>の<ruby>子<rt>こ</rt></ruby>が<ruby>何人<rt>なんにん</rt></ruby>かいる'
     ],
     antigenAvail: true, pcrAvail: true, earlyAntigen: false, earlyPCR: true, skipTiming: true,
-    explainEarly: 'マイコプラズマには「リボテスト」という<ruby>抗原検査<rt>こうげんけんさ</rt></ruby>がありますが、<ruby>感度<rt>かんど</rt></ruby>は約57〜60%と<ruby>低め<rt>ひくめ</rt></ruby>です。<ruby>陰性<rt>いんせい</rt></ruby>でもマイコプラズマを<ruby>完全<rt>かんぜん</rt></ruby>には<ruby>否定<rt>ひてい</rt></ruby>できません。PCR<ruby>検査<rt>けんさ</rt></ruby>のほうがより<ruby>正確<rt>せいかく</rt></ruby>に<ruby>見<rt>み</rt></ruby>つけられます。',
-    explainLate: 'マイコプラズマには「リボテスト」という<ruby>抗原検査<rt>こうげんけんさ</rt></ruby>がありますが、<ruby>感度<rt>かんど</rt></ruby>は約57〜60%と<ruby>低め<rt>ひくめ</rt></ruby>です。<ruby>陰性<rt>いんせい</rt></ruby>でもマイコプラズマを<ruby>完全<rt>かんぜん</rt></ruby>には<ruby>否定<rt>ひてい</rt></ruby>できません。PCR<ruby>検査<rt>けんさ</rt></ruby>のほうがより<ruby>正確<rt>せいかく</rt></ruby>に<ruby>見<rt>み</rt></ruby>つけられます。',
-    culpritInfo: 'マイコプラズマが<ruby>犯人<rt>はんにん</rt></ruby>でした！\n<ruby>長引<rt>ながび</rt></ruby>くかわいたせきと<ruby>微熱<rt>びねつ</rt></ruby>が<ruby>特徴<rt>とくちょう</rt></ruby>。\n「リボテスト」という<ruby>抗原検査<rt>こうげんけんさ</rt></ruby>で<ruby>調<rt>しら</rt></ruby>べられますが、PCR<ruby>検査<rt>けんさ</rt></ruby>のほうがより<ruby>正確<rt>せいかく</rt></ruby>です。'
+    explainEarly: 'マイコプラズマには「リボテスト®マイコプラズマ」という<ruby>抗原検査<rt>こうげんけんさ</rt></ruby>がありますが、<ruby>感度<rt>かんど</rt></ruby>は約57〜60%と<ruby>低め<rt>ひくめ</rt></ruby>です。<ruby>陰性<rt>いんせい</rt></ruby>でもマイコプラズマを<ruby>完全<rt>かんぜん</rt></ruby>には<ruby>否定<rt>ひてい</rt></ruby>できません。PCR<ruby>検査<rt>けんさ</rt></ruby>のほうがより<ruby>正確<rt>せいかく</rt></ruby>に<ruby>見<rt>み</rt></ruby>つけられます。',
+    explainLate: 'マイコプラズマには「リボテスト®マイコプラズマ」という<ruby>抗原検査<rt>こうげんけんさ</rt></ruby>がありますが、<ruby>感度<rt>かんど</rt></ruby>は約57〜60%と<ruby>低め<rt>ひくめ</rt></ruby>です。<ruby>陰性<rt>いんせい</rt></ruby>でもマイコプラズマを<ruby>完全<rt>かんぜん</rt></ruby>には<ruby>否定<rt>ひてい</rt></ruby>できません。PCR<ruby>検査<rt>けんさ</rt></ruby>のほうがより<ruby>正確<rt>せいかく</rt></ruby>に<ruby>見<rt>み</rt></ruby>つけられます。',
+    culpritInfo: 'マイコプラズマが<ruby>犯人<rt>はんにん</rt></ruby>でした！\n<ruby>長引<rt>ながび</rt></ruby>くかわいたせきと<ruby>微熱<rt>びねつ</rt></ruby>が<ruby>特徴<rt>とくちょう</rt></ruby>。\n「リボテスト®マイコプラズマ」という<ruby>抗原検査<rt>こうげんけんさ</rt></ruby>で<ruby>調<rt>しら</rt></ruby>べられますが、PCR<ruby>検査<rt>けんさ</rt></ruby>のほうがより<ruby>正確<rt>せいかく</rt></ruby>です。'
+  },
+  {
+    id: 'pertussis', emoji: '💨',
+    silSrc: 'PNG/pertussis_sil.png', charaSrc: 'PNG/pertussis.png',
+    name: '<ruby>百日咳<rt>ひゃくにちぜき</rt></ruby>',
+    nameKana: '<ruby>百日咳菌<rt>ひゃくにちぜききん</rt></ruby>（<i>Bordetella pertussis</i>）',
+    hints: [
+      '<ruby>鼻水<rt>はなみず</rt></ruby>・くしゃみ・<ruby>微熱<rt>びねつ</rt></ruby>があり、かぜのような<ruby>症状<rt>しょうじょう</rt></ruby>が1〜2<ruby>週間<rt>しゅうかん</rt></ruby>つづいている',
+      'さいきん、せきが<ruby>出<rt>で</rt></ruby>はじめた。まだそれほど<ruby>激<rt>はげ</rt></ruby>しくないが、<ruby>夜<rt>よる</rt></ruby>に<ruby>多<rt>おお</rt></ruby>い',
+      'せきが<ruby>発作<rt>ほっさ</rt></ruby>のように<ruby>出<rt>で</rt></ruby>る',
+      '<ruby>周囲<rt>しゅうい</rt></ruby>で<ruby>百日咳<rt>ひゃくにちぜき</rt></ruby>が<ruby>流行<rt>りゅうこう</rt></ruby>している'
+    ],
+    antigenAvail: true,
+    pcrAvail: true,
+    pertussis: true,
+    timingLabel: 'いまも<ruby>鼻水<rt>はなみず</rt></ruby>やくしゃみはある？',
+    timingEarlyLabel: 'カタル<ruby>症状<rt>しょうじょう</rt></ruby>あり',
+    timingEarlyNote: '（<ruby>鼻水<rt>はなみず</rt></ruby>・くしゃみがまだある）',
+    timingLateLabel: 'カタル<ruby>症状<rt>しょうじょう</rt></ruby>なし',
+    timingLateNote: '（せきだけになってきた）',
+    explainEarly: 'カタル<ruby>期<rt>き</rt></ruby>は<ruby>百日咳菌<rt>ひゃくにちぜききん</rt></ruby>が<ruby>最<rt>もっと</rt></ruby>も<ruby>多<rt>おお</rt></ruby>い<ruby>時期<rt>じき</rt></ruby>です。「リボテスト®<ruby>百日咳<rt>ひゃくにちぜき</rt></ruby>」という<ruby>抗原検査<rt>こうげんけんさ</rt></ruby>がありますが<ruby>感度<rt>かんど</rt></ruby>は<ruby>低め<rt>ひくめ</rt></ruby>で、<ruby>陰性<rt>いんせい</rt></ruby>でも<ruby>否定<rt>ひてい</rt></ruby>できません。PCR<ruby>検査<rt>けんさ</rt></ruby>ならより<ruby>確実<rt>かくじつ</rt></ruby>に<ruby>見<rt>み</rt></ruby>つけられますが、Ct<ruby>値<rt>ち</rt></ruby>が<ruby>高め<rt>たかめ</rt></ruby>（<ruby>菌<rt>きん</rt></ruby>がまだ<ruby>少<rt>すく</rt></ruby>なめ）のこともあります。',
+    explainLate: '痙咳<ruby>期<rt>き</rt></ruby>に<ruby>入<rt>はい</rt></ruby>ると<ruby>菌<rt>きん</rt></ruby>の<ruby>量<rt>りょう</rt></ruby>が<ruby>急激<rt>きゅうげき</rt></ruby>に<ruby>減<rt>へ</rt></ruby>ります。「リボテスト®<ruby>百日咳<rt>ひゃくにちぜき</rt></ruby>」は<ruby>陰性<rt>いんせい</rt></ruby>になりやすく、PCR<ruby>検査<rt>けんさ</rt></ruby>でも<ruby>検出<rt>けんしゅつ</rt></ruby>できないことがあります。この<ruby>時期<rt>じき</rt></ruby>は<ruby>抗体検査<rt>こうたいけんさ</rt></ruby>や<ruby>臨床診断<rt>りんしょうしんだん</rt></ruby>が<ruby>重要<rt>じゅうよう</rt></ruby>になります。',
+    culpritInfo: '<ruby>百日咳菌<rt>ひゃくにちぜききん</rt></ruby>（<i>Bordetella pertussis</i>）が<ruby>犯人<rt>はんにん</rt></ruby>でした！\nカタル<ruby>期<rt>き</rt></ruby>は<ruby>風邪<rt>かぜ</rt></ruby>と<ruby>見分<rt>みわ</rt></ruby>けがつきにくいのが<ruby>特徴<rt>とくちょう</rt></ruby>。\n「リボテスト®<ruby>百日咳<rt>ひゃくにちぜき</rt></ruby>」という<ruby>抗原検査<rt>こうげんけんさ</rt></ruby>がありますが<ruby>感度<rt>かんど</rt></ruby>は<ruby>低め<rt>ひくめ</rt></ruby>。PCR<ruby>検査<rt>けんさ</rt></ruby>のほうがより<ruby>確実<rt>かくじつ</rt></ruby>に<ruby>見<rt>み</rt></ruby>つけられます。'
   }
 ];
 
@@ -339,8 +374,15 @@ const FEEDBACK = {
     'インフルエンザ': 'インフルエンザは<ruby>急<rt>きゅう</rt></ruby>に<ruby>高熱<rt>こうねつ</rt></ruby>がでるよ。この<ruby>患者<rt>かんじゃ</rt></ruby>さんは<ruby>熱<rt>ねつ</rt></ruby>はあまり<ruby>高<rt>たか</rt></ruby>くなく、<ruby>長<rt>なが</rt></ruby>い<ruby>間<rt>あいだ</rt></ruby>せきがつづいているね。',
     'コロナ':       'コロナはにおいがわからなくなったり、<ruby>家族<rt>かぞく</rt></ruby>にうつりやすいよ。この<ruby>患者<rt>かんじゃ</rt></ruby>さんは2〜3<ruby>週間<rt>しゅうかん</rt></ruby>もせきがつづいているね。',
     '溶連菌':       '<ruby>溶連菌<rt>ようれんきん</rt></ruby>はのどが<ruby>激<rt>はげ</rt></ruby>しく<ruby>痛<rt>いた</rt></ruby>くなるよ。この<ruby>患者<rt>かんじゃ</rt></ruby>さんはのどより<ruby>長引<rt>ながび</rt></ruby>くせきが<ruby>主<rt>おも</rt></ruby>な<ruby>症状<rt>しょうじょう</rt></ruby>だね。',
-    '百日咳':       '<ruby>百日咳<rt>ひゃくにちぜき</rt></ruby>も<ruby>長引<rt>ながび</rt></ruby>くせきが<ruby>特徴<rt>とくちょう</rt></ruby>だね。ヒューッという<ruby>音<rt>おと</rt></ruby>があるかどうか、<ruby>年齢<rt>ねんれい</rt></ruby>もヒントになるよ。',
+    '百日咳':       '<ruby>百日咳<rt>ひゃくにちぜき</rt></ruby>も<ruby>長引<rt>ながび</rt></ruby>くせきが<ruby>特徴<rt>とくちょう</rt></ruby>だね。でもマイコプラズマは2〜3<ruby>週間<rt>しゅうかん</rt></ruby>以上のせきと<ruby>微熱<rt>びねつ</rt></ruby>が<ruby>特徴<rt>とくちょう</rt></ruby>だよ。',
     '風邪':         '<ruby>風邪<rt>かぜ</rt></ruby>のせきは<ruby>普通<rt>ふつう</rt></ruby>1〜2<ruby>週間<rt>しゅうかん</rt></ruby>でよくなるよ。この<ruby>患者<rt>かんじゃ</rt></ruby>さんはもう2〜3<ruby>週間<rt>しゅうかん</rt></ruby>もつづいているね。',
+  },
+  pertussis: {
+    'インフルエンザ': 'インフルエンザは<ruby>急<rt>きゅう</rt></ruby>な<ruby>高熱<rt>こうねつ</rt></ruby>と<ruby>体<rt>からだ</rt></ruby>のだるさが<ruby>特徴<rt>とくちょう</rt></ruby>だよ。この<ruby>患者<rt>かんじゃ</rt></ruby>さんは1〜2<ruby>週間<rt>しゅうかん</rt></ruby>の<ruby>鼻水<rt>はなみず</rt></ruby>とかぜ<ruby>症状<rt>しょうじょう</rt></ruby>から<ruby>始<rt>はじ</rt></ruby>まっているね。',
+    'コロナ':       'コロナはにおいがわからなくなることが<ruby>多<rt>おお</rt></ruby>いよ。この<ruby>患者<rt>かんじゃ</rt></ruby>さんのせきのようすをもう<ruby>一度<rt>いちど</rt></ruby>よく<ruby>見<rt>み</rt></ruby>てみよう。',
+    '溶連菌':       '<ruby>溶連菌<rt>ようれんきん</rt></ruby>はのどが<ruby>激<rt>はげ</rt></ruby>しく<ruby>痛<rt>いた</rt></ruby>くなるよ。この<ruby>患者<rt>かんじゃ</rt></ruby>さんはせきの<ruby>症状<rt>しょうじょう</rt></ruby>が<ruby>中心<rt>ちゅうしん</rt></ruby>だね。',
+    'マイコプラズマ': 'マイコプラズマも<ruby>長引<rt>ながび</rt></ruby>くせきが<ruby>特徴<rt>とくちょう</rt></ruby>だね。でも<ruby>周囲<rt>しゅうい</rt></ruby>での<ruby>流行<rt>りゅうこう</rt></ruby>やせきの<ruby>発作<rt>ほっさ</rt></ruby>のようすも<ruby>考<rt>かんが</rt></ruby>えてみよう。',
+    '風邪':         '<ruby>風邪<rt>かぜ</rt></ruby>のせきは<ruby>普通<rt>ふつう</rt></ruby>1〜2<ruby>週間<rt>しゅうかん</rt></ruby>でよくなるよ。せきが<ruby>発作<rt>ほっさ</rt></ruby>のように<ruby>出<rt>で</rt></ruby>ることはほとんどないよ。',
   },
 };
 
@@ -378,12 +420,19 @@ function renderHintScreen() {
 }
 
 function renderSuspect() {
-  const el = document.getElementById('suspect-img');
-  el.textContent = '❓';
-  el.className = 'suspect-img';
-  if (hintIdx >= 1) el.classList.add('reveal-25');
-  if (hintIdx >= 2) el.classList.add('reveal-50');
-  if (hintIdx >= 3) el.classList.add('reveal-75');
+  const sil = document.getElementById('suspect-img-sil');
+  const chara = document.getElementById('suspect-img-chara');
+  const wrap = document.getElementById('suspect-img-wrap');
+  sil.src = current.silSrc;
+  chara.src = current.charaSrc;
+  wrap.classList.remove('revealed');
+}
+
+function revealCharacter() {
+  const wrap = document.getElementById('suspect-img-wrap');
+  const label = document.getElementById('suspect-label');
+  wrap.classList.add('revealed');
+  label.innerHTML = current.name + 'が<ruby>犯人<rt>はんにん</rt></ruby>だ！';
 }
 
 const SYMPTOM_ICONS = {
@@ -403,14 +452,19 @@ const SYMPTOM_ICONS = {
   lowFever: '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="42" cy="40" r="24" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/><ellipse cx="31.4" cy="45.3" rx="6.7" ry="4.3" fill="#fda4af" opacity=".55"/><ellipse cx="52.6" cy="45.3" rx="6.7" ry="4.3" fill="#fda4af" opacity=".55"/><circle cx="37.2" cy="37.6" r="2.2" fill="#78350f"/><circle cx="46.8" cy="37.6" r="2.2" fill="#78350f"/><circle cx="38.2" cy="36.6" r="0.82" fill="#fff"/><circle cx="47.8" cy="36.6" r="0.82" fill="#fff"/><path d="M35.3,44.3 Q42,49.1 48.7,44.3" stroke="#78350f" stroke-width="1.6" fill="none" stroke-linecap="round"/><rect x="70" y="22" width="6" height="24" rx="3" fill="#fff" stroke="#cbd5e0" stroke-width="1.2"/><rect x="71.5" y="36" width="3" height="9" rx="1.5" fill="#fb923c"/><circle cx="73" cy="47" r="3.5" fill="#fb923c"/><text x="78" y="31" font-size="7.5" fill="#fb923c" font-weight="bold">37.5</text><text x="78" y="40" font-size="6.5" fill="#fb923c">℃</text><rect x="12" y="58" width="22" height="18" rx="4" fill="#a5b4fc" stroke="#6366f1" stroke-width="1.2"/><path d="M17,58 Q23,49 29,58" stroke="#6366f1" stroke-width="1.5" fill="none"/><rect x="17" y="63" width="12" height="8" rx="2" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/></svg>',
   dryCough: '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="36" cy="46" r="24" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/><path d="M28.8,43.6 Q32.2,46.5 35.5,43.6" stroke="#78350f" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M36.5,43.6 Q39.8,46.5 43.2,43.6" stroke="#78350f" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M30.7,51.8 Q36,51.3 41.3,51.8" stroke="#78350f" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M62,26 Q84,26 84,46 Q84,60 72,60 L62,64 L66,56 Q52,56 52,46 Q52,26 62,26Z" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3" stroke-dasharray="4,3"/><text x="68" y="44" font-size="9.5" fill="#64748b" text-anchor="middle">カラッ</text><text x="68" y="55" font-size="8" fill="#94a3b8" text-anchor="middle">たんなし</text></svg>',
   schoolAge: '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="45" cy="32" r="22" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/><ellipse cx="35.3" cy="36.8" rx="6.2" ry="4.0" fill="#fda4af" opacity=".55"/><ellipse cx="54.7" cy="36.8" rx="6.2" ry="4.0" fill="#fda4af" opacity=".55"/><circle cx="40.6" cy="29.8" r="2.0" fill="#78350f"/><circle cx="49.4" cy="29.8" r="2.0" fill="#78350f"/><circle cx="41.5" cy="28.9" r="0.75" fill="#fff"/><circle cx="50.3" cy="28.9" r="0.75" fill="#fff"/><path d="M38.8,36.0 Q45,40.4 51.2,36.0" stroke="#78350f" stroke-width="1.6" fill="none" stroke-linecap="round"/><rect x="26" y="60" width="38" height="26" rx="6" fill="#f87171" stroke="#ef4444" stroke-width="1.5"/><path d="M34,60 Q45,48 56,60" stroke="#ef4444" stroke-width="1.8" fill="none"/><rect x="35" y="66" width="20" height="11" rx="3" fill="#fde68a" stroke="#f59e0b" stroke-width="1.2"/><text x="45" y="89" font-size="8.5" fill="#6366f1" text-anchor="middle" font-weight="bold">小〜中学生</text></svg>',
+  coldSymptom: '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="45" cy="44" r="26" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/><ellipse cx="33.6" cy="49.7" rx="7.3" ry="4.7" fill="#fda4af" opacity=".55"/><ellipse cx="56.4" cy="49.7" rx="7.3" ry="4.7" fill="#fda4af" opacity=".55"/><circle cx="39.8" cy="41.4" r="2.3" fill="#78350f"/><circle cx="50.2" cy="41.4" r="2.3" fill="#78350f"/><circle cx="40.8" cy="40.4" r="0.89" fill="#fff"/><circle cx="51.2" cy="40.4" r="0.89" fill="#fff"/><path d="M37.7,48.7 Q45,46 52.3,48.7" stroke="#78350f" stroke-width="1.6" fill="none" stroke-linecap="round"/><ellipse cx="43" cy="56" rx="2.5" ry="5" fill="#bfdbfe" opacity=".8"/><ellipse cx="47" cy="57" rx="2" ry="4" fill="#bfdbfe" opacity=".7"/><path d="M30,28 Q26,22 28,18" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M34,26 Q32,20 35,16" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/><text x="22" y="14" font-size="8" fill="#94a3b8">くしゃみ</text></svg>',
+  nightCough: '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="36" cy="50" r="22" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/><path d="M29.4,47.8 Q32.5,50.4 35.6,47.8" stroke="#78350f" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M36.4,47.8 Q39.5,50.4 42.6,47.8" stroke="#78350f" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M31.2,55.3 Q36,54.8 40.8,55.3" stroke="#78350f" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M62,10 Q80,10 80,26 Q80,36 72,36 L64,40 L67,33 Q55,33 55,26 Q55,10 62,10Z" fill="#1e1b4b" stroke="#4338ca" stroke-width="1.2"/><text x="67" y="25" font-size="8" fill="#c7d2fe" text-anchor="middle">ゴホッ</text><path d="M72,48 Q76,40 80,34" stroke="#fbbf24" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="80" cy="32" r="3.5" fill="#fbbf24"/><circle cx="78" cy="52" r="2.5" fill="#c7d2fe" opacity=".7"/><circle cx="84" cy="44" r="2" fill="#c7d2fe" opacity=".6"/><text x="62" y="78" font-size="8" fill="#4338ca" text-anchor="middle">夜に多い</text></svg>',
+  paroxysmCough: '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="38" cy="50" r="22" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/><path d="M31,47.5 Q34.5,50.5 38,47.5" stroke="#78350f" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M38,47.5 Q41.5,50.5 45,47.5" stroke="#78350f" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M32.5,56 Q38,55 43.5,56" stroke="#78350f" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M62,20 Q72,20 72,28 L68,32 L72,36 L66,36 Q58,36 58,28 Q58,20 62,20Z" fill="#fee2e2" stroke="#ef4444" stroke-width="1.2"/><text x="65" y="30" font-size="7" fill="#b91c1c" text-anchor="middle">ケッケッ</text><text x="65" y="39" font-size="7" fill="#b91c1c" text-anchor="middle">ケッ！</text><path d="M60,44 L56,52" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/><path d="M65,46 L63,54" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/><path d="M70,44 L72,52" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/></svg>',
+  outbreak: '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="20" cy="28" r="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.2"/><path d="M15.5,26 Q18,28.5 20.5,26" stroke="#78350f" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M16,31 Q20,33 24,31" stroke="#78350f" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="70" cy="28" r="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.2"/><path d="M65.5,26 Q68,28.5 70.5,26" stroke="#78350f" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M66,31 Q70,33 74,31" stroke="#78350f" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="45" cy="55" r="14" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><path d="M39.8,53 Q42.8,55.8 45.8,53" stroke="#78350f" stroke-width="1.7" fill="none" stroke-linecap="round"/><path d="M40.5,59 Q45,61 49.5,59" stroke="#78350f" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M28,30 Q36,38 40,46" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="3,2" fill="none" stroke-linecap="round"/><path d="M62,30 Q54,38 50,46" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="3,2" fill="none" stroke-linecap="round"/><text x="45" y="82" font-size="8" fill="#dc2626" text-anchor="middle" font-weight="bold">流行中</text></svg>',
 };
 
 // シナリオごとのヒントキーマッピング
 const HINT_ICONS = {
-  flu:   ['suddenFever', 'jointPain',  'noRunnyNose', 'winter'],
-  covid: ['noSmell',     'fatigue',    'cough',       'family'],
-  strep: ['soreThroat',  'whiteSpots', 'noCough',     'rash'],
-  myco:  ['longCough',   'lowFever',   'dryCough',    'schoolAge'],
+  flu:        ['suddenFever', 'jointPain',    'noRunnyNose',   'winter'],
+  covid:      ['noSmell',     'fatigue',      'cough',         'family'],
+  strep:      ['soreThroat',  'whiteSpots',   'noCough',       'rash'],
+  myco:       ['longCough',   'lowFever',     'dryCough',      'schoolAge'],
+  pertussis:  ['coldSymptom', 'nightCough',   'paroxysmCough', 'outbreak'],
 };
 
 function renderHints() {
@@ -518,6 +572,15 @@ function renderKenshaScreen() {
     document.getElementById('t-late').style.display = '';
     document.getElementById('kensha-sub').style.display = '';
     document.getElementById('swab-section').classList.add('hidden');
+    if (current.pertussis) {
+      document.getElementById('kensha-sub').innerHTML = current.timingLabel;
+      document.getElementById('t-early').innerHTML = current.timingEarlyLabel + '<br><span style="font-size:11px">' + current.timingEarlyNote + '</span>';
+      document.getElementById('t-late').innerHTML = current.timingLateLabel + '<br><span style="font-size:11px">' + current.timingLateNote + '</span>';
+    } else {
+      document.getElementById('kensha-sub').innerHTML = '<ruby>発症<rt>はっしょう</rt></ruby>してからどのくらいたつ？';
+      document.getElementById('t-early').innerHTML = '<ruby>早い<rt>はやい</rt></ruby><br><span style="font-size:11px">（12<ruby>時間<rt>じかん</rt></ruby><ruby>以内<rt>いない</rt></ruby>）</span>';
+      document.getElementById('t-late').innerHTML = 'ふつう<br><span style="font-size:11px">（1〜2<ruby>日<rt>にち</rt></ruby>）</span>';
+    }
   }
 }
 
@@ -551,22 +614,37 @@ function startTests() {
   document.getElementById('test-section').classList.remove('hidden');
   const isEarly = timing === 'early';
   let agPositive;  // null=キットなし / false=陰性 / 'faint'=うっすら陽性 / true=陽性
-  if (!current.antigenAvail) {
+  let ctCycleOverride = null;
+  let pcrPositive;
+
+  if (current.pertussis) {
+    // 百日咳専用ロジック
+    if (isEarly) {
+      // カタル症状あり：抗原50%うっすら/50%陰性、PCR常時陽性
+      agPositive = Math.random() < 0.5 ? 'faint' : false;
+      pcrPositive = true;
+      ctCycleOverride = agPositive === 'faint' ? 32 : 36;
+    } else {
+      // カタル症状なし：抗原常時陰性、PCR50%陽性Ct36/50%陰性
+      agPositive = false;
+      pcrPositive = Math.random() < 0.5;
+      ctCycleOverride = pcrPositive ? 36 : null;
+    }
+  } else if (!current.antigenAvail) {
     agPositive = null;
+    pcrPositive = current.earlyPCR;
   } else if (current.skipTiming) {
     // マイコプラズマ：感度約57%をランダムで再現
     agPositive = Math.random() < 0.57;
+    pcrPositive = current.earlyPCR;
   } else if (isEarly && current.earlyRandom) {
     // インフル・コロナ早期：80%陰性 / 20%うっすら陽性
     agPositive = Math.random() < 0.2 ? 'faint' : false;
+    pcrPositive = current.earlyPCR;
+    ctCycleOverride = agPositive === 'faint' ? 32 : 36;
   } else {
     agPositive = isEarly ? current.earlyAntigen : true;
-  }
-  const pcrPositive = current.earlyPCR;
-  // Ct値：早期・結果に応じて変動
-  let ctCycleOverride = null;
-  if (isEarly && current.earlyRandom) {
-    ctCycleOverride = agPositive === 'faint' ? 32 : 36; // うっすら→32, 陰性→36
+    pcrPositive = current.earlyPCR;
   }
 
   // バッジをリセット
@@ -961,6 +1039,8 @@ function showTestResult(id, positive, available) {
 
 function goResult() {
   showScreen('result');
+  revealCharacter();
+  document.getElementById('result-chara-img').src = current.charaSrc;
   const titles = [
     { maxHint: 1, badge: '🕵️', name: '<ruby>天才<rt>てんさい</rt></ruby>たんてい！', emoji: '🎉', msg: 'ヒント1<ruby>枚<rt>まい</rt></ruby>で<ruby>正解<rt>せいかい</rt></ruby>！すごい！' },
     { maxHint: 2, badge: '🔍', name: 'するどいたんてい！', emoji: '🎊', msg: 'ヒント2<ruby>枚<rt>まい</rt></ruby>で<ruby>正解<rt>せいかい</rt></ruby>！よくできました！' },
@@ -974,7 +1054,7 @@ function goResult() {
   document.getElementById('result-title').innerHTML = t.msg;
   document.getElementById('result-sub').innerHTML = '<ruby>犯人<rt>はんにん</rt></ruby>は「' + current.name + '」でした！';
   document.getElementById('culprit-reveal').innerHTML =
-    '<div class="culprit-name">' + current.emoji + ' ' + current.nameKana + '</div>' + current.culpritInfo.replace(/\n/g, '<br>');
+    '<div class="culprit-name">' + current.nameKana + '</div>' + current.culpritInfo.replace(/\n/g, '<br>');
 }
 </script>
 </body>
