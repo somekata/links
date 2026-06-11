@@ -323,7 +323,6 @@ const SCENARIOS = [
     id: 'pertussis', emoji: '💨',
     silSrc: 'PNG/pertussis_sil.png', charaSrc: 'PNG/pertussis.png',
     name: '<ruby>百日咳<rt>ひゃくにちぜき</rt></ruby>',
-    nameKey: '百日咳',
     nameKana: '<ruby>百日咳菌<rt>ひゃくにちぜききん</rt></ruby>（<i>Bordetella pertussis</i>）',
     hints: [
       '<ruby>鼻水<rt>はなみず</rt></ruby>・くしゃみ・<ruby>微熱<rt>びねつ</rt></ruby>があり、かぜのような<ruby>症状<rt>しょうじょう</rt></ruby>が1〜2<ruby>週間<rt>しゅうかん</rt></ruby>つづいている',
@@ -393,26 +392,6 @@ function startGame() {
   const pool = shuffle([...SCENARIOS]);
   current = pool[0];
   hintIdx = 0; wrongCount = 0; timing = null;
-  // PCRキャンバスをリセット
-  const cAmp = document.getElementById('canvas-pcr-amp');
-  const cTemp = document.getElementById('canvas-pcr-temp');
-  if (cAmp) cAmp.getContext('2d').clearRect(0, 0, cAmp.width, cAmp.height);
-  if (cTemp) cTemp.getContext('2d').clearRect(0, 0, cTemp.width, cTemp.height);
-  // 抗原検査SVGをリセット
-  const svg = document.getElementById('svg-antigen');
-  if (svg) svg.innerHTML = '';
-  // バッジ・理由テキストをリセット
-  ['badge-antigen','badge-pcr'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { el.className = 'test-panel-badge badge-waiting'; el.innerHTML = ''; }
-  });
-  ['reason-antigen','reason-pcr'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '';
-  });
-  // 結果画面キャラ画像をリセット
-  const rc = document.getElementById('result-chara-img');
-  if (rc) rc.src = '';
   showScreen('hint');
   renderHintScreen();
 }
@@ -444,11 +423,9 @@ function renderSuspect() {
   const sil = document.getElementById('suspect-img-sil');
   const chara = document.getElementById('suspect-img-chara');
   const wrap = document.getElementById('suspect-img-wrap');
-  const label = document.getElementById('suspect-label');
   sil.src = current.silSrc;
   chara.src = current.charaSrc;
   wrap.classList.remove('revealed');
-  label.innerHTML = '<ruby>犯人<rt>はんにん</rt></ruby>はだれだ…？';
 }
 
 function revealCharacter() {
@@ -540,8 +517,7 @@ function renderChoices() {
 }
 
 function guess(key, btn) {
-  const matchName = current.nameKey || current.name;
-  if (key === matchName) {
+  if (key === current.name) {
     document.getElementById('feedback-area').innerHTML = '';
     showScreen('kensha');
     renderKenshaScreen();
