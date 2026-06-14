@@ -1,1 +1,1509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>核酸増幅法 — PCRのしくみと仲間たち</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════
+   TOKENS
+══════════════════════════════════════ */
+:root {
+  --bg:         #FAFBFC;
+  --bg2:        #F0F4F9;
+  --bg3:        #E4EDF8;
+  --blue:       #0066CC;
+  --blue-lt:    #E8F2FF;
+  --blue-dk:    #004A99;
+  --green:      #00A86B;
+  --green-lt:   #E6F7F1;
+  --gold:       #D08000;
+  --gold-lt:    #FFF4E0;
+  --red:        #CC3333;
+  --red-lt:     #FFF0F0;
+  --purple:     #7B2FBE;
+  --purple-lt:  #F3ECFF;
+  --orange:     #E05800;
+  --orange-lt:  #FFF2EA;
+  --text:       #1A1A2E;
+  --text2:      #4A5568;
+  --text3:      #8A94A6;
+  --border:     #D1DCF0;
+  --white:      #FFFFFF;
+  --r:          12px;
+  --sh:         0 2px 16px rgba(0,102,204,.10);
+  --font-r:     'M PLUS Rounded 1c', sans-serif;
+  --font-b:     'Noto Sans JP', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-b);
+  font-size: 16px;
+  line-height: 1.8;
+}
 
+/* ── LEVEL SHOW/HIDE ────────────────── */
+.easy, .mid, .pro { display: none; }
+body[data-lv="easy"] .easy { display: block; }
+body[data-lv="mid"]  .mid  { display: block; }
+body[data-lv="pro"]  .pro  { display: block; }
+/* inline variants */
+.ei, .mi, .pi { display: none; }
+body[data-lv="easy"] .ei { display: inline; }
+body[data-lv="mid"]  .mi { display: inline; }
+body[data-lv="pro"]  .pi { display: inline; }
+
+/* ── STICKY NAV ─────────────────────── */
+.snav {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(250,251,252,.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.snav-inner {
+  max-width: 960px; margin: 0 auto;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  height: 52px; padding: 0 20px; gap: 12px;
+}
+.snav-logo {
+  font-family: var(--font-r);
+  font-weight: 800; font-size: 15px;
+  color: var(--blue); white-space: nowrap; flex-shrink: 0;
+}
+.ltabs {
+  display: flex; gap: 3px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px;
+}
+.ltab {
+  cursor: pointer;
+  padding: 5px 18px;
+  border-radius: 999px;
+  font-family: var(--font-r);
+  font-weight: 700; font-size: 13px;
+  border: none; background: transparent;
+  color: var(--text2); transition: all .2s;
+  white-space: nowrap;
+}
+.ltab:hover { color: var(--blue); }
+.ltab[data-lv="easy"].on { background: var(--green);  color: #fff; }
+.ltab[data-lv="mid"].on  { background: var(--blue);   color: #fff; }
+.ltab[data-lv="pro"].on  { background: var(--purple);  color: #fff; }
+
+/* ── HERO ───────────────────────────── */
+.hero {
+  background: linear-gradient(140deg,#001F4D 0%,#003399 55%,#0055CC 100%);
+  color: #fff; padding: 60px 24px 52px;
+  text-align: center; position: relative; overflow: hidden;
+}
+#hcanvas { position: absolute; inset: 0; pointer-events: none; }
+.hero-in { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; }
+.hero-pill {
+  display: inline-block;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 999px; padding: 4px 16px;
+  font-size: 12px; font-family: var(--font-r);
+  letter-spacing: .06em; margin-bottom: 18px;
+  color: rgba(255,255,255,.9);
+}
+.hero h1 {
+  font-family: var(--font-r); font-weight: 800;
+  font-size: clamp(26px,6vw,52px);
+  line-height: 1.15; margin-bottom: 14px;
+}
+.hero h1 .ac { color: #7DDFFF; }
+.hero-sub {
+  font-size: clamp(13px,2.5vw,16px);
+  color: rgba(255,255,255,.78);
+  max-width: 520px; margin: 0 auto 26px;
+}
+.hero-hint {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.12);
+  border-radius: 999px; padding: 7px 18px;
+  font-size: 12px; color: rgba(255,255,255,.82);
+  font-family: var(--font-r);
+}
+.hdot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* ── CONTAINER ──────────────────────── */
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+/* ── SECTION HEADER ─────────────────── */
+.sh {
+  display: flex; align-items: center;
+  gap: 12px; margin: 52px 0 22px;
+}
+.sh-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center;
+  justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.sh h2 {
+  font-family: var(--font-r); font-size: 21px;
+  font-weight: 800;
+}
+.sh h2 span { color: var(--blue); }
+
+/* ── CARD ───────────────────────────── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 26px 28px;
+  margin-bottom: 18px;
+  box-shadow: var(--sh);
+  position: relative; overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; width: 4px; height: 100%;
+}
+.card.bl::before  { background: var(--blue); }
+.card.gr::before  { background: var(--green); }
+.card.gd::before  { background: var(--gold); }
+.card.rd::before  { background: var(--red); }
+.card.pu::before  { background: var(--purple); }
+.card.or::before  { background: var(--orange); }
+.card h3 {
+  font-family: var(--font-r); font-size: 18px;
+  font-weight: 800; margin-bottom: 10px;
+}
+.card p { color: var(--text2); font-size: 15px; }
+.card p+p { margin-top: 10px; }
+
+/* ── FUN CARD (easy) ─────────────────── */
+.fcard {
+  border: 3px solid var(--green);
+  border-radius: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg,#E6FAF4 0%,#fff 100%);
+  margin-bottom: 18px; text-align: center;
+}
+.fcard h3 {
+  font-family: var(--font-r); font-weight: 800;
+  font-size: 20px; color: var(--green); margin-bottom: 10px;
+}
+.fcard p { font-size: 15px; color: var(--text2); }
+.big-e { font-size: 48px; display: block; margin: 0 auto 10px; }
+.big-n {
+  font-family: var(--font-r); font-size: 52px;
+  font-weight: 800; color: var(--blue); line-height: 1;
+  display: block;
+}
+.big-u { font-size: 17px; color: var(--text2); font-family: var(--font-r); }
+
+/* ── ANALOGY ────────────────────────── */
+.ana {
+  background: var(--gold-lt);
+  border: 1px solid #F0C040;
+  border-radius: 10px; padding: 14px 18px;
+  margin: 14px 0; font-size: 14px; color: #4A3000;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.ana-ic { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+.ana strong { color: var(--gold); }
+
+/* ── AMPLIFY ANIMATION ──────────────── */
+.amp-anim { margin: 20px 0; }
+.amp-rows { display: flex; flex-direction: column; gap: 6px; }
+.amp-row {
+  display: flex; align-items: center; gap: 10px;
+  opacity: 0; transform: translateX(-10px);
+  transition: opacity .4s, transform .4s;
+}
+.amp-row.show { opacity: 1; transform: none; }
+.amp-cycle {
+  font-family: monospace; font-size: 12px;
+  color: var(--text3); min-width: 60px; text-align: right;
+}
+.amp-dots { display: flex; flex-wrap: wrap; gap: 4px; }
+.adot {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--blue); display: inline-block;
+  box-shadow: 0 1px 4px rgba(0,102,204,.3);
+}
+.adot.new { background: var(--green); }
+.amp-count {
+  font-family: var(--font-r); font-weight: 800;
+  font-size: 13px; color: var(--blue); min-width: 90px;
+}
+/* 省略行（…） */
+.amp-ellipsis {
+  justify-content: center;
+  padding: 2px 0;
+}
+.amp-dots-omit {
+  font-size: 20px;
+  color: var(--text3);
+  letter-spacing: .4em;
+  padding-left: .4em;
+  font-family: var(--font-r);
+  font-weight: 700;
+}
+.amp-btn {
+  margin-top: 14px;
+  background: var(--blue); color: #fff;
+  border: none; border-radius: 999px;
+  padding: 9px 24px; font-family: var(--font-r);
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  transition: background .2s;
+}
+.amp-btn:hover { background: var(--blue-dk); }
+
+/* ── MILESTONES ─────────────────────── */
+.milestones {
+  display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0;
+}
+.ms {
+  flex: 1; min-width: 130px;
+  background: var(--blue-lt);
+  border: 1px solid #B3D4FF;
+  border-radius: 10px; padding: 14px;
+  text-align: center;
+}
+.ms .ms-n {
+  font-family: var(--font-r); font-weight: 700;
+  font-size: 13px; color: var(--text3); display: block;
+  letter-spacing: .03em;
+}
+.ms .ms-l {
+  font-family: var(--font-r); font-weight: 800;
+  font-size: 28px; color: var(--blue);
+  display: block; margin-top: 4px; line-height: 1.1;
+}
+.ms .ms-sub {
+  font-size: 11px; color: var(--text3);
+  font-family: var(--font-r); display: block; margin-top: 3px;
+}
+.ms-wow {
+  font-size: 28px;
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: wow-pop .5s ease .1s both;
+}
+.amp-wow {
+  font-size: 22px;
+  display: inline-block;
+  margin-left: 5px;
+  vertical-align: middle;
+  animation: wow-pop .5s ease .1s both;
+}
+@keyframes wow-pop {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  70%  { transform: scale(1.3) rotate(8deg);  opacity: 1; }
+  100% { transform: scale(1)   rotate(0deg);  opacity: 1; }
+}
+
+/* ── SENSITIVITY/SPECIFICITY CARDS ─── */
+.ss-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+@media(max-width:580px){.ss-grid{grid-template-columns:1fr;}}
+.ss-card {
+  border-radius: 12px; padding: 20px;
+  border: 2px solid transparent;
+}
+.ss-card.sen { background: #E6F7F1; border-color: var(--green); }
+.ss-card.spe { background: #E8F2FF; border-color: var(--blue); }
+.ss-card .ss-title {
+  font-family: var(--font-r); font-weight: 800;
+  font-size: 16px; margin-bottom: 8px;
+}
+.ss-card.sen .ss-title { color: var(--green); }
+.ss-card.spe .ss-title { color: var(--blue); }
+.ss-card p { font-size: 14px; color: var(--text2); }
+.ss-card .ss-rule {
+  margin-top: 12px; padding: 10px 12px;
+  border-radius: 8px; font-size: 13px;
+  font-family: var(--font-r); font-weight: 700;
+}
+.ss-card.sen .ss-rule { background: #C8F0E0; color: #005035; }
+.ss-card.spe .ss-rule { background: #CCE4FF; color: #003477; }
+
+/* Detective scene */
+.detective-scene {
+  background: #1A1A2E;
+  border-radius: 14px; padding: 24px;
+  margin: 16px 0; color: #fff;
+}
+.det-title {
+  font-family: var(--font-r); font-weight: 800;
+  font-size: 16px; color: #FFD700; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.det-row {
+  display: flex; gap: 12px; margin-bottom: 14px;
+  align-items: flex-start;
+}
+.det-icon { font-size: 28px; flex-shrink: 0; }
+.det-body { flex: 1; }
+.det-body .det-hd {
+  font-family: var(--font-r); font-weight: 700;
+  font-size: 14px; margin-bottom: 4px;
+}
+.det-body .det-hd.g { color: #6EF2B0; }
+.det-body .det-hd.r { color: #FF8080; }
+.det-body p { font-size: 13px; color: rgba(255,255,255,.75); }
+.det-result {
+  margin-top: 6px; padding: 6px 10px;
+  border-radius: 6px; font-size: 13px;
+  font-family: var(--font-r); font-weight: 700;
+}
+.det-result.good { background: rgba(110,242,176,.2); color: #6EF2B0; }
+.det-result.warn { background: rgba(255,200,80,.2); color: #FFD050; }
+
+/* SS summary table */
+.ss-sum {
+  width: 100%; border-collapse: collapse;
+  font-size: 14px; margin: 16px 0;
+}
+.ss-sum th {
+  background: var(--blue); color: #fff;
+  padding: 10px 14px; text-align: left;
+  font-family: var(--font-r); font-size: 13px;
+}
+.ss-sum td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+}
+.ss-sum tr:hover td { background: var(--bg2); }
+.ss-sum .g { color: var(--green); font-weight: 700; }
+.ss-sum .r { color: var(--red); font-weight: 700; }
+
+/* ── VS BAR (PCR vs immunochromatography) */
+.vs-wrap { display: flex; gap: 14px; flex-wrap: wrap; margin: 16px 0; }
+.vs-col {
+  flex: 1; min-width: 200px;
+  border-radius: 12px; padding: 18px;
+  border: 2px solid transparent;
+}
+.vs-col.pcr { background: var(--blue-lt); border-color: var(--blue); }
+.vs-col.ico { background: var(--orange-lt); border-color: var(--orange); }
+.vs-col .vs-title {
+  font-family: var(--font-r); font-weight: 800;
+  font-size: 15px; margin-bottom: 8px;
+}
+.vs-col.pcr .vs-title { color: var(--blue); }
+.vs-col.ico .vs-title { color: var(--orange); }
+.vs-bar-wrap { margin: 8px 0; }
+.vs-label { font-size: 12px; color: var(--text2); margin-bottom: 3px; }
+.vs-bar-bg {
+  height: 18px; background: var(--bg3);
+  border-radius: 999px; overflow: hidden;
+}
+.vs-bar-fill {
+  height: 100%; border-radius: 999px;
+  transition: width 1s ease;
+}
+.pcr  .vs-bar-fill { background: var(--blue); }
+.ico  .vs-bar-fill { background: var(--orange); }
+.vs-note { font-size: 12px; color: var(--text2); margin-top: 6px; }
+
+/* ── PROCESS FLOW ──────────────────── */
+.flow {
+  display: flex; align-items: stretch;
+  gap: 0; overflow-x: auto; margin: 16px 0;
+}
+.fs {
+  flex: 1; min-width: 90px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-right: none; padding: 14px 10px;
+  text-align: center; position: relative; font-size: 13px;
+}
+.fs:last-child { border-right: 1px solid var(--border); }
+.fs .fs-ic { font-size: 22px; display: block; margin-bottom: 4px; }
+.fs .fs-t  { font-size: 11px; font-family: monospace; color: var(--text3); display: block; margin-top: 3px; }
+.fs .fs-lb { font-weight: 700; color: var(--text); }
+.fs::after {
+  content: '▶'; position: absolute;
+  right: -10px; top: 50%; transform: translateY(-50%);
+  font-size: 11px; color: var(--blue);
+  background: var(--bg2); z-index: 1; padding: 1px;
+}
+.fs:last-child::after { display: none; }
+.fs.hot  { background: #FFF0EE; border-color: #FFCCCC; }
+.fs.cool { background: #EEF4FF; border-color: #CCE0FF; }
+.fs.warm { background: #EEFAF4; border-color: #CCEEDF; }
+
+/* ── VARIANT GRID ───────────────────── */
+.vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+@media(max-width:600px){.vgrid{grid-template-columns:1fr;}}
+.vc {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+}
+.vc .vc-n {
+  font-family: var(--font-r); font-weight: 700;
+  font-size: 14px; color: var(--blue); margin-bottom: 5px;
+}
+.vc p { font-size: 13px; color: var(--text2); }
+
+/* ── TECH TABLE ─────────────────────── */
+.tw { overflow-x: auto; margin: 16px 0; }
+table.tt { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tt th {
+  background: var(--blue); color: #fff;
+  padding: 10px 12px; text-align: left;
+  font-family: var(--font-r); font-size: 12px; white-space: nowrap;
+}
+table.tt td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+table.tt tr:hover td { background: var(--bg2); }
+table.tt .go { color: var(--green); font-weight: 700; }
+table.tt .mi { color: var(--gold); font-weight: 700; }
+table.tt .ba { color: var(--red); font-weight: 700; }
+table.tt .tn { font-weight: 700; }
+
+/* ── PATHOGEN CARDS ─────────────────── */
+.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 12px; margin: 16px 0; }
+.pc {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 12px;
+  text-align: center; box-shadow: var(--sh);
+  transition: transform .15s, box-shadow .15s;
+}
+.pc:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,102,204,.14); }
+.pc .pc-ic { font-size: 30px; display: block; margin-bottom: 6px; }
+.pc .pc-name { font-family: var(--font-r); font-weight: 700; font-size: 13px; color: var(--text); }
+.pc .pc-method {
+  margin-top: 5px; font-size: 11px;
+  padding: 2px 8px; border-radius: 999px;
+  display: inline-block; font-family: monospace;
+}
+.pc .m-pcr    { background: var(--blue-lt); color: var(--blue); }
+.pc .m-lamp   { background: var(--green-lt); color: var(--green); }
+.pc .m-multi  { background: var(--purple-lt); color: var(--purple); }
+.pc .m-ngs    { background: var(--gold-lt); color: var(--gold); }
+
+/* ── INFO / WARN BOX ────────────────── */
+.ibox {
+  border-left: 4px solid var(--blue);
+  background: var(--blue-lt);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px; font-size: 14px;
+  color: var(--text2); margin: 14px 0;
+}
+.ibox strong { color: var(--blue-dk); }
+.wbox {
+  border-left: 4px solid var(--gold);
+  background: var(--gold-lt);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px; font-size: 14px;
+  color: var(--text2); margin: 14px 0;
+}
+.wbox strong { color: var(--gold); }
+
+/* ── QUIZ ───────────────────────────── */
+.qbox {
+  background: linear-gradient(135deg,#E6FAF4,#fff);
+  border: 2px solid var(--green); border-radius: 14px;
+  padding: 22px; margin: 20px 0; text-align: center;
+}
+.qbox h4 {
+  font-family: var(--font-r); font-weight: 800;
+  font-size: 16px; color: var(--green); margin-bottom: 12px;
+}
+.qopts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; }
+.qopt {
+  cursor: pointer; padding: 9px 18px;
+  border: 2px solid var(--border); border-radius: 999px;
+  background: var(--white); font-family: var(--font-r);
+  font-weight: 700; font-size: 13px; color: var(--text);
+  transition: all .15s;
+}
+.qopt:hover { border-color: var(--green); color: var(--green); }
+.qopt.ok  { background: var(--green); color: #fff; border-color: var(--green); }
+.qopt.ng  { background: var(--red-lt); color: var(--red); border-color: var(--red); }
+.qmsg { margin-top: 10px; font-size: 15px; font-family: var(--font-r); font-weight: 700; min-height: 22px; }
+
+/* ── NGS FLOW ───────────────────────── */
+.nflow { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.ns {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 12px 16px; border-radius: 8px;
+}
+.ns-n { font-family: monospace; font-weight: 700; font-size: 18px; color: var(--blue); min-width: 28px; }
+.ns-t { font-weight: 700; font-size: 14px; color: var(--text); }
+.ns-d { font-size: 13px; color: var(--text2); }
+
+/* ── TIMELINE ───────────────────────── */
+.tl { position: relative; padding-left: 28px; margin: 16px 0; }
+.tl::before {
+  content: ''; position: absolute;
+  left: 8px; top: 0; bottom: 0; width: 2px;
+  background: linear-gradient(to bottom,var(--blue),var(--green));
+}
+.tl-it { position: relative; margin-bottom: 18px; }
+.tl-it::before {
+  content: ''; position: absolute;
+  left: -24px; top: 6px; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--blue);
+  border: 2px solid var(--white);
+  box-shadow: 0 0 0 2px var(--blue);
+}
+.tl-era { font-family: monospace; font-size: 11px; color: var(--blue); font-weight: 700; letter-spacing: .04em; }
+.tl-nm  { font-family: var(--font-r); font-weight: 700; font-size: 14px; color: var(--text); }
+.tl-ds  { font-size: 13px; color: var(--text2); }
+
+/* ── TAGS ───────────────────────────── */
+.trow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.tag {
+  font-size: 11px; padding: 3px 10px;
+  border-radius: 999px; border: 1px solid var(--border);
+  color: var(--text2); background: var(--bg2); font-family: monospace;
+}
+.tag.bl { background: var(--blue-lt); color: var(--blue); border-color: #B3D4FF; }
+.tag.gr { background: var(--green-lt); color: var(--green); border-color: #AADDCC; }
+.tag.gd { background: var(--gold-lt); color: var(--gold); border-color: #FFCC66; }
+.tag.rd { background: var(--red-lt); color: var(--red); border-color: #FFAAAA; }
+.tag.pu { background: var(--purple-lt); color: var(--purple); border-color: #CCA8EE; }
+
+/* ── REF ────────────────────────────── */
+.refbox {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px 22px;
+  margin: 16px 0 40px; font-size: 12px; color: var(--text2);
+}
+.refbox ol { padding-left: 18px; }
+.refbox li { margin-bottom: 5px; line-height: 1.65; }
+
+/* ── FOOTER ─────────────────────────── */
+footer {
+  background: var(--text); color: rgba(255,255,255,.55);
+  padding: 36px 24px; text-align: center;
+  font-size: 12px; line-height: 2.1; margin-top: 60px;
+}
+
+/* misc */
+.it  { font-style: italic; }
+.bold { font-weight: 700; }
+.mt12 { margin-top: 12px; }
+.mt20 { margin-top: 20px; }
+
+/* primer grid */
+.pgr3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 12px 0; }
+.prbox { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
+.prbox .prn { font-family: monospace; font-weight: 700; font-size: 14px; color: var(--green); }
+.prbox .prd { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+@media(max-width:640px){
+  .snav-logo { display: none; }
+  .ltab { padding: 5px 10px; font-size: 12px; }
+  .card { padding: 18px 16px; }
+}
+</style>
+</head>
+<body data-lv="easy">
+
+<!-- ══ STICKY NAV ══════════════════════ -->
+<nav class="snav">
+  <div class="snav-inner">
+    <div class="snav-logo">🧬 核酸増幅法</div>
+    <div class="ltabs">
+      <button class="ltab on" data-lv="easy">🌱 やさしく</button>
+      <button class="ltab"    data-lv="mid" >📖 ふつう</button>
+      <button class="ltab"    data-lv="pro" >🔬 くわしく</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ HERO ════════════════════════════ -->
+<div class="hero">
+  <canvas id="hcanvas"></canvas>
+  <div class="hero-in">
+    <div class="hero-pill">Nucleic Acid Amplification Technology</div>
+    <div class="easy">
+      <h1>PCRって<br><span class="ac">聞いたことある？</span></h1>
+      <p class="hero-sub">コロナのとき、ニュースで毎日聞いたあの「PCR検査」。<br>いったいどんなしくみなんだろう？</p>
+    </div>
+    <div class="mid">
+      <h1>核酸増幅法<br><span class="ac">原理と臨床応用</span></h1>
+      <p class="hero-sub">PCR・LAMP・NEAR・NGS・ナノポア技術の仕組みと、感染症・がん診断への応用を体系的に解説します。</p>
+    </div>
+    <div class="pro">
+      <h1>核酸増幅技術の<br><span class="ac">原理・比較・臨床実装</span></h1>
+      <p class="hero-sub">PCR変法・等温増幅（LAMP/RPA/NEAR）・ショート/ロングリードNGS・mNGS・ONT/PacBioの原理、感度指標（LoD・診断感度/特異度）、AMR・感染症診断への実装を概説する。</p>
+    </div>
+    <div class="hero-hint">
+      <span class="hdot" style="background:#00A86B"></span> やさしく
+      <span class="hdot" style="background:#7DDFFF"></span> ふつう
+      <span class="hdot" style="background:#C080FF"></span> くわしく
+      &nbsp;— 上のタブで切替
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN ═════════════════════════════ -->
+<div class="wrap">
+
+<!-- ┌─────────────────────────────────────
+     § 1  そもそも核酸・PCRとは
+─────────────────────────────────────┘ -->
+<div class="sh">
+  <div class="sh-icon" style="background:#E8F2FF">🧬</div>
+  <h2><span>PCR</span> って何だろう？</h2>
+</div>
+
+<!-- EASY -->
+<div class="easy">
+  <div class="fcard">
+    <span class="big-e">🦠</span>
+    <h3>コロナのとき、聞いたよね？</h3>
+    <p>「PCR検査で陽性でした」「PCRで陰性が確認されました」——そんなニュース、コロナのときにたくさん聞いたはず。でも、PCRってどんな技術なのかな？</p>
+  </div>
+
+  <div class="card bl">
+    <h3>🔤 まず「DNA」ってなに？</h3>
+    <p>すべての生き物の細胞の中には、<strong>「設計図」</strong>が入っています。それが <strong>DNA</strong>。人間にも、ウイルスにも、細菌にも、それぞれの設計図があります。</p>
+    <p>DNAは <strong>A・T・G・C</strong> の4種類の「文字（塩基）」が並んだ暗号のようなもの。ウイルスや細菌ごとに、この文字の並び方が違います。</p>
+  </div>
+
+  <div class="card bl">
+    <h3>📋 PCRとは「DNAのコピー機」</h3>
+    <p><strong>PCR</strong> は <strong>P</strong>olymerase <strong>C</strong>hain <strong>R</strong>eaction の略。日本語だと「ポリメラーゼ連鎖反応」といいます。</p>
+    <p>ウイルスや細菌の設計図（DNA）を、ものすごい数にコピー（増幅）することで、たった1個でも見つけられるようにする技術です。</p>
+    <div class="ana"><span class="ana-ic">💡</span><div>コピー機で1枚の紙を増やすのと同じイメージ。ただし、<strong>信じられないほどの枚数に増やせる</strong>のが特徴です。</div></div>
+  </div>
+</div>
+
+<!-- MID -->
+<div class="mid">
+  <div class="card bl">
+    <h3>核酸増幅法（NAAT）とは</h3>
+    <p>核酸増幅法（Nucleic Acid Amplification Technology, NAAT）は、微量のDNA・RNAを酵素反応によって大量にコピーし、検出・解析を可能にする技術の総称です。</p>
+    <p>培養法（感度50–70%、TAT 24–72 h）と比べ、<strong>感度95%超・特異度99%超・TAT 1–数時間</strong>を達成し、培養困難な病原体にも対応できます。</p>
+    <div class="trow">
+      <span class="tag bl">NAAT</span><span class="tag bl">感度 &gt;95%</span>
+      <span class="tag bl">特異度 &gt;99%</span><span class="tag">培養不要</span>
+    </div>
+  </div>
+</div>
+
+<!-- PRO -->
+<div class="pro">
+  <div class="card bl">
+    <h3>核酸増幅法（NAAT）— 概論</h3>
+    <p>NAATs（Nucleic Acid Amplification Technologies）は、標的核酸配列を酵素によって指数関数的に増幅し、生物学的検出限界（理論的に~1コピー/反応）を達成する技術群である。感染症診断における臨床的感度はPCR &gt;95%、等温増幅法 &gt;90%（病原体・標的により変動）、特異度は適切なプライマー設計下で &gt;99%。</p>
+    <p>RNAを標的とする場合、逆転写（RT）ステップが前置される（AMV-RT/MMLV-RT/SSIV等）が、増幅原理本体とは独立しており、本稿ではDNA/RNAを統合して概説する。</p>
+    <div class="trow">
+      <span class="tag bl">診断感度 vs 解析感度（LoD）の区別</span>
+      <span class="tag bl">RT前置でRNA対応</span>
+      <span class="tag">~1コピー/反応（理論値）</span>
+    </div>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 2  PCRのしくみ（増幅の原理）
+─────────────────────────────────────┘ -->
+<div class="sh">
+  <div class="sh-icon" style="background:#EEF4FF">⚙️</div>
+  <h2>PCRの<span>しくみ</span></h2>
+</div>
+
+<!-- EASY -->
+<div class="easy">
+  <div class="card bl">
+    <h3>🌡️ 3つのステップをくり返す</h3>
+    <p>PCRは「温度を変える」だけで、DNAを2倍、2倍、2倍…と増やし続けます。</p>
+    <div class="flow mt12">
+      <div class="fs hot"><span class="fs-ic">🔥</span><span class="fs-lb">①バラバラに</span><span class="fs-t">95°C</span><span style="font-size:11px;color:var(--text3)">二本鎖を開く</span></div>
+      <div class="fs cool"><span class="fs-ic">🧩</span><span class="fs-lb">②目印をつける</span><span class="fs-t">55°C</span><span style="font-size:11px;color:var(--text3)">プライマーがくっつく</span></div>
+      <div class="fs warm"><span class="fs-ic">✏️</span><span class="fs-lb">③書き写す</span><span class="fs-t">72°C</span><span style="font-size:11px;color:var(--text3)">DNAが2倍になる</span></div>
+    </div>
+    <p class="mt12">これを <strong>30〜40回くり返す</strong> と……</p>
+  </div>
+
+  <div class="card bl">
+    <h3>📈 1個が10億個になる！</h3>
+    <p>1回で2倍、2回で4倍、3回で8倍……10回で？</p>
+
+    <div class="amp-anim">
+      <div class="amp-rows" id="ampRows"></div>
+      <button class="amp-btn" id="ampBtn" onclick="startAmp()">▶ アニメーションを見る</button>
+    </div>
+
+    <div class="milestones mt12">
+      <div class="ms">
+        <span class="ms-n">10回くり返すと</span>
+        <span class="ms-l">1,024倍</span>
+        <span class="ms-sub">2¹⁰ ≈ 約1千倍</span>
+      </div>
+      <div class="ms">
+        <span class="ms-n">20回くり返すと</span>
+        <span class="ms-l">100万倍</span>
+        <span class="ms-sub">2²⁰ ≈ 約1百万倍</span>
+      </div>
+      <div class="ms">
+        <span class="ms-n">30回くり返すと</span>
+        <span class="ms-l">10億倍！<span class="ms-wow">🤯</span></span>
+        <span class="ms-sub">2³⁰ ≈ 約10億倍</span>
+      </div>
+    </div>
+
+    <div class="ana"><span class="ana-ic">💡</span><div><strong>だから——</strong>ウイルスや細菌が <strong>1個だけ</strong> サンプルの中にいても、PCRはそれを見つけることができます。</div></div>
+  </div>
+</div>
+
+<!-- MID -->
+<div class="mid">
+  <div class="card bl">
+    <h3>PCR（Polymerase Chain Reaction）の原理</h3>
+    <p>1983年にKary Mullisが発明。<span class="it">Thermus aquaticus</span> 由来の耐熱性<strong>Taq DNAポリメラーゼ</strong>を用い、温度サイクルで標的DNAを指数関数的（2ⁿ倍）に増幅します。</p>
+    <div class="flow mt12">
+      <div class="fs hot"><span class="fs-ic">🔥</span><span class="fs-lb">変性</span><span class="fs-t">94–98°C</span><span style="font-size:11px;color:var(--text3)">二本鎖解離</span></div>
+      <div class="fs cool"><span class="fs-ic">🧩</span><span class="fs-lb">アニーリング</span><span class="fs-t">50–65°C</span><span style="font-size:11px;color:var(--text3)">プライマー結合</span></div>
+      <div class="fs warm"><span class="fs-ic">✏️</span><span class="fs-lb">伸長</span><span class="fs-t">72°C</span><span style="font-size:11px;color:var(--text3)">DNA合成</span></div>
+    </div>
+    <div class="milestones mt12">
+      <div class="ms">
+        <span class="ms-n">10サイクル</span>
+        <span class="ms-l">1,024倍</span>
+        <span class="ms-sub">2¹⁰</span>
+      </div>
+      <div class="ms">
+        <span class="ms-n">20サイクル</span>
+        <span class="ms-l">100万倍</span>
+        <span class="ms-sub">2²⁰ ≈ 1.05 × 10⁶</span>
+      </div>
+      <div class="ms">
+        <span class="ms-n">30サイクル</span>
+        <span class="ms-l">10億倍</span>
+        <span class="ms-sub">2³⁰ ≈ 1.07 × 10⁹</span>
+      </div>
+    </div>
+    <div class="vgrid mt20">
+      <div class="vc"><div class="vc-n">リアルタイムPCR（qPCR）</div><p>蛍光でリアルタイム定量。Ct値から初期コピー数を推定。ウイルス量測定の標準法。</p></div>
+      <div class="vc"><div class="vc-n">RT-PCR</div><p>RNAを逆転写でcDNA化後にPCR。インフルエンザ・SARS-CoV-2などRNAウイルスに対応。</p></div>
+      <div class="vc"><div class="vc-n">マルチプレックスPCR</div><p>複数プライマーで多病原体を同時検出。FilmArray®などで20〜30種を一度に。</p></div>
+      <div class="vc"><div class="vc-n">デジタルPCR（dPCR）</div><p>液滴に分割して絶対定量。がん液体生検のctDNA検出に応用。</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- PRO -->
+<div class="pro">
+  <div class="card bl">
+    <h3>PCR — 原理・変法・限界</h3>
+    <p>3ステップの温度サイクル（変性94–98°C・アニーリング50–65°C・伸長72°C）を25–40回反復することで標的配列を2ⁿ倍に増幅する。<em>Taq</em>ポリメラーゼ（エラー率10⁻⁴/bp）からHiFi酵素（Phusion/Q5、エラー率 &lt;10⁻⁶/bp）まで用途に応じて選択する。</p>
+    <p>プライマー設計はTm値±5°C以内・GC含量40–60%・3'末端の安定性（ΔG &lt; -2 kcal/mol）が基本要件。阻害物質（ヘモグロビン・ヘパリン・胆汁酸・フミン酸）は感度低下の主因であり、核酸抽出法の最適化が重要。</p>
+    <div class="vgrid mt12">
+      <div class="vc"><div class="vc-n">qPCR</div><p>TaqManプローブ（探索配列特異的蛍光消光）またはSYBR Green（インターカレーター）。Ct値の対数外挿で定量。ダイナミックレンジ &gt;10⁷。</p></div>
+      <div class="vc"><div class="vc-n">ddPCR</div><p>Poisson統計による絶対定量（コピー数/mL）。VAF 0.01%以下のctDNA・MRD・CNV検出に臨床実装拡大中。</p></div>
+      <div class="vc"><div class="vc-n">マルチプレックス</div><p>FilmArray®/BioFire® Respiratory Panelで20–30病原体、TAT ~1 h。プライマーダイマー・競合増幅の抑制設計が技術的難点。</p></div>
+      <div class="vc"><div class="vc-n">RT-qPCR</div><p>SSIV/AMV-RTで一段法。RdRp/Eターゲット（SARS-CoV-2）・NA/HA（インフルエンザ）・ORF1ab等。</p></div>
+    </div>
+    <div class="wbox mt12"><strong>注：</strong>PCRは核酸を検出するが「生菌/死菌」を区別しない。治療後も陽性持続あり。Ct値の推移と臨床経過の統合解釈が必須。偽陽性防止のため陰性対照・陽性対照を同時設置すること。</div>
+    <div class="trow">
+      <span class="tag bl">耐熱性DNAポリメラーゼ</span>
+      <span class="tag bl">プライマーTm設計</span>
+      <span class="tag">阻害物質対策</span>
+      <span class="tag">生死不区別</span>
+    </div>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 3  感度・特異度
+─────────────────────────────────────┘ -->
+<div class="sh">
+  <div class="sh-icon" style="background:#E6F7F1">🕵️</div>
+  <h2>感度と<span>特異度</span></h2>
+</div>
+
+<!-- EASY -->
+<div class="easy">
+  <div class="card gr">
+    <h3>「見つける力」と「まちがえない力」</h3>
+    <p>検査の性能には大きく2つの「力」があります。<strong>感度</strong>（見つける力）と<strong>特異度</strong>（まちがえない力）です。</p>
+    <p>刑事のたとえで考えてみましょう。</p>
+  </div>
+
+  <div class="detective-scene">
+    <div class="det-title">🕵️ 刑事さんのたとえ</div>
+
+    <div class="det-row">
+      <div class="det-icon">🎯</div>
+      <div class="det-body">
+        <div class="det-hd">感度 ＝「犯人を見逃さない力」</div>
+        <p>感度が高い刑事は、<strong>犯人をほぼ全員つかまえる</strong>。感度が低い刑事は、犯人を見逃してしまうことがある。</p>
+        <div class="det-result good">✅ 感度が高い → 陰性（シロ）なら、ほぼ確実に犯人ではない</div>
+        <div class="det-result warn">⚠️ 感度が低い → 陰性（シロ）でも、実は犯人かもしれない</div>
+      </div>
+    </div>
+
+    <div class="det-row">
+      <div class="det-icon">🔍</div>
+      <div class="det-body">
+        <div class="det-hd">特異度 ＝「無実の人を捕まえない力」</div>
+        <p>特異度が高い刑事は、<strong>無実の人には手を出さない</strong>。特異度が低い刑事は、関係ない人まで捕まえてしまう。</p>
+        <div class="det-result good">✅ 特異度が高い → 陽性（クロ）なら、ほぼ確実に犯人</div>
+        <div class="det-result warn">⚠️ 特異度が低い → 陽性（クロ）でも、実は犯人ではないかも</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card gr">
+    <h3>📊 まとめると…</h3>
+    <table class="ss-sum">
+      <thead>
+        <tr><th></th><th>陽性のとき</th><th>陰性のとき</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>感度が高い</strong></td><td>—</td><td class="g">陰性なら安心 ✅</td></tr>
+        <tr><td><strong>感度が低い</strong></td><td>—</td><td class="r">陰性でも油断禁物 ⚠️</td></tr>
+        <tr><td><strong>特異度が高い</strong></td><td class="g">陽性ならほぼ確か ✅</td><td>—</td></tr>
+        <tr><td><strong>特異度が低い</strong></td><td class="r">陽性でも怪しい ⚠️</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p class="mt12">PCRは感度も特異度も<strong>両方高い</strong>のが強みです！</p>
+  </div>
+</div>
+
+<!-- MID -->
+<div class="mid">
+  <div class="ss-grid">
+    <div class="ss-card sen">
+      <div class="ss-title">🎯 感度（Sensitivity）</div>
+      <p>本当の感染者のうち、検査で<strong>陽性</strong>と正しく判定できた割合。<br>「見逃さない力」。</p>
+      <p class="mt12"><code>感度 = 真陽性 ÷ (真陽性 + 偽陰性)</code></p>
+      <div class="ss-rule">感度が高い → 陰性なら感染していない可能性が高い<br>感度が低い → 陰性でも感染を否定できない</div>
+    </div>
+    <div class="ss-card spe">
+      <div class="ss-title">🔍 特異度（Specificity）</div>
+      <p>本当の非感染者のうち、検査で<strong>陰性</strong>と正しく判定できた割合。<br>「まちがえない力」。</p>
+      <p class="mt12"><code>特異度 = 真陰性 ÷ (真陰性 + 偽陽性)</code></p>
+      <div class="ss-rule">特異度が高い → 陽性なら感染している可能性が高い<br>特異度が低い → 陽性でも感染していないかもしれない</div>
+    </div>
+  </div>
+  <div class="ibox">
+    <strong>PCRの強み：</strong>感度・特異度ともに &gt;95%（多くの病原体で &gt;99%）。増幅工程があるからこそ、微量のウイルスDNA/RNAも検出できます。
+  </div>
+</div>
+
+<!-- PRO -->
+<div class="pro">
+  <div class="card gr">
+    <h3>感度・特異度・LoD — 正確な定義と臨床的解釈</h3>
+    <p><strong>解析的感度（Limit of Detection, LoD）</strong>：検査法が95%の確率で検出できる最低標的コピー数。PCRでは ~1–10コピー/反応、等温増幅法では10–100コピー/反応が目安。</p>
+    <p><strong>診断感度/特異度</strong>：参照標準（培養・抗原検査・臨床診断）と比較した集団レベルの性能指標。感度・特異度は疾患の事前確率とは独立した検査固有の値。</p>
+  </div>
+
+  <div class="detective-scene">
+    <div class="det-title">🕵️ 感度・特異度の使い方（臨床的解釈）</div>
+    <div class="det-row">
+      <div class="det-icon">🎯</div>
+      <div class="det-body">
+        <div class="det-hd g">感度（Se）— 「見逃さない力」</div>
+        <p>Se = TP/(TP+FN)。感度が高い検査は陰性的中率（NPV）が高くなり、陰性結果が感染否定の根拠になる。スクリーニングに適する。</p>
+        <div class="det-result good">感度高 → 陰性なら感染否定の根拠 ✅</div>
+        <div class="det-result warn">感度低 → 陰性でも感染を否定できない ⚠️</div>
+      </div>
+    </div>
+    <div class="det-row">
+      <div class="det-icon">🔍</div>
+      <div class="det-body">
+        <div class="det-hd g">特異度（Sp）— 「まちがえない力」</div>
+        <p>Sp = TN/(TN+FP)。特異度が高い検査は陽性的中率（PPV）が高くなり（事前確率に依存）、陽性結果が感染確定の根拠になりやすい。確認検査に適する。</p>
+        <div class="det-result good">特異度高 → 陽性なら感染の根拠 ✅</div>
+        <div class="det-result warn">特異度低 → 陽性でも偽陽性の可能性 ⚠️</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card gr mt12">
+    <h3>PPV・NPVと事前確率</h3>
+    <p>陽性的中率（PPV）= Se × prev ÷ [Se × prev + (1−Sp)(1−prev)]。事前確率（prevalence）が低い集団でのスクリーニングでは、特異度99.9%でも偽陽性が真陽性を上回りうる（希少病優位性のパラドックス）。</p>
+    <p>PCRのSp &gt;99%でも、集団スクリーニングでは偽陽性症例が発生するため、臨床情報と合わせた解釈が不可欠。</p>
+    <div class="ibox mt12">
+      <strong>LoD vs 診断感度：</strong>LoDが低くても診断感度が低い場合、核酸抽出効率・サンプリング（検体採取のタイミング・部位）・保存状態が主因。検査性能評価にはLoDと診断感度を区別して報告する必要がある。
+    </div>
+    <div class="trow">
+      <span class="tag gr">Se = TP/(TP+FN)</span>
+      <span class="tag gr">Sp = TN/(TN+FP)</span>
+      <span class="tag">PPV・NPVは事前確率依存</span>
+      <span class="tag">LoD ≠ 診断感度</span>
+    </div>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 4  イムノクロマトとの比較
+─────────────────────────────────────┘ -->
+<div class="sh">
+  <div class="sh-icon" style="background:#FFF2EA">🆚</div>
+  <h2>PCR vs <span>イムノクロマト検査</span></h2>
+</div>
+
+<!-- EASY -->
+<div class="easy">
+  <div class="card or">
+    <h3>🩺 バンドが出る検査（イムノクロマト法）との違い</h3>
+    <p>病院でインフルエンザを調べるとき、<strong>鼻に棒を入れてカードを見る検査</strong>を受けたことがある人も多いはず。あれが「イムノクロマト法」です。</p>
+    <div class="vs-wrap mt12">
+      <div class="vs-col pcr">
+        <div class="vs-title">🔵 PCR（増幅あり）</div>
+        <div class="vs-bar-wrap">
+          <div class="vs-label">感度（見つける力）</div>
+          <div class="vs-bar-bg"><div class="vs-bar-fill" style="width:95%" id="pcrSen"></div></div>
+        </div>
+        <div class="vs-bar-wrap">
+          <div class="vs-label">特異度（まちがえない力）</div>
+          <div class="vs-bar-bg"><div class="vs-bar-fill" style="width:99%"></div></div>
+        </div>
+        <div class="vs-note">✅ 少量でも見つけられる<br>⚠️ 機械が必要・時間がかかる</div>
+      </div>
+      <div class="vs-col ico">
+        <div class="vs-title">🟠 イムノクロマト（増幅なし）</div>
+        <div class="vs-bar-wrap">
+          <div class="vs-label">感度（見つける力）</div>
+          <div class="vs-bar-bg"><div class="vs-bar-fill" style="width:50%"></div></div>
+        </div>
+        <div class="vs-bar-wrap">
+          <div class="vs-label">特異度（まちがえない力）</div>
+          <div class="vs-bar-bg"><div class="vs-bar-fill" style="width:97%"></div></div>
+        </div>
+        <div class="vs-note">✅ 15分・どこでもできる<br>⚠️ ウイルスが少ないと見逃す</div>
+      </div>
+    </div>
+    <div class="ana mt12"><span class="ana-ic">💡</span><div>イムノクロマトは「増やす」工程がないので、ウイルスが少ないと見逃してしまいます。<strong>「陰性でも油断禁物」</strong>なのはそのためです。</div></div>
+  </div>
+</div>
+
+<!-- MID -->
+<div class="mid">
+  <div class="card or">
+    <h3>イムノクロマト法（LFIA）との比較</h3>
+    <p>抗原検査（Lateral Flow Immunoassay）は増幅工程を持たず、<strong>抗原タンパク質を直接検出</strong>します。感度はウイルス量が多い発症早期にはPCRに近い（70–80%）ものの、全体では50–70%程度。特異度は97–99%と比較的高い。</p>
+    <div class="tw mt12">
+      <table class="tt">
+        <thead><tr><th>比較項目</th><th>PCR（qPCR）</th><th>抗原検査（LFIA）</th></tr></thead>
+        <tbody>
+          <tr><td>原理</td><td>核酸増幅</td><td>抗体-抗原反応</td></tr>
+          <tr><td>感度</td><td class="go">&gt;95%</td><td class="mi">50–80%</td></tr>
+          <tr><td>特異度</td><td class="go">&gt;99%</td><td class="go">97–99%</td></tr>
+          <tr><td>TAT</td><td>1–3 h</td><td class="go">10–15 min</td></tr>
+          <tr><td>必要機器</td><td>サーマルサイクラー等</td><td class="go">不要</td></tr>
+          <tr><td>コスト/回</td><td>高</td><td class="go">低</td></tr>
+          <tr><td>POCT適性</td><td class="mi">△（小型機あり）</td><td class="go">◎</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ibox">抗原検査の陰性は感染否定には不十分（感度が低いため）。症状・暴露歴を踏まえPCR等での確認を検討する。</div>
+  </div>
+</div>
+
+<!-- PRO -->
+<div class="pro">
+  <div class="card or">
+    <h3>NAAT vs LFIA — 感度・特異度・事前確率と検査選択</h3>
+    <p>LFIAは解析感度がNAATより2–3 log₁₀低い（SARS-CoV-2の場合、LFIAのLoD ~10⁵–10⁶コピー/mL vs qPCR ~10²–10³コピー/mL）。発症後3日以内のウイルス量ピーク期では診断感度が改善するが（70–80%）、発症前・発症後期には大きく低下する。</p>
+    <p><strong>特異度が高いLFIAは高確率スクリーニングに有用</strong>（陽性なら確度高）だが、陰性の解釈には慎重さが必要。診断目的（陰性除外）にはNAATが優先される。</p>
+    <div class="ibox mt12">
+      <strong>Likelihood Ratio（LR）：</strong>LR+ = Se/(1−Sp)、LR− = (1−Se)/Sp。qPCRのLR+ &gt;100、LR− &lt;0.01。LFIAはLR− が0.3–0.5程度と高く、陰性でも感染の事後確率が大きく下がらない。
+    </div>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 5  PCRのデメリットと等温増幅法
+─────────────────────────────────────┘ -->
+<div class="sh">
+  <div class="sh-icon" style="background:#E6F7F1">🟢</div>
+  <h2>PCRの<span>デメリット</span>と、その仲間たち</h2>
+</div>
+
+<!-- EASY -->
+<div class="easy">
+  <div class="card gr">
+    <h3>⚠️ PCRの弱点</h3>
+    <p>PCRはとても優秀な技術ですが、<strong>温度を上げたり下げたりを繰り返す機械</strong>（サーマルサイクラー）が必要です。大きくて高価で、結果が出るまで少し時間もかかります。</p>
+    <div class="ana"><span class="ana-ic">💡</span><div>「オーブンとレンジと冷蔵庫が合わさった機械」みたいなものが必要。病院でしかできない…</div></div>
+  </div>
+
+  <div class="card gr">
+    <h3>✨ そこで「温度が一定の方法」が登場！</h3>
+    <p>PCRの「温度を変えないといけない」という問題を解決した方法が <strong>LAMP</strong>（ランプ）や <strong>NEAR</strong> などの等温増幅法です。</p>
+    <div class="vs-wrap mt12">
+      <div class="vs-col pcr">
+        <div class="vs-title">🔵 PCR</div>
+        <p style="font-size:13px;color:var(--text2)">✅ 感度・特異度ともに高い<br>⚠️ サーマルサイクラーが必要<br>⚠️ 結果まで1〜3時間</p>
+      </div>
+      <div class="vs-col" style="background:var(--green-lt);border-color:var(--green)">
+        <div class="vs-title" style="color:var(--green)">🟢 LAMP / NEAR</div>
+        <p style="font-size:13px;color:var(--text2)">✅ 60°C前後の一定温度でOK<br>✅ 15〜30分で結果！<br>✅ 小型機器や簡易機器でも使える</p>
+      </div>
+    </div>
+    <div class="ana"><span class="ana-ic">💡</span><div><strong>NEAR</strong> は<strong>N</strong>icking <strong>E</strong>nzyme <strong>A</strong>mplification <strong>R</strong>eactionの略。「傷をつける酵素」を使った増幅法で、とても短時間で結果が出ます。</div></div>
+  </div>
+</div>
+
+<!-- MID -->
+<div class="mid">
+  <div class="card gr">
+    <h3>等温増幅法 — LAMP・NEAR・RPA</h3>
+    <p>温度を一定に保ったまま核酸を増幅する方法の総称。サーマルサイクラーが不要でPOCT（ポイントオブケア検査）に適しています。</p>
+    <div class="vgrid mt12">
+      <div class="vc">
+        <div class="vc-n">LAMP</div>
+        <p>60–65°C。<span class="it">Bst</span>DNAポリメラーゼ。6本のプライマーで6領域を認識し、ステム-ループ構造を連鎖形成。15–30分、10⁹倍以上に増幅。濁度や色変化で目視判定も可。</p>
+      </div>
+      <div class="vc">
+        <div class="vc-n">NEAR（Nicking Enzyme Amplification Reaction）</div>
+        <p>ニッキング酵素（一本鎖切断）と鎖置換型ポリメラーゼを組合せ。37°C前後、15–30分。Alere i ID NOW™（インフルエンザ・SARS-CoV-2）に採用。</p>
+      </div>
+      <div class="vc">
+        <div class="vc-n">RPA</div>
+        <p>リコンビナーゼ複合体がプライマーをdsDNAに侵入させ、37–42°Cで10–20分に増幅。試薬凍結乾燥製剤で電源不要な環境でも使用可。</p>
+      </div>
+      <div class="vc">
+        <div class="vc-n">NASBA</div>
+        <p>RNA標的、41°C。逆転写酵素・RNaseH・T7 RNAポリメラーゼの3酵素系。HIV RNAなどに利用。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRO -->
+<div class="pro">
+  <div class="card gr">
+    <h3>等温増幅法の原理詳細と比較</h3>
+    <p><strong>LAMP</strong>（Notomi et al., 2000）：<span class="it">Bst</span> DNAポリメラーゼ（鎖置換活性）が3種6本（F3/B3・FIP/BIP・LF/LB）のプライマーにより6領域を認識し、自己触媒的ステム-ループ構造を形成。60–65°Cで15–30分以内に10⁹–10¹⁰倍増幅。検出法：濁度計・蛍光（Calcein/SYBR等）・側流LFA・HNB/フェノールレッドカラーインジケーター。偽陽性はプライマーダイマー由来の濁度増加が原因。蛍光プローブ法またはLFAで特異性改善。</p>
+    <p><strong>NEAR</strong>：ニッキング酵素（Nb.BsaI等）で一本鎖にノッチ→鎖置換型Bst/SApolで新鎖合成を繰り返すサイクル増幅。等温（37°C）、TAT 6–13分。ID NOW™（Abbott）のプラットフォーム。インフルA/B・RSV・SARS-CoV-2に対応。</p>
+    <p><strong>RPA</strong>：T4 gp32・UvsX・UvsY複合体がATP存在下でプライマーをdsDNAに侵入（chain invasion）させ、ポリメラーゼ（<span class="it">Bsu</span>）が合成。37–42°C、10–20分。TwistAmpキット（LFD法）。試薬lyophilization製剤により冷蔵不要。</p>
+    <p><strong>CRISPR連携（SHERLOCK/DETECTR）</strong>：等温増幅後にCas13a（SHERLOCK）またはCas12a（DETECTR）のcollateral cleavage活性を利用。10⁻¹⁸ M感度。LFAスティックで非電力目視検出。</p>
+    <div class="trow">
+      <span class="tag gr">Bst DNAポリメラーゼ</span>
+      <span class="tag gr">鎖置換活性</span>
+      <span class="tag">NEAR：ニッキング酵素</span>
+      <span class="tag">RPA：chain invasion</span>
+      <span class="tag">CRISPR-Cas12/13</span>
+    </div>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 6  PCRとその仲間：一覧
+─────────────────────────────────────┘ -->
+<div class="sh">
+  <div class="sh-icon" style="background:#F3ECFF">📊</div>
+  <h2>PCRと仲間たちの<span>一覧</span></h2>
+</div>
+
+<!-- EASY -->
+<div class="easy">
+  <div class="card pu">
+    <h3>🔬 どんな方法があるの？</h3>
+    <div class="tw">
+      <table class="tt">
+        <thead><tr><th>方法</th><th>温度</th><th>時間</th><th>感度</th><th>特徴</th></tr></thead>
+        <tbody>
+          <tr><td class="tn">PCR</td><td>変化させる</td><td>1〜3時間</td><td class="go">◎とても高い</td><td>もっとも基本的・精度が高い</td></tr>
+          <tr><td class="tn">LAMP</td><td>60°C 一定</td><td class="go">15〜30分</td><td class="go">○高い</td><td>機器が小さい・どこでも使える</td></tr>
+          <tr><td class="tn">NEAR</td><td>37°C 一定</td><td class="go">6〜15分</td><td class="go">○高い</td><td>超高速・インフルなどのPOCTに</td></tr>
+          <tr><td class="tn">RPA</td><td>37〜42°C 一定</td><td class="go">10〜20分</td><td class="go">○高い</td><td>電源なしでもOK</td></tr>
+          <tr><td class="tn">抗原検査（イムノクロマト）</td><td>必要なし</td><td class="go">10〜15分</td><td class="ba">△低〜中</td><td>超簡単だが感度が低い</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MID & PRO -->
+<div class="mid">
+  <div class="tw">
+    <table class="tt">
+      <thead><tr><th>技術</th><th>原理</th><th>温度</th><th>TAT</th><th>感度</th><th>特異度</th><th>POCT</th><th>コスト</th></tr></thead>
+      <tbody>
+        <tr><td class="tn">PCR / qPCR</td><td>温度サイクル</td><td>可変</td><td>1–3 h</td><td class="go">◎&gt;95%</td><td class="go">◎&gt;99%</td><td class="mi">△</td><td class="mi">中</td></tr>
+        <tr><td class="tn">RT-PCR</td><td>RT＋PCR</td><td>可変</td><td>2–4 h</td><td class="go">◎&gt;95%</td><td class="go">◎&gt;99%</td><td class="mi">△</td><td class="mi">中</td></tr>
+        <tr><td class="tn">LAMP</td><td>等温・鎖置換</td><td>60–65°C</td><td class="go">◎15–30 min</td><td class="go">○&gt;90%</td><td class="go">○&gt;97%</td><td class="go">◎</td><td class="go">低</td></tr>
+        <tr><td class="tn">NEAR</td><td>等温・ニッキング</td><td>37°C</td><td class="go">◎6–15 min</td><td class="go">○&gt;90%</td><td class="go">○&gt;97%</td><td class="go">◎</td><td class="go">低</td></tr>
+        <tr><td class="tn">RPA</td><td>等温・リコンビナーゼ</td><td>37–42°C</td><td class="go">◎10–20 min</td><td class="go">○&gt;90%</td><td class="mi">○&gt;95%</td><td class="go">◎</td><td class="go">低</td></tr>
+        <tr><td class="tn">LFIA（抗原）</td><td>免疫反応</td><td>室温</td><td class="go">◎10–15 min</td><td class="ba">△50–80%</td><td class="go">○97–99%</td><td class="go">◎</td><td class="go">最低</td></tr>
+        <tr><td class="tn">NGS（mNGS）</td><td>大量並行SBS</td><td>可変</td><td class="ba">✕2–4日</td><td class="go">○高</td><td class="mi">△解析依存</td><td class="ba">✕</td><td class="ba">高</td></tr>
+        <tr><td class="tn">Nanopore（ONT）</td><td>電流シグナル</td><td>室温</td><td class="go">○数時間〜</td><td class="mi">○&gt;97%</td><td class="go">○高</td><td class="go">○</td><td class="mi">中</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="pro">
+  <div class="tw">
+    <table class="tt">
+      <thead><tr><th>技術</th><th>原理</th><th>LoD</th><th>診断感度</th><th>特異度</th><th>TAT</th><th>コスト/検体</th><th>POCT</th></tr></thead>
+      <tbody>
+        <tr><td class="tn">qPCR</td><td>温度サイクル・蛍光</td><td class="go">~1–10コピー/反応</td><td class="go">&gt;95%</td><td class="go">&gt;99%</td><td>1–3 h</td><td>$20–50</td><td class="mi">△</td></tr>
+        <tr><td class="tn">ddPCR</td><td>液滴区画化</td><td class="go">&lt;1コピー/反応</td><td class="go">&gt;99%</td><td class="go">&gt;99%</td><td>4–6 h</td><td>$50–100</td><td class="ba">✕</td></tr>
+        <tr><td class="tn">LAMP</td><td>Bst・鎖置換</td><td>10–100コピー</td><td class="go">&gt;90%</td><td class="go">&gt;97%</td><td class="go">15–30 min</td><td>$5–20</td><td class="go">◎</td></tr>
+        <tr><td class="tn">NEAR</td><td>ニッキング酵素</td><td>10–100コピー</td><td class="go">&gt;90%</td><td class="go">&gt;97%</td><td class="go">6–15 min</td><td>$15–30</td><td class="go">◎</td></tr>
+        <tr><td class="tn">RPA</td><td>リコンビナーゼ</td><td>1–10コピー</td><td class="go">&gt;90%</td><td class="mi">&gt;95%</td><td class="go">10–20 min</td><td>$10–30</td><td class="go">◎</td></tr>
+        <tr><td class="tn">mNGS</td><td>SBS断片網羅</td><td>0.01–0.1%</td><td class="mi">解析依存</td><td class="mi">解析依存</td><td class="ba">2–4日</td><td class="ba">$300–1000</td><td class="ba">✕</td></tr>
+        <tr><td class="tn">ONT</td><td>電流シグナル</td><td>~100コピー</td><td class="mi">機種依存</td><td class="go">&gt;97%</td><td class="go">数時間〜</td><td>$100–500</td><td class="go">○</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 7  病原体・感染症への応用
+─────────────────────────────────────┘ -->
+<div class="sh">
+  <div class="sh-icon" style="background:#FFF0F0">🦠</div>
+  <h2>こんな感染症の<span>検査</span>に使われている</h2>
+</div>
+
+<!-- ALL LEVELS — pathogen cards (shared) -->
+<div class="easy">
+  <p style="color:var(--text2);font-size:14px;margin-bottom:12px;">みんなが知っている病気の検査にも、PCRやその仲間が使われています。</p>
+</div>
+<div class="mid">
+  <p style="color:var(--text2);font-size:14px;margin-bottom:12px;">主な感染症と使用される核酸増幅法の一覧です。</p>
+</div>
+<div class="pro">
+  <p style="color:var(--text2);font-size:14px;margin-bottom:12px;">病原体別・用途別の選択指針。カードをクリックすると詳細が表示されます（タブにより説明の詳細度が変わります）。</p>
+</div>
+
+<div class="pgrid">
+  <div class="pc"><span class="pc-ic">😷</span><span class="pc-name">新型コロナウイルス</span><span class="pc-method m-pcr">RT-qPCR</span><br><span class="pc-method m-lamp">LAMP</span></div>
+  <div class="pc"><span class="pc-ic">🤧</span><span class="pc-name">インフルエンザ</span><span class="pc-method m-pcr">RT-PCR</span><br><span class="pc-method m-lamp">NEAR</span></div>
+  <div class="pc"><span class="pc-ic">😮‍💨</span><span class="pc-name">百日咳</span><span class="pc-method m-pcr">PCR</span><br><span class="pc-method m-multi">マルチプレックス</span></div>
+  <div class="pc"><span class="pc-ic">🤒</span><span class="pc-name">溶連菌</span><span class="pc-method m-pcr">PCR</span><br><span class="pc-method m-lamp">LAMP</span></div>
+  <div class="pc"><span class="pc-ic">💨</span><span class="pc-name">マイコプラズマ</span><span class="pc-method m-pcr">PCR</span><br><span class="pc-method m-multi">マルチプレックス</span></div>
+  <div class="pc"><span class="pc-ic">🫁</span><span class="pc-name">結核</span><span class="pc-method m-pcr">Xpert MTB/RIF</span></div>
+  <div class="pc"><span class="pc-ic">🦠</span><span class="pc-name">RSウイルス</span><span class="pc-method m-pcr">RT-PCR</span><br><span class="pc-method m-lamp">NEAR</span></div>
+  <div class="pc"><span class="pc-ic">🧫</span><span class="pc-name">クラミジア・淋菌</span><span class="pc-method m-pcr">PCR</span><br><span class="pc-method m-multi">NAAT</span></div>
+  <div class="pc"><span class="pc-ic">🫀</span><span class="pc-name">HIV</span><span class="pc-method m-pcr">RT-qPCR</span></div>
+  <div class="pc"><span class="pc-ic">🩸</span><span class="pc-name">肝炎ウイルス（HCV/HBV）</span><span class="pc-method m-pcr">RT-qPCR</span></div>
+  <div class="pc"><span class="pc-ic">🧬</span><span class="pc-name">カンジダ・真菌</span><span class="pc-method m-ngs">mNGS</span><br><span class="pc-method m-pcr">PCR</span></div>
+  <div class="pc"><span class="pc-ic">🏥</span><span class="pc-name">MRSA・耐性菌</span><span class="pc-method m-pcr">PCR</span><br><span class="pc-method m-ngs">WGS</span></div>
+</div>
+
+<!-- easy note -->
+<div class="easy">
+  <div class="ana"><span class="ana-ic">💡</span><div>「熱がある、咳がする」といったとき、病院の先生がどの検査を使うかは、症状や状況によって選んでいます。PCRや LAMP、NEARなどが、その場面に合わせて使い分けられています。</div></div>
+</div>
+
+<!-- mid note -->
+<div class="mid">
+  <div class="ibox">
+    <strong>マルチプレックスパネルの例：</strong>FilmArray® Respiratory Panel（BioFire®）はインフルA/B・RSV・SARS-CoV-2・ライノウイルス・百日咳菌・<span class="it">Mycoplasma pneumoniae</span> など20–30病原体を1反応・TAT約1時間で同時検出します。
+  </div>
+</div>
+
+<!-- pro note -->
+<div class="pro">
+  <div class="card pu">
+    <h3>病原体別選択指針（抜粋）</h3>
+    <div class="vgrid">
+      <div class="vc"><div class="vc-n">SARS-CoV-2</div><p>急性期：RT-qPCR（鼻咽頭）またはNEAR/LAMP（POCT）。発症5日以降はウイルス量低下で感度低下。抗原検査は高ウイルス量期のスクリーニングに。</p></div>
+      <div class="vc"><div class="vc-n">インフルエンザA/B</div><p>NEAR（ID NOW™）はTAT 6–13分だがLoD感度はRT-PCRより低い。高流行期では抗原検査+RT-PCRの組合せを検討。</p></div>
+      <div class="vc"><div class="vc-n">百日咳（<span class="it">B. pertussis</span>）</div><p>培養感度20–60%。PCRは発症3週以内に高感度。IS481標的（感度高・特異度注意：<span class="it">B. holmesii</span>と交差）。</p></div>
+      <div class="vc"><div class="vc-n">結核（<span class="it">M. tuberculosis</span>）</div><p>Xpert MTB/RIF Ultra：IS6110/IS1081+rpoB同時。塗抹陰性でも感度70%超。TAT 2 h以内でRIF耐性も判定。</p></div>
+      <div class="vc"><div class="vc-n">マイコプラズマ（<span class="it">M. pneumoniae</span>）</div><p>培養不可（実用上）。PCRが標準。FilmArrayパネルに含まれる。マクロライド耐性（A2063G/A2064G）変異の同時検出も可。</p></div>
+      <div class="vc"><div class="vc-n">耐性菌AMR</div><p><span class="it">mecA/mecC</span>（MRSA）・<span class="it">bla</span><sub>KPC/NDM/OXA-48</sub>（CRE）・<span class="it">van</span>A/B（VRE）をカートリッジ型NAATs（Xpert等）で2 h以内に検出。WGSでSNP解析・系統解析・耐性遺伝子の全体像把握。</p></div>
+    </div>
+    <div class="trow">
+      <span class="tag pu">FilmArray®</span>
+      <span class="tag pu">Xpert MTB/RIF Ultra</span>
+      <span class="tag">マクロライド耐性PCR</span>
+      <span class="tag">IS481百日咳交差注意</span>
+    </div>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 8  NGS・ナノポア（MID・PRO）
+─────────────────────────────────────┘ -->
+<div class="mid">
+  <div class="sh">
+    <div class="sh-icon" style="background:#FFF4E0">🧬</div>
+    <h2>さらに進んだ技術：<span>NGS・ナノポア</span></h2>
+  </div>
+  <div class="card gd">
+    <h3>NGS（次世代シーケンシング）</h3>
+    <p>DNAをランダムに断片化し、数百万の断片を並行してシーケンシング。感染症では <strong>mNGS</strong>（メタゲノムNGS）として、検体中の全核酸を非選択的に読み取り、どんな病原体でも同時検出できます。培養で育たない菌や未知ウイルスにも有効。</p>
+    <div class="nflow mt12">
+      <div class="ns"><div class="ns-n">1</div><div><div class="ns-t">ライブラリ調製</div><div class="ns-d">DNA断片化→アダプター付加</div></div></div>
+      <div class="ns"><div class="ns-n">2</div><div><div class="ns-t">大量並行シーケンシング</div><div class="ns-d">数百万リードを同時に読み取る</div></div></div>
+      <div class="ns"><div class="ns-n">3</div><div><div class="ns-t">バイオインフォマティクス</div><div class="ns-d">データベース照合で病原体を同定</div></div></div>
+    </div>
+  </div>
+  <div class="card rd">
+    <h3>ナノポア（Nanopore）シーケンシング</h3>
+    <p>タンパク質の「穴（ナノポア）」にDNA/RNAを通し、<strong>電流の変化</strong>で塩基配列を読む技術。PCR不要・リアルタイム解析・超長鎖読み取りが特徴。<strong>MinION</strong>はUSBから電源供給の手のひらサイズで、フィールドでの現場検査にも活用されています。</p>
+    <div class="ibox mt12"><strong>実績：</strong>エボラ・ジカ・COVID-19のアウトブレイク現場でMinIONが活用。重症患者の全ゲノムを7時間で解析した報告あり（Gorzynski et al., NEJM 2022）。</div>
+  </div>
+</div>
+
+<div class="pro">
+  <div class="sh">
+    <div class="sh-icon" style="background:#FFF4E0">🧬</div>
+    <h2>NGS・ナノポアの<span>詳細</span></h2>
+  </div>
+  <div class="card gd">
+    <h3>mNGS — 原理・解釈・限界</h3>
+    <p>宿主ゲノム除去（in silico デプリーション / saponin/PMA等wet lab処理）後、残存リードをNCBI RefSeq・カスタムデータベースにBLAST/DIAMOND/KRAKEN2でアライメント。reads per million（RPM）・normalized score（ZSCORE等）で起炎菌判定。感度は培養より高いが、コンタミネーション（試薬由来・環境菌）・宿主核酸比（血液・BALF・CSFで差）・バイオインフォ解析精度がボトルネック。</p>
+    <div class="wbox mt12"><strong>解釈の注意：</strong>mNGSで検出された核酸が「起炎菌」か「コンタミ/定着菌」かの判断は、RPM値・臨床所見・従来法との整合性の総合判断が必須。偽陽性リスクを理解した上で、培養等の従来法と相補的に使用する。</div>
+  </div>
+  <div class="card rd">
+    <h3>Nanopore（ONT）& PacBio（SMRT）</h3>
+    <p><strong>ONT R10.4ポア + Doradoベースコーラー：</strong>精度 Q20+（>99%）、読み取り長 ~1 Mb超。ホモポリマー領域の精度改善。MinIONによるフィールドシーケンシング（エボラ・COVID-19）。Ultra-Rapid WGS 7 h（Gorzynski et al., NEJM 2022）。</p>
+    <p><strong>PacBio HiFi（CCS法）：</strong>同一分子複数回読み直しで Q30（>99.9%）、読み取り長 15–25 kb。反復配列拡大（HTT CAGリピート・DM1 CTGリピート・FMR1 CGG）の正確な計測。ハプロタイプフェージング。</p>
+    <div class="trow">
+      <span class="tag rd">R10.4 Q20+</span>
+      <span class="tag rd">Dorado</span>
+      <span class="tag">PacBio HiFi Q30</span>
+      <span class="tag">Ultra-Rapid WGS 7 h</span>
+      <span class="tag">メチル化直接検出</span>
+    </div>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 9  まとめ・クイズ（easy）
+─────────────────────────────────────┘ -->
+<div class="easy">
+  <div class="sh">
+    <div class="sh-icon" style="background:#E6F7F1">✅</div>
+    <h2>まとめ<span>クイズ</span></h2>
+  </div>
+
+  <div class="qbox" id="q1">
+    <h4>Q1. PCRはなぜ感度が高いのでしょう？</h4>
+    <div class="qopts">
+      <button class="qopt" onclick="doQ(this,'ng','q1','q1m')">特殊な抗体を使うから</button>
+      <button class="qopt" onclick="doQ(this,'ok','q1','q1m')">DNAをものすごい数にコピー（増幅）できるから</button>
+      <button class="qopt" onclick="doQ(this,'ng','q1','q1m')">温度が一定だから</button>
+    </div>
+    <div class="qmsg" id="q1m"></div>
+  </div>
+
+  <div class="qbox" id="q2">
+    <h4>Q2. 特異度が低い検査で陽性が出た。どう考えるべき？</h4>
+    <div class="qopts">
+      <button class="qopt" onclick="doQ(this,'ok','q2','q2m')">陽性でも、実は感染していないかもしれない</button>
+      <button class="qopt" onclick="doQ(this,'ng','q2','q2m')">陽性なら、確実に感染している</button>
+      <button class="qopt" onclick="doQ(this,'ng','q2','q2m')">もう一度同じ検査をすればよい</button>
+    </div>
+    <div class="qmsg" id="q2m"></div>
+  </div>
+
+  <div class="qbox" id="q3">
+    <h4>Q3. LAMPがPCRより優れている点はどれ？</h4>
+    <div class="qopts">
+      <button class="qopt" onclick="doQ(this,'ng','q3','q3m')">PCRより感度がはるかに高い</button>
+      <button class="qopt" onclick="doQ(this,'ok','q3','q3m')">温度を変える機械がなくてもできる</button>
+      <button class="qopt" onclick="doQ(this,'ng','q3','q3m')">増幅工程がないので速い</button>
+    </div>
+    <div class="qmsg" id="q3m"></div>
+  </div>
+</div>
+
+<!-- ┌─────────────────────────────────────
+     § 10  参考文献（MID・PRO）
+─────────────────────────────────────┘ -->
+<div class="mid">
+  <div class="sh">
+    <div class="sh-icon" style="background:#F3ECFF">📚</div>
+    <h2>主な<span>参考文献</span></h2>
+  </div>
+  <div class="refbox">
+    <ol>
+      <li>Rolando JC, et al. The Present and Future Landscapes of Molecular Diagnostics. <em>Annu Rev Anal Chem.</em> 2024;17:459–474.</li>
+      <li>Notomi T, et al. Loop-mediated isothermal amplification of DNA. <em>Nucleic Acids Res.</em> 2000;28:e63.</li>
+      <li>Filkins LM, et al. Navigating Clinical Utilization of Direct-From-Specimen Metagenomic Pathogen Detection. <em>Clin Chem.</em> 2020;66:1381–1395.</li>
+      <li>Gorzynski JE, et al. Ultrarapid Nanopore Genome Sequencing in a Critical Care Setting. <em>N Engl J Med.</em> 2022;386:700–702.</li>
+      <li>Glökler J, et al. Isothermal Amplifications – A Comprehensive Review. <em>Crit Rev Biochem Mol Biol.</em> 2021;56:543–586.</li>
+      <li>Asokan S, et al. Molecular Diagnostics in Clinical Microbiology. <em>Diagn Microbiol Infect Dis.</em> 2025;114:117223.</li>
+      <li>Miller S, Chiu C. The Role of Metagenomics and NGS in Infectious Disease Diagnosis. <em>Clin Chem.</em> 2021;68:115–124.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="pro">
+  <div class="sh">
+    <div class="sh-icon" style="background:#F3ECFF">📚</div>
+    <h2>主な<span>参考文献</span></h2>
+  </div>
+  <div class="refbox">
+    <ol>
+      <li>Rolando JC, Melkonian AV, Walt DR. The Present and Future Landscapes of Molecular Diagnostics. <em>Annu Rev Anal Chem.</em> 2024;17(1):459–474.</li>
+      <li>Notomi T, et al. Loop-mediated isothermal amplification of DNA. <em>Nucleic Acids Res.</em> 2000;28(12):e63.</li>
+      <li>Filkins LM, Bryson AL, Miller SA, Mitchell SL. Navigating Clinical Utilization of Direct-From-Specimen Metagenomic Pathogen Detection. <em>Clin Chem.</em> 2020;66(11):1381–1395.</li>
+      <li>Miller S, Chiu C. The Role of Metagenomics and NGS in Infectious Disease Diagnosis. <em>Clin Chem.</em> 2021;68(1):115–124.</li>
+      <li>Zhao Y, Zhang W, Zhang X. Application of mNGS in the Diagnosis of Infectious Diseases. <em>Front Cell Infect Microbiol.</em> 2024;14:1458316.</li>
+      <li>Gorzynski JE, et al. Ultrarapid Nanopore Genome Sequencing in a Critical Care Setting. <em>N Engl J Med.</em> 2022;386(7):700–702.</li>
+      <li>Warburton PE, Sebra RP. Long-Read DNA Sequencing. <em>Annu Rev Genomics Hum Genet.</em> 2023;24:109–132.</li>
+      <li>Glökler J, et al. Isothermal Amplifications. <em>Crit Rev Biochem Mol Biol.</em> 2021;56(6):543–586.</li>
+      <li>Asokan S, et al. Molecular Diagnostics in Clinical Microbiology. <em>Diagn Microbiol Infect Dis.</em> 2025;114(3):117223.</li>
+      <li>Eveleigh RJM, et al. Benchmarking of Sequencing Technologies. <em>Genome Biol.</em> 2026;27(1):129.</li>
+      <li>Shao C, et al. Clinical Utility of mNGS in Precision Diagnosis of Infectious Diseases. <em>Eur J Clin Microbiol Infect Dis.</em> 2026. doi:10.1007/s10096-026-05552-y.</li>
+    </ol>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ══ FOOTER ════════════════════════════ -->
+<footer>
+  <p>
+    本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+    医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。<br><br>
+    Shiro Somekata @ FunFection
+  </p>
+</footer>
+
+<!-- ══ JAVASCRIPT ══════════════════════════ -->
+<script>
+/* ── Level tabs ─────────────────────── */
+const tabs = document.querySelectorAll('.ltab');
+tabs.forEach(t => t.addEventListener('click', () => {
+  document.body.dataset.lv = t.dataset.lv;
+  tabs.forEach(x => x.classList.remove('on'));
+  t.classList.add('on');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}));
+
+/* ── Hero canvas ────────────────────── */
+const cv  = document.getElementById('hcanvas');
+const ctx = cv.getContext('2d');
+function resize(){ cv.width = cv.offsetWidth; cv.height = cv.offsetHeight; }
+resize();
+window.addEventListener('resize', resize);
+const dots = Array.from({length:36}, () => ({
+  x: Math.random()*cv.width, y: Math.random()*cv.height,
+  r: 2+Math.random()*3,
+  vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4,
+  a:.12+Math.random()*.3,
+  c:['#7DDFFF','#00FF9D','#FFD700'][Math.floor(Math.random()*3)]
+}));
+function anim(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  dots.forEach(d => {
+    d.x+=d.vx; d.y+=d.vy;
+    if(d.x<0||d.x>cv.width) d.vx*=-1;
+    if(d.y<0||d.y>cv.height) d.vy*=-1;
+    ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+    ctx.fillStyle=d.c; ctx.globalAlpha=d.a; ctx.fill(); ctx.globalAlpha=1;
+  });
+  for(let i=0;i<dots.length;i++) for(let j=i+1;j<dots.length;j++){
+    const dx=dots[i].x-dots[j].x, dy=dots[i].y-dots[j].y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<80){
+      ctx.beginPath(); ctx.moveTo(dots[i].x,dots[i].y); ctx.lineTo(dots[j].x,dots[j].y);
+      ctx.strokeStyle='#7DDFFF'; ctx.globalAlpha=(1-dist/80)*.1;
+      ctx.lineWidth=1; ctx.stroke(); ctx.globalAlpha=1;
+    }
+  }
+  requestAnimationFrame(anim);
+}
+anim();
+
+/* ── Amplification animation ─────────── */
+const data = [
+  { cycle:'スタート', count:1,          dots:[1],                 label:'1個' },
+  { cycle:'1回目',   count:2,          dots:[1,1],               label:'2個' },
+  { cycle:'2回目',   count:4,          dots:[1,1,1,1],           label:'4個' },
+  { cycle:'3回目',   count:8,          dots:Array(8).fill(1),    label:'8個' },
+  { cycle:'4回目',   count:16,         dots:Array(16).fill(1),   label:'16個' },
+  { cycle:'5回目',   count:32,         dots:Array(16).fill(1),   label:'32個' },
+  { ellipsis: true },
+  { cycle:'10回目',  count:1024,       dots:[],                  label:'1,024個（約1千個）' },
+  { ellipsis: true },
+  { cycle:'20回目',  count:1048576,    dots:[],                  label:'1,048,576個（約100万個）' },
+  { ellipsis: true },
+  { cycle:'30回目',  count:1073741824, dots:[],                  label:'約10億個！<span class="amp-wow">🤯</span>' },
+];
+
+function buildRows(){
+  const cont = document.getElementById('ampRows');
+  cont.innerHTML = '';
+  data.forEach((d,i) => {
+    const row = document.createElement('div');
+    row.id = 'ar'+i;
+
+    if(d.ellipsis){
+      row.className = 'amp-row amp-ellipsis';
+      row.innerHTML = `<div class="amp-dots-omit">・・・</div>`;
+    } else {
+      row.className = 'amp-row';
+      let dotsHTML = '';
+      if(d.dots && d.dots.length){
+        d.dots.forEach((_,j) => {
+          dotsHTML += `<span class="adot${j >= d.count/2 ? ' new' : ''}"></span>`;
+        });
+      }
+      row.innerHTML = `
+        <div class="amp-cycle">${d.cycle}</div>
+        <div class="amp-dots">${dotsHTML}</div>
+        <div class="amp-count">${d.label}</div>
+      `;
+    }
+    cont.appendChild(row);
+  });
+}
+buildRows();
+
+let ampRunning = false;
+function startAmp(){
+  if(ampRunning) return;
+  ampRunning = true;
+  document.getElementById('ampBtn').textContent = '▶ アニメーション中…';
+  // reset
+  data.forEach((_,i) => {
+    const el = document.getElementById('ar'+i);
+    if(el) el.classList.remove('show');
+  });
+  data.forEach((_,i) => {
+    setTimeout(() => {
+      const el = document.getElementById('ar'+i);
+      if(el) el.classList.add('show');
+      if(i === data.length-1){
+        ampRunning = false;
+        document.getElementById('ampBtn').textContent = '▶ もう一度';
+      }
+    }, i * 600);
+  });
+}
+
+/* ── Quiz ───────────────────────────── */
+function doQ(btn, result, qid, mid){
+  const box = document.getElementById(qid);
+  if(box.dataset.done) return;
+  box.dataset.done = '1';
+  box.querySelectorAll('.qopt').forEach(b => { b.style.cursor='default'; b.onclick=null; });
+  const msg = document.getElementById(mid);
+  if(result==='ok'){
+    btn.classList.add('ok');
+    msg.textContent = '🎉 正解！すばらしい！';
+    msg.style.color = 'var(--green)';
+  } else {
+    btn.classList.add('ng');
+    box.querySelectorAll('.qopt').forEach(b => {
+      if(b.textContent.includes('コピー') || b.textContent.includes('感染していないかも') || b.textContent.includes('機械がなくて')){
+        b.classList.add('ok');
+      }
+    });
+    msg.textContent = '惜しい！もう一度考えてみよう。';
+    msg.style.color = 'var(--red)';
+  }
+}
+</script>
+</body>
+</html>
