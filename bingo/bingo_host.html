@@ -20,21 +20,13 @@ main{max-width:800px;margin:0 auto;padding:1.2rem}
 .card{background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:1.2rem;margin-bottom:1rem}
 .card-title{font-size:0.88rem;font-weight:700;color:var(--primary);margin-bottom:0.8rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.4rem}
 
-/* seed setup */
-.seed-row{display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap}
-.seed-field{flex:1;min-width:140px}
-.seed-field label{display:block;font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:0.3rem}
-.seed-field input{width:100%;border:2px solid var(--border);border-radius:8px;padding:0.55rem 0.8rem;font-size:1.1rem;text-align:center;font-family:inherit;background:var(--bg2);color:var(--text);outline:none}
-.seed-field input:focus{border-color:var(--primary)}
 .btn{border:none;border-radius:8px;padding:0.6rem 1.1rem;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .12s}
-.btn-primary{background:var(--primary);color:#fff}
-.btn-primary:hover{background:#1a4060}
 .btn-accent{background:var(--accent);color:#fff}
 .btn-accent:hover{background:#c04020}
 .btn-gray{background:var(--bg2);color:var(--text);border:1.5px solid var(--border)}
 .btn-gray:hover{background:#e8e0d0}
 .btn-lg{padding:0.85rem 1.8rem;font-size:1rem}
-.btn:disabled{background:#ccc;cursor:not-allowed}
+.btn:disabled{background:#ccc;cursor:not-allowed;color:#888}
 
 /* current draw */
 .draw-stage{display:flex;flex-direction:column;align-items:center;gap:0.75rem;padding:0.5rem 0}
@@ -78,6 +70,26 @@ main{max-width:800px;margin:0 auto;padding:1.2rem}
 .reset-btns{display:flex;gap:0.6rem;justify-content:center}
 
 footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem 2rem;border-top:1px solid var(--border);margin-top:1rem}
+
+/* lock banner */
+#lock-banner{padding:0.45rem 1rem;text-align:center;font-size:0.82rem;font-weight:700;background:var(--bg2);color:var(--muted);border-bottom:1px solid var(--border);transition:background .3s,color .3s}
+#lock-banner.locked{background:#fff3cd;color:#7a5000;border-bottom-color:#e6c200}
+#lock-banner.locked::before{content:"🔒 "}
+#lock-banner:not(.locked)::before{content:"🔓 "}
+
+/* reset 2段階モーダル */
+#modal-reset-step2{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:6000;align-items:center;justify-content:center}
+#modal-reset-step2.open{display:flex}
+.reset-box2{background:#fff;border-radius:12px;width:min(320px,92vw);padding:1.5rem;text-align:center;border:2px solid #c00}
+.reset-box2 h3{color:#c00;font-size:1rem;margin-bottom:0.5rem}
+.reset-box2 p{font-size:0.82rem;color:var(--text);margin-bottom:0.9rem}
+.reset-box2 input{width:100%;border:2px solid #ccc;border-radius:6px;padding:0.5rem 0.7rem;font-size:0.9rem;font-family:inherit;margin-bottom:0.8rem;outline:none}
+.reset-box2 input:focus{border-color:#c00}
+.reset-box2 input.ok{border-color:var(--accent)}
+.reset-btns2{display:flex;gap:0.6rem;justify-content:center}
+.btn-danger{background:#c00;color:#fff;border:none;border-radius:8px;padding:0.6rem 1.2rem;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-danger:disabled{background:#ccc;cursor:not-allowed}
+.btn-danger:not(:disabled):hover{background:#a00}
 </style>
 </head>
 <body>
@@ -86,22 +98,9 @@ footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem
   <h1>🦠 バイキンズビンゴ — 主催者ツール</h1>
   <div class="header-badge">HOST</div>
 </header>
+<div id="lock-banner">抽選前：「次を引く」を押すと引き順が確定します</div>
 
 <main>
-  <!-- シード設定 -->
-  <div class="card">
-    <div class="card-title">🔑 シード番号（参加者に告知する番号）</div>
-    <div class="seed-row">
-      <div class="seed-field">
-        <label>シード番号</label>
-        <input type="number" id="seed-input" min="1" max="9999" placeholder="例：42" value="">
-      </div>
-      <button class="btn btn-primary" id="btn-set-seed">セットする</button>
-      <button class="btn btn-gray" id="btn-random-seed">ランダム生成</button>
-    </div>
-    <div style="margin-top:0.6rem;font-size:0.8rem;color:var(--muted)" id="seed-status">シード未設定</div>
-  </div>
-
   <!-- 統計 -->
   <div class="card">
     <div class="card-title">📊 進行状況</div>
@@ -115,7 +114,7 @@ footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem
   <div class="card">
     <div class="card-title">🎲 抽選</div>
     <div class="draw-stage">
-      <div class="draw-char-box" id="draw-char-box">
+      <div class="draw-char-box">
         <div class="draw-char-img placeholder" id="draw-img-wrap">🦠</div>
         <div class="draw-char-info">
           <div class="cnum" id="draw-num">—</div>
@@ -142,7 +141,7 @@ footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem
 
   <!-- リセット -->
   <div style="text-align:center;margin:0.5rem 0 1rem">
-    <button class="btn btn-gray" id="btn-show-reset">🔄 ゲームをリセット</button>
+    <button class="btn btn-gray" id="btn-show-reset">🔄 ゲームをリセット（要確認）</button>
   </div>
 </main>
 
@@ -155,13 +154,26 @@ footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem
   <div class="fs-hint">タップ・クリックで閉じる</div>
 </div>
 
-<!-- リセット確認モーダル -->
+<!-- リセット確認モーダル Step1 -->
 <div id="modal-reset">
   <div class="reset-box">
-    <p>ゲームをリセットして<br>最初からやり直しますか？<br><small style="color:#c00">（読み上げ履歴が消えます）</small></p>
+    <p>⚠️ ゲームをリセットしますか？<br><strong>読み上げ履歴がすべて消えます。</strong><br><small style="color:#c00">この操作は取り消せません</small></p>
     <div class="reset-btns">
-      <button class="btn btn-accent" id="btn-confirm-reset">リセット</button>
+      <button class="btn btn-accent" id="btn-confirm-reset">続ける →</button>
       <button class="btn btn-gray" id="btn-cancel-reset">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- リセット確認モーダル Step2 -->
+<div id="modal-reset-step2">
+  <div class="reset-box2">
+    <h3>⛔ 最終確認</h3>
+    <p>リセットするには下のボックスに<br><strong>「リセット」</strong>と入力してください</p>
+    <input type="text" id="reset-confirm-input" placeholder="リセット" autocomplete="off">
+    <div class="reset-btns2">
+      <button class="btn btn-danger" id="btn-do-reset" disabled>リセット実行</button>
+      <button class="btn btn-gray" id="btn-cancel-reset2">キャンセル</button>
     </div>
   </div>
 </div>
@@ -206,65 +218,39 @@ const CHARS = [
   { id: 31, name: "ディフィシル",               latin: "Clostridioides difficile",       memo: "芽胞形成嫌気性菌" },
   { id: 32, name: "タンソ",                     latin: "Bacillus anthracis",             memo: "炭疽菌" },
 ];
+
 const IMG_BASE = "https://somekata.github.io/baikinscharacters/img/chara";
 function imgUrl(id){ return IMG_BASE + id + ".png"; }
 
-// Mulberry32 PRNG
-function mulberry32(seed){
-  return function(){
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function seededShuffle(arr, seed){
+// ページ読み込み時にブラウザのcrypto.getRandomValuesで真のランダムシャッフル
+function cryptoShuffle(arr){
   const a = arr.slice();
-  const rand = mulberry32(seed + 99999); // host uses different salt
-  for(let i = a.length-1; i>0; i--){
-    const j = Math.floor(rand()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
+  for(let i = a.length - 1; i > 0; i--){
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const j = buf[0] % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
 
-let pool = [];        // shuffled draw order
-let drawnIdx = 0;     // next index to draw from pool
-let currentSeed = null;
+let pool = cryptoShuffle(CHARS);  // ページ読み込み時に一度だけシャッフル
+let drawnIdx = 0;
 let currentChar = null;
 
-function setSeed(s){
-  currentSeed = s;
-  pool = seededShuffle(CHARS, s);
-  drawnIdx = 0;
-  currentChar = null;
-  updateUI();
-  document.getElementById('seed-status').textContent = `✅ シード：${s}　を参加者に告知してください`;
-  document.getElementById('btn-draw').disabled = false;
-  document.getElementById('history-grid').innerHTML = '<div class="history-empty-msg" id="hist-empty">まだ読み上げなし</div>';
-  document.getElementById('draw-name').textContent = '「次を引く」で抽選開始';
-  document.getElementById('draw-num').textContent = '—';
-  document.getElementById('draw-latin').textContent = '';
-  document.getElementById('draw-memo').textContent = '';
-  const wrap = document.getElementById('draw-img-wrap');
-  wrap.innerHTML = '🦠';
-  wrap.className = 'draw-char-img placeholder';
-  document.getElementById('btn-fullscreen').disabled = true;
-}
+let isLocked = false;
 
-document.getElementById('btn-set-seed').addEventListener('click', () => {
-  const v = parseInt(document.getElementById('seed-input').value);
-  if(!v || v<1){ alert('有効な番号を入力してください'); return; }
-  setSeed(v);
-});
-document.getElementById('btn-random-seed').addEventListener('click', () => {
-  const v = Math.floor(Math.random()*9000)+1000;
-  document.getElementById('seed-input').value = v;
-  setSeed(v);
-});
+function lockSession(){
+  if(isLocked) return;
+  isLocked = true;
+  const banner = document.getElementById('lock-banner');
+  banner.textContent = '抽選進行中：引き順が確定しました。リセット以外の操作は無効です';
+  banner.classList.add('locked');
+}
 
 function draw(){
   if(drawnIdx >= pool.length){ alert('全キャラクターを読み上げました！'); return; }
+  lockSession();  // 最初の引きでロック
   currentChar = pool[drawnIdx];
   drawnIdx++;
   showCurrentChar();
@@ -300,18 +286,16 @@ function addToHistory(ch, order){
 }
 
 function updateUI(){
-  const drawn = drawnIdx;
-  const remain = pool.length - drawn;
-  document.getElementById('stat-drawn').textContent = drawn;
+  const remain = pool.length - drawnIdx;
+  document.getElementById('stat-drawn').textContent = drawnIdx;
   document.getElementById('stat-remain').textContent = remain;
   document.getElementById('remain-badge').textContent = `残り ${remain} 体`;
   if(remain === 0) document.getElementById('btn-draw').disabled = true;
 }
 
-document.getElementById('btn-draw').disabled = true;
 document.getElementById('btn-draw').addEventListener('click', draw);
 
-// Fullscreen overlay
+// 大画面オーバーレイ
 document.getElementById('btn-fullscreen').addEventListener('click', () => {
   if(!currentChar) return;
   document.getElementById('fs-img').src = imgUrl(currentChar.id);
@@ -323,20 +307,59 @@ document.getElementById('fullscreen-overlay').addEventListener('click', () => {
   document.getElementById('fullscreen-overlay').classList.remove('open');
 });
 
-// Reset
+// リセット Step1
 document.getElementById('btn-show-reset').addEventListener('click', () => {
   document.getElementById('modal-reset').classList.add('open');
 });
 document.getElementById('btn-cancel-reset').addEventListener('click', () => {
   document.getElementById('modal-reset').classList.remove('open');
 });
+
+// リセット Step1 → Step2へ
 document.getElementById('btn-confirm-reset').addEventListener('click', () => {
   document.getElementById('modal-reset').classList.remove('open');
-  if(currentSeed) setSeed(currentSeed);
-  else {
-    document.getElementById('seed-status').textContent = 'シード未設定';
-    document.getElementById('btn-draw').disabled = true;
-  }
+  const inp = document.getElementById('reset-confirm-input');
+  inp.value = '';
+  document.getElementById('btn-do-reset').disabled = true;
+  inp.classList.remove('ok');
+  document.getElementById('modal-reset-step2').classList.add('open');
+  setTimeout(() => inp.focus(), 100);
+});
+
+// Step2: 入力チェック
+document.getElementById('reset-confirm-input').addEventListener('input', function(){
+  const ok = this.value === 'リセット';
+  document.getElementById('btn-do-reset').disabled = !ok;
+  this.classList.toggle('ok', ok);
+});
+
+// Step2: キャンセル
+document.getElementById('btn-cancel-reset2').addEventListener('click', () => {
+  document.getElementById('modal-reset-step2').classList.remove('open');
+});
+
+// Step2: 実行
+document.getElementById('btn-do-reset').addEventListener('click', () => {
+  document.getElementById('modal-reset-step2').classList.remove('open');
+  // リセット実行
+  isLocked = false;
+  pool = cryptoShuffle(CHARS);
+  drawnIdx = 0;
+  currentChar = null;
+  const banner = document.getElementById('lock-banner');
+  banner.textContent = '抽選前：「次を引く」を押すと引き順が確定します';
+  banner.classList.remove('locked');
+  document.getElementById('draw-name').textContent = '「次を引く」で抽選開始';
+  document.getElementById('draw-num').textContent = '—';
+  document.getElementById('draw-latin').textContent = '';
+  document.getElementById('draw-memo').textContent = '';
+  const wrap = document.getElementById('draw-img-wrap');
+  wrap.innerHTML = '🦠';
+  wrap.className = 'draw-char-img placeholder';
+  document.getElementById('btn-fullscreen').disabled = true;
+  document.getElementById('btn-draw').disabled = false;
+  document.getElementById('history-grid').innerHTML = '<div class="history-empty-msg" id="hist-empty">まだ読み上げなし</div>';
+  updateUI();
 });
 </script>
 </body>
