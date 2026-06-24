@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>バイキンズビンゴ — 主催者ツール</title>
+<style>
+:root{
+  --bg:#fdfaf3;--bg2:#f5f1e8;--primary:#2C5F8A;--accent:#E85D2F;
+  --gold:#c8940a;--green:#2e7d4f;--text:#1a1a1a;--muted:#666;
+  --border:#d9d0b8;--card-bg:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'BIZ UDPGothic','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text)}
+header{background:var(--primary);color:#fff;padding:0.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+.header-badge{font-size:0.7rem;background:rgba(255,255,255,0.18);padding:0.2rem 0.6rem;border-radius:4px;border:1px solid rgba(255,255,255,0.3)}
+main{max-width:800px;margin:0 auto;padding:1.2rem}
+
+.card{background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:1.2rem;margin-bottom:1rem}
+.card-title{font-size:0.88rem;font-weight:700;color:var(--primary);margin-bottom:0.8rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.4rem}
+
+/* seed setup */
+.seed-row{display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap}
+.seed-field{flex:1;min-width:140px}
+.seed-field label{display:block;font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:0.3rem}
+.seed-field input{width:100%;border:2px solid var(--border);border-radius:8px;padding:0.55rem 0.8rem;font-size:1.1rem;text-align:center;font-family:inherit;background:var(--bg2);color:var(--text);outline:none}
+.seed-field input:focus{border-color:var(--primary)}
+.btn{border:none;border-radius:8px;padding:0.6rem 1.1rem;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .12s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:#1a4060}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{background:#c04020}
+.btn-gray{background:var(--bg2);color:var(--text);border:1.5px solid var(--border)}
+.btn-gray:hover{background:#e8e0d0}
+.btn-lg{padding:0.85rem 1.8rem;font-size:1rem}
+.btn:disabled{background:#ccc;cursor:not-allowed}
+
+/* current draw */
+.draw-stage{display:flex;flex-direction:column;align-items:center;gap:0.75rem;padding:0.5rem 0}
+.draw-char-box{background:var(--bg2);border-radius:12px;border:1.5px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem;width:100%}
+.draw-char-img{width:100px;height:100px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--border);flex-shrink:0}
+.draw-char-img.placeholder{display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+.draw-char-info .cnum{font-size:0.75rem;color:var(--muted)}
+.draw-char-info .cname{font-size:1.4rem;font-weight:700;color:var(--primary);line-height:1.2;margin:2px 0}
+.draw-char-info .clatin{font-size:0.78rem;font-style:italic;color:var(--muted)}
+.draw-char-info .cmemo{font-size:0.78rem;color:var(--text);margin-top:2px}
+.draw-btns{display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:center}
+.remain-badge{font-size:0.78rem;color:var(--muted);text-align:center}
+
+/* fullscreen announce */
+#fullscreen-overlay{display:none;position:fixed;inset:0;background:var(--primary);z-index:9999;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+#fullscreen-overlay.open{display:flex}
+.fs-label{font-size:0.9rem;color:rgba(255,255,255,0.55);letter-spacing:0.1em;margin-bottom:0.75rem}
+.fs-img{width:min(260px,45vw);height:min(260px,45vw);object-fit:contain;border-radius:16px;background:rgba(255,255,255,0.08);padding:1rem}
+.fs-name{font-size:clamp(1.6rem,5vw,3rem);font-weight:700;color:#fff;margin-top:1rem;text-align:center}
+.fs-latin{font-size:clamp(0.9rem,2.5vw,1.3rem);font-style:italic;color:rgba(255,255,255,0.65);margin-top:0.3rem;text-align:center}
+.fs-hint{position:absolute;bottom:1.5rem;font-size:0.75rem;color:rgba(255,255,255,0.35)}
+
+/* history */
+.history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px}
+.hist-item{background:var(--bg2);border-radius:6px;display:flex;flex-direction:column;align-items:center;padding:4px 4px 5px;font-size:0.55rem;text-align:center;color:var(--muted);border:1px solid var(--border)}
+.hist-item img{width:44px;height:44px;object-fit:contain;margin-bottom:2px}
+.hist-num{font-size:0.6rem;color:var(--primary);font-weight:700}
+.history-empty-msg{font-size:0.8rem;color:var(--muted);text-align:center;padding:1rem 0}
+
+/* stats */
+.stat-row{display:flex;gap:1rem;flex-wrap:wrap}
+.stat-box{flex:1;min-width:100px;background:var(--bg2);border-radius:8px;padding:0.6rem 0.8rem;text-align:center}
+.stat-val{font-size:1.6rem;font-weight:700;color:var(--primary)}
+.stat-label{font-size:0.7rem;color:var(--muted)}
+
+/* reset confirm */
+#modal-reset{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5000;align-items:center;justify-content:center}
+#modal-reset.open{display:flex}
+.reset-box{background:#fff;border-radius:12px;width:min(300px,90vw);padding:1.5rem;text-align:center}
+.reset-box p{font-size:0.9rem;margin-bottom:1.2rem;color:var(--text)}
+.reset-btns{display:flex;gap:0.6rem;justify-content:center}
+
+footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem 2rem;border-top:1px solid var(--border);margin-top:1rem}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🦠 バイキンズビンゴ — 主催者ツール</h1>
+  <div class="header-badge">HOST</div>
+</header>
+
+<main>
+  <!-- シード設定 -->
+  <div class="card">
+    <div class="card-title">🔑 シード番号（参加者に告知する番号）</div>
+    <div class="seed-row">
+      <div class="seed-field">
+        <label>シード番号</label>
+        <input type="number" id="seed-input" min="1" max="9999" placeholder="例：42" value="">
+      </div>
+      <button class="btn btn-primary" id="btn-set-seed">セットする</button>
+      <button class="btn btn-gray" id="btn-random-seed">ランダム生成</button>
+    </div>
+    <div style="margin-top:0.6rem;font-size:0.8rem;color:var(--muted)" id="seed-status">シード未設定</div>
+  </div>
+
+  <!-- 統計 -->
+  <div class="card">
+    <div class="card-title">📊 進行状況</div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val" id="stat-drawn">0</div><div class="stat-label">読み上げ済み</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-remain">32</div><div class="stat-label">残り</div></div>
+    </div>
+  </div>
+
+  <!-- 抽選 -->
+  <div class="card">
+    <div class="card-title">🎲 抽選</div>
+    <div class="draw-stage">
+      <div class="draw-char-box" id="draw-char-box">
+        <div class="draw-char-img placeholder" id="draw-img-wrap">🦠</div>
+        <div class="draw-char-info">
+          <div class="cnum" id="draw-num">—</div>
+          <div class="cname" id="draw-name">「次を引く」で抽選開始</div>
+          <div class="clatin" id="draw-latin"></div>
+          <div class="cmemo" id="draw-memo"></div>
+        </div>
+      </div>
+      <div class="draw-btns">
+        <button class="btn btn-accent btn-lg" id="btn-draw">次を引く 🎲</button>
+        <button class="btn btn-gray" id="btn-fullscreen" disabled>大画面表示</button>
+      </div>
+      <div class="remain-badge" id="remain-badge">残り 32 体</div>
+    </div>
+  </div>
+
+  <!-- 読み上げ済み -->
+  <div class="card">
+    <div class="card-title">📋 読み上げ済みキャラ</div>
+    <div class="history-grid" id="history-grid">
+      <div class="history-empty-msg" id="hist-empty">まだ読み上げなし</div>
+    </div>
+  </div>
+
+  <!-- リセット -->
+  <div style="text-align:center;margin:0.5rem 0 1rem">
+    <button class="btn btn-gray" id="btn-show-reset">🔄 ゲームをリセット</button>
+  </div>
+</main>
+
+<!-- 大画面オーバーレイ -->
+<div id="fullscreen-overlay">
+  <div class="fs-label">🦠 バイキンズビンゴ — 読み上げ</div>
+  <img class="fs-img" id="fs-img" src="" alt="">
+  <div class="fs-name" id="fs-name"></div>
+  <div class="fs-latin" id="fs-latin"></div>
+  <div class="fs-hint">タップ・クリックで閉じる</div>
+</div>
+
+<!-- リセット確認モーダル -->
+<div id="modal-reset">
+  <div class="reset-box">
+    <p>ゲームをリセットして<br>最初からやり直しますか？<br><small style="color:#c00">（読み上げ履歴が消えます）</small></p>
+    <div class="reset-btns">
+      <button class="btn btn-accent" id="btn-confirm-reset">リセット</button>
+      <button class="btn btn-gray" id="btn-cancel-reset">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  本コンテンツは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+const CHARS = [
+  { id:  1, name: "ハイエンキューキン王",       latin: "Streptococcus pneumoniae",       memo: "肺炎球菌" },
+  { id:  2, name: "インフルエンザキンXV世女王", latin: "Haemophilus influenzae",          memo: "グラム陰性桿菌" },
+  { id:  3, name: "マイコプラズマ姫",           latin: "Mycoplasma pneumoniae",           memo: "細胞壁なし" },
+  { id:  4, name: "レジオネラ爺や",             latin: "Legionella pneumophila",          memo: "細胞内寄生" },
+  { id:  5, name: "ダイチョーキン",             latin: "Escherichia coli",               memo: "大腸菌" },
+  { id:  6, name: "ベロダシ",                   latin: "Enterohemorrhagic E. coli",      memo: "EHEC" },
+  { id:  7, name: "シゲ裸族",                   latin: "Shigella",                       memo: "赤痢菌" },
+  { id:  8, name: "クレブシエ裸族",             latin: "Klebsiella pneumoniae",          memo: "肺炎桿菌" },
+  { id:  9, name: "ビブリ男コレラ",             latin: "Vibrio cholerae",                memo: "コレラ菌" },
+  { id: 10, name: "リョクノーキン",             latin: "Pseudomonas aeruginosa",         memo: "緑膿菌" },
+  { id: 11, name: "アシネトバクター",           latin: "Acinetobacter baumannii",        memo: "多剤耐性" },
+  { id: 12, name: "チフス和尚",                 latin: "Salmonella Typhi",               memo: "腸チフス菌" },
+  { id: 13, name: "クラミジア・ニューモニエ侯", latin: "Chlamydophila pneumoniae",       memo: "細胞内寄生" },
+  { id: 14, name: "クラミジア・シッタ氏",       latin: "Chlamydophila psittaci",        memo: "オウム病" },
+  { id: 15, name: "ブドウキューキン族（黄色）", latin: "Staphylococcus aureus",          memo: "黄色ブドウ球菌" },
+  { id: 16, name: "ケッカクキン",               latin: "Mycobacterium tuberculosis",     memo: "結核菌" },
+  { id: 17, name: "MAC",                        latin: "Mycobacterium avium complex",   memo: "抗酸菌" },
+  { id: 18, name: "コクシジオイデス海賊王",     latin: "Coccidioides immitis",           memo: "輸入真菌症" },
+  { id: 19, name: "ヒストプラズ魔王",           latin: "Histoplasma capsulatum",         memo: "輸入真菌症" },
+  { id: 20, name: "パラコクシジオイデス",       latin: "Paracoccidioides brasiliensis",  memo: "輸入真菌症" },
+  { id: 21, name: "ミセス・ブラスト",           latin: "Blastomyces dermatitidis",       memo: "輸入真菌症" },
+  { id: 22, name: "タラロミセス・マルネッフェイ", latin: "Talaromyces marneffei",        memo: "東南アジア" },
+  { id: 23, name: "クリプトコックス・ネオフォルマンス", latin: "Cryptococcus neoformans", memo: "莢膜" },
+  { id: 24, name: "クリプトコックス・ガッティ", latin: "Cryptococcus gattii",            memo: "輸入真菌症" },
+  { id: 25, name: "カンジダ",                   latin: "Candida albicans",               memo: "日和見真菌" },
+  { id: 26, name: "アスペルギルス",             latin: "Aspergillus fumigatus",          memo: "糸状菌" },
+  { id: 27, name: "コーボくん",                 latin: "Saccharomyces cerevisiae",       memo: "非病原性酵母" },
+  { id: 28, name: "こうじ君",                   latin: "Aspergillus oryzae",             memo: "非病原性麹菌" },
+  { id: 29, name: "Ａ軍連隊",                   latin: "Streptococcus pyogenes",         memo: "A群溶連菌" },
+  { id: 30, name: "Ｂ軍連隊",                   latin: "Streptococcus agalactiae",       memo: "B群溶連菌" },
+  { id: 31, name: "ディフィシル",               latin: "Clostridioides difficile",       memo: "芽胞形成嫌気性菌" },
+  { id: 32, name: "タンソ",                     latin: "Bacillus anthracis",             memo: "炭疽菌" },
+];
+const IMG_BASE = "https://somekata.github.io/baikinscharacters/img/chara";
+function imgUrl(id){ return IMG_BASE + id + ".png"; }
+
+// Mulberry32 PRNG
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function seededShuffle(arr, seed){
+  const a = arr.slice();
+  const rand = mulberry32(seed + 99999); // host uses different salt
+  for(let i = a.length-1; i>0; i--){
+    const j = Math.floor(rand()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+let pool = [];        // shuffled draw order
+let drawnIdx = 0;     // next index to draw from pool
+let currentSeed = null;
+let currentChar = null;
+
+function setSeed(s){
+  currentSeed = s;
+  pool = seededShuffle(CHARS, s);
+  drawnIdx = 0;
+  currentChar = null;
+  updateUI();
+  document.getElementById('seed-status').textContent = `✅ シード：${s}　を参加者に告知してください`;
+  document.getElementById('btn-draw').disabled = false;
+  document.getElementById('history-grid').innerHTML = '<div class="history-empty-msg" id="hist-empty">まだ読み上げなし</div>';
+  document.getElementById('draw-name').textContent = '「次を引く」で抽選開始';
+  document.getElementById('draw-num').textContent = '—';
+  document.getElementById('draw-latin').textContent = '';
+  document.getElementById('draw-memo').textContent = '';
+  const wrap = document.getElementById('draw-img-wrap');
+  wrap.innerHTML = '🦠';
+  wrap.className = 'draw-char-img placeholder';
+  document.getElementById('btn-fullscreen').disabled = true;
+}
+
+document.getElementById('btn-set-seed').addEventListener('click', () => {
+  const v = parseInt(document.getElementById('seed-input').value);
+  if(!v || v<1){ alert('有効な番号を入力してください'); return; }
+  setSeed(v);
+});
+document.getElementById('btn-random-seed').addEventListener('click', () => {
+  const v = Math.floor(Math.random()*9000)+1000;
+  document.getElementById('seed-input').value = v;
+  setSeed(v);
+});
+
+function draw(){
+  if(drawnIdx >= pool.length){ alert('全キャラクターを読み上げました！'); return; }
+  currentChar = pool[drawnIdx];
+  drawnIdx++;
+  showCurrentChar();
+  addToHistory(currentChar, drawnIdx);
+  updateUI();
+  document.getElementById('btn-fullscreen').disabled = false;
+}
+
+function showCurrentChar(){
+  const ch = currentChar;
+  const wrap = document.getElementById('draw-img-wrap');
+  wrap.className = 'draw-char-img';
+  wrap.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = imgUrl(ch.id);
+  img.alt = ch.name;
+  img.style.cssText = 'width:100%;height:100%;object-fit:contain';
+  wrap.appendChild(img);
+  document.getElementById('draw-num').textContent = `No.${ch.id}　${drawnIdx}/${pool.length}番目`;
+  document.getElementById('draw-name').textContent = ch.name;
+  document.getElementById('draw-latin').textContent = ch.latin;
+  document.getElementById('draw-memo').textContent = ch.memo;
+}
+
+function addToHistory(ch, order){
+  const grid = document.getElementById('history-grid');
+  const empty = document.getElementById('hist-empty');
+  if(empty) empty.remove();
+  const item = document.createElement('div');
+  item.className = 'hist-item';
+  item.innerHTML = `<span class="hist-num">${order}</span><img src="${imgUrl(ch.id)}" alt="${ch.name}"><span>${ch.name}</span>`;
+  grid.appendChild(item);
+}
+
+function updateUI(){
+  const drawn = drawnIdx;
+  const remain = pool.length - drawn;
+  document.getElementById('stat-drawn').textContent = drawn;
+  document.getElementById('stat-remain').textContent = remain;
+  document.getElementById('remain-badge').textContent = `残り ${remain} 体`;
+  if(remain === 0) document.getElementById('btn-draw').disabled = true;
+}
+
+document.getElementById('btn-draw').disabled = true;
+document.getElementById('btn-draw').addEventListener('click', draw);
+
+// Fullscreen overlay
+document.getElementById('btn-fullscreen').addEventListener('click', () => {
+  if(!currentChar) return;
+  document.getElementById('fs-img').src = imgUrl(currentChar.id);
+  document.getElementById('fs-name').textContent = currentChar.name;
+  document.getElementById('fs-latin').textContent = currentChar.latin;
+  document.getElementById('fullscreen-overlay').classList.add('open');
+});
+document.getElementById('fullscreen-overlay').addEventListener('click', () => {
+  document.getElementById('fullscreen-overlay').classList.remove('open');
+});
+
+// Reset
+document.getElementById('btn-show-reset').addEventListener('click', () => {
+  document.getElementById('modal-reset').classList.add('open');
+});
+document.getElementById('btn-cancel-reset').addEventListener('click', () => {
+  document.getElementById('modal-reset').classList.remove('open');
+});
+document.getElementById('btn-confirm-reset').addEventListener('click', () => {
+  document.getElementById('modal-reset').classList.remove('open');
+  if(currentSeed) setSeed(currentSeed);
+  else {
+    document.getElementById('seed-status').textContent = 'シード未設定';
+    document.getElementById('btn-draw').disabled = true;
+  }
+});
+</script>
+</body>
+</html>

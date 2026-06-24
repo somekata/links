@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>バイキンズビンゴ</title>
+<style>
+:root {
+  --bg: #fdfaf3;
+  --bg2: #f5f1e8;
+  --primary: #2C5F8A;
+  --accent: #E85D2F;
+  --gold: #c8940a;
+  --green: #2e7d4f;
+  --text: #1a1a1a;
+  --muted: #666;
+  --border: #d9d0b8;
+  --card-bg: #fff;
+  --hole: #2C5F8A;
+  --free: #c8940a;
+  --reach: #e85d2f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'BIZ UDPGothic','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ---- SEED SCREEN ---- */
+#seed-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;text-align:center;background:var(--bg)}
+.seed-logo{font-size:3.5rem;margin-bottom:0.5rem}
+.seed-title{font-size:1.6rem;font-weight:700;color:var(--primary);margin-bottom:0.25rem}
+.seed-sub{font-size:0.9rem;color:var(--muted);margin-bottom:2rem}
+.seed-box{background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:1.5rem 2rem;width:min(360px,90vw)}
+.seed-box label{display:block;font-weight:700;font-size:0.9rem;color:var(--primary);margin-bottom:0.5rem}
+.seed-box input{width:100%;border:2px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;font-size:1.2rem;text-align:center;outline:none;font-family:inherit;letter-spacing:0.1em;color:var(--text);background:var(--bg2)}
+.seed-box input:focus{border-color:var(--primary)}
+.seed-hint{font-size:0.78rem;color:var(--muted);margin-top:0.4rem;margin-bottom:1rem}
+.btn-start{width:100%;padding:0.75rem;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:1.05rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn-start:hover{background:#1a4060}
+.btn-start:disabled{background:#aaa;cursor:not-allowed}
+
+/* ---- GAME SCREEN ---- */
+#game-screen{display:none;min-height:100vh;background:var(--bg)}
+.game-header{background:var(--primary);color:#fff;padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between}
+.game-header-title{font-size:1rem;font-weight:700;letter-spacing:0.05em}
+.game-header-seed{font-size:0.75rem;opacity:0.7}
+.btn-reset{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:6px;padding:0.3rem 0.7rem;font-size:0.75rem;cursor:pointer;font-family:inherit}
+.btn-reset:hover{background:rgba(255,255,255,0.25)}
+
+.game-body{display:grid;grid-template-columns:1fr 200px;gap:0;max-width:900px;margin:0 auto;padding:0.75rem;gap:0.75rem}
+@media(max-width:640px){.game-body{grid-template-columns:1fr;}}
+
+/* ---- BINGO BOARD ---- */
+.board-wrap{display:flex;flex-direction:column;align-items:center;gap:0.5rem}
+.board-label-row{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:420px;gap:3px}
+.board-col-label{text-align:center;font-weight:700;font-size:0.85rem;color:var(--primary);padding:2px 0}
+
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;width:100%;max-width:420px}
+.cell{aspect-ratio:1;background:var(--card-bg);border:1.5px solid var(--border);border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:transform .1s,box-shadow .1s;padding:2px}
+.cell:hover:not(.punched):not(.free){transform:scale(1.04);box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.cell img{width:70%;height:70%;object-fit:contain;display:block}
+.cell .cname{font-size:0.38rem;color:var(--muted);text-align:center;line-height:1.2;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+@media(min-width:380px){.cell .cname{font-size:0.48rem}}
+@media(min-width:500px){.cell .cname{font-size:0.58rem}}
+
+/* punched */
+.cell.punched{background:var(--hole);border-color:var(--hole);cursor:default}
+.cell.punched img{filter:brightness(0) invert(1) opacity(0.3)}
+.cell.punched .cname{color:rgba(255,255,255,0.5)}
+.cell.punched::after{content:"●";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;color:#fff;opacity:0.9}
+
+/* free cell */
+.cell.free{background:var(--free);border-color:var(--free);cursor:default}
+.cell.free img{filter:brightness(0) invert(1) opacity(0.35)}
+.cell.free .cname{color:rgba(255,255,255,0.7)}
+.cell.free::after{content:"FREE";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.9rem;font-weight:700;color:#fff}
+
+/* reach highlight */
+.cell.reach-line{outline:2.5px solid var(--reach);outline-offset:-2px}
+
+/* bingo line highlight */
+.cell.bingo-line{outline:3px solid var(--gold);outline-offset:-2px;background:var(--hole)}
+.cell.bingo-line.punched{background:#1a3f60}
+.cell.bingo-line.free{background:#a07000}
+.cell.bingo-line::before{content:"★";position:absolute;top:2px;right:3px;font-size:0.6rem;color:var(--gold);z-index:1;line-height:1}
+
+/* bingo banner (hidden until bingo) */
+#bingo-banner{display:none;background:var(--gold);color:#fff;text-align:center;padding:0.5rem 1rem;font-weight:700;font-size:0.95rem;letter-spacing:0.05em;animation:pulse-banner 1.5s ease-in-out infinite}
+#bingo-banner.show{display:block}
+@keyframes pulse-banner{0%,100%{opacity:1}50%{opacity:0.7}}
+
+/* ---- SIDE PANEL ---- */
+.side-panel{display:flex;flex-direction:column;gap:0.5rem}
+.panel-box{background:var(--card-bg);border:1.5px solid var(--border);border-radius:10px;padding:0.75rem}
+.panel-title{font-size:0.8rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;border-bottom:1px solid var(--border);padding-bottom:0.3rem}
+.history-list{list-style:none;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.history-item{display:flex;align-items:center;gap:6px;font-size:0.72rem;background:var(--bg2);border-radius:6px;padding:4px 6px}
+.history-num{font-size:0.65rem;color:var(--muted);min-width:18px}
+.history-img{width:28px;height:28px;object-fit:contain;flex-shrink:0}
+.history-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-cancel{background:none;border:1px solid #ccc;border-radius:4px;padding:1px 5px;font-size:0.65rem;cursor:pointer;color:var(--muted);white-space:nowrap;font-family:inherit}
+.btn-cancel:hover{background:#fee;border-color:#c00;color:#c00}
+.history-empty{font-size:0.75rem;color:var(--muted);text-align:center;padding:0.5rem 0}
+
+.reach-info{font-size:0.8rem;color:var(--reach);font-weight:700;text-align:center}
+.reach-count-0{display:none}
+
+/* ---- CONFIRM MODAL ---- */
+#modal-confirm{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center}
+#modal-confirm.open{display:flex}
+.modal-box{background:#fff;border-radius:14px;width:min(320px,92vw);overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.25)}
+.modal-char{display:flex;align-items:center;gap:1rem;padding:1.2rem 1.2rem 0.8rem;background:var(--bg2)}
+.modal-char img{width:72px;height:72px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--border)}
+.modal-char-info .cname-lg{font-size:1rem;font-weight:700;color:var(--primary)}
+.modal-char-info .clatin{font-size:0.72rem;color:var(--muted);font-style:italic}
+.modal-char-info .cmemo{font-size:0.72rem;color:var(--text);margin-top:2px}
+.modal-question{padding:0.8rem 1.2rem;font-size:0.9rem;color:var(--text)}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border)}
+.modal-btns button{border:none;padding:0.85rem;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .12s}
+.btn-ok{background:var(--primary);color:#fff;border-radius:0 0 0 14px}
+.btn-ok:hover{background:#1a4060}
+.btn-ng{background:#f5f5f5;color:var(--muted);border-radius:0 0 14px 0;border-left:1px solid var(--border)}
+.btn-ng:hover{background:#eee}
+
+/* ---- REACH MODAL ---- */
+#modal-reach{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center}
+#modal-reach.open{display:flex}
+.reach-modal-box{background:#fff;border-radius:16px;width:min(300px,90vw);text-align:center;padding:2rem 1.5rem;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.reach-emoji{font-size:3.5rem;display:block;margin-bottom:0.5rem}
+.reach-modal-title{font-size:1.6rem;font-weight:700;color:var(--reach);margin-bottom:0.25rem}
+.reach-modal-sub{font-size:0.85rem;color:var(--muted);margin-bottom:1.2rem}
+.btn-reach-close{background:var(--reach);color:#fff;border:none;border-radius:8px;padding:0.65rem 2rem;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-reach-close:hover{background:#c04020}
+
+/* ---- BINGO MODAL ---- */
+#modal-bingo{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;align-items:center;justify-content:center}
+#modal-bingo.open{display:flex}
+.bingo-box{background:var(--primary);border-radius:20px;width:min(340px,92vw);text-align:center;padding:2.5rem 1.5rem;box-shadow:0 12px 48px rgba(0,0,0,0.4);color:#fff}
+.bingo-emoji{font-size:4rem;margin-bottom:0.5rem;display:block}
+.bingo-title{font-size:2.5rem;font-weight:700;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.25rem}
+.bingo-sub{font-size:0.9rem;opacity:0.8;margin-bottom:1.5rem}
+.btn-bingo-close{background:var(--gold);color:#fff;border:none;border-radius:10px;padding:0.75rem 2.5rem;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit}
+
+footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem 2rem;border-top:1px solid var(--border);margin-top:1rem}
+</style>
+</head>
+<body>
+
+<!-- ===== SEED SCREEN ===== -->
+<div id="seed-screen">
+  <div class="seed-logo">🦠</div>
+  <div class="seed-title">バイキンズ ビンゴ</div>
+  <div class="seed-sub">Baikinzu Bingo — FunFection Edition</div>
+  <div class="seed-box">
+    <label for="seed-input">シード番号（主催者から告知）</label>
+    <input type="number" id="seed-input" placeholder="例：42" min="1" max="9999" autocomplete="off">
+    <div class="seed-hint">同じ番号を入力すると、あなた専用のビンゴカードが作られます</div>
+    <button class="btn-start" id="btn-start" disabled>カードを作る →</button>
+  </div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="game-screen">
+  <div class="game-header">
+    <div class="game-header-title">🦠 バイキンズビンゴ</div>
+    <div class="game-header-seed" id="header-seed"></div>
+    <button class="btn-reset" id="btn-reset">最初から</button>
+  </div>
+  <div id="bingo-banner">🎉 BINGO！ — 主催者に声をかけてください！ 🎉</div>
+
+  <div class="game-body">
+    <div class="board-wrap">
+      <div class="board-label-row" id="col-labels">
+        <div class="board-col-label">B</div>
+        <div class="board-col-label">I</div>
+        <div class="board-col-label">N</div>
+        <div class="board-col-label">G</div>
+        <div class="board-col-label">O</div>
+      </div>
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="side-panel">
+      <div class="panel-box">
+        <div class="panel-title">📢 リーチ状況</div>
+        <div class="reach-info" id="reach-info">まだリーチなし</div>
+      </div>
+      <div class="panel-box">
+        <div class="panel-title">📋 選んだキャラ（順番）</div>
+        <ul class="history-list" id="history-list">
+          <li class="history-empty" id="history-empty">まだ選択なし</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONFIRM MODAL ===== -->
+<div id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-char">
+      <img id="mc-img" src="" alt="">
+      <div class="modal-char-info">
+        <div class="cname-lg" id="mc-name"></div>
+        <div class="clatin" id="mc-latin"></div>
+        <div class="cmemo" id="mc-memo"></div>
+      </div>
+    </div>
+    <div class="modal-question">このキャラを選択しますか？</div>
+    <div class="modal-btns">
+      <button class="btn-ok" id="btn-ok">選択する</button>
+      <button class="btn-ng" id="btn-ng">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REACH MODAL ===== -->
+<div id="modal-reach">
+  <div class="reach-modal-box">
+    <span class="reach-emoji">🔥</span>
+    <div class="reach-modal-title" id="reach-modal-title">リーチ！</div>
+    <div class="reach-modal-sub" id="reach-modal-sub">あと1つでビンゴ</div>
+    <button class="btn-reach-close" id="btn-reach-close">OK</button>
+  </div>
+</div>
+
+<!-- ===== BINGO MODAL ===== -->
+<div id="modal-bingo">
+  <div class="bingo-box">
+    <span class="bingo-emoji">🎉</span>
+    <div class="bingo-title">BINGO!</div>
+    <div class="bingo-sub" id="bingo-sub">おめでとうございます！主催者に知らせてください</div>
+    <button class="btn-bingo-close" id="btn-bingo-close">閉じる</button>
+  </div>
+</div>
+
+<footer>
+  本コンテンツは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+  医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+const CHARS = [
+  { id:  1, name: "ハイエンキューキン王",       latin: "Streptococcus pneumoniae",       memo: "肺炎球菌" },
+  { id:  2, name: "インフルエンザキンXV世女王", latin: "Haemophilus influenzae",          memo: "グラム陰性桿菌" },
+  { id:  3, name: "マイコプラズマ姫",           latin: "Mycoplasma pneumoniae",           memo: "細胞壁なし" },
+  { id:  4, name: "レジオネラ爺や",             latin: "Legionella pneumophila",          memo: "細胞内寄生" },
+  { id:  5, name: "ダイチョーキン",             latin: "Escherichia coli",               memo: "大腸菌" },
+  { id:  6, name: "ベロダシ",                   latin: "Enterohemorrhagic E. coli",      memo: "EHEC" },
+  { id:  7, name: "シゲ裸族",                   latin: "Shigella",                       memo: "赤痢菌" },
+  { id:  8, name: "クレブシエ裸族",             latin: "Klebsiella pneumoniae",          memo: "肺炎桿菌" },
+  { id:  9, name: "ビブリ男コレラ",             latin: "Vibrio cholerae",                memo: "コレラ菌" },
+  { id: 10, name: "リョクノーキン",             latin: "Pseudomonas aeruginosa",         memo: "緑膿菌" },
+  { id: 11, name: "アシネトバクター",           latin: "Acinetobacter baumannii",        memo: "多剤耐性" },
+  { id: 12, name: "チフス和尚",                 latin: "Salmonella Typhi",               memo: "腸チフス菌" },
+  { id: 13, name: "クラミジア・ニューモニエ侯", latin: "Chlamydophila pneumoniae",       memo: "細胞内寄生" },
+  { id: 14, name: "クラミジア・シッタ氏",       latin: "Chlamydophila psittaci",        memo: "オウム病" },
+  { id: 15, name: "ブドウキューキン族（黄色）", latin: "Staphylococcus aureus",          memo: "黄色ブドウ球菌" },
+  { id: 16, name: "ケッカクキン",               latin: "Mycobacterium tuberculosis",     memo: "結核菌" },
+  { id: 17, name: "MAC",                        latin: "Mycobacterium avium complex",   memo: "抗酸菌" },
+  { id: 18, name: "コクシジオイデス海賊王",     latin: "Coccidioides immitis",           memo: "輸入真菌症" },
+  { id: 19, name: "ヒストプラズ魔王",           latin: "Histoplasma capsulatum",         memo: "輸入真菌症" },
+  { id: 20, name: "パラコクシジオイデス",       latin: "Paracoccidioides brasiliensis",  memo: "輸入真菌症" },
+  { id: 21, name: "ミセス・ブラスト",           latin: "Blastomyces dermatitidis",       memo: "輸入真菌症" },
+  { id: 22, name: "タラロミセス・マルネッフェイ", latin: "Talaromyces marneffei",        memo: "東南アジア" },
+  { id: 23, name: "クリプトコックス・ネオフォルマンス", latin: "Cryptococcus neoformans", memo: "莢膜" },
+  { id: 24, name: "クリプトコックス・ガッティ", latin: "Cryptococcus gattii",            memo: "輸入真菌症" },
+  { id: 25, name: "カンジダ",                   latin: "Candida albicans",               memo: "日和見真菌" },
+  { id: 26, name: "アスペルギルス",             latin: "Aspergillus fumigatus",          memo: "糸状菌" },
+  { id: 27, name: "コーボくん",                 latin: "Saccharomyces cerevisiae",       memo: "非病原性酵母" },
+  { id: 28, name: "こうじ君",                   latin: "Aspergillus oryzae",             memo: "非病原性麹菌" },
+  { id: 29, name: "Ａ軍連隊",                   latin: "Streptococcus pyogenes",         memo: "A群溶連菌" },
+  { id: 30, name: "Ｂ軍連隊",                   latin: "Streptococcus agalactiae",       memo: "B群溶連菌" },
+  { id: 31, name: "ディフィシル",               latin: "Clostridioides difficile",       memo: "芽胞形成嫌気性菌" },
+  { id: 32, name: "タンソ",                     latin: "Bacillus anthracis",             memo: "炭疽菌" },
+];
+
+const IMG_BASE = "https://somekata.github.io/baikinscharacters/img/chara";
+const FREE_POS = 12; // 0-indexed center of 5x5
+
+function imgUrl(id){ return IMG_BASE + id + ".png"; }
+
+// Mulberry32 seeded PRNG
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle(arr, seed){
+  const a = arr.slice();
+  const rand = mulberry32(seed);
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ---- State ----
+let boardChars = [];    // 25 chars for the board
+let punchedSet = new Set();  // indices of punched cells (0-24)
+let history = [];       // punched indices in order (non-FREE)
+let pendingIdx = null;  // index of cell awaiting confirm
+let bingoAlreadyShown = false;
+let prevReachCount = 0;
+
+const LINES = [
+  [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+  [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+  [0,6,12,18,24],[4,8,12,16,20]
+];
+
+function buildBoard(seed){
+  // Each participant gets unique card: seed = participant's own number
+  // Use seed to pick+shuffle 25 from 32
+  const rand = mulberry32(seed);
+  const shuffled = seededShuffle(CHARS, seed);
+  boardChars = shuffled.slice(0, 25);
+  punchedSet = new Set([FREE_POS]);
+  history = [];
+  bingoAlreadyShown = false;
+  prevReachCount = 0;
+  render();
+}
+
+function render(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  boardChars.forEach((ch, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.idx = i;
+    if(i === FREE_POS){
+      cell.classList.add('free');
+    } else if(punchedSet.has(i)){
+      cell.classList.add('punched');
+    }
+    const img = document.createElement('img');
+    img.src = imgUrl(ch.id);
+    img.alt = ch.name;
+    img.loading = 'lazy';
+    const name = document.createElement('div');
+    name.className = 'cname';
+    name.textContent = ch.name;
+    cell.appendChild(img);
+    cell.appendChild(name);
+    if(i !== FREE_POS && !punchedSet.has(i)){
+      cell.addEventListener('click', () => openConfirm(i));
+    }
+    board.appendChild(cell);
+  });
+  renderHistory();
+  applyReachHighlight();
+  updateReachInfo();
+}
+
+function renderHistory(){
+  const list = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty');
+  list.innerHTML = '';
+  if(history.length === 0){
+    const li = document.createElement('li');
+    li.className = 'history-empty';
+    li.textContent = 'まだ選択なし';
+    list.appendChild(li);
+    return;
+  }
+  history.forEach((idx, order) => {
+    const ch = boardChars[idx];
+    const li = document.createElement('li');
+    li.className = 'history-item';
+    li.innerHTML = `<span class="history-num">${order+1}</span>
+      <img class="history-img" src="${imgUrl(ch.id)}" alt="${ch.name}">
+      <span class="history-name">${ch.name}</span>
+      <button class="btn-cancel" data-hidx="${order}">取消</button>`;
+    list.appendChild(li);
+  });
+  list.querySelectorAll('.btn-cancel').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const hidx = parseInt(e.target.dataset.hidx);
+      cancelHistory(hidx);
+    });
+  });
+}
+
+function cancelHistory(orderIdx){
+  const idx = history[orderIdx];
+  history.splice(orderIdx, 1);
+  punchedSet.delete(idx);
+  bingoAlreadyShown = false;
+  render();
+  checkReach(true); // re-check silently after cancel
+}
+
+function openConfirm(idx){
+  pendingIdx = idx;
+  const ch = boardChars[idx];
+  document.getElementById('mc-img').src = imgUrl(ch.id);
+  document.getElementById('mc-name').textContent = ch.name;
+  document.getElementById('mc-latin').textContent = ch.latin;
+  document.getElementById('mc-memo').textContent = ch.memo;
+  document.getElementById('modal-confirm').classList.add('open');
+}
+
+document.getElementById('btn-ok').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('open');
+  if(pendingIdx === null) return;
+  punchedSet.add(pendingIdx);
+  history.push(pendingIdx);
+  pendingIdx = null;
+  render();
+  if(checkBingo()) return;
+  checkReach(false);
+});
+
+document.getElementById('btn-ng').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('open');
+  pendingIdx = null;
+});
+
+// ---- Reach / Bingo check ----
+function getReachLines(){
+  return LINES.filter(line => {
+    const punched = line.filter(i => punchedSet.has(i)).length;
+    const open = line.filter(i => !punchedSet.has(i)).length;
+    return punched === 4 && open === 1;
+  });
+}
+
+function getBingoLines(){
+  return LINES.filter(line => line.every(i => punchedSet.has(i)));
+}
+
+function applyReachHighlight(){
+  const board = document.getElementById('board');
+  board.querySelectorAll('.cell').forEach(c => {
+    c.classList.remove('reach-line');
+    c.classList.remove('bingo-line');
+  });
+  const blines = getBingoLines();
+  if(blines.length > 0){
+    blines.forEach(line => {
+      line.forEach(i => {
+        const cell = board.querySelector(`[data-idx="${i}"]`);
+        if(cell) cell.classList.add('bingo-line');
+      });
+    });
+    return;
+  }
+  const rlines = getReachLines();
+  rlines.forEach(line => {
+    line.forEach(i => {
+      const cell = board.querySelector(`[data-idx="${i}"]`);
+      if(cell) cell.classList.add('reach-line');
+    });
+  });
+}
+
+function updateReachInfo(){
+  const rcount = getReachLines().length;
+  const el = document.getElementById('reach-info');
+  if(rcount === 0){ el.textContent = 'まだリーチなし'; el.style.color = 'var(--muted)'; }
+  else if(rcount === 1){ el.textContent = '🔥 リーチ！'; el.style.color = 'var(--reach)'; }
+  else if(rcount === 2){ el.textContent = '🔥🔥 ダブルリーチ！'; el.style.color = 'var(--reach)'; }
+  else { el.textContent = `🔥×${rcount} ${rcount}重リーチ！`; el.style.color = 'var(--reach)'; }
+}
+
+function checkReach(silent){
+  const rlines = getReachLines();
+  const rcount = rlines.length;
+  if(!silent && rcount > 0 && rcount !== prevReachCount){
+    const titleMap = { 1:'リーチ！', 2:'ダブルリーチ！', 3:'トリプルリーチ！' };
+    const subMap = { 1:'あと1つでビンゴ', 2:'2方向でリーチ！', 3:'3方向でリーチ！' };
+    document.getElementById('reach-modal-title').textContent = titleMap[rcount] || `${rcount}重リーチ！`;
+    document.getElementById('reach-modal-sub').textContent = subMap[rcount] || `${rcount}方向でリーチ！`;
+    document.getElementById('modal-reach').classList.add('open');
+  }
+  prevReachCount = rcount;
+}
+
+function checkBingo(){
+  const blines = getBingoLines();
+  if(blines.length > 0 && !bingoAlreadyShown){
+    bingoAlreadyShown = true;
+    // サイドパネルをビンゴ表示に
+    const ri = document.getElementById('reach-info');
+    ri.textContent = '🎉 BINGO！主催者に声をかけて！';
+    ri.style.color = 'var(--gold)';
+    ri.style.fontSize = '0.85rem';
+    // ヘッダーバナー表示
+    document.getElementById('bingo-banner').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('modal-bingo').classList.add('open');
+    }, 150);
+    return true;
+  }
+  // ビンゴ済みでも盤面は維持
+  if(blines.length > 0 && bingoAlreadyShown){
+    return true;
+  }
+  return false;
+}
+
+document.getElementById('btn-reach-close').addEventListener('click', () => {
+  document.getElementById('modal-reach').classList.remove('open');
+});
+document.getElementById('btn-bingo-close').addEventListener('click', () => {
+  document.getElementById('modal-bingo').classList.remove('open');
+});
+
+// ---- Seed screen ----
+const seedInput = document.getElementById('seed-input');
+const btnStart = document.getElementById('btn-start');
+seedInput.addEventListener('input', () => {
+  btnStart.disabled = seedInput.value.trim() === '' || parseInt(seedInput.value) < 1;
+});
+seedInput.addEventListener('keydown', e => { if(e.key==='Enter' && !btnStart.disabled) startGame(); });
+btnStart.addEventListener('click', startGame);
+
+function startGame(){
+  const seed = parseInt(seedInput.value.trim());
+  if(!seed || seed < 1) return;
+  document.getElementById('seed-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+  document.getElementById('header-seed').textContent = `シード：${seed}`;
+  buildBoard(seed);
+}
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if(confirm('最初からやり直しますか？')) {
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('seed-screen').style.display = 'flex';
+    seedInput.value = '';
+    btnStart.disabled = true;
+  }
+});
+</script>
+</body>
+</html>
