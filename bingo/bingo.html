@@ -250,6 +250,16 @@ footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem
         <div class="panel-title">📢 リーチ状況</div>
         <div class="reach-info" id="reach-info">まだリーチなし</div>
       </div>
+      <div class="panel-box" id="free-char-box" style="display:none">
+        <div class="panel-title">⭐ FREEキャラ</div>
+        <div id="free-char-info" style="display:flex;align-items:center;gap:6px;font-size:0.75rem;cursor:pointer" onclick="openLearn(12)">
+          <img id="free-char-img" src="" alt="" style="width:32px;height:32px;object-fit:contain;flex-shrink:0">
+          <div>
+            <div id="free-char-name" style="font-weight:700;color:var(--primary)"></div>
+            <div id="free-char-badge" class="gbadge" style="margin-top:2px"></div>
+          </div>
+        </div>
+      </div>
       <div class="panel-box">
         <div class="panel-title">📋 選んだキャラ（順番）</div>
         <ul class="history-list" id="history-list">
@@ -424,6 +434,10 @@ const LINES = [
   [0,6,12,18,24],[4,8,12,16,20]
 ];
 
+function isGameWon(){
+  return bingoAlreadyShown || specialShownGroups.size > 0;
+}
+
 function buildBoard(seed){
   // Each participant gets unique card: seed = participant's own number
   // Use seed to pick+shuffle 25 from 32
@@ -436,6 +450,14 @@ function buildBoard(seed){
   specialShownGroups = new Set();
   prevReachCount = 0;
   document.getElementById('bingo-banner').classList.remove('show');
+  // FREEキャラをサイドパネルに表示
+  const freeCh = boardChars[FREE_POS];
+  document.getElementById('free-char-img').src = imgUrl(freeCh.id);
+  document.getElementById('free-char-name').textContent = freeCh.name;
+  const fb = document.getElementById('free-char-badge');
+  fb.textContent = freeCh.gbadge;
+  fb.className = 'gbadge ' + groupBadgeClass(freeCh.group);
+  document.getElementById('free-char-box').style.display = 'block';
   render();
 }
 
@@ -461,11 +483,16 @@ function render(){
     cell.appendChild(img);
     cell.appendChild(name);
     if(i === FREE_POS){
-      // FREE: 何もしない
+      cell.addEventListener('click', () => openLearn(FREE_POS));
     } else if(punchedSet.has(i)){
       cell.addEventListener('click', () => openLearn(i));
     } else {
-      cell.addEventListener('click', () => openConfirm(i));
+      if(!isGameWon()){
+        cell.addEventListener('click', () => openConfirm(i));
+      } else {
+        cell.style.cursor = 'default';
+        cell.style.opacity = '0.55';
+      }
     }
     board.appendChild(cell);
   });
@@ -508,9 +535,28 @@ function cancelHistory(orderIdx){
   const idx = history[orderIdx];
   history.splice(orderIdx, 1);
   punchedSet.delete(idx);
-  bingoAlreadyShown = false;
+  // 通常ビンゴが解消されたか再チェック
+  const stillBingo = LINES.some(function(line){ return line.every(function(j){ return punchedSet.has(j); }); });
+  bingoAlreadyShown = stillBingo;
+  // スペシャルビンゴも再評価（閾値を下回ったグループを解除）
+  for(var gkey in GROUP_IDS){
+    if(!specialShownGroups.has(gkey)) continue;
+    var gids = GROUP_IDS[gkey];
+    var cardGroupIdxs = boardChars.map(function(ch,j){ return gids.has(ch.id) ? j : -1; }).filter(function(j){ return j >= 0; });
+    var total = cardGroupIdxs.length;
+    var threshold = Math.min(5, total);
+    var punchedCount = cardGroupIdxs.filter(function(j){ return punchedSet.has(j); }).length;
+    if(punchedCount < threshold) specialShownGroups.delete(gkey);
+  }
+  // どちらのビンゴも解消されたらバナーを消す
+  if(!bingoAlreadyShown && specialShownGroups.size === 0){
+    document.getElementById('bingo-banner').classList.remove('show');
+    var ri = document.getElementById('reach-info');
+    ri.style.color = '';
+    ri.style.fontSize = '';
+  }
   render();
-  checkReach(true); // re-check silently after cancel
+  checkReach(true);
 }
 
 function groupBadgeClass(group){
@@ -551,10 +597,30 @@ document.getElementById('btn-ok').addEventListener('click', () => {
   punchedSet.add(pendingIdx);
   history.push(pendingIdx);
   pendingIdx = null;
+  // フラグだけ先に更新（render内のisGameWon()に反映させる）
+  var bingo = updateBingoFlags();
+  // フラグが確定した状態でrender（未穴あけセルのロックが反映される）
   render();
-  if(checkBingo()) return;
-  checkSpecialBingo();
-  checkReach(false);
+  // モーダル表示はrender後
+  if(bingo === 'bingo'){
+    const ri = document.getElementById('reach-info');
+    ri.textContent = '🎉 BINGO！主催者に声をかけて！';
+    ri.style.color = 'var(--gold)';
+    ri.style.fontSize = '0.85rem';
+    document.getElementById('bingo-banner').classList.add('show');
+    setTimeout(() => { document.getElementById('modal-bingo').classList.add('open'); }, 150);
+  } else if(bingo && bingo.startsWith('special:')){
+    const gkey = bingo.split(':')[1];
+    const info = GROUP_INFO[gkey];
+    const ri = document.getElementById('reach-info');
+    ri.textContent = '🎊 ' + info.label + '！';
+    ri.style.color = info.color;
+    ri.style.fontSize = '0.85rem';
+    document.getElementById('bingo-banner').classList.add('show');
+    document.getElementById('modal-special').classList.add('open');
+  } else {
+    checkReach(false);
+  }
 });
 
 document.getElementById('btn-ng').addEventListener('click', () => {
@@ -601,6 +667,7 @@ function applyReachHighlight(){
 }
 
 function updateReachInfo(){
+  if(isGameWon()) return;  // ビンゴ・スペシャル成立中は上書きしない
   const rcount = getReachLines().length;
   const el = document.getElementById('reach-info');
   if(rcount === 0){ el.textContent = 'まだリーチなし'; el.style.color = 'var(--muted)'; }
@@ -623,15 +690,32 @@ function checkReach(silent){
 }
 
 function checkSpecialBingo(){
-  // カード内で該当グループを5体以上穴あけしたら成立
+  const r = updateBingoFlags();
+  return r && r.startsWith('special:');
+}
+document.getElementById('btn-special-close').addEventListener('click', () => {
+  document.getElementById('modal-special').classList.remove('open');
+});
+
+// フラグだけ更新して結果を返す（UI表示はしない）
+// 戻り値: 'bingo' | 'special' | null
+function updateBingoFlags(){
+  // 通常ビンゴ
+  const blines = getBingoLines();
+  if(blines.length > 0 && !bingoAlreadyShown){
+    bingoAlreadyShown = true;
+    return 'bingo';
+  }
+  if(bingoAlreadyShown) return 'bingo';
+  // スペシャルビンゴ
   for(const [gkey, gids] of Object.entries(GROUP_IDS)){
     if(specialShownGroups.has(gkey)) continue;
     const cardGroupIdxs = boardChars
       .map((ch, i) => gids.has(ch.id) ? i : -1)
       .filter(i => i >= 0);
     const total = cardGroupIdxs.length;
-    if(total < 3) continue;  // 3体未満は対象外
-    const threshold = Math.min(5, total);  // 5体 or カード内全体数（少ない方）
+    if(total < 3) continue;
+    const threshold = Math.min(5, total);
     const punchedCount = cardGroupIdxs.filter(i => punchedSet.has(i)).length;
     if(punchedCount >= threshold){
       specialShownGroups.add(gkey);
@@ -639,38 +723,27 @@ function checkSpecialBingo(){
       document.getElementById('sp-emoji').textContent = info.emoji;
       document.getElementById('sp-role').textContent = info.label;
       document.getElementById('sp-sub').textContent = info.desc + ' 主催者に声をかけてください！';
-      document.getElementById('modal-special').classList.add('open');
-      // バナーも表示
-      document.getElementById('bingo-banner').classList.add('show');
-      const ri = document.getElementById('reach-info');
-      ri.textContent = '🎊 ' + info.label + '！';
-      ri.style.color = info.color;
-      return true;
+      return 'special:' + gkey;
     }
   }
-  return false;
+  if(specialShownGroups.size > 0) return 'special:' + [...specialShownGroups].slice(-1)[0];
+  return null;
 }
-document.getElementById('btn-special-close').addEventListener('click', () => {
-  document.getElementById('modal-special').classList.remove('open');
-});
 
 function checkBingo(){
   const blines = getBingoLines();
   if(blines.length > 0 && !bingoAlreadyShown){
     bingoAlreadyShown = true;
-    // サイドパネルをビンゴ表示に
     const ri = document.getElementById('reach-info');
     ri.textContent = '🎉 BINGO！主催者に声をかけて！';
     ri.style.color = 'var(--gold)';
     ri.style.fontSize = '0.85rem';
-    // ヘッダーバナー表示
     document.getElementById('bingo-banner').classList.add('show');
     setTimeout(() => {
       document.getElementById('modal-bingo').classList.add('open');
     }, 150);
     return true;
   }
-  // ビンゴ済みでも盤面は維持
   if(blines.length > 0 && bingoAlreadyShown){
     return true;
   }
