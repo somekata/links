@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ゲーミフィケーションの部屋 2026</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0a0a14;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'BIZ UDPGothic', 'Meiryo', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Slideshow container ── */
+    .slideshow-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 720px;
+      /* 4:5 aspect ratio for the uploaded images */
+      aspect-ratio: 720 / 1050;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 0 60px rgba(0, 200, 255, 0.25), 0 0 120px rgba(255, 0, 100, 0.15);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.8s ease-in-out;
+      pointer-events: none;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ── Dot indicators ── */
+    .dots {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+      border: none;
+    }
+
+    .dot.active {
+      background: #00cfff;
+      transform: scale(1.4);
+      box-shadow: 0 0 8px #00cfff;
+    }
+
+    /* ── Prev / Next arrows ── */
+    .arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.45);
+      border: 1.5px solid rgba(255,255,255,0.25);
+      color: #fff;
+      font-size: 22px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: background 0.2s, border-color 0.2s;
+      user-select: none;
+    }
+
+    .arrow:hover {
+      background: rgba(0, 207, 255, 0.35);
+      border-color: #00cfff;
+    }
+
+    .arrow-prev { left: 10px; }
+    .arrow-next { right: 10px; }
+
+    /* ── Progress bar ── */
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #00cfff, #ff4ea0);
+      width: 0%;
+      transition: width linear;
+      z-index: 5;
+    }
+
+    /* ── Slide counter ── */
+    .counter {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: rgba(0,0,0,0.5);
+      color: rgba(255,255,255,0.75);
+      font-size: 12px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      z-index: 10;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Go! Ripple overlay ── */
+    .go-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 20;
+      gap: 0;
+    }
+
+    /* Each ripple ring is a separate element animated with a staggered delay */
+    .go-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      gap: 6px;
+    }
+
+    .go-ring.firing {
+      animation: goRipple 1.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    }
+
+    .go-ring:nth-child(2).firing { animation-delay: 0.28s; }
+    .go-ring:nth-child(3).firing { animation-delay: 0.56s; }
+
+    @keyframes goRipple {
+      0%   { opacity: 0;    transform: scale(0.55); }
+      18%  { opacity: 1;    transform: scale(1.0);  }
+      55%  { opacity: 0.82; transform: scale(1.08); }
+      100% { opacity: 0;    transform: scale(1.45); }
+    }
+
+    .go-line1 {
+      font-family: 'BIZ UDPGothic', 'Meiryo', sans-serif;
+      font-weight: 900;
+      font-size: clamp(14px, 3.8vw, 28px);
+      letter-spacing: 0.06em;
+      color: #fff;
+      text-shadow:
+        0 0 12px rgba(0, 207, 255, 0.9),
+        0 0 28px rgba(0, 207, 255, 0.6),
+        2px 2px 4px rgba(0,0,0,0.9);
+      white-space: nowrap;
+      line-height: 1.25;
+    }
+
+    .go-line2 {
+      font-family: 'BIZ UDPGothic', 'Meiryo', sans-serif;
+      font-weight: 900;
+      font-size: clamp(22px, 7vw, 52px);
+      letter-spacing: 0.05em;
+      color: #00cfff;
+      text-shadow:
+        0 0 16px rgba(0, 207, 255, 1),
+        0 0 40px rgba(0, 207, 255, 0.7),
+        0 0 70px rgba(0, 207, 255, 0.4),
+        2px 2px 6px rgba(0,0,0,0.95);
+      white-space: nowrap;
+      line-height: 1.1;
+    }
+
+    /* The semi-transparent backdrop that briefly flashes */
+    .go-ring::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center,
+        rgba(0, 20, 40, 0.55) 0%,
+        rgba(0, 10, 20, 0.0) 70%);
+      border-radius: inherit;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 24px;
+      max-width: 720px;
+      width: 100%;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 11px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 740px) {
+      .slideshow-wrap {
+        border-radius: 0;
+        max-width: 100vw;
+      }
+      footer {
+        border-radius: 0;
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="slideshow-wrap" id="slideshow">
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- Slide counter -->
+    <div class="counter" id="counter">1 / 4</div>
+
+    <!-- Slides -->
+    <div class="slide active" data-index="0">
+      <img src="スライド1.PNG" alt="ゲーミフィケーションの部屋 スライド1 — SAVIOR RESURGENCE">
+    </div>
+    <div class="slide" data-index="1">
+      <img src="スライド2.PNG" alt="ゲーミフィケーションの部屋 スライド2 — AMR スーパーバグ">
+    </div>
+    <div class="slide" data-index="2">
+      <img src="スライド3.PNG" alt="ゲーミフィケーションの部屋 スライド3 — 救世主降臨">
+    </div>
+    <div class="slide" data-index="3">
+      <img src="スライド4.PNG" alt="ゲーミフィケーションの部屋 スライド4 — FIVE MOMENTS">
+    </div>
+
+    <!-- Go! Ripple overlay -->
+    <div class="go-overlay" id="goOverlay">
+      <div class="go-ring">
+        <span class="go-line1">パシフィコ横浜ノース</span>
+        <span class="go-line2">3F G320 へ Go!</span>
+      </div>
+      <div class="go-ring">
+        <span class="go-line1">パシフィコ横浜ノース</span>
+        <span class="go-line2">3F G320 へ Go!</span>
+      </div>
+      <div class="go-ring">
+        <span class="go-line1">パシフィコ横浜ノース</span>
+        <span class="go-line2">3F G320 へ Go!</span>
+      </div>
+    </div>
+
+    <!-- Arrows -->
+    <button class="arrow arrow-prev" id="btnPrev" aria-label="前へ">&#8249;</button>
+    <button class="arrow arrow-next" id="btnNext" aria-label="次へ">&#8250;</button>
+  </div>
+
+  <!-- Dots -->
+  <div class="dots" id="dots">
+    <button class="dot active" data-index="0" aria-label="スライド1"></button>
+    <button class="dot"        data-index="1" aria-label="スライド2"></button>
+    <button class="dot"        data-index="2" aria-label="スライド3"></button>
+    <button class="dot"        data-index="3" aria-label="スライド4"></button>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    本ページは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+
+  <script>
+    const INTERVAL   = 5000; // 自動切替間隔 (ms)
+    const TRANSITION = 800;  // fade時間 (ms)、CSS の transition と合わせる
+
+    const slides      = Array.from(document.querySelectorAll('.slide'));
+    const dots        = Array.from(document.querySelectorAll('.dot'));
+    const counterEl   = document.getElementById('counter');
+    const progressBar = document.getElementById('progressBar');
+    const btnPrev     = document.getElementById('btnPrev');
+    const btnNext     = document.getElementById('btnNext');
+
+    let current   = 0;
+    let timer     = null;
+    let progTimer = null;
+    const total   = slides.length;
+
+    function goTo(index) {
+      // Remove active from current
+      slides[current].classList.remove('active');
+      dots[current].classList.remove('active');
+
+      // Update index
+      current = (index + total) % total;
+
+      // Add active to new
+      slides[current].classList.add('active');
+      dots[current].classList.add('active');
+
+      // Update counter
+      counterEl.textContent = `${current + 1} / ${total}`;
+
+      // Restart progress animation
+      startProgress();
+      // Restart Go ripple for new slide
+      scheduleGo(900);
+    }
+
+    function next() { goTo(current + 1); }
+    function prev() { goTo(current - 1); }
+
+    // ── Auto advance ──
+    function startAuto() {
+      clearInterval(timer);
+      timer = setInterval(next, INTERVAL);
+    }
+
+    function stopAuto() {
+      clearInterval(timer);
+      clearTimeout(progTimer);
+    }
+
+    // Pause on hover, resume on leave
+    const ss = document.getElementById('slideshow');
+    ss.addEventListener('mouseenter', () => { stopAuto(); cancelGo(); progressBar.style.transition = 'none'; progressBar.style.width = '0%'; });
+    ss.addEventListener('mouseleave', () => { startAuto(); startProgress(); scheduleGo(600); });
+
+    // ── Progress bar ──
+    function startProgress() {
+      clearTimeout(progTimer);
+      progressBar.style.transition = 'none';
+      progressBar.style.width = '0%';
+
+      // Force reflow so the transition resets
+      void progressBar.offsetWidth;
+
+      progressBar.style.transition = `width ${INTERVAL}ms linear`;
+      progressBar.style.width = '100%';
+
+      // Reset after interval
+      progTimer = setTimeout(() => {
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+      }, INTERVAL);
+    }
+
+    // ── Button / dot listeners ──
+    btnNext.addEventListener('click', () => { stopAuto(); next(); startAuto(); });
+    btnPrev.addEventListener('click', () => { stopAuto(); prev(); startAuto(); });
+
+    dots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        stopAuto();
+        goTo(parseInt(dot.dataset.index));
+        startAuto();
+      });
+    });
+
+    // ── Touch swipe ──
+    let touchStartX = null;
+    ss.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+    ss.addEventListener('touchend', e => {
+      if (touchStartX === null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 40) {
+        stopAuto();
+        dx < 0 ? next() : prev();
+        startAuto();
+      }
+      touchStartX = null;
+    }, { passive: true });
+
+    // ── Keyboard ──
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') { stopAuto(); next(); startAuto(); }
+      if (e.key === 'ArrowLeft')  { stopAuto(); prev(); startAuto(); }
+    });
+
+    // ── Go! Ripple ──
+    const goRings   = Array.from(document.querySelectorAll('.go-ring'));
+    let   goTimer   = null;
+
+    function fireGo() {
+      // Remove any lingering animation classes
+      goRings.forEach(r => {
+        r.classList.remove('firing');
+        void r.offsetWidth; // reflow
+      });
+      // Add firing class → triggers staggered CSS keyframe
+      goRings.forEach(r => r.classList.add('firing'));
+    }
+
+    function scheduleGo(delayFirst = 1500) {
+      clearTimeout(goTimer);
+      // First burst after delayFirst, then repeats every 2.8s within the slide
+      goTimer = setTimeout(function repeat() {
+        fireGo();
+        goTimer = setTimeout(repeat, 2800);
+      }, delayFirst);
+    }
+
+    function cancelGo() {
+      clearTimeout(goTimer);
+      goRings.forEach(r => r.classList.remove('firing'));
+    }
+
+    // ── Init ──
+    startAuto();
+    startProgress();
+    scheduleGo(1200);
+  </script>
+</body>
+</html>
