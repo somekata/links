@@ -259,6 +259,7 @@ footer{text-align:center;font-size:0.7rem;color:var(--muted);padding:1.5rem 1rem
             <div id="free-char-badge" class="gbadge" style="margin-top:2px"></div>
           </div>
         </div>
+        <div id="myhand-desc" style="margin-top:0.5rem;padding:0.4rem 0.5rem;background:var(--bg2);border-radius:6px;font-size:0.72rem;color:var(--text);line-height:1.5;border-left:3px solid var(--gold);white-space:pre-line"></div>
       </div>
       <div class="panel-box">
         <div class="panel-title">📋 選んだキャラ（順番）</div>
@@ -413,10 +414,10 @@ const GROUP_IDS = {
   atyp:   new Set([3,4,13,14,16,17]),
 };
 const GROUP_INFO = {
-  pos:    { label:"オール陽性 🧫",  emoji:"🧫", desc:"カード内のグラム陽性菌を5体穴あけ！",    color:"var(--primary)" },
-  neg:    { label:"オール陰性 🦠",  emoji:"🦠", desc:"カード内のグラム陰性菌を5体穴あけ！",    color:"var(--accent)"  },
-  fungus: { label:"オール真菌 🍄",  emoji:"🍄", desc:"カード内の真菌を5体穴あけ！",            color:"#7a3fa0"        },
-  atyp:   { label:"オール非定型 🔬",emoji:"🔬", desc:"カード内の非定型・抗酸菌を5体穴あけ！",  color:"var(--green)"   },
+  pos:    { label:"オール陽性 🧫",  emoji:"🧫", text:"グラム陽性菌", desc:"カード内のグラム陽性菌を5体穴あけ！",    color:"var(--primary)" },
+  neg:    { label:"オール陰性 🦠",  emoji:"🦠", text:"グラム陰性菌", desc:"カード内のグラム陰性菌を5体穴あけ！",    color:"var(--accent)"  },
+  fungus: { label:"オール真菌 🍄",  emoji:"🍄", text:"真菌",        desc:"カード内の真菌を5体穴あけ！",            color:"#7a3fa0"        },
+  atyp:   { label:"オール非定型 🔬",emoji:"🔬", text:"非定型・抗酸菌",desc:"カード内の非定型・抗酸菌を5体穴あけ！",color:"var(--green)"   },
 };
 
 // ---- State ----
@@ -439,11 +440,56 @@ function isGameWon(){
 }
 
 function buildBoard(seed){
-  // Each participant gets unique card: seed = participant's own number
-  // Use seed to pick+shuffle 25 from 32
-  const rand = mulberry32(seed);
-  const shuffled = seededShuffle(CHARS, seed);
-  boardChars = shuffled.slice(0, 25);
+  // 制約付き選択：各グループFREE含めて最低6体保証
+  //
+  // 配分: FREE(1) + FREEグループ残り(5) + 他3グループ各6体(18) + pool(1) = 25体
+  // → 全グループFREE含め最低6体が数学的に保証される
+
+  // 1. シード由来のシャッフルでグループ別リスト作成
+  const allShuffled = seededShuffle(CHARS, seed);
+  const byGroup = { pos:[], neg:[], fungus:[], atyp:[] };
+  allShuffled.forEach(ch => { if(byGroup[ch.group]) byGroup[ch.group].push(ch); });
+
+  // 2. FREEキャラ決定（allShuffled[0]）
+  const freeChar = allShuffled[0];
+  const freeGroup = freeChar.group;
+  const usedIds = new Set([freeChar.id]);
+
+  // 3. FREEグループから残り5体を必須選択
+  const mandatory = [];
+  let cnt = 0;
+  for(const ch of byGroup[freeGroup]){
+    if(usedIds.has(ch.id)) continue;
+    mandatory.push(ch); usedIds.add(ch.id);
+    if(++cnt >= 5) break;
+  }
+
+  // 4. 他3グループから各6体を必須選択
+  for(const g of Object.keys(byGroup)){
+    if(g === freeGroup) continue;
+    let cnt2 = 0;
+    for(const ch of byGroup[g]){
+      if(usedIds.has(ch.id)) continue;
+      mandatory.push(ch); usedIds.add(ch.id);
+      if(++cnt2 >= 6) break;
+    }
+  }
+  // 合計: 5 + 6*3 = 23体
+
+  // 5. 残り1体をpoolから選択（未使用キャラから）
+  const pool = allShuffled.filter(ch => !usedIds.has(ch.id)).slice(0, 1);
+
+  // 6. 25体を組み立てて配置シャッフル
+  const selected = [freeChar, ...mandatory, ...pool]; // 1+23+1=25体
+  const placed = seededShuffle(selected, seed + 1);
+
+  // 7. FREEキャラを中央(FREE_POS=12)に固定
+  const freeIdx = placed.findIndex(ch => ch.id === freeChar.id);
+  if(freeIdx !== FREE_POS){
+    [placed[freeIdx], placed[FREE_POS]] = [placed[FREE_POS], placed[freeIdx]];
+  }
+
+  boardChars = placed;
   punchedSet = new Set([FREE_POS]);
   history = [];
   bingoAlreadyShown = false;
@@ -458,6 +504,13 @@ function buildBoard(seed){
   fb.textContent = freeCh.gbadge;
   fb.className = 'gbadge ' + groupBadgeClass(freeCh.group);
   document.getElementById('free-char-box').style.display = 'block';
+  // マイハンド説明文
+  const myHandInfo = GROUP_INFO[freeCh.group];
+  const myHandGids = GROUP_IDS[freeCh.group];
+  const myHandCount = boardChars.filter(ch => myHandGids.has(ch.id)).length;
+  document.getElementById('myhand-desc').textContent =
+    'マイハンド：' + myHandInfo.label.replace(/\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim() +
+    '（' + myHandInfo.text + '5体でスペシャルビンゴ）';
   render();
 }
 
@@ -538,15 +591,13 @@ function cancelHistory(orderIdx){
   // 通常ビンゴが解消されたか再チェック
   const stillBingo = LINES.some(function(line){ return line.every(function(j){ return punchedSet.has(j); }); });
   bingoAlreadyShown = stillBingo;
-  // スペシャルビンゴも再評価（閾値を下回ったグループを解除）
-  for(var gkey in GROUP_IDS){
-    if(!specialShownGroups.has(gkey)) continue;
-    var gids = GROUP_IDS[gkey];
+  // スペシャルビンゴ再評価（マイハンドのみ・5体を下回ったら解除）
+  var myHandGroup = boardChars[FREE_POS].group;
+  if(specialShownGroups.has(myHandGroup)){
+    var gids = GROUP_IDS[myHandGroup];
     var cardGroupIdxs = boardChars.map(function(ch,j){ return gids.has(ch.id) ? j : -1; }).filter(function(j){ return j >= 0; });
-    var total = cardGroupIdxs.length;
-    var threshold = Math.min(5, total);
     var punchedCount = cardGroupIdxs.filter(function(j){ return punchedSet.has(j); }).length;
-    if(punchedCount < threshold) specialShownGroups.delete(gkey);
+    if(punchedCount < 5) specialShownGroups.delete(myHandGroup);
   }
   // どちらのビンゴも解消されたらバナーを消す
   if(!bingoAlreadyShown && specialShownGroups.size === 0){
@@ -707,23 +758,21 @@ function updateBingoFlags(){
     return 'bingo';
   }
   if(bingoAlreadyShown) return 'bingo';
-  // スペシャルビンゴ
-  for(const [gkey, gids] of Object.entries(GROUP_IDS)){
-    if(specialShownGroups.has(gkey)) continue;
+  // スペシャルビンゴ：マイハンド（FREEキャラのグループ）のみ・5体で成立
+  const myHandGroup = boardChars[FREE_POS].group;
+  if(!specialShownGroups.has(myHandGroup)){
+    const gids = GROUP_IDS[myHandGroup];
     const cardGroupIdxs = boardChars
       .map((ch, i) => gids.has(ch.id) ? i : -1)
       .filter(i => i >= 0);
-    const total = cardGroupIdxs.length;
-    if(total < 3) continue;
-    const threshold = Math.min(5, total);
     const punchedCount = cardGroupIdxs.filter(i => punchedSet.has(i)).length;
-    if(punchedCount >= threshold){
-      specialShownGroups.add(gkey);
-      const info = GROUP_INFO[gkey];
+    if(punchedCount >= 5){
+      specialShownGroups.add(myHandGroup);
+      const info = GROUP_INFO[myHandGroup];
       document.getElementById('sp-emoji').textContent = info.emoji;
       document.getElementById('sp-role').textContent = info.label;
       document.getElementById('sp-sub').textContent = info.desc + ' 主催者に声をかけてください！';
-      return 'special:' + gkey;
+      return 'special:' + myHandGroup;
     }
   }
   if(specialShownGroups.size > 0) return 'special:' + [...specialShownGroups].slice(-1)[0];
