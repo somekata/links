@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>qPCR 診断シミュレーター</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+JP:wght@400;700&display=swap');
+:root{
+  --bg:#0d1018; --machine:#21252c; --screen:#070a10;
+  --border:#1a2535; --border2:#253040;
+  --green:#00e676; --green-dim:#003d1a; --green-glow:rgba(0,230,118,.35);
+  --amber:#ffab40; --amber-dim:#3a2500;
+  --blue:#40c4ff; --blue-dim:#0a2535;
+  --red:#ff5252; --red-dim:#3a0808;
+  --purple:#ce93d8; --purple-dim:#2a1035;
+  --text:#8099b0; --dim:#3a4858;
+  --mono:'Share Tech Mono',monospace;
+  --sans:'Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:radial-gradient(ellipse at 30% 20%,#101520 0%,#08090d 100%);
+  min-height:100vh;font-family:var(--sans);color:#b0c0d0;
+  display:flex;flex-direction:column;align-items:center;padding:14px 8px 0;
+}
+
+/* ======= モーダル ======= */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.82);
+  display:flex;align-items:center;justify-content:center;z-index:100;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.hidden{display:none}
+.modal{
+  background:linear-gradient(160deg,#1a2030 0%,#10151e 100%);
+  border:1px solid #253545;border-radius:14px;width:94%;max-width:480px;
+  padding:24px;box-shadow:0 30px 80px rgba(0,0,0,.8),0 0 0 1px #0a1020;
+}
+.modal-title{
+  font-family:var(--mono);font-size:14px;color:var(--blue);
+  letter-spacing:2px;margin-bottom:18px;padding-bottom:10px;
+  border-bottom:1px solid #1a2535;
+}
+.modal-title span{color:var(--dim);font-size:11px;margin-left:8px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;display:block}
+.form-input{
+  width:100%;background:#0a1020;border:1px solid #1e2f45;border-radius:6px;
+  padding:9px 12px;font-family:var(--mono);font-size:13px;color:#90b0c0;
+  outline:none;transition:border-color .2s;
+}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(64,196,255,.12)}
+.form-input::placeholder{color:#253545}
+.modal-btn{
+  width:100%;margin-top:6px;padding:11px;
+  background:linear-gradient(180deg,#0f3020 0%,#081e12 100%);
+  border:1px solid #1e5030;border-radius:7px;
+  font-family:var(--mono);font-size:13px;color:var(--green);
+  cursor:pointer;letter-spacing:2px;transition:all .15s;
+  box-shadow:0 0 10px rgba(0,230,118,.08);
+}
+.modal-btn:hover{background:linear-gradient(180deg,#133828 0%,#0a2518 100%);box-shadow:0 0 14px rgba(0,230,118,.15)}
+
+/* ======= 筐体 ======= */
+.machine{
+  width:100%;max-width:760px;
+  background:linear-gradient(160deg,#2e333c 0%,#1e2228 60%,#181b20 100%);
+  border-radius:16px 16px 10px 10px;padding:18px 18px 14px;
+  box-shadow:0 28px 70px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.06),inset 0 -1px 0 rgba(0,0,0,.4);
+  border:1px solid #353c48;
+}
+.brand-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.brand-l .brand-name{font-size:11px;font-weight:700;letter-spacing:2px;color:#505868;text-transform:uppercase}
+.brand-l .model-name{font-size:9px;color:#363e4a;letter-spacing:1px;margin-top:2px}
+.patient-badge{
+  font-family:var(--mono);font-size:10px;color:#3a5060;
+  background:#0a1520;border:1px solid #1a2535;border-radius:5px;
+  padding:4px 10px;max-width:240px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.patient-badge span{color:var(--blue)}
+.led-row{display:flex;gap:6px;align-items:center}
+.led{width:8px;height:8px;border-radius:50%;transition:all .3s}
+.led.g{background:#0d1e10}.led.g.on{background:var(--green);box-shadow:0 0 7px var(--green),0 0 14px var(--green-glow)}
+.led.a{background:#2a1a00}.led.a.on{background:var(--amber);box-shadow:0 0 7px var(--amber);animation:blink .7s ease-in-out infinite alternate}
+.led.r{background:#1e0808}.led.r.on{background:var(--red);box-shadow:0 0 7px var(--red)}
+@keyframes blink{from{opacity:.4}to{opacity:1}}
+
+/* ======= スクリーン ======= */
+.screen-wrap{
+  background:#080c12;border-radius:10px;padding:3px;margin-bottom:14px;
+  box-shadow:inset 0 0 22px rgba(0,0,0,.9),0 0 0 1px #060809,0 0 0 2px #1e2838;
+}
+.screen{background:var(--screen);border-radius:8px;min-height:320px;position:relative;overflow:hidden}
+.screen::before{
+  content:'';position:absolute;inset:0;pointer-events:none;border-radius:8px;z-index:5;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,200,100,.01) 3px,rgba(0,200,100,.01) 4px);
+}
+.panel{display:none;padding:14px}
+.panel.active{display:block}
+
+/* ======= ① 検出法選択 ======= */
+.method-title{
+  font-family:var(--mono);font-size:13px;color:var(--blue);letter-spacing:2px;
+  border-bottom:1px solid #0d1a28;padding-bottom:9px;margin-bottom:14px;
+}
+.method-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.method-card{
+  border:1px solid var(--border);border-radius:9px;padding:14px 14px 12px;
+  cursor:pointer;background:#090f1c;transition:all .15s;position:relative;overflow:hidden;
+}
+.method-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:transparent;transition:all .2s;
+}
+.method-card.sel-inter::after{background:var(--green);box-shadow:0 0 8px var(--green)}
+.method-card.sel-taqman::after{background:linear-gradient(90deg,var(--green),#29b6f6,var(--amber),var(--red));box-shadow:0 2px 8px rgba(255,171,64,.3)}
+.method-card:hover:not(.sel-inter):not(.sel-taqman){background:#0c1525;border-color:var(--border2)}
+.method-card.sel-inter,.method-card.sel-taqman{border-color:#2a4050;background:#0a141c}
+.method-icon{font-size:24px;margin-bottom:6px}
+.method-name{font-family:var(--mono);font-size:13px;color:var(--text);margin-bottom:4px}
+.method-card.sel-inter .method-name{color:var(--green)}
+.method-card.sel-taqman .method-name{color:var(--blue)}
+.method-sub{font-size:10px;color:var(--dim);line-height:1.5}
+.method-badge{
+  display:inline-block;font-family:var(--mono);font-size:9px;margin-top:6px;
+  padding:2px 7px;border-radius:3px;
+}
+.method-badge.green{background:var(--green-dim);color:var(--green);border:1px solid #005530}
+.method-badge.multi{background:#0a1530;color:var(--blue);border:1px solid #1a3050}
+
+/* ======= チャンネル設定（TaqMan）======= */
+.ch-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.ch-card{
+  background:#090f1c;border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;position:relative;
+}
+.ch-card.disabled{opacity:.35;pointer-events:none}
+.ch-header{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.ch-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ch-label{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.ch-enable{accent-color:var(--green);cursor:pointer;margin-left:auto}
+.ch-input{
+  width:100%;background:#060d18;border:1px solid #162030;border-radius:5px;
+  padding:6px 8px;font-size:11px;color:#7090a8;outline:none;
+  transition:border-color .2s;
+}
+.ch-input:focus{border-color:#203a55;color:#90b0c0}
+.ch-input::placeholder{color:#1e2f3f}
+
+/* ======= サンプル設定 ======= */
+.sample-count-row{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+  background:#090f1c;border:1px solid var(--border);border-radius:7px;padding:10px 14px;
+}
+.sample-count-label{font-size:12px;color:var(--dim);flex:1}
+.count-btns{display:flex;gap:5px}
+.cnt-btn{
+  width:28px;height:28px;background:#0f1a28;border:1px solid #1e3040;
+  border-radius:5px;color:#5a7080;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .12s;
+}
+.cnt-btn:hover{background:#162535;color:var(--green)}
+.cnt-btn:active{transform:scale(.9)}
+.count-val{font-family:var(--mono);font-size:18px;color:var(--amber);min-width:24px;text-align:center}
+.sample-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.sample-card{
+  background:#090f1c;border:1px solid var(--border);border-radius:7px;
+  padding:9px 12px;display:flex;align-items:center;gap:8px;
+}
+.sample-card.inactive{opacity:.3;pointer-events:none}
+.sample-num{
+  font-family:var(--mono);font-size:11px;color:var(--dim);
+  background:#0c1825;border:1px solid #1a2f45;border-radius:4px;
+  padding:3px 7px;flex-shrink:0;
+}
+.sample-name-input{
+  flex:1;background:transparent;border:none;border-bottom:1px solid #1a2535;
+  padding:3px 2px;font-family:var(--mono);font-size:12px;color:#80a0b8;
+  outline:none;transition:border-color .2s;
+}
+.sample-name-input:focus{border-color:#2a4560;color:#a0c0d0}
+
+/* ======= パラメータ ======= */
+.param-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.param-title{font-family:var(--mono);font-size:12px;color:var(--blue);letter-spacing:2px}
+.prog-sel{
+  font-family:var(--mono);font-size:11px;background:#0a1520;
+  border:1px solid #1e2f45;color:#4a7080;border-radius:4px;
+  padding:4px 8px;cursor:pointer;outline:none;
+}
+.step-tabs{display:flex;gap:4px;margin-bottom:9px;flex-wrap:wrap}
+.step-tab{
+  font-family:var(--mono);font-size:10px;padding:4px 9px;
+  background:#0c1520;border:1px solid var(--border);border-radius:4px;
+  color:#2e4558;cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.step-tab.active{background:#071510;border-color:var(--green);color:var(--green);text-shadow:0 0 5px var(--green-glow)}
+.step-tab:hover:not(.active){background:#0f1e30;color:#4a6070}
+.param-grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
+.param-card{background:#0a1520;border:1px solid var(--border);border-radius:7px;padding:9px 11px}
+.param-label{font-size:9px;color:#253545;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+.param-row{display:flex;align-items:center;gap:6px}
+.param-val{font-family:var(--mono);font-size:22px;color:var(--green);text-shadow:0 0 7px var(--green-glow);min-width:50px;text-align:center}
+.param-unit{font-family:var(--mono);font-size:10px;color:#1e3040}
+.adj-col{display:flex;flex-direction:column;gap:3px;margin-left:auto}
+.adj{
+  width:23px;height:21px;background:#101c28;border:1px solid #1e3040;
+  border-radius:3px;color:#3a5060;font-size:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .1s;user-select:none;
+}
+.adj:hover{background:#162535;color:var(--green)}.adj:active{transform:scale(.9)}
+.cycle-row{
+  display:flex;align-items:center;gap:10px;
+  background:#0a1520;border:1px solid var(--border);border-radius:7px;padding:9px 13px;margin-bottom:8px;
+}
+.cycle-label{font-size:11px;color:#2e4558;flex:1}
+.cycle-val{font-family:var(--mono);font-size:22px;color:var(--amber);text-shadow:0 0 7px rgba(255,171,64,.3);min-width:40px;text-align:center}
+.hint-box{background:#08101c;border:1px solid #102030;border-left:3px solid #1a3a6a;border-radius:5px;padding:7px 10px}
+.hint-title{font-size:9px;color:#1e3a60;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.hint-text{font-size:10px;color:#2e4860;line-height:1.6}
+
+/* ======= 実行画面 ======= */
+.run-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.run-status{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:2px}
+.run-badge{
+  font-family:var(--mono);font-size:10px;
+  background:#1a1000;border:1px solid #3a2500;border-radius:4px;padding:3px 9px;color:var(--amber);
+}
+/* 実行タブ（表示切替）*/
+.view-tabs{display:flex;border-radius:6px;overflow:hidden;border:1px solid var(--border);margin-bottom:9px}
+.view-tab{
+  flex:1;font-family:var(--mono);font-size:10px;padding:6px 3px;
+  text-align:center;cursor:pointer;background:#0a1520;color:#2e4558;transition:all .15s;
+  border-right:1px solid var(--border);
+}
+.view-tab:last-child{border-right:none}
+.view-tab.active{background:#071510;color:var(--green);text-shadow:0 0 5px var(--green-glow)}
+.view-tab:hover:not(.active){background:#0d1e30;color:#4a6070}
+
+/* 温度ビュー */
+#viewTemp{}
+.temp-now-row{display:flex;align-items:flex-end;gap:5px;margin-bottom:4px}
+.temp-big{font-family:var(--mono);font-size:46px;line-height:1;color:var(--green);text-shadow:0 0 15px var(--green-glow);transition:color .4s}
+.temp-big.hot{color:var(--red);text-shadow:0 0 15px rgba(255,82,82,.5)}
+.temp-big.warm{color:var(--amber);text-shadow:0 0 15px rgba(255,171,64,.5)}
+.temp-big.cool{color:var(--blue);text-shadow:0 0 15px rgba(64,196,255,.5)}
+.temp-unit{font-family:var(--mono);font-size:15px;color:#1e3040;margin-bottom:9px}
+.temp-step{font-size:10px;color:#2e4558;margin-bottom:7px}
+canvas.cgraph{width:100%;display:block;border-radius:4px;background:#050810;border:1px solid #0d1828}
+
+/* 蛍光ビュー：チャンネルタブ */
+.ch-tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.ch-tab{
+  font-family:var(--mono);font-size:10px;padding:4px 10px;
+  background:#0a1520;border:1px solid var(--border);border-radius:4px;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.ch-tab:hover{background:#0d1e30}
+/* 色はJSで動的に */
+
+/* インジケーター */
+.info-row{display:flex;gap:5px;margin-top:7px}
+.info-box{flex:1;background:#08111c;border:1px solid #101e2d;border-radius:5px;padding:6px;text-align:center}
+.info-label{font-size:8px;color:#1e3040;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.info-val{font-family:var(--mono);font-size:13px;color:var(--blue);text-shadow:0 0 4px rgba(64,196,255,.25)}
+
+/* ======= 結果 ======= */
+.result-hdr{text-align:center;margin-bottom:12px}
+.result-icon{font-size:40px;animation:pop .5s ease;margin-bottom:6px}
+@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.result-title{font-family:var(--mono);font-size:17px;letter-spacing:3px;margin-bottom:3px}
+.result-sub{font-size:10px;color:#3a5060}
+
+/* Ct テーブル */
+.ct-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+.ct-table th{font-family:var(--mono);font-size:9px;color:#2a4050;letter-spacing:1px;padding:5px 8px;border-bottom:1px solid #0d1a28;text-transform:uppercase;text-align:left}
+.ct-table td{padding:6px 8px;border-bottom:1px solid #09121e;font-family:var(--mono);color:var(--text)}
+.ct-table tr:hover td{background:#08111c}
+.ct-pos{color:var(--green);text-shadow:0 0 5px var(--green-glow)}
+.ct-neg{color:#2a4050}
+.ct-warn{color:var(--amber)}
+
+/* 最終グラフ */
+.final-graph-wrap{margin-bottom:10px}
+.final-graph-label{font-size:9px;color:#1e3040;margin-bottom:4px;font-family:var(--mono)}
+
+/* 解説 */
+.edu-box{background:#07101c;border:1px solid #102030;border-left:3px solid var(--blue);border-radius:5px;padding:8px 10px}
+.edu-title{font-size:9px;color:#1e4068;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.edu-text{font-size:10px;color:#2e4860;line-height:1.7}
+
+/* ======= ボタン ======= */
+.btn-panel{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.cbtn{
+  background:linear-gradient(180deg,#1c2430 0%,#141b22 100%);
+  border:1px solid #2a3848;border-radius:7px;
+  padding:8px 4px;font-family:var(--mono);font-size:10px;
+  color:#4a6070;cursor:pointer;transition:all .12s;
+  text-align:center;line-height:1.35;
+  box-shadow:0 3px 0 #0c1018;user-select:none;
+}
+.cbtn .bi{font-size:14px;display:block;margin-bottom:2px}
+.cbtn:hover{background:linear-gradient(180deg,#222e3c 0%,#182028 100%);color:#7090a8}
+.cbtn:active{transform:translateY(2px);box-shadow:0 1px 0 #0c1018}
+.cbtn.run{background:linear-gradient(180deg,#0c2818 0%,#081810 100%);border-color:#1a4828;color:var(--green);box-shadow:0 3px 0 #040c08,0 0 8px rgba(0,230,118,.07)}
+.cbtn.run:hover{background:linear-gradient(180deg,#103220 0%,#0a2015 100%)}
+.cbtn.stop{background:linear-gradient(180deg,#2a1010 0%,#1c0808 100%);border-color:#4a1818;color:var(--red)}
+.cbtn.back{background:linear-gradient(180deg,#182028 0%,#101820 100%);border-color:#222e3c;color:#3a5060}
+.cbtn:disabled{opacity:.28;cursor:not-allowed;transform:none!important;box-shadow:0 3px 0 #0c1018!important}
+
+/* ======= ステップインジケーター ======= */
+.step-indicator{display:flex;align-items:center;gap:0;margin-bottom:10px}
+.si-step{
+  flex:1;height:4px;background:#0a1520;border-radius:2px;margin:0 1px;
+  transition:background .3s;
+}
+.si-step.done{background:var(--green);box-shadow:0 0 4px var(--green)}
+.si-step.active{background:var(--amber);animation:blink .5s ease-in-out infinite alternate}
+
+footer{margin-top:20px;padding:12px;max-width:760px;width:100%;border-top:1px solid #10181e;font-size:9px;color:#253040;line-height:1.7;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- ===== 起動モーダル ===== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title">🏥 患者情報入力 <span>NEW RUN</span></div>
+    <div class="form-group">
+      <label class="form-label">患者 / 検体 ID</label>
+      <input class="form-input" id="mPatientId" placeholder="例: PT-2024-0001" maxlength="30">
+    </div>
+    <div class="form-group">
+      <label class="form-label">氏名（または検体名）</label>
+      <input class="form-input" id="mPatientName" placeholder="例: 山田 太郎" maxlength="30">
+    </div>
+    <div class="form-group">
+      <label class="form-label">検査日時</label>
+      <input class="form-input" id="mDate" type="text" readonly style="color:#3a5060">
+    </div>
+    <button class="modal-btn" onclick="closeModal()">▶ 検査開始</button>
+  </div>
+</div>
+
+<!-- ===== 筐体 ===== -->
+<div class="machine">
+  <div class="brand-bar">
+    <div class="brand-l">
+      <div class="brand-name">ThermoScript qPCR-DX</div>
+      <div class="model-name">DIAGNOSTIC REAL-TIME THERMAL CYCLER</div>
+    </div>
+    <div class="patient-badge" id="patientBadge">ID: —&nbsp;&nbsp;氏名: —</div>
+    <div class="led-row">
+      <div class="led g" id="ledG"></div>
+      <div class="led a" id="ledA"></div>
+      <div class="led r" id="ledR"></div>
+    </div>
+  </div>
+
+  <div class="screen-wrap"><div class="screen">
+
+    <!-- ① 検出法 -->
+    <div class="panel active" id="panel-method">
+      <div class="method-title">⚗️ 検出法を選択</div>
+      <div class="method-cards">
+        <div class="method-card" id="mc-inter" onclick="selectMethod('inter')">
+          <div class="method-icon">🟢</div>
+          <div class="method-name">インターカレーター法</div>
+          <div class="method-sub">SYBR® Green などの二本鎖 DNA 結合色素を使用。1 チャンネル。汎用的・低コスト。</div>
+          <div><span class="method-badge green">1ch</span></div>
+        </div>
+        <div class="method-card" id="mc-taqman" onclick="selectMethod('taqman')">
+          <div class="method-icon">🔬</div>
+          <div class="method-name">TaqMan プローブ法</div>
+          <div class="method-sub">配列特異的な蛍光プローブを使用。高感度・高特異性。最大 4 チャンネル同時検出（多重 PCR）。</div>
+          <div><span class="method-badge multi">最大 4ch</span></div>
+        </div>
+      </div>
+      <!-- チャンネル設定（TaqMan 選択時に表示） -->
+      <div id="tqConfig" style="display:none">
+        <div style="font-family:var(--mono);font-size:11px;color:#2a4560;letter-spacing:1px;margin-bottom:8px">🎨 チャンネル設定（使用するチャンネルを有効化）</div>
+        <div class="ch-grid" id="chGrid"></div>
+      </div>
+    </div>
+
+    <!-- ② サンプル設定 -->
+    <div class="panel" id="panel-sample">
+      <div style="font-family:var(--mono);font-size:12px;color:var(--blue);letter-spacing:2px;border-bottom:1px solid #0d1a28;padding-bottom:8px;margin-bottom:12px">🧪 サンプル設定</div>
+      <div class="sample-count-row">
+        <span class="sample-count-label">サンプル数</span>
+        <div class="count-btns">
+          <button class="cnt-btn" onclick="changeSampleCount(-1)">−</button>
+          <div class="count-val" id="sampleCountVal">1</div>
+          <button class="cnt-btn" onclick="changeSampleCount(+1)">＋</button>
+        </div>
+      </div>
+      <div class="sample-grid" id="sampleGrid"></div>
+    </div>
+
+    <!-- ③ パラメータ -->
+    <div class="panel" id="panel-param">
+      <div class="param-hdr">
+        <div class="param-title">PROGRAM SETUP</div>
+        <select class="prog-sel" id="progSel" onchange="loadPreset()">
+          <option value="0">一般 qPCR</option>
+          <option value="1">TaqMan 2-step</option>
+          <option value="2">高感度（低コピー）</option>
+          <option value="3">カスタム</option>
+        </select>
+      </div>
+      <div class="step-tabs" id="stepTabs"></div>
+      <div id="ptTempTime" class="param-grid2">
+        <div class="param-card">
+          <div class="param-label">TEMPERATURE</div>
+          <div class="param-row">
+            <div class="param-val" id="editTemp">95</div>
+            <div class="param-unit">°C</div>
+            <div class="adj-col">
+              <button class="adj" onclick="adjP('temp',+1)">▲</button>
+              <button class="adj" onclick="adjP('temp',-1)">▼</button>
+            </div>
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-label">TIME</div>
+          <div class="param-row">
+            <div class="param-val" id="editTime">120</div>
+            <div class="param-unit">sec</div>
+            <div class="adj-col">
+              <button class="adj" onclick="adjP('time',+5)">▲</button>
+              <button class="adj" onclick="adjP('time',-5)">▼</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="ptCycle" style="display:none">
+        <div class="cycle-row">
+          <span class="cycle-label">増幅サイクル数</span>
+          <div class="adj-col" style="flex-direction:row;gap:4px">
+            <button class="adj" style="width:26px;height:26px" onclick="adjP('cycles',+1)">▲</button>
+            <button class="adj" style="width:26px;height:26px" onclick="adjP('cycles',-1)">▼</button>
+          </div>
+          <div class="cycle-val" id="editCycles">40</div>
+        </div>
+      </div>
+      <div class="hint-box"><div class="hint-title">💡 HINT</div><div class="hint-text" id="hintText">—</div></div>
+    </div>
+
+    <!-- ④ 実行 -->
+    <div class="panel" id="panel-run">
+      <div class="run-hdr">
+        <div class="run-status" id="runStatus">RUNNING</div>
+        <div class="run-badge" id="runBadge">— / —</div>
+      </div>
+      <div class="step-indicator" id="stepIndicator"></div>
+      <div class="view-tabs" id="viewTabs"></div>
+
+      <!-- 温度ビュー -->
+      <div id="viewTemp">
+        <div class="temp-now-row">
+          <div class="temp-big" id="tempNow">—</div>
+          <div class="temp-unit">°C</div>
+        </div>
+        <div class="temp-step" id="tempStepName">—</div>
+        <canvas class="cgraph" id="tempCanvas" height="80"></canvas>
+      </div>
+      <!-- 蛍光ビュー -->
+      <div id="viewFluor" style="display:none">
+        <div class="ch-tabs" id="runChTabs"></div>
+        <canvas class="cgraph" id="fluorCanvas" height="110"></canvas>
+      </div>
+
+      <div class="info-row">
+        <div class="info-box"><div class="info-label">CYCLE</div><div class="info-val" id="iC">0</div></div>
+        <div class="info-box"><div class="info-label">TEMP</div><div class="info-val" id="iT">—</div></div>
+        <div class="info-box"><div class="info-label">SAMPLE</div><div class="info-val" id="iS" style="font-size:11px">—</div></div>
+        <div class="info-box"><div class="info-label">TIME LEFT</div><div class="info-val" id="iL">—</div></div>
+      </div>
+    </div>
+
+    <!-- ⑤ 結果 -->
+    <div class="panel" id="panel-result">
+      <div class="result-hdr">
+        <div class="result-icon" id="resIcon">✅</div>
+        <div class="result-title" id="resTitle" style="color:var(--green)">ANALYSIS COMPLETE</div>
+        <div class="result-sub" id="resSub"></div>
+      </div>
+      <table class="ct-table" id="ctTable"></table>
+      <div class="final-graph-wrap">
+        <div class="final-graph-label">📈 増幅曲線（全サンプル・全チャンネル）</div>
+        <canvas class="cgraph" id="finalCanvas" height="120"></canvas>
+      </div>
+      <div class="edu-box"><div class="edu-title">🔬 解説</div><div class="edu-text" id="eduText"></div></div>
+    </div>
+
+  </div></div>
+
+  <!-- ボタン -->
+  <div class="btn-panel">
+    <button class="cbtn back" id="btnBack" onclick="navBack()"><span class="bi">◀</span>BACK</button>
+    <button class="cbtn" id="btnSetup" onclick="goParam()" disabled><span class="bi">⚙️</span>SETUP</button>
+    <button class="cbtn run" id="btnRun" onclick="startRun()" disabled><span class="bi">▶</span>RUN</button>
+    <button class="cbtn stop" id="btnStop" onclick="stopRun()" disabled><span class="bi">⏹</span>STOP</button>
+  </div>
+</div>
+
+<footer>
+  ⚠️ 本ツールは AI（Claude, Anthropic）を用いて作成された教育用 qPCR シミュレーターです。実際の診断・検査結果とは一切関係ありません。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+// =============================================
+// 定数・設定
+// =============================================
+const CH_DEFS = [
+  { id:'ch1', name:'FAM',   color:'#29b6f6', hex:'#29b6f6', ex:494, em:521 },
+  { id:'ch2', name:'HEX',   color:'#ffee58', hex:'#ffee58', ex:535, em:553 },
+  { id:'ch3', name:'ROX',   color:'#ef5350', hex:'#ef5350', ex:575, em:602 },
+  { id:'ch4', name:'Cy5',   color:'#ce93d8', hex:'#ce93d8', ex:649, em:670 },
+];
+const INTER_DYE = { id:'sybr', name:'SYBR® Green', color:'#00e676', hex:'#00e676' };
+
+const PRESETS = [
+  { name:'一般 qPCR', p:{ di:{t:95,s:120}, d:{t:95,s:15}, a:{t:60,s:30}, e:{t:72,s:30}, f:{t:72,s:60}, cyc:40 } },
+  { name:'TaqMan 2-step', p:{ di:{t:95,s:120}, d:{t:95,s:15}, a:{t:60,s:60}, e:{t:72,s:1}, f:{t:72,s:30}, cyc:40 } },
+  { name:'高感度', p:{ di:{t:95,s:300}, d:{t:95,s:20}, a:{t:58,s:30}, e:{t:72,s:60}, f:{t:72,s:300}, cyc:45 } },
+  { name:'カスタム', p:{ di:{t:95,s:120}, d:{t:95,s:15}, a:{t:60,s:30}, e:{t:72,s:30}, f:{t:72,s:60}, cyc:40 } },
+];
+const HINTS = {
+  di:'初期変性：UNG 処理含む場合は 50°C 2 min → 95°C 10 min。標準は 95°C / 2–5 分。',
+  d:'変性：95°C / 10–15 秒が qPCR 標準。長すぎると Taq 活性が低下します。',
+  a:'アニーリング：TaqMan では 60°C で Two-step（アニーリング + 伸長）が一般的。蛍光はこのステップで読取。',
+  e:'伸長：72°C。産物が短い（< 150 bp）場合は省略可。蛍光読取りをここで行う設定もあります。',
+  f:'最終伸長：qPCR では短め（30–60 秒）で OK。融解曲線（Melt Curve）を続けて実施することも。',
+  cycle:'サイクル数：40–45 が標準。Ct > 35 は偽陽性の可能性を考慮します。',
+};
+const STEP_KEYS  = ['di','d','a','e','f','cycle'];
+const STEP_NAMES = ['初期変性','変性','アニーリング','伸長','最終伸長','サイクル数'];
+
+// =============================================
+// 状態
+// =============================================
+let patientId = '', patientName = '', runDate = '';
+let selMethod = null; // 'inter' | 'taqman'
+let chConfig = [ // TaqMan チャンネル設定
+  { enabled:true,  target:'ターゲット 1' },
+  { enabled:false, target:'ターゲット 2' },
+  { enabled:false, target:'ターゲット 3' },
+  { enabled:false, target:'内部標準 (IC)' },
+];
+let sampleCount = 1;
+let sampleNames = ['Sample 1','Sample 2','Sample 3','Sample 4'];
+let workP = JSON.parse(JSON.stringify(PRESETS[0].p));
+let editStep = 'di';
+let currentPanel = 'method';
+let runTimer = null, runState = null;
+let activeView = 'temp';
+let activeChIdx = 0;   // 蛍光ビューの選択チャンネル
+let tempHistory = [];
+
+// =============================================
+// モーダル
+// =============================================
+(function initModal(){
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const str = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('mDate').value = str;
+  runDate = str;
+})();
+
+function closeModal(){
+  patientId   = document.getElementById('mPatientId').value.trim()   || 'UNKNOWN';
+  patientName = document.getElementById('mPatientName').value.trim() || '—';
+  document.getElementById('patientBadge').innerHTML =
+    `ID: <span>${escHtml(patientId)}</span>&nbsp;&nbsp;${escHtml(patientName)}`;
+  document.getElementById('modalOverlay').classList.add('hidden');
+  buildChGrid();
+  buildSampleGrid();
+  updateBtns();
+}
+
+function escHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+
+// =============================================
+// パネル切替
+// =============================================
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  currentPanel = name;
+  updateBtns();
+}
+function updateBtns(){
+  const p = currentPanel;
+  document.getElementById('btnBack').disabled  = p==='method'||p==='run';
+  document.getElementById('btnSetup').disabled = !selMethod||p==='run';
+  document.getElementById('btnRun').disabled   = !selMethod||p==='run';
+  document.getElementById('btnStop').disabled  = p!=='run';
+}
+function navBack(){
+  if(p==='sample') showPanel('method');
+  if(p==='param')  showPanel('sample');
+  if(p==='result') { selMethod=null; showPanel('method'); }
+}
+function navBack(){
+  const p=currentPanel;
+  if(p==='sample') showPanel('method');
+  else if(p==='param') showPanel('sample');
+  else if(p==='result'){selMethod=null;document.getElementById('mc-inter').className='method-card';document.getElementById('mc-taqman').className='method-card';showPanel('method');}
+}
+function goParam(){
+  renderStepTabs();
+  renderParamVals();
+  showPanel('param');
+}
+
+// =============================================
+// 検出法
+// =============================================
+function selectMethod(m){
+  selMethod = m;
+  document.getElementById('mc-inter').className  = 'method-card'+(m==='inter' ?' sel-inter':'');
+  document.getElementById('mc-taqman').className = 'method-card'+(m==='taqman'?' sel-taqman':'');
+  document.getElementById('tqConfig').style.display = m==='taqman'?'block':'none';
+  updateBtns();
+  // サンプル画面も更新
+  buildSampleGrid();
+}
+
+// =============================================
+// チャンネル設定
+// =============================================
+function buildChGrid(){
+  const grid = document.getElementById('chGrid');
+  grid.innerHTML='';
+  CH_DEFS.forEach((ch,i)=>{
+    const card = document.createElement('div');
+    card.className='ch-card';
+    card.id='ch-card-'+i;
+    card.innerHTML=`
+      <div class="ch-header">
+        <div class="ch-dot" style="background:${ch.color};box-shadow:0 0 5px ${ch.color}"></div>
+        <div class="ch-label">${ch.name} (${ch.ex}/${ch.em}nm)</div>
+        <input type="checkbox" class="ch-enable" id="chk${i}" ${i===0?'checked':''} onchange="toggleCh(${i})">
+      </div>
+      <input class="ch-input" id="chTarget${i}" placeholder="例：インフルエンザ A" value="${escHtml(chConfig[i].target)}" oninput="chConfig[${i}].target=this.value">
+    `;
+    grid.appendChild(card);
+    updateChCard(i);
+  });
+}
+function toggleCh(i){
+  chConfig[i].enabled = document.getElementById('chk'+i).checked;
+  updateChCard(i);
+}
+function updateChCard(i){
+  document.getElementById('ch-card-'+i).classList.toggle('disabled',!chConfig[i].enabled);
+}
+
+// =============================================
+// サンプル設定
+// =============================================
+function buildSampleGrid(){
+  const grid = document.getElementById('sampleGrid');
+  grid.innerHTML='';
+  for(let i=0;i<4;i++){
+    const card=document.createElement('div');
+    card.className='sample-card'+(i>=sampleCount?' inactive':'');
+    card.id='scrd-'+i;
+    card.innerHTML=`
+      <div class="sample-num">S${i+1}</div>
+      <input class="sample-name-input" id="sname${i}" value="${escHtml(sampleNames[i])}" placeholder="Sample ${i+1}" oninput="sampleNames[${i}]=this.value">
+    `;
+    grid.appendChild(card);
+  }
+  document.getElementById('sampleCountVal').textContent=sampleCount;
+}
+function changeSampleCount(d){
+  sampleCount=Math.max(1,Math.min(4,sampleCount+d));
+  buildSampleGrid();
+}
+
+// =============================================
+// パラメータ
+// =============================================
+function loadPreset(){
+  const idx=+document.getElementById('progSel').value;
+  workP=JSON.parse(JSON.stringify(PRESETS[idx].p));
+  renderParamVals();
+}
+function renderStepTabs(){
+  const tabs=document.getElementById('stepTabs');
+  tabs.innerHTML='';
+  STEP_KEYS.forEach((k,i)=>{
+    const el=document.createElement('div');
+    el.className='step-tab'+(k===editStep?' active':'');
+    el.textContent=STEP_NAMES[i];
+    el.onclick=()=>switchStep(k);
+    tabs.appendChild(el);
+  });
+  document.getElementById('hintText').textContent=HINTS[editStep]||'—';
+  const isCyc=(editStep==='cycle');
+  document.getElementById('ptTempTime').style.display=isCyc?'none':'grid';
+  document.getElementById('ptCycle').style.display   =isCyc?'block':'none';
+}
+function switchStep(k){editStep=k;renderStepTabs();renderParamVals()}
+function renderParamVals(){
+  if(editStep==='cycle'){document.getElementById('editCycles').textContent=workP.cyc;return}
+  const s=workP[editStep];
+  document.getElementById('editTemp').textContent=s.t;
+  document.getElementById('editTime').textContent=s.s;
+}
+function adjP(type,d){
+  if(type==='temp'){const s=workP[editStep];s.t=Math.max(4,Math.min(99,s.t+d));document.getElementById('editTemp').textContent=s.t}
+  else if(type==='time'){const s=workP[editStep];s.s=Math.max(5,Math.min(1800,s.s+d));document.getElementById('editTime').textContent=s.s}
+  else{workP.cyc=Math.max(1,Math.min(50,workP.cyc+d));document.getElementById('editCycles').textContent=workP.cyc}
+}
+
+// =============================================
+// 実行
+// =============================================
+function startRun(){
+  if(!selMethod) return;
+  // 有効チャンネルを確定
+  const channels = selMethod==='inter'
+    ? [{ ...INTER_DYE, target:'増幅産物（インターカレーター）', enabled:true }]
+    : CH_DEFS.map((ch,i)=>({ ...ch, target:chConfig[i].target, enabled:chConfig[i].enabled })).filter(c=>c.enabled);
+  if(channels.length===0){ alert('チャンネルを最低1つ有効にしてください'); return; }
+
+  const p = workP;
+  // サンプル名を確定
+  const samples = [];
+  for(let i=0;i<sampleCount;i++) samples.push(sampleNames[i]||`Sample ${i+1}`);
+
+  // シーケンス構築
+  const seq=[];
+  seq.push({key:'di',name:'初期変性',temp:p.di.t,time:p.di.s,isCyc:false});
+  for(let c=1;c<=p.cyc;c++){
+    seq.push({key:'d',name:`変性 [${c}/${p.cyc}]`,      temp:p.d.t,time:p.d.s,isCyc:true,cyc:c});
+    seq.push({key:'a',name:`アニーリング [${c}/${p.cyc}]`,temp:p.a.t,time:p.a.s,isCyc:true,cyc:c,read:true});
+    seq.push({key:'e',name:`伸長 [${c}/${p.cyc}]`,        temp:p.e.t,time:p.e.s,isCyc:true,cyc:c});
+  }
+  seq.push({key:'f',name:'最終伸長',temp:p.f.t,time:p.f.s,isCyc:false});
+  const totalTime=seq.reduce((s,x)=>s+x.time,0);
+  const simRatio=Math.max(1,Math.round(totalTime/55));
+  const TICK=160;
+
+  // 各サンプル×チャンネルの蛍光パラメータ
+  const fluorParams = samples.map((_,si)=>
+    channels.map((_,ci)=>{
+      const ctTrue   = 18+Math.random()*14;
+      const baseline = 40+Math.random()*30;
+      const plateau  = 7000+Math.random()*5000;
+      const slope    = 0.5+Math.random()*0.25;
+      const thresh   = baseline*8+200+(ci*50);
+      return {ctTrue,baseline,plateau,slope,thresh,ctDet:null};
+    })
+  );
+
+  // アニーリング品質
+  const annOk = p.a.t>=55&&p.a.t<=68;
+  const effScale = annOk?1.0:0.35;
+
+  runState = {
+    seq,totalTime,simRatio,TICK,
+    idx:0,elapsed:0,totalElapsed:0,
+    cycles:p.cyc,channels,samples,fluorParams,effScale,
+    fluorByCycle: samples.map(()=>channels.map(()=>[])), // [sample][ch][cyc]
+    tempNow:seq[0].temp,
+    done:false,
+  };
+  tempHistory=[];
+  activeView='temp';
+  activeChIdx=0;
+
+  // ビュータブ構築
+  buildViewTabs(channels);
+  buildChTabs(channels);
+  buildStepIndicator(p.cyc);
+
+  showPanel('run');
+  ledSet('a');
+
+  runTimer=setInterval(()=>{
+    if(!runState||runState.done)return;
+    const step=runState.seq[runState.idx];
+    const dt=runState.simRatio*(TICK/1000);
+    runState.elapsed+=dt;
+    runState.totalElapsed+=dt;
+
+    // 温度
+    runState.tempNow=step.temp+(Math.random()-.5)*.35;
+    tempHistory.push(runState.tempNow);
+    if(tempHistory.length>120)tempHistory.shift();
+
+    // 蛍光読取（アニーリングステップ）
+    if(step.read){
+      const c=step.cyc;
+      runState.samples.forEach((_,si)=>{
+        runState.channels.forEach((_,ci)=>{
+          const fp=runState.fluorParams[si][ci];
+          const sig=runState.effScale*fp.plateau/(1+Math.exp(-fp.slope*(c-fp.ctTrue)));
+          const rfu=fp.baseline+sig+(Math.random()-.5)*40;
+          runState.fluorByCycle[si][ci][c]=Math.max(rfu,fp.baseline);
+          if(fp.ctDet===null&&rfu>=fp.thresh) fp.ctDet=c;
+        });
+      });
+    }
+
+    updateRunUI(step,runState);
+    updateStepIndicator(step,p.cyc);
+    if(activeView==='temp')  drawTempGraph();
+    if(activeView==='fluor') drawFluorGraph(runState,activeChIdx);
+
+    if(runState.elapsed>=step.time){
+      runState.elapsed=0;runState.idx++;
+      if(runState.idx>=runState.seq.length){finishRun();return;}
+    }
+  },TICK);
+}
+
+function buildViewTabs(channels){
+  const vt=document.getElementById('viewTabs');
+  vt.innerHTML=`
+    <div class="view-tab active" id="vtTemp" onclick="switchView('temp')">🌡 TEMPERATURE</div>
+    <div class="view-tab" id="vtFluor" onclick="switchView('fluor')">🔬 FLUORESCENCE</div>
+  `;
+}
+function buildChTabs(channels){
+  const ct=document.getElementById('runChTabs');
+  ct.innerHTML='';
+  channels.forEach((ch,i)=>{
+    const el=document.createElement('div');
+    el.className='ch-tab'+(i===0?' active':'');
+    el.id='cht-'+i;
+    el.style.borderColor=i===0?ch.color:'#1a2535';
+    el.style.color=i===0?ch.color:'#2e4558';
+    el.innerHTML=`<span style="color:${ch.color}">●</span> ${ch.name}`;
+    el.onclick=()=>selChTab(i,channels);
+    ct.appendChild(el);
+  });
+}
+function selChTab(i,channels){
+  activeChIdx=i;
+  document.querySelectorAll('.ch-tab').forEach((el,j)=>{
+    el.classList.toggle('active',j===i);
+    el.style.color=j===i?channels[j].color:'#2e4558';
+    el.style.borderColor=j===i?channels[j].color:'#1a2535';
+  });
+  if(runState) drawFluorGraph(runState,i);
+}
+function buildStepIndicator(cyc){
+  const si=document.getElementById('stepIndicator');
+  si.innerHTML='';
+  // 初期変性1 + サイクル*3 + 最終伸長1 を圧縮表示（最大40本）
+  const total=Math.min(1+cyc*3+1,40);
+  for(let i=0;i<total;i++){
+    const d=document.createElement('div');
+    d.className='si-step';d.id='si-'+i;si.appendChild(d);
+  }
+}
+function updateStepIndicator(step,cyc){
+  const total=Math.min(1+cyc*3+1,40);
+  const ratio=(runState.idx)/runState.seq.length;
+  const done=Math.floor(ratio*total);
+  for(let i=0;i<total;i++){
+    const el=document.getElementById('si-'+i);
+    if(!el)continue;
+    el.className='si-step'+(i<done?' done':i===done?' active':'');
+  }
+}
+
+function switchView(v){
+  activeView=v;
+  document.getElementById('vtTemp').classList.toggle('active',v==='temp');
+  document.getElementById('vtFluor').classList.toggle('active',v==='fluor');
+  document.getElementById('viewTemp').style.display  =v==='temp'?'block':'none';
+  document.getElementById('viewFluor').style.display =v==='fluor'?'block':'none';
+}
+
+function updateRunUI(step,rs){
+  document.getElementById('runStatus').textContent=step.key==='f'?'FINAL EXT':'RUNNING';
+  document.getElementById('runBadge').textContent=step.cyc?`CYCLE ${step.cyc}/${rs.cycles}`:(step.key==='di'?'PRE-PCR':'POST-PCR');
+  const t=Math.round(rs.tempNow);
+  document.getElementById('tempNow').textContent=t;
+  document.getElementById('tempStepName').textContent=step.name;
+  document.getElementById('iC').textContent=step.cyc||'—';
+  document.getElementById('iT').textContent=t+'°C';
+  const lf=rs.fluorByCycle[0][0].filter(Boolean).slice(-1)[0];
+  document.getElementById('iS').textContent=rs.samples[0]||'—';
+  const rem=Math.max(0,Math.round(rs.totalTime-rs.totalElapsed));
+  document.getElementById('iL').textContent=pad2(Math.floor(rem/60))+':'+pad2(rem%60);
+  const tn=document.getElementById('tempNow');
+  tn.className='temp-big'+(t>=90?' hot':t>=65?' warm':t<=40?' cool':'');
+}
+function pad2(n){return String(n).padStart(2,'0')}
+
+function drawTempGraph(){
+  const cv=document.getElementById('tempCanvas');
+  if(!cv)return;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=cv.offsetHeight*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=cv.offsetHeight;
+  ctx.fillStyle='#050810';ctx.fillRect(0,0,W,H);
+  [40,55,72,95].forEach(t=>{
+    const y=H-((t-4)/(99-4))*H;
+    ctx.strokeStyle='#091525';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    ctx.fillStyle='#1a3050';ctx.font=`${8*dpr}px monospace`;ctx.fillText(t+'°',1,y-2);
+  });
+  if(tempHistory.length<2)return;
+  ctx.beginPath();ctx.strokeStyle='#00e676';ctx.lineWidth=1.5;
+  ctx.shadowColor='#00e676';ctx.shadowBlur=4;
+  tempHistory.forEach((t,i)=>{
+    const x=(i/(tempHistory.length-1))*W;
+    const y=H-((t-4)/(99-4))*H;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();ctx.shadowBlur=0;
+}
+
+function drawFluorGraph(rs,chIdx){
+  const cv=document.getElementById('fluorCanvas');
+  if(!cv)return;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=cv.offsetHeight*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=cv.offsetHeight;
+  const cycles=rs.cycles;
+  ctx.fillStyle='#050810';ctx.fillRect(0,0,W,H);
+
+  // 各サンプルを描画
+  rs.samples.forEach((sname,si)=>{
+    const ch=rs.channels[chIdx];
+    const fp=rs.fluorParams[si][chIdx];
+    const maxRfu=fp.baseline+fp.plateau*1.05;
+    const data=rs.fluorByCycle[si][chIdx].filter((v,i)=>i>0&&v!=null);
+    if(data.length<2)return;
+
+    // 閾値（初回サンプルのみ描画）
+    if(si===0){
+      const thY=H-((fp.thresh-fp.baseline)/(maxRfu-fp.baseline+1))*(H-10)-5;
+      ctx.setLineDash([3,3]);ctx.strokeStyle='#6a1aaa';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(28,thY);ctx.lineTo(W,thY);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#6a1aaa';ctx.font=`${8*dpr}px monospace`;ctx.fillText('threshold',W-58,thY-3);
+    }
+
+    // Ct ライン
+    if(fp.ctDet){
+      const cx=28+((fp.ctDet-1)/(cycles-1))*(W-28);
+      const SCOLORS=['#ffffff','#ffdd00','#ff9922','#aaffaa'];
+      ctx.strokeStyle=SCOLORS[si]||'#aaa';ctx.lineWidth=.8;ctx.setLineDash([2,3]);
+      ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,H);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=SCOLORS[si]||'#aaa';ctx.font=`${8*dpr}px monospace`;
+      ctx.fillText(`S${si+1} Ct=${fp.ctDet}`,cx+2,12+si*10);
+    }
+
+    // 曲線（サンプルごとに輝度調整）
+    const alpha=1-si*0.18;
+    const col=ch.color;
+    ctx.beginPath();
+    ctx.strokeStyle=col;ctx.lineWidth=2-si*0.3;
+    ctx.globalAlpha=alpha;
+    ctx.shadowColor=col;ctx.shadowBlur=4;
+    data.forEach((v,i)=>{
+      const x=28+((i)/(cycles-1))*(W-28);
+      const y=H-Math.max(0,Math.min(1,(v-fp.baseline)/(maxRfu-fp.baseline+1)))*(H-10)-5;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();ctx.globalAlpha=1;ctx.shadowBlur=0;
+
+    // 最新点
+    if(data.length){
+      const lv=data[data.length-1];
+      const lx=28+((data.length-1)/(cycles-1))*(W-28);
+      const ly=H-Math.max(0,Math.min(1,(lv-fp.baseline)/(maxRfu-fp.baseline+1)))*(H-10)-5;
+      ctx.beginPath();ctx.arc(lx,ly,3,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=7;
+      ctx.globalAlpha=alpha;ctx.fill();ctx.globalAlpha=1;ctx.shadowBlur=0;
+    }
+  });
+
+  // サンプル凡例
+  rs.samples.forEach((s,i)=>{
+    const SCOLORS=['#ffffff','#ffdd00','#ff9922','#aaffaa'];
+    ctx.fillStyle=SCOLORS[i]||'#aaa';
+    ctx.font=`${8*dpr}px monospace`;
+    ctx.fillText(`S${i+1}:${s.slice(0,8)}`,W-90,H-2-i*10);
+  });
+
+  // X 軸
+  ctx.fillStyle='#1a3050';ctx.font=`${8*dpr}px monospace`;
+  [10,20,30,40,45].filter(n=>n<=cycles).forEach(n=>{
+    const x=28+((n-1)/(cycles-1))*(W-28);
+    ctx.fillText(n,x-4,H-1);
+  });
+}
+
+function stopRun(){
+  if(runTimer)clearInterval(runTimer);
+  runTimer=null;runState=null;
+  ledSet(null);
+  showPanel('method');
+}
+
+function ledSet(mode){
+  document.getElementById('ledG').classList.toggle('on',mode==='g');
+  document.getElementById('ledA').classList.toggle('on',mode==='a');
+  document.getElementById('ledR').classList.toggle('on',mode==='r');
+}
+
+// =============================================
+// 完了
+// =============================================
+function finishRun(){
+  if(runTimer)clearInterval(runTimer);runTimer=null;
+  ledSet('g');
+  const rs=runState;
+  const p=workP;
+
+  // 品質チェック
+  const annOk=p.a.t>=55&&p.a.t<=68;
+  const warns=[];
+  if(!annOk) warns.push(`アニーリング温度（${p.a.t}°C）が推奨範囲（55–68°C）外。`);
+  if(p.cyc>45) warns.push('サイクル数 > 45 は非特異的増幅のリスクあり。');
+
+  // Ct テーブル
+  let thtml=`<thead><tr><th>サンプル</th>`;
+  rs.channels.forEach(ch=>{
+    thtml+=`<th style="color:${ch.color}">${ch.name}<br><span style="color:#2a3e50;font-size:8px">${ch.target}</span></th>`;
+  });
+  thtml+=`</tr></thead><tbody>`;
+
+  let anyPos=false;
+  rs.samples.forEach((sname,si)=>{
+    thtml+=`<tr><td style="color:#6080a0">${escHtml(sname)}</td>`;
+    rs.channels.forEach((ch,ci)=>{
+      const fp=rs.fluorParams[si][ci];
+      const ct=fp.ctDet;
+      if(ct){
+        anyPos=true;
+        const cls=ct>35?'ct-warn':'ct-pos';
+        thtml+=`<td class="${cls}">${ct.toFixed(1)}<span style="font-size:9px;color:#2a4050"> cyc</span></td>`;
+      } else {
+        thtml+=`<td class="ct-neg">NEGATIVE</td>`;
+      }
+    });
+    thtml+='</tr>';
+  });
+  thtml+='</tbody>';
+  document.getElementById('ctTable').innerHTML=thtml;
+
+  // 結果タイトル
+  const icon=warns.length===0&&anyPos?'✅':warns.length?'⚠️':'❌';
+  document.getElementById('resIcon').textContent=icon;
+  document.getElementById('resTitle').textContent=warns.length===0?'ANALYSIS COMPLETE':'ANALYSIS WARNING';
+  document.getElementById('resTitle').style.color=warns.length===0?'#00e676':'#ffab40';
+  document.getElementById('resSub').textContent=
+    `患者ID: ${escHtml(patientId)} | ${escHtml(patientName)} | ${runDate}`;
+
+  // 解説
+  const method=rs.channels.length===1&&rs.channels[0].id==='sybr'?'インターカレーター法（SYBR® Green）':'TaqMan プローブ法';
+  const chDesc=rs.channels.map(c=>`${c.name}（${c.target}）`).join('、');
+  const eduTxt=(warns.length?'<b>⚠️ 警告：</b>'+warns.join(' ')+'<br><br>':'')
+    +`今回は <b>${method}</b> を使用し、チャンネル：${chDesc}で測定しました。`
+    +`サンプル数は <b>${rs.samples.length}</b> 検体、サイクル数は <b>${p.cyc}</b> です。`
+    +(anyPos?` Ct 値が検出されたサンプルでは、初期鋳型 DNA が存在することを示します。Ct 値が低いほど鋳型量が多く、Ct > 35 は微量陽性として偽陽性との区別が必要です。`
+            :' すべてのサンプルで増幅産物が検出されませんでした（NEGATIVE）。条件またはサンプルを確認してください。');
+  document.getElementById('eduText').innerHTML=eduTxt;
+
+  showPanel('result');
+  setTimeout(()=>drawFinalCurve(rs),80);
+}
+
+function drawFinalCurve(rs){
+  const cv=document.getElementById('finalCanvas');
+  if(!cv)return;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=cv.offsetHeight*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=cv.offsetHeight;
+  const cycles=rs.cycles;
+  ctx.fillStyle='#050810';ctx.fillRect(0,0,W,H);
+
+  rs.channels.forEach((ch,ci)=>{
+    const fp0=rs.fluorParams[0][ci];
+    const maxRfu=fp0.baseline+fp0.plateau*1.05;
+
+    // 閾値
+    const thY=H-((fp0.thresh-fp0.baseline)/(maxRfu-fp0.baseline+1))*(H-10)-5;
+    ctx.setLineDash([3,3]);ctx.strokeStyle=ch.color+'66';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(28,thY);ctx.lineTo(W,thY);ctx.stroke();ctx.setLineDash([]);
+
+    rs.samples.forEach((_,si)=>{
+      const fp=rs.fluorParams[si][ci];
+      const data=rs.fluorByCycle[si][ci].filter((v,i)=>i>0&&v!=null);
+      if(data.length<2)return;
+      const alpha=1-si*0.18;
+      ctx.beginPath();ctx.strokeStyle=ch.color;ctx.lineWidth=1.5;
+      ctx.globalAlpha=alpha;ctx.shadowColor=ch.color;ctx.shadowBlur=3;
+      data.forEach((v,i)=>{
+        const x=28+((i)/(cycles-1))*(W-28);
+        const y=H-Math.max(0,Math.min(1,(v-fp.baseline)/(maxRfu-fp.baseline+1)))*(H-10)-5;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.stroke();ctx.globalAlpha=1;ctx.shadowBlur=0;
+    });
+    // チャンネル凡例
+    ctx.fillStyle=ch.color;ctx.font=`${8*dpr}px monospace`;
+    ctx.fillText(`●${ch.name}(${ch.target.slice(0,8)})`,W-130,12+ci*11);
+  });
+
+  ctx.fillStyle='#1a3050';ctx.font=`${8*dpr}px monospace`;
+  [10,20,30,40,45].filter(n=>n<=cycles).forEach(n=>{
+    const x=28+((n-1)/(cycles-1))*(W-28);
+    ctx.fillText(n,x-4,H-1);
+  });
+}
+
+// =============================================
+// 初期化
+// =============================================
+updateBtns();
+
+// SETUP / RUN ボタンからもサンプル確認 → パラメータ へ流れる設計
+// RUN ボタンはサンプル設定画面が飛ばされていても動くよう直接 startRun
+// SETUP ボタンはパラメータ画面へ
+// 検出法選択後、RUN を押したら自動でサンプル確認 → 実行
+
+document.getElementById('btnRun').onclick = function(){
+  // サンプル名を input から取得
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('sname'+i);
+    if(el) sampleNames[i]=el.value||`Sample ${i+1}`;
+  }
+  // チャンネルターゲット名を取得
+  CH_DEFS.forEach((_,i)=>{
+    const el=document.getElementById('chTarget'+i);
+    if(el) chConfig[i].target=el.value||`ターゲット ${i+1}`;
+  });
+  startRun();
+};
+document.getElementById('btnSetup').onclick = function(){
+  // サンプルパネルをビルドしてから表示
+  buildSampleGrid();
+  if(currentPanel==='sample') goParam();
+  else if(currentPanel==='param') { /* すでにいる */}
+  else showPanel('sample');
+};
+document.getElementById('btnBack').onclick = navBack;
+</script>
+</body>
+</html>
