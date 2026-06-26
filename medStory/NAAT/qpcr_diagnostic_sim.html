@@ -136,11 +136,12 @@ body{
   background:#090f1c;border:1px solid var(--border);border-radius:8px;
   padding:10px 12px;position:relative;
 }
-.ch-card.disabled{opacity:.35;pointer-events:none}
+.ch-card.disabled{opacity:.35}
+.ch-card.disabled .ch-input,.ch-card.disabled .ch-label,.ch-card.disabled .ch-dot{pointer-events:none}
 .ch-header{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .ch-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .ch-label{font-family:var(--mono);font-size:11px;color:var(--dim)}
-.ch-enable{accent-color:var(--green);cursor:pointer;margin-left:auto}
+.ch-enable{accent-color:var(--green);cursor:pointer;margin-left:auto;pointer-events:auto!important;position:relative;z-index:2}
 .ch-input{
   width:100%;background:#060d18;border:1px solid #162030;border-radius:5px;
   padding:6px 8px;font-size:11px;color:#7090a8;outline:none;
@@ -487,11 +488,32 @@ footer{margin-top:20px;padding:12px;max-width:760px;width:100%;border-top:1px so
         <div class="result-title" id="resTitle" style="color:var(--green)">ANALYSIS COMPLETE</div>
         <div class="result-sub" id="resSub"></div>
       </div>
+
       <table class="ct-table" id="ctTable"></table>
-      <div class="final-graph-wrap">
-        <div class="final-graph-label">📈 増幅曲線（全サンプル・全チャンネル）</div>
-        <canvas class="cgraph" id="finalCanvas" height="120"></canvas>
+
+      <div style="margin:10px 0 6px;font-family:var(--mono);font-size:9px;color:#2a4050;letter-spacing:1px">📊 グラフ表示軸</div>
+
+      <!-- 軸切替 -->
+      <div style="display:flex;gap:0;border-radius:6px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px">
+        <div id="axisTabSample" onclick="switchResultAxis('sample')"
+          style="flex:1;font-family:var(--mono);font-size:10px;padding:6px 4px;text-align:center;cursor:pointer;background:#071510;color:var(--green);transition:all .15s">
+          🧪 サンプル軸<br><span style="font-size:8px;opacity:.7">1サンプル × 全チャンネル</span>
+        </div>
+        <div id="axisTabChannel" onclick="switchResultAxis('channel')"
+          style="flex:1;font-family:var(--mono);font-size:10px;padding:6px 4px;text-align:center;cursor:pointer;background:#0a1520;color:#2e4558;border-left:1px solid var(--border);transition:all .15s">
+          🎨 チャンネル軸<br><span style="font-size:8px;opacity:.7">1チャンネル × 全サンプル</span>
+        </div>
       </div>
+
+      <!-- サブタブ（サンプル or チャンネル選択） -->
+      <div class="ch-tabs" id="resultSubTabs" style="margin-bottom:8px"></div>
+
+      <!-- グラフ -->
+      <div class="final-graph-wrap">
+        <div class="final-graph-label" id="finalGraphLabel">📈 増幅曲線</div>
+        <canvas class="cgraph" id="finalCanvas" height="130"></canvas>
+      </div>
+
       <div class="edu-box"><div class="edu-title">🔬 解説</div><div class="edu-text" id="eduText"></div></div>
     </div>
 
@@ -577,6 +599,7 @@ function closeModal(){
   document.getElementById('patientBadge').innerHTML =
     `ID: <span>${escHtml(patientId)}</span>&nbsp;&nbsp;${escHtml(patientName)}`;
   document.getElementById('modalOverlay').classList.add('hidden');
+  // チャンネルグリッドを事前構築しておく
   buildChGrid();
   buildSampleGrid();
   updateBtns();
@@ -624,9 +647,13 @@ function selectMethod(m){
   selMethod = m;
   document.getElementById('mc-inter').className  = 'method-card'+(m==='inter' ?' sel-inter':'');
   document.getElementById('mc-taqman').className = 'method-card'+(m==='taqman'?' sel-taqman':'');
-  document.getElementById('tqConfig').style.display = m==='taqman'?'block':'none';
+  const tqConf = document.getElementById('tqConfig');
+  tqConf.style.display = m==='taqman'?'block':'none';
+  // TaqMan選択時にチャンネルグリッドを即時構築
+  if(m==='taqman'){
+    buildChGrid();
+  }
   updateBtns();
-  // サンプル画面も更新
   buildSampleGrid();
 }
 
@@ -635,29 +662,52 @@ function selectMethod(m){
 // =============================================
 function buildChGrid(){
   const grid = document.getElementById('chGrid');
-  grid.innerHTML='';
+  grid.innerHTML=''; // 毎回クリアして再構築
   CH_DEFS.forEach((ch,i)=>{
     const card = document.createElement('div');
-    card.className='ch-card';
+    card.className='ch-card'+(chConfig[i].enabled?'':' disabled');
     card.id='ch-card-'+i;
-    card.innerHTML=`
-      <div class="ch-header">
-        <div class="ch-dot" style="background:${ch.color};box-shadow:0 0 5px ${ch.color}"></div>
-        <div class="ch-label">${ch.name} (${ch.ex}/${ch.em}nm)</div>
-        <input type="checkbox" class="ch-enable" id="chk${i}" ${i===0?'checked':''} onchange="toggleCh(${i})">
-      </div>
-      <input class="ch-input" id="chTarget${i}" placeholder="例：インフルエンザ A" value="${escHtml(chConfig[i].target)}" oninput="chConfig[${i}].target=this.value">
-    `;
+
+    const hdr = document.createElement('div');
+    hdr.className='ch-header';
+
+    const dot = document.createElement('div');
+    dot.className='ch-dot';
+    dot.style.background=ch.color;
+    dot.style.boxShadow=`0 0 5px ${ch.color}`;
+
+    const lbl = document.createElement('div');
+    lbl.className='ch-label';
+    lbl.textContent=`${ch.name} (${ch.ex}/${ch.em}nm)`;
+
+    const chk = document.createElement('input');
+    chk.type='checkbox';
+    chk.className='ch-enable';
+    chk.id='chk'+i;
+    chk.checked=chConfig[i].enabled;
+    // チェックボックス自体はpointer-events:autoを明示
+    chk.style.pointerEvents='auto';
+    chk.style.cursor='pointer';
+    chk.addEventListener('change', (function(idx){ return function(){
+      chConfig[idx].enabled = this.checked;
+      document.getElementById('ch-card-'+idx).classList.toggle('disabled', !this.checked);
+    }})(i));
+
+    hdr.appendChild(dot);
+    hdr.appendChild(lbl);
+    hdr.appendChild(chk);
+
+    const inp = document.createElement('input');
+    inp.className='ch-input';
+    inp.id='chTarget'+i;
+    inp.placeholder=['例：インフルエンザ A','例：インフルエンザ B','例：RSウイルス','例：内部標準 (IC)'][i];
+    inp.value=chConfig[i].target;
+    inp.addEventListener('input', (function(idx){ return function(){ chConfig[idx].target=this.value; }})(i));
+
+    card.appendChild(hdr);
+    card.appendChild(inp);
     grid.appendChild(card);
-    updateChCard(i);
   });
-}
-function toggleCh(i){
-  chConfig[i].enabled = document.getElementById('chk'+i).checked;
-  updateChCard(i);
-}
-function updateChCard(i){
-  document.getElementById('ch-card-'+i).classList.toggle('disabled',!chConfig[i].enabled);
 }
 
 // =============================================
@@ -1075,52 +1125,243 @@ function finishRun(){
   document.getElementById('eduText').innerHTML=eduTxt;
 
   showPanel('result');
-  setTimeout(()=>drawFinalCurve(rs),80);
+  // 結果グラフ初期化
+  setTimeout(()=>initResultGraph(rs), 80);
 }
 
-function drawFinalCurve(rs){
-  const cv=document.getElementById('finalCanvas');
-  if(!cv)return;
-  const dpr=window.devicePixelRatio||1;
-  cv.width=cv.offsetWidth*dpr;cv.height=cv.offsetHeight*dpr;
-  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
-  const W=cv.offsetWidth,H=cv.offsetHeight;
-  const cycles=rs.cycles;
-  ctx.fillStyle='#050810';ctx.fillRect(0,0,W,H);
+// =============================================
+// 結果グラフ（2軸切替）
+// =============================================
+let resultRS = null;       // finishRun後のrunStateを保持
+let resultAxis = 'sample'; // 'sample' | 'channel'
+let resultSubIdx = 0;      // 選択中のサンプルindex or チャンネルindex
 
-  rs.channels.forEach((ch,ci)=>{
-    const fp0=rs.fluorParams[0][ci];
-    const maxRfu=fp0.baseline+fp0.plateau*1.05;
+// サンプル色（最大4色、チャンネル軸で各サンプルを区別）
+const SAMPLE_COLORS = ['#ffffff','#ffd740','#ff6e40','#69ff47'];
 
-    // 閾値
-    const thY=H-((fp0.thresh-fp0.baseline)/(maxRfu-fp0.baseline+1))*(H-10)-5;
-    ctx.setLineDash([3,3]);ctx.strokeStyle=ch.color+'66';ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(28,thY);ctx.lineTo(W,thY);ctx.stroke();ctx.setLineDash([]);
+function initResultGraph(rs){
+  resultRS  = rs;
+  resultAxis   = 'sample';
+  resultSubIdx = 0;
+  buildResultSubTabs();
+  drawResultGraph();
+}
 
-    rs.samples.forEach((_,si)=>{
-      const fp=rs.fluorParams[si][ci];
-      const data=rs.fluorByCycle[si][ci].filter((v,i)=>i>0&&v!=null);
-      if(data.length<2)return;
-      const alpha=1-si*0.18;
-      ctx.beginPath();ctx.strokeStyle=ch.color;ctx.lineWidth=1.5;
-      ctx.globalAlpha=alpha;ctx.shadowColor=ch.color;ctx.shadowBlur=3;
+function switchResultAxis(axis){
+  resultAxis   = axis;
+  resultSubIdx = 0;
+  // 軸タブのスタイル更新
+  const stS = document.getElementById('axisTabSample');
+  const stC = document.getElementById('axisTabChannel');
+  if(axis==='sample'){
+    stS.style.background='#071510'; stS.style.color='var(--green)';
+    stC.style.background='#0a1520'; stC.style.color='#2e4558';
+  } else {
+    stC.style.background='#071510'; stC.style.color='var(--green)';
+    stS.style.background='#0a1520'; stS.style.color='#2e4558';
+  }
+  buildResultSubTabs();
+  drawResultGraph();
+}
+
+function buildResultSubTabs(){
+  const rs  = resultRS;
+  if(!rs) return;
+  const wrap = document.getElementById('resultSubTabs');
+  wrap.innerHTML = '';
+
+  if(resultAxis === 'sample'){
+    // サンプルタブ → 選んだサンプルの全チャンネルを表示
+    rs.samples.forEach((name, si) => {
+      const el = document.createElement('div');
+      el.className = 'ch-tab';
+      const active = si === resultSubIdx;
+      el.style.borderColor  = active ? '#00e676' : '#1a2535';
+      el.style.color        = active ? '#00e676' : '#2e4558';
+      el.style.background   = active ? '#071510' : '#0a1520';
+      el.innerHTML = `<span style="color:${SAMPLE_COLORS[si]}">●</span> ${escHtml(name)}`;
+      el.onclick = () => { resultSubIdx = si; buildResultSubTabs(); drawResultGraph(); };
+      wrap.appendChild(el);
+    });
+    document.getElementById('finalGraphLabel').textContent =
+      `📈 ${escHtml(rs.samples[resultSubIdx])} — 全チャンネル比較`;
+  } else {
+    // チャンネルタブ → 選んだチャンネルの全サンプルを表示
+    rs.channels.forEach((ch, ci) => {
+      const el = document.createElement('div');
+      el.className = 'ch-tab';
+      const active = ci === resultSubIdx;
+      el.style.borderColor  = active ? ch.color : '#1a2535';
+      el.style.color        = active ? ch.color : '#2e4558';
+      el.style.background   = active ? '#071510' : '#0a1520';
+      el.innerHTML = `<span style="color:${ch.color}">●</span> ${ch.name}<span style="font-size:8px;opacity:.6;margin-left:4px">${ch.target.slice(0,10)}</span>`;
+      el.onclick = () => { resultSubIdx = ci; buildResultSubTabs(); drawResultGraph(); };
+      wrap.appendChild(el);
+    });
+    const ch = rs.channels[resultSubIdx];
+    document.getElementById('finalGraphLabel').textContent =
+      `📈 ${ch.name}（${ch.target}）— 全サンプル比較`;
+  }
+}
+
+function drawResultGraph(){
+  const rs = resultRS;
+  if(!rs) return;
+  const cv = document.getElementById('finalCanvas');
+  if(!cv) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  cv.width  = cv.offsetWidth  * dpr;
+  cv.height = cv.offsetHeight * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = cv.offsetWidth, H = cv.offsetHeight;
+  const cycles = rs.cycles;
+  const PAD_L = 32, PAD_B = 14, PAD_T = 8, PAD_R = 8;
+  const gW = W - PAD_L - PAD_R;
+  const gH = H - PAD_T - PAD_B;
+
+  ctx.fillStyle = '#050810'; ctx.fillRect(0,0,W,H);
+
+  // ---- グリッド・軸ラベル ----
+  const xPos = n => PAD_L + ((n-1)/(cycles-1)) * gW;
+  const yPos = (v, base, max) => PAD_T + gH - Math.max(0, Math.min(1, (v-base)/(max-base+1))) * gH;
+
+  // X 軸ラベル
+  ctx.fillStyle = '#1a3050'; ctx.font = `${8*dpr}px monospace`;
+  [1,10,20,30,40,45].filter(n=>n<=cycles).forEach(n=>{
+    ctx.fillText(n, xPos(n)-4, H-2);
+  });
+  // X 軸ライン
+  ctx.strokeStyle = '#0d1828'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD_L, PAD_T+gH); ctx.lineTo(W-PAD_R, PAD_T+gH); ctx.stroke();
+
+  // ---- データを描画 ----
+  if(resultAxis === 'sample'){
+    // 選択サンプル × 全チャンネル
+    const si = resultSubIdx;
+    // Y スケール：全チャンネルの最大値を統一
+    const globalMax = Math.max(...rs.channels.map((_,ci)=>{
+      const fp=rs.fluorParams[si][ci]; return fp.baseline+fp.plateau*1.05;
+    }));
+    const globalBase = Math.min(...rs.channels.map((_,ci)=>rs.fluorParams[si][ci].baseline));
+
+    // Y グリッド
+    [0,.25,.5,.75,1].forEach(r=>{
+      const y=PAD_T+gH-r*gH;
+      ctx.strokeStyle='#091525';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(W-PAD_R,y);ctx.stroke();
+      ctx.fillStyle='#1a3050';ctx.font=`${7*dpr}px monospace`;
+      ctx.fillText(Math.round(globalBase+r*(globalMax-globalBase)),0,y+3);
+    });
+
+    rs.channels.forEach((ch, ci)=>{
+      const fp   = rs.fluorParams[si][ci];
+      const data = rs.fluorByCycle[si][ci].filter((v,i)=>i>0&&v!=null);
+      if(data.length < 2) return;
+
+      // 閾値ライン
+      const thY = yPos(fp.thresh, globalBase, globalMax);
+      ctx.setLineDash([3,3]); ctx.strokeStyle=ch.color+'55'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(PAD_L,thY); ctx.lineTo(W-PAD_R,thY); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Ct 縦線
+      if(fp.ctDet){
+        const cx = xPos(fp.ctDet);
+        ctx.strokeStyle=ch.color+'88'; ctx.lineWidth=1; ctx.setLineDash([2,3]);
+        ctx.beginPath(); ctx.moveTo(cx,PAD_T); ctx.lineTo(cx,PAD_T+gH); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle=ch.color; ctx.font=`${8*dpr}px monospace`;
+        ctx.fillText(`Ct=${fp.ctDet}`, cx+2, PAD_T+12+ci*11);
+      }
+
+      // 増幅曲線
+      ctx.beginPath();
+      ctx.strokeStyle=ch.color; ctx.lineWidth=2;
+      ctx.shadowColor=ch.color; ctx.shadowBlur=5;
       data.forEach((v,i)=>{
-        const x=28+((i)/(cycles-1))*(W-28);
-        const y=H-Math.max(0,Math.min(1,(v-fp.baseline)/(maxRfu-fp.baseline+1)))*(H-10)-5;
+        const x=xPos(i+1), y=yPos(v,globalBase,globalMax);
         i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
       });
-      ctx.stroke();ctx.globalAlpha=1;ctx.shadowBlur=0;
-    });
-    // チャンネル凡例
-    ctx.fillStyle=ch.color;ctx.font=`${8*dpr}px monospace`;
-    ctx.fillText(`●${ch.name}(${ch.target.slice(0,8)})`,W-130,12+ci*11);
-  });
+      ctx.stroke(); ctx.shadowBlur=0;
 
-  ctx.fillStyle='#1a3050';ctx.font=`${8*dpr}px monospace`;
-  [10,20,30,40,45].filter(n=>n<=cycles).forEach(n=>{
-    const x=28+((n-1)/(cycles-1))*(W-28);
-    ctx.fillText(n,x-4,H-1);
-  });
+      // 末端点
+      const lv=data[data.length-1];
+      const lx=xPos(data.length), ly=yPos(lv,globalBase,globalMax);
+      ctx.beginPath(); ctx.arc(lx,ly,3,0,Math.PI*2);
+      ctx.fillStyle=ch.color; ctx.shadowColor=ch.color; ctx.shadowBlur=8;
+      ctx.fill(); ctx.shadowBlur=0;
+
+      // 凡例（右端）
+      ctx.fillStyle=ch.color; ctx.font=`${8*dpr}px monospace`;
+      ctx.fillText(`●${ch.name}`, W-PAD_R-60, PAD_T+8+ci*11);
+    });
+
+  } else {
+    // 選択チャンネル × 全サンプル
+    const ci = resultSubIdx;
+    const ch = rs.channels[ci];
+    // Y スケール：全サンプルの最大値を統一
+    const globalMax  = Math.max(...rs.samples.map((_,si)=>{const fp=rs.fluorParams[si][ci];return fp.baseline+fp.plateau*1.05;}));
+    const globalBase = Math.min(...rs.samples.map((_,si)=>rs.fluorParams[si][ci].baseline));
+
+    // Y グリッド
+    [0,.25,.5,.75,1].forEach(r=>{
+      const y=PAD_T+gH-r*gH;
+      ctx.strokeStyle='#091525';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(W-PAD_R,y);ctx.stroke();
+      ctx.fillStyle='#1a3050';ctx.font=`${7*dpr}px monospace`;
+      ctx.fillText(Math.round(globalBase+r*(globalMax-globalBase)),0,y+3);
+    });
+
+    // 閾値（チャンネル共通：sample0のthreshを代表に）
+    const fpRef  = rs.fluorParams[0][ci];
+    const thY    = yPos(fpRef.thresh, globalBase, globalMax);
+    ctx.setLineDash([3,3]); ctx.strokeStyle=ch.color+'55'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(PAD_L,thY); ctx.lineTo(W-PAD_R,thY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=ch.color+'88'; ctx.font=`${8*dpr}px monospace`;
+    ctx.fillText('threshold', W-PAD_R-58, thY-3);
+
+    rs.samples.forEach((sname, si)=>{
+      const fp   = rs.fluorParams[si][ci];
+      const data = rs.fluorByCycle[si][ci].filter((v,i)=>i>0&&v!=null);
+      if(data.length < 2) return;
+      const sc   = SAMPLE_COLORS[si];
+
+      // Ct 縦線
+      if(fp.ctDet){
+        const cx = xPos(fp.ctDet);
+        ctx.strokeStyle=sc+'88'; ctx.lineWidth=1; ctx.setLineDash([2,3]);
+        ctx.beginPath(); ctx.moveTo(cx,PAD_T); ctx.lineTo(cx,PAD_T+gH); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle=sc; ctx.font=`${8*dpr}px monospace`;
+        ctx.fillText(`Ct=${fp.ctDet}`, cx+2, PAD_T+12+si*11);
+      }
+
+      // 増幅曲線
+      ctx.beginPath();
+      ctx.strokeStyle=sc; ctx.lineWidth=2;
+      ctx.shadowColor=sc; ctx.shadowBlur=4;
+      data.forEach((v,i)=>{
+        const x=xPos(i+1), y=yPos(v,globalBase,globalMax);
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.stroke(); ctx.shadowBlur=0;
+
+      // 末端点
+      const lv=data[data.length-1];
+      const lx=xPos(data.length), ly=yPos(lv,globalBase,globalMax);
+      ctx.beginPath(); ctx.arc(lx,ly,3,0,Math.PI*2);
+      ctx.fillStyle=sc; ctx.shadowColor=sc; ctx.shadowBlur=7;
+      ctx.fill(); ctx.shadowBlur=0;
+
+      // 凡例
+      ctx.fillStyle=sc; ctx.font=`${8*dpr}px monospace`;
+      ctx.fillText(`●${escHtml(sname).slice(0,8)}`, W-PAD_R-65, PAD_T+8+si*11);
+    });
+  }
 }
 
 // =============================================
