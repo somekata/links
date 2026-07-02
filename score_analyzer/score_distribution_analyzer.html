@@ -167,6 +167,30 @@
   }
   .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
 
+  /* ---------- Exam info card ---------- */
+  .info-card{ margin: 18px 0 0; }
+  .info-card .card-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .info-card .card-head h2{ margin:0; }
+  .info-card .card-head .desc-inline{ margin:0; font-size:12.5px; color:var(--muted); }
+  .info-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px 18px; }
+  @media (max-width:640px){ .info-grid{ grid-template-columns: 1fr; } }
+  .info-field{ display:flex; flex-direction:column; gap:6px; }
+  .info-field.full{ grid-column: 1 / -1; }
+  .info-field .field-top{ display:flex; align-items:center; justify-content:space-between; }
+  .info-field label{ font-size:12px; font-weight:700; color: var(--muted); letter-spacing:.02em; }
+  .info-field .toggle{ display:flex; align-items:center; gap:5px; font-size:11.5px; color: var(--muted); cursor:pointer; user-select:none; }
+  .info-field .toggle input{ accent-color: var(--primary); width:13px; height:13px; cursor:pointer; }
+  .info-field input[type=text], .info-field input[type=date], .info-field textarea{
+    border:1px solid var(--border); border-radius:9px; padding:9px 11px; font-size:13.5px;
+    font-family:inherit; color: var(--ink); background: var(--surface); resize:vertical;
+  }
+  .info-field textarea{ min-height:52px; }
+  .info-field input:focus, .info-field textarea:focus{ outline:none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .info-field.disabled input, .info-field.disabled textarea{ opacity:.45; }
+  .normalize-row{ flex-direction:row; align-items:center; }
+  .toggle.big{ font-size:13px; color: var(--ink); display:flex; align-items:center; gap:8px; }
+  .toggle.big input{ width:15px; height:15px; }
+
   footer.disclaimer{
     margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
     font-size: 11.5px; color: var(--muted); line-height:1.7;
@@ -208,11 +232,68 @@
     </div>
   </header>
 
+  <div class="card info-card">
+    <div class="card-head">
+      <h2>採点設定</h2>
+      <p class="desc-inline">満点・合格点を変更すると、統計・グラフ・出力すべてに反映されます。</p>
+    </div>
+    <div class="info-grid">
+      <div class="info-field">
+        <div class="field-top"><label for="in-fullscore">満点</label></div>
+        <input type="number" id="in-fullscore" min="1" step="1" value="100">
+      </div>
+      <div class="info-field">
+        <div class="field-top"><label for="in-passscore">合格点</label></div>
+        <input type="number" id="in-passscore" min="0" step="1" value="60">
+      </div>
+      <div class="info-field full normalize-row">
+        <label class="toggle big"><input type="checkbox" id="chk-normalize">100点満点に換算して統計・グラフを表示する（満点が100点以外の場合に使用）</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card info-card">
+    <div class="card-head">
+      <h2>試験情報</h2>
+      <p class="desc-inline">入力すると出力（HTML／CSV／Word）に反映されます。チェックを外した項目は出力に含まれません。</p>
+    </div>
+    <div class="info-grid">
+      <div class="info-field" id="field-examname">
+        <div class="field-top">
+          <label for="in-examname">試験名</label>
+          <label class="toggle"><input type="checkbox" id="chk-examname" checked>出力に含める</label>
+        </div>
+        <input type="text" id="in-examname" placeholder="例）第3回 中間試験">
+      </div>
+      <div class="info-field" id="field-examdate">
+        <div class="field-top">
+          <label for="in-examdate">実施日</label>
+          <label class="toggle"><input type="checkbox" id="chk-examdate" checked>出力に含める</label>
+        </div>
+        <input type="date" id="in-examdate">
+      </div>
+      <div class="info-field full" id="field-comment">
+        <div class="field-top">
+          <label for="in-comment">コメント</label>
+          <label class="toggle"><input type="checkbox" id="chk-comment" checked>出力に含める</label>
+        </div>
+        <textarea id="in-comment" placeholder="例）平均点が前回より低め。30点台の受験者が多い。"></textarea>
+      </div>
+      <div class="info-field full" id="field-note">
+        <div class="field-top">
+          <label for="in-note">備考</label>
+          <label class="toggle"><input type="checkbox" id="chk-note" checked>出力に含める</label>
+        </div>
+        <textarea id="in-note" placeholder="例）欠席者2名を除く。再試験は7/20実施予定。"></textarea>
+      </div>
+    </div>
+  </div>
+
   <nav class="tabs">
     <button data-tab="overview" class="active">概要</button>
     <button data-tab="box">箱ひげ図</button>
     <button data-tab="hist">ヒストグラム</button>
-    <button data-tab="under60">60点未満<span class="badge" id="tab-badge">0</span></button>
+    <button data-tab="under60"><span id="tab-pass-label">60</span>点未満<span class="badge" id="tab-badge">0</span></button>
     <button data-tab="export">出力</button>
     <button data-tab="howto">使い方</button>
   </nav>
@@ -240,9 +321,9 @@
           <div class="stat"><div class="label">第1四分位数 (Q1)</div><div class="value" id="s-q1">–</div></div>
           <div class="stat"><div class="label">第3四分位数 (Q3)</div><div class="value" id="s-q3">–</div></div>
           <div class="stat"><div class="label">四分位範囲 (IQR)</div><div class="value" id="s-iqr">–</div></div>
-          <div class="stat alert"><div class="label">60点未満</div><div class="value" id="s-under">–<span class="unit">名</span></div></div>
-          <div class="stat good"><div class="label">60点以上</div><div class="value" id="s-over">–<span class="unit">名</span></div></div>
-          <div class="stat"><div class="label">60点未満の割合</div><div class="value" id="s-underpct">–<span class="unit">%</span></div></div>
+          <div class="stat alert"><div class="label"><span id="lbl-under">60点</span>未満</div><div class="value" id="s-under">–<span class="unit">名</span></div></div>
+          <div class="stat good"><div class="label"><span id="lbl-over">60点</span>以上</div><div class="value" id="s-over">–<span class="unit">名</span></div></div>
+          <div class="stat"><div class="label"><span id="lbl-underpct">60点</span>未満の割合</div><div class="value" id="s-underpct">–<span class="unit">%</span></div></div>
         </div>
       </div>
     </section>
@@ -289,14 +370,14 @@
       </div>
     </section>
 
-    <!-- UNDER 60 -->
+    <!-- UNDER PASS SCORE -->
     <section class="tab-panel" id="panel-under60">
       <div class="card">
-        <h2>60点未満の受験者一覧</h2>
-        <p class="desc"><b id="u60-count">0</b> 名が60点未満です（得点の低い順）。</p>
+        <h2><span id="lbl-under-title">60点</span>未満の受験者一覧</h2>
+        <p class="desc"><b id="u60-count">0</b> 名が <span id="lbl-under-desc">60点</span>未満です（得点の低い順）。</p>
         <div class="table-scroll">
           <table id="under60-table">
-            <thead><tr><th>ID</th><th>得点</th></tr></thead>
+            <thead><tr id="under60-thead-row"><th>ID</th><th>得点</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -318,13 +399,13 @@
           <div class="export-card">
             <span class="tag">CSV</span>
             <h3>統計サマリー（CSV）</h3>
-            <p>最低点・最高点・平均・中央値・60点未満数などの集計値をCSVで保存します。</p>
+            <p>最低点・最高点・平均・中央値・合格点未満数などの集計値をCSVで保存します。</p>
             <button class="export-btn" id="export-csv-summary">サマリーCSVを保存</button>
           </div>
           <div class="export-card">
             <span class="tag">CSV</span>
-            <h3>60点未満リスト（CSV）</h3>
-            <p>60点未満のID・得点一覧をCSVで保存します。</p>
+            <h3><span id="lbl-under-export">60点</span>未満リスト（CSV）</h3>
+            <p><span id="lbl-under-export2">60点</span>未満のID・得点一覧をCSVで保存します。</p>
             <button class="export-btn" id="export-csv-under60">リストCSVを保存</button>
           </div>
         </div>
@@ -383,14 +464,28 @@
       </div>
 
       <div class="card">
+        <h2>採点設定（満点・合格点）</h2>
+        <p class="desc" style="margin-bottom:0;">
+          既定では満点100点・合格点60点として集計します。100点満点以外の試験（例: 50点満点）の場合は「採点設定」の満点を変更してください。合格点も自由に設定できます（例: 70点合格の資格試験など）。「100点満点に換算して表示」にチェックすると、統計量・箱ひげ図・ヒストグラムがすべて100点換算値で表示されます（合否判定そのものは元の得点で行われるため変わりません）。
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>試験情報（試験名・実施日・コメント・備考）</h2>
+        <p class="desc" style="margin-bottom:0;">
+          「採点設定」の下にある「試験情報」欄に、試験名・実施日・コメント・備考を自由に入力できます。入力した内容は出力（HTMLレポート／統計サマリーCSV／Word文書）にそのまま反映されます。各項目の「出力に含める」チェックを外すと、その項目だけを出力から除外できます（画面上には残ります）。空欄の項目は出力されません。
+        </p>
+      </div>
+
+      <div class="card">
         <h2>各タブの見方</h2>
         <table>
           <tbody>
             <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">概要</td><td style="text-align:left;">受験者数・最低点・最高点・平均・中央値・標準偏差・四分位数など基本統計量の一覧。</td></tr>
             <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">箱ひげ図</td><td style="text-align:left;">五数要約（最小・Q1・中央値・Q3・最大）と平均（◆）、外れ値（1.5×IQRを超える値）を表示。</td></tr>
             <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">ヒストグラム</td><td style="text-align:left;">10点刻みの度数分布と、度数・相対度数・累積度数の対応表。</td></tr>
-            <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">60点未満</td><td style="text-align:left;">60点未満の受験者を得点の低い順に一覧表示（人数はタブ横のバッジにも表示）。</td></tr>
-            <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">出力</td><td style="text-align:left;">現在の分析結果を HTMLレポート／統計サマリーCSV／60点未満リストCSV／Word文書 として保存。</td></tr>
+            <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">合格点未満</td><td style="text-align:left;">「採点設定」で指定した合格点（デフォルト60点）に満たない受験者を得点の低い順に一覧表示（人数はタブ横のバッジにも表示）。</td></tr>
+            <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">出力</td><td style="text-align:left;">現在の分析結果を HTMLレポート／統計サマリーCSV／合格点未満リストCSV／Word文書 として保存。</td></tr>
           </tbody>
         </table>
       </div>
@@ -501,6 +596,13 @@ function parseCSV(text){
   return out;
 }
 
+/* ---------------- Scoring settings (満点・合格点・100点換算) ---------------- */
+let fullScore = 100;
+let passScore = 60;
+let normalize = false;
+
+function toDisplay(v){ return normalize ? (v * 100 / fullScore) : v; }
+
 /* ---------------- Stats ---------------- */
 function median(sortedArr){
   const m = sortedArr.length;
@@ -510,14 +612,20 @@ function median(sortedArr){
 }
 
 function computeStats(data){
-  const scores = data.map(d => d.score).slice().sort((a,b) => a-b);
+  // Records carry both the original raw score and the display-scale score
+  // (identical unless "100点換算" is enabled). Pass/fail is always decided
+  // on the raw score against the raw 合格点 the user entered; everything
+  // shown on screen (stats, chart axes, tables) uses the display scale.
+  const records = data.map(d => ({ id: d.id, raw: d.score, score: toDisplay(d.score) }))
+                       .sort((a,b) => a.score - b.score);
+  const scores = records.map(r => r.score);
   const n = scores.length;
   const min = scores[0], max = scores[n-1];
   const mean = scores.reduce((a,b) => a+b, 0) / n;
   const variance = scores.reduce((a,b) => a + Math.pow(b-mean,2), 0) / n;
   const sd = Math.sqrt(variance);
   const mid = Math.floor(n/2);
-  const lower = n % 2 ? scores.slice(0, mid) : scores.slice(0, mid);
+  const lower = scores.slice(0, mid);
   const upper = n % 2 ? scores.slice(mid+1) : scores.slice(mid);
   const med = median(scores);
   const q1 = median(lower);
@@ -529,15 +637,21 @@ function computeStats(data){
   const whiskerLow = inFence.length ? inFence[0] : min;
   const whiskerHigh = inFence.length ? inFence[inFence.length-1] : max;
   const outliers = scores.filter(s => s < fenceLow || s > fenceHigh);
-  const under60 = data.filter(d => d.score < 60).slice().sort((a,b) => a.score - b.score);
-  const over60 = n - under60.length;
+
+  const passDisp = toDisplay(passScore);
+  const underPass = records.filter(r => r.raw < passScore).slice().sort((a,b) => a.raw - b.raw);
+  const overPass = n - underPass.length;
+  const domainBase = normalize ? 100 : fullScore;
+  const domainMax = Math.max(domainBase, max);
 
   return {
     n, min, max, mean, sd, median: med, q1, q3, iqr,
     whiskerLow, whiskerHigh, outliers,
-    under60, over60,
-    underPct: (under60.length / n) * 100,
-    scoresSorted: scores
+    underPass, overPass,
+    underPct: (underPass.length / n) * 100,
+    scoresSorted: scores,
+    passDisp, domainMax,
+    fullScore, passScore, normalize
   };
 }
 
@@ -547,11 +661,25 @@ function fmt(v, d=1){
   return (r % 1 === 0) ? String(r) : r.toFixed(d);
 }
 
+// Chart canvases live inside tab panels that are display:none when not
+// active, which makes their own clientWidth read as 0. ".app" is never
+// hidden, so we derive the chart width from it (minus the .app and .card
+// padding) instead of the canvas's own (possibly-hidden) parent. This keeps
+// charts correctly sized for HTML/Word export even if the person never
+// opened the 箱ひげ図/ヒストグラム tabs before exporting.
+function getChartWidth(){
+  const app = document.querySelector('.app');
+  const w = app ? app.clientWidth : 1000;
+  return Math.max(260, w - 84); // 84 = .app padding (40) + .card padding (44)
+}
+
 /* ---------------- Rendering: header + overview ---------------- */
 function renderOverview(stats){
+  const passLabel = fmt(stats.passDisp,1) + '点';
+
   document.getElementById('hdr-n').textContent = stats.n;
   document.getElementById('hdr-mean').textContent = fmt(stats.mean);
-  document.getElementById('hdr-under').textContent = stats.under60.length;
+  document.getElementById('hdr-under').textContent = stats.underPass.length;
   document.getElementById('hdr-filename').textContent = currentFileLabel + ' を表示中';
 
   document.getElementById('s-n').innerHTML = stats.n + '<span class="unit">名</span>';
@@ -564,11 +692,19 @@ function renderOverview(stats){
   document.getElementById('s-q1').textContent = fmt(stats.q1);
   document.getElementById('s-q3').textContent = fmt(stats.q3);
   document.getElementById('s-iqr').textContent = fmt(stats.iqr);
-  document.getElementById('s-under').innerHTML = stats.under60.length + '<span class="unit">名</span>';
-  document.getElementById('s-over').innerHTML = stats.over60 + '<span class="unit">名</span>';
+  document.getElementById('s-under').innerHTML = stats.underPass.length + '<span class="unit">名</span>';
+  document.getElementById('s-over').innerHTML = stats.overPass + '<span class="unit">名</span>';
   document.getElementById('s-underpct').innerHTML = fmt(stats.underPct) + '<span class="unit">%</span>';
 
-  document.getElementById('tab-badge').textContent = stats.under60.length;
+  document.getElementById('lbl-under').textContent = passLabel;
+  document.getElementById('lbl-over').textContent = passLabel;
+  document.getElementById('lbl-underpct').textContent = passLabel;
+  document.getElementById('lbl-under-title').textContent = passLabel;
+  document.getElementById('lbl-under-desc').textContent = passLabel;
+  document.getElementById('lbl-under-export').textContent = passLabel;
+  document.getElementById('lbl-under-export2').textContent = passLabel;
+  document.getElementById('tab-pass-label').textContent = fmt(stats.passDisp,1);
+  document.getElementById('tab-badge').textContent = stats.underPass.length;
 
   const row = document.getElementById('five-num-row');
   row.innerHTML = `<td>${fmt(stats.min,0)}</td><td>${fmt(stats.q1)}</td><td>${fmt(stats.median)}</td><td>${fmt(stats.q3)}</td><td>${fmt(stats.max,0)}</td><td>${fmt(stats.iqr)}</td>`;
@@ -581,25 +717,28 @@ function renderScoreBar(stats){
   const svg = document.getElementById('scorebar-svg');
   const W = 1000, H = 58;
   const axisY = 40;
-  const domainMax = Math.max(100, stats.max);
+  const domainMax = stats.domainMax;
+  const pass = stats.passDisp;
+  const tickStep = domainMax > 60 ? 10 : (domainMax > 20 ? 5 : 1);
+  const labelEvery = tickStep * 2;
   const x = v => 20 + (v / domainMax) * (W - 40);
 
   let parts = [];
   // baseline
   parts.push(`<line x1="${x(0)}" y1="${axisY}" x2="${x(domainMax)}" y2="${axisY}" stroke="#DCE4DF" stroke-width="2"/>`);
-  // alert zone (<60)
-  parts.push(`<rect x="${x(0)}" y="${axisY-5}" width="${x(60)-x(0)}" height="10" fill="#B8443B" opacity="0.10" rx="4"/>`);
-  parts.push(`<rect x="${x(60)}" y="${axisY-5}" width="${x(domainMax)-x(60)}" height="10" fill="#1E7A63" opacity="0.08" rx="4"/>`);
+  // alert zone (< pass)
+  parts.push(`<rect x="${x(0)}" y="${axisY-5}" width="${x(pass)-x(0)}" height="10" fill="#B8443B" opacity="0.10" rx="4"/>`);
+  parts.push(`<rect x="${x(pass)}" y="${axisY-5}" width="${x(domainMax)-x(pass)}" height="10" fill="#1E7A63" opacity="0.08" rx="4"/>`);
   // ticks
-  for(let t=0; t<=domainMax; t+=10){
+  for(let t=0; t<=domainMax + 0.001; t+=tickStep){
     parts.push(`<line x1="${x(t)}" y1="${axisY-2}" x2="${x(t)}" y2="${axisY+4}" stroke="#B9C4BE" stroke-width="1"/>`);
-    if(t % 20 === 0){
-      parts.push(`<text x="${x(t)}" y="${axisY+16}" font-size="9" fill="#8A948E" text-anchor="middle">${t}</text>`);
+    if(Math.round(t*10) % Math.round(labelEvery*10) === 0){
+      parts.push(`<text x="${x(t)}" y="${axisY+16}" font-size="9" fill="#8A948E" text-anchor="middle">${fmt(t,1)}</text>`);
     }
   }
-  // 60 line
-  parts.push(`<line x1="${x(60)}" y1="${axisY-14}" x2="${x(60)}" y2="${axisY+4}" stroke="#B8443B" stroke-width="1.5" stroke-dasharray="2,2"/>`);
-  parts.push(`<text x="${x(60)}" y="${axisY-17}" font-size="9.5" fill="#B8443B" text-anchor="middle" font-weight="700">60点</text>`);
+  // pass line
+  parts.push(`<line x1="${x(pass)}" y1="${axisY-14}" x2="${x(pass)}" y2="${axisY+4}" stroke="#B8443B" stroke-width="1.5" stroke-dasharray="2,2"/>`);
+  parts.push(`<text x="${x(pass)}" y="${axisY-17}" font-size="9.5" fill="#B8443B" text-anchor="middle" font-weight="700">${fmt(pass,1)}点</text>`);
 
   // IQR band
   parts.push(`<rect x="${x(stats.q1)}" y="${axisY-9}" width="${x(stats.q3)-x(stats.q1)}" height="18" fill="#12564F" opacity="0.16" rx="3"/>`);
@@ -627,7 +766,7 @@ function renderScoreBar(stats){
 function renderBoxplot(stats){
   const canvas = document.getElementById('box-canvas');
   const dpr = window.devicePixelRatio || 1;
-  const cssW = canvas.parentElement.clientWidth;
+  const cssW = getChartWidth();
   const cssH = 220;
   canvas.width = cssW * dpr;
   canvas.height = cssH * dpr;
@@ -636,7 +775,10 @@ function renderBoxplot(stats){
   ctx.scale(dpr, dpr);
   ctx.clearRect(0,0,cssW,cssH);
 
-  const domainMax = Math.max(100, stats.max);
+  const domainMax = stats.domainMax;
+  const pass = stats.passDisp;
+  const tickStep = domainMax > 60 ? 10 : (domainMax > 20 ? 5 : 1);
+  const labelEvery = tickStep * 2;
   const padL = 50, padR = 30;
   const plotW = cssW - padL - padR;
   const y0 = 90;
@@ -647,11 +789,11 @@ function renderBoxplot(stats){
   ctx.strokeStyle = '#DCE4DF'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(padL, y0+boxH/2+40); ctx.lineTo(cssW-padR, y0+boxH/2+40); ctx.stroke();
   ctx.fillStyle = '#8A948E'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-  for(let t=0; t<=domainMax; t+=10){
+  for(let t=0; t<=domainMax+0.001; t+=tickStep){
     ctx.beginPath();
     ctx.moveTo(x(t), y0+boxH/2+40); ctx.lineTo(x(t), y0+boxH/2+45);
     ctx.strokeStyle = '#DCE4DF'; ctx.stroke();
-    if(t % 20 === 0) ctx.fillText(t, x(t), y0+boxH/2+58);
+    if(Math.round(t*10) % Math.round(labelEvery*10) === 0) ctx.fillText(fmt(t,1), x(t), y0+boxH/2+58);
   }
 
   // whiskers
@@ -688,23 +830,28 @@ function renderBoxplot(stats){
     ctx.beginPath(); ctx.arc(x(v), my, 4, 0, Math.PI*2); ctx.fill();
   });
 
-  // 60 line
+  // pass-score line
   ctx.strokeStyle = '#B8443B'; ctx.setLineDash([3,3]); ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.moveTo(x(60), y0-14); ctx.lineTo(x(60), y0+boxH+14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x(pass), y0-14); ctx.lineTo(x(pass), y0+boxH+14); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = '#B8443B'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('60点', x(60), y0-18);
+  ctx.fillText(fmt(pass,1) + '点', x(pass), y0-18);
 }
 
 /* ---------------- Histogram ---------------- */
-function buildBins(scores){
+function buildBins(scores, domainMax, pass){
+  const binWidth = domainMax / 10;
   const bins = [];
   for(let i=0;i<10;i++){
-    const lo = i*10, hi = (i===9) ? 100 : i*10+9;
-    bins.push({ lo, hi, label: (i===9? `${lo}〜100` : `${lo}〜${hi}`), count:0, under60: lo < 60 });
+    const lo = i*binWidth;
+    const hi = (i===9) ? domainMax : (i+1)*binWidth;
+    const label = (Number.isInteger(lo) && Number.isInteger(hi))
+      ? (i===9 ? `${lo}〜${hi}` : `${lo}〜${hi-1}`)
+      : `${fmt(lo,1)}〜${fmt(hi,1)}`;
+    bins.push({ lo, hi, label, count:0, underPass: lo < pass });
   }
   scores.forEach(s=>{
-    let idx = Math.floor(s/10);
+    let idx = Math.floor(s/binWidth);
     if(idx > 9) idx = 9;
     if(idx < 0) idx = 0;
     bins[idx].count++;
@@ -713,10 +860,10 @@ function buildBins(scores){
 }
 
 function renderHistogram(stats){
-  const bins = buildBins(stats.scoresSorted);
+  const bins = buildBins(stats.scoresSorted, stats.domainMax, stats.passDisp);
   const canvas = document.getElementById('hist-canvas');
   const dpr = window.devicePixelRatio || 1;
-  const cssW = canvas.parentElement.clientWidth;
+  const cssW = getChartWidth();
   const cssH = 260;
   canvas.width = cssW*dpr; canvas.height = cssH*dpr;
   canvas.style.height = cssH+'px';
@@ -745,7 +892,7 @@ function renderHistogram(stats){
     const bh = (b.count/maxCount)*plotH;
     const bx = padL + i*(barW+barGap);
     const by = padT + plotH - bh;
-    ctx.fillStyle = b.under60 ? '#B8443B' : '#1E7A63';
+    ctx.fillStyle = b.underPass ? '#B8443B' : '#1E7A63';
     ctx.globalAlpha = 0.85;
     ctx.fillRect(bx, by, barW, bh);
     ctx.globalAlpha = 1;
@@ -753,7 +900,7 @@ function renderHistogram(stats){
       ctx.fillStyle = '#16211E'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign='center';
       ctx.fillText(b.count, bx+barW/2, by-5);
     }
-    ctx.fillStyle = '#667169'; ctx.font = '10px sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle = '#667169'; ctx.font = '9.5px sans-serif'; ctx.textAlign='center';
     ctx.fillText(b.label, bx+barW/2, cssH-padB+16);
   });
 
@@ -765,7 +912,7 @@ function renderHistogram(stats){
   bins.forEach(b=>{
     cum += b.count;
     const tr = document.createElement('tr');
-    if(b.under60) tr.classList.add('row-alert');
+    if(b.underPass) tr.classList.add('row-alert');
     tr.innerHTML = `<td>${b.label}</td><td>${b.count}</td><td>${fmt(b.count/n*100)}</td><td>${cum}</td><td>${fmt(cum/n*100)}</td>`;
     tbody.appendChild(tr);
   });
@@ -773,15 +920,21 @@ function renderHistogram(stats){
   return bins;
 }
 
-/* ---------------- Under 60 table ---------------- */
+/* ---------------- Under-pass-score table ---------------- */
 function renderUnder60(stats){
-  document.getElementById('u60-count').textContent = stats.under60.length;
+  document.getElementById('u60-count').textContent = stats.underPass.length;
+  const theadRow = document.getElementById('under60-thead-row');
   const tbody = document.querySelector('#under60-table tbody');
   tbody.innerHTML = '';
-  stats.under60.forEach(d=>{
+  theadRow.innerHTML = stats.normalize
+    ? '<th>ID</th><th>得点（元点）</th><th>換算後</th>'
+    : '<th>ID</th><th>得点</th>';
+  stats.underPass.forEach(d=>{
     const tr = document.createElement('tr');
     tr.classList.add('row-alert');
-    tr.innerHTML = `<td>${d.id}</td><td>${fmt(d.score,0)}</td>`;
+    tr.innerHTML = stats.normalize
+      ? `<td>${d.id}</td><td>${fmt(d.raw,0)}</td><td>${fmt(d.score,1)}</td>`
+      : `<td>${d.id}</td><td>${fmt(d.raw,0)}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -806,6 +959,30 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     if(btn.dataset.tab === 'hist') renderHistogram(currentStats);
   });
 });
+
+/* ---------------- Scoring settings wiring ---------------- */
+const inFullScore = document.getElementById('in-fullscore');
+const inPassScore = document.getElementById('in-passscore');
+const chkNormalize = document.getElementById('chk-normalize');
+
+function applySettingsFromInputs(){
+  let fs = parseFloat(inFullScore.value);
+  if(isNaN(fs) || fs <= 0){ fs = 100; inFullScore.value = 100; }
+  fullScore = fs;
+
+  let ps = parseFloat(inPassScore.value);
+  if(isNaN(ps)) { ps = 60; inPassScore.value = 60; }
+  if(ps < 0){ ps = 0; inPassScore.value = 0; }
+  if(ps > fullScore){ ps = fullScore; inPassScore.value = fullScore; showToast('合格点は満点以下にしてください'); }
+  passScore = ps;
+
+  normalize = chkNormalize.checked;
+}
+
+[inFullScore, inPassScore].forEach(el=>{
+  el.addEventListener('change', ()=>{ applySettingsFromInputs(); renderAll(); });
+});
+chkNormalize.addEventListener('change', ()=>{ applySettingsFromInputs(); renderAll(); });
 
 /* ---------------- File upload (click / drag & drop) ---------------- */
 function loadFile(file){
@@ -894,6 +1071,56 @@ function showToast(msg){
   showToast._timer = setTimeout(()=> t.classList.remove('show'), 2400);
 }
 
+/* ---------------- Exam info (試験名・実施日・コメント・備考) ---------------- */
+const infoFields = [
+  { key: 'examname', inputId: 'in-examname', chkId: 'chk-examname', wrapId: 'field-examname', label: '試験名' },
+  { key: 'examdate',  inputId: 'in-examdate',  chkId: 'chk-examdate',  wrapId: 'field-examdate',  label: '実施日' },
+  { key: 'comment',   inputId: 'in-comment',   chkId: 'chk-comment',   wrapId: 'field-comment',   label: 'コメント' },
+  { key: 'note',      inputId: 'in-note',      chkId: 'chk-note',      wrapId: 'field-note',      label: '備考' },
+];
+
+function formatExamDate(v){
+  if(!v) return '';
+  const d = new Date(v + 'T00:00:00');
+  if(isNaN(d.getTime())) return v;
+  return d.toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+}
+
+function updateFieldState(f){
+  const chk = document.getElementById(f.chkId);
+  const wrap = document.getElementById(f.wrapId);
+  wrap.classList.toggle('disabled', !chk.checked);
+  document.getElementById(f.inputId).disabled = !chk.checked;
+}
+
+infoFields.forEach(f=>{
+  document.getElementById(f.chkId).addEventListener('change', ()=> updateFieldState(f));
+  document.getElementById(f.inputId).addEventListener('input', ()=> {}); // reserved for future live-preview hooks
+  updateFieldState(f);
+});
+
+// Returns only the checked & non-empty fields, ready for report embedding.
+function getReportInfo(){
+  const out = [];
+  infoFields.forEach(f=>{
+    const chk = document.getElementById(f.chkId);
+    const raw = document.getElementById(f.inputId).value.trim();
+    if(!chk.checked || !raw) return;
+    const value = f.key === 'examdate' ? formatExamDate(raw) : raw;
+    out.push({ key: f.key, label: f.label, value });
+  });
+  return out;
+}
+
+// Human-readable summary of the current scoring settings, for report headers.
+function getScoringInfoLine(stats){
+  let line = `満点: ${fmt(stats.fullScore,0)}点　/　合格点: ${fmt(stats.passScore,0)}点`;
+  if(stats.fullScore !== 100){
+    line += stats.normalize ? '　/　100点換算で表示' : '　/　元点のまま表示';
+  }
+  return line;
+}
+
 /* ---------------- CSV downloads ---------------- */
 function downloadBlob(content, filename, mime){
   const blob = new Blob([content], { type: mime });
@@ -904,10 +1131,25 @@ function downloadBlob(content, filename, mime){
   URL.revokeObjectURL(url);
 }
 
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function csvField(v){
+  const str = String(v);
+  return /[",\r\n]/.test(str) ? '"' + str.replace(/"/g,'""') + '"' : str;
+}
+
 document.getElementById('export-csv-summary').addEventListener('click', ()=>{
   const s = currentStats;
-  const rows = [
-    ['項目','値'],
+  const info = getReportInfo();
+  const passLabel = fmt(s.passDisp,1);
+  const rows = [['項目','値']];
+  rows.push(['満点', fmt(s.fullScore,0)]);
+  rows.push(['合格点', fmt(s.passScore,0)]);
+  if(s.fullScore !== 100) rows.push(['100点換算表示', s.normalize ? 'ON' : 'OFF']);
+  info.forEach(f => rows.push([f.label, f.value]));
+  rows.push(
     ['受験者数', s.n],
     ['最低点', fmt(s.min,0)],
     ['最高点', fmt(s.max,0)],
@@ -917,30 +1159,38 @@ document.getElementById('export-csv-summary').addEventListener('click', ()=>{
     ['第1四分位数(Q1)', fmt(s.q1)],
     ['第3四分位数(Q3)', fmt(s.q3)],
     ['四分位範囲(IQR)', fmt(s.iqr)],
-    ['60点未満の人数', s.under60.length],
-    ['60点以上の人数', s.over60],
-    ['60点未満の割合(%)', fmt(s.underPct)],
-  ];
-  const csv = '\uFEFF' + rows.map(r=>r.join(',')).join('\r\n');
+    [`${passLabel}点未満の人数`, s.underPass.length],
+    [`${passLabel}点以上の人数`, s.overPass],
+    [`${passLabel}点未満の割合(%)`, fmt(s.underPct)],
+  );
+  const csv = '\uFEFF' + rows.map(r=>r.map(csvField).join(',')).join('\r\n');
   downloadBlob(csv, 'score_summary.csv', 'text/csv;charset=utf-8;');
   showToast('サマリーCSVを保存しました');
 });
 
 document.getElementById('export-csv-under60').addEventListener('click', ()=>{
   const s = currentStats;
-  const rows = [['id','score'], ...s.under60.map(d=>[d.id, fmt(d.score,0)])];
-  const csv = '\uFEFF' + rows.map(r=>r.join(',')).join('\r\n');
-  downloadBlob(csv, 'under60_list.csv', 'text/csv;charset=utf-8;');
-  showToast('60点未満リストCSVを保存しました');
+  const rows = s.normalize
+    ? [['id','score_raw','score_100'], ...s.underPass.map(d=>[d.id, fmt(d.raw,0), fmt(d.score,1)])]
+    : [['id','score'], ...s.underPass.map(d=>[d.id, fmt(d.raw,0)])];
+  const csv = '\uFEFF' + rows.map(r=>r.map(csvField).join(',')).join('\r\n');
+  downloadBlob(csv, 'under_pass_score_list.csv', 'text/csv;charset=utf-8;');
+  showToast(`${fmt(s.passDisp,1)}点未満リストCSVを保存しました`);
 });
 
 /* ---------------- HTML report export ---------------- */
 document.getElementById('export-html').addEventListener('click', ()=>{
   const s = currentStats;
+  const info = getReportInfo();
+  const passLabel = fmt(s.passDisp,1);
   const boxImg = document.getElementById('box-canvas').toDataURL('image/png');
   const histImg = document.getElementById('hist-canvas').toDataURL('image/png');
   const freqRows = document.querySelector('#freq-table tbody').innerHTML;
+  const under60Head = document.getElementById('under60-thead-row').innerHTML;
   const under60Rows = document.querySelector('#under60-table tbody').innerHTML;
+  const infoBlock = info.length ? `<div class="info-box">${info.map(f=>
+    `<div class="info-row"><span class="il">${escapeHtml(f.label)}</span><span class="iv">${escapeHtml(f.value).replace(/\n/g,'<br>')}</span></div>`
+  ).join('')}</div>` : '';
 
   const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <title>採点分布 分析レポート</title>
@@ -956,11 +1206,16 @@ thead th{background:#EEF3F0;}
 .stat .l{font-size:11px;color:#667169;} .stat .v{font-size:18px;font-weight:800;}
 img{max-width:100%;border:1px solid #DCE4DF;border-radius:8px;margin-top:8px;}
 .alertrow{color:#B8443B;font-weight:700;}
+.info-box{background:#EEF3F0;border-radius:8px;padding:12px 16px;margin-top:14px;}
+.info-row{display:flex;gap:10px;padding:4px 0;font-size:12.5px;}
+.info-row .il{flex:0 0 70px;color:#667169;font-weight:700;}
+.info-row .iv{flex:1;color:#16211E;}
 footer{margin-top:36px;padding-top:14px;border-top:1px solid #DCE4DF;font-size:11px;color:#667169;line-height:1.7;}
 </style></head><body>
 <h1>採点分布 分析レポート</h1>
 <p style="color:#667169;font-size:12.5px;">対象データ: ${currentFileLabel}　/　出力日: ${new Date().toLocaleDateString('ja-JP')}</p>
-
+<p style="color:#667169;font-size:12.5px;">${escapeHtml(getScoringInfoLine(s))}</p>
+${infoBlock}
 <h2>基本統計量</h2>
 <div class="stat-grid">
   <div class="stat"><div class="l">受験者数</div><div class="v">${s.n} 名</div></div>
@@ -970,8 +1225,8 @@ footer{margin-top:36px;padding-top:14px;border-top:1px solid #DCE4DF;font-size:1
   <div class="stat"><div class="l">中央値</div><div class="v">${fmt(s.median)} 点</div></div>
   <div class="stat"><div class="l">標準偏差</div><div class="v">${fmt(s.sd)} 点</div></div>
   <div class="stat"><div class="l">Q1 / Q3</div><div class="v">${fmt(s.q1)} / ${fmt(s.q3)}</div></div>
-  <div class="stat"><div class="l">60点未満</div><div class="v">${s.under60.length} 名（${fmt(s.underPct)}%）</div></div>
-  <div class="stat"><div class="l">60点以上</div><div class="v">${s.over60} 名</div></div>
+  <div class="stat"><div class="l">${passLabel}点未満</div><div class="v">${s.underPass.length} 名（${fmt(s.underPct)}%）</div></div>
+  <div class="stat"><div class="l">${passLabel}点以上</div><div class="v">${s.overPass} 名</div></div>
 </div>
 
 <h2>箱ひげ図</h2>
@@ -984,8 +1239,8 @@ footer{margin-top:36px;padding-top:14px;border-top:1px solid #DCE4DF;font-size:1
 <table><thead><tr><th>階級</th><th>度数</th><th>相対度数(%)</th><th>累積度数</th><th>累積相対度数(%)</th></tr></thead>
 <tbody>${freqRows}</tbody></table>
 
-<h2>60点未満の受験者一覧（${s.under60.length}名）</h2>
-<table><thead><tr><th>ID</th><th>得点</th></tr></thead>
+<h2>${passLabel}点未満の受験者一覧（${s.underPass.length}名）</h2>
+<table><thead><tr>${under60Head}</tr></thead>
 <tbody>${under60Rows}</tbody></table>
 
 <footer>
@@ -1000,10 +1255,16 @@ footer{margin-top:36px;padding-top:14px;border-top:1px solid #DCE4DF;font-size:1
 /* ---------------- DOCX (Word-compatible .doc) export ---------------- */
 document.getElementById('export-docx').addEventListener('click', ()=>{
   const s = currentStats;
+  const info = getReportInfo();
+  const passLabel = fmt(s.passDisp,1);
   const boxImg = document.getElementById('box-canvas').toDataURL('image/png');
   const histImg = document.getElementById('hist-canvas').toDataURL('image/png');
   const freqRows = document.querySelector('#freq-table tbody').innerHTML;
+  const under60Head = document.getElementById('under60-thead-row').innerHTML;
   const under60Rows = document.querySelector('#under60-table tbody').innerHTML;
+  const infoRowsHtml = info.map(f=>
+    `<tr><th style="width:110px;">${escapeHtml(f.label)}</th><td colspan="3" style="text-align:left;">${escapeHtml(f.value).replace(/\n/g,'<br>')}</td></tr>`
+  ).join('');
 
   const doc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="UTF-8">
@@ -1021,13 +1282,15 @@ img{margin-top:8px;}
 <body>
 <h1>採点分布 分析レポート</h1>
 <p>対象データ: ${currentFileLabel}　/　出力日: ${new Date().toLocaleDateString('ja-JP')}</p>
+<p>${escapeHtml(getScoringInfoLine(s))}</p>
+${info.length ? `<table>${infoRowsHtml}</table>` : ''}
 
 <h2>基本統計量</h2>
 <table>
-<tr><th>受験者数</th><td>${s.n} 名</td><th>60点未満</th><td>${s.under60.length} 名（${fmt(s.underPct)}%）</td></tr>
+<tr><th>受験者数</th><td>${s.n} 名</td><th>${passLabel}点未満</th><td>${s.underPass.length} 名（${fmt(s.underPct)}%）</td></tr>
 <tr><th>最低点</th><td>${fmt(s.min,0)} 点</td><th>最高点</th><td>${fmt(s.max,0)} 点</td></tr>
 <tr><th>平均点</th><td>${fmt(s.mean)} 点</td><th>中央値</th><td>${fmt(s.median)} 点</td></tr>
-<tr><th>標準偏差</th><td>${fmt(s.sd)} 点</td><th>60点以上</th><td>${s.over60} 名</td></tr>
+<tr><th>標準偏差</th><td>${fmt(s.sd)} 点</td><th>${passLabel}点以上</th><td>${s.overPass} 名</td></tr>
 <tr><th>第1四分位数(Q1)</th><td>${fmt(s.q1)}</td><th>第3四分位数(Q3)</th><td>${fmt(s.q3)}</td></tr>
 </table>
 
@@ -1040,8 +1303,8 @@ img{margin-top:8px;}
 <h2>度数分布表</h2>
 <table><tr><th>階級</th><th>度数</th><th>相対度数(%)</th><th>累積度数</th><th>累積相対度数(%)</th></tr>${freqRows}</table>
 
-<h2>60点未満の受験者一覧（${s.under60.length}名）</h2>
-<table><tr><th>ID</th><th>得点</th></tr>${under60Rows}</table>
+<h2>${passLabel}点未満の受験者一覧（${s.underPass.length}名）</h2>
+<table><tr>${under60Head}</tr>${under60Rows}</table>
 
 <div class="footer">
 本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
@@ -1054,6 +1317,7 @@ img{margin-top:8px;}
 });
 
 /* ---------------- Init ---------------- */
+applySettingsFromInputs();
 currentData = parseCSV(SAMPLE_CSV);
 renderAll();
 </script>
