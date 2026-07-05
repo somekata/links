@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ドレミ作曲機 - Tine Composer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+:root{
+  --bg: #14121f;
+  --panel: #1f1b31;
+  --panel-line: #322a4a;
+  --amber: #e8a33d;
+  --coral: #e2725b;
+  --cream: #f5efe0;
+  --teal: #3fb5a3;
+  --muted: #8b84a8;
+}
+
+*{ box-sizing: border-box; }
+
+html,body{
+  margin:0; padding:0;
+  background: var(--bg);
+  color: var(--cream);
+  font-family: 'Noto Sans JP', sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+.wrap{
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 28px 18px 60px;
+}
+
+header{
+  text-align:center;
+  margin-bottom: 22px;
+}
+
+h1{
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 900;
+  font-size: clamp(28px, 6vw, 44px);
+  margin: 0 0 6px;
+  letter-spacing: 0.02em;
+  background: linear-gradient(90deg, var(--amber), var(--coral));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sub{
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* --- Transport --- */
+.transport{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0 26px;
+}
+
+button{
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 20px;
+  cursor: pointer;
+  color: var(--cream);
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  transition: transform .12s ease, background .2s ease, box-shadow .2s ease;
+}
+button:hover{ transform: translateY(-1px); }
+button:active{ transform: translateY(0); }
+button:focus-visible{ outline: 2px solid var(--teal); outline-offset: 2px; }
+
+#recBtn.armed{
+  background: var(--coral);
+  color: #1b0f0c;
+  box-shadow: 0 0 0 4px rgba(226,114,91,0.18);
+}
+#recBtn.recording{
+  background: #c0392b;
+  color: #fff;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse{
+  0%,100%{ box-shadow: 0 0 0 0 rgba(192,57,43,0.5); }
+  50%{ box-shadow: 0 0 0 10px rgba(192,57,43,0); }
+}
+
+#playBtn.playing{
+  background: var(--teal);
+  color: #08211d;
+}
+
+.status{
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 120px;
+  text-align: center;
+}
+
+/* --- Tines (keys) --- */
+.stage{
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 20px;
+  padding: 26px 18px 14px;
+  margin-bottom: 20px;
+}
+
+.tines{
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap: clamp(4px, 1.6vw, 10px);
+  height: 230px;
+  padding: 0 4px;
+}
+
+.tine{
+  --h: 100px;
+  width: clamp(28px, 8vw, 46px);
+  height: var(--h);
+  background: linear-gradient(180deg, #d8b56a, #a67c3d 78%, #7a5a2c);
+  border-radius: 10px 10px 6px 6px;
+  border: none;
+  position: relative;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding-bottom: 10px;
+  color: #2b1c0c;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 700;
+  font-size: clamp(12px, 3vw, 15px);
+  box-shadow: inset 0 -6px 10px rgba(0,0,0,0.25), 0 6px 10px rgba(0,0,0,0.35);
+  transform-origin: top center;
+  transition: filter .08s ease;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.tine.hi{
+  background: linear-gradient(180deg, #f0d9a0, #d8b56a 78%, #a67c3d);
+}
+
+.tine .key{
+  position:absolute;
+  top: 8px;
+  font-size: 10px;
+  color: rgba(43,28,12,0.55);
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+.tine.active{
+  filter: brightness(1.35);
+  animation: strike .28s ease-out;
+}
+@keyframes strike{
+  0%{ transform: rotate(0deg); }
+  20%{ transform: rotate(-2.2deg); }
+  45%{ transform: rotate(1.6deg); }
+  70%{ transform: rotate(-0.8deg); }
+  100%{ transform: rotate(0deg); }
+}
+
+/* --- Piano roll --- */
+.rollWrap{
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 16px;
+  padding: 14px;
+  overflow-x: auto;
+}
+
+.rollHeader{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  margin-bottom: 8px;
+}
+.rollHeader h2{
+  font-family:'Zen Maru Gothic',sans-serif;
+  font-size: 14px;
+  margin:0;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.roll{
+  position: relative;
+  height: 176px;
+  min-width: 100%;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0 21.5px, transparent 21.5px 43px),
+    #17132a;
+  border-radius: 10px;
+  border: 1px solid var(--panel-line);
+}
+
+.rollBar{
+  position: absolute;
+  height: 16px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--amber), var(--coral));
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.playhead{
+  position:absolute;
+  top:0; bottom:0;
+  width: 2px;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+  display:none;
+}
+
+.emptyMsg{
+  color: var(--muted);
+  font-size: 12px;
+  text-align:center;
+  padding-top: 74px;
+}
+
+/* --- Actions row --- */
+.actions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-top: 16px;
+}
+.actions button{ font-size: 12px; padding: 9px 16px; background: #26213a; }
+input[type=file]{ display:none; }
+
+footer{
+  margin-top: 34px;
+  text-align:center;
+  font-size: 10.5px;
+  line-height:1.7;
+  color: var(--muted);
+  border-top: 1px solid var(--panel-line);
+  padding-top: 16px;
+  white-space: pre-line;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .tine.active{ animation: none; filter: brightness(1.35); }
+  #recBtn.recording{ animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ドレミ作曲機</h1>
+    <p class="sub">ド・レ・ミ・ファ・ソ・ラ・シ・ドの8音だけで、押すタイミングと長さをそのまま録音します</p>
+  </header>
+
+  <div class="transport">
+    <button id="recBtn">● 録音</button>
+    <button id="playBtn" disabled>▶ 再生</button>
+    <button id="clearBtn" disabled>クリア</button>
+    <span class="status" id="statusText">キーを押すと音が鳴ります</span>
+  </div>
+
+  <div class="stage">
+    <div class="tines" id="tines"></div>
+  </div>
+
+  <div class="rollWrap">
+    <div class="rollHeader">
+      <h2>録音ロール（時間軸）</h2>
+      <span class="status" id="lenText"></span>
+    </div>
+    <div class="roll" id="roll">
+      <div class="emptyMsg" id="emptyMsg">まだ録音がありません。「● 録音」を押してから鍵盤を弾いてみてください</div>
+      <div class="playhead" id="playhead"></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="exportBtn" disabled>JSONで書き出す</button>
+    <button id="importBtn">JSONを読み込む</button>
+    <input type="file" id="fileInput" accept="application/json">
+  </div>
+
+  <footer>本テキスト（ツール）は AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。
+二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</footer>
+</div>
+
+<script>
+(function(){
+  const NOTES = [
+    { name:'ド',  freq: 261.63, key:'A' },
+    { name:'レ',  freq: 293.66, key:'S' },
+    { name:'ミ',  freq: 329.63, key:'D' },
+    { name:'ファ', freq: 349.23, key:'F' },
+    { name:'ソ',  freq: 392.00, key:'G' },
+    { name:'ラ',  freq: 440.00, key:'H' },
+    { name:'シ',  freq: 493.88, key:'J' },
+    { name:'ド',  freq: 523.25, key:'K' },
+  ];
+
+  const minFreq = Math.min(...NOTES.map(n=>n.freq));
+  const maxFreq = Math.max(...NOTES.map(n=>n.freq));
+
+  const tinesEl = document.getElementById('tines');
+  const recBtn = document.getElementById('recBtn');
+  const playBtn = document.getElementById('playBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const importBtn = document.getElementById('importBtn');
+  const fileInput = document.getElementById('fileInput');
+  const statusText = document.getElementById('statusText');
+  const lenText = document.getElementById('lenText');
+  const rollEl = document.getElementById('roll');
+  const emptyMsg = document.getElementById('emptyMsg');
+  const playhead = document.getElementById('playhead');
+
+  let audioCtx = null;
+  function ensureCtx(){
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  // live oscillators keyed by note index (for press-and-hold)
+  const live = {};
+
+  function startTone(idx){
+    const ctx = ensureCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = NOTES[idx].freq;
+    gain.gain.value = 0;
+    osc.connect(gain).connect(ctx.destination);
+    const now = ctx.currentTime;
+    gain.gain.linearRampToValueAtTime(0.28, now + 0.015);
+    osc.start(now);
+    live[idx] = { osc, gain };
+  }
+
+  function stopTone(idx){
+    const v = live[idx];
+    if(!v) return;
+    const ctx = ensureCtx();
+    const now = ctx.currentTime;
+    v.gain.gain.cancelScheduledValues(now);
+    v.gain.gain.setValueAtTime(v.gain.gain.value, now);
+    v.gain.gain.linearRampToValueAtTime(0, now + 0.08);
+    v.osc.stop(now + 0.1);
+    delete live[idx];
+  }
+
+  // build tines
+  NOTES.forEach((n, idx)=>{
+    const btn = document.createElement('button');
+    btn.className = 'tine' + (idx === NOTES.length-1 ? ' hi' : '');
+    // shorter freq -> taller tine (inverse relationship), map to px range
+    const t = (Math.log(n.freq)-Math.log(minFreq)) / (Math.log(maxFreq)-Math.log(minFreq));
+    const height = 210 - t*110; // low notes = long tine, high notes = short tine
+    btn.style.setProperty('--h', height + 'px');
+    btn.dataset.idx = idx;
+    btn.innerHTML = '<span class="key">' + n.key + '</span><span>' + n.name + '</span>';
+    tinesEl.appendChild(btn);
+  });
+
+  const tineEls = Array.from(document.querySelectorAll('.tine'));
+
+  // --- recording state ---
+  let isArmed = false;
+  let isRecording = false;
+  let recordStart = 0;
+  let events = []; // {idx, start, duration}
+  let pressStart = {}; // idx -> time at press
+
+  let isPlaying = false;
+  let playTimers = [];
+
+  function setStatus(msg){ statusText.textContent = msg; }
+
+  function press(idx){
+    if(live[idx]) return; // already sounding
+    startTone(idx);
+    tineEls[idx].classList.add('active');
+    if(isRecording){
+      pressStart[idx] = performance.now() - recordStart;
+    }
+  }
+
+  function release(idx){
+    if(!live[idx]) return;
+    stopTone(idx);
+    tineEls[idx].classList.remove('active');
+    if(isRecording && pressStart[idx] !== undefined){
+      const start = pressStart[idx];
+      const duration = Math.max(60, performance.now() - recordStart - start);
+      events.push({ idx, start, duration });
+      delete pressStart[idx];
+    }
+  }
+
+  tineEls.forEach((el, idx)=>{
+    el.addEventListener('pointerdown', (e)=>{
+      e.preventDefault();
+      if(!isArmed && !isRecording){
+        // free play: just sound, no recording
+      }
+      if(isArmed && !isRecording){
+        // first press starts recording
+        beginRecording();
+      }
+      press(idx);
+    });
+    el.addEventListener('pointerup', ()=> release(idx));
+    el.addEventListener('pointerleave', ()=> release(idx));
+    el.addEventListener('pointercancel', ()=> release(idx));
+  });
+
+  // keyboard support
+  const keyMap = {};
+  NOTES.forEach((n, idx)=>{ keyMap[n.key] = idx; });
+  const heldKeys = new Set();
+  window.addEventListener('keydown', (e)=>{
+    const k = e.key.toUpperCase();
+    if(keyMap.hasOwnProperty(k) && !heldKeys.has(k)){
+      heldKeys.add(k);
+      const idx = keyMap[k];
+      if(isArmed && !isRecording) beginRecording();
+      press(idx);
+    }
+  });
+  window.addEventListener('keyup', (e)=>{
+    const k = e.key.toUpperCase();
+    if(keyMap.hasOwnProperty(k)){
+      heldKeys.delete(k);
+      release(keyMap[k]);
+    }
+  });
+
+  function beginRecording(){
+    isRecording = true;
+    recordStart = performance.now();
+    events = [];
+    pressStart = {};
+    recBtn.classList.remove('armed');
+    recBtn.classList.add('recording');
+    recBtn.textContent = '■ 録音停止';
+    setStatus('録音中… 鍵盤を弾いてください');
+  }
+
+  function finishRecording(){
+    isRecording = false;
+    isArmed = false;
+    recBtn.classList.remove('recording','armed');
+    recBtn.textContent = '● 録音';
+    // release any still-held notes
+    Object.keys(pressStart).forEach(idxStr=>{
+      const idx = Number(idxStr);
+      release(idx);
+    });
+    if(events.length){
+      playBtn.disabled = false;
+      clearBtn.disabled = false;
+      exportBtn.disabled = false;
+      setStatus(events.length + '個の音を録音しました');
+      drawRoll();
+    } else {
+      setStatus('録音された音がありません');
+    }
+  }
+
+  recBtn.addEventListener('click', ()=>{
+    ensureCtx();
+    if(isRecording){
+      finishRecording();
+    } else if(isArmed){
+      isArmed = false;
+      recBtn.classList.remove('armed');
+      recBtn.textContent = '● 録音';
+      setStatus('録音を待機解除しました');
+    } else {
+      isArmed = true;
+      recBtn.classList.add('armed');
+      recBtn.textContent = '● 待機中（鍵盤を押すと開始）';
+      setStatus('鍵盤を押すと録音が始まります');
+    }
+  });
+
+  function totalLength(){
+    if(!events.length) return 0;
+    return Math.max(...events.map(e=>e.start + e.duration));
+  }
+
+  function drawRoll(){
+    // clear old bars
+    Array.from(rollEl.querySelectorAll('.rollBar')).forEach(b=>b.remove());
+    if(!events.length){
+      emptyMsg.style.display = 'block';
+      lenText.textContent = '';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+    const total = totalLength();
+    lenText.textContent = (total/1000).toFixed(1) + ' 秒 ・ ' + events.length + '音';
+    const rollWidth = Math.max(rollEl.clientWidth, total * 0.12 + 40);
+    rollEl.style.minWidth = rollWidth + 'px';
+    const laneH = 176 / NOTES.length;
+    events.forEach(ev=>{
+      const bar = document.createElement('div');
+      bar.className = 'rollBar';
+      const laneIdx = NOTES.length - 1 - ev.idx; // higher note = higher on screen
+      bar.style.top = (laneIdx * laneH + laneH*0.22) + 'px';
+      bar.style.left = (ev.start * 0.12) + 'px';
+      bar.style.width = Math.max(6, ev.duration * 0.12) + 'px';
+      rollEl.appendChild(bar);
+    });
+  }
+
+  window.addEventListener('resize', ()=>{ if(events.length) drawRoll(); });
+
+  playBtn.addEventListener('click', ()=>{
+    if(isPlaying){
+      stopPlayback();
+      return;
+    }
+    if(!events.length) return;
+    ensureCtx();
+    isPlaying = true;
+    playBtn.classList.add('playing');
+    playBtn.textContent = '■ 停止';
+    setStatus('再生中…');
+    playhead.style.display = 'block';
+    const total = totalLength();
+
+    events.forEach(ev=>{
+      const onTimer = setTimeout(()=>{
+        press(ev.idx);
+      }, ev.start);
+      const offTimer = setTimeout(()=>{
+        release(ev.idx);
+      }, ev.start + ev.duration);
+      playTimers.push(onTimer, offTimer);
+    });
+
+    const startTime = performance.now();
+    function tick(){
+      if(!isPlaying) return;
+      const elapsed = performance.now() - startTime;
+      playhead.style.left = Math.min(elapsed * 0.12, total*0.12) + 'px';
+      if(elapsed < total + 50){
+        requestAnimationFrame(tick);
+      } else {
+        stopPlayback();
+      }
+    }
+    requestAnimationFrame(tick);
+  });
+
+  function stopPlayback(){
+    isPlaying = false;
+    playTimers.forEach(t=>clearTimeout(t));
+    playTimers = [];
+    playBtn.classList.remove('playing');
+    playBtn.textContent = '▶ 再生';
+    playhead.style.display = 'none';
+    NOTES.forEach((_,idx)=>release(idx));
+    setStatus(events.length + '個の音を録音しました');
+  }
+
+  clearBtn.addEventListener('click', ()=>{
+    if(isPlaying) stopPlayback();
+    events = [];
+    playBtn.disabled = true;
+    clearBtn.disabled = true;
+    exportBtn.disabled = true;
+    drawRoll();
+    setStatus('クリアしました');
+  });
+
+  exportBtn.addEventListener('click', ()=>{
+    const data = JSON.stringify({ notes: NOTES.map(n=>n.name), events }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'doremi-composition.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  importBtn.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const parsed = JSON.parse(reader.result);
+        if(Array.isArray(parsed.events)){
+          events = parsed.events;
+          playBtn.disabled = false;
+          clearBtn.disabled = false;
+          exportBtn.disabled = false;
+          drawRoll();
+          setStatus(events.length + '個の音を読み込みました');
+        }
+      }catch(err){
+        setStatus('読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+    fileInput.value = '';
+  });
+})();
+</script>
+</body>
+</html>
