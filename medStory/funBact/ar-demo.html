@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>細菌楽 AR デモ - 画像認識で3Dモデルを表示</title>
+
+<!-- 無料・オープンソースのライブラリをCDNから読み込み -->
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+<style>
+  body{margin:0;overflow:hidden;font-family:sans-serif;}
+  .ui{
+    position:fixed;top:0;left:0;right:0;z-index:10;
+    background:rgba(0,0,0,0.55);color:#fff;
+    padding:10px 16px;font-size:13px;text-align:center;
+  }
+  #startBtn{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    z-index:10;padding:12px 28px;border-radius:24px;border:none;
+    background:#4B2E83;color:#fff;font-size:15px;
+  }
+</style>
+</head>
+<body>
+
+<div class="ui">紙面の対象画像にカメラを向けてください</div>
+<button id="startBtn">ARを開始</button>
+
+<!--
+  ★ targets.mind は、認識させたい「本のページ画像」から
+     事前に生成しておく専用ファイルです（作り方は下の説明を参照）。
+     このデモでは同じフォルダに targets.mind を置く前提です。
+-->
+<a-scene
+  mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiScanning: no;"
+  color-space="sRGB"
+  renderer="colorManagement: true, physicallyCorrectLights"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  embedded
+  style="width:100%; height:100vh;"
+>
+  <a-assets></a-assets>
+
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+  <!-- targetIndex: 0 = compileしたときの1番目の画像に対応 -->
+  <a-entity mindar-image-target="targetIndex: 0">
+
+    <!--
+      ここに表示したい3Dコンテンツを置く。
+      まずは動作確認用に、鞭毛の回転をイメージした
+      簡易な円柱＋球のアニメーションを配置。
+      本番では glTFモデル（無料ツールBlenderで作成可）に差し替える。
+    -->
+    <a-entity position="0 0 0.1" scale="1 1 1">
+      <!-- 菌体（桿菌イメージ） -->
+      <a-cylinder
+        radius="0.15" height="0.6" rotation="90 0 0"
+        color="#C2185B" roughness="0.4"
+      ></a-cylinder>
+
+      <!-- 鞭毛（回転アニメーション付き） -->
+      <a-entity position="0.35 0 0" rotation="0 0 0"
+        animation="property: rotation; to: 360 0 0; loop: true; dur: 900; easing: linear">
+        <a-torus
+          radius="0.18" radius-tubular="0.01"
+          rotation="0 90 0" color="#4B2E83"
+        ></a-torus>
+      </a-entity>
+
+      <a-entity position="-0.35 0 0"
+        animation="property: rotation; to: 360 0 0; loop: true; dur: 900; easing: linear">
+        <a-torus
+          radius="0.18" radius-tubular="0.01"
+          rotation="0 90 0" color="#4B2E83"
+        ></a-torus>
+      </a-entity>
+    </a-entity>
+
+  </a-entity>
+</a-scene>
+
+<script>
+  const sceneEl = document.querySelector('a-scene');
+  const startBtn = document.getElementById('startBtn');
+
+  startBtn.addEventListener('click', () => {
+    const arSystem = sceneEl.systems['mindar-image-system'];
+    arSystem.start(); // カメラ起動 + 認識開始
+    startBtn.style.display = 'none';
+  });
+</script>
+
+</body>
+</html>
