@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>細菌楽 AR クイズ - このキャラは誰？</title>
+
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+<style>
+  body{margin:0;overflow:hidden;font-family:sans-serif;}
+
+  .ui-top{
+    position:fixed;top:0;left:0;right:0;z-index:10;
+    background:rgba(0,0,0,0.55);color:#fff;
+    padding:10px 16px;font-size:13px;text-align:center;
+  }
+  #startBtn{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    z-index:20;padding:12px 28px;border-radius:24px;border:none;
+    background:#4B2E83;color:#fff;font-size:15px;
+  }
+
+  /* --- クイズパネル --- */
+  #quizPanel{
+    display:none;
+    position:fixed;left:0;right:0;bottom:0;z-index:15;
+    background:rgba(255,255,255,0.96);
+    padding:18px 16px 26px;
+    border-radius:18px 18px 0 0;
+    box-shadow:0 -4px 20px rgba(0,0,0,0.25);
+  }
+  #quizPanel h2{
+    margin:0 0 14px;font-size:16px;text-align:center;color:#221C2B;
+  }
+  .choices{
+    display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+  }
+  .choice-btn{
+    flex:1 1 28%;min-width:90px;
+    padding:14px 8px;border-radius:10px;border:2px solid #4B2E83;
+    background:#fff;color:#4B2E83;font-size:14px;font-weight:700;
+  }
+  .choice-btn:active{background:#4B2E83;color:#fff;}
+  .choice-btn.correct{background:#2E7D32;border-color:#2E7D32;color:#fff;}
+  .choice-btn.wrong{background:#C2185B;border-color:#C2185B;color:#fff;}
+  .choice-btn:disabled{opacity:0.55;}
+
+  /* --- 正誤オーバーレイ --- */
+  #resultMark{
+    display:none;
+    position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);
+    z-index:25;font-size:140px;font-weight:900;
+    text-shadow:0 4px 18px rgba(0,0,0,0.35);
+  }
+  #resultMark.circle{color:#2E7D32;}
+  #resultMark.cross{color:#C2185B;}
+</style>
+</head>
+<body>
+
+<div class="ui-top">画像にカメラを向けてください</div>
+<button id="startBtn">ARを開始</button>
+
+<div id="quizPanel">
+  <h2>このキャラは誰？</h2>
+  <div class="choices">
+    <button class="choice-btn" data-choice="皇族">皇族</button>
+    <button class="choice-btn" data-choice="庶民">庶民</button>
+    <button class="choice-btn" data-choice="モンスター">モンスター</button>
+  </div>
+</div>
+
+<div id="resultMark">○</div>
+
+<!--
+  targets.mind は複数画像をまとめてコンパイルしたファイル。
+  コンパイラにアップロードした順番が targetIndex: 0, 1, 2... に対応する。
+  例) 1枚目=chara1.png(皇族), 2枚目=chara2.png(庶民), 3枚目=chara3.png(モンスター)
+-->
+<a-scene
+  mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiScanning: no;"
+  color-space="sRGB"
+  renderer="colorManagement: true, physicallyCorrectLights"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  embedded
+  style="width:100%; height:100vh;"
+>
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+  <!--
+    ★ここが複数画像対応のポイント★
+    targetIndex を 0, 1, 2 と変えて、画像の数だけ a-entity を用意する。
+    data-answer に「その画像の正解」を書いておく。
+  -->
+  <a-entity mindar-image-target="targetIndex: 0" data-answer="皇族"></a-entity>
+  <a-entity mindar-image-target="targetIndex: 1" data-answer="庶民"></a-entity>
+  <a-entity mindar-image-target="targetIndex: 2" data-answer="モンスター"></a-entity>
+
+</a-scene>
+
+<script>
+  const sceneEl   = document.querySelector('a-scene');
+  const startBtn  = document.getElementById('startBtn');
+  const quizPanel = document.getElementById('quizPanel');
+  const resultEl  = document.getElementById('resultMark');
+  const choiceBtns = document.querySelectorAll('.choice-btn');
+
+  let currentAnswer = null; // 今認識している画像の正解
+  let answered = false;
+
+  startBtn.addEventListener('click', () => {
+    sceneEl.systems['mindar-image-system'].start();
+    startBtn.style.display = 'none';
+  });
+
+  // targetIndexごとの a-entity すべてに「見つかった/見失った」イベントを仕込む
+  document.querySelectorAll('[mindar-image-target]').forEach((entity) => {
+    entity.addEventListener('targetFound', () => {
+      currentAnswer = entity.getAttribute('data-answer');
+      answered = false;
+      resetChoices();
+      quizPanel.style.display = 'block';
+    });
+
+    entity.addEventListener('targetLost', () => {
+      quizPanel.style.display = 'none';
+      resultEl.style.display = 'none';
+      currentAnswer = null;
+    });
+  });
+
+  choiceBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (answered || !currentAnswer) return;
+      answered = true;
+
+      const picked = btn.getAttribute('data-choice');
+      const isCorrect = picked === currentAnswer;
+
+      // 選んだボタンの色を変える
+      btn.classList.add(isCorrect ? 'correct' : 'wrong');
+      // 正解ボタンも分かるようにハイライト
+      choiceBtns.forEach((b) => {
+        if (b.getAttribute('data-choice') === currentAnswer) {
+          b.classList.add('correct');
+        }
+        b.disabled = true;
+      });
+
+      // 大きな ○ / ✗ を表示
+      resultEl.textContent = isCorrect ? '○' : '✗';
+      resultEl.className = isCorrect ? 'circle' : 'cross';
+      resultEl.style.display = 'block';
+
+      setTimeout(() => { resultEl.style.display = 'none'; }, 1400);
+    });
+  });
+
+  function resetChoices() {
+    choiceBtns.forEach((b) => {
+      b.disabled = false;
+      b.classList.remove('correct', 'wrong');
+    });
+  }
+</script>
+
+</body>
+</html>
