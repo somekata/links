@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統合PBL 第4回「五日前からの発熱と意識障害」</title>
+<style>
+  :root{
+    --paper: #f7f3ea;
+    --paper-deep: #efe8d8;
+    --ink: #2b2b28;
+    --ink-soft: #514c44;
+    --indigo: #2c4a52;
+    --indigo-soft: #4a6f78;
+    --indigo-pale: #dfe8e6;
+    --gold: #a98a4a;
+    --line: #d9cfb8;
+    --alert: #a13d2f;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(44,74,82,0.05), transparent 42%),
+      radial-gradient(circle at 85% 92%, rgba(169,138,74,0.05), transparent 42%);
+    color: var(--ink);
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "游明朝", serif;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+  .ui{
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+  .scroll{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 28px 80px;
+  }
+
+  header.title-block{
+    position: relative;
+    text-align:center;
+    margin-bottom: 40px;
+    padding-bottom: 26px;
+    border-bottom: 1px double var(--line);
+  }
+  .series-tag{
+    font-family: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.32em;
+    color: var(--indigo-soft);
+    margin-bottom: 12px;
+  }
+  h1.main-title{
+    font-size: 1.7rem;
+    margin: 0 0 8px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  .case-sub{
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+  .ping{
+    width: 34px; height: 34px;
+    margin: 18px auto 0;
+    opacity: 0.6;
+  }
+  .ping circle{
+    fill: none;
+    stroke: var(--alert);
+    stroke-width: 1.3;
+    transform-origin: center;
+    animation: ping-out 2.6s ease-out infinite;
+  }
+  .ping circle.c2{ animation-delay: 0.9s; }
+  @keyframes ping-out{
+    0%{ transform: scale(0.4); opacity: 0.9; }
+    100%{ transform: scale(1.3); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ping circle{ animation: none; opacity: 0.5; }
+  }
+
+  .progress-track{
+    display:flex;
+    gap: 6px;
+    justify-content:center;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+  .progress-dot{
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--line);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+  .progress-dot:hover{ transform: scale(1.4); background: var(--indigo-soft); }
+  .progress-dot:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .progress-dot.done{ background: var(--indigo-soft); }
+  .progress-dot.current{ background: var(--indigo); transform: scale(1.3); }
+  .progress-hint{
+    text-align:center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .back-btn{
+    font-family: inherit;
+    background: none;
+    color: var(--indigo-soft);
+    border: 1px solid var(--line);
+    padding: 12px 22px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-right: auto;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+  .back-btn:hover{ background: var(--paper-deep); border-color: var(--indigo-soft); }
+  .back-btn:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .back-btn:disabled{ visibility: hidden; }
+
+  .stage{
+    display:none;
+    animation: fadeUp 0.55s ease;
+  }
+  .stage.visible{ display:block; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .kind-label{
+    font-family: inherit;
+    display:inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    padding: 3px 10px;
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    margin-bottom: 14px;
+  }
+  .kind-label.q{ border-color: var(--alert); color: var(--alert); }
+  .kind-label.check{ border-color: var(--gold); color: var(--gold); }
+
+  h2.stage-title{
+    font-size: 1.3rem;
+    margin: 0 0 20px;
+    padding-left: 14px;
+    border-left: 3px solid var(--indigo);
+    color: var(--ink);
+  }
+
+  h3.sub-title{
+    font-size: 1.02rem;
+    margin: 22px 0 10px;
+    color: var(--indigo);
+  }
+
+  .card{
+    background: var(--paper-deep);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 24px 26px;
+    margin-bottom: 22px;
+  }
+
+  .vitals-table{
+    width:100%;
+    border-collapse: collapse;
+    font-family: inherit;
+    font-size: 0.96rem;
+    margin: 14px 0;
+  }
+  .vitals-table td{
+    padding: 6px 10px;
+    border-bottom: 1px dotted var(--line);
+  }
+  .vitals-table td:first-child{
+    color: var(--ink-soft);
+    width: 42%;
+  }
+  .vitals-table .flag{
+    color: var(--alert);
+    font-weight: bold;
+  }
+
+  .score-table{
+    width:100%;
+    border-collapse: collapse;
+    font-family: inherit;
+    font-size: 0.92rem;
+    margin: 14px 0;
+  }
+  .score-table th{
+    text-align:left;
+    font-weight: normal;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+    padding: 6px 8px;
+  }
+  .score-table td{
+    padding: 6px 8px;
+    border-bottom: 1px dotted var(--line);
+  }
+  .score-table .pt{
+    text-align:right;
+    font-weight: bold;
+    color: var(--indigo);
+    white-space: nowrap;
+  }
+  .score-table tr.total td{
+    border-top: 2px solid var(--indigo-soft);
+    border-bottom: none;
+    font-weight: bold;
+    padding-top: 10px;
+  }
+
+  .q-list{
+    margin: 0;
+    padding-left: 1.3em;
+  }
+  .q-list li{ margin-bottom: 10px; }
+
+  aside.note{
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    border-left: 2px solid var(--gold);
+    padding: 10px 16px;
+    margin: 18px 0;
+    background: rgba(169,138,74,0.06);
+  }
+
+  .sp{ font-style: italic; }
+
+  details.check{
+    margin: 12px 0;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper);
+    padding: 4px 4px;
+  }
+  details.check summary{
+    font-family: inherit;
+    cursor: pointer;
+    padding: 10px 14px;
+    color: var(--indigo);
+    font-size: 0.98rem;
+    outline: none;
+  }
+  details.check summary::marker{ color: var(--gold); }
+  details.check .answer{
+    padding: 4px 16px 14px;
+    border-top: 1px dashed var(--line);
+    margin-top: 6px;
+    font-size: 0.95rem;
+  }
+
+  .nav-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+  }
+  .next-btn{
+    font-family: inherit;
+    background: var(--indigo);
+    color: var(--paper);
+    border: none;
+    padding: 12px 26px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.25s ease, transform 0.15s ease;
+  }
+  .next-btn:hover{ background: var(--indigo-soft); }
+  .next-btn:active{ transform: translateY(1px); }
+  .next-btn:focus-visible{
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .end-card{
+    text-align:center;
+    padding: 40px 20px;
+  }
+  .end-card p{ color: var(--ink-soft); }
+
+  footer{
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  .case-fab{
+    position: sticky;
+    top: 14px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 auto 34px;
+    padding: 9px 18px;
+    background: var(--paper);
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(43,43,40,0.08);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .case-fab:hover{ background: var(--indigo-pale); }
+  .case-fab:active{ transform: translateY(1px); }
+  .case-fab:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-fab-icon{ font-size: 0.95rem; }
+
+  .case-modal-overlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    background: rgba(43,43,40,0.45);
+    z-index: 100;
+    padding: 6vh 20px;
+    overflow-y: auto;
+  }
+  .case-modal-overlay.open{ display:block; }
+  .case-modal{
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 12px 32px rgba(43,43,40,0.25);
+    animation: fadeUp 0.3s ease;
+  }
+  .case-modal-head{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 18px 22px 0;
+  }
+  .case-modal-close{
+    background:none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .case-modal-close:hover{ background: var(--paper-deep); }
+  .case-modal-close:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-modal-body{
+    padding: 14px 26px 26px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+<div class="scroll">
+
+  <header class="title-block">
+    <div class="series-tag ui">統合PBL &nbsp;第4回</div>
+    <h1 class="main-title">五日前からの発熱と意識障害</h1>
+    <div class="case-sub ui">重症レジオネラ肺炎・敗血症性ショックを通じて、重症度評価と集中治療の考え方を辿る</div>
+    <svg class="ping" viewBox="0 0 34 34">
+      <circle class="c1" cx="17" cy="17" r="6"/>
+      <circle class="c2" cx="17" cy="17" r="6"/>
+    </svg>
+    <div class="progress-track ui" id="progressTrack"></div>
+    <div class="progress-hint ui">丸をクリックすると、好きな場面に移動できます</div>
+  </header>
+
+  <button id="caseModalTrigger" class="case-fab ui" type="button">
+    <span class="case-fab-icon">📋</span> 症例・所見・検査所見を見る
+  </button>
+
+  <!-- ============ Stage 0: 症例提示 ============ -->
+  <section class="stage visible" data-stage="0">
+    <div class="kind-label ui">症例</div>
+    <h2 class="stage-title">症例提示</h2>
+    <div class="card">
+      <p><strong>患者:</strong> 62歳、男性</p>
+      <p><strong>主訴:</strong> 発熱、呼吸困難、意識障害</p>
+      <p><strong>現病歴:</strong><br>
+      5日前から38℃台の発熱、全身倦怠感、頭痛が出現した。3日前から乾性咳嗽、筋肉痛が出現し、近医を受診し感冒として対症療法を受けた。2日前から39℃以上の高熱が持続し、呼吸困難が出現した。当日朝、家族が意識レベルの低下と呼吸困難の増悪に気づき救急要請した。救急隊接触時、SpO2 85%(室内気)、JCS II-10(GCS 13)であり、当院救急外来へ搬送された。</p>
+      <p><strong>既往歴:</strong> 2型糖尿病(HbA1c 8.1%、内服治療中)、高血圧症、慢性閉塞性肺疾患(COPD、GOLD II)</p>
+      <p><strong>社会歴:</strong> 職業はホテル設備管理(冷却塔・空調設備の点検業務)。喫煙40本/日×40年(現在も喫煙中)。機会飲酒。</p>
+      <p><strong>曝露歴:</strong> 2週間前に勤務先ホテルの冷却塔清掃作業に従事した。同僚2名も同時期に発熱・呼吸器症状で休職中(後日レジオネラ肺炎と判明)。</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td class="flag">JCS II-10(GCS13:E3V4M6)、見当識障害あり</td></tr>
+        <tr><td>体温</td><td class="flag">39.8℃</td></tr>
+        <tr><td>呼吸数</td><td class="flag">32回/分</td></tr>
+        <tr><td>脈拍</td><td>88回/分・整</td></tr>
+        <tr><td>血圧</td><td class="flag">88/52 mmHg</td></tr>
+        <tr><td>SpO2</td><td class="flag">85%(室内気)→92%(酸素10L/分リザーバーマスク)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong><br>
+      苦悶様顔貌、発汗著明、チアノーゼあり。両側下肺野にcoarse crackles聴取、呼吸音減弱。心音整、雑音なし、末梢冷感あり、毛細血管再充満時間(CRT)&gt;3秒。腹部軽度圧痛、筋性防御なし、腸蠕動音やや減弱(入院後に水様下痢が出現)。項部硬直なし。</p>
+      <p><strong>胸部X線:</strong> 両側下肺野優位の浸潤影、consolidation。右下葉に著明な浸潤影、air bronchogram陽性。左下葉にも浸潤影あり。心胸郭比(CTR)52%(正常範囲)。右側に少量の胸水貯留。</p>
+    </div>
+    <aside class="note ui">この症例を通じて、敗血症の病態生理、重症度評価スコア(qSOFA・NEWS2・SOFA・A-DROP)の実際の計算、ARDSの病態、そして診断・治療・公衆衛生対応までを段階的にたどっていく。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back disabled>&larr; 戻る</button><button class="next-btn ui" data-next>症例を読んだ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 1: 検査所見 ============ -->
+  <section class="stage" data-stage="1">
+    <div class="kind-label ui">検査所見</div>
+    <h2 class="stage-title">検査所見(血液検査・動脈血液ガス)</h2>
+    <div class="card">
+      <p><strong>血算(CBC):</strong></p>
+      <table class="vitals-table">
+        <tr><td>WBC</td><td class="flag">18,500 /μL(好中球88%、桿状核球12%、リンパ球6%)</td></tr>
+        <tr><td>Hb</td><td>13.2 g/dL</td></tr>
+        <tr><td>Plt</td><td class="flag">9.5万 /μL(軽度血小板減少)</td></tr>
+      </table>
+      <p><strong>生化学:</strong></p>
+      <table class="vitals-table">
+        <tr><td>BUN</td><td class="flag">38 mg/dL</td></tr>
+        <tr><td>Cr</td><td class="flag">2.1 mg/dL(急性腎障害)</td></tr>
+        <tr><td>eGFR</td><td class="flag">28 mL/min/1.73m²</td></tr>
+        <tr><td>Na</td><td class="flag">128 mEq/L</td></tr>
+        <tr><td>K / Cl</td><td>3.2 / 96 mEq/L</td></tr>
+        <tr><td>AST / ALT</td><td class="flag">128 / 98 U/L</td></tr>
+        <tr><td>LDH</td><td class="flag">485 U/L</td></tr>
+        <tr><td>CK</td><td class="flag">1,850 U/L</td></tr>
+        <tr><td>総ビリルビン</td><td>1.8 mg/dL</td></tr>
+        <tr><td>アルブミン</td><td class="flag">2.8 g/dL</td></tr>
+        <tr><td>血糖</td><td class="flag">285 mg/dL</td></tr>
+        <tr><td>リン(P)</td><td class="flag">2.1 mg/dL</td></tr>
+      </table>
+      <p><strong>血清:</strong></p>
+      <table class="vitals-table">
+        <tr><td>CRP</td><td class="flag">28.5 mg/dL</td></tr>
+        <tr><td>プロカルシトニン</td><td class="flag">8.5 ng/mL</td></tr>
+        <tr><td>乳酸(Lactate)</td><td class="flag">3.8 mmol/L</td></tr>
+        <tr><td>フェリチン</td><td class="flag">1,250 ng/mL</td></tr>
+      </table>
+      <p><strong>動脈血液ガス(酸素10L/分リザーバーマスク下):</strong></p>
+      <table class="vitals-table">
+        <tr><td>pH</td><td class="flag">7.32</td></tr>
+        <tr><td>PaCO2</td><td>32 mmHg</td></tr>
+        <tr><td>PaO2</td><td class="flag">62 mmHg</td></tr>
+        <tr><td>HCO3-</td><td class="flag">16 mEq/L</td></tr>
+        <tr><td>BE</td><td class="flag">-8 mEq/L</td></tr>
+      </table>
+    </div>
+    <aside class="note ui">喀痰検査・尿中抗原・血液培養・ペア血清の結果は、この後の問題を少し進めた段階で提示する。まずは血液検査・血液ガスの数値をざっと眺めておこう。重症度スコア(qSOFA・NEWS2・SOFA・A-DROP)は、この後の問題で実際に自分で計算してみよう。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>検査所見を見た &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 2: 問題1 ============ -->
+  <section class="stage" data-stage="2">
+    <div class="kind-label q ui">問題 1</div>
+    <h2 class="stage-title">敗血症の病態生理</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>「感染症」と「敗血症」の違いは何か(Sepsis-3の定義に基づいて説明しなさい)。</li>
+        <li>敗血症における、血管拡張・血管透過性亢進・循環不全に至る病態生理の概要を説明しなさい。</li>
+        <li>「相対的徐脈」とは何か。本症例(体温39.8℃、脈拍88回/分)がこれに該当する理由と、なぜレジオネラ肺炎で特徴的とされるか説明しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 3: 解説1 ============ -->
+  <section class="stage" data-stage="3">
+    <div class="kind-label ui">解説 1</div>
+    <h2 class="stage-title">敗血症の病態生理</h2>
+    <div class="card">
+      <p><strong>①感染症と敗血症の違い:</strong><br>
+      Sepsis-3の定義では、敗血症は「感染症に対する宿主の制御不能な反応により、生命を脅かす臓器障害が生じた状態」とされる。単なる感染巣の存在(局所感染)と異なり、臓器障害の有無(SOFAスコアのベースラインからの2点以上の急激な上昇などで示される)が本質的な違いとなる。</p>
+      <p><strong>②病態生理:</strong><br>
+      病原体関連分子パターン(PAMPs)が自然免疫を活性化し、TNF-α・IL-1・IL-6などの炎症性サイトカインが大量に放出される(サイトカインストーム)。これにより血管内皮が傷害され、一酸化窒素(NO)の過剰産生による血管拡張、血管透過性亢進による血管内容量減少、微小血栓形成による微小循環障害が生じる。結果として組織灌流が低下し、細胞レベルでの酸素利用障害(乳酸値の上昇はこれを反映する)、さらには臓器障害へと進行する。</p>
+      <p><strong>③相対的徐脈:</strong><br>
+      通常、体温が1℃上昇すると脈拍は約10回/分上昇するとされる。本症例では体温39.8℃(平熱37℃からおよそ+2.8℃)に対し脈拍88回/分と、期待される上昇(100回/分程度以上)に比べて明らかに遅い。この乖離が相対的徐脈であり、レジオネラ、腸チフス、オウム病など一部の細胞内寄生菌による感染症で特徴的にみられる所見である。機序は完全には解明されていないが、病原体やその産物による心筋・洞結節への直接的な影響などが想定されている。</p>
+      <aside class="note ui">相対的徐脈は、高熱の患者を診たときに「熱の割に脈が上がっていない」という違和感として気づくことが多い。この気づきが、レジオネラなどの非典型的な起因菌を想起するきっかけになる。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 4: 振り返り確認1 ============ -->
+  <section class="stage" data-stage="4">
+    <div class="kind-label check ui">振り返り・確認 1</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>敗血症は、単なる感染症と何によって区別されるか？</summary>
+      <div class="answer">臓器障害の有無。Sepsis-3では、感染症に対する制御不能な宿主反応により生命を脅かす臓器障害が生じた状態を敗血症と定義する。</div>
+    </details>
+    <details class="check ui">
+      <summary>相対的徐脈とは何か。本症例が該当する理由を説明できるか？</summary>
+      <div class="answer">体温上昇に見合うだけ脈拍が上昇していない状態。本症例は体温39.8℃に対し脈拍88回/分であり、期待される上昇(100回/分程度以上)より明らかに遅く、相対的徐脈に該当する。</div>
+    </details>
+    <details class="check ui">
+      <summary>敗血症における血管透過性亢進の主な機序は？</summary>
+      <div class="answer">炎症性サイトカインの大量放出による血管内皮の傷害。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 5: 問題2 ============ -->
+  <section class="stage" data-stage="5">
+    <div class="kind-label q ui">問題 2</div>
+    <h2 class="stage-title">qSOFAとNEWS2を計算する</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>qSOFAの3項目を挙げ、本症例のバイタルサインを用いて実際に採点しなさい。</li>
+        <li>NEWS2の各項目(呼吸数・SpO2・酸素投与の有無・体温・収縮期血圧・脈拍・意識レベル)を、本症例のバイタルサインを用いて実際に採点し、合計点を算出しなさい。</li>
+        <li>qSOFAとNEWS2は、それぞれどのような場面での使用を想定して設計されたスコアか、役割の違いを説明しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 6: 解説2 ============ -->
+  <section class="stage" data-stage="6">
+    <div class="kind-label ui">解説 2</div>
+    <h2 class="stage-title">qSOFAとNEWS2を計算する</h2>
+    <div class="card">
+      <h3 class="sub-title">① qSOFA(本症例での採点)</h3>
+      <table class="score-table">
+        <tr><th>項目</th><th>基準</th><th>本症例</th><th class="pt">点数</th></tr>
+        <tr><td>意識変容</td><td>GCS&lt;15など</td><td>JCS II-10(GCS13)</td><td class="pt">1点</td></tr>
+        <tr><td>呼吸数</td><td>≥22回/分</td><td>32回/分</td><td class="pt">1点</td></tr>
+        <tr><td>収縮期血圧</td><td>≤100 mmHg</td><td>88 mmHg</td><td class="pt">1点</td></tr>
+        <tr class="total"><td colspan="3">合計</td><td class="pt">3点</td></tr>
+      </table>
+      <p>qSOFA≥2点は、感染症が疑われる患者において院内死亡や集中治療室滞在の延長リスクが上昇することを示唆する。ただしqSOFAは感度が比較的低い(報告により異なるがおおむね60%前後)とされ、単独のスクリーニングツールとして敗血症を除外する目的には推奨されない。</p>
+
+      <h3 class="sub-title">② NEWS2(本症例での採点)</h3>
+      <table class="score-table">
+        <tr><th>項目</th><th>本症例の値</th><th class="pt">点数</th></tr>
+        <tr><td>呼吸数</td><td>32回/分(≥25)</td><td class="pt">3点</td></tr>
+        <tr><td>SpO2(酸素投与下)</td><td>92%(92〜93%)</td><td class="pt">2点</td></tr>
+        <tr><td>酸素投与</td><td>投与あり</td><td class="pt">2点</td></tr>
+        <tr><td>体温</td><td>39.8℃(≥39.1)</td><td class="pt">2点</td></tr>
+        <tr><td>収縮期血圧</td><td>88 mmHg(≤90)</td><td class="pt">3点</td></tr>
+        <tr><td>脈拍</td><td>88回/分(51〜90)</td><td class="pt">0点</td></tr>
+        <tr><td>意識レベル(ACVPU)</td><td>清明でない(V相当)</td><td class="pt">3点</td></tr>
+        <tr class="total"><td colspan="2">合計</td><td class="pt">15点</td></tr>
+      </table>
+      <p>NEWS2は7点以上で高リスク、5点以上でICU医師などへの連絡が推奨される目安とされる。本症例の15点は極めて高リスクであり、緊急対応が必要な状態を示している。</p>
+
+      <h3 class="sub-title">③ 役割の違い</h3>
+      <p>qSOFAは、集中治療室外(一般病棟・救急外来)で、感染症が疑われる患者に敗血症の可能性を簡便にスクリーニングするために考案された、ベッドサイドで即座に評価できる3項目のみのツールである。NEWS2は、感染症の有無にかかわらず、入院患者全般の全身状態の急変・悪化を早期に検知するために開発された、より多項目からなる包括的な早期警告スコアである。感染症に特化していない分、より幅広い病態の悪化を捉えられる一方、算出にはやや手間がかかる。</p>
+      <aside class="note ui">どちらのスコアも「診断」ではなく「危険信号(red flag)」である。高得点は詳細な評価と迅速な対応の必要性を示すものであり、これ自体が治療方針を決定するものではない。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 7: 振り返り確認2 ============ -->
+  <section class="stage" data-stage="7">
+    <div class="kind-label check ui">振り返り・確認 2</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>本症例のqSOFAは何点か。該当する項目は？</summary>
+      <div class="answer">3点(満点)。意識変容、呼吸数≥22回/分、収縮期血圧≤100mmHgのすべてに該当する。</div>
+    </details>
+    <details class="check ui">
+      <summary>本症例のNEWS2は何点か。特に高得点となった項目はどれか？</summary>
+      <div class="answer">15点。呼吸数(3点)、収縮期血圧(3点)、意識レベル(3点)が特に高得点となっている。</div>
+    </details>
+    <details class="check ui">
+      <summary>qSOFAとNEWS2の想定使用場面の違いを説明できるか？</summary>
+      <div class="answer">qSOFAは感染症が疑われる患者の敗血症スクリーニングに特化した簡便な3項目ツール。NEWS2は感染症に限らず入院患者全般の急変を早期に検知するための、より包括的な早期警告スコアである。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 8: 問題3 ============ -->
+  <section class="stage" data-stage="8">
+    <div class="kind-label q ui">問題 3</div>
+    <h2 class="stage-title">敗血症性ショックとSOFAスコア</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>Sepsis-3における「敗血症性ショック」の定義を説明しなさい。本症例はこれに該当するか。</li>
+        <li>SOFAスコアの6つの評価項目(臓器系)を挙げなさい。</li>
+        <li>本症例のSOFAスコアを、検査値・バイタルサインをもとに実際に算出しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 9: 解説3 ============ -->
+  <section class="stage" data-stage="9">
+    <div class="kind-label ui">解説 3</div>
+    <h2 class="stage-title">敗血症性ショックとSOFAスコア</h2>
+    <div class="card">
+      <p><strong>①敗血症性ショックの定義:</strong><br>
+      Sepsis-3では、敗血症性ショックは「十分な輸液蘇生にもかかわらず、平均動脈圧(MAP)65mmHg以上を維持するために昇圧薬を要し、かつ血清乳酸値&gt;2mmol/Lを認める状態」と定義される。本症例は、初期輸液後もノルアドレナリンを要し、乳酸3.8mmol/Lと上昇しており、敗血症性ショックの定義を満たす。</p>
+      <p><strong>②SOFAの6項目:</strong><br>
+      呼吸(PaO2/FiO2)、凝固(血小板数)、肝(ビリルビン)、循環(血圧・昇圧薬の要否と用量)、中枢神経(GCS)、腎(クレアチニン・尿量)。</p>
+      <h3 class="sub-title">③本症例でのSOFA算出</h3>
+      <table class="score-table">
+        <tr><th>臓器系</th><th>基準・本症例の値</th><th class="pt">点数</th></tr>
+        <tr><td>呼吸</td><td>P/F比=62/0.8=77.5、人工呼吸管理下で&lt;100</td><td class="pt">4点</td></tr>
+        <tr><td>凝固</td><td>血小板9.5万/μL、&lt;10万</td><td class="pt">2点</td></tr>
+        <tr><td>肝</td><td>総ビリルビン1.8mg/dL、1.2〜1.9の範囲</td><td class="pt">1点</td></tr>
+        <tr><td>循環</td><td>ノルアドレナリン0.15〜0.25μg/kg/分、&gt;0.1</td><td class="pt">4点</td></tr>
+        <tr><td>中枢神経</td><td>GCS13点、13〜14の範囲</td><td class="pt">1点</td></tr>
+        <tr><td>腎</td><td>クレアチニン2.1mg/dL、2.0〜3.4の範囲</td><td class="pt">2点</td></tr>
+        <tr class="total"><td colspan="2">合計</td><td class="pt">14点</td></tr>
+      </table>
+      <p>SOFAスコアはICUにおける重症度・臓器障害の程度を数値化するために開発され、点数が高いほど死亡リスクが上昇する。qSOFA・NEWS2が「危険信号を素早く察知するためのスクリーニングツール」であるのに対し、SOFAは「臓器障害の程度をより詳細に評価し、重症度・予後を評価するための、より専門的なツール」という位置づけの違いがある。</p>
+      <aside class="note ui">本症例のSOFA14点は非常に高く、統計的には死亡リスクが大きく上昇する水準である。しかし、若年であることや早期の集中治療介入により、必ずしも転帰が悪いとは限らない。スコアはあくまで確率的なリスクの目安であり、個々の患者の転帰を確定するものではない。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 10: 振り返り確認3 ============ -->
+  <section class="stage" data-stage="10">
+    <div class="kind-label check ui">振り返り・確認 3</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>Sepsis-3における敗血症性ショックの定義を説明できるか？</summary>
+      <div class="answer">十分な輸液蘇生にもかかわらずMAP65mmHg以上を維持するために昇圧薬を要し、かつ血清乳酸値&gt;2mmol/Lを認める状態。</div>
+    </details>
+    <details class="check ui">
+      <summary>SOFAの6つの評価項目を挙げられるか？</summary>
+      <div class="answer">呼吸、凝固、肝、循環、中枢神経、腎。</div>
+    </details>
+    <details class="check ui">
+      <summary>qSOFA/NEWS2とSOFAの、想定される使用場面の違いは？</summary>
+      <div class="answer">qSOFA/NEWS2は危険信号を素早く察知するためのスクリーニングツール。SOFAは臓器障害の程度をより詳細に評価し、重症度・予後を評価する専門的なツールである。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 11: 問題4 ============ -->
+  <section class="stage" data-stage="11">
+    <div class="kind-label q ui">問題 4</div>
+    <h2 class="stage-title">ARDSと肺の病態生理</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>P/F比とは何か。本症例のP/F比を計算しなさい(PaO2 62 mmHg、酸素10L/分リザーバーマスク=FiO2約0.8とする)。</li>
+        <li>ARDS Berlin定義における重症度分類を説明し、本症例がどの重症度に該当するか判定しなさい。</li>
+        <li>肺保護換気戦略(低一回換気量・PEEP)は、どのような生理学的根拠に基づいているか。</li>
+        <li>PBL1で学んだ換気血流比不均衡・シャントの考え方は、本症例のガス交換障害にどう関連するか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 12: 解説4 ============ -->
+  <section class="stage" data-stage="12">
+    <div class="kind-label ui">解説 4</div>
+    <h2 class="stage-title">ARDSと肺の病態生理</h2>
+    <div class="card">
+      <p><strong>①P/F比:</strong><br>
+      PaO2をFiO2で割った値で、酸素化能を簡便に評価する指標。本症例:62 ÷ 0.8 = <strong>77.5</strong>。</p>
+      <p><strong>②ARDS Berlin定義:</strong><br>
+      1週間以内の急性発症で、両側性浸潤影(心不全・体液過剰では説明できない)があることを前提に、P/F比によって軽症(200&lt;P/F≤300)、中等症(100&lt;P/F≤200)、重症(P/F≤100)に分類される。本症例はP/F比77.5であり、<strong>重度ARDS</strong>に該当する。</p>
+      <p><strong>③肺保護換気戦略:</strong><br>
+      大きな一回換気量は、すでに障害を受けた肺胞に過伸展(volutrauma)や剪断力による障害(atelectrauma)を引き起こし、人工呼吸器関連肺傷害(VILI)を助長する。そのため、低一回換気量(6mL/kg予測体重)で肺胞の過伸展を避けつつ、適切なPEEPを設定して呼気終末の肺胞虚脱を防ぐことで、肺全体への負荷を最小限にする戦略がとられる。</p>
+      <p><strong>④換気血流比不均衡・シャントとの関連:</strong><br>
+      ARDSでは、肺胞が滲出液・炎症細胞・すりガラス影として描出される浮腫液で満たされ、含気を失う。この含気消失部分は換気ゼロ・血流ありの極端な換気血流比不均衡、すなわち肺内シャントとなり、酸素投与を増やしても改善しにくい重度の低酸素血症を来す。PBL1で学んだA-aDO2開大の考え方と同じ機序が、より広範かつ重度に生じている状態と理解できる。</p>
+      <aside class="note ui">シャント様の病態では、いくらFiO2を上げても、血液が通っていない(換気されていない)肺胞には酸素が届かないため、酸素化の改善に限界がある。これが重症ARDSで酸素投与だけでは対応しきれない理由である。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 13: 振り返り確認4 ============ -->
+  <section class="stage" data-stage="13">
+    <div class="kind-label check ui">振り返り・確認 4</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>本症例のP/F比はいくつか。ARDSの重症度分類でどの区分に該当するか？</summary>
+      <div class="answer">P/F比77.5。ARDS Berlin定義における重度ARDS(P/F≤100)に該当する。</div>
+    </details>
+    <details class="check ui">
+      <summary>肺保護換気戦略で一回換気量を制限する生理学的根拠は？</summary>
+      <div class="answer">大きな一回換気量による肺胞の過伸展(volutrauma)や剪断力による障害(atelectrauma)、すなわち人工呼吸器関連肺傷害(VILI)を防ぐため。</div>
+    </details>
+    <details class="check ui">
+      <summary>ARDSでの重度低酸素血症が酸素投与だけでは改善しにくい理由を、換気血流比不均衡の考え方から説明できるか？</summary>
+      <div class="answer">含気を失った肺胞は換気ゼロ・血流ありのシャント様病態となり、酸素が届かないため、FiO2を上げても酸素化の改善に限界があるため。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 14: 問題5 ============ -->
+  <section class="stage" data-stage="14">
+    <div class="kind-label q ui">問題 5</div>
+    <h2 class="stage-title">検査所見の解釈(レジオネラに特徴的な所見)</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>低ナトリウム血症(Na 128)の機序として何が考えられるか。</li>
+        <li>低リン血症(P 2.1)は、レジオネラ肺炎でなぜ特徴的とされるか。</li>
+        <li>CK著明上昇(1,850)は何を示唆するか。それが急性腎障害(AKI)とどう関連するか(PBL2の復習)。</li>
+        <li>リンパ球減少症(好中球88%、リンパ球6%)の臨床的意義は何か。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 15: 解説5 ============ -->
+  <section class="stage" data-stage="15">
+    <div class="kind-label ui">解説 5</div>
+    <h2 class="stage-title">検査所見の解釈(レジオネラに特徴的な所見)</h2>
+    <div class="card">
+      <p><strong>①低Na血症:</strong><br>
+      レジオネラ肺炎では、SIADH(抗利尿ホルモン不適合分泌症候群)様の機序による低Na血症が特徴的にみられる。炎症性サイトカインの関与や、肺病変そのものが抗利尿ホルモン分泌を刺激する機序が想定されている。他の細菌性肺炎に比べて低Na血症の頻度・程度が強い傾向があり、診断のヒントとなる。</p>
+      <p><strong>②低P血症:</strong><br>
+      機序は完全には解明されていないが、細胞内へのリンの急速な取り込みや、下痢などによる消化管からの喪失、腎からの排泄増加などが複合的に関与すると考えられている。低Na血症と並び、レジオネラ肺炎を示唆する検査所見として知られる。</p>
+      <p><strong>③CK上昇と横紋筋融解症:</strong><br>
+      CK著明上昇は横紋筋融解症を示唆する。レジオネラ菌自体、あるいは重症感染・高熱・ショックに伴う筋組織の直接的・間接的な傷害により生じると考えられる。横紋筋融解症で遊離したミオグロビンは腎尿細管を直接傷害し、急性腎障害(AKI)の一因となる。PBL2で学んだ「腎排泄に依存する物質」という視点に立つと、ミオグロビンのような大量の異常産物の急激な負荷も、腎機能に影響しうることがわかる。</p>
+      <p><strong>④リンパ球減少症:</strong><br>
+      重症感染症・敗血症では、アポトーシスの亢進などによりリンパ球が減少することが多く、免疫応答の破綻・重症度の高さを反映する所見とされる。レジオネラ肺炎においては、リンパ球減少が独立した予後不良因子の一つとして報告されている。</p>
+      <aside class="note ui">「高熱なのに脈が上がらない」「Naが低い」「Pが低い」「CKが高い」という組み合わせは、細菌性肺炎の中でもレジオネラ肺炎を積極的に疑う臨床的な手がかりとなる。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 16: 振り返り確認5 ============ -->
+  <section class="stage" data-stage="16">
+    <div class="kind-label check ui">振り返り・確認 5</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>レジオネラ肺炎で低Na血症が生じる機序として考えられているものは？</summary>
+      <div class="answer">SIADH様の機序(炎症性サイトカインや肺病変による抗利尿ホルモン分泌の刺激)。</div>
+    </details>
+    <details class="check ui">
+      <summary>CK上昇がAKIとどう関連するか説明できるか？</summary>
+      <div class="answer">横紋筋融解症で遊離したミオグロビンが腎尿細管を直接傷害し、急性腎障害の一因となる。</div>
+    </details>
+    <details class="check ui">
+      <summary>リンパ球減少症の臨床的意義は？</summary>
+      <div class="answer">重症感染症・敗血症での免疫応答の破綻・重症度の高さを反映し、レジオネラ肺炎では独立した予後不良因子の一つとされる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 17: 問題6 ============ -->
+  <section class="stage" data-stage="17">
+    <div class="kind-label q ui">問題 6</div>
+    <h2 class="stage-title">診断とA-DROPスコア</h2>
+    <div class="card">
+      <h3 class="sub-title">【検査結果】</h3>
+      <table class="vitals-table">
+        <tr><td>喀痰グラム染色</td><td>白血球多数、グラム陰性桿菌少数(検出困難)</td></tr>
+        <tr><td>一般細菌培養(48時間後)</td><td>正常口腔内常在菌のみ</td></tr>
+        <tr><td>レジオネラ培養(BCYE寒天培地)</td><td class="flag">5日後に<span class="sp">Legionella pneumophila</span> serogroup 1検出</td></tr>
+        <tr><td>血液培養(2セット)</td><td>陰性</td></tr>
+        <tr><td>尿中レジオネラ抗原</td><td class="flag">陽性(<span class="sp">Legionella pneumophila</span> serogroup 1)</td></tr>
+        <tr><td>血清抗体価(ペア血清)</td><td class="flag">急性期 IgM1:128/IgG1:64 → 回復期 IgM1:512/IgG1:512(4倍以上上昇)</td></tr>
+      </table>
+      <ol class="q-list">
+        <li>レジオネラ肺炎の診断に用いられる検査(尿中抗原、培養、ペア血清)について、それぞれの特徴(感度・特異度・迅速性・限界)を説明しなさい。</li>
+        <li>喀痰のグラム染色でレジオネラが検出されにくいのはなぜか。</li>
+        <li>本症例の検査値を用いて、A-DROPスコアを実際に算出しなさい(Age・Dehydration・Respiratory failure・Orientation disturbance・Pressure)。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 18: 解説6 ============ -->
+  <section class="stage" data-stage="18">
+    <div class="kind-label ui">解説 6</div>
+    <h2 class="stage-title">診断とA-DROPスコア</h2>
+    <div class="card">
+      <p><strong>①各検査の特徴:</strong></p>
+      <p><strong>尿中抗原検査:</strong> 感度70〜90%、特異度&gt;95%、15分程度で結果が得られる迅速検査。ただし<span class="sp">Legionella pneumophila</span> serogroup 1のみを検出対象としており、全レジオネラ症の約80%をカバーするにとどまる(serogroup 1以外や他菌種は検出できない)。</p>
+      <p><strong>培養(BCYE寒天培地):</strong> 感度80〜90%、特異度100%(培養陽性であれば確定的)だが、結果判明まで3〜5日を要し、システインを含む特殊な培地を必要とする。</p>
+      <p><strong>ペア血清抗体価:</strong> 急性期と回復期(通常2週間程度あける)で4倍以上の抗体価上昇を確認することで診断する。結果判明までに時間がかかるため、回顧的な診断に用いられる。</p>
+      <p><strong>②グラム染色で検出困難な理由:</strong><br>
+      <span class="sp">Legionella</span>属は薄い細胞壁を持ち、通常のグラム染色での染色性が悪く、たとえグラム陰性桿菌として観察されても背景に紛れて見逃されやすい。加えて偏性細胞内寄生性であり、喀痰中では好中球に貪食された状態で存在することが多く、通常の塗抹検鏡では同定が難しい。</p>
+      <h3 class="sub-title">③A-DROPスコア(本症例での採点)</h3>
+      <table class="score-table">
+        <tr><th>項目</th><th>基準</th><th>本症例</th><th class="pt">点数</th></tr>
+        <tr><td>A(Age)</td><td>男性70歳以上・女性75歳以上</td><td>62歳、該当せず</td><td class="pt">0点</td></tr>
+        <tr><td>D(Dehydration)</td><td>BUN≥21mg/dL</td><td>BUN 38</td><td class="pt">1点</td></tr>
+        <tr><td>R(Respiratory failure)</td><td>SpO2≤90%またはPaO2≤60mmHg</td><td>SpO2 85%</td><td class="pt">1点</td></tr>
+        <tr><td>O(Orientation)</td><td>意識障害</td><td>JCS II-10</td><td class="pt">1点</td></tr>
+        <tr><td>P(Pressure)</td><td>収縮期血圧≤90mmHg</td><td>88 mmHg</td><td class="pt">1点</td></tr>
+        <tr class="total"><td colspan="3">合計</td><td class="pt">4点(超重症)</td></tr>
+      </table>
+      <p>A-DROPスコアは日本呼吸器学会が提唱する市中肺炎重症度分類であり、CURB-65(欧米で用いられる類似スコア)の日本版に相当する。0点:軽症(外来治療)、1〜2点:中等症、3点:重症、4〜5点:超重症(ICU入室を考慮)とされ、本症例は4点(超重症)であり、ICU入室を要する病態である。</p>
+      <aside class="note ui">PBL1で学んだ「市中肺炎/院内肺炎/NHCAP」という発症場所による分類に加え、A-DROPのような重症度分類を組み合わせることで、初めて治療の場(外来/一般病棟/ICU)を判断できる。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 19: 振り返り確認6 ============ -->
+  <section class="stage" data-stage="19">
+    <div class="kind-label check ui">振り返り・確認 6</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>尿中レジオネラ抗原検査の限界は何か？</summary>
+      <div class="answer"><span class="sp">Legionella pneumophila</span> serogroup 1のみを検出対象としており、全レジオネラ症の約80%しかカバーできない。</div>
+    </details>
+    <details class="check ui">
+      <summary>なぜレジオネラは通常のグラム染色で検出しにくいか？</summary>
+      <div class="answer">薄い細胞壁を持ち染色性が悪いことに加え、偏性細胞内寄生性であり好中球に貪食された状態で存在することが多いため。</div>
+    </details>
+    <details class="check ui">
+      <summary>本症例のA-DROPスコアは何点で、どの重症度区分に該当するか？</summary>
+      <div class="answer">4点で、超重症に該当する。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 20: 問題7 ============ -->
+  <section class="stage" data-stage="20">
+    <div class="kind-label q ui">問題 7</div>
+    <h2 class="stage-title">治療戦略と公衆衛生対応</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>敗血症性ショックの初期対応(Surviving Sepsis Campaign 2021)の主要な要素を、時系列で述べなさい。</li>
+        <li>レジオネラ肺炎に対する抗菌薬として、β-ラクタム系(ペニシリン・セフェム系)が無効とされるのはなぜか。</li>
+        <li>本症例で選択されたレボフロキサシン+アジスロマイシンという抗菌薬の組み合わせについて、その選択根拠を説明しなさい。</li>
+        <li>レジオネラ症が「届出感染症」であることの意味と、本症例での公衆衛生上の対応について説明しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 21: 解説7 ============ -->
+  <section class="stage" data-stage="21">
+    <div class="kind-label ui">解説 7</div>
+    <h2 class="stage-title">治療戦略と公衆衛生対応</h2>
+    <div class="card">
+      <p><strong>①敗血症バンドル:</strong><br>
+      Surviving Sepsis Campaign 2021ガイドラインでは、敗血症・敗血症性ショックが疑われた時点から、①血液培養(可能なら抗菌薬投与前に2セット)採取、②乳酸値測定、③晶質液による初期輸液(30mL/kg、3時間以内を目安)、④広域抗菌薬の投与(可能な限り1時間以内)、⑤輸液に反応しない場合の昇圧薬(ノルアドレナリンが第一選択)投与、という一連の対応を速やかに行うことが推奨されている。本症例でも、培養採取後45分で抗菌薬が開始され、初期輸液・ノルアドレナリンによる循環管理が行われた。</p>
+      <p><strong>②β-ラクタムが無効な理由:</strong><br>
+      <span class="sp">Legionella pneumophila</span>は偏性細胞内寄生菌であり、肺胞マクロファージなどの細胞内で増殖する。β-ラクタム系抗菌薬は細胞膜透過性が低く、細胞内へ十分に到達できないため、細胞外の細菌には有効でも細胞内寄生菌には効果が乏しい。有効な薬剤は、細胞内への移行性が高いフルオロキノロン系、マクロライド系、テトラサイクリン系などに限られる。</p>
+      <p><strong>③薬剤選択の根拠:</strong><br>
+      フルオロキノロン(レボフロキサシン)は細胞内移行性・肺組織移行性に優れ、レジオネラ肺炎の第一選択薬の一つである。マクロライド(アジスロマイシン)も同様に細胞内移行性に優れる。重症例では両者の併用が選択されることもあるが、併用療法の優越性は確立されておらず、近年の研究では単剤療法でも同等の転帰が報告されている。</p>
+      <p><strong>④届出感染症と公衆衛生対応:</strong><br>
+      レジオネラ症は感染症法上の届出対象疾患であり、診断した医師は保健所へ届け出る義務がある。本症例のように、共通の曝露源(冷却塔)による集団発生が疑われる場合には、保健所が施設調査を行い、感染源を特定し、清掃・消毒などの是正措置を講じることで、二次感染や新たな患者発生を防ぐ。個人の治療だけでなく、感染源対策という公衆衛生的な視点が不可欠となる疾患である。</p>
+      <aside class="note ui">レジオネラ症は、個々の患者の治療(内科的アプローチ)と、感染源の特定・除去(公衆衛生的アプローチ)の両方が同時に求められる疾患の代表例である。同僚2名の発症は、単発の重症例ではなく「アウトブレイク」の可能性を示す重要な情報である。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 22: 振り返り確認7 ============ -->
+  <section class="stage" data-stage="22">
+    <div class="kind-label check ui">振り返り・確認 7</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>敗血症バンドルの主要な要素を、時系列で説明できるか？</summary>
+      <div class="answer">血液培養採取→乳酸値測定→初期輸液(30mL/kg)→広域抗菌薬投与(可能な限り1時間以内)→反応不良時の昇圧薬投与、という流れ。</div>
+    </details>
+    <details class="check ui">
+      <summary>β-ラクタム系抗菌薬がレジオネラに無効な理由は？</summary>
+      <div class="answer"><span class="sp">Legionella</span>が偏性細胞内寄生菌であり、細胞膜透過性の低いβ-ラクタム系薬剤が細胞内へ十分に到達できないため。</div>
+    </details>
+    <details class="check ui">
+      <summary>レジオネラ症が届出感染症であることの公衆衛生上の意義は？</summary>
+      <div class="answer">保健所による感染源(本症例では職場の冷却塔)の調査・特定・清掃消毒を可能にし、集団発生の拡大や新たな患者発生を防ぐことができる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>まとめへ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 23: まとめ ============ -->
+  <section class="stage end-card" data-stage="23">
+    <div class="kind-label ui">まとめ</div>
+    <h2 class="stage-title" style="text-align:left;">第4回のまとめ</h2>
+    <div class="card" style="text-align:left;">
+      <p>今回は、職業曝露(冷却塔清掃)を契機とした重症レジオネラ肺炎・敗血症性ショック・ARDSの一例を通じて、敗血症の病態生理、qSOFA・NEWS2・SOFA・A-DROPという重症度評価スコアの実際の計算、ARDSと肺保護換気、レジオネラに特徴的な検査所見、診断法、そして治療戦略と公衆衛生対応という、集中治療・感染症診療の一連の流れを辿った。</p>
+      <p>早期の敗血症バンドル実施、適切な抗菌薬選択(フルオロキノロン+マクロライド)、そして集中治療により、本症例は22日間の入院を経て回復し、職場復帰に至った。</p>
+    </div>
+    <p class="ui" style="font-size:0.85rem;">次回:PBL5(キャップストーン)へ続く</p>
+    <div class="nav-row" style="justify-content:center; margin-top:32px;">
+      <button class="back-btn ui" data-back style="margin-right:0;">&larr; 見直す</button>
+    </div>
+  </section>
+
+  <footer class="ui">
+    本テキストは AI(Claude, Anthropic)を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+
+</div>
+
+<div id="caseModalOverlay" class="case-modal-overlay">
+  <div class="case-modal" role="dialog" aria-modal="true" aria-labelledby="caseModalTitle">
+    <div class="case-modal-head">
+      <span id="caseModalTitle" class="kind-label ui">症例</span>
+      <button id="caseModalClose" class="case-modal-close ui" type="button" aria-label="閉じる">✕</button>
+    </div>
+    <div class="case-modal-body">
+      <p><strong>患者:</strong> 62歳、男性</p>
+      <p><strong>主訴:</strong> 発熱、呼吸困難、意識障害</p>
+      <p><strong>現病歴:</strong><br>
+      5日前から38℃台の発熱、全身倦怠感、頭痛が出現。3日前から乾性咳嗽、筋肉痛が出現し感冒として対症療法を受けた。2日前から39℃以上の高熱と呼吸困難が出現し増悪、当日朝に意識レベル低下があり救急搬送された。</p>
+      <p><strong>既往歴:</strong> 2型糖尿病(HbA1c8.1%)、高血圧症、COPD(GOLD II)</p>
+      <p><strong>社会歴:</strong> ホテル設備管理(冷却塔・空調点検)、喫煙40本/日×40年</p>
+      <p><strong>曝露歴:</strong> 2週間前に冷却塔清掃作業に従事。同僚2名も同時期に発症(後日レジオネラ肺炎と判明)。</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td class="flag">JCS II-10(GCS13)</td></tr>
+        <tr><td>体温</td><td class="flag">39.8℃</td></tr>
+        <tr><td>呼吸数</td><td class="flag">32回/分</td></tr>
+        <tr><td>脈拍</td><td>88回/分・整</td></tr>
+        <tr><td>血圧</td><td class="flag">88/52 mmHg</td></tr>
+        <tr><td>SpO2</td><td class="flag">85%(室内気)→92%(O2 10L)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong> 苦悶様顔貌、チアノーゼ、両側下肺野coarse crackles、末梢冷感・CRT延長。</p>
+      <p><strong>胸部X線:</strong> 両側下肺野優位の浸潤影、右下葉に著明、air bronchogram陽性。</p>
+      <hr style="border:none; border-top:1px dashed var(--line); margin:20px 0;">
+      <p class="kind-label ui" style="margin-bottom:10px;">検査所見(血液検査・血液ガス)</p>
+      <p><strong>血算:</strong> WBC18,500(リンパ球6%)、Hb13.2、Plt9.5万</p>
+      <p><strong>生化学:</strong> BUN38、Cr2.1、Na128、CK1,850、Alb2.8、P2.1、血糖285</p>
+      <p><strong>血清:</strong> CRP28.5、PCT8.5、乳酸3.8、フェリチン1,250</p>
+      <p><strong>動脈血液ガス(O2 10L下):</strong> pH7.32、PaCO2 32、PaO2 62、HCO3- 16</p>
+      <p style="font-size:0.85rem; color:var(--ink-soft);">※喀痰検査・尿中抗原・血液培養・ペア血清の結果は、原因病原体を推定する問題で別途提示する。重症度スコアは各問題で自分で計算する。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stages = Array.from(document.querySelectorAll('.stage'));
+  const track = document.getElementById('progressTrack');
+  let current = 0;
+
+  stages.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'progress-dot' + (i === 0 ? ' current' : '');
+    dot.setAttribute('aria-label', '場面 ' + (i + 1) + ' へ移動');
+    dot.addEventListener('click', () => goToStage(i));
+    track.appendChild(dot);
+  });
+
+  function updateProgress(){
+    const dots = track.children;
+    for(let i=0; i<dots.length; i++){
+      dots[i].classList.remove('current','done');
+      if(i < current) dots[i].classList.add('done');
+      if(i === current) dots[i].classList.add('current');
+    }
+  }
+
+  function goToStage(i){
+    if(i < 0 || i >= stages.length || i === current) return;
+    stages[current].classList.remove('visible');
+    current = i;
+    stages[current].classList.add('visible');
+    updateProgress();
+    stages[current].scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  document.querySelectorAll('[data-next]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current + 1));
+  });
+
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current - 1));
+  });
+
+  const caseTrigger = document.getElementById('caseModalTrigger');
+  const caseOverlay = document.getElementById('caseModalOverlay');
+  const caseClose = document.getElementById('caseModalClose');
+
+  function openCaseModal(){
+    caseOverlay.classList.add('open');
+  }
+  function closeCaseModal(){
+    caseOverlay.classList.remove('open');
+  }
+
+  caseTrigger.addEventListener('click', openCaseModal);
+  caseClose.addEventListener('click', closeCaseModal);
+  caseOverlay.addEventListener('click', (e) => {
+    if(e.target === caseOverlay) closeCaseModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && caseOverlay.classList.contains('open')) closeCaseModal();
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統合PBL 第3回「三週間続く発熱」</title>
+<style>
+  :root{
+    --paper: #f7f3ea;
+    --paper-deep: #efe8d8;
+    --ink: #2b2b28;
+    --ink-soft: #514c44;
+    --indigo: #2c4a52;
+    --indigo-soft: #4a6f78;
+    --indigo-pale: #dfe8e6;
+    --gold: #a98a4a;
+    --line: #d9cfb8;
+    --alert: #a13d2f;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(44,74,82,0.05), transparent 42%),
+      radial-gradient(circle at 85% 92%, rgba(169,138,74,0.05), transparent 42%);
+    color: var(--ink);
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "游明朝", serif;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+  .ui{
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+  .scroll{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 28px 80px;
+  }
+
+  header.title-block{
+    position: relative;
+    text-align:center;
+    margin-bottom: 40px;
+    padding-bottom: 26px;
+    border-bottom: 1px double var(--line);
+  }
+  .series-tag{
+    font-family: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.32em;
+    color: var(--indigo-soft);
+    margin-bottom: 12px;
+  }
+  h1.main-title{
+    font-size: 1.7rem;
+    margin: 0 0 8px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  .case-sub{
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+  .ekg{
+    width: 90px; height: 30px;
+    margin: 18px auto 0;
+    opacity: 0.55;
+  }
+  .ekg path{
+    fill: none;
+    stroke: var(--indigo-soft);
+    stroke-width: 1.4;
+    stroke-dasharray: 220;
+    stroke-dashoffset: 220;
+    animation: draw-ekg 3.2s ease-in-out infinite;
+  }
+  @keyframes draw-ekg{
+    0%{ stroke-dashoffset: 220; opacity: 0.3; }
+    45%{ stroke-dashoffset: 0; opacity: 0.9; }
+    70%{ stroke-dashoffset: 0; opacity: 0.9; }
+    100%{ stroke-dashoffset: -220; opacity: 0.3; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ekg path{ animation: none; stroke-dashoffset: 0; }
+  }
+
+  .progress-track{
+    display:flex;
+    gap: 6px;
+    justify-content:center;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+  .progress-dot{
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--line);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+  .progress-dot:hover{ transform: scale(1.4); background: var(--indigo-soft); }
+  .progress-dot:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .progress-dot.done{ background: var(--indigo-soft); }
+  .progress-dot.current{ background: var(--indigo); transform: scale(1.3); }
+  .progress-hint{
+    text-align:center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .back-btn{
+    font-family: inherit;
+    background: none;
+    color: var(--indigo-soft);
+    border: 1px solid var(--line);
+    padding: 12px 22px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-right: auto;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+  .back-btn:hover{ background: var(--paper-deep); border-color: var(--indigo-soft); }
+  .back-btn:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .back-btn:disabled{ visibility: hidden; }
+
+  .stage{
+    display:none;
+    animation: fadeUp 0.55s ease;
+  }
+  .stage.visible{ display:block; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .kind-label{
+    font-family: inherit;
+    display:inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    padding: 3px 10px;
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    margin-bottom: 14px;
+  }
+  .kind-label.q{ border-color: var(--alert); color: var(--alert); }
+  .kind-label.check{ border-color: var(--gold); color: var(--gold); }
+
+  h2.stage-title{
+    font-size: 1.3rem;
+    margin: 0 0 20px;
+    padding-left: 14px;
+    border-left: 3px solid var(--indigo);
+    color: var(--ink);
+  }
+
+  h3.sub-title{
+    font-size: 1.02rem;
+    margin: 22px 0 10px;
+    color: var(--indigo);
+  }
+
+  .card{
+    background: var(--paper-deep);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 24px 26px;
+    margin-bottom: 22px;
+  }
+
+  .vitals-table{
+    width:100%;
+    border-collapse: collapse;
+    font-family: inherit;
+    font-size: 0.96rem;
+    margin: 14px 0;
+  }
+  .vitals-table td{
+    padding: 6px 10px;
+    border-bottom: 1px dotted var(--line);
+  }
+  .vitals-table td:first-child{
+    color: var(--ink-soft);
+    width: 42%;
+  }
+  .vitals-table .flag{
+    color: var(--alert);
+    font-weight: bold;
+  }
+
+  .q-list{
+    margin: 0;
+    padding-left: 1.3em;
+  }
+  .q-list li{ margin-bottom: 10px; }
+
+  aside.note{
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    border-left: 2px solid var(--gold);
+    padding: 10px 16px;
+    margin: 18px 0;
+    background: rgba(169,138,74,0.06);
+  }
+
+  .sp{ font-style: italic; }
+
+  details.check{
+    margin: 12px 0;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper);
+    padding: 4px 4px;
+  }
+  details.check summary{
+    font-family: inherit;
+    cursor: pointer;
+    padding: 10px 14px;
+    color: var(--indigo);
+    font-size: 0.98rem;
+    outline: none;
+  }
+  details.check summary::marker{ color: var(--gold); }
+  details.check .answer{
+    padding: 4px 16px 14px;
+    border-top: 1px dashed var(--line);
+    margin-top: 6px;
+    font-size: 0.95rem;
+  }
+
+  .nav-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+  }
+  .next-btn{
+    font-family: inherit;
+    background: var(--indigo);
+    color: var(--paper);
+    border: none;
+    padding: 12px 26px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.25s ease, transform 0.15s ease;
+  }
+  .next-btn:hover{ background: var(--indigo-soft); }
+  .next-btn:active{ transform: translateY(1px); }
+  .next-btn:focus-visible{
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .end-card{
+    text-align:center;
+    padding: 40px 20px;
+  }
+  .end-card p{ color: var(--ink-soft); }
+
+  footer{
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  .case-fab{
+    position: sticky;
+    top: 14px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 auto 34px;
+    padding: 9px 18px;
+    background: var(--paper);
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(43,43,40,0.08);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .case-fab:hover{ background: var(--indigo-pale); }
+  .case-fab:active{ transform: translateY(1px); }
+  .case-fab:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-fab-icon{ font-size: 0.95rem; }
+
+  .case-modal-overlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    background: rgba(43,43,40,0.45);
+    z-index: 100;
+    padding: 6vh 20px;
+    overflow-y: auto;
+  }
+  .case-modal-overlay.open{ display:block; }
+  .case-modal{
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 12px 32px rgba(43,43,40,0.25);
+    animation: fadeUp 0.3s ease;
+  }
+  .case-modal-head{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 18px 22px 0;
+  }
+  .case-modal-close{
+    background:none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .case-modal-close:hover{ background: var(--paper-deep); }
+  .case-modal-close:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-modal-body{
+    padding: 14px 26px 26px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+<div class="scroll">
+
+  <header class="title-block">
+    <div class="series-tag ui">統合PBL &nbsp;第3回</div>
+    <h1 class="main-title">三週間続く発熱</h1>
+    <div class="case-sub ui">感染性心内膜炎疑いを通じて、心臓の解剖・免疫・診断基準・治療戦略を辿る</div>
+    <svg class="ekg" viewBox="0 0 90 30"><path d="M0 15 H20 L26 15 L30 4 L36 26 L40 15 H50 L54 8 L58 22 L62 15 H90"/></svg>
+    <div class="progress-track ui" id="progressTrack"></div>
+    <div class="progress-hint ui">丸をクリックすると、好きな場面に移動できます</div>
+  </header>
+
+  <button id="caseModalTrigger" class="case-fab ui" type="button">
+    <span class="case-fab-icon">📋</span> 症例・所見・検査所見を見る
+  </button>
+
+  <!-- ============ Stage 0: 症例提示 ============ -->
+  <section class="stage visible" data-stage="0">
+    <div class="kind-label ui">症例</div>
+    <h2 class="stage-title">症例提示</h2>
+    <div class="card">
+      <p><strong>患者:</strong> 58歳、男性</p>
+      <p><strong>主訴:</strong> 発熱、全身倦怠感、息切れ</p>
+      <p><strong>現病歴:</strong><br>
+      3週間前から38℃台の発熱が持続し、全身倦怠感、食欲不振が出現した。近医で感冒として対症療法を受けたが改善せず、1週間前から労作時の息切れが出現し増悪したため受診した。<strong>2ヶ月前に歯科治療(抜歯)の既往がある。</strong></p>
+      <p><strong>既往歴:</strong> 僧帽弁閉鎖不全症(軽度、経過観察中)、高血圧症、2型糖尿病(HbA1c 7.2%)</p>
+      <p><strong>社会歴:</strong> 喫煙歴なし、機会飲酒、静注薬物使用歴なし</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td>清明(JCS 0)</td></tr>
+        <tr><td>体温</td><td class="flag">38.6℃</td></tr>
+        <tr><td>呼吸数</td><td class="flag">22回/分</td></tr>
+        <tr><td>脈拍</td><td class="flag">102回/分・整</td></tr>
+        <tr><td>血圧</td><td>138/88 mmHg</td></tr>
+        <tr><td>SpO2</td><td class="flag">94%(室内気)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong><br>
+      軽度の苦悶様顔貌、発汗あり、軽度の呼吸窮迫。<br>
+      心尖部に全収縮期雑音(Levine III/VI)を聴取、以前より増強。新たに拡張早期雑音(Levine II/VI)を大動脈弁領域に聴取(新規所見)。<br>
+      両手指に有痛性の紫紅色結節(Osler結節)を2箇所認める。手掌に無痛性の紅斑(Janeway病変)を数箇所認める。爪下線状出血を複数認める。結膜出血あり、眼底検査でRoth斑は認めず。<br>
+      腹部:脾腫あり(肋骨弓下2横指、圧痛なし)。四肢:浮腫なし、ばち指なし(罹病期間が短いため)。</p>
+      <p><strong>心電図:</strong> 洞調律、心拍数102回/分。PR間隔0.22秒(第1度房室ブロック、新規所見)。ST-T変化なし。</p>
+      <p><strong>胸部X線:</strong> 心胸郭比(CTR)58%(軽度心拡大)。軽度の肺うっ血所見あり。胸水貯留なし。</p>
+    </div>
+    <aside class="note ui">この症例を通じて、心臓の解剖・伝導系から、菌血症・免疫学的現象の考え方、心エコーの使い分け、診断基準、そして治療戦略までを段階的にたどっていく。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back disabled>&larr; 戻る</button><button class="next-btn ui" data-next>症例を読んだ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 1: 検査所見 ============ -->
+  <section class="stage" data-stage="1">
+    <div class="kind-label ui">検査所見</div>
+    <h2 class="stage-title">検査所見(血液検査・尿検査)</h2>
+    <div class="card">
+      <p><strong>血算(CBC):</strong></p>
+      <table class="vitals-table">
+        <tr><td>WBC</td><td class="flag">13,500 /μL(好中球78%、リンパ球18%、単球4%)</td></tr>
+        <tr><td>Hb</td><td class="flag">10.2 g/dL(正球性正色素性貧血)</td></tr>
+        <tr><td>Plt</td><td>18.5万 /μL</td></tr>
+      </table>
+      <p><strong>生化学:</strong></p>
+      <table class="vitals-table">
+        <tr><td>BUN</td><td class="flag">32 mg/dL</td></tr>
+        <tr><td>Cr</td><td class="flag">1.5 mg/dL(軽度腎機能低下)</td></tr>
+        <tr><td>eGFR</td><td class="flag">48 mL/min/1.73m²</td></tr>
+        <tr><td>AST / ALT</td><td>38 / 42 U/L</td></tr>
+        <tr><td>LDH</td><td>285 U/L(軽度上昇)</td></tr>
+        <tr><td>総ビリルビン</td><td>1.2 mg/dL</td></tr>
+        <tr><td>アルブミン</td><td class="flag">3.2 g/dL(低アルブミン血症)</td></tr>
+      </table>
+      <p><strong>血清:</strong></p>
+      <table class="vitals-table">
+        <tr><td>CRP</td><td class="flag">8.5 mg/dL(著明高値)</td></tr>
+        <tr><td>ESR</td><td class="flag">68 mm/hr(著明高値)</td></tr>
+        <tr><td>プロカルシトニン</td><td>1.2 ng/mL</td></tr>
+        <tr><td>リウマトイド因子(RF)</td><td class="flag">陽性(68 IU/mL)</td></tr>
+        <tr><td>補体C3</td><td class="flag">82 mg/dL(軽度低下)</td></tr>
+        <tr><td>補体C4</td><td class="flag">18 mg/dL(軽度低下)</td></tr>
+      </table>
+      <p><strong>尿検査:</strong></p>
+      <table class="vitals-table">
+        <tr><td>蛋白</td><td>2+</td></tr>
+        <tr><td>潜血</td><td class="flag">3+</td></tr>
+        <tr><td>尿沈渣・赤血球</td><td class="flag">20〜30/HPF</td></tr>
+        <tr><td>尿沈渣・赤血球円柱</td><td class="flag">2〜3/LPF</td></tr>
+        <tr><td>尿沈渣・白血球</td><td>5〜10/HPF</td></tr>
+      </table>
+    </div>
+    <aside class="note ui">血液培養と心エコーの結果は、この後の問題を少し進めた段階でそれぞれ提示する。まずは血液検査・尿検査の数値をざっと眺めておこう。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>検査所見を見た &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 2: 問題1 ============ -->
+  <section class="stage" data-stage="2">
+    <div class="kind-label q ui">問題 1</div>
+    <h2 class="stage-title">心臓の解剖と伝導系</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>心臓の4つの弁の名称と、それぞれの聴診最強点を答えなさい。</li>
+        <li>収縮期雑音と拡張期雑音は、それぞれどのような弁病変を反映するか。本症例の心尖部の全収縮期雑音、大動脈弁領域の拡張早期雑音は、それぞれ何を示唆するか。</li>
+        <li>心臓の刺激伝導系の経路を、洞房結節から順に述べなさい。心電図のPR間隔は何を反映する指標か。</li>
+        <li>本症例で新たに出現した第1度房室ブロック(PR間隔0.22秒)は、なぜ「弁周囲膿瘍」を示唆する所見となるのか、解剖学的に説明しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 3: 解説1 ============ -->
+  <section class="stage" data-stage="3">
+    <div class="kind-label ui">解説 1</div>
+    <h2 class="stage-title">心臓の解剖と伝導系</h2>
+    <div class="card">
+      <p><strong>①4つの弁と聴診最強点:</strong><br>
+      三尖弁(胸骨左縁第4〜5肋間)、肺動脈弁(胸骨左縁第2肋間)、僧帽弁(心尖部、第5肋間鎖骨中線上)、大動脈弁(胸骨右縁第2肋間)。</p>
+      <p><strong>②雑音と弁病変:</strong><br>
+      収縮期雑音は、房室弁(僧帽弁・三尖弁)の閉鎖不全、または半月弁(大動脈弁・肺動脈弁)の狭窄を反映する。拡張期雑音は、房室弁の狭窄、または半月弁の閉鎖不全を反映する。本症例の心尖部全収縮期雑音の増強は僧帽弁逆流の悪化を、大動脈弁領域の新規拡張早期雑音は新規に出現した大動脈弁逆流を示唆する。</p>
+      <p><strong>③刺激伝導系とPR間隔:</strong><br>
+      洞房結節(右房)→ 心房筋を伝導 → 房室結節(心房中隔下部)→ His束 → 左脚・右脚 → Purkinje線維、という経路で興奮が伝わる。PR間隔は、心房の興奮開始から心室の興奮開始までの時間、すなわち主に房室結節・His束における伝導時間を反映する心電図指標である。</p>
+      <p><strong>④AVブロックと弁周囲膿瘍:</strong><br>
+      房室結節・His束といった伝導系の中心部分は、解剖学的に大動脈弁輪・僧帽弁輪に近接する中心線維体(central fibrous body)のすぐ近くを走行している。大動脈弁輪部に感染が進展して膿瘍を形成すると、周囲の伝導組織に炎症・浮腫が波及し、房室伝導が障害される。新規の房室ブロックの出現は、この解剖学的近接性を背景に、弁周囲膿瘍の存在を示唆する重要な所見となる。</p>
+      <aside class="note ui">新規の第1度房室ブロックは、まだ軽度の伝導障害だが、感染がさらに進展すると完全房室ブロックや脚ブロックに至ることがあり、これらは生命を脅かす合併症のサインとなる。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 4: 振り返り確認1 ============ -->
+  <section class="stage" data-stage="4">
+    <div class="kind-label check ui">振り返り・確認 1</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>収縮期雑音・拡張期雑音の一般的な機序を説明できるか？</summary>
+      <div class="answer">収縮期雑音は房室弁の閉鎖不全または半月弁の狭窄、拡張期雑音は房室弁の狭窄または半月弁の閉鎖不全を反映する。</div>
+    </details>
+    <details class="check ui">
+      <summary>本症例の新規房室ブロックが示唆する病態は？</summary>
+      <div class="answer">大動脈弁輪部の弁周囲膿瘍が、近接する伝導系(房室結節・His束)に炎症・浮腫として波及していることを示唆する。</div>
+    </details>
+    <details class="check ui">
+      <summary>心尖部で最もよく聴取される弁はどれか？</summary>
+      <div class="answer">僧帽弁。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 5: 問題2 ============ -->
+  <section class="stage" data-stage="5">
+    <div class="kind-label q ui">問題 2</div>
+    <h2 class="stage-title">血液培養と菌血症</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>感染性心内膜炎が疑われる場合、血液培養はどのように採取すべきか(セット数・間隔・タイミング)。</li>
+        <li>「持続的菌血症」とは何か。なぜIEの診断において重要視されるか。</li>
+        <li>血液培養から検出された菌が真の起因菌か、皮膚常在菌によるコンタミネーションかを判断する際、何に着目するか(これまでのPBLの復習)。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 6: 解説2 ============ -->
+  <section class="stage" data-stage="6">
+    <div class="kind-label ui">解説 2</div>
+    <h2 class="stage-title">血液培養と菌血症</h2>
+    <div class="card">
+      <p><strong>①採取方法:</strong><br>
+      抗菌薬投与前に、30分以上の間隔をあけて計3セット(各セット好気・嫌気ボトル)採取することが推奨される。</p>
+      <p><strong>②持続的菌血症:</strong><br>
+      疣贅内で細菌が増殖し、間欠的にではなく持続的に血中へ放出されている状態を指す。具体的には、12時間以上あけて採取した2回以上の血液培養陽性、または3セット以上(4セット以上なら大多数)が陽性で、かつ最初と最後の採血が1時間以上離れている場合などが該当する。これは、疣贅という「持続する感染巣」の存在を強く示唆し、Duke基準のMajor criterionを構成する重要な考え方である。</p>
+      <p><strong>③コンタミネーションとの鑑別:</strong><br>
+      複数セット中どれだけの割合で陽性か(例えば1/3セットのみ陽性なら疑わしい)、検出菌が皮膚常在菌(コアグラーゼ陰性ブドウ球菌など)かIEの典型的な起因菌か、臨床像と整合するか、といった点を総合的に判断する。</p>
+
+      <h3 class="sub-title">【血液培養結果】</h3>
+      <table class="vitals-table">
+        <tr><td>第1セット(10:00)</td><td class="flag">好気陽性(18時間)、嫌気陽性(20時間)</td></tr>
+        <tr><td>第2セット(10:30)</td><td class="flag">好気陽性(19時間)、嫌気陰性</td></tr>
+        <tr><td>第3セット(11:00)</td><td class="flag">好気陽性(18時間)、嫌気陽性(21時間)</td></tr>
+        <tr><td>同定結果</td><td class="flag">全セットから<span class="sp">Streptococcus viridans group</span>(<span class="sp">Streptococcus mitis</span>)検出</td></tr>
+      </table>
+      <p>→ 3セット中3セット陽性、かつ最初と最後の採血が1時間以上離れている:<strong>持続的菌血症</strong>の基準を満たす。</p>
+      <p><strong>薬剤感受性試験:</strong></p>
+      <table class="vitals-table">
+        <tr><td>ペニシリンG</td><td class="flag">MIC 0.06 μg/mL(高度感受性)</td></tr>
+        <tr><td>セフトリアキソン</td><td>感受性(S)</td></tr>
+        <tr><td>バンコマイシン</td><td>感受性(S)</td></tr>
+        <tr><td>ゲンタマイシン</td><td>感受性(S)</td></tr>
+      </table>
+      <aside class="note ui"><span class="sp">Streptococcus viridans group</span>は口腔内常在菌であり、歯科処置(抜歯など)後に生じる一過性の菌血症が侵入門戸となることが多い。本症例の2ヶ月前の抜歯歴は、この経過と時間的に矛盾しない。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 7: 振り返り確認2 ============ -->
+  <section class="stage" data-stage="7">
+    <div class="kind-label check ui">振り返り・確認 2</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>血液培養の推奨採取方法(セット数・間隔・タイミング)を説明できるか？</summary>
+      <div class="answer">抗菌薬投与前に、30分以上の間隔をあけて3セット(各セット好気・嫌気ボトル)採取する。</div>
+    </details>
+    <details class="check ui">
+      <summary>本症例が持続的菌血症の基準を満たす根拠は？</summary>
+      <div class="answer">3セット中3セットすべてが陽性であり、かつ最初と最後の採血が1時間以上離れているため。</div>
+    </details>
+    <details class="check ui">
+      <summary><span class="sp">Streptococcus viridans group</span>の主な生息部位と、本症例における感染経路は？</summary>
+      <div class="answer">口腔内常在菌であり、2ヶ月前の抜歯(歯科処置)による一過性菌血症が侵入門戸になったと考えられる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 8: 問題3 ============ -->
+  <section class="stage" data-stage="8">
+    <div class="kind-label q ui">問題 3</div>
+    <h2 class="stage-title">血管現象と免疫学的現象</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>本症例にみられる皮膚・眼所見(Osler結節、Janeway病変、爪下線状出血、結膜出血)を、「血管(塞栓)現象」と「免疫学的現象」に分類しなさい。</li>
+        <li>尿検査でみられる赤血球円柱は、どのような病態を反映するか。</li>
+        <li>リウマトイド因子陽性・補体低下は、それぞれ何を反映するか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 9: 解説3 ============ -->
+  <section class="stage" data-stage="9">
+    <div class="kind-label ui">解説 3</div>
+    <h2 class="stage-title">血管現象と免疫学的現象</h2>
+    <div class="card">
+      <p><strong>①分類:</strong></p>
+      <table class="vitals-table">
+        <tr><td>血管(塞栓)現象</td><td>Janeway病変(無痛性、微小膿瘍を伴う塞栓性病変)、爪下線状出血、無症候性脳梗塞</td></tr>
+        <tr><td>免疫学的現象</td><td>Osler結節(有痛性、免疫複合体沈着による血管炎)、糸球体腎炎(赤血球円柱)、リウマトイド因子陽性、低補体血症</td></tr>
+      </table>
+      <p>結膜出血は微小塞栓・血管の脆弱性のいずれの機序も関与しうる、やや境界的な所見である。</p>
+      <p><strong>②赤血球円柱:</strong><br>
+      尿細管腔内で赤血球が円柱状に固まって形成されるもので、出血の由来が下部尿路ではなく、糸球体・腎実質であることを示す所見である。本症例では、IEに伴う免疫複合体性糸球体腎炎の存在を示唆する。</p>
+      <p><strong>③RF・補体低下:</strong><br>
+      持続する菌血症により産生された免疫複合体が全身の組織に沈着し、補体を消費するため補体(C3・C4)が低下する。リウマトイド因子(RF)はこの免疫複合体形成過程と関連して、罹病期間が長い症例(目安として6週間以上)で陽性化しやすいとされる。</p>
+      <aside class="note ui">Osler結節・Janeway病変・爪下線状出血などの古典的所見は、現代では出現頻度が低下している(それぞれ5〜25%程度)が、認められた場合の診断的価値は高い。本症例では複数の所見が揃っており、診断を強く後押ししている。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 10: 振り返り確認3 ============ -->
+  <section class="stage" data-stage="10">
+    <div class="kind-label check ui">振り返り・確認 3</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>Osler結節とJaneway病変の機序の違いを説明できるか？</summary>
+      <div class="answer">Osler結節は免疫複合体沈着による血管炎で有痛性、Janeway病変は微小塞栓による病変で無痛性という違いがある。</div>
+    </details>
+    <details class="check ui">
+      <summary>赤血球円柱が示唆する病態は？</summary>
+      <div class="answer">出血の由来が糸球体・腎実質にあることを示し、本症例では免疫複合体性糸球体腎炎を示唆する。</div>
+    </details>
+    <details class="check ui">
+      <summary>補体が低下する機序を説明できるか？</summary>
+      <div class="answer">持続する菌血症により生じた免疫複合体が組織に沈着する過程で補体が消費されるため。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 11: 問題4 ============ -->
+  <section class="stage" data-stage="11">
+    <div class="kind-label q ui">問題 4</div>
+    <h2 class="stage-title">検査所見の解釈</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>Hb 10.2 g/dL(正球性正色素性貧血)は、どのような機序で生じると考えられるか。</li>
+        <li>腎機能低下(Cr 1.5、eGFR 48)の機序として、何が考えられるか。</li>
+        <li>低アルブミン血症(Alb 3.2)は何を反映するか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 12: 解説4 ============ -->
+  <section class="stage" data-stage="12">
+    <div class="kind-label ui">解説 4</div>
+    <h2 class="stage-title">検査所見の解釈</h2>
+    <div class="card">
+      <p><strong>①貧血:</strong><br>
+      慢性炎症に伴う貧血(anemia of chronic disease/inflammation)と考えられる。持続する炎症性サイトカインがヘプシジンの産生を介して鉄利用を障害し、赤血球産生が抑制されることで生じる、正球性正色素性のパターンをとる。</p>
+      <p><strong>②腎機能低下:</strong><br>
+      赤血球円柱の存在と対応する、免疫複合体性糸球体腎炎による糸球体障害が主な機序と考えられる。PBL2で学んだ腎盂腎炎のような細菌の直接感染ではなく、免疫複合体沈着による二次性の腎障害である点が異なる。</p>
+      <p><strong>③低アルブミン血症:</strong><br>
+      慢性炎症による肝でのアルブミン合成低下(陰性急性期反応)、および炎症に伴う血管透過性の亢進などが関与すると考えられる。</p>
+      <aside class="note ui">同じ「腎機能低下」でも、PBL2の腎盂腎炎(細菌の直接感染)と本症例(免疫複合体性)とでは機序が異なる。検査値だけでなく、背景にある病態を考える習慣をつけよう。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 13: 振り返り確認4 ============ -->
+  <section class="stage" data-stage="13">
+    <div class="kind-label check ui">振り返り・確認 4</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>慢性炎症に伴う貧血の機序を説明できるか？</summary>
+      <div class="answer">炎症性サイトカインがヘプシジンを介して鉄利用を障害し、赤血球産生が抑制されることで生じる。</div>
+    </details>
+    <details class="check ui">
+      <summary>本症例の腎機能低下と、PBL2(腎盂腎炎)の腎障害の機序の違いを説明できるか？</summary>
+      <div class="answer">腎盂腎炎は細菌の直接感染による腎実質の炎症だが、本症例は免疫複合体沈着による二次性の糸球体腎炎である。</div>
+    </details>
+    <details class="check ui">
+      <summary>低アルブミン血症が示唆することは？</summary>
+      <div class="answer">慢性炎症の存在(陰性急性期反応によるアルブミン合成低下)や、血管透過性の亢進を示唆する。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 14: 問題5 ============ -->
+  <section class="stage" data-stage="14">
+    <div class="kind-label q ui">問題 5</div>
+    <h2 class="stage-title">心エコー(TTE と TEE)</h2>
+    <div class="card">
+      <h3 class="sub-title">【画像所見】</h3>
+      <p><strong>経胸壁心エコー(TTE):</strong></p>
+      <table class="vitals-table">
+        <tr><td>LVEF</td><td>55%(正常)</td></tr>
+        <tr><td>僧帽弁</td><td class="flag">前尖に可動性のある付着物(約8mm×5mm)</td></tr>
+        <tr><td>僧帽弁逆流</td><td class="flag">中等度(以前は軽度)</td></tr>
+        <tr><td>大動脈弁</td><td>小さな付着物を疑う所見(約4mm、不明瞭)</td></tr>
+        <tr><td>大動脈弁逆流</td><td class="flag">軽度(新規)</td></tr>
+        <tr><td>弁周囲膿瘍</td><td>評価困難(TTEの限界)</td></tr>
+      </table>
+      <p><strong>経食道心エコー(TEE):</strong></p>
+      <table class="vitals-table">
+        <tr><td>僧帽弁</td><td class="flag">前尖に可動性のある疣贅を明瞭に描出(12mm×7mm、振動性)</td></tr>
+        <tr><td>大動脈弁</td><td class="flag">非冠尖に疣贅(5mm×3mm)</td></tr>
+        <tr><td>大動脈弁輪部</td><td class="flag">低輝度領域あり、弁周囲膿瘍を強く疑う(8mm×6mm)</td></tr>
+        <tr><td>僧帽弁逆流 / 大動脈弁逆流</td><td>中等度 / 軽度〜中等度</td></tr>
+        <tr><td>左房径</td><td>45mm(左房拡大あり)</td></tr>
+      </table>
+      <p><strong>頭部MRI(塞栓症スクリーニング):</strong> 右中大脳動脈領域に無症候性の急性期脳梗塞(約8mm)。出血性変化なし。脳動脈瘤なし。</p>
+      <h3 class="sub-title">【問題】</h3>
+      <ol class="q-list">
+        <li>TTEとTEEでは、感度・特異度にどのような違いがあるか。</li>
+        <li>TEEがTTEより疣贅・弁周囲膿瘍の検出に優れるのはなぜか、解剖学的に説明しなさい。</li>
+        <li>TEEが追加で行われる適応にはどのようなものがあるか。本症例ではなぜTEEが追加されたか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 15: 解説5 ============ -->
+  <section class="stage" data-stage="15">
+    <div class="kind-label ui">解説 5</div>
+    <h2 class="stage-title">心エコー(TTE と TEE)</h2>
+    <div class="card">
+      <p><strong>①感度・特異度の違い:</strong><br>
+      TTEは非侵襲的な初期評価として有用だが、感度はおよそ60〜75%にとどまる。TEEは感度90%以上、特異度90%以上と優れており、特に弁周囲膿瘍の検出感度は85%以上とされる。</p>
+      <p><strong>②TEEが優れる解剖学的理由:</strong><br>
+      食道は左房・僧帽弁・大動脈基部のすぐ後方を走行しているため、TEEでは探触子をこれらの構造に近接させることができ、TTE(胸壁を介する)よりも高い周波数・高解像度で心臓後方の構造を描出できる。特に人工弁・肥満・COPDなどTTEの画質が低下しやすい状況で、TEEの有用性が際立つ。</p>
+      <p><strong>③TEE追加の適応:</strong><br>
+      TTEで診断的な所見が得られない場合、弁周囲膿瘍などの合併症が疑われる場合、心内デバイスリードがある場合、人工弁の評価、新規の伝導障害(本症例のPR間隔延長)がある場合などに追加される。本症例では、新規の房室ブロックがあり弁周囲膿瘍が疑われたため、TEEが追加された。</p>
+      <aside class="note ui">TTEでは「評価困難」だった大動脈弁周囲の膿瘍が、TEEでは明瞭に描出された。この解像度の違いは、PBL1で学んだ胸部X線とCTの解像度の違いにも通じる考え方である。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 16: 振り返り確認5 ============ -->
+  <section class="stage" data-stage="16">
+    <div class="kind-label check ui">振り返り・確認 5</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>TTEとTEEの感度の違いを説明できるか？</summary>
+      <div class="answer">TTEの感度は約60〜75%であるのに対し、TEEは感度90%以上、特異度90%以上とより優れている。</div>
+    </details>
+    <details class="check ui">
+      <summary>なぜTEEが心臓後方構造の描出に優れるか、解剖学的理由を説明できるか？</summary>
+      <div class="answer">食道が左房・僧帽弁・大動脈基部のすぐ後方を走行しているため、探触子を近接させ高解像度で描出できるため。</div>
+    </details>
+    <details class="check ui">
+      <summary>本症例でTEEが追加された理由は？</summary>
+      <div class="answer">新規の房室ブロックがあり、弁周囲膿瘍が疑われたため、TTEでは評価困難な膿瘍の有無を確認する目的でTEEが追加された。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 17: 問題6 ============ -->
+  <section class="stage" data-stage="17">
+    <div class="kind-label q ui">問題 6</div>
+    <h2 class="stage-title">診断基準(Duke Criteria)</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>Modified Duke Criteriaにおける、Major criteriaとMinor criteriaをそれぞれ挙げなさい。</li>
+        <li>本症例をModified Duke Criteriaに当てはめ、Major/Minor criteriaがそれぞれ何個該当するか整理し、診断カテゴリー(Definite/Possible/Rejected)を判定しなさい。</li>
+        <li>2023年に発表されたDuke-ISCVID Criteriaでは、Modified Duke Criteriaからどのような点が更新されたか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 18: 解説6 ============ -->
+  <section class="stage" data-stage="18">
+    <div class="kind-label ui">解説 6</div>
+    <h2 class="stage-title">診断基準(Duke Criteria)</h2>
+    <div class="card">
+      <h3 class="sub-title">① Modified Duke Criteria(2000年)</h3>
+      <p><strong>Major criteria</strong></p>
+      <ol class="q-list">
+        <li>血液培養陽性:IEに典型的な微生物(緑色連鎖球菌、<span class="sp">Streptococcus bovis</span>、HACEK群、黄色ブドウ球菌、市中感染型腸球菌)が検出される、または持続的菌血症の基準を満たす、または<span class="sp">Coxiella burnetii</span>の単回陽性・抗体価&gt;1:800</li>
+        <li>心内膜病変の証拠(心エコー):弁・支持組織上の振動性腫瘤(疣贅)、膿瘍、人工弁の新規部分的離開、新規の弁逆流(既存雑音の増悪・変化のみでは不十分)</li>
+      </ol>
+      <p><strong>Minor criteria</strong></p>
+      <ol class="q-list">
+        <li>素因(基礎心疾患・静注薬物使用)</li>
+        <li>発熱&gt;38℃</li>
+        <li>血管現象(主要動脈塞栓、敗血症性肺梗塞、感染性動脈瘤、頭蓋内出血、結膜出血、Janeway病変)</li>
+        <li>免疫学的現象(糸球体腎炎、Osler結節、Roth斑、RF陽性)</li>
+        <li>微生物学的証拠(Major基準を満たさない血液培養陽性、または血清学的証拠)</li>
+      </ol>
+      <p><strong>診断カテゴリー:</strong> Definite IE = 2 Major、または1 Major+3 Minor、または5 Minor / Possible IE = 1 Major+1 Minor、または3 Minor / Rejected = 確固たる代替診断、抗菌薬治療4日以内の症状消失、上記いずれも満たさない場合など。</p>
+
+      <h3 class="sub-title">② 本症例への当てはめ</h3>
+      <p><strong>Major criteria(2つ該当):</strong></p>
+      <ol class="q-list">
+        <li>血液培養陽性:<span class="sp">Streptococcus viridans</span>(典型的微生物)が3セット中3セット陽性、持続的菌血症の基準を満たす</li>
+        <li>心エコー陽性:僧帽弁・大動脈弁の疣贅、弁周囲膿瘍、新規の弁逆流</li>
+      </ol>
+      <p><strong>Minor criteria(4つ該当):</strong></p>
+      <ol class="q-list">
+        <li>素因:僧帽弁閉鎖不全症(既知)</li>
+        <li>発熱:38.6℃</li>
+        <li>血管現象:無症候性脳塞栓、Janeway病変</li>
+        <li>免疫学的現象:Osler結節、RF陽性、糸球体腎炎(赤血球円柱)</li>
+      </ol>
+      <p>→ Major criteria 2つを満たし、<strong>Definite Infective Endocarditis</strong>(確定診断)と判定される。</p>
+
+      <h3 class="sub-title">③ 2023 Duke-ISCVID Criteria の主な更新点</h3>
+      <ol class="q-list">
+        <li><strong>新しい微生物学的診断法の追加:</strong> <span class="sp">Bartonella</span>属へのEIA、PCR、アンプリコン/メタゲノムシーケンシング、in situ hybridization、<span class="sp">Coxiella burnetii</span>・<span class="sp">Bartonella</span>属・<span class="sp">Tropheryma whipplei</span>に対する核酸増幅法が、微生物学的Major criterionとして追加された。</li>
+        <li><strong>新しい画像診断法の追加(Imaging Major Criteria):</strong> 18F-FDG PET/CTでの異常代謝活性(自己弁・人工弁・人工血管・心内デバイスリードなど)、心臓CTでの疣贅・弁穿孔・弁瘤・膿瘍・仮性動脈瘤・瘻孔の検出が、心エコーに加えて新たにMajor criterionとして採用された。</li>
+        <li><strong>術中所見の追加(Surgical Major Criterion):</strong> 心臓手術中の直接観察によるIEの証拠が、新たなMajor criterionとして追加された。</li>
+        <li><strong>典型的微生物リストの拡大:</strong> IEを引き起こす「典型的」微生物のリストが拡大され、一部の菌種は心内人工物がある場合に限り典型的とみなされる。2セット以上の典型的微生物、または3セット以上の非典型的微生物の検出でMajor criterionを満たすよう整理された。</li>
+        <li><strong>血液培養のタイミング・採血部位要件の削除:</strong> Modified Duke Criteriaにあった「12時間以上あける」「別々の静脈穿刺」といった要件が削除され、より柔軟な運用が可能になった。</li>
+        <li><strong>素因となる条件の明確化:</strong> 経カテーテル弁置換術(TAVR)、心内デバイス(CIED)、IEの既往が素因として明確に位置づけられた。</li>
+      </ol>
+      <p><strong>診断性能の比較:</strong> 外部検証研究では、2023 Duke-ISCVID Criteriaは Modified Duke Criteriaと比較して感度が有意に高い(84.2% vs 74.9%、p&lt;0.001)ことが示され、特異度に有意な低下はみられなかった。複数の検証研究では感度74〜97.6%、特異度46〜99%と研究間でばらつきがあり、特に心内デバイスを有する患者では偽陽性が増加しうる点に注意が必要とされる。</p>
+      <p><strong>Duke-ESC Criteriaとの違い:</strong> 同じ2023年にEuropean Society of CardiologyもDuke-ESC Criteriaを発表している。Duke-ISCVID Criteriaは微生物学的基準がより充実している一方、Duke-ESC CriteriaはSPECT/CTを含む点、Duke-ISCVID Criteriaは術中所見・身体所見(Osler結節など)をMinor基準に含む点などで違いがある。</p>
+      <aside class="note ui">診断基準は「診断を補助するツール」であり、臨床的判断そのものの代替ではない。特異度の低下が一部の研究で報告されており、特に心内デバイスを有する患者での偽陽性増加には注意が必要である。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 19: 振り返り確認6 ============ -->
+  <section class="stage" data-stage="19">
+    <div class="kind-label check ui">振り返り・確認 6</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>本症例がDefinite IEと判定される根拠(Major criteria)を2つ挙げられるか？</summary>
+      <div class="answer">①持続的菌血症の基準を満たす血液培養陽性(<span class="sp">Streptococcus viridans</span>)、②心エコーでの疣贅・弁周囲膿瘍・新規弁逆流という心内膜病変の証拠。</div>
+    </details>
+    <details class="check ui">
+      <summary>2023 Duke-ISCVID Criteriaで新たにMajor criterionとして追加された画像検査を2つ挙げられるか？</summary>
+      <div class="answer">18F-FDG PET/CT、心臓CT(いずれも心エコーに加えて追加された)。</div>
+    </details>
+    <details class="check ui">
+      <summary>2023年改訂で、血液培養に関する要件はどう変わったか？</summary>
+      <div class="answer">「12時間以上あける」「別々の静脈穿刺」といった採取タイミング・採血部位の要件が削除され、より柔軟な運用が可能になった。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 20: 問題7 ============ -->
+  <section class="stage" data-stage="20">
+    <div class="kind-label q ui">問題 7</div>
+    <h2 class="stage-title">治療戦略と Antimicrobial Stewardship</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>血液培養結果が判明する前の初期経験的治療は、どのような考え方で選択されるか。</li>
+        <li>感受性結果判明後、治療薬はどのように変更されたか。その判断の根拠は何か。</li>
+        <li>この治療変更は、Antimicrobial Stewardship(AS、抗菌薬適正使用)の観点からどのような意義を持つか。</li>
+        <li>弁周囲膿瘍があるにもかかわらず、なぜ本症例では緊急手術ではなく内科的治療が選択されたか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 21: 解説7 ============ -->
+  <section class="stage" data-stage="21">
+    <div class="kind-label ui">解説 7</div>
+    <h2 class="stage-title">治療戦略と Antimicrobial Stewardship</h2>
+    <div class="card">
+      <p><strong>①経験的治療(Day 1、血液培養結果判明前):</strong><br>
+      バンコマイシン15mg/kg静注12時間毎 + セフトリアキソン2g静注1日1回を開始。原因菌がまだ不明な段階では、グラム陽性菌(MRSAを含む)とグラム陰性菌の両方をカバーできる広域な組み合わせを選択する必要がある。</p>
+      <p><strong>②De-escalation(狭域化、Day 3):</strong><br>
+      血液培養からペニシリンG高度感受性(MIC 0.06 μg/mL)の<span class="sp">Streptococcus viridans group</span>が同定されたため、治療はセフトリアキソン2g 1日1回・単剤・4週間へと変更された(ペニシリンG大量持続静注も選択肢だが、投与回数の利便性からセフトリアキソンが選択された)。これは、原因菌と感受性が判明した時点で、不要に広域な抗菌薬(バンコマイシンなど)を中止し、より狭域で有効性の高い薬剤に絞り込む「de-escalation」の典型例である。</p>
+      <p><strong>③Antimicrobial Stewardship(AS)の視点:</strong><br>
+      ASとは、抗菌薬を「適切な患者に、適切な薬剤を、適切な用量・期間で」使用することを組織的に支援する取り組みである。本症例の治療変更は、AS原則の中核である</p>
+      <ul class="q-list">
+        <li>培養結果に基づく狭域化(de-escalation)</li>
+        <li>不要な広域抗菌薬(バンコマイシンなど)投与期間の最小化</li>
+        <li>感受性データに基づく最適な薬剤選択</li>
+        <li>根拠のある治療期間の設定(漫然とした延長を避ける)</li>
+      </ul>
+      <p>を体現している。広域抗菌薬を漫然と継続することは、耐性菌選択圧、副作用(腎障害、<span class="sp">Clostridioides difficile</span>感染など)、医療コストの観点から避けるべきであり、感受性結果が判明し次第、可及的速やかに狭域化することが望ましい。</p>
+      <p><strong>④手術適応の判断:</strong><br>
+      弁周囲膿瘍は一般に外科的介入(弁置換・膿瘍郭清)の適応となりやすい合併症である。しかし本症例では、心不全のコントロールが良好で、抗菌薬治療への反応も良好(解熱・炎症反応の改善・疣贅の縮小傾向)であったため、心臓外科にコンサルトのうえで、まず内科的治療を継続し経過観察する方針となった。緊急手術の絶対適応としては、難治性心不全、コントロール不良の感染(抗菌薬治療にもかかわらず持続する菌血症や膿瘍の拡大)、再発性の塞栓症などが挙げられ、本症例はこれらに該当しなかった。</p>
+
+      <h3 class="sub-title">【経過】</h3>
+      <table class="vitals-table">
+        <tr><td>Day 5</td><td>解熱、血液培養陰性化確認</td></tr>
+        <tr><td>Day 7</td><td>CRP 3.2 mg/dLに低下</td></tr>
+        <tr><td>Day 10</td><td>心臓外科コンサルト → 内科的治療継続の方針</td></tr>
+        <tr><td>Day 14</td><td>TEE再検、疣贅縮小傾向(10mm×6mm)、膿瘍は不変</td></tr>
+        <tr><td>Day 21</td><td>腎機能改善(Cr 1.1 mg/dL)</td></tr>
+        <tr><td>Day 28</td><td>セフトリアキソン4週間コース完遂、CRP 0.3 mg/dL</td></tr>
+      </table>
+      <p>退院後は定期的なTTEで経過観察され、弁周囲膿瘍は瘢痕化、疣贅は消失した。今後の歯科処置前には抗菌薬予防投与が推奨されている。</p>
+      <aside class="note ui">「広域抗菌薬を使い続けること」が安全とは限らない。感受性が判明した段階で速やかに狭域化することは、患者本人にとって(副作用の軽減)も、社会全体にとって(耐性菌対策)も望ましい。これがAntimicrobial Stewardshipの基本的な考え方である。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 22: 振り返り確認7 ============ -->
+  <section class="stage" data-stage="22">
+    <div class="kind-label check ui">振り返り・確認 7</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>経験的治療でバンコマイシン+セフトリアキソンが選択された理由は？</summary>
+      <div class="answer">原因菌が不明な段階で、グラム陽性菌(MRSAを含む)とグラム陰性菌の両方を広くカバーする必要があるため。</div>
+    </details>
+    <details class="check ui">
+      <summary>De-escalationとは何か。本症例でどのように行われたか？</summary>
+      <div class="answer">培養結果・感受性が判明した時点で、不要に広域な抗菌薬を中止し、より狭域で有効性の高い薬剤に絞り込むこと。本症例ではバンコマイシン+セフトリアキソンから、ペニシリンG高度感受性株と判明した後にセフトリアキソン単剤へ変更された。</div>
+    </details>
+    <details class="check ui">
+      <summary>Antimicrobial Stewardshipの中核となる考え方を説明できるか？</summary>
+      <div class="answer">適切な患者に、適切な薬剤を、適切な用量・期間で使用すること。培養結果に基づく狭域化、不要な広域抗菌薬投与期間の最小化、根拠のある治療期間の設定などがその具体策となる。</div>
+    </details>
+    <details class="check ui">
+      <summary>弁周囲膿瘍があっても手術ではなく内科的治療が選択された理由は？</summary>
+      <div class="answer">心不全のコントロールが良好で、抗菌薬治療への反応(解熱・炎症反応改善・疣贅縮小)も良好であり、緊急手術の絶対適応(難治性心不全、コントロール不良の感染、再発性塞栓症など)に該当しなかったため。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>まとめへ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 23: まとめ ============ -->
+  <section class="stage end-card" data-stage="23">
+    <div class="kind-label ui">まとめ</div>
+    <h2 class="stage-title" style="text-align:left;">第3回のまとめ</h2>
+    <div class="card" style="text-align:left;">
+      <p>今回は、抜歯後の一過性菌血症を契機とした亜急性感染性心内膜炎の一例を通じて、心臓の解剖と伝導系、血液培養と菌血症の考え方、血管現象・免疫学的現象、心エコーの使い分け、Duke診断基準(Modified Duke Criteria・2023 Duke-ISCVID Criteria)、そして治療戦略とAntimicrobial Stewardshipという、感染症診療の一連の流れを辿った。</p>
+      <p>最終的にDefinite Infective Endocarditisと診断され、経験的治療から<span class="sp">Streptococcus viridans</span>の感受性結果に基づくde-escalationを経て、4週間の抗菌薬治療で治癒に至った。</p>
+    </div>
+    <p class="ui" style="font-size:0.85rem;">次回:PBL4へ続く</p>
+    <div class="nav-row" style="justify-content:center; margin-top:32px;">
+      <button class="back-btn ui" data-back style="margin-right:0;">&larr; 見直す</button>
+    </div>
+  </section>
+
+  <footer class="ui">
+    本テキストは AI(Claude, Anthropic)を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+
+</div>
+
+<div id="caseModalOverlay" class="case-modal-overlay">
+  <div class="case-modal" role="dialog" aria-modal="true" aria-labelledby="caseModalTitle">
+    <div class="case-modal-head">
+      <span id="caseModalTitle" class="kind-label ui">症例</span>
+      <button id="caseModalClose" class="case-modal-close ui" type="button" aria-label="閉じる">✕</button>
+    </div>
+    <div class="case-modal-body">
+      <p><strong>患者:</strong> 58歳、男性</p>
+      <p><strong>主訴:</strong> 発熱、全身倦怠感、息切れ</p>
+      <p><strong>現病歴:</strong><br>
+      3週間前から38℃台の発熱が持続し、全身倦怠感、食欲不振が出現した。近医で感冒として対症療法を受けたが改善せず、1週間前から労作時の息切れが出現し増悪したため受診した。2ヶ月前に歯科治療(抜歯)の既往がある。</p>
+      <p><strong>既往歴:</strong> 僧帽弁閉鎖不全症(軽度、経過観察中)、高血圧症、2型糖尿病(HbA1c 7.2%)</p>
+      <p><strong>社会歴:</strong> 喫煙歴なし、機会飲酒、静注薬物使用歴なし</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td>清明(JCS 0)</td></tr>
+        <tr><td>体温</td><td class="flag">38.6℃</td></tr>
+        <tr><td>呼吸数</td><td class="flag">22回/分</td></tr>
+        <tr><td>脈拍</td><td class="flag">102回/分・整</td></tr>
+        <tr><td>血圧</td><td>138/88 mmHg</td></tr>
+        <tr><td>SpO2</td><td class="flag">94%(室内気)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong> 心尖部に全収縮期雑音(増強)、大動脈弁領域に新規拡張早期雑音。Osler結節、Janeway病変、爪下線状出血、結膜出血あり。脾腫あり。</p>
+      <p><strong>心電図:</strong> PR間隔0.22秒(第1度房室ブロック、新規)。</p>
+      <p><strong>胸部X線:</strong> CTR 58%(軽度心拡大)、軽度肺うっ血。</p>
+      <hr style="border:none; border-top:1px dashed var(--line); margin:20px 0;">
+      <p class="kind-label ui" style="margin-bottom:10px;">検査所見(血液検査・尿検査)</p>
+      <p><strong>血算:</strong> WBC 13,500/μL、Hb 10.2 g/dL(正球性正色素性貧血)、Plt 18.5万/μL</p>
+      <p><strong>生化学:</strong> BUN 32、Cr 1.5、eGFR 48、AST/ALT 38/42、LDH 285、Alb 3.2</p>
+      <p><strong>血清:</strong> CRP 8.5 mg/dL、ESR 68 mm/hr、PCT 1.2 ng/mL、RF陽性(68 IU/mL)、C3 82・C4 18(低下)</p>
+      <p><strong>尿検査:</strong> 蛋白2+、潜血3+、赤血球20〜30/HPF、赤血球円柱2〜3/LPF</p>
+      <p style="font-size:0.85rem; color:var(--ink-soft);">※血液培養・心エコー(TTE/TEE)の結果は、原因病原体を推定する問題・心エコーの問題でそれぞれ別途提示する。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stages = Array.from(document.querySelectorAll('.stage'));
+  const track = document.getElementById('progressTrack');
+  let current = 0;
+
+  stages.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'progress-dot' + (i === 0 ? ' current' : '');
+    dot.setAttribute('aria-label', '場面 ' + (i + 1) + ' へ移動');
+    dot.addEventListener('click', () => goToStage(i));
+    track.appendChild(dot);
+  });
+
+  function updateProgress(){
+    const dots = track.children;
+    for(let i=0; i<dots.length; i++){
+      dots[i].classList.remove('current','done');
+      if(i < current) dots[i].classList.add('done');
+      if(i === current) dots[i].classList.add('current');
+    }
+  }
+
+  function goToStage(i){
+    if(i < 0 || i >= stages.length || i === current) return;
+    stages[current].classList.remove('visible');
+    current = i;
+    stages[current].classList.add('visible');
+    updateProgress();
+    stages[current].scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  document.querySelectorAll('[data-next]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current + 1));
+  });
+
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current - 1));
+  });
+
+  const caseTrigger = document.getElementById('caseModalTrigger');
+  const caseOverlay = document.getElementById('caseModalOverlay');
+  const caseClose = document.getElementById('caseModalClose');
+
+  function openCaseModal(){
+    caseOverlay.classList.add('open');
+  }
+  function closeCaseModal(){
+    caseOverlay.classList.remove('open');
+  }
+
+  caseTrigger.addEventListener('click', openCaseModal);
+  caseClose.addEventListener('click', closeCaseModal);
+  caseOverlay.addEventListener('click', (e) => {
+    if(e.target === caseOverlay) closeCaseModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && caseOverlay.classList.contains('open')) closeCaseModal();
+  });
+</script>
+
+</body>
+</html>
