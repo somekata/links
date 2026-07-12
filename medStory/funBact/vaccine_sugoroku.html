@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>よぼうせっしゅ人生線 | ワクチンすごろく</title>
+<style>
+:root{
+  --paper:#f5f1e8;
+  --ink:#2b2620;
+  --ink-soft:#6b6153;
+  --card-bg:#fffdf7;
+  --line-border:#d8d0bd;
+  --gold:#b08a3e;
+  --seg-infant:#c97b7b;
+  --seg-child:#6fa06a;
+  --seg-youth:#5b84ab;
+  --seg-adult:#b08a3e;
+  --seg-senior:#8a6bab;
+  --ok:#3d5a52;
+  --danger:#a8362b;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"Noto Serif JP","Hiragino Mincho ProN",serif;
+  min-height:100dvh;overflow-x:hidden;
+}
+h1,h2,h3{font-family:"Noto Serif JP",serif;font-weight:700;margin:0;}
+.mono{font-family:"JetBrains Mono","Courier New",monospace;}
+#app{max-width:640px;margin:0 auto;padding:16px 16px 90px;}
+
+.header{
+  display:flex;align-items:baseline;justify-content:space-between;
+  border-bottom:3px double var(--ink);padding-bottom:8px;margin-bottom:18px;
+}
+.header h1{font-size:1.25rem;letter-spacing:.04em;}
+.header .sub{font-size:.68rem;color:var(--ink-soft);font-family:"JetBrains Mono",monospace;}
+
+.screen{display:none;}
+.screen.active{display:block;}
+
+button{
+  font-family:inherit;font-size:.95rem;cursor:pointer;
+  border:1.5px solid var(--ink);background:var(--card-bg);color:var(--ink);
+  padding:10px 16px;border-radius:20px;transition:transform .08s ease, background .15s ease;
+}
+button:hover{background:#efe9db;}
+button:active{transform:scale(.96);}
+button.primary{background:var(--ok);color:#fff;border-color:var(--ok);}
+button.primary:hover{background:#2e4740;}
+button:disabled{opacity:.35;cursor:not-allowed;}
+
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;}
+.choice-card{
+  border:1.5px solid var(--line-border);background:var(--card-bg);
+  padding:20px 12px;border-radius:10px;text-align:center;cursor:pointer;
+}
+.choice-card.selected{border-color:var(--ok);box-shadow:inset 0 0 0 1.5px var(--ok);background:#eef3f0;}
+.choice-card .emoji{font-size:2rem;display:block;margin-bottom:6px;}
+
+/* start screen */
+.intro-box{
+  background:var(--card-bg);border:1.5px solid var(--ink);border-radius:8px;
+  padding:18px;margin:14px 0;line-height:1.9;font-size:.92rem;
+}
+
+/* train line board */
+.line-wrap{position:relative;padding-left:34px;margin:20px 0;}
+.station{position:relative;padding:14px 0 14px 10px;}
+.station::before{
+  content:"";position:absolute;left:-30px;top:0;bottom:0;width:3px;
+  background:var(--line-border);
+}
+.station:first-child::before{top:50%;}
+.station:last-child::before{bottom:50%;}
+.station .dot{
+  position:absolute;left:-38px;top:calc(50% - 9px);width:18px;height:18px;border-radius:50%;
+  background:var(--card-bg);border:3px solid var(--line-border);z-index:2;
+}
+.station.done .dot{background:var(--ok);border-color:var(--ok);}
+.station.current .dot{
+  background:var(--gold);border-color:var(--gold);
+  box-shadow:0 0 0 4px rgba(176,138,62,.25);
+  animation:pulse 1.6s infinite;
+}
+@keyframes pulse{0%{box-shadow:0 0 0 3px rgba(176,138,62,.3);}50%{box-shadow:0 0 0 7px rgba(176,138,62,.05);}100%{box-shadow:0 0 0 3px rgba(176,138,62,.3);}}
+.station .train{position:absolute;left:-44px;top:calc(50% - 12px);font-size:1.2rem;}
+.station .stlabel{font-size:.68rem;color:var(--ink-soft);font-family:"JetBrains Mono",monospace;}
+.station .sttitle{font-size:.98rem;font-weight:700;margin-top:2px;}
+.station.locked{opacity:.4;}
+.station.seg-infant .dot{border-color:var(--seg-infant);}
+.station.seg-child .dot{border-color:var(--seg-child);}
+.station.seg-youth .dot{border-color:var(--seg-youth);}
+.station.seg-adult .dot{border-color:var(--seg-adult);}
+.station.seg-senior .dot{border-color:var(--seg-senior);}
+
+/* quiz panel */
+.quiz-panel{
+  background:var(--card-bg);border:1.5px solid var(--ink);border-radius:10px;
+  padding:18px;margin-top:16px;
+}
+.quiz-panel .stage-tag{font-size:.7rem;color:var(--ink-soft);font-family:"JetBrains Mono",monospace;}
+.quiz-panel h2{font-size:1.1rem;margin:4px 0 8px;}
+.quiz-panel .narrative{font-size:.88rem;line-height:1.8;margin-bottom:12px;color:var(--ink);}
+.vopts{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
+.vopt{
+  border:1.3px solid var(--line-border);background:#fff;border-radius:8px;
+  padding:10px 12px;font-size:.88rem;display:flex;align-items:center;gap:10px;cursor:pointer;
+}
+.vopt input{transform:scale(1.2);flex-shrink:0;}
+.vopt.picked{border-color:var(--gold);background:#faf3e0;}
+.vopt-text{display:flex;flex-direction:column;gap:2px;}
+.vopt-name{font-weight:700;}
+.vopt-sub{font-size:.72rem;color:var(--ink-soft);font-family:"JetBrains Mono",monospace;}
+.feedback{margin-top:14px;padding:12px;border-radius:8px;font-size:.85rem;line-height:1.8;}
+.feedback.ok{background:#eaf1ee;color:var(--ok);border:1px solid var(--ok);}
+.feedback.ng{background:#f6e9e7;color:var(--danger);border:1px solid var(--danger);}
+.feedback .note{margin-top:8px;color:var(--ink-soft);}
+.vdetail-list{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+.vdetail{background:#fff;border:1px solid var(--line-border);border-radius:6px;padding:8px 10px;color:var(--ink);}
+.vdetail-name{font-weight:700;font-size:.85rem;margin-bottom:3px;}
+.vdetail-row{font-size:.76rem;color:var(--ink-soft);}
+.vdetail-row b{color:var(--ink);font-weight:700;}
+.vdetail-row.caution{color:var(--danger);}
+.stamp-sub{font-size:.6rem;color:var(--ink-soft);font-family:"JetBrains Mono",monospace;}
+
+.info-list{display:flex;flex-direction:column;gap:10px;margin:12px 0;}
+.info-item{border:1.3px solid var(--line-border);background:#fff;border-radius:8px;padding:12px;font-size:.85rem;}
+.info-item b{display:block;margin-bottom:4px;}
+
+.stamp-book{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0;}
+.stamp{
+  border:1.3px dashed var(--line-border);border-radius:8px;padding:10px 6px;text-align:center;font-size:.7rem;
+  background:#fff;
+}
+.stamp .mark{font-size:1.4rem;display:block;}
+
+footer.disclaimer{
+  max-width:640px;margin:30px auto 0;padding:14px 16px 30px;
+  font-size:.68rem;color:var(--ink-soft);line-height:1.7;border-top:1px solid var(--line-border);
+}
+
+/* top tabs */
+.toptabs{display:flex;gap:8px;margin-bottom:16px;}
+.toptabs button{flex:1;font-size:.82rem;padding:9px 6px;border-radius:20px;}
+.toptabs button.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.tabcontent{display:none;}
+.tabcontent.active{display:block;}
+
+/* kaisetsu / link tabs */
+.kaisetsu-box, .link-box{
+  background:var(--card-bg);border:1.5px solid var(--ink);border-radius:8px;
+  padding:18px;margin-bottom:14px;line-height:1.9;font-size:.9rem;
+}
+.kaisetsu-box h3{font-size:.95rem;margin-bottom:8px;color:var(--ok);}
+.kaisetsu-box ol, .kaisetsu-box ul{margin:6px 0;padding-left:22px;}
+.kaisetsu-box li{margin-bottom:4px;}
+.link-item{display:block;padding:10px 0;border-bottom:1px dashed var(--line-border);font-size:.85rem;
+  color:var(--ink);text-decoration:none;}
+.link-item:last-child{border-bottom:none;}
+.link-item .link-desc{font-size:.72rem;color:var(--ink-soft);margin-top:2px;}
+a.link-item{cursor:pointer;}
+a.link-item:hover .link-name{color:var(--ok);text-decoration:underline;}
+.link-name{font-weight:700;}
+.link-box h4{font-size:.8rem;color:var(--ink-soft);margin:0 0 4px;letter-spacing:.05em;}
+.link-box h4:not(:first-child){margin-top:16px;padding-top:12px;border-top:1px solid var(--line-border);}
+
+/* birth date UI */
+.birthdate-box{
+  background:var(--card-bg);border:1.5px solid var(--line-border);border-radius:8px;
+  padding:16px;margin:14px 0;
+}
+.birthdate-box label{font-size:.85rem;display:block;margin-bottom:8px;}
+.birthdate-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.birthdate-row input[type=date]{
+  font-family:inherit;font-size:.9rem;padding:8px 10px;border:1.3px solid var(--line-border);
+  border-radius:6px;background:#fff;color:var(--ink);
+}
+.birthdate-preview{font-size:.75rem;color:var(--ink-soft);margin-top:8px;font-family:"JetBrains Mono",monospace;}
+
+/* stage date badge */
+.date-badge{font-size:.68rem;color:var(--ink-soft);font-family:"JetBrains Mono",monospace;margin-left:6px;}
+.stage-date{font-size:.78rem;color:var(--gold);font-family:"JetBrains Mono",monospace;margin:2px 0 8px;}
+
+/* boshi-techo button + modal */
+.techo-bar{display:flex;justify-content:flex-end;margin-bottom:10px;}
+.techo-btn{font-size:.8rem;padding:8px 14px;border-radius:20px;}
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(43,38,32,.55);z-index:50;
+  align-items:center;justify-content:center;padding:16px;
+}
+.modal-overlay.active{display:flex;}
+.modal-box{
+  background:var(--paper);border:1.5px solid var(--ink);border-radius:10px;
+  max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:20px;
+  position:relative;
+}
+.modal-box h2{font-size:1.05rem;margin-bottom:4px;}
+.modal-sub{font-size:.7rem;color:var(--ink-soft);font-family:"JetBrains Mono",monospace;margin-bottom:14px;}
+.modal-close{
+  position:absolute;top:14px;right:14px;border-radius:50%;width:32px;height:32px;
+  padding:0;font-size:1rem;line-height:1;
+}
+.techo-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.techo-table th, .techo-table td{
+  border-bottom:1px solid var(--line-border);padding:8px 6px;text-align:left;
+}
+.techo-table th{color:var(--ink-soft);font-weight:700;font-size:.7rem;}
+.techo-table td.route{color:var(--ink-soft);}
+.techo-table td.lot{font-family:"JetBrains Mono",monospace;font-size:.72rem;}
+.techo-empty{font-size:.82rem;color:var(--ink-soft);padding:20px 0;text-align:center;}
+.techo-subheading{font-size:.9rem;color:var(--ok);margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--line-border);}
+.techo-subheading:first-of-type{border-top:none;padding-top:0;margin-top:12px;}
+
+/* intro modal */
+.intro-modal-body p{margin:0 0 12px;font-size:.85rem;line-height:1.8;}
+.intro-modal-body b{color:var(--ok);}
+
+/* history timeline (解説タブ) */
+.history-timeline{list-style:none;margin:0;padding:0;}
+.history-timeline li{
+  padding:8px 0 8px 16px;border-left:2px solid var(--line-border);position:relative;font-size:.84rem;line-height:1.7;
+}
+.history-timeline li::before{
+  content:"";position:absolute;left:-5px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--gold);
+}
+.history-timeline .hy{font-family:"JetBrains Mono",monospace;font-weight:700;color:var(--ok);margin-right:6px;}
+
+/* vaccine encyclopedia tab */
+.vdb-controls{
+  background:var(--card-bg);border:1.5px solid var(--line-border);border-radius:8px;
+  padding:14px;margin-bottom:14px;
+}
+#vdbSearch{
+  width:100%;font-family:inherit;font-size:.88rem;padding:9px 12px;border:1.3px solid var(--line-border);
+  border-radius:20px;background:#fff;color:var(--ink);margin-bottom:10px;
+}
+.vdb-chip-group{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.vdb-chip{
+  font-size:.72rem;padding:5px 12px;border-radius:14px;border:1.3px solid var(--line-border);
+  background:#fff;cursor:pointer;color:var(--ink-soft);
+}
+.vdb-chip.active{background:var(--ok);border-color:var(--ok);color:#fff;}
+.vdb-select-row{display:flex;gap:8px;flex-wrap:wrap;}
+.vdb-select-row select{
+  font-family:inherit;font-size:.78rem;padding:7px 8px;border:1.3px solid var(--line-border);
+  border-radius:6px;background:#fff;color:var(--ink);flex:1;min-width:100px;
+}
+.vdb-count{font-size:.72rem;color:var(--ink-soft);margin:0 0 10px 4px;}
+.vdb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width:420px){.vdb-grid{grid-template-columns:1fr;}}
+.vdb-card{
+  background:var(--card-bg);border:1.3px solid var(--line-border);border-radius:8px;
+  padding:12px;cursor:pointer;text-align:left;
+}
+.vdb-card:hover{border-color:var(--gold);}
+.vdb-card .vdb-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;}
+.vdb-tag{font-size:.6rem;padding:2px 7px;border-radius:8px;background:var(--ok);color:#fff;}
+.vdb-tag.tag-任意{background:var(--gold);}
+.vdb-tag.tag-渡航{background:var(--seg-youth);}
+.vdb-tag.tag-臨時{background:var(--danger);}
+.vdb-tag.tag-その他{background:var(--ink-soft);}
+.vdb-tag.tag-outdated{background:#999;}
+.vdb-card .vdb-name{font-weight:700;font-size:.88rem;margin-bottom:2px;}
+.vdb-card .vdb-disease{font-size:.72rem;color:var(--ink-soft);}
+.vdb-empty{font-size:.85rem;color:var(--ink-soft);text-align:center;padding:30px 0;}
+
+/* vaccine detail modal */
+.vm-section{font-size:.82rem;line-height:1.8;margin-bottom:8px;}
+.vm-section b{color:var(--ok);display:inline-block;min-width:96px;}
+.vm-note{margin-top:10px;padding:10px;background:#f3ede0;border-radius:6px;font-size:.76rem;color:var(--ink-soft);line-height:1.7;}
+.vm-outdated-flag{display:inline-block;margin-left:8px;font-size:.68rem;background:#999;color:#fff;padding:2px 8px;border-radius:8px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <h1>よぼうせっしゅ人生線</h1>
+    <div class="sub">A LIFE ON THE IMMUNIZATION LINE</div>
+  </div>
+
+  <div class="toptabs">
+    <button id="tabBtnHonntai" class="active">📖 本体</button>
+    <button id="tabBtnKaisetsu">💡 解説</button>
+    <button id="tabBtnVaccineDB">🧬 ワクチン</button>
+    <button id="tabBtnLink">🔗 リンク</button>
+  </div>
+
+  <!-- 本体タブ -->
+  <div id="tabHonntai" class="tabcontent active">
+
+    <!-- START -->
+    <div id="screenStart" class="screen active">
+      <div class="intro-box">
+        ようこそ。これから一人の赤ちゃんが生まれ、大人になり、歳を重ねていく人生を、予防接種の視点でたどっていきます。<br><br>
+        あなたは保護者であり、時には本人として、その時々で必要なワクチンを選んでいきます。正しく選べたら、人生線の次の駅へ進みます。
+      </div>
+
+      <h2 style="font-size:1rem;margin:16px 0 8px;">生年月日を設定してください</h2>
+      <div class="birthdate-box">
+        <label>この人生のスタート日(誕生日)</label>
+        <div class="birthdate-row">
+          <input type="date" id="birthDateInput">
+          <button id="todayBirthBtn">本日を出生にする</button>
+        </div>
+        <div class="birthdate-preview" id="birthDatePreview"></div>
+      </div>
+
+      <h2 style="font-size:1rem;margin:16px 0 8px;">性別を選んでください</h2>
+      <div class="choice-grid" id="genderGrid">
+        <div class="choice-card" data-g="girl"><span class="emoji">👧</span>女の子</div>
+        <div class="choice-card" data-g="boy"><span class="emoji">👦</span>男の子</div>
+      </div>
+      <div class="controls">
+        <button class="primary" id="startBtn" disabled>人生線に乗る →</button>
+      </div>
+    </div>
+
+    <!-- BOARD -->
+    <div id="screenBoard" class="screen">
+      <div class="techo-bar">
+        <button class="techo-btn" id="openTechoBtnBoard">📔 母子手帳・接種記録書を見る</button>
+      </div>
+      <div class="line-wrap" id="lineWrap"></div>
+      <div class="quiz-panel" id="quizPanel"></div>
+    </div>
+
+    <!-- ENDING -->
+    <div id="screenEnding" class="screen">
+      <div class="techo-bar">
+        <button class="techo-btn" id="openTechoBtnEnd">📔 母子手帳・接種記録書を見る</button>
+      </div>
+      <div class="intro-box" id="endingText"></div>
+      <h2 style="font-size:1rem;margin:16px 0 8px;"><span id="endingBookLabel">接種記録書</span>スタンプ一覧</h2>
+      <div class="stamp-book" id="stampBook"></div>
+      <div class="controls">
+        <button class="primary" id="restartBtn">もう一度最初から</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 解説タブ -->
+  <div id="tabKaisetsu" class="tabcontent">
+    <div class="kaisetsu-box">
+      <h3>目的</h3>
+      <p>このアプリは、誕生から高齢期までのライフステージに沿って、日本の予防接種スケジュールを体験的に学ぶための教育用シミュレーションです。年齢や渡航などの場面ごとに必要なワクチンの回数・接種経路・注意事項を、実際の「母子手帳」に記録していくような感覚で学べるように作られています。医学生・医療者の学習を主な想定用途としています。</p>
+    </div>
+    <div class="kaisetsu-box">
+      <h3>使い方</h3>
+      <ol>
+        <li>「本体」タブで生年月日を設定します(「本日を出生にする」で今日の日付を使うこともできます)。</li>
+        <li>男の子・女の子を選び、「人生線に乗る」で開始します。</li>
+        <li>各駅(ライフイベント)で、その時期に必要なワクチンをチェックして選びます。</li>
+        <li>正しく選べると、選んだワクチンの回数・接種経路・注意事項が表示され、次の駅に進みます。同時に「母子手帳」にも自動で記録されます(接種日・投与経路・ロット番号)。</li>
+        <li>選び方が誤っている場合は、ヒントが表示されるので、もう一度考えてみましょう。</li>
+        <li>画面上部の「📔 母子手帳を見る」から、いつでもこれまでの記録を確認できます。</li>
+        <li>65歳の駅まで進むと、記録の一覧とともに人生の旅が完了します。</li>
+        <li>「🧬 ワクチン」タブでは、登場するワクチンを図鑑形式で検索・比較できます。</li>
+      </ol>
+    </div>
+    <div class="kaisetsu-box">
+      <h3>ワクチンの歴史</h3>
+      <p>予防接種の考え方は、およそ230年にわたって発展してきました。主なできごとを簡単に振り返ります。</p>
+      <ul class="history-timeline">
+        <li><span class="hy">1796</span>エドワード・ジェンナーが牛痘を用いた種痘を行い、近代ワクチン学の出発点となった。</li>
+        <li><span class="hy">1885</span>ルイ・パスツールが狂犬病ワクチンを開発し、弱毒化病原体を用いる考え方が確立した。</li>
+        <li><span class="hy">1948</span>日本で予防接種法が制定され、当初は「義務接種」として始まった。</li>
+        <li><span class="hy">1980</span>WHOが天然痘の世界根絶を宣言。</li>
+        <li><span class="hy">1994</span>日本の予防接種法改正で「義務接種」から「勧奨接種」へと転換。</li>
+        <li><span class="hy">2000年代</span>肺炎球菌結合型ワクチンが登場し、カバーする血清型数はPCV7からPCV13、PCV15、PCV20へと拡大。</li>
+        <li><span class="hy">2006〜2014</span>HPVワクチンが4価・2価・9価と段階的に開発され、より広い型をカバーするようになった。</li>
+        <li><span class="hy">2013〜2022</span>日本でHPVワクチンの積極的勧奨が一時中止され、2022年4月に再開。</li>
+        <li><span class="hy">2015〜2020</span>水痘・B型肝炎・ロタウイルスワクチンが相次いで日本の定期接種に加わった。</li>
+        <li><span class="hy">2020年代</span>mRNA技術がCOVID-19パンデミックを機に実用化され、ワクチン開発の手法に新たな選択肢が加わった。</li>
+        <li><span class="hy">2023〜2024</span>RSウイルスに対するワクチン・モノクローナル抗体が相次いで承認され、高齢者・妊婦・乳児それぞれの対策が整い始めた。</li>
+        <li><span class="hy">2024</span>日本でジフテリア・百日咳・破傷風・ポリオ・Hibの5成分を1本にまとめた五種混合ワクチンが導入され、接種回数が簡素化された。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ワクチンタブ -->
+  <div id="tabVaccineDB" class="tabcontent">
+    <div class="vdb-controls">
+      <input type="text" id="vdbSearch" placeholder="ワクチン名・疾患名・病原体で検索">
+      <div class="vdb-chip-group" id="vdbPurposeChips"></div>
+      <div class="vdb-select-row">
+        <select id="vdbRouteFilter"><option value="">接種経路: すべて</option></select>
+        <select id="vdbTypeFilter"><option value="">種類: すべて</option></select>
+        <select id="vdbSort">
+          <option value="name">並び替え: 名前順</option>
+          <option value="purpose">並び替え: 分類順</option>
+        </select>
+      </div>
+    </div>
+    <div class="vdb-count" id="vdbCount"></div>
+    <div class="vdb-grid" id="vdbGrid"></div>
+  </div>
+
+  <!-- リンクタブ -->
+  <div id="tabLink" class="tabcontent">
+    <div class="link-box">
+      <h4>関連サイト</h4>
+      <a class="link-item" href="https://www.know-vpd.jp/" target="_blank" rel="noopener">
+        <span class="link-name">知ろう!ワクチンで防げる病気 KNOW-VPD!</span>
+        <span class="link-desc">保護者・医療者向けに予防接種スケジュールをわかりやすく発信しているサイトです。</span>
+      </a>
+      <a class="link-item" href="https://www.kankyokansen.org/news/20260126/" target="_blank" rel="noopener">
+        <span class="link-name">日本環境感染学会</span>
+        <span class="link-desc">院内感染対策・医療関連感染症の専門学会です。</span>
+      </a>
+      <a class="link-item" href="http://www.wakutin.or.jp/public/" target="_blank" rel="noopener">
+        <span class="link-name">公益財団法人 予防接種リサーチセンター</span>
+        <span class="link-desc">予防接種に関する情報提供・調査研究を行う公益財団法人です。</span>
+      </a>
+      <a class="link-item" href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/yobou-sesshu/index.html" target="_blank" rel="noopener">
+        <span class="link-name">厚生労働省 予防接種情報</span>
+        <span class="link-desc">厚生労働省サイトへ。定期接種・任意接種の最新スケジュールは、必ずこちらの公式情報でご確認ください。</span>
+      </a>
+      <a class="link-item" href="https://www.vaccine4all.jp/" target="_blank" rel="noopener">
+        <span class="link-name">Vaccine4All</span>
+        <span class="link-desc">全世代のワクチンについて情報発信するサイトです。</span>
+      </a>
+      <a class="link-item" href="https://otona.know-vpd.jp/seinen.html" target="_blank" rel="noopener">
+        <span class="link-name">おとなのVPD</span>
+        <span class="link-desc">KNOW-VPD!による、成人・青年期向けの予防接種情報サイトです。</span>
+      </a>
+
+      <h4>参考文献</h4>
+      <span class="link-item">
+        <span class="link-name">Saitoh A, Okabe N. Progress and Challenges for the Japanese Immunization Program. Vaccine. 2018;36(30):4582-4588.</span>
+        <span class="link-desc">日本の予防接種制度の歴史的経緯に関する参考文献。</span>
+      </span>
+      <span class="link-item">
+        <span class="link-name">Ujiie M. Resumption of Active Recommendation of the HPV Vaccine in Japan. Hum Vaccin Immunother. 2022;18(6):2090777.</span>
+        <span class="link-desc">HPVワクチンの積極的勧奨再開に関する参考文献。</span>
+      </span>
+      <span class="link-item" style="color:var(--ink-soft);">
+        <span class="link-name">その他の関連リンクも追加できます。</span>
+        <span class="link-desc">追加したいURLを教えていただければ組み込みます。</span>
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<!-- 母子手帳/接種記録書モーダル -->
+<div class="modal-overlay" id="techoModal">
+  <div class="modal-box">
+    <button class="modal-close" id="closeTechoBtn">✕</button>
+    <h2>母子手帳・接種記録書</h2>
+    <div class="modal-sub" id="techoOwnerLine"></div>
+
+    <h3 class="techo-subheading">📔 母子手帳(20歳未満)</h3>
+    <table class="techo-table" id="techoTableChild">
+      <thead><tr><th>接種日</th><th>ワクチン</th><th>投与経路</th><th>ロット</th></tr></thead>
+      <tbody id="techoTableBodyChild"></tbody>
+    </table>
+    <div class="techo-empty" id="techoEmptyChild" style="display:none;">まだ記録がありません。</div>
+
+    <h3 class="techo-subheading">📋 接種記録書(20歳以降)</h3>
+    <table class="techo-table" id="techoTableAdult">
+      <thead><tr><th>接種日</th><th>ワクチン</th><th>投与経路</th><th>ロット</th></tr></thead>
+      <tbody id="techoTableBodyAdult"></tbody>
+    </table>
+    <div class="techo-empty" id="techoEmptyAdult" style="display:none;">まだ記録がありません。</div>
+  </div>
+</div>
+
+<!-- ワクチン詳細モーダル -->
+<div class="modal-overlay" id="vaccineModal">
+  <div class="modal-box">
+    <button class="modal-close" id="closeVaccineBtn">✕</button>
+    <h2 id="vmName"></h2>
+    <div class="modal-sub" id="vmTagsLine"></div>
+    <div class="vm-section"><b>対象疾患</b><span id="vmDisease"></span></div>
+    <div class="vm-section"><b>病原体</b><span id="vmPathogen"></span></div>
+    <div class="vm-section"><b>病原体の特徴</b><span id="vmFeature"></span></div>
+    <div class="vm-section"><b>感染経路</b><span id="vmTransmission"></span></div>
+    <div class="vm-section"><b>ワクチンの種類</b><span id="vmVaccineType"></span></div>
+    <div class="vm-section"><b>接種経路</b><span id="vmRoute"></span></div>
+    <div class="vm-section"><b>スケジュール</b><span id="vmSchedule"></span></div>
+    <div class="vm-section" id="vmCautionRow"><b>注意事項</b><span id="vmCaution"></span></div>
+    <div class="vm-note" id="vmExtraNote" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- 初回案内モーダル -->
+<div class="modal-overlay active" id="introModal">
+  <div class="modal-box">
+    <h2>ご利用にあたって</h2>
+    <div class="modal-sub" id="versionLine"></div>
+    <div class="intro-modal-body">
+      <p><b>生成AIの使用について</b><br>本アプリの解説文・データはAI(Claude, Anthropic)を用いて作成しています。内容には誤りが含まれる可能性があります。</p>
+      <p><b>最新情報について</b><br>掲載しているワクチンの回数・スケジュール・承認状況等は目安であり、必ずしも最新の接種状況を反映しているとは限りません。実際の接種にあたっては、公式情報・添付文書・専門家の指導を必ずご確認ください。</p>
+      <p><b>記録について</b><br>ゲーム内の日付・ロット番号は演出用に生成された架空の値であり、実在の記録ではありません。</p>
+    </div>
+    <div class="controls">
+      <button class="primary" id="closeIntroBtn">同意して始める</button>
+    </div>
+  </div>
+</div>
+
+<footer class="disclaimer">
+本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。渡航ワクチンは渡航先・時期・活動内容により必要なものが異なるため、実際の渡航前には必ずトラベルクリニック等にご相談ください。ロット番号はゲーム上の演出であり、実在のロット番号ではありません。<br>
+二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+/* ================= ワクチン情報辞書(図鑑データ兼用) =================
+   route: 接種経路 / doses: 必要な回数(目安) / caution: 注意事項(目安)
+   disease/pathogen/feature/transmission/vaccineType/purpose は「ワクチン」タブの図鑑表示に使用。
+   数値・回数・承認状況は簡略化した目安です。実際の接種にあたっては添付文書・最新の公式情報を確認してください。
+   purpose: '定期' | '任意' | '渡航' | '臨時' | 'その他'(複数可) */
+const VACCINE_INFO = {
+  bcg:{name:'BCG(結核)', route:'皮内(スタンプ法)', doses:'1回(生後5〜8か月)',
+    caution:'生ワクチン。重度免疫不全・妊娠中では接種を避ける。',
+    disease:'結核', pathogen:'<i>Mycobacterium tuberculosis</i>(結核菌)',
+    feature:'抗酸菌の一種で増殖が遅い。肺を中心に全身の臓器を侵しうる。',
+    transmission:'空気感染(飛沫核感染)', vaccineType:'生ワクチン(弱毒化ウシ型結核菌)',
+    purpose:['定期']},
+
+  hepb:{name:'B型肝炎', route:'皮下または筋肉内', doses:'3回(生後2か月・3か月・7〜8か月が目安)',
+    caution:'不活化ワクチン。針刺し事故など曝露後は緊急対応が別途必要になる場合がある。',
+    disease:'B型肝炎', pathogen:'B型肝炎ウイルス(HBV)',
+    feature:'DNAウイルス。肝細胞に感染し、慢性化することがある。',
+    transmission:'血液・体液を介した感染(母子感染・性的接触・血液曝露など)', vaccineType:'不活化(組換えタンパク)ワクチン',
+    purpose:['定期']},
+
+  rota:{name:'ロタウイルス', route:'経口', doses:'2回または3回(製剤により異なる)',
+    caution:'生ワクチン。初回接種開始月齢に上限があるため、遅れないよう注意。',
+    disease:'ロタウイルス胃腸炎', pathogen:'ロタウイルス',
+    feature:'乳幼児に重症の急性胃腸炎を起こしうるRNAウイルス。',
+    transmission:'糞口感染', vaccineType:'生ワクチン(経口)',
+    purpose:['定期']},
+
+  dpt5:{name:'五種混合(DPT-IPV-Hib)', route:'皮下', doses:'初回3回+追加1回(計4回、生後2か月から開始)',
+    caution:'不活化ワクチン・トキソイドの混合製剤。従来の四種混合とHibの個別接種が1本に統合された。',
+    disease:'ジフテリア・百日咳・破傷風・急性灰白髄炎(ポリオ)・Hib感染症',
+    pathogen:'<i>Corynebacterium diphtheriae</i>(ジフテリア菌)・<i>Bordetella pertussis</i>(百日咳菌)・<i>Clostridium tetani</i>(破傷風菌)・ポリオウイルス・<i>Haemophilus influenzae</i> type b(Hib)',
+    feature:'5つの異なる病原体に対する成分を1本にまとめた混合ワクチン。',
+    transmission:'成分ごとに異なる(飛沫感染・接触感染・創傷感染など)', vaccineType:'不活化ワクチン・トキソイドの混合製剤',
+    purpose:['定期'], extraNote:'商品名Gobik(ゴービック)として承認。従来は四種混合(DPT-IPV)とHibを別々に接種していた。'},
+
+  hib:{name:'Hib(個別接種・現在は五種混合に統合)', route:'皮下', doses:'現在は五種混合に統合されることが多い',
+    caution:'不活化ワクチン。単独接種は限定的な場面に限られる。',
+    disease:'Hib感染症(細菌性髄膜炎など)', pathogen:'<i>Haemophilus influenzae</i> type b',
+    feature:'莢膜を持つ株が重症感染症を起こしやすい。',
+    transmission:'飛沫感染・接触感染', vaccineType:'不活化(莢膜多糖体結合型)ワクチン',
+    purpose:['その他'], outdated:true},
+
+  dpt4:{name:'四種混合(個別接種・現在は五種混合に統合)', route:'皮下', doses:'現在は五種混合に統合されることが多い',
+    caution:'不活化ワクチン・トキソイドの混合製剤。単独接種は限定的な場面に限られる。',
+    disease:'ジフテリア・百日咳・破傷風・ポリオ',
+    pathogen:'<i>Corynebacterium diphtheriae</i>・<i>Bordetella pertussis</i>・<i>Clostridium tetani</i>・ポリオウイルス',
+    feature:'4つの病原体成分を含む混合ワクチン。',
+    transmission:'成分ごとに異なる', vaccineType:'不活化ワクチン・トキソイドの混合製剤',
+    purpose:['その他'], outdated:true},
+
+  pcv:{name:'肺炎球菌(小児用)', route:'皮下', doses:'計4回(開始月齢により回数が変わる)',
+    caution:'不活化ワクチン。',
+    disease:'肺炎球菌感染症(肺炎・中耳炎・侵襲性感染症など)', pathogen:'<i>Streptococcus pneumoniae</i>(肺炎球菌)',
+    feature:'莢膜血清型が多数あり、結合型ワクチンがカバーする型はPCV7→13→15→20と拡大してきた。',
+    transmission:'飛沫感染・接触感染', vaccineType:'不活化(莢膜多糖体結合型)ワクチン',
+    purpose:['定期']},
+
+  mr:{name:'MR(麻疹・風疹)', route:'皮下', doses:'2回(1歳時・就学前1年間)',
+    caution:'生ワクチン。妊娠中・重度免疫不全では接種を避ける。',
+    disease:'麻疹・風疹', pathogen:'麻疹ウイルス・風疹ウイルス',
+    feature:'麻疹ウイルスは感染力が非常に強い。風疹は妊娠初期の感染で先天性風疹症候群のリスクがある。',
+    transmission:'空気感染(麻疹)・飛沫感染(風疹)', vaccineType:'生ワクチン(混合)',
+    purpose:['定期']},
+
+  varicella:{name:'水痘', route:'皮下', doses:'2回',
+    recordDoses:2, recordIntervalMonths:1,
+    caution:'生ワクチン。妊娠中・重度免疫不全では接種を避ける。',
+    disease:'水痘(みずぼうそう)', pathogen:'水痘帯状疱疹ウイルス(VZV)',
+    feature:'初感染で水痘を起こし、その後神経節に潜伏。加齢等で再活性化すると帯状疱疹を起こす。',
+    transmission:'空気感染・接触感染', vaccineType:'生ワクチン',
+    purpose:['定期']},
+
+  mumps:{name:'おたふくかぜ(任意)', route:'皮下', doses:'2回推奨(1歳ごろ・就学前が目安)',
+    caution:'生ワクチン。無菌性髄膜炎の頻度について説明が必要とされることがある。',
+    disease:'おたふくかぜ(流行性耳下腺炎)', pathogen:'ムンプスウイルス',
+    feature:'耳下腺炎のほか、無菌性髄膜炎・難聴などの合併症が知られる。',
+    transmission:'飛沫感染・接触感染', vaccineType:'生ワクチン',
+    purpose:['任意']},
+
+  je:{name:'日本脳炎', route:'皮下', doses:'初回2回+追加1回、9歳で追加(計4回)',
+    caution:'不活化ワクチン。',
+    disease:'日本脳炎', pathogen:'日本脳炎ウイルス',
+    feature:'蚊が媒介するフラビウイルス。多くは不顕性感染だが、発症すると重篤化しうる。',
+    transmission:'蚊媒介感染', vaccineType:'不活化ワクチン',
+    purpose:['定期']},
+
+  dt:{name:'DT(二種混合)', route:'皮下', doses:'1回(11〜12歳)',
+    caution:'不活化ワクチン(トキソイド)。ジフテリア・破傷風。',
+    disease:'ジフテリア・破傷風', pathogen:'<i>Corynebacterium diphtheriae</i>・<i>Clostridium tetani</i>',
+    feature:'いずれも毒素が病原性の主体で、トキソイド(無毒化毒素)ワクチンが用いられる。',
+    transmission:'飛沫感染(ジフテリア)・創傷感染(破傷風)', vaccineType:'トキソイド',
+    purpose:['定期']},
+
+  hpv:{name:'HPV(9価シルガード9)', route:'筋肉内', doses:'15歳未満で開始:2回(6か月あけて) / 15歳以上で開始:3回(2か月・6か月あけて)',
+    caution:'不活化(組換えVLP)ワクチン。妊娠中または妊娠の可能性がある場合は原則接種しない。',
+    disease:'子宮頸がん等HPV関連疾患', pathogen:'ヒトパピローマウイルス(HPV)',
+    feature:'型により発がん性が異なり、9価ワクチンは高リスク型を広くカバーする。',
+    transmission:'性的接触', vaccineType:'不活化(組換えVLP)ワクチン',
+    purpose:['定期'],
+    extraNote:'現在の定期接種は9価ワクチン(シルガード9)が中心。対象は小学校6年生〜高校1年生相当の女子。1997〜2008年度生まれの女性を対象とするキャッチアップ接種の経過措置は2026年3月末まで(2025年3月末までに接種開始した場合)。'},
+
+  hepa:{name:'A型肝炎', route:'筋肉内または皮下', doses:'2回+6か月後追加(計3回)が目安',
+    caution:'不活化ワクチン。',
+    disease:'A型肝炎', pathogen:'A型肝炎ウイルス(HAV)',
+    feature:'慢性化はしないが急性肝炎を起こす。',
+    transmission:'糞口感染(汚染された水・食品など)', vaccineType:'不活化ワクチン',
+    purpose:['任意','渡航']},
+
+  typhoid:{name:'腸チフス', route:'製剤による(注射または経口)', doses:'製剤による',
+    caution:'国内未承認の製剤もあり、トラベルクリニック等での相談が必要。',
+    disease:'腸チフス', pathogen:'<i>Salmonella</i> Typhi(チフス菌、血清型Typhi)',
+    feature:'血清型Typhiは重症の全身感染症(腸チフス)を起こす。',
+    transmission:'糞口感染', vaccineType:'製剤による(不活化/経口弱毒生)',
+    purpose:['渡航']},
+
+  rabies:{name:'狂犬病(曝露前)', route:'筋肉内または皮下', doses:'3回(曝露前)',
+    caution:'不活化ワクチン。曝露後は追加接種が別途必要。',
+    disease:'狂犬病', pathogen:'狂犬病ウイルス',
+    feature:'発症するとほぼ致死的とされる急性脳炎を起こす。',
+    transmission:'感染動物の咬傷・接触', vaccineType:'不活化ワクチン',
+    purpose:['渡航','その他']},
+
+  yellowfever:{name:'黄熱', route:'皮下', doses:'1回(長期にわたり有効とされる)',
+    caution:'生ワクチン。国内では検疫所等の指定医療機関でのみ接種可能。妊娠中・重度免疫不全では要相談。',
+    disease:'黄熱', pathogen:'黄熱ウイルス',
+    feature:'蚊が媒介するフラビウイルス。重症例では出血傾向・肝障害を伴う。',
+    transmission:'蚊媒介感染', vaccineType:'生ワクチン',
+    purpose:['渡航'], extraNote:'入国要件として接種証明書(イエローカード)を求める国がある。'},
+
+  meningo:{name:'髄膜炎菌', route:'筋肉内', doses:'製剤により1回または複数回',
+    caution:'不活化ワクチン。',
+    disease:'髄膜炎菌感染症', pathogen:'<i>Neisseria meningitidis</i>(髄膜炎菌)',
+    feature:'急速に進行する髄膜炎・敗血症を起こしうる。',
+    transmission:'飛沫感染・接触感染', vaccineType:'不活化(莢膜多糖体結合型)ワクチン',
+    purpose:['任意','渡航']},
+
+  tdBooster:{name:'破傷風トキソイド追加', route:'筋肉内', doses:'1回',
+    caution:'外傷時などに追加接種が必要になる場合がある。',
+    disease:'ジフテリア・破傷風(追加免疫)', pathogen:'<i>Corynebacterium diphtheriae</i>・<i>Clostridium tetani</i>',
+    feature:'免疫が経年で低下するため、成人での追加接種が検討される。',
+    transmission:'-', vaccineType:'トキソイド',
+    purpose:['その他','渡航']},
+
+  ppsv:{name:'肺炎球菌(高齢者用)', route:'皮下または筋肉内', doses:'制度上1回(65歳以上)',
+    caution:'不活化ワクチン。',
+    disease:'肺炎球菌感染症(成人・高齢者)', pathogen:'<i>Streptococcus pneumoniae</i>',
+    feature:'高齢者では侵襲性感染症・肺炎のリスクが高まる。',
+    transmission:'飛沫感染・接触感染', vaccineType:'不活化ワクチン',
+    purpose:['定期']},
+
+  fluelderly:{name:'季節性インフルエンザ(高齢者)', route:'皮下', doses:'年1回',
+    caution:'不活化ワクチン。',
+    disease:'季節性インフルエンザ', pathogen:'インフルエンザウイルス(A型・B型)',
+    feature:'毎年流行株が変化するため、ワクチンも毎年更新される。',
+    transmission:'飛沫感染・接触感染', vaccineType:'不活化ワクチン',
+    purpose:['定期']},
+
+  flu:{name:'季節性インフルエンザ(任意)', route:'皮下', doses:'年1〜2回',
+    caution:'不活化ワクチン。',
+    disease:'季節性インフルエンザ', pathogen:'インフルエンザウイルス(A型・B型)',
+    feature:'毎年流行株が変化するため、ワクチンも毎年更新される。',
+    transmission:'飛沫感染・接触感染', vaccineType:'不活化ワクチン',
+    purpose:['任意']},
+
+  zoster:{name:'帯状疱疹(任意・50歳以上)', route:'皮下または筋肉内', doses:'製剤により1回または2回',
+    caution:'生ワクチン・不活化ワクチンの2種類があり、回数・注意事項が異なる。',
+    disease:'帯状疱疹', pathogen:'水痘帯状疱疹ウイルス(VZV)の再活性化',
+    feature:'水痘の既往がある人の神経節に潜むウイルスが、加齢や免疫低下により再活性化する。',
+    transmission:'再活性化によるため直接の感染経路はない(水疱内容物からの接触感染で他者に水痘を起こしうる)',
+    vaccineType:'生ワクチンまたは不活化ワクチン(製剤による)',
+    purpose:['任意']},
+
+  covid:{name:'COVID-19(任意)', route:'筋肉内', doses:'時期・流行状況により異なる',
+    caution:'不活化ワクチン・mRNAワクチンなど複数の種類がある。',
+    disease:'COVID-19', pathogen:'SARS-CoV-2',
+    feature:'変異株の出現により流行株が変化してきた。',
+    transmission:'飛沫感染・エアロゾル感染・接触感染', vaccineType:'mRNAワクチンなど',
+    purpose:['臨時','任意']},
+
+  rsv_infant:{name:'RSウイルス(乳児・モノクローナル抗体)', route:'筋肉内', doses:'単回投与が目安',
+    caution:'厳密には能動免疫の「ワクチン」ではなく、抗体そのものを投与する受動免疫。',
+    disease:'RSウイルス感染症(乳児)', pathogen:'RSウイルス(呼吸器合胞体ウイルス)',
+    feature:'乳児の下気道感染症(細気管支炎・肺炎)の主要な原因の一つ。',
+    transmission:'飛沫感染・接触感染', vaccineType:'モノクローナル抗体(受動免疫)',
+    purpose:['その他'], extraNote:'2024年に日本で承認。現在は高リスク乳児が公的医療保険の適用対象の中心。初めてのRSVシーズンを迎える前の投与が目安。'},
+
+  rsv_senior:{name:'RSウイルス(高齢者・高リスク成人用)', route:'筋肉内', doses:'単回接種が目安',
+    caution:'不活化ワクチン・mRNAワクチンなど複数の種類がある。',
+    disease:'RSウイルス感染症(高齢者)', pathogen:'RSウイルス(呼吸器合胞体ウイルス)',
+    feature:'高齢者でも重症下気道感染症を起こしうる。',
+    transmission:'飛沫感染・接触感染', vaccineType:'不活化(プレフュージョンF蛋白)ワクチンまたはmRNAワクチン',
+    purpose:['任意'], extraNote:'2023〜2024年に日本でも承認。対象は60歳以上に加え、2026年5月からは18歳以上で重症化リスクが高いと考えられる者にも拡大された。'},
+};
+// 後方互換用(既存コードのVNAMES参照)
+const VNAMES = Object.fromEntries(Object.entries(VACCINE_INFO).map(([k,v])=>[k,v.name]));
+
+/* ================= 人生線ステージ ================= */
+// type: 'quiz' | 'info'
+// required: 選ぶべきもの / optional: 選んでも減点なし / wrong: 選ぶべきでないもの
+const STAGES = [
+ {id:'m2', ageMonths:2, seg:'seg-infant', ageLabel:'生後2か月', title:'はじめての健診',
+  narrative:'首もすわらない小さな体で、はじめての予防接種デビューです。この時期に受けるものを選びましょう。',
+  type:'quiz', required:['hepb','pcv','rota','dpt5'], optional:['rsv_infant'], wrong:['bcg','mr','hib','dpt4'],
+  note:'BCGは生後5〜8か月、MRは1歳からが目安です。Hib・四種混合は現在、五種混合(DPT-IPV-Hib)に統合されています。肺炎球菌・五種混合はこの後、生後3・4か月にも接種が続きます。RSVの抗体投与は主に高リスク児が対象です。'},
+
+ {id:'m3', ageMonths:3, seg:'seg-infant', ageLabel:'生後3か月', title:'2回目の健診',
+  narrative:'1か月前に受けたワクチンの、2回目のタイミングです。',
+  type:'quiz', required:['hepb','pcv','dpt5'], optional:['rota'], wrong:['bcg','je','hib','dpt4'],
+  note:'B型肝炎はこれで初回の2回が完了です(追加はおよそ生後7〜8か月)。肺炎球菌・五種混合は次の生後4か月でもう1回続きます。ロタウイルスは製剤により総回数が2回または3回です。'},
+
+ {id:'m4', ageMonths:4, seg:'seg-infant', ageLabel:'生後4か月', title:'3回目の健診',
+  narrative:'肺炎球菌と五種混合は、2・3か月に続けて3回目です。',
+  type:'quiz', required:['pcv','dpt5'], optional:['rota'], wrong:['bcg','mr','je','dt','hib','dpt4','hepb'],
+  note:'肺炎球菌(PCV)と五種混合(DPT-IPV-Hib)は、生後2・3・4か月の3回で初回シリーズが完了します。B型肝炎はすでに2回目まで終わっているため、この時期の追加接種は不要です(次は生後7〜8か月ごろ)。'},
+
+ {id:'m6', ageMonths:6, seg:'seg-infant', ageLabel:'生後5〜8か月', title:'BCGの時期',
+  narrative:'この時期ならではの接種、BCGです。',
+  type:'quiz', required:['bcg'], optional:[], wrong:['mr','dt','hepb'],
+  note:'BCGは皮内接種(スタンプ法)です。B型肝炎の追加接種はもう少し先(生後7〜8か月ごろ)です。'},
+
+ {id:'m7-8', ageMonths:7.5, seg:'seg-infant', ageLabel:'生後7〜8か月', title:'B型肝炎 追加接種',
+  narrative:'B型肝炎の最終回(追加接種)です。生後9か月になる前に済ませます。',
+  type:'quiz', required:['hepb'], optional:[], wrong:['mr','dt','bcg'],
+  note:'B型肝炎は初回2回(生後2・3か月)から139日以上あけ、生後9か月未満に追加接種を行います。'},
+
+ {id:'y1', ageMonths:12, seg:'seg-child', ageLabel:'1歳の誕生日', title:'1歳のお誕生日',
+  narrative:'1歳になり、生ワクチンの出番です。',
+  type:'quiz', required:['mr','varicella'], optional:['mumps'], wrong:['je','dt'],
+  note:'おたふくかぜは任意接種ですが、1回目をこの時期に、2回目を就学前に受けることが推奨されています。'},
+
+ {id:'y3', ageMonths:36, seg:'seg-child', ageLabel:'3〜4歳', title:'日本脳炎 1期初回',
+  narrative:'',
+  type:'quiz', required:['je'], optional:[], wrong:['dt','hpv'],
+  note:'日本脳炎の1期初回(計2回)です。'},
+
+ {id:'y4-5', ageMonths:54, seg:'seg-child', ageLabel:'4〜5歳', title:'日本脳炎 1期追加',
+  narrative:'1期初回の6か月〜1年ほど後、追加接種の時期です。',
+  type:'quiz', required:['je'], optional:[], wrong:['dt','hpv','mr'],
+  note:'日本脳炎は1期初回(2回)+1期追加(1回)+2期(1回、9〜10歳ごろ)の計4回です。ここが抜けやすいポイントです。'},
+
+ {id:'y5-6', ageMonths:66, seg:'seg-child', ageLabel:'5〜6歳(就学前)', title:'就学前健診',
+  narrative:'小学校入学を控え、追加接種の時期です。',
+  type:'quiz', required:['mr'], optional:['mumps'], wrong:['varicella','dt'],
+  note:'MRの2期接種です。水痘は通常この時期には完了しています。おたふくかぜは任意接種ですが、就学前の2回目としてこの時期に検討されることが多いワクチンです。'},
+
+ {id:'y9', ageMonths:108, seg:'seg-child', ageLabel:'9〜10歳', title:'日本脳炎 2期',
+  narrative:'',
+  type:'quiz', required:['je'], optional:[], wrong:['dt','hpv'],
+  note:'日本脳炎の2期(4回目)です。'},
+
+ {id:'y11-12', ageMonths:138, seg:'seg-youth', ageLabel:'11〜12歳', title:'小学校高学年',
+  narrative:'',
+  type:'quiz', required:['dt'], optional:[], wrong:['hpv','mr'],
+  note:'ジフテリア・破傷風の二種混合です。'},
+
+ {id:'y12-16-hpv', ageMonths:168, seg:'seg-youth', ageLabel:'12〜16歳', title:'HPVワクチンの時期', girlOnly:true,
+  narrative:'現在の定期接種の対象は女性です。',
+  type:'quiz', required:['hpv'], optional:[], wrong:['dt'],
+  note:'現在の定期接種は9価ワクチン(シルガード9)が中心で、15歳未満で開始すれば2回、15歳以上で開始すると3回です。積極的勧奨は2013年に一時中止され、2022年4月に再開されました。'},
+
+ {id:'y15-travel', ageMonths:180, seg:'seg-youth', ageLabel:'15歳', title:'海外赴任に帯同',
+  narrative:'ご両親の転勤で、海外に3年ほど住むことになりました。滞在に備えて検討すべきワクチンを選びましょう。',
+  type:'quiz', required:['hepa'], optional:['typhoid','rabies','tdBooster'], wrong:['yellowfever'],
+  note:'長期滞在では衛生状況によりA型肝炎が広く推奨されます。実際に必要なものは渡航先で大きく異なります。'},
+
+ {id:'y24-us', ageMonths:288, seg:'seg-youth', ageLabel:'24歳', title:'アメリカへ留学',
+  narrative:'大学の寮生活のため、大学から予防接種の証明や追加接種を求められました。',
+  type:'quiz', required:['meningo'], optional:['tdBooster'], wrong:['yellowfever','typhoid'],
+  note:'寮生活を伴う米国の大学では髄膜炎菌ワクチンを求められることが多くあります。MR・水痘は幼少期の接種歴の証明で足りることが一般的です。'},
+
+ {id:'y30-india', ageMonths:360, seg:'seg-adult', ageLabel:'30歳', title:'インドへ1か月旅行',
+  narrative:'夏休みを利用してインドを1か月旅行することにしました。',
+  type:'quiz', required:['hepa','typhoid'], optional:['rabies','tdBooster'], wrong:['yellowfever'],
+  note:'A型肝炎・腸チフスは南アジアへの旅行で広く推奨されます。'},
+
+ {id:'y40-ghana', ageMonths:480, seg:'seg-adult', ageLabel:'40歳', title:'ガーナへ渡航',
+  narrative:'仕事でガーナに渡航することになりました。',
+  type:'quiz', required:['yellowfever'], optional:['hepa','typhoid'], wrong:[],
+  note:'黄熱ワクチンは入国に際して接種証明(イエローカード)が求められることがあり、日本では検疫所等の指定機関でのみ接種できます。'},
+
+ {id:'y65', ageMonths:780, seg:'seg-senior', ageLabel:'65歳', title:'65歳の誕生日',
+  narrative:'',
+  type:'quiz', required:['ppsv'], optional:['fluelderly','rsv_senior'], wrong:['hpv','dt'],
+  note:'高齢者を対象とした肺炎球菌ワクチンの定期接種です。RSウイルスワクチンは任意接種として検討されます。'},
+
+ {id:'bonus', ageMonths:null, seg:'seg-senior', ageLabel:'いつでも', title:'その他の任意接種',
+  narrative:'年齢を問わず、状況に応じて検討したい任意接種です。クリックして確認しましょう。',
+  type:'info', items:[
+    {id:'zoster', title:'帯状疱疹(50歳以上)', body:'水痘に罹患したことがある人は誰でも発症しうる帯状疱疹の予防を目的とした任意接種です。'},
+    {id:'covid', title:'COVID-19', body:'全年齢が対象で、時期や流行状況に応じて接種が案内される任意接種です。'},
+    {id:'flu', title:'季節性インフルエンザ(現役世代)', body:'65歳未満は任意接種として、毎年流行前の接種が案内されます。'},
+  ]},
+];
+
+const SEG_LABEL = {'seg-infant':'乳幼児期','seg-child':'学童期','seg-youth':'思春期・青年期','seg-adult':'成人期','seg-senior':'高齢期'};
+const PURPOSE_LABELS = ['定期','任意','渡航','臨時','その他'];
+const APP_VERSION = 'v1.2';
+const APP_UPDATED = '2026年7月';
+/* ================= 日付ユーティリティ ================= */
+const WEEKDAYS_JP = ['日','月','火','水','木','金','土'];
+
+function formatDateJP(d){
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日(${WEEKDAYS_JP[d.getDay()]})`;
+}
+function formatDateISO(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function addMonths(baseDate, months){
+  const d = new Date(baseDate.getTime());
+  d.setMonth(d.getMonth() + Math.round(months));
+  return d;
+}
+function stageDate(ageMonths){
+  if(ageMonths===null || ageMonths===undefined || !state.birthDate) return null;
+  return addMonths(state.birthDate, ageMonths);
+}
+function randomLot(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+  let s = '';
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return `LOT-${s}`;
+}
+
+/* ================= 状態 ================= */
+const state = {
+  gender:null,
+  birthDate:null,
+  stageIdx:0,
+  picked:new Set(),
+  passedStages:[],   // completed stage summaries (for stamp book)
+  activeStages:[],   // filtered by gender
+  records:[],        // 母子手帳/接種記録書の記録 [{date, dateLabel, name, route, lot}]
+  lastKnownAgeMonths:null,
+};
+
+/* ================= 初回案内モーダル ================= */
+document.getElementById('versionLine').textContent = `${APP_VERSION} ・ 最終更新 ${APP_UPDATED}`;
+document.getElementById('closeIntroBtn').onclick = ()=>{
+  document.getElementById('introModal').classList.remove('active');
+};
+
+/* ================= 上部タブ切替 ================= */
+function switchTopTab(tab){
+  document.querySelectorAll('.toptabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tabcontent').forEach(c=>c.classList.remove('active'));
+  document.getElementById(`tabBtn${tab}`).classList.add('active');
+  document.getElementById(`tab${tab}`).classList.add('active');
+}
+document.getElementById('tabBtnHonntai').onclick = ()=>switchTopTab('Honntai');
+document.getElementById('tabBtnKaisetsu').onclick = ()=>switchTopTab('Kaisetsu');
+document.getElementById('tabBtnVaccineDB').onclick = ()=>{ switchTopTab('VaccineDB'); renderVdbGrid(); };
+document.getElementById('tabBtnLink').onclick = ()=>switchTopTab('Link');
+
+/* ================= 生年月日UI ================= */
+const birthInput = document.getElementById('birthDateInput');
+function todayISO(){
+  const d = new Date();
+  return formatDateISO(d);
+}
+birthInput.value = todayISO();
+updateBirthPreview();
+
+document.getElementById('todayBirthBtn').onclick = ()=>{
+  birthInput.value = todayISO();
+  updateBirthPreview();
+};
+birthInput.onchange = updateBirthPreview;
+
+function updateBirthPreview(){
+  if(!birthInput.value){ document.getElementById('birthDatePreview').textContent=''; return; }
+  const d = new Date(birthInput.value + 'T00:00:00');
+  document.getElementById('birthDatePreview').textContent = `誕生日: ${formatDateJP(d)}`;
+}
+
+/* ================= スタート画面 ================= */
+document.querySelectorAll('#genderGrid .choice-card').forEach(card=>{
+  card.onclick = ()=>{
+    document.querySelectorAll('#genderGrid .choice-card').forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.gender = card.dataset.g;
+    document.getElementById('startBtn').disabled = false;
+  };
+});
+
+document.getElementById('startBtn').onclick = ()=>{
+  state.birthDate = new Date(birthInput.value + 'T00:00:00');
+  state.activeStages = STAGES.filter(s => !s.girlOnly || state.gender==='girl');
+  state.stageIdx = 0;
+  state.passedStages = [];
+  state.records = [];
+  showScreen('screenBoard');
+  renderBoard();
+};
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ================= 路線図 ================= */
+function renderBoard(){
+  const wrap = document.getElementById('lineWrap');
+  wrap.innerHTML = state.activeStages.map((s,i)=>{
+    let cls = 'station ' + s.seg;
+    if(i < state.stageIdx) cls += ' done';
+    else if(i === state.stageIdx) cls += ' current';
+    else cls += ' locked';
+    const d = stageDate(s.ageMonths);
+    const dateHtml = d ? `<span class="date-badge">${formatDateJP(d)}</span>` : '';
+    return `<div class="${cls}">
+      <div class="dot"></div>
+      ${i===state.stageIdx?'<div class="train">🚃</div>':''}
+      <div class="stlabel">${SEG_LABEL[s.seg]} ・ ${s.ageLabel}${dateHtml}</div>
+      <div class="sttitle">${i<state.stageIdx?'✔ ':''}${s.title}</div>
+    </div>`;
+  }).join('');
+  renderQuizPanel();
+}
+
+/* ================= クイズ / インフォ パネル ================= */
+function renderQuizPanel(){
+  const panel = document.getElementById('quizPanel');
+  if(state.stageIdx >= state.activeStages.length){
+    showEnding();
+    return;
+  }
+  const s = state.activeStages[state.stageIdx];
+  state.picked = new Set();
+  const d = stageDate(s.ageMonths);
+  if(s.ageMonths !== null && s.ageMonths !== undefined){
+    state.lastKnownAgeMonths = s.ageMonths;
+  }
+  updateTechoLabels();
+
+  if(s.type === 'info'){
+    panel.innerHTML = `
+      <div class="stage-tag">${s.ageLabel}</div>
+      ${d? `<div class="stage-date">${formatDateJP(d)}</div>` : ''}
+      <h2>${s.title}</h2>
+      <div class="narrative">${s.narrative}</div>
+      <div class="info-list">
+        ${s.items.map(it=>`<div class="info-item"><b>${it.title}</b>${it.body}</div>`).join('')}
+      </div>
+      <div class="controls"><button class="primary" id="nextFromInfo">次の駅へ →</button></div>
+    `;
+    document.getElementById('nextFromInfo').onclick = advanceStage;
+    return;
+  }
+
+  const allOpts = [...new Set([...s.required, ...s.optional, ...s.wrong])];
+  shuffleArray(allOpts);
+
+  panel.innerHTML = `
+    <div class="stage-tag">${s.ageLabel}</div>
+    ${d? `<div class="stage-date">${formatDateJP(d)}</div>` : ''}
+    <h2>${s.title}</h2>
+    ${s.narrative? `<div class="narrative">${s.narrative}</div>` : ''}
+    <div class="vopts" id="vopts">
+      ${allOpts.map(id=>{
+        const info = VACCINE_INFO[id];
+        return `
+        <label class="vopt" data-id="${id}">
+          <input type="checkbox" data-id="${id}">
+          <span class="vopt-text">
+            <span class="vopt-name">${info.name}</span>
+            <span class="vopt-sub">${info.route}・${info.doses}</span>
+          </span>
+        </label>`;
+      }).join('')}
+    </div>
+    <div class="controls"><button class="primary" id="judgeBtn">この内容で決める</button></div>
+    <div id="feedbackArea"></div>
+  `;
+
+  panel.querySelectorAll('#vopts input[type=checkbox]').forEach(cb=>{
+    cb.onchange = (e)=>{
+      const id = e.target.dataset.id;
+      if(e.target.checked) state.picked.add(id); else state.picked.delete(id);
+      e.target.closest('.vopt').classList.toggle('picked', e.target.checked);
+    };
+  });
+  document.getElementById('judgeBtn').onclick = ()=>judgeStage(s);
+}
+
+function shuffleArray(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+}
+
+function judgeStage(s){
+  const missing = s.required.filter(id=>!state.picked.has(id));
+  const wrongPicked = s.wrong.filter(id=>state.picked.has(id));
+  const pass = missing.length===0 && wrongPicked.length===0;
+  const feedback = document.getElementById('feedbackArea');
+
+  if(pass){
+    const detailIds = [...new Set([...s.required, ...s.optional.filter(id=>state.picked.has(id))])];
+    const d = stageDate(s.ageMonths);
+    const dateLabel = d ? formatDateJP(d) : s.ageLabel;
+
+    const detailHtml = detailIds.map(id=>{
+      const info = VACCINE_INFO[id];
+      return `<div class="vdetail">
+        <div class="vdetail-name">${info.name}</div>
+        <div class="vdetail-row"><b>回数:</b> ${info.doses}</div>
+        <div class="vdetail-row"><b>接種経路:</b> ${info.route}</div>
+        ${info.caution? `<div class="vdetail-row caution"><b>注意事項:</b> ${info.caution}</div>` : ''}
+      </div>`;
+    }).join('');
+    feedback.innerHTML = `
+      <div class="feedback ok">
+        <div>正解です。母子手帳に記録し、次の駅へ進みます。</div>
+        ${s.note? `<div class="note">${s.note}</div>` : ''}
+        <div class="vdetail-list">${detailHtml}</div>
+      </div>
+      <div class="controls"><button class="primary" id="nextBtn">次の駅へ →</button></div>
+    `;
+    document.getElementById('nextBtn').onclick = ()=>{
+      // 母子手帳/接種記録書へ記録(複数回接種が必要なものは自動的に間隔を空けて記録)
+      detailIds.forEach(id=>{
+        const info = VACCINE_INFO[id];
+        const doseCount = info.recordDoses || 1;
+        const intervalMonths = info.recordIntervalMonths || 0;
+        for(let i=0; i<doseCount; i++){
+          const doseDate = d ? addMonths(d, i*intervalMonths) : null;
+          const doseDateLabel = doseDate ? formatDateJP(doseDate) : dateLabel;
+          const doseSuffix = doseCount > 1 ? `(${i+1}回目)` : '';
+          state.records.push({
+            date: doseDate, dateLabel: doseDateLabel, name: info.name + doseSuffix, route: info.route, lot: randomLot(),
+            ageMonthsAtRecord: s.ageMonths
+          });
+        }
+      });
+      state.passedStages.push({id:s.id, title:s.title, ageLabel:s.ageLabel, picked:detailIds});
+      advanceStage();
+    };
+    document.getElementById('judgeBtn').disabled = true;
+  } else {
+    let msg = '';
+    if(missing.length) msg += `足りないもの: ${missing.map(id=>VNAMES[id]).join('、')}<br>`;
+    if(wrongPicked.length) msg += `この時期には不要なもの: ${wrongPicked.map(id=>VNAMES[id]).join('、')}`;
+    feedback.innerHTML = `<div class="feedback ng"><div>もう一度考えてみましょう。</div><div class="note">${msg}</div></div>`;
+  }
+}
+
+function advanceStage(){
+  state.stageIdx++;
+  renderBoard();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ================= 母子手帳/接種記録書 分類 =================
+   20歳(240か月)未満で受けた記録は「母子手帳」、以降は「接種記録書」に分けて、両方を残す。 */
+function isAdultRecord(rec){
+  return rec.ageMonthsAtRecord !== null && rec.ageMonthsAtRecord !== undefined && rec.ageMonthsAtRecord >= 240;
+}
+function techoLabel(){
+  return (state.lastKnownAgeMonths !== null && state.lastKnownAgeMonths >= 240) ? '接種記録書' : '母子手帳';
+}
+function updateTechoLabels(){
+  const endingLabel = document.getElementById('endingBookLabel');
+  if(endingLabel) endingLabel.textContent = techoLabel();
+}
+
+/* ================= エンディング ================= */
+function showEnding(){
+  showScreen('screenEnding');
+  state.lastKnownAgeMonths = 780;
+  updateTechoLabels();
+  const childLabel = state.gender==='girl' ? '女の子' : '男の子';
+  document.getElementById('endingText').innerHTML =
+    `${childLabel}として生まれ、赤ちゃんから65歳まで、人生の節目ごとに必要な予防接種を選びながら歩んできました。お疲れさまでした。`;
+
+  const book = document.getElementById('stampBook');
+  const allPicked = new Set();
+  state.passedStages.forEach(p => p.picked.forEach(id=>allPicked.add(id)));
+  book.innerHTML = [...allPicked].map(id=>{
+    const info = VACCINE_INFO[id];
+    return `<div class="stamp"><span class="mark">💉</span>${info.name}<br><span class="stamp-sub">${info.route}・${info.doses}</span></div>`;
+  }).join('') || '<div class="stamp">記録なし</div>';
+}
+
+document.getElementById('restartBtn').onclick = ()=>{
+  state.gender = null; state.stageIdx = 0; state.passedStages = []; state.records = []; state.birthDate = null;
+  state.lastKnownAgeMonths = null;
+  document.querySelectorAll('#genderGrid .choice-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('startBtn').disabled = true;
+  birthInput.value = todayISO();
+  updateBirthPreview();
+  showScreen('screenStart');
+};
+
+/* ================= 母子手帳・接種記録書モーダル ================= */
+function renderTechoTable(records, tbodyId, emptyId){
+  const body = document.getElementById(tbodyId);
+  const empty = document.getElementById(emptyId);
+  const sorted = [...records].sort((a,b)=>{
+    if(!a.date) return 1; if(!b.date) return -1;
+    return a.date - b.date;
+  });
+  if(sorted.length === 0){
+    body.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    body.innerHTML = sorted.map(r=>`
+      <tr>
+        <td>${r.dateLabel || '-'}</td>
+        <td>${r.name}</td>
+        <td class="route">${r.route}</td>
+        <td class="lot">${r.lot}</td>
+      </tr>
+    `).join('');
+  }
+}
+function openTecho(){
+  const owner = document.getElementById('techoOwnerLine');
+  owner.textContent = state.birthDate ? `生年月日: ${formatDateJP(state.birthDate)}` : '';
+
+  const childRecords = state.records.filter(r=>!isAdultRecord(r));
+  const adultRecords = state.records.filter(r=>isAdultRecord(r));
+  renderTechoTable(childRecords, 'techoTableBodyChild', 'techoEmptyChild');
+  renderTechoTable(adultRecords, 'techoTableBodyAdult', 'techoEmptyAdult');
+
+  document.getElementById('techoModal').classList.add('active');
+}
+function closeTecho(){
+  document.getElementById('techoModal').classList.remove('active');
+}
+document.getElementById('openTechoBtnBoard').onclick = openTecho;
+document.getElementById('openTechoBtnEnd').onclick = openTecho;
+document.getElementById('closeTechoBtn').onclick = closeTecho;
+document.getElementById('techoModal').addEventListener('click', (e)=>{
+  if(e.target.id === 'techoModal') closeTecho();
+});
+
+/* ================= ワクチン図鑑タブ ================= */
+const vdbState = { search:'', purposes:new Set(), route:'', type:'', sort:'name' };
+
+// 購入経路・種類のユニークな選択肢を自動収集
+function collectVdbOptions(){
+  const routes = new Set(), types = new Set();
+  Object.values(VACCINE_INFO).forEach(v=>{
+    routes.add(v.route);
+    types.add(v.vaccineType);
+  });
+  const routeSel = document.getElementById('vdbRouteFilter');
+  const typeSel = document.getElementById('vdbTypeFilter');
+  [...routes].sort().forEach(r=>{
+    const opt = document.createElement('option');
+    opt.value = r; opt.textContent = r;
+    routeSel.appendChild(opt);
+  });
+  [...types].sort().forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    typeSel.appendChild(opt);
+  });
+}
+function renderVdbChips(){
+  const wrap = document.getElementById('vdbPurposeChips');
+  wrap.innerHTML = PURPOSE_LABELS.map(p=>`<span class="vdb-chip" data-p="${p}">${p}</span>`).join('');
+  wrap.querySelectorAll('.vdb-chip').forEach(chip=>{
+    chip.onclick = ()=>{
+      const p = chip.dataset.p;
+      if(vdbState.purposes.has(p)) vdbState.purposes.delete(p); else vdbState.purposes.add(p);
+      chip.classList.toggle('active');
+      renderVdbGrid();
+    };
+  });
+}
+document.getElementById('vdbSearch').oninput = (e)=>{ vdbState.search = e.target.value.trim().toLowerCase(); renderVdbGrid(); };
+document.getElementById('vdbRouteFilter').onchange = (e)=>{ vdbState.route = e.target.value; renderVdbGrid(); };
+document.getElementById('vdbTypeFilter').onchange = (e)=>{ vdbState.type = e.target.value; renderVdbGrid(); };
+document.getElementById('vdbSort').onchange = (e)=>{ vdbState.sort = e.target.value; renderVdbGrid(); };
+
+function stripHtml(s){ return (s||'').replace(/<[^>]*>/g,''); }
+
+function renderVdbGrid(){
+  const grid = document.getElementById('vdbGrid');
+  const countEl = document.getElementById('vdbCount');
+  let entries = Object.entries(VACCINE_INFO);
+
+  entries = entries.filter(([id, v])=>{
+    if(vdbState.route && v.route !== vdbState.route) return false;
+    if(vdbState.type && v.vaccineType !== vdbState.type) return false;
+    if(vdbState.purposes.size > 0){
+      const hit = v.purpose.some(p=>vdbState.purposes.has(p));
+      if(!hit) return false;
+    }
+    if(vdbState.search){
+      const text = (v.name + stripHtml(v.disease||'') + stripHtml(v.pathogen||'')).toLowerCase();
+      if(!text.includes(vdbState.search)) return false;
+    }
+    return true;
+  });
+
+  entries.sort((a,b)=>{
+    if(vdbState.sort === 'purpose'){
+      const pa = PURPOSE_LABELS.indexOf(a[1].purpose[0]);
+      const pb = PURPOSE_LABELS.indexOf(b[1].purpose[0]);
+      if(pa !== pb) return pa - pb;
+    }
+    return a[1].name.localeCompare(b[1].name, 'ja');
+  });
+
+  countEl.textContent = `${entries.length}件のワクチン`;
+
+  if(entries.length === 0){
+    grid.innerHTML = '<div class="vdb-empty">条件に一致するワクチンが見つかりません。</div>';
+    return;
+  }
+
+  grid.innerHTML = entries.map(([id, v])=>`
+    <div class="vdb-card" data-id="${id}">
+      <div class="vdb-tags">
+        ${v.purpose.map(p=>`<span class="vdb-tag tag-${p}">${p}</span>`).join('')}
+        ${v.outdated? '<span class="vdb-tag tag-outdated">旧</span>' : ''}
+      </div>
+      <div class="vdb-name">${v.name}</div>
+      <div class="vdb-disease">${stripHtml(v.disease||'')}</div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.vdb-card').forEach(card=>{
+    card.onclick = ()=>openVaccineModal(card.dataset.id);
+  });
+}
+
+function openVaccineModal(id){
+  const v = VACCINE_INFO[id];
+  document.getElementById('vmName').innerHTML = v.name + (v.outdated? ' <span class="vm-outdated-flag">現在は統合・限定的</span>' : '');
+  document.getElementById('vmTagsLine').textContent = v.purpose.join(' / ');
+  document.getElementById('vmDisease').innerHTML = v.disease || '-';
+  document.getElementById('vmPathogen').innerHTML = v.pathogen || '-';
+  document.getElementById('vmFeature').textContent = v.feature || '-';
+  document.getElementById('vmTransmission').textContent = v.transmission || '-';
+  document.getElementById('vmVaccineType').textContent = v.vaccineType || '-';
+  document.getElementById('vmRoute').textContent = v.route || '-';
+  document.getElementById('vmSchedule').textContent = v.doses || '-';
+  const cautionRow = document.getElementById('vmCautionRow');
+  if(v.caution){
+    cautionRow.style.display = '';
+    document.getElementById('vmCaution').textContent = v.caution;
+  } else {
+    cautionRow.style.display = 'none';
+  }
+  const noteEl = document.getElementById('vmExtraNote');
+  if(v.extraNote){
+    noteEl.style.display = 'block';
+    noteEl.textContent = v.extraNote;
+  } else {
+    noteEl.style.display = 'none';
+  }
+  document.getElementById('vaccineModal').classList.add('active');
+}
+document.getElementById('closeVaccineBtn').onclick = ()=>{
+  document.getElementById('vaccineModal').classList.remove('active');
+};
+document.getElementById('vaccineModal').addEventListener('click', (e)=>{
+  if(e.target.id === 'vaccineModal') document.getElementById('vaccineModal').classList.remove('active');
+});
+
+collectVdbOptions();
+renderVdbChips();
+renderVdbGrid();
+</script>
+</body>
+</html>
