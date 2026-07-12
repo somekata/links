@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統合PBL 第1回「三日前からの咳」</title>
+<style>
+  :root{
+    --paper: #f7f3ea;
+    --paper-deep: #efe8d8;
+    --ink: #2b2b28;
+    --ink-soft: #514c44;
+    --indigo: #2c4a52;
+    --indigo-soft: #4a6f78;
+    --indigo-pale: #dfe8e6;
+    --gold: #a98a4a;
+    --line: #d9cfb8;
+    --alert: #a13d2f;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(44,74,82,0.05), transparent 42%),
+      radial-gradient(circle at 85% 92%, rgba(169,138,74,0.05), transparent 42%);
+    color: var(--ink);
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "游明朝", serif;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+  .ui{
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+  .scroll{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 28px 80px;
+  }
+
+  /* ---- header / progress ---- */
+  header.title-block{
+    position: relative;
+    text-align:center;
+    margin-bottom: 40px;
+    padding-bottom: 26px;
+    border-bottom: 1px double var(--line);
+  }
+  .series-tag{
+    font-family: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.32em;
+    color: var(--indigo-soft);
+    margin-bottom: 12px;
+  }
+  h1.main-title{
+    font-size: 1.7rem;
+    margin: 0 0 8px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  .case-sub{
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+  .breath{
+    width: 34px; height: 34px;
+    margin: 18px auto 0;
+    opacity: 0.55;
+  }
+  .breath circle{
+    fill: none;
+    stroke: var(--indigo-soft);
+    stroke-width: 1.4;
+    transform-origin: center;
+    animation: breathe 4.4s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{ transform: scale(0.86); opacity: 0.4; }
+    50%{ transform: scale(1.05); opacity: 0.85; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .breath circle{ animation: none; }
+  }
+
+  .progress-track{
+    display:flex;
+    gap: 7px;
+    justify-content:center;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+  .progress-dot{
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--line);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+  .progress-dot:hover{ transform: scale(1.4); background: var(--indigo-soft); }
+  .progress-dot:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .progress-dot.done{ background: var(--indigo-soft); }
+  .progress-dot.current{ background: var(--indigo); transform: scale(1.3); }
+  .progress-hint{
+    text-align:center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .back-btn{
+    font-family: inherit;
+    background: none;
+    color: var(--indigo-soft);
+    border: 1px solid var(--line);
+    padding: 12px 22px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-right: auto;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+  .back-btn:hover{ background: var(--paper-deep); border-color: var(--indigo-soft); }
+  .back-btn:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .back-btn:disabled{ visibility: hidden; }
+
+  /* ---- stages ---- */
+  .stage{
+    display:none;
+    animation: fadeUp 0.55s ease;
+  }
+  .stage.visible{ display:block; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .kind-label{
+    font-family: inherit;
+    display:inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    padding: 3px 10px;
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    margin-bottom: 14px;
+  }
+  .kind-label.q{ border-color: var(--alert); color: var(--alert); }
+  .kind-label.check{ border-color: var(--gold); color: var(--gold); }
+
+  h2.stage-title{
+    font-size: 1.3rem;
+    margin: 0 0 20px;
+    padding-left: 14px;
+    border-left: 3px solid var(--indigo);
+    color: var(--ink);
+  }
+
+  .card{
+    background: var(--paper-deep);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 24px 26px;
+    margin-bottom: 22px;
+  }
+
+  .vitals-table{
+    width:100%;
+    border-collapse: collapse;
+    font-family: inherit;
+    font-size: 0.96rem;
+    margin: 14px 0;
+  }
+  .vitals-table td{
+    padding: 6px 10px;
+    border-bottom: 1px dotted var(--line);
+  }
+  .vitals-table td:first-child{
+    color: var(--ink-soft);
+    width: 40%;
+  }
+  .vitals-table .flag{
+    color: var(--alert);
+    font-weight: bold;
+  }
+
+  .q-list{
+    margin: 0;
+    padding-left: 1.3em;
+  }
+  .q-list li{ margin-bottom: 10px; }
+
+  aside.note{
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    border-left: 2px solid var(--gold);
+    padding: 10px 16px;
+    margin: 18px 0;
+    background: rgba(169,138,74,0.06);
+  }
+
+  .sp{ font-style: italic; }
+
+  details.check{
+    margin: 12px 0;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper);
+    padding: 4px 4px;
+  }
+  details.check summary{
+    font-family: inherit;
+    cursor: pointer;
+    padding: 10px 14px;
+    color: var(--indigo);
+    font-size: 0.98rem;
+    outline: none;
+  }
+  details.check summary::marker{ color: var(--gold); }
+  details.check .answer{
+    padding: 4px 16px 14px;
+    border-top: 1px dashed var(--line);
+    margin-top: 6px;
+    font-size: 0.95rem;
+  }
+
+  .nav-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+  }
+  .next-btn{
+    font-family: inherit;
+    background: var(--indigo);
+    color: var(--paper);
+    border: none;
+    padding: 12px 26px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.25s ease, transform 0.15s ease;
+  }
+  .next-btn:hover{ background: var(--indigo-soft); }
+  .next-btn:active{ transform: translateY(1px); }
+  .next-btn:focus-visible{
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .end-card{
+    text-align:center;
+    padding: 40px 20px;
+  }
+  .end-card p{ color: var(--ink-soft); }
+
+  footer{
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  /* ---- case reference: floating button + modal ---- */
+  .case-fab{
+    position: sticky;
+    top: 14px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 auto 34px;
+    padding: 9px 18px;
+    background: var(--paper);
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(43,43,40,0.08);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .case-fab:hover{ background: var(--indigo-pale); }
+  .case-fab:active{ transform: translateY(1px); }
+  .case-fab:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-fab-icon{ font-size: 0.95rem; }
+
+  .case-modal-overlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    background: rgba(43,43,40,0.45);
+    z-index: 100;
+    padding: 6vh 20px;
+    overflow-y: auto;
+  }
+  .case-modal-overlay.open{ display:block; }
+  .case-modal{
+    max-width: 620px;
+    margin: 0 auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 12px 32px rgba(43,43,40,0.25);
+    animation: fadeUp 0.3s ease;
+  }
+  .case-modal-head{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 18px 22px 0;
+  }
+  .case-modal-close{
+    background:none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .case-modal-close:hover{ background: var(--paper-deep); }
+  .case-modal-close:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-modal-body{
+    padding: 14px 26px 26px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+<div class="scroll">
+
+  <header class="title-block">
+    <div class="series-tag ui">統合PBL &nbsp;第1回</div>
+    <h1 class="main-title">三日前からの咳</h1>
+    <div class="case-sub ui">呼吸器感染症を通じて、解剖・生理・病理を辿る</div>
+    <svg class="breath" viewBox="0 0 40 40"><circle cx="20" cy="20" r="14"/></svg>
+    <div class="progress-track ui" id="progressTrack"></div>
+    <div class="progress-hint ui">丸をクリックすると、好きな場面に移動できます</div>
+  </header>
+
+  <button id="caseModalTrigger" class="case-fab ui" type="button">
+    <span class="case-fab-icon">📋</span> 症例・所見・検査所見を見る
+  </button>
+
+  <!-- ============ Stage 0: 症例提示 ============ -->
+  <section class="stage visible" data-stage="0">
+    <div class="kind-label ui">症例</div>
+    <h2 class="stage-title">症例提示</h2>
+    <div class="card">
+      <p><strong>患者:</strong> 65歳、男性</p>
+      <p><strong>主訴:</strong> 発熱、咳嗽、呼吸困難</p>
+      <p><strong>現病歴:</strong><br>
+      3日前から悪寒戦慄を伴う39.2℃の発熱が出現した。当初は乾性咳嗽であったが、翌日から鉄錆色の痰を伴うようになった。本日朝から呼吸困難感が増悪し、右胸部に呼吸時の鋭い胸膜痛を自覚したため受診した。</p>
+      <p><strong>既往歴:</strong> 2型糖尿病(HbA1c 7.5%)、慢性閉塞性肺疾患(COPD)</p>
+      <p><strong>喫煙歴:</strong> 30年間、1日1箱(現在も喫煙中)</p>
+      <p><strong>生活歴:</strong> ADL自立、自宅で妻と2人暮らし</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td>清明(JCS 0)</td></tr>
+        <tr><td>体温</td><td class="flag">39.4℃</td></tr>
+        <tr><td>呼吸数</td><td class="flag">28回/分</td></tr>
+        <tr><td>脈拍</td><td class="flag">112回/分(整)</td></tr>
+        <tr><td>血圧</td><td>118/76 mmHg</td></tr>
+        <tr><td>SpO2</td><td class="flag">88%(室内気)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong> 口唇チアノーゼあり。右下肺野でcoarse cracklesを聴取し、打診で濁音、気管支呼吸音を聴取、エゴフォニー陽性。</p>
+      <p><strong>胸部X線:</strong> 右下肺野に均質な浸潤影(consolidation)を認め、air bronchogramを伴う。右肋骨横隔膜角の鈍化あり(少量の胸水貯留を示唆)。</p>
+      <p><strong>胸部CT:</strong> 右下葉に区域性分布(segmental distribution)を示す浸潤影(consolidation)を認め、内部にair bronchogramを伴う。周囲に軽度のすりガラス陰影(ground-glass opacity)が散在し、粘液栓(mucoid impaction)や小葉中心性結節(centrilobular nodules)を伴う。小葉間隔壁の肥厚もみられ、少量の胸水貯留を認める。</p>
+    </div>
+    <aside class="note ui">この症例を通じて、気道・肺の構造から呼吸生理、そして臨床判断までを段階的にたどっていく。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back disabled>&larr; 戻る</button><button class="next-btn ui" data-next>症例を読んだ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 1: 検査所見 ============ -->
+  <section class="stage" data-stage="1">
+    <div class="kind-label ui">検査所見</div>
+    <h2 class="stage-title">検査所見(血液検査)</h2>
+    <div class="card">
+      <p><strong>血算(CBC):</strong></p>
+      <table class="vitals-table">
+        <tr><td>WBC</td><td class="flag">18,200 /μL(好中球88%、桿状核球12%)</td></tr>
+        <tr><td>Hb</td><td>13.2 g/dL</td></tr>
+        <tr><td>Plt</td><td>24.5万 /μL</td></tr>
+      </table>
+      <p><strong>生化学:</strong></p>
+      <table class="vitals-table">
+        <tr><td>BUN</td><td>28 mg/dL</td></tr>
+        <tr><td>Cr</td><td>1.2 mg/dL</td></tr>
+        <tr><td>Na</td><td class="flag">132 mEq/L</td></tr>
+        <tr><td>血糖</td><td>185 mg/dL</td></tr>
+        <tr><td>AST / ALT</td><td>32 / 28 U/L</td></tr>
+        <tr><td>乳酸</td><td>2.8 mmol/L</td></tr>
+      </table>
+      <p><strong>血清(炎症マーカー):</strong></p>
+      <table class="vitals-table">
+        <tr><td>CRP</td><td class="flag">28.5 mg/dL</td></tr>
+        <tr><td>プロカルシトニン</td><td class="flag">3.8 ng/mL</td></tr>
+      </table>
+      <p><strong>ESR(赤血球沈降速度):</strong></p>
+      <table class="vitals-table">
+        <tr><td>ESR</td><td class="flag">82 mm/時</td></tr>
+      </table>
+      <p><strong>動脈血液ガス(室内気):</strong></p>
+      <table class="vitals-table">
+        <tr><td>pH</td><td>7.42</td></tr>
+        <tr><td>PaCO2</td><td>35 mmHg</td></tr>
+        <tr><td>PaO2</td><td class="flag">58 mmHg</td></tr>
+        <tr><td>HCO3-</td><td>22 mEq/L</td></tr>
+      </table>
+    </div>
+    <aside class="note ui">喀痰検査・血液培養・尿中抗原検査の結果は、この後の問題を少し進め、原因病原体を推定する段階で提示する。まずは血液検査の数値をざっと眺めておこう。A-aDO2はここでは示していない。問題3で自分で計算してみよう。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>検査所見を見た &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 2: 問題1 ============ -->
+  <section class="stage" data-stage="2">
+    <div class="kind-label q ui">問題 1</div>
+    <h2 class="stage-title">気道の構造</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>鼻腔から肺胞に至るまでの気道の構造を、順を追って答えなさい。</li>
+        <li>ヒトの気道は、気管から肺胞に至るまでに何回分岐しているか。</li>
+        <li>気道のうち、軟骨が存在するのはどこまでか。</li>
+        <li>気道のうち、ガス交換を行わず換気(空気の通り道)のみを担っているのはどこまでか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 2: 解説1 ============ -->
+  <section class="stage" data-stage="3">
+    <div class="kind-label ui">解説 1</div>
+    <h2 class="stage-title">気道の構造</h2>
+    <div class="card">
+      <p><strong>①経路:</strong><br>
+      鼻腔 → 咽頭 → 喉頭 → 気管 → (主)気管支 → 葉気管支 → 区域気管支 → 亜区域気管支 → 細気管支 → 終末細気管支 → 呼吸細気管支 → 肺胞管 → 肺胞嚢 → 肺胞</p>
+      <p><strong>②分岐回数:</strong><br>
+      気管(0世代)から肺胞(約23世代)まで、平均して約23回分岐する(Weibelのモデル)。1本の気管から、指数関数的に枝分かれしていくイメージを持つとよい。</p>
+      <p><strong>③軟骨の範囲:</strong><br>
+      軟骨は気管から区域気管支・亜区域気管支あたりまで存在し、それより末梢の細気管支には軟骨がなく、代わりに平滑筋が発達する。軟骨がなくなることで気道の虚脱しやすさが変化し、喘息などでの気道狭窄の機序にも関わってくる。</p>
+      <p><strong>④換気のみを行う範囲(伝導帯・解剖学的死腔):</strong><br>
+      気管から終末細気管支まで(およそ0〜16世代)はガス交換を行わず、空気の通り道としてのみ機能する。この部分の容積は成人でおよそ150 mLであり、解剖学的死腔と呼ばれる。呼吸細気管支以降(17〜23世代)は移行帯・呼吸帯としてガス交換に関与し始める。</p>
+      <aside class="note ui">この症例で浸潤影が右下葉に生じやすい理由の一つは、右主気管支が左よりも太く短く、気管からの分岐角度もより垂直に近い(右約25度、左約45度)ため、誤嚥物や分泌物が右側、特に下葉に落ち込みやすいという解剖学的特徴による。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 3: 振り返り確認1 ============ -->
+  <section class="stage" data-stage="4">
+    <div class="kind-label check ui">振り返り・確認 1</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>誤嚥性肺炎で右下葉に好発するのはなぜか、解剖学的理由を説明できるか？</summary>
+      <div class="answer">右主気管支は左主気管支より太く短く、気管からの分岐角度も垂直に近いため、誤嚥物・分泌物が重力に従って右側、特に下葉に落ち込みやすいため。</div>
+    </details>
+    <details class="check ui">
+      <summary>解剖学的死腔とはどこを指すか。成人でおよそ何mLか？</summary>
+      <div class="answer">気管から終末細気管支までの、ガス交換に関与しない伝導帯を指す。成人でおよそ150 mL。</div>
+    </details>
+    <details class="check ui">
+      <summary>軟骨がなくなる境界はどのあたりで、それが何と関係するか説明できるか？</summary>
+      <div class="answer">区域気管支・亜区域気管支あたりまでで軟骨は消失し、以降は平滑筋が支持する。軟骨の消失は気道の虚脱しやすさや、平滑筋収縮による気道狭窄(喘息など)の機序に関わる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 4: 問題2 ============ -->
+  <section class="stage" data-stage="5">
+    <div class="kind-label q ui">問題 2</div>
+    <h2 class="stage-title">肺の構造・微小構造・機能</h2>
+    <div class="card">
+      <p>以下のキーワードを手がかりに、肺の構造と機能を整理しなさい。</p>
+      <ol class="q-list">
+        <li>肺の葉・区域の構成はどうなっているか(左右で何が違うか)。</li>
+        <li>肺胞上皮にはどのような細胞があり、それぞれ何をしているか。</li>
+        <li>サーファクタントとは何か。なぜ必要か。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 5: 解説2 ============ -->
+  <section class="stage" data-stage="6">
+    <div class="kind-label ui">解説 2</div>
+    <h2 class="stage-title">肺の構造・微小構造・機能</h2>
+    <div class="card">
+      <p><strong>①葉・区域:</strong><br>
+      右肺は上葉・中葉・下葉の3葉からなり、10区域に分かれる。左肺は上葉・下葉の2葉で、心臓が左に寄っている分だけ肺の容積も小さく、上葉に右の中葉に相当する舌区を含む。区域は8〜9(左のB7は上葉B4・B5と融合しているとして8区域とすることが多い)。</p>
+      <p><strong>②肺胞上皮の細胞:</strong><br>
+      肺胞上皮には主に2種類の細胞がある。<br>
+      ・I型肺胞上皮細胞:扁平な形で、肺胞表面積の大部分(約95%)を覆い、ガス交換の主体を担う。<br>
+      ・II型肺胞上皮細胞:立方状で、数はI型より多いが表面積は小さい。サーファクタントを産生するほか、障害を受けたI型細胞の供給源(幹細胞的役割)にもなる。</p>
+      <p><strong>③サーファクタント:</strong><br>
+      主成分はジパルミトイルホスファチジルコリン(DPPC)というリン脂質。肺胞の内面を覆う液層の表面張力を低下させる役割を持つ。Laplaceの法則(圧 = 2×表面張力 ÷ 半径)に従うと、径の小さい肺胞ほど内圧が高くなり虚脱しやすいが、サーファクタントが表面張力を下げることでこれを防ぎ、呼気終末でも肺胞が虚脱せずに保たれる。新生児呼吸窮迫症候群は、このサーファクタントの産生不足(II型肺胞上皮細胞の未成熟)が原因である。</p>
+      <aside class="note ui">この症例の胸部X線でみられる浸潤影は、肺胞腔が本来の空気ではなく、滲出液や炎症細胞で満たされている状態(consolidation)を反映している。含気が失われた肺胞ではガス交換ができず、これがSpO2低下につながる。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 6: 振り返り確認2 ============ -->
+  <section class="stage" data-stage="7">
+    <div class="kind-label check ui">振り返り・確認 2</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>サーファクタントを産生するのはどちらの肺胞上皮細胞か？</summary>
+      <div class="answer">II型肺胞上皮細胞。</div>
+    </details>
+    <details class="check ui">
+      <summary>Laplaceの法則に基づいて、なぜサーファクタントが肺胞の虚脱を防ぐのか説明できるか？</summary>
+      <div class="answer">Laplaceの法則(圧=2×表面張力÷半径)により、径の小さい肺胞ほど内圧が高くなり虚脱しやすい。サーファクタントは表面張力を下げることでこの内圧上昇を抑え、小さい肺胞でも虚脱を防ぐ。</div>
+    </details>
+    <details class="check ui">
+      <summary>右肺と左肺で葉・区域の数が異なるのはなぜか？</summary>
+      <div class="answer">心臓が左寄りに位置するため、左肺は右肺より容積が小さく、上葉・下葉の2葉構成となる(右は上葉・中葉・下葉の3葉)。左上葉には右の中葉に相当する舌区が含まれる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 7: 問題3 ============ -->
+  <section class="stage" data-stage="8">
+    <div class="kind-label q ui">問題 3</div>
+    <h2 class="stage-title">呼吸機能・呼吸不全・酸塩基平衡</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>肺活量とは何か。何と何を合わせたものか。</li>
+        <li>換気(呼吸のリズムと量)はどのように調整されているか。</li>
+        <li>動脈血液ガスの主な項目とおおよその正常値を答えなさい。</li>
+        <li>A-aDO2とは何か。何がわかるか。</li>
+        <li>検査所見の動脈血液ガス(pH 7.42、PaCO2 35 mmHg、PaO2 58 mmHg)を用いて、この患者のA-aDO2を実際に計算しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 8: 解説3 ============ -->
+  <section class="stage" data-stage="9">
+    <div class="kind-label ui">解説 3</div>
+    <h2 class="stage-title">呼吸機能・呼吸不全・酸塩基平衡</h2>
+    <div class="card">
+      <p><strong>①肺活量(VC):</strong><br>
+      1回換気量+予備吸気量+予備呼気量の合計。これに残気量(RV、努力呼出後も肺に残る空気の量)を加えると全肺気量(TLC)になる。</p>
+      <p><strong>②換気の調整:</strong><br>
+      呼吸のリズムは延髄の呼吸中枢が基本パターンを形成し、橋の呼吸調節中枢がこれを修飾する。中枢化学受容体(延髄腹側表面)は、脳脊髄液中のCO2由来のH+濃度変化を感知し、換気を調整する最も重要な駆動因子となる。末梢化学受容体(頸動脈小体・大動脈小体)は主にPaO2の低下を感知するが、その感度は中枢ほど鋭敏ではなく、通常はPaO2がかなり低下しないと強く反応しない。</p>
+      <p><strong>③動脈血液ガスの正常値(目安):</strong></p>
+      <table class="vitals-table">
+        <tr><td>pH</td><td>7.35〜7.45</td></tr>
+        <tr><td>PaCO2</td><td>35〜45 mmHg</td></tr>
+        <tr><td>PaO2</td><td>80〜100 mmHg(加齢で低下)</td></tr>
+        <tr><td>HCO3-</td><td>22〜26 mEq/L</td></tr>
+      </table>
+      <p><strong>④A-aDO2(肺胞気-動脈血酸素分圧較差):</strong><br>
+      A-aDO2 = PAO2(肺胞気酸素分圧) − PaO2(動脈血酸素分圧)で計算する。PAO2は肺胞気式で求める:PAO2 = FiO2×(大気圧760 − 水蒸気圧47) − PaCO2/呼吸商(通常0.8)。正常上限はおおよそ「年齢÷4+4 mmHg」程度とされる。A-aDO2が開大している場合は、拡散障害・換気血流比不均衡・シャントなど肺自体に原因がある低酸素血症を示唆し、開大していなければ中枢性の低換気など、肺以外の要因による低酸素血症を疑う。</p>
+      <p><strong>この症例での計算例:</strong><br>
+      PAO2 = 0.21×(760−47) − 35/0.8 = 149.7 − 43.8 ≈ 106 mmHg<br>
+      A-aDO2 = 106 − 58 = <strong>約48 mmHg</strong><br>
+      65歳の正常上限の目安(65÷4+4 ≈ 20 mmHg)を大きく超えており、明らかに開大している。</p>
+      <aside class="note ui">この症例ではSpO2 88%まで低下しており、肺炎による肺胞の含気消失が換気血流比不均衡を引き起こしていると考えられる。実際にA-aDO2を計算すると約48 mmHgと大きく開大しており、肺自体に原因のある低酸素血症であることが確認できる。また、COPDの既往と現在も続く喫煙歴があるため、基礎にある閉塞性換気障害の関与も念頭に置く必要がある。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 9: 振り返り確認3 ============ -->
+  <section class="stage" data-stage="10">
+    <div class="kind-label check ui">振り返り・確認 3</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>換気を調整する最も重要な駆動因子は何か？</summary>
+      <div class="answer">中枢化学受容体が感知する、脳脊髄液中のCO2由来のH+濃度変化(PaCO2の変化)。</div>
+    </details>
+    <details class="check ui">
+      <summary>A-aDO2が開大しているとき、何を疑うべきか？</summary>
+      <div class="answer">拡散障害・換気血流比不均衡・シャントなど、肺自体に原因のある低酸素血症を疑う。</div>
+    </details>
+    <details class="check ui">
+      <summary>この症例のA-aDO2を、自分の手で計算できたか?(PaO2 58 mmHg、PaCO2 35 mmHg)</summary>
+      <div class="answer">PAO2 = 0.21×(760−47) − 35/0.8 ≈ 106 mmHg。A-aDO2 = 106 − 58 ≈ 48 mmHg。65歳の正常上限の目安(約20 mmHg)を大きく超えており、開大している。</div>
+    </details>
+    <details class="check ui">
+      <summary>この症例でSpO2が88%まで低下している機序を、A-aDO2の考え方を用いて説明できるか？</summary>
+      <div class="answer">肺炎により肺胞が滲出液・炎症細胞で満たされ含気を失うことで、その部分の血流に対して換気が相対的に不足する(換気血流比不均衡)。これによりA-aDO2が開大し、動脈血酸素化が障害される。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 10: 問題4 ============ -->
+  <section class="stage" data-stage="11">
+    <div class="kind-label q ui">問題 4</div>
+    <h2 class="stage-title">どんな検査をするか</h2>
+    <div class="card">
+      <p>この患者に対して、どのような検査を行うべきか考えなさい。</p>
+      <ol class="q-list">
+        <li>基本的な検査として何を行うか。</li>
+        <li>尿検査は行うか。便検査は行うか。行う・行わないの理由は何か。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 11: 解説4 ============ -->
+  <section class="stage" data-stage="12">
+    <div class="kind-label ui">解説 4</div>
+    <h2 class="stage-title">どんな検査をするか</h2>
+    <div class="card">
+      <p><strong>基本検査:</strong><br>
+      血算・生化学・CRP、動脈血液ガス、胸部X線(施行済み)、血液培養2セット、可能であれば抗菌薬投与前の喀痰グラム染色・培養を行う。</p>
+      <p><strong>尿検査・便検査について:</strong><br>
+      肺炎は呼吸器局所の感染であり、尿路や消化管への波及を疑わせる所見(排尿時痛、下痢など)がなければ、尿検査・便検査は通常行わない。「感染臓器に対応した検体を採取する」という原則の確認である。</p>
+      <aside class="note ui">ただし例外がある。肺炎球菌尿中抗原検査、レジオネラ尿中抗原検査は、検体そのものは尿だが、対象としているのは呼吸器感染症である。これらは迅速に結果が得られ、抗菌薬投与後もある程度の期間陽性が持続するという利点があり、「検体を採取する臓器」と「診断しようとしている感染巣」は必ずしも一致しないことを示す好例である。</aside>
+      <p style="margin-top:16px; font-size:0.92rem; color:var(--ink-soft);">喀痰培養・血液培養・尿中抗原検査は、この場で提出はするが、結果が判明するまでには時間がかかる。次の問題で、それらの結果を確認していく。</p>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 12: 振り返り確認4 ============ -->
+  <section class="stage" data-stage="13">
+    <div class="kind-label check ui">振り返り・確認 4</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>呼吸器感染症の診療で、尿を検体として用いる代表的な迅速検査を2つ挙げられるか？</summary>
+      <div class="answer">肺炎球菌尿中抗原検査、レジオネラ尿中抗原検査。</div>
+    </details>
+    <details class="check ui">
+      <summary>喀痰培養は、いつ採取するのが望ましいか？</summary>
+      <div class="answer">可能であれば抗菌薬投与を開始する前に採取するのが望ましい。投与後では検出感度が下がる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 13: 問題5 ============ -->
+  <section class="stage" data-stage="14">
+    <div class="kind-label q ui">問題 5</div>
+    <h2 class="stage-title">原因病原体を推定する</h2>
+    <div class="card">
+      <p>提出していた喀痰・血液培養、尿中抗原検査の結果が判明した。</p>
+      <table class="vitals-table">
+        <tr><td>喀痰グラム染色</td><td>多数の多形核白血球を背景に、グラム陽性双球菌が優位</td></tr>
+        <tr><td>喀痰培養</td><td class="flag"><span class="sp">Streptococcus pneumoniae</span> 4+(優位菌)、ペニシリン感受性株</td></tr>
+        <tr><td>血液培養(2セット)</td><td class="flag">2/2セットで<span class="sp">Streptococcus pneumoniae</span>検出</td></tr>
+        <tr><td>尿中肺炎球菌抗原</td><td class="flag">陽性</td></tr>
+        <tr><td>尿中レジオネラ抗原</td><td>陰性</td></tr>
+      </table>
+      <ol class="q-list">
+        <li>これらの結果から、原因病原体として何が最も考えられるか。</li>
+        <li>複数の検査結果が一致していることには、どのような臨床的意味があるか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 14: 解説5 ============ -->
+  <section class="stage" data-stage="15">
+    <div class="kind-label ui">解説 5</div>
+    <h2 class="stage-title">原因病原体を推定する</h2>
+    <div class="card">
+      <p><strong>グラム染色について:</strong><br>
+      グラム染色は、細菌を「染まる色」(紫に染まる=グラム陽性、赤く染まる=グラム陰性)と「形」(球菌・桿菌など)で大まかに分類する染色法である。<span class="sp">Streptococcus pneumoniae</span>(肺炎球菌)は、グラム陽性の球菌が2個ずつ対になって並ぶ「双球菌」という特徴的な形態をとることで知られる。</p>
+      <p><strong>①原因病原体:</strong><br>
+      喀痰グラム染色でのグラム陽性双球菌優位という所見、喀痰培養・血液培養での<span class="sp">Streptococcus pneumoniae</span>検出、尿中肺炎球菌抗原陽性という3つの独立した検査結果が揃って一致しており、<span class="sp">Streptococcus pneumoniae</span>による肺炎と考えるのが最も妥当である。</p>
+      <p><strong>②複数検査が一致することの意味:</strong><br>
+      グラム染色は迅速だが検者の技量に左右されやすく、培養は感度が高いが数日を要し、尿中抗原は迅速だが感度に限界がある(既習の通り)。それぞれ得意・不得意が異なる検査が同じ結論を指し示していることで、診断の確からしさが大きく高まる。特に血液培養が陽性であることから、この症例は単なる肺炎ではなく、<strong>菌血症を伴う肺炎球菌性肺炎</strong>と判断できる。</p>
+      <aside class="note ui">今回は結果があらかじめ分かっている状態で答え合わせをしたが、実際の臨床では、グラム染色の所見(迅速だが未確定)をもとに、培養結果が判明するまでの間、経験的治療の方針を立てなければならない。この「不確実な情報で判断する」という感覚は、今後のPBLで繰り返し扱っていく。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 15: 振り返り確認5 ============ -->
+  <section class="stage" data-stage="16">
+    <div class="kind-label check ui">振り返り・確認 5</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary><span class="sp">Streptococcus pneumoniae</span>のグラム染色所見上の特徴は?</summary>
+      <div class="answer">グラム陽性の球菌が2個ずつ対になって並ぶ「双球菌」の形態をとる。</div>
+    </details>
+    <details class="check ui">
+      <summary>「菌血症を伴う肺炎球菌性肺炎」とはどのような状態を指すか？</summary>
+      <div class="answer">肺炎球菌による肺炎に加えて、血液培養で同じ菌が検出される、すなわち血流内にも菌が存在している状態を指す。局所の感染にとどまらず全身への波及リスクを伴う、より重症度の高い病態である。</div>
+    </details>
+    <details class="check ui">
+      <summary>グラム染色・培養・尿中抗原、それぞれの検査の長所と短所を説明できるか？</summary>
+      <div class="answer">グラム染色は迅速だが検者の技量に依存し感度に限界がある。培養は感度・特異度が高いが結果判明までに数日を要する。尿中抗原は迅速で抗菌薬投与後も陽性が持続しやすいが、感度は限定的である。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 16: 問題6 ============ -->
+  <section class="stage" data-stage="17">
+    <div class="kind-label q ui">問題 6</div>
+    <h2 class="stage-title">肺炎の分類</h2>
+    <div class="card">
+      <p>肺炎にはいくつかの分類方法がある。</p>
+      <ol class="q-list">
+        <li>最もよく臨床で使われる分類は、感染した「場所・状況」による分類である。これを説明しなさい。</li>
+        <li>その他にどのような分類方法があるか、できるだけ挙げなさい。</li>
+        <li><strong>問:</strong> 入院の5時間後に発症した肺炎は、どの分類に当たるか。理由も述べなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 14: 解説6 ============ -->
+  <section class="stage" data-stage="18">
+    <div class="kind-label ui">解説 6</div>
+    <h2 class="stage-title">肺炎の分類</h2>
+    <div class="card">
+      <p><strong>①発症場所による分類(最頻用):</strong></p>
+      <ul class="q-list">
+        <li>市中肺炎(CAP: community-acquired pneumonia) — 病院外の日常生活の中で発症した肺炎</li>
+        <li>院内肺炎(HAP: hospital-acquired pneumonia) — 入院後48時間以降に新たに発症した肺炎</li>
+        <li>医療・介護関連肺炎(NHCAP) — 長期療養施設入所者や、頻回の医療介入歴がある患者に生じる肺炎で、CAPともHAPとも異なる背景菌叢を想定する分類</li>
+      </ul>
+      <p><strong>②その他の分類:</strong></p>
+      <ul class="q-list">
+        <li>病像による分類:定型肺炎/非定型肺炎</li>
+        <li>病原体による分類:細菌性、ウイルス性、真菌性 など</li>
+        <li>宿主背景による分類:健常者の肺炎、免疫不全者の日和見感染としての肺炎</li>
+        <li>感染性/非感染性:誤嚥性肺臓炎(化学性)、薬剤性肺障害、放射線肺臓炎などとの鑑別</li>
+        <li>病理学的分類:大葉性肺炎、気管支肺炎、間質性肺炎</li>
+      </ul>
+      <p><strong>③入院5時間後発症の肺炎:</strong><br>
+      HAPは「入院後48時間以降」に新たに発症した肺炎と定義される。入院5時間後という時間は、この基準に遠く及ばない。この場合、入院前にすでに病原体への曝露や潜伏が生じていたと考えるのが合理的であり、<strong>市中肺炎(CAP)</strong>に分類される(施設入所歴や頻回の医療介入歴などの背景があれば、NHCAPの可能性も考慮する)。</p>
+      <aside class="note ui">「病院にいる間に発症した肺炎=院内肺炎」ではない。分類の軸は「発症した場所」そのものではなく、「どの環境で病原体に曝露し、どのような菌叢を想定すべきか」という臨床的な意味づけにある。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 15: 振り返り確認6 ============ -->
+  <section class="stage" data-stage="19">
+    <div class="kind-label check ui">振り返り・確認 6</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>HAP(院内肺炎)の定義における発症時期の基準は？</summary>
+      <div class="answer">入院後48時間以降に新たに発症した肺炎。</div>
+    </details>
+    <details class="check ui">
+      <summary>入院5時間後に発症した肺炎がCAPに分類される理由を説明できるか？</summary>
+      <div class="answer">HAPの定義(入院後48時間以降の発症)に該当しないため。入院前にすでに病原体への曝露・潜伏があったと考えるのが合理的であり、市中肺炎(CAP)に分類される。</div>
+    </details>
+    <details class="check ui">
+      <summary>大葉性肺炎と気管支肺炎の違いを、病理学的観点から説明できるか？</summary>
+      <div class="answer">大葉性肺炎は肺葉全体〜広範囲が均一に炎症性滲出物で満たされる病型。気管支肺炎は気管支・細気管支を中心に斑状・多発性の炎症巣が散在する病型で、しばしば高齢者や基礎疾患を持つ患者にみられる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>まとめへ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 16: まとめ ============ -->
+  <section class="stage end-card" data-stage="20">
+    <div class="kind-label ui">まとめ</div>
+    <h2 class="stage-title" style="text-align:left;">第1回のまとめ</h2>
+    <div class="card" style="text-align:left;">
+      <p>今回は、菌血症を伴う肺炎球菌性肺炎を疑う一例を通じて、気道・肺の解剖と微小構造、換気とガス交換の生理、そして検査・原因推定・分類という臨床判断の流れを辿った。</p>
+      <p>最終的にグラム染色・培養・尿中抗原の結果が一致し、<span class="sp">Streptococcus pneumoniae</span>による肺炎球菌性肺炎(菌血症あり)と判明した。抗菌薬の選び方やde-escalationといった治療の詳細は、今後のPBL(薬理・病理を扱う回)で改めて取り上げる。</p>
+    </div>
+    <p class="ui" style="font-size:0.85rem;">次回:PBL2「おしっこが痛い」— 尿路の解剖と局所感染へ続く</p>
+    <div class="nav-row" style="justify-content:center; margin-top:32px;">
+      <button class="back-btn ui" data-back style="margin-right:0;">&larr; 見直す</button>
+    </div>
+  </section>
+
+  <footer class="ui">
+    本テキストは AI(Claude, Anthropic)を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+
+</div>
+
+<div id="caseModalOverlay" class="case-modal-overlay">
+  <div class="case-modal" role="dialog" aria-modal="true" aria-labelledby="caseModalTitle">
+    <div class="case-modal-head">
+      <span id="caseModalTitle" class="kind-label ui">症例</span>
+      <button id="caseModalClose" class="case-modal-close ui" type="button" aria-label="閉じる">✕</button>
+    </div>
+    <div class="case-modal-body">
+      <p><strong>患者:</strong> 65歳、男性</p>
+      <p><strong>主訴:</strong> 発熱、咳嗽、呼吸困難</p>
+      <p><strong>現病歴:</strong><br>
+      3日前から悪寒戦慄を伴う39.2℃の発熱が出現した。当初は乾性咳嗽であったが、翌日から鉄錆色の痰を伴うようになった。本日朝から呼吸困難感が増悪し、右胸部に呼吸時の鋭い胸膜痛を自覚したため受診した。</p>
+      <p><strong>既往歴:</strong> 2型糖尿病(HbA1c 7.5%)、慢性閉塞性肺疾患(COPD)</p>
+      <p><strong>喫煙歴:</strong> 30年間、1日1箱(現在も喫煙中)</p>
+      <p><strong>生活歴:</strong> ADL自立、自宅で妻と2人暮らし</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td>清明(JCS 0)</td></tr>
+        <tr><td>体温</td><td class="flag">39.4℃</td></tr>
+        <tr><td>呼吸数</td><td class="flag">28回/分</td></tr>
+        <tr><td>脈拍</td><td class="flag">112回/分(整)</td></tr>
+        <tr><td>血圧</td><td>118/76 mmHg</td></tr>
+        <tr><td>SpO2</td><td class="flag">88%(室内気)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong> 口唇チアノーゼあり。右下肺野でcoarse cracklesを聴取し、打診で濁音、気管支呼吸音を聴取、エゴフォニー陽性。</p>
+      <p><strong>胸部X線:</strong> 右下肺野に均質な浸潤影(consolidation)を認め、air bronchogramを伴う。右肋骨横隔膜角の鈍化あり(少量の胸水貯留を示唆)。</p>
+      <p><strong>胸部CT:</strong> 右下葉に区域性分布(segmental distribution)を示す浸潤影(consolidation)を認め、内部にair bronchogramを伴う。周囲に軽度のすりガラス陰影(ground-glass opacity)が散在し、粘液栓(mucoid impaction)や小葉中心性結節(centrilobular nodules)を伴う。小葉間隔壁の肥厚もみられ、少量の胸水貯留を認める。</p>
+      <hr style="border:none; border-top:1px dashed var(--line); margin:20px 0;">
+      <p class="kind-label ui" style="margin-bottom:10px;">検査所見(血液検査)</p>
+      <p><strong>血算:</strong> WBC 18,200/μL(好中球88%、桿状核球12%)、Hb 13.2 g/dL、Plt 24.5万/μL</p>
+      <p><strong>生化学:</strong> BUN 28、Cr 1.2、Na 132、血糖 185、AST/ALT 32/28、乳酸 2.8 mmol/L</p>
+      <p><strong>血清:</strong> CRP 28.5 mg/dL、プロカルシトニン 3.8 ng/mL</p>
+      <p><strong>ESR:</strong> 82 mm/時</p>
+      <p><strong>動脈血液ガス(室内気):</strong> pH 7.42、PaCO2 35 mmHg、PaO2 58 mmHg、HCO3- 22 mEq/L</p>
+      <p style="font-size:0.85rem; color:var(--ink-soft);">※喀痰・血液培養、尿中抗原検査の結果は、原因病原体を推定する問題で別途提示する。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stages = Array.from(document.querySelectorAll('.stage'));
+  const track = document.getElementById('progressTrack');
+  let current = 0;
+
+  stages.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'progress-dot' + (i === 0 ? ' current' : '');
+    dot.setAttribute('aria-label', '場面 ' + (i + 1) + ' へ移動');
+    dot.addEventListener('click', () => goToStage(i));
+    track.appendChild(dot);
+  });
+
+  function updateProgress(){
+    const dots = track.children;
+    for(let i=0; i<dots.length; i++){
+      dots[i].classList.remove('current','done');
+      if(i < current) dots[i].classList.add('done');
+      if(i === current) dots[i].classList.add('current');
+    }
+  }
+
+  function goToStage(i){
+    if(i < 0 || i >= stages.length || i === current) return;
+    stages[current].classList.remove('visible');
+    current = i;
+    stages[current].classList.add('visible');
+    updateProgress();
+    stages[current].scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  document.querySelectorAll('[data-next]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current + 1));
+  });
+
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current - 1));
+  });
+
+  // ---- case reference modal ----
+  const caseTrigger = document.getElementById('caseModalTrigger');
+  const caseOverlay = document.getElementById('caseModalOverlay');
+  const caseClose = document.getElementById('caseModalClose');
+
+  function openCaseModal(){
+    caseOverlay.classList.add('open');
+  }
+  function closeCaseModal(){
+    caseOverlay.classList.remove('open');
+  }
+
+  caseTrigger.addEventListener('click', openCaseModal);
+  caseClose.addEventListener('click', closeCaseModal);
+  caseOverlay.addEventListener('click', (e) => {
+    if(e.target === caseOverlay) closeCaseModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && caseOverlay.classList.contains('open')) closeCaseModal();
+  });
+</script>
+
+</body>
+</html>

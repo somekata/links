@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統合PBL 第2回「二日前からの排尿時痛」</title>
+<style>
+  :root{
+    --paper: #f7f3ea;
+    --paper-deep: #efe8d8;
+    --ink: #2b2b28;
+    --ink-soft: #514c44;
+    --indigo: #2c4a52;
+    --indigo-soft: #4a6f78;
+    --indigo-pale: #dfe8e6;
+    --gold: #a98a4a;
+    --line: #d9cfb8;
+    --alert: #a13d2f;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(44,74,82,0.05), transparent 42%),
+      radial-gradient(circle at 85% 92%, rgba(169,138,74,0.05), transparent 42%);
+    color: var(--ink);
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "游明朝", serif;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+  .ui{
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+  .scroll{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 28px 80px;
+  }
+
+  /* ---- header / progress ---- */
+  header.title-block{
+    position: relative;
+    text-align:center;
+    margin-bottom: 40px;
+    padding-bottom: 26px;
+    border-bottom: 1px double var(--line);
+  }
+  .series-tag{
+    font-family: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.32em;
+    color: var(--indigo-soft);
+    margin-bottom: 12px;
+  }
+  h1.main-title{
+    font-size: 1.7rem;
+    margin: 0 0 8px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  .case-sub{
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+  .drop{
+    width: 30px; height: 34px;
+    margin: 18px auto 0;
+    opacity: 0.55;
+  }
+  .drop path{
+    fill: none;
+    stroke: var(--indigo-soft);
+    stroke-width: 1.4;
+    transform-origin: center;
+    animation: pulse-drop 3.6s ease-in-out infinite;
+  }
+  @keyframes pulse-drop{
+    0%,100%{ opacity: 0.35; transform: translateY(0); }
+    50%{ opacity: 0.85; transform: translateY(2px); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .drop path{ animation: none; }
+  }
+
+  .progress-track{
+    display:flex;
+    gap: 7px;
+    justify-content:center;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+  .progress-dot{
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--line);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+  .progress-dot:hover{ transform: scale(1.4); background: var(--indigo-soft); }
+  .progress-dot:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .progress-dot.done{ background: var(--indigo-soft); }
+  .progress-dot.current{ background: var(--indigo); transform: scale(1.3); }
+  .progress-hint{
+    text-align:center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .back-btn{
+    font-family: inherit;
+    background: none;
+    color: var(--indigo-soft);
+    border: 1px solid var(--line);
+    padding: 12px 22px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-right: auto;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+  .back-btn:hover{ background: var(--paper-deep); border-color: var(--indigo-soft); }
+  .back-btn:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .back-btn:disabled{ visibility: hidden; }
+
+  /* ---- stages ---- */
+  .stage{
+    display:none;
+    animation: fadeUp 0.55s ease;
+  }
+  .stage.visible{ display:block; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .kind-label{
+    font-family: inherit;
+    display:inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    padding: 3px 10px;
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    margin-bottom: 14px;
+  }
+  .kind-label.q{ border-color: var(--alert); color: var(--alert); }
+  .kind-label.check{ border-color: var(--gold); color: var(--gold); }
+
+  h2.stage-title{
+    font-size: 1.3rem;
+    margin: 0 0 20px;
+    padding-left: 14px;
+    border-left: 3px solid var(--indigo);
+    color: var(--ink);
+  }
+
+  .card{
+    background: var(--paper-deep);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 24px 26px;
+    margin-bottom: 22px;
+  }
+
+  .vitals-table{
+    width:100%;
+    border-collapse: collapse;
+    font-family: inherit;
+    font-size: 0.96rem;
+    margin: 14px 0;
+  }
+  .vitals-table td{
+    padding: 6px 10px;
+    border-bottom: 1px dotted var(--line);
+  }
+  .vitals-table td:first-child{
+    color: var(--ink-soft);
+    width: 40%;
+  }
+  .vitals-table .flag{
+    color: var(--alert);
+    font-weight: bold;
+  }
+
+  .q-list{
+    margin: 0;
+    padding-left: 1.3em;
+  }
+  .q-list li{ margin-bottom: 10px; }
+
+  aside.note{
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    border-left: 2px solid var(--gold);
+    padding: 10px 16px;
+    margin: 18px 0;
+    background: rgba(169,138,74,0.06);
+  }
+
+  .sp{ font-style: italic; }
+
+  details.check{
+    margin: 12px 0;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper);
+    padding: 4px 4px;
+  }
+  details.check summary{
+    font-family: inherit;
+    cursor: pointer;
+    padding: 10px 14px;
+    color: var(--indigo);
+    font-size: 0.98rem;
+    outline: none;
+  }
+  details.check summary::marker{ color: var(--gold); }
+  details.check .answer{
+    padding: 4px 16px 14px;
+    border-top: 1px dashed var(--line);
+    margin-top: 6px;
+    font-size: 0.95rem;
+  }
+
+  .nav-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+  }
+  .next-btn{
+    font-family: inherit;
+    background: var(--indigo);
+    color: var(--paper);
+    border: none;
+    padding: 12px 26px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.25s ease, transform 0.15s ease;
+  }
+  .next-btn:hover{ background: var(--indigo-soft); }
+  .next-btn:active{ transform: translateY(1px); }
+  .next-btn:focus-visible{
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .end-card{
+    text-align:center;
+    padding: 40px 20px;
+  }
+  .end-card p{ color: var(--ink-soft); }
+
+  footer{
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  /* ---- case reference: floating button + modal ---- */
+  .case-fab{
+    position: sticky;
+    top: 14px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 auto 34px;
+    padding: 9px 18px;
+    background: var(--paper);
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(43,43,40,0.08);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .case-fab:hover{ background: var(--indigo-pale); }
+  .case-fab:active{ transform: translateY(1px); }
+  .case-fab:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-fab-icon{ font-size: 0.95rem; }
+
+  .case-modal-overlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    background: rgba(43,43,40,0.45);
+    z-index: 100;
+    padding: 6vh 20px;
+    overflow-y: auto;
+  }
+  .case-modal-overlay.open{ display:block; }
+  .case-modal{
+    max-width: 620px;
+    margin: 0 auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 12px 32px rgba(43,43,40,0.25);
+    animation: fadeUp 0.3s ease;
+  }
+  .case-modal-head{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 18px 22px 0;
+  }
+  .case-modal-close{
+    background:none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .case-modal-close:hover{ background: var(--paper-deep); }
+  .case-modal-close:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-modal-body{
+    padding: 14px 26px 26px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+<div class="scroll">
+
+  <header class="title-block">
+    <div class="series-tag ui">統合PBL &nbsp;第2回</div>
+    <h1 class="main-title">二日前からの排尿時痛</h1>
+    <div class="case-sub ui">急性腎盂腎炎を通じて、尿路の解剖・腎生理・粘膜免疫を辿る</div>
+    <svg class="drop" viewBox="0 0 30 34"><path d="M15 2 C15 2 4 16 4 23 A11 11 0 0 0 26 23 C26 16 15 2 15 2 Z"/></svg>
+    <div class="progress-track ui" id="progressTrack"></div>
+    <div class="progress-hint ui">丸をクリックすると、好きな場面に移動できます</div>
+  </header>
+
+  <button id="caseModalTrigger" class="case-fab ui" type="button">
+    <span class="case-fab-icon">📋</span> 症例・所見・検査所見を見る
+  </button>
+
+  <!-- ============ Stage 0: 症例提示 ============ -->
+  <section class="stage visible" data-stage="0">
+    <div class="kind-label ui">症例</div>
+    <h2 class="stage-title">症例提示</h2>
+    <div class="card">
+      <p><strong>患者:</strong> 28歳、女性</p>
+      <p><strong>主訴:</strong> 発熱、右側腹部痛、排尿時痛</p>
+      <p><strong>現病歴:</strong><br>
+      2日前から排尿時痛と頻尿が出現した。翌日から38.8℃の発熱、悪寒戦慄、右側腹部痛が出現し増悪したため受診した。嘔気・嘔吐を1回認めた。</p>
+      <p><strong>既往歴:</strong> 再発性膀胱炎(年1〜2回、直近のエピソードは3ヶ月前)</p>
+      <p><strong>月経歴:</strong> 最終月経2週間前、規則的。妊娠の可能性なし。</p>
+      <p><strong>生活歴:</strong> 性交渉歴あり</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td>清明(JCS 0)</td></tr>
+        <tr><td>体温</td><td class="flag">39.2℃</td></tr>
+        <tr><td>呼吸数</td><td>18回/分</td></tr>
+        <tr><td>脈拍</td><td class="flag">98回/分</td></tr>
+        <tr><td>血圧</td><td>108/68 mmHg</td></tr>
+        <tr><td>SpO2</td><td>98%(室内気)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong> 軽度の苦悶様顔貌、発汗あり。右肋骨脊柱角(CVA)に著明な叩打痛あり、左側は軽度の圧痛のみ。下腹部に軽度圧痛あり、反跳痛なし、腸蠕動音正常。外陰部に異常なし、腟分泌物なし。</p>
+      <p><strong>画像検査:</strong> 臨床症状・検査所見から診断が明確であり、初期治療への反応も良好であったため施行せず。</p>
+    </div>
+    <aside class="note ui">この症例を通じて、尿路の構造から腎の生理、粘膜免疫、そして臨床判断までを段階的にたどっていく。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back disabled>&larr; 戻る</button><button class="next-btn ui" data-next>症例を読んだ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 1: 検査所見 ============ -->
+  <section class="stage" data-stage="1">
+    <div class="kind-label ui">検査所見</div>
+    <h2 class="stage-title">検査所見(尿検査・血液検査)</h2>
+    <div class="card">
+      <p><strong>尿検査(尿定性):</strong></p>
+      <table class="vitals-table">
+        <tr><td>外観</td><td>混濁、黄褐色</td></tr>
+        <tr><td>比重</td><td>1.025</td></tr>
+        <tr><td>pH</td><td>6.0</td></tr>
+        <tr><td>蛋白</td><td>2+</td></tr>
+        <tr><td>糖</td><td>陰性</td></tr>
+        <tr><td>ケトン</td><td>1+</td></tr>
+        <tr><td>潜血</td><td class="flag">3+</td></tr>
+        <tr><td>白血球エステラーゼ</td><td class="flag">3+(陽性)</td></tr>
+        <tr><td>亜硝酸塩</td><td class="flag">陽性</td></tr>
+      </table>
+      <p><strong>尿沈渣:</strong></p>
+      <table class="vitals-table">
+        <tr><td>白血球</td><td class="flag">50〜100/HPF</td></tr>
+        <tr><td>赤血球</td><td>10〜20/HPF</td></tr>
+        <tr><td>細菌</td><td class="flag">多数(3+)</td></tr>
+        <tr><td>白血球円柱</td><td class="flag">2〜3/LPF</td></tr>
+        <tr><td>扁平上皮細胞</td><td>0〜2/HPF</td></tr>
+      </table>
+      <p><strong>血算(CBC):</strong></p>
+      <table class="vitals-table">
+        <tr><td>WBC</td><td class="flag">15,800 /μL(好中球85%、桿状核球8%)</td></tr>
+        <tr><td>Hb</td><td>12.8 g/dL</td></tr>
+        <tr><td>Plt</td><td>28.5万 /μL</td></tr>
+      </table>
+      <p><strong>生化学:</strong></p>
+      <table class="vitals-table">
+        <tr><td>BUN</td><td>18 mg/dL</td></tr>
+        <tr><td>Cr</td><td>0.9 mg/dL</td></tr>
+        <tr><td>eGFR</td><td>&gt;90 mL/min/1.73m²</td></tr>
+        <tr><td>Na / K / Cl</td><td>138 / 3.8 / 102 mEq/L</td></tr>
+        <tr><td>AST / ALT</td><td>28 / 24 U/L</td></tr>
+        <tr><td>血糖</td><td>98 mg/dL</td></tr>
+      </table>
+      <p><strong>血清(炎症マーカー):</strong></p>
+      <table class="vitals-table">
+        <tr><td>CRP</td><td class="flag">12.5 mg/dL</td></tr>
+        <tr><td>プロカルシトニン</td><td class="flag">0.8 ng/mL</td></tr>
+      </table>
+    </div>
+    <aside class="note ui">尿培養・血液培養の結果は、この後の問題を少し進め、原因病原体を推定する段階で提示する。まずは尿検査・血液検査の数値をざっと眺めておこう。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>検査所見を見た &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 2: 問題1 ============ -->
+  <section class="stage" data-stage="2">
+    <div class="kind-label q ui">問題 1</div>
+    <h2 class="stage-title">尿路の解剖</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>腎から尿道口に至るまでの尿路の経路を、順を追って答えなさい。</li>
+        <li>女性の尿道は男性と比べてどのような特徴があるか。それは尿路感染症の男女差とどう関係するか。</li>
+        <li>膀胱三角とは何か。尿管口・内尿道口との位置関係を説明しなさい。</li>
+        <li>身体所見にある「CVA叩打痛」の「CVA」とは解剖学的にどこを指すか。この所見は何を反映しているか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 3: 解説1 ============ -->
+  <section class="stage" data-stage="3">
+    <div class="kind-label ui">解説 1</div>
+    <h2 class="stage-title">尿路の解剖</h2>
+    <div class="card">
+      <p><strong>①経路:</strong><br>
+      腎(腎盂・腎杯)→ 尿管 → 膀胱 → 尿道 → 体外</p>
+      <p><strong>②尿道長の性差:</strong><br>
+      女性の尿道は長さ約4cmと短く、男性の尿道(約20cm)よりはるかに短い。さらに女性では尿道口が肛門・腟に近接している。このため腸内細菌が尿道口に到達しやすく、上行性感染(尿道→膀胱→尿管→腎盂)を起こしやすい。これが、女性に尿路感染症が圧倒的に多い最大の解剖学的理由である。</p>
+      <p><strong>③膀胱三角:</strong><br>
+      膀胱底部にある、左右の尿管口と内尿道口の3点を結ぶ三角形の領域。この部分の粘膜は他の膀胱粘膜と異なり伸展性に乏しく平滑であり、感染や炎症、逆流(尿管膀胱逆流)の関与を考える上で重要な部位となる。</p>
+      <p><strong>④CVA(肋骨脊柱角):</strong><br>
+      第12肋骨と脊柱(傍脊柱筋)がつくる角を指す。腎は後腹膜臓器としてこの深部に位置しており、CVAを叩打すると振動が腎に伝わり、炎症で腫大・伸展した腎被膜を刺激して疼痛を誘発する。CVA叩打痛陽性は、感染が上部尿路(腎盂・腎実質)に及んでいることを示唆する所見であり、膀胱炎単独では通常みられない。</p>
+      <aside class="note ui">本症例で右CVA叩打痛が陽性であることは、感染が膀胱にとどまらず、上行性に腎盂・腎実質まで達していることを示唆している。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 4: 振り返り確認1 ============ -->
+  <section class="stage" data-stage="4">
+    <div class="kind-label check ui">振り返り・確認 1</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>女性が男性より尿路感染症を起こしやすい解剖学的理由を説明できるか？</summary>
+      <div class="answer">女性の尿道は男性(約20cm)より短く約4cmしかなく、尿道口が肛門・腟に近接しているため、腸内細菌が尿道から上行性に膀胱・腎盂へ達しやすいため。</div>
+    </details>
+    <details class="check ui">
+      <summary>CVA叩打痛陽性が示唆する感染部位は？</summary>
+      <div class="answer">上部尿路、すなわち腎盂・腎実質への感染の波及を示唆する。膀胱炎単独では通常陰性である。</div>
+    </details>
+    <details class="check ui">
+      <summary>膀胱三角がなぜ他の膀胱粘膜と区別される部位なのか説明できるか？</summary>
+      <div class="answer">左右の尿管口と内尿道口を結ぶ三角形の領域で、粘膜が伸展性に乏しく平滑であるという特徴があり、感染や逆流の観点から重要視される部位である。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 5: 問題2 ============ -->
+  <section class="stage" data-stage="5">
+    <div class="kind-label q ui">問題 2</div>
+    <h2 class="stage-title">腎の生理</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>糸球体濾過とは何か。GFR・eGFRは何を反映する指標か。</li>
+        <li>BUNとクレアチニンは、それぞれ何を反映する検査値か。この症例の値(BUN 18、Cr 0.9、eGFR&gt;90)は何を意味するか。</li>
+        <li>腎は薬物の体内動態にどのように関わるか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 6: 解説2 ============ -->
+  <section class="stage" data-stage="6">
+    <div class="kind-label ui">解説 2</div>
+    <h2 class="stage-title">腎の生理</h2>
+    <div class="card">
+      <p><strong>①糸球体濾過・GFR:</strong><br>
+      腎の基本機能単位はネフロン(糸球体+尿細管)である。糸球体では血漿が濾過されて原尿となり、その後尿細管で必要な物質の再吸収と不要な物質の分泌を経て、最終的な尿がつくられる。GFR(糸球体濾過量)は単位時間あたりに糸球体で濾過される血漿量であり、腎機能全体を評価する代表的な指標である。eGFRは血清クレアチニン値などから推算したGFRである。</p>
+      <p><strong>②BUNとクレアチニン:</strong><br>
+      BUN(尿素窒素)は蛋白質代謝の最終産物であり、腎排泄以外にも、脱水や消化管出血、高蛋白食などの影響を受けやすい。一方クレアチニンは筋肉のクレアチン代謝産物で、産生量がほぼ一定であり腎からの排泄にほぼ依存するため、腎機能をより直接的に反映する。本症例ではBUN 18、Cr 0.9、eGFR&gt;90といずれも正常範囲であり、腎盂腎炎(腎実質の局所的な感染・炎症)があっても、糸球体濾過機能そのものは保たれていることが多いという重要な気づきが得られる。</p>
+      <p><strong>③腎と薬物動態:</strong><br>
+      多くの抗菌薬(β-ラクタム系、アミノグリコシド系、ST合剤など)は腎排泄型であり、腎機能が低下している場合は投与量や投与間隔の調整が必要になる。本症例は腎機能が正常範囲であるため、通常量での治療が可能と考えられる。</p>
+      <aside class="note ui">「腎盂腎炎=腎不全」ではない。腎実質に局所的な炎症があっても、糸球体濾過機能全体は保たれていることが多い。逆に腎機能低下がみられる場合は、より広範な腎障害や敗血症などの重症化を疑う契機になる。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 7: 振り返り確認2 ============ -->
+  <section class="stage" data-stage="7">
+    <div class="kind-label check ui">振り返り・確認 2</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>BUNとクレアチニンの違いを説明できるか？</summary>
+      <div class="answer">BUNは蛋白質代謝産物で、脱水や消化管出血など腎機能以外の影響も受けやすい。クレアチニンは筋肉由来で産生量がほぼ一定であり、腎排泄にほぼ依存するため腎機能をより直接的に反映する。</div>
+    </details>
+    <details class="check ui">
+      <summary>本症例で腎機能(eGFR)が保たれていることは何を意味するか？</summary>
+      <div class="answer">腎盂腎炎という腎実質の感染・炎症があっても、糸球体濾過機能全体は保たれている場合が多いことを示している。腎機能低下がある場合はより重症な病態を疑う契機になる。</div>
+    </details>
+    <details class="check ui">
+      <summary>腎排泄型の薬物で、腎機能低下時に注意すべきことは？</summary>
+      <div class="answer">薬物が体内に蓄積しやすくなるため、投与量や投与間隔の調整が必要になる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 8: 問題3 ============ -->
+  <section class="stage" data-stage="8">
+    <div class="kind-label q ui">問題 3</div>
+    <h2 class="stage-title">尿路の防御機構と常在細菌叢</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>尿路には、どのような自然防御機構があるか。</li>
+        <li>女性における尿路感染症のリスク因子にはどのようなものがあるか。</li>
+        <li>「常在細菌叢」と「病原体」の境界について、大腸菌(<span class="sp">Escherichia coli</span>)を例に考えなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 9: 解説3 ============ -->
+  <section class="stage" data-stage="9">
+    <div class="kind-label ui">解説 3</div>
+    <h2 class="stage-title">尿路の防御機構と常在細菌叢</h2>
+    <div class="card">
+      <p><strong>①自然防御機構:</strong><br>
+      排尿による物理的な洗い流し効果、膀胱上皮のバリア機能、尿中のTamm-Horsfall蛋白による細菌の捕捉・排出、粘膜面の分泌型IgA、尿のpHや浸透圧など、複数の機構が組み合わさって尿路を無菌に近い状態に保っている。</p>
+      <p><strong>②女性におけるリスク因子:</strong><br>
+      女性であること(解剖学的要因)に加え、性交渉(細菌の尿道への機械的な移行)、尿路感染症の既往、閉経後のエストロゲン低下、尿路の構造異常や結石、尿道カテーテル留置、糖尿病などがリスク因子として知られる。</p>
+      <p><strong>③常在細菌叢と病原体の境界:</strong><br>
+      <span class="sp">Escherichia coli</span>は腸内細菌叢を構成する主要な常在菌の一つであり、腸管内にある限りは病原性を発揮しない共生関係にある。しかし、本来無菌であるべき尿路に迷入し増殖すると感染症を引き起こす。つまり「病原体かどうか」は菌の種類そのものだけで決まるのではなく、「本来いるべきでない場所に存在しているかどうか」という文脈によっても規定される。</p>
+      <aside class="note ui">この患者には、膀胱炎の既往(年1〜2回)と性交渉歴という、典型的な尿路感染症のリスク因子が重なっている。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 10: 振り返り確認3 ============ -->
+  <section class="stage" data-stage="10">
+    <div class="kind-label check ui">振り返り・確認 3</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>尿路の自然防御機構を3つ挙げられるか？</summary>
+      <div class="answer">例:排尿による洗い流し効果、膀胱上皮のバリア機能、Tamm-Horsfall蛋白による細菌捕捉、分泌型IgAなど(3つ挙げられればよい)。</div>
+    </details>
+    <details class="check ui">
+      <summary>なぜ性交渉が尿路感染症のリスク因子になるのか説明できるか？</summary>
+      <div class="answer">性交渉に伴う機械的な刺激により、会陰部・腸管由来の細菌が尿道口から尿道内へ移行しやすくなるため。</div>
+    </details>
+    <details class="check ui">
+      <summary><span class="sp">Escherichia coli</span>が「病原体」として振る舞うのはどのような状況か？</summary>
+      <div class="answer">本来生息している腸管内から、本来無菌であるべき尿路など別の部位に迷入し、そこで増殖した場合。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 11: 問題4 ============ -->
+  <section class="stage" data-stage="11">
+    <div class="kind-label q ui">問題 4</div>
+    <h2 class="stage-title">どんな検査をするか</h2>
+    <div class="card">
+      <p>この患者に対して、どのような検査を行うべきか考えなさい。</p>
+      <ol class="q-list">
+        <li>治療開始前に、必ず行っておくべき検査は何か。</li>
+        <li>血液培養は必要か。画像検査は必要か。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 12: 解説4 ============ -->
+  <section class="stage" data-stage="12">
+    <div class="kind-label ui">解説 4</div>
+    <h2 class="stage-title">どんな検査をするか</h2>
+    <div class="card">
+      <p><strong>基本検査:</strong><br>
+      尿検査(尿定性・尿沈渣)に加え、<strong>尿培養と薬剤感受性試験は、抗菌薬投与を開始する前に必ず提出する</strong>。腎盂腎炎は、膀胱炎と異なり原則として尿培養を行った上で治療方針を決定する疾患である。血算・生化学・CRPも合わせて評価する。</p>
+      <p><strong>血液培養について:</strong><br>
+      急性腎盂腎炎の10〜50%では菌血症を合併するとされ、特に中等症以上の症例では血液培養2セットの提出が推奨される。</p>
+      <p><strong>画像検査について:</strong><br>
+      全例に画像検査が必要なわけではない。敗血症・敗血症性ショック、尿路結石の疑い、尿pHが7.0以上(尿素分解菌による結石形成を示唆)、腎機能低下、初期治療への反応不良などがある場合に画像検査(超音波やCT)を考慮する。本症例では臨床像・検査所見から診断が明確で、初期治療への反応も良好であったため、画像検査は施行しなかった。</p>
+      <p style="margin-top:16px; font-size:0.92rem; color:var(--ink-soft);">尿培養・血液培養は、この場で提出はするが、結果が判明するまでには時間がかかる。次の問題で、それらの結果を確認していく。</p>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 13: 振り返り確認4 ============ -->
+  <section class="stage" data-stage="13">
+    <div class="kind-label check ui">振り返り・確認 4</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>腎盂腎炎の治療において、尿培養をいつ提出すべきか？</summary>
+      <div class="answer">抗菌薬投与を開始する前に必ず提出する。</div>
+    </details>
+    <details class="check ui">
+      <summary>腎盂腎炎で血液培養を提出する意義は？</summary>
+      <div class="answer">腎盂腎炎の10〜50%で菌血症を合併するとされ、菌血症の有無を確認することは重症度評価や治療方針の判断に役立つため。</div>
+    </details>
+    <details class="check ui">
+      <summary>画像検査が推奨される状況を3つ挙げられるか？</summary>
+      <div class="answer">例:敗血症・敗血症性ショック、尿路結石の疑い、尿pH 7.0以上、腎機能低下、初期治療への反応不良など(3つ挙げられればよい)。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 14: 問題5 ============ -->
+  <section class="stage" data-stage="14">
+    <div class="kind-label q ui">問題 5</div>
+    <h2 class="stage-title">原因病原体を推定する</h2>
+    <div class="card">
+      <p>提出していた尿培養・血液培養の結果が判明した。</p>
+      <table class="vitals-table">
+        <tr><td>尿培養(中間尿)</td><td class="flag"><span class="sp">Escherichia coli</span> &gt;100,000 CFU/mL</td></tr>
+        <tr><td>血液培養(2セット)</td><td>陰性</td></tr>
+      </table>
+      <p><strong>薬剤感受性試験:</strong></p>
+      <table class="vitals-table">
+        <tr><td>アンピシリン</td><td class="flag">耐性(R)</td></tr>
+        <tr><td>セファゾリン</td><td>感受性(S)</td></tr>
+        <tr><td>セフトリアキソン</td><td>感受性(S)</td></tr>
+        <tr><td>シプロフロキサシン</td><td>感受性(S)</td></tr>
+        <tr><td>レボフロキサシン</td><td>感受性(S)</td></tr>
+        <tr><td>ゲンタマイシン</td><td>感受性(S)</td></tr>
+        <tr><td>ST合剤</td><td class="flag">耐性(R)</td></tr>
+        <tr><td>ニトロフラントイン</td><td>感受性(S)(ただし腎盂腎炎には不適)</td></tr>
+      </table>
+      <ol class="q-list">
+        <li>原因菌として最も考えられるものは何か。診断的とされるコロニー数の目安は。</li>
+        <li>血液培養が陰性であることは何を意味するか。</li>
+        <li>ニトロフラントインは感受性ありと判定されているにもかかわらず、なぜ腎盂腎炎には「不適」とされるのか、考えてみなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 15: 解説5 ============ -->
+  <section class="stage" data-stage="15">
+    <div class="kind-label ui">解説 5</div>
+    <h2 class="stage-title">原因病原体を推定する</h2>
+    <div class="card">
+      <p><strong>①原因菌:</strong><br>
+      中間尿培養で<span class="sp">Escherichia coli</span>(グラム陰性桿菌)が10万(100,000)CFU/mL以上検出されており、これが尿路感染症における診断的な菌数の目安(10⁵ CFU/mL以上)を満たしている。<span class="sp">E. coli</span>は尿路感染症全体の75〜95%を占める最も頻度の高い起因菌である。</p>
+      <p><strong>②血液培養陰性の意味:</strong><br>
+      腎盂腎炎の10〜50%は菌血症を伴うとされるが、本症例は血液培養陰性であり、血流への波及がない、比較的限局した感染と考えられる。ただし血液培養陰性は「軽症」を直接意味するものではなく、あくまで菌血症の有無に関する情報の一つとして評価する。</p>
+      <p><strong>③ニトロフラントインが腎盂腎炎に不適な理由:</strong><br>
+      ニトロフラントインは尿中では高濃度に達するため膀胱炎の治療には有効だが、腎実質など尿路以外の組織への移行性が乏しく、腎盂腎炎のように腎実質そのものが感染巣となる病態には、十分な組織内濃度が得られず効果が期待できない。「感受性がある(試験管内で効く)」ことと、「その臓器に薬が届いて効く」ことは別の問題であるという、PK/PD(薬物動態・薬力学)の視点の最初の一歩である。</p>
+      <aside class="note ui">今回はグラム陰性桿菌である<span class="sp">Escherichia coli</span>が登場した。PBL1で扱ったグラム陽性双球菌(<span class="sp">Streptococcus pneumoniae</span>)と合わせて、グラム染色による大まかな細菌の分類を少しずつ整理していこう。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 16: 振り返り確認5 ============ -->
+  <section class="stage" data-stage="16">
+    <div class="kind-label check ui">振り返り・確認 5</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>尿路感染症の診断における尿培養のコロニー数の目安は？</summary>
+      <div class="answer">10⁵ CFU/mL(100,000 CFU/mL)以上。</div>
+    </details>
+    <details class="check ui">
+      <summary><span class="sp">Escherichia coli</span>はグラム染色でどのような形態を示すか？</summary>
+      <div class="answer">グラム陰性の桿菌。</div>
+    </details>
+    <details class="check ui">
+      <summary>ニトロフラントインが腎盂腎炎に不適とされる理由を説明できるか？</summary>
+      <div class="answer">尿中では高濃度に達するため膀胱炎には有効だが、腎実質への組織移行性が乏しく、腎実質の感染である腎盂腎炎には十分な効果が期待できないため。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 17: 問題6 ============ -->
+  <section class="stage" data-stage="17">
+    <div class="kind-label q ui">問題 6</div>
+    <h2 class="stage-title">尿路感染症の分類</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>尿路感染症は、解剖学的にどのように分類されるか(上部/下部)。</li>
+        <li>単純性(uncomplicated)と複雑性(complicated)尿路感染症の違いは何か。</li>
+        <li>外来治療が可能かどうかを判断する基準にはどのようなものがあるか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 18: 解説6 ============ -->
+  <section class="stage" data-stage="18">
+    <div class="kind-label ui">解説 6</div>
+    <h2 class="stage-title">尿路感染症の分類</h2>
+    <div class="card">
+      <p><strong>①解剖学的分類:</strong><br>
+      下部尿路感染症(膀胱炎・尿道炎)と上部尿路感染症(腎盂腎炎)に大別される。発熱・悪寒戦慄・CVA叩打痛の有無が、両者を区別する重要な臨床所見となる。</p>
+      <p><strong>②単純性/複雑性:</strong><br>
+      単純性尿路感染症は、解剖学的・機能的に正常な尿路を持つ非妊娠女性に生じるものを指す。複雑性尿路感染症は、尿路の構造異常、尿路結石、尿道カテーテル留置、妊娠、男性であること、免疫不全、腎機能低下など、感染を難治化・重症化させうる背景を伴う場合を指す。本症例は基礎疾患のない非妊娠の若年女性であり、<strong>単純性急性腎盂腎炎</strong>に分類される。</p>
+      <p><strong>③外来治療の判断基準:</strong><br>
+      バイタルサインが安定していること、経口摂取が可能であること、敗血症性ショックなどの重篤な合併症がないこと、妊娠していないこと、外来でのフォローアップが可能であることなどが目安となる。非複雑性腎盂腎炎の場合、約80%以上が外来治療可能とされる。</p>
+      <aside class="note ui">「膀胱炎の既往がある」「性交渉歴がある」という背景は、複雑性尿路感染症の定義には含まれない。複雑性かどうかは、あくまで尿路そのものの構造的・機能的異常や、宿主の免疫状態によって決まる。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 19: 振り返り確認6 ============ -->
+  <section class="stage" data-stage="19">
+    <div class="kind-label check ui">振り返り・確認 6</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>上部尿路感染症と下部尿路感染症を分ける代表的な臨床所見は？</summary>
+      <div class="answer">発熱・悪寒戦慄・CVA叩打痛の有無。これらがあれば上部尿路感染症(腎盂腎炎)を示唆する。</div>
+    </details>
+    <details class="check ui">
+      <summary>単純性と複雑性尿路感染症を分ける基準は？</summary>
+      <div class="answer">尿路の構造的・機能的異常や、妊娠・男性・免疫不全・腎機能低下・カテーテル留置などの宿主側の背景の有無。膀胱炎の既往や性交渉歴そのものは複雑性の定義には含まれない。</div>
+    </details>
+    <details class="check ui">
+      <summary>外来治療を選択する際に確認すべき項目を3つ挙げられるか？</summary>
+      <div class="answer">例:バイタルサインの安定性、経口摂取が可能か、重篤な合併症がないか、妊娠していないか、フォローアップが可能か(3つ挙げられればよい)。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>まとめへ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 20: まとめ ============ -->
+  <section class="stage end-card" data-stage="20">
+    <div class="kind-label ui">まとめ</div>
+    <h2 class="stage-title" style="text-align:left;">第2回のまとめ</h2>
+    <div class="card" style="text-align:left;">
+      <p>今回は、急性腎盂腎炎を疑う一例を通じて、尿路の解剖と機能、腎の生理、尿路の自然防御機構、そして検査・原因推定・分類という臨床判断の流れを辿った。</p>
+      <p>最終的に尿培養から<span class="sp">Escherichia coli</span>が検出され、菌血症を伴わない単純性急性腎盂腎炎と判明した。抗菌薬の選び方や外来治療の進め方といった治療の詳細は、今後のPBL(薬理・病理を扱う回)で改めて取り上げる。</p>
+    </div>
+    <p class="ui" style="font-size:0.85rem;">次回:PBL3へ続く</p>
+    <div class="nav-row" style="justify-content:center; margin-top:32px;">
+      <button class="back-btn ui" data-back style="margin-right:0;">&larr; 見直す</button>
+    </div>
+  </section>
+
+  <footer class="ui">
+    本テキストは AI(Claude, Anthropic)を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+
+</div>
+
+<div id="caseModalOverlay" class="case-modal-overlay">
+  <div class="case-modal" role="dialog" aria-modal="true" aria-labelledby="caseModalTitle">
+    <div class="case-modal-head">
+      <span id="caseModalTitle" class="kind-label ui">症例</span>
+      <button id="caseModalClose" class="case-modal-close ui" type="button" aria-label="閉じる">✕</button>
+    </div>
+    <div class="case-modal-body">
+      <p><strong>患者:</strong> 28歳、女性</p>
+      <p><strong>主訴:</strong> 発熱、右側腹部痛、排尿時痛</p>
+      <p><strong>現病歴:</strong><br>
+      2日前から排尿時痛と頻尿が出現した。翌日から38.8℃の発熱、悪寒戦慄、右側腹部痛が出現し増悪したため受診した。嘔気・嘔吐を1回認めた。</p>
+      <p><strong>既往歴:</strong> 再発性膀胱炎(年1〜2回、直近のエピソードは3ヶ月前)</p>
+      <p><strong>月経歴:</strong> 最終月経2週間前、規則的。妊娠の可能性なし。</p>
+      <p><strong>生活歴:</strong> 性交渉歴あり</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td>清明(JCS 0)</td></tr>
+        <tr><td>体温</td><td class="flag">39.2℃</td></tr>
+        <tr><td>呼吸数</td><td>18回/分</td></tr>
+        <tr><td>脈拍</td><td class="flag">98回/分</td></tr>
+        <tr><td>血圧</td><td>108/68 mmHg</td></tr>
+        <tr><td>SpO2</td><td>98%(室内気)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong> 軽度の苦悶様顔貌、発汗あり。右CVA叩打痛あり、左側は軽度圧痛のみ。下腹部に軽度圧痛あり、反跳痛なし。外陰部に異常なし、腟分泌物なし。</p>
+      <p><strong>画像検査:</strong> 施行せず(診断が明確、初期治療への反応も良好)。</p>
+      <hr style="border:none; border-top:1px dashed var(--line); margin:20px 0;">
+      <p class="kind-label ui" style="margin-bottom:10px;">検査所見(尿検査・血液検査)</p>
+      <p><strong>尿定性:</strong> 潜血3+、白血球エステラーゼ3+(陽性)、亜硝酸塩陽性</p>
+      <p><strong>尿沈渣:</strong> 白血球50〜100/HPF、細菌多数、白血球円柱2〜3/LPF</p>
+      <p><strong>血算:</strong> WBC 15,800/μL(好中球85%)、Hb 12.8 g/dL、Plt 28.5万/μL</p>
+      <p><strong>生化学:</strong> BUN 18、Cr 0.9、eGFR&gt;90、Na 138/K 3.8/Cl 102、血糖 98</p>
+      <p><strong>血清:</strong> CRP 12.5 mg/dL、プロカルシトニン 0.8 ng/mL</p>
+      <p style="font-size:0.85rem; color:var(--ink-soft);">※尿培養・血液培養の結果は、原因病原体を推定する問題で別途提示する。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stages = Array.from(document.querySelectorAll('.stage'));
+  const track = document.getElementById('progressTrack');
+  let current = 0;
+
+  stages.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'progress-dot' + (i === 0 ? ' current' : '');
+    dot.setAttribute('aria-label', '場面 ' + (i + 1) + ' へ移動');
+    dot.addEventListener('click', () => goToStage(i));
+    track.appendChild(dot);
+  });
+
+  function updateProgress(){
+    const dots = track.children;
+    for(let i=0; i<dots.length; i++){
+      dots[i].classList.remove('current','done');
+      if(i < current) dots[i].classList.add('done');
+      if(i === current) dots[i].classList.add('current');
+    }
+  }
+
+  function goToStage(i){
+    if(i < 0 || i >= stages.length || i === current) return;
+    stages[current].classList.remove('visible');
+    current = i;
+    stages[current].classList.add('visible');
+    updateProgress();
+    stages[current].scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  document.querySelectorAll('[data-next]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current + 1));
+  });
+
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current - 1));
+  });
+
+  // ---- case reference modal ----
+  const caseTrigger = document.getElementById('caseModalTrigger');
+  const caseOverlay = document.getElementById('caseModalOverlay');
+  const caseClose = document.getElementById('caseModalClose');
+
+  function openCaseModal(){
+    caseOverlay.classList.add('open');
+  }
+  function closeCaseModal(){
+    caseOverlay.classList.remove('open');
+  }
+
+  caseTrigger.addEventListener('click', openCaseModal);
+  caseClose.addEventListener('click', closeCaseModal);
+  caseOverlay.addEventListener('click', (e) => {
+    if(e.target === caseOverlay) closeCaseModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && caseOverlay.classList.contains('open')) closeCaseModal();
+  });
+</script>
+
+</body>
+</html>
