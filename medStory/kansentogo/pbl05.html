@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統合PBL 第5回「三日前からの水様下痢」</title>
+<style>
+  :root{
+    --paper: #f7f3ea;
+    --paper-deep: #efe8d8;
+    --ink: #2b2b28;
+    --ink-soft: #514c44;
+    --indigo: #2c4a52;
+    --indigo-soft: #4a6f78;
+    --indigo-pale: #dfe8e6;
+    --gold: #a98a4a;
+    --line: #d9cfb8;
+    --alert: #a13d2f;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(44,74,82,0.05), transparent 42%),
+      radial-gradient(circle at 85% 92%, rgba(169,138,74,0.05), transparent 42%);
+    color: var(--ink);
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "游明朝", serif;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+  .ui{
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+  .scroll{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 28px 80px;
+  }
+
+  header.title-block{
+    position: relative;
+    text-align:center;
+    margin-bottom: 40px;
+    padding-bottom: 26px;
+    border-bottom: 1px double var(--line);
+  }
+  .series-tag{
+    font-family: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.32em;
+    color: var(--indigo-soft);
+    margin-bottom: 12px;
+  }
+  h1.main-title{
+    font-size: 1.7rem;
+    margin: 0 0 8px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  .case-sub{
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+  .drop{
+    width: 28px; height: 32px;
+    margin: 18px auto 0;
+    opacity: 0.55;
+  }
+  .drop path{
+    fill: none;
+    stroke: var(--alert);
+    stroke-width: 1.4;
+    transform-origin: center;
+    animation: pulse-drop 3.6s ease-in-out infinite;
+  }
+  @keyframes pulse-drop{
+    0%,100%{ opacity: 0.35; transform: translateY(0); }
+    50%{ opacity: 0.85; transform: translateY(2px); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .drop path{ animation: none; }
+  }
+
+  .progress-track{
+    display:flex;
+    gap: 6px;
+    justify-content:center;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+  .progress-dot{
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--line);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+  .progress-dot:hover{ transform: scale(1.4); background: var(--indigo-soft); }
+  .progress-dot:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .progress-dot.done{ background: var(--indigo-soft); }
+  .progress-dot.current{ background: var(--indigo); transform: scale(1.3); }
+  .progress-hint{
+    text-align:center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .back-btn{
+    font-family: inherit;
+    background: none;
+    color: var(--indigo-soft);
+    border: 1px solid var(--line);
+    padding: 12px 22px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-right: auto;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+  .back-btn:hover{ background: var(--paper-deep); border-color: var(--indigo-soft); }
+  .back-btn:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .back-btn:disabled{ visibility: hidden; }
+
+  .stage{
+    display:none;
+    animation: fadeUp 0.55s ease;
+  }
+  .stage.visible{ display:block; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .kind-label{
+    font-family: inherit;
+    display:inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    padding: 3px 10px;
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    margin-bottom: 14px;
+  }
+  .kind-label.q{ border-color: var(--alert); color: var(--alert); }
+  .kind-label.check{ border-color: var(--gold); color: var(--gold); }
+
+  h2.stage-title{
+    font-size: 1.3rem;
+    margin: 0 0 20px;
+    padding-left: 14px;
+    border-left: 3px solid var(--indigo);
+    color: var(--ink);
+  }
+
+  h3.sub-title{
+    font-size: 1.02rem;
+    margin: 22px 0 10px;
+    color: var(--indigo);
+  }
+
+  .card{
+    background: var(--paper-deep);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 24px 26px;
+    margin-bottom: 22px;
+  }
+
+  .vitals-table{
+    width:100%;
+    border-collapse: collapse;
+    font-family: inherit;
+    font-size: 0.96rem;
+    margin: 14px 0;
+  }
+  .vitals-table td{
+    padding: 6px 10px;
+    border-bottom: 1px dotted var(--line);
+  }
+  .vitals-table td:first-child{
+    color: var(--ink-soft);
+    width: 42%;
+  }
+  .vitals-table .flag{
+    color: var(--alert);
+    font-weight: bold;
+  }
+
+  .score-table{
+    width:100%;
+    border-collapse: collapse;
+    font-family: inherit;
+    font-size: 0.92rem;
+    margin: 14px 0;
+  }
+  .score-table th{
+    text-align:left;
+    font-weight: normal;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+    padding: 6px 8px;
+  }
+  .score-table td{
+    padding: 6px 8px;
+    border-bottom: 1px dotted var(--line);
+  }
+  .score-table .pt{
+    text-align:right;
+    font-weight: bold;
+    color: var(--indigo);
+    white-space: nowrap;
+  }
+  .score-table tr.total td{
+    border-top: 2px solid var(--indigo-soft);
+    border-bottom: none;
+    font-weight: bold;
+    padding-top: 10px;
+  }
+
+  .q-list{
+    margin: 0;
+    padding-left: 1.3em;
+  }
+  .q-list li{ margin-bottom: 10px; }
+
+  aside.note{
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    border-left: 2px solid var(--gold);
+    padding: 10px 16px;
+    margin: 18px 0;
+    background: rgba(169,138,74,0.06);
+  }
+
+  aside.caution{
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--ink);
+    border-left: 2px solid var(--alert);
+    padding: 10px 16px;
+    margin: 18px 0;
+    background: rgba(161,61,47,0.06);
+  }
+
+  .sp{ font-style: italic; }
+
+  details.check{
+    margin: 12px 0;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper);
+    padding: 4px 4px;
+  }
+  details.check summary{
+    font-family: inherit;
+    cursor: pointer;
+    padding: 10px 14px;
+    color: var(--indigo);
+    font-size: 0.98rem;
+    outline: none;
+  }
+  details.check summary::marker{ color: var(--gold); }
+  details.check .answer{
+    padding: 4px 16px 14px;
+    border-top: 1px dashed var(--line);
+    margin-top: 6px;
+    font-size: 0.95rem;
+  }
+
+  .nav-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+  }
+  .next-btn{
+    font-family: inherit;
+    background: var(--indigo);
+    color: var(--paper);
+    border: none;
+    padding: 12px 26px;
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.25s ease, transform 0.15s ease;
+  }
+  .next-btn:hover{ background: var(--indigo-soft); }
+  .next-btn:active{ transform: translateY(1px); }
+  .next-btn:focus-visible{
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .end-card{
+    text-align:center;
+    padding: 40px 20px;
+  }
+  .end-card p{ color: var(--ink-soft); }
+
+  footer{
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  .case-fab{
+    position: sticky;
+    top: 14px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 auto 34px;
+    padding: 9px 18px;
+    background: var(--paper);
+    border: 1px solid var(--indigo-soft);
+    color: var(--indigo);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(43,43,40,0.08);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .case-fab:hover{ background: var(--indigo-pale); }
+  .case-fab:active{ transform: translateY(1px); }
+  .case-fab:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-fab-icon{ font-size: 0.95rem; }
+
+  .case-modal-overlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    background: rgba(43,43,40,0.45);
+    z-index: 100;
+    padding: 6vh 20px;
+    overflow-y: auto;
+  }
+  .case-modal-overlay.open{ display:block; }
+  .case-modal{
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 12px 32px rgba(43,43,40,0.25);
+    animation: fadeUp 0.3s ease;
+  }
+  .case-modal-head{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 18px 22px 0;
+  }
+  .case-modal-close{
+    background:none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .case-modal-close:hover{ background: var(--paper-deep); }
+  .case-modal-close:focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
+  .case-modal-body{
+    padding: 14px 26px 26px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+<div class="scroll">
+
+  <header class="title-block">
+    <div class="series-tag ui">統合PBL &nbsp;第5回</div>
+    <h1 class="main-title">三日前からの水様下痢</h1>
+    <div class="case-sub ui">腸管出血性大腸菌(EHEC)感染症を通じて、小児の体液生理・志賀毒素・HUS・「治療しない勇気」を辿る</div>
+    <svg class="drop" viewBox="0 0 28 32"><path d="M14 2 C14 2 3 15 3 22 A11 11 0 0 0 25 22 C25 15 14 2 14 2 Z"/></svg>
+    <div class="progress-track ui" id="progressTrack"></div>
+    <div class="progress-hint ui">丸をクリックすると、好きな場面に移動できます</div>
+  </header>
+
+  <button id="caseModalTrigger" class="case-fab ui" type="button">
+    <span class="case-fab-icon">📋</span> 症例・所見・検査所見を見る
+  </button>
+
+  <!-- ============ Stage 0: 症例提示 ============ -->
+  <section class="stage visible" data-stage="0">
+    <div class="kind-label ui">症例</div>
+    <h2 class="stage-title">症例提示</h2>
+    <div class="card">
+      <p><strong>患者:</strong> 5歳、男児</p>
+      <p><strong>主訴:</strong> 水様下痢、血便、腹痛</p>
+      <p><strong>現病歴:</strong><br>
+      3日前(病日1)から水様下痢が出現(1日7〜8回)、腹痛、嘔吐2回あり。近医を受診し、ウイルス性胃腸炎として対症療法を受けた。1日前(病日3)から便に鮮血が混じるようになり、腹痛が増強。排便時に痛みを訴え、失禁もあり(普段はトイレトレーニング完了)。本日(病日4)、血便が増悪し、顔色不良となったため受診した。</p>
+      <p><strong>曝露歴:</strong> 1週間前に家族でバーベキューに参加し、牛肉(ハンバーガー)を摂取(加熱不十分の可能性)。同じバーベキューに参加した親戚の子供2名も同時期に下痢症状あり(後日、EHEC感染と判明)。</p>
+      <p><strong>既往歴:</strong> 特記事項なし。予防接種は年齢相応に完了。</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td>清明</td></tr>
+        <tr><td>体温</td><td>37.2℃(微熱)</td></tr>
+        <tr><td>血圧</td><td>95/58 mmHg</td></tr>
+        <tr><td>脈拍</td><td>110回/分・整</td></tr>
+        <tr><td>呼吸数</td><td>22回/分</td></tr>
+        <tr><td>SpO2</td><td>98%(室内気)</td></tr>
+        <tr><td>体重</td><td class="flag">18.5 kg(通常体重19.0 kg、体重減少2.6%)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong><br>
+      軽度の不機嫌、顔色やや不良、活気やや低下。皮膚ツルゴール正常、口腔粘膜やや乾燥、毛細血管再充満時間(CRT)2秒(正常)、涙あり、眼窩陥凹なし。<br>
+      腹部:全体的に圧痛あり、特に<strong>左下腹部に強い圧痛</strong>。筋性防御なし、反跳痛なし、腸蠕動音やや亢進、肝脾腫なし。<br>
+      神経学的:意識清明、明らかな神経学的異常所見なし。</p>
+      <p><strong>便所見(肉眼的):</strong> 水様便、鮮血混入(+++、大量)、粘液あり。</p>
+    </div>
+    <aside class="note ui">この症例を通じて、消化管の解剖と下痢の病態、小児の体液生理、志賀毒素とHUSの病態生理、診断検査の解釈、そして「治療しないことの重要性」までを段階的にたどっていく。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back disabled>&larr; 戻る</button><button class="next-btn ui" data-next>症例を読んだ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 1: 検査所見 ============ -->
+  <section class="stage" data-stage="1">
+    <div class="kind-label ui">検査所見</div>
+    <h2 class="stage-title">検査所見(血液検査・尿検査)</h2>
+    <div class="card">
+      <p><strong>血算(CBC):</strong></p>
+      <table class="vitals-table">
+        <tr><td>WBC</td><td class="flag">15,200 /μL(好中球78%、リンパ球18%、単球4%)</td></tr>
+        <tr><td>Hb / Ht</td><td>12.8 g/dL / 38%(いずれも正常)</td></tr>
+        <tr><td>Plt</td><td>28.5万 /μL(正常)</td></tr>
+        <tr><td>末梢血塗抹標本</td><td>破砕赤血球(schistocyte)なし</td></tr>
+      </table>
+      <p><strong>生化学:</strong></p>
+      <table class="vitals-table">
+        <tr><td>BUN</td><td>18 mg/dL(正常上限)</td></tr>
+        <tr><td>Cr</td><td>0.4 mg/dL(5歳小児の正常値0.3〜0.5)</td></tr>
+        <tr><td>Na / K / Cl</td><td>138 / 3.8 / 102 mEq/L</td></tr>
+        <tr><td>AST / ALT</td><td>28 / 22 U/L</td></tr>
+        <tr><td>LDH</td><td>245 U/L(5歳小児の正常値150〜300)</td></tr>
+        <tr><td>総ビリルビン</td><td>0.6 mg/dL</td></tr>
+        <tr><td>アルブミン</td><td>4.2 g/dL</td></tr>
+        <tr><td>血糖</td><td>95 mg/dL</td></tr>
+      </table>
+      <p><strong>血清:</strong></p>
+      <table class="vitals-table">
+        <tr><td>CRP</td><td class="flag">2.8 mg/dL(軽度上昇)</td></tr>
+      </table>
+      <p><strong>尿検査:</strong></p>
+      <table class="vitals-table">
+        <tr><td>蛋白 / 潜血</td><td>陰性 / 陰性</td></tr>
+        <tr><td>尿比重</td><td>1.025(軽度濃縮)</td></tr>
+        <tr><td>ケトン</td><td>1+(軽度陽性)</td></tr>
+      </table>
+    </div>
+    <aside class="note ui">便培養・Shiga毒素検査の結果は、この後の問題を少し進めた段階で提示する。まずは血液検査・尿検査の数値をざっと眺めておこう。この時点でHb・Plt・Crはいずれも正常範囲であることに注目してほしい。</aside>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>検査所見を見た &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 2: 問題1 ============ -->
+  <section class="stage" data-stage="2">
+    <div class="kind-label q ui">問題 1</div>
+    <h2 class="stage-title">消化管の解剖と下痢の病態</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>大腸の構造(区分)を、盲腸から順に述べなさい。</li>
+        <li>下痢は病態生理学的に3つに大別される。それぞれの機序と代表例を説明しなさい。EHEC感染による下痢はどれに該当するか。</li>
+        <li>身体所見にある「左下腹部の圧痛」は、解剖学的にどの部位の炎症を反映していると考えられるか。</li>
+        <li>血便(bloody diarrhea)を来す病態にはどのようなものがあるか、できるだけ挙げなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 3: 解説1 ============ -->
+  <section class="stage" data-stage="3">
+    <div class="kind-label ui">解説 1</div>
+    <h2 class="stage-title">消化管の解剖と下痢の病態</h2>
+    <div class="card">
+      <p><strong>①大腸の区分:</strong><br>
+      盲腸 → 上行結腸 → 横行結腸 → 下行結腸 → S状結腸 → 直腸 → 肛門管。</p>
+      <p><strong>②下痢の3分類:</strong></p>
+      <ul class="q-list">
+        <li><strong>浸透圧性下痢:</strong> 腸管内に吸収されない浸透圧物質(乳糖不耐症など)が水分を腸管内に引き込む。絶食で改善するのが特徴。</li>
+        <li><strong>分泌性下痢:</strong> 腸管上皮からの水分・電解質分泌が異常に亢進する(コレラ毒素などによる)。絶食でも改善しにくい。</li>
+        <li><strong>炎症性(滲出性)下痢:</strong> 腸粘膜の炎症・破壊により血液・粘液・蛋白が滲出する。しばしば血便・発熱・腹痛を伴う。</li>
+      </ul>
+      <p>EHEC感染は、志賀毒素による大腸粘膜上皮の直接傷害・血管内皮傷害を介した、<strong>炎症性下痢(出血性大腸炎)</strong>に該当する。</p>
+      <p><strong>③左下腹部圧痛:</strong><br>
+      下行結腸〜S状結腸領域の炎症を反映していると考えられる。EHECは大腸全体に炎症を来しうるが、特に左側結腸(下行結腸〜S状結腸)に強い炎症を来す傾向が報告されている。</p>
+      <p><strong>④血便を来す病態:</strong><br>
+      感染性(EHECなどの腸管出血性大腸菌、<span class="sp">Salmonella</span>、<span class="sp">Shigella</span>、<span class="sp">Campylobacter</span>など)、炎症性腸疾患(潰瘍性大腸炎、Crohn病)、虚血性大腸炎、腸重積、Meckel憩室、ポリープ・腫瘍などが挙げられる。</p>
+      <aside class="note ui">「血便=すぐ内視鏡」ではなく、年齢・経過・随伴症状・曝露歴から鑑別を絞り込むことが重要である。本症例は年齢(5歳)、急性発症、明確な食事曝露歴という情報が、感染性腸炎を強く示唆している。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 4: 振り返り確認1 ============ -->
+  <section class="stage" data-stage="4">
+    <div class="kind-label check ui">振り返り・確認 1</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>大腸の区分を、盲腸から順に言えるか？</summary>
+      <div class="answer">盲腸→上行結腸→横行結腸→下行結腸→S状結腸→直腸→肛門管。</div>
+    </details>
+    <details class="check ui">
+      <summary>EHEC感染による下痢は、3分類のどれに該当するか？</summary>
+      <div class="answer">炎症性(滲出性)下痢。志賀毒素による腸粘膜・血管内皮の傷害を介して生じる。</div>
+    </details>
+    <details class="check ui">
+      <summary>左下腹部圧痛が示唆する部位は？</summary>
+      <div class="answer">下行結腸〜S状結腸領域。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 5: 問題2 ============ -->
+  <section class="stage" data-stage="5">
+    <div class="kind-label q ui">問題 2</div>
+    <h2 class="stage-title">小児の脱水評価と体液生理</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>Clinical Dehydration Scale(CDS)の評価項目を挙げ、本症例を採点しなさい。</li>
+        <li>小児のバイタルサイン正常値は成人と異なる。本症例の脈拍110回/分・呼吸数22回/分は、5歳児にとって正常範囲内といえるか。</li>
+        <li>Holliday-Segarの法則を用いて、本症例(体重18.5kg)の1日維持輸液量を計算しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 6: 解説2 ============ -->
+  <section class="stage" data-stage="6">
+    <div class="kind-label ui">解説 2</div>
+    <h2 class="stage-title">小児の脱水評価と体液生理</h2>
+    <div class="card">
+      <h3 class="sub-title">① Clinical Dehydration Scale(CDS)</h3>
+      <p>評価項目は、一般外観・眼・粘膜(口腔)・涙の4項目で、それぞれ0〜2点(合計0〜8点)により評価する。0点=脱水なし、1〜4点=軽度脱水、5〜8点=中等度〜重度脱水と分類される。</p>
+      <table class="score-table">
+        <tr><th>項目</th><th>本症例の所見</th><th class="pt">評価</th></tr>
+        <tr><td>一般外観</td><td>軽度不機嫌、活気やや低下</td><td class="pt">軽度異常</td></tr>
+        <tr><td>眼</td><td>眼窩陥凹なし</td><td class="pt">正常</td></tr>
+        <tr><td>粘膜</td><td>口腔粘膜やや乾燥</td><td class="pt">軽度異常</td></tr>
+        <tr><td>涙</td><td>あり</td><td class="pt">正常</td></tr>
+        <tr class="total"><td colspan="2">総合評価</td><td class="pt">軽度脱水(3〜5%)</td></tr>
+      </table>
+      <p><strong>②小児のバイタルサイン正常値:</strong><br>
+      小児は成人より心拍数・呼吸数の正常上限が高い。5歳児の正常脈拍はおおむね70〜120回/分、正常呼吸数はおおむね18〜25回/分とされ、本症例の脈拍110回/分・呼吸数22回/分はいずれもこの範囲内(やや高め)である。成人であれば明らかな頻脈・頻呼吸となるような数値も、小児では正常範囲に含まれうる点に注意が必要である。</p>
+      <p><strong>③Holliday-Segarの法則:</strong><br>
+      体重に応じて段階的に維持輸液量を計算する。最初の10kgまでは100mL/kg/日、次の10kgまでは50mL/kg/日、それ以降は20mL/kg/日として計算する。<br>
+      本症例(18.5kg):最初の10kg × 100mL = 1,000mL + 残り8.5kg × 50mL = 425mL、<strong>合計約1,425mL/日</strong>(概算で約1,400mL/日)。</p>
+      <aside class="note ui">下痢・嘔吐による喪失分は、この維持輸液量に加えて別途補充する必要がある。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 7: 振り返り確認2 ============ -->
+  <section class="stage" data-stage="7">
+    <div class="kind-label check ui">振り返り・確認 2</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>CDSの評価項目を4つ挙げられるか？</summary>
+      <div class="answer">一般外観、眼、粘膜(口腔)、涙。</div>
+    </details>
+    <details class="check ui">
+      <summary>小児のバイタルサイン正常値が成人と異なる点を説明できるか？</summary>
+      <div class="answer">小児は成人より心拍数・呼吸数の正常上限が高く、成人なら異常となる数値でも小児では正常範囲に含まれることがある。</div>
+    </details>
+    <details class="check ui">
+      <summary>Holliday-Segarの法則の考え方を説明できるか？</summary>
+      <div class="answer">体重を10kgごとの区分に分け、最初の10kgは100mL/kg/日、次の10kgは50mL/kg/日、それ以降は20mL/kg/日として段階的に維持輸液量を計算する方法。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 8: 問題3 ============ -->
+  <section class="stage" data-stage="8">
+    <div class="kind-label q ui">問題 3</div>
+    <h2 class="stage-title">志賀毒素とHUSの病態生理</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>志賀毒素の細胞への作用機序を説明しなさい。</li>
+        <li>志賀毒素による血管内皮傷害から、溶血性貧血・血小板減少・急性腎障害という3徴に至る機序を説明しなさい。</li>
+        <li>HUS(溶血性尿毒症症候群)とはどのような病態か、定義しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 9: 解説3 ============ -->
+  <section class="stage" data-stage="9">
+    <div class="kind-label ui">解説 3</div>
+    <h2 class="stage-title">志賀毒素とHUSの病態生理</h2>
+    <div class="card">
+      <p><strong>①志賀毒素の作用機序:</strong><br>
+      志賀毒素はA・Bサブユニットからなる毒素(ABトキシン)で、Bサブユニットが標的細胞表面の糖脂質受容体(Gb3)に結合し、Aサブユニットが細胞内に取り込まれてリボソームRNAを切断し、蛋白合成を不可逆的に阻害する。これにより細胞死(アポトーシス)が誘導される。</p>
+      <p><strong>②血栓性微小血管症(TMA)への進展:</strong><br>
+      志賀毒素は腸管から吸収され血流に乗り、Gb3受容体を高発現する血管内皮細胞(特に腎糸球体内皮細胞に豊富)を傷害する。傷害された内皮では血小板の活性化・凝集が生じ、微小血管内に微小血栓が多数形成される。この過程で、</p>
+      <ul class="q-list">
+        <li>赤血球が微小血栓を通過する際に物理的に破砕され → <strong>溶血性貧血</strong>(破砕赤血球=schistocyteが特徴)</li>
+        <li>血小板が血栓形成に消費され → <strong>血小板減少</strong></li>
+        <li>腎糸球体の微小血栓により濾過機能が障害され → <strong>急性腎障害</strong></li>
+      </ul>
+      <p>という3徴が生じる。</p>
+      <p><strong>③HUSの定義:</strong><br>
+      微小血管障害性溶血性貧血・血小板減少・急性腎障害の3徴を呈する病態。小児では大部分が志賀毒素産生性大腸菌感染に続発する(下痢関連HUS、D+HUS)。</p>
+      <aside class="note ui">末梢血塗抹標本で破砕赤血球(schistocyte)の有無を確認することは、HUSの早期発見において重要である。本症例では受診時点(病日4)で破砕赤血球は認めていない。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 10: 振り返り確認3 ============ -->
+  <section class="stage" data-stage="10">
+    <div class="kind-label check ui">振り返り・確認 3</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>志賀毒素はどのように蛋白合成を阻害するか？</summary>
+      <div class="answer">Bサブユニットが細胞表面のGb3受容体に結合し、Aサブユニットが細胞内でリボソームRNAを切断することで、蛋白合成を不可逆的に阻害する。</div>
+    </details>
+    <details class="check ui">
+      <summary>HUSの3徴を挙げられるか？</summary>
+      <div class="answer">微小血管障害性溶血性貧血、血小板減少、急性腎障害。</div>
+    </details>
+    <details class="check ui">
+      <summary>なぜ腎臓が特に傷害されやすいか説明できるか？</summary>
+      <div class="answer">腎糸球体内皮細胞がGb3受容体を高発現しているため、志賀毒素の標的になりやすい。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 11: 問題4 ============ -->
+  <section class="stage" data-stage="11">
+    <div class="kind-label q ui">問題 4</div>
+    <h2 class="stage-title">診断検査の解釈</h2>
+    <div class="card">
+      <h3 class="sub-title">【検査結果】</h3>
+      <table class="vitals-table">
+        <tr><td>便培養(Sorbitol-MacConkey寒天培地)</td><td class="flag">ソルビトール非発酵性の無色コロニー → <span class="sp">Escherichia coli</span> O157:H7と同定(O157抗原陽性、H7鞭毛抗原陽性)</td></tr>
+        <tr><td>Shiga毒素遺伝子検出(PCR)</td><td class="flag">stx2陽性、stx1陰性 → 高リスクSTEC(HUS発症リスク15〜20%)</td></tr>
+        <tr><td>Shiga毒素抗原検出</td><td>Shiga毒素2抗原陽性</td></tr>
+        <tr><td>便グラム染色</td><td>白血球多数、グラム陰性桿菌多数</td></tr>
+      </table>
+      <ol class="q-list">
+        <li>なぜ便培養にSorbitol-MacConkey寒天培地という特殊な培地が用いられるのか。</li>
+        <li>Shiga毒素遺伝子検査で、stx1とstx2のどちらが検出されるとHUSリスクがより高いとされるか。本症例はどちらに該当するか。</li>
+        <li>便培養とPCR検査は、それぞれどのような特徴(感度・迅速性・限界)を持つか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 12: 解説4 ============ -->
+  <section class="stage" data-stage="12">
+    <div class="kind-label ui">解説 4</div>
+    <h2 class="stage-title">診断検査の解釈</h2>
+    <div class="card">
+      <p><strong>①Sorbitol-MacConkey寒天培地:</strong><br>
+      通常の大腸菌の大部分はソルビトールを速やかに発酵するが、<span class="sp">E. coli</span> O157:H7はソルビトールを発酵しないという性質を持つ。この培地では、ソルビトール発酵菌はピンク色のコロニーを形成するのに対し、O157:H7は無色(白色)のコロニーを形成するため、通常の腸内細菌叢の中からO157:H7を選択的に見分けることができる。</p>
+      <p><strong>②stx1とstx2:</strong><br>
+      stx2(志賀毒素2)を産生する株は、stx1のみを産生する株よりも血便・HUSのリスクが高いとされる。<span class="sp">E. coli</span> O157はほぼ普遍的にstx2を産生するため、O157感染は自動的に高リスクと見なされる。本症例はstx2陽性・stx1陰性であり、<strong>高リスクSTEC</strong>に分類される。</p>
+      <p><strong>③検査の特徴:</strong><br>
+      便培養は感度・特異度に優れ確定診断に有用だが、結果判明まで数日を要する。PCR法によるShiga毒素遺伝子検出は、培養より感度が高く、血清型に依存せずSTECを検出でき、数時間で結果が得られる迅速性が利点である。ただし市販キットの中には毒素遺伝子型(stx1 vs stx2)を明示しないものもあり、その場合はHUSリスク評価が困難になることがある。</p>
+      <aside class="note ui">迅速なPCR検査でstx2陽性という結果が早期に得られたことで、本症例は受診当日のうちに「高リスクSTEC感染」と判定され、入院と厳重なモニタリングの方針が速やかに決定された。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 13: 振り返り確認4 ============ -->
+  <section class="stage" data-stage="13">
+    <div class="kind-label check ui">振り返り・確認 4</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>なぜSorbitol-MacConkey寒天培地でO157:H7を選択的に検出できるか？</summary>
+      <div class="answer">O157:H7はソルビトールを発酵しないため、発酵する他の大腸菌(ピンク色コロニー)と区別して無色コロニーとして検出できるため。</div>
+    </details>
+    <details class="check ui">
+      <summary>stx1とstx2のどちらがHUSとより強く関連するか？</summary>
+      <div class="answer">stx2。</div>
+    </details>
+    <details class="check ui">
+      <summary>便培養とPCR検査、それぞれの利点・欠点を説明できるか？</summary>
+      <div class="answer">便培養は確定診断に有用だが結果まで数日かかる。PCRは感度が高く数時間で結果が出るが、市販キットによっては毒素遺伝子型まで明示しないことがある。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 14: 問題5 ============ -->
+  <section class="stage" data-stage="14">
+    <div class="kind-label q ui">問題 5</div>
+    <h2 class="stage-title">治療の原則 — 「治療しない」ことの重要性</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>高リスクSTEC感染が疑われる患者に対して、なぜ抗菌薬投与を避けるべきとされてきたか、その仮説的機序を説明しなさい。</li>
+        <li>止痢薬・オピオイド系鎮痛薬・NSAIDsが、それぞれなぜ避けるべきとされるか。</li>
+        <li>輸液療法(体液量拡大)が、HUSの重症化を防ぐとされる根拠は何か。</li>
+        <li>抗菌薬投与の是非については、近年議論がある。どのような点が議論されているか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 15: 解説5 ============ -->
+  <section class="stage" data-stage="15">
+    <div class="kind-label ui">解説 5</div>
+    <h2 class="stage-title">治療の原則 — 「治療しない」ことの重要性</h2>
+    <div class="card">
+      <p><strong>①抗菌薬回避の仮説的機序:</strong><br>
+      一部の抗菌薬(特にDNA損傷を引き起こすフルオロキノロン系やST合剤など)は、細菌のSOS応答を誘導し、志賀毒素をコードするファージの溶菌サイクルを活性化させることで、菌体崩壊時にむしろ志賀毒素の放出を増加させる可能性が示唆されている。複数の観察研究で、高リスクSTEC感染患者への抗菌薬投与がHUS発症リスクを増加させることが示されており、免疫正常患者の血便に対する経験的抗菌薬投与は、伝統的に避けるべきとされてきた。</p>
+      <p><strong>②止痢薬・オピオイド・NSAIDs:</strong><br>
+      止痢薬(ロペラミドなど)やオピオイド系鎮痛薬は腸管蠕動を抑制し、毒素・病原体の腸管内滞留時間を延長させることで、血便の遷延やHUS・神経学的合併症のリスク増加と関連することが観察されている。NSAIDsは消化管感染症時の急性腎障害のリスクを高める可能性があるため避けるべきとされる。鎮痛が必要な場合はアセトアミノフェンを用いる。</p>
+      <p><strong>③輸液療法の意義:</strong><br>
+      脱水患者への積極的な補液・体液量拡大は、腎血流量を保ち、微小血栓形成による腎障害の進行を軽減することで、HUSの重症度を軽減することが示されている。本症例でも入院後に積極的な静注輸液が行われ、これがHUS発症を防いだ一因と考えられている。</p>
+      <aside class="caution ui">
+      <strong>④抗菌薬をめぐる近年の議論:</strong><br>
+      抗菌薬投与を一律に禁忌とする従来の立場に対し、近年は議論がある。すべての抗菌薬が同じリスクを持つわけではなく、蛋白合成阻害薬(アジスロマイシンなどのマクロライド系)は、DNA損傷を介したファージ誘導を起こしにくいと考えられており、感染早期に投与することでむしろHUS予防効果がある可能性を示唆する研究も報告されている。一方でこれらの知見は観察研究や限られた規模の試験に基づくものにとどまり、明確な結論には至っていない。現時点で多くのガイドラインは、免疫正常な高リスクSTEC感染患者への経験的抗菌薬投与を推奨しない立場を取っているが、これは今なおエビデンスが蓄積されつつある、現在進行形の議論であることを理解しておく必要がある。
+      </aside>
+      <aside class="note ui">「抗菌薬は感染症治療の基本」という直感に反して、特定の病態では抗菌薬がむしろ有害になりうるという事実は、EHEC/STEC感染症を学ぶ上で重要な教訓である。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 16: 振り返り確認5 ============ -->
+  <section class="stage" data-stage="16">
+    <div class="kind-label check ui">振り返り・確認 5</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>抗菌薬がHUSリスクを高めるとされる仮説的機序は？</summary>
+      <div class="answer">一部の抗菌薬が細菌のSOS応答を誘導し、志賀毒素をコードするファージの溶菌サイクルを活性化させ、菌体崩壊時に志賀毒素の放出を増加させる可能性が考えられている。</div>
+    </details>
+    <details class="check ui">
+      <summary>止痢薬・NSAIDsがそれぞれ避けるべきとされる理由は？</summary>
+      <div class="answer">止痢薬は腸管蠕動を抑制し毒素の滞留時間を延ばしHUSリスクを高めうる。NSAIDsは消化管感染症時の急性腎障害リスクを高めうる。</div>
+    </details>
+    <details class="check ui">
+      <summary>抗菌薬をめぐる近年の議論のポイントを説明できるか？</summary>
+      <div class="answer">蛋白合成阻害薬(マクロライド系)はファージ誘導を起こしにくく、早期投与でむしろ予防効果がある可能性が示唆されているが、まだエビデンスが限られており結論は出ていない。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 17: 問題6 ============ -->
+  <section class="stage" data-stage="17">
+    <div class="kind-label q ui">問題 6</div>
+    <h2 class="stage-title">モニタリングと小児の重症度スコア</h2>
+    <div class="card">
+      <h3 class="sub-title">【経過】</h3>
+      <table class="vitals-table">
+        <tr><td>Day 8(病日8)</td><td>血便減少、Plt 28.0万</td></tr>
+        <tr><td>Day 9(病日9)</td><td>血便消失、Plt 29.5万(前日比+5.4%)</td></tr>
+        <tr><td>Day 10(病日10)</td><td>便性状改善、Plt 30.5万(前日比+3.4%)</td></tr>
+      </table>
+      <ol class="q-list">
+        <li>「HUS発症ウィンドウ」とは何か。これを評価するためにどのようなモニタリングが行われるか。</li>
+        <li>上記のDay8〜10の血小板数の推移は、HUS発症ウィンドウの評価にどう関わるか。</li>
+        <li>A-DROPスコアはなぜ小児の急性胃腸炎には適用できないか。小児で用いられる重症度評価スケールにはどのようなものがあるか。</li>
+        <li>便培養陰性化確認と登園基準について説明しなさい。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 18: 解説6 ============ -->
+  <section class="stage" data-stage="18">
+    <div class="kind-label ui">解説 6</div>
+    <h2 class="stage-title">モニタリングと小児の重症度スコア</h2>
+    <div class="card">
+      <p><strong>①HUS発症ウィンドウ:</strong><br>
+      STEC感染後、下痢症状の出現からおおむね1〜2週間の間にHUSを発症するリスクが高いとされる期間を指す。このウィンドウが閉じるまで、血算・生化学・血液塗抹標本・尿検査を毎日モニタリングすることが推奨される。</p>
+      <p><strong>②血小板数の推移の意義:</strong><br>
+      消化器症状が改善した状態で、病日5日目以降に24時間間隔で採取した検体において血小板数が少なくとも5%増加することを確認できれば、HUS発症リスクが低下したと判断できる。本症例ではDay9に前日比+5.4%、Day10に+3.4%の増加を認め、消化器症状も改善しており、この基準を満たしている。</p>
+      <p><strong>③小児の重症度スケール:</strong><br>
+      A-DROPは成人の市中肺炎を対象に開発された指標であり、年齢基準・血圧の正常値・意識評価の方法などが成人を前提としているため、生理学的に異なる小児には適用できない。小児の急性胃腸炎の重症度評価には、Clinical Dehydration Scale(CDS、脱水の程度を評価)、Modified Vesikari Score(下痢・嘔吐の回数、発熱、脱水の程度、治療内容を点数化し9点以上を中等症〜重症とする)、Clark Score、CODA Scoreなどが用いられる。</p>
+      <p><strong>④便培養陰性化と登園基準:</strong><br>
+      EHEC感染症は感染症法上の届出対象であり、多くの自治体で、便培養が2回連続陰性化するまで登園(登校)が制限される。本症例でもDay14・Day21の便培養がいずれも陰性であったことを確認したうえで登園が許可された。</p>
+      <aside class="note ui">PBL1で学んだA-DROPと本症例のCDSを並べてみると、「どの年齢層・どの疾患を想定して設計されたスコアか」を意識することの重要性がよくわかる。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 19: 振り返り確認6 ============ -->
+  <section class="stage" data-stage="19">
+    <div class="kind-label check ui">振り返り・確認 6</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>HUS発症ウィンドウが「閉じた」と判断する基準は？</summary>
+      <div class="answer">消化器症状が改善した状態で、病日5日目以降に24時間間隔で採取した血小板数が少なくとも5%増加すること。</div>
+    </details>
+    <details class="check ui">
+      <summary>A-DROPが小児に適用できない理由は？</summary>
+      <div class="answer">年齢基準・血圧の正常値・意識評価の方法などが成人を前提として設計されているため。</div>
+    </details>
+    <details class="check ui">
+      <summary>登園許可の基準は何か？</summary>
+      <div class="answer">便培養が2回連続で陰性化することを確認すること。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>次の問題へ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 20: 問題7 ============ -->
+  <section class="stage" data-stage="20">
+    <div class="kind-label q ui">問題 7</div>
+    <h2 class="stage-title">公衆衛生対応</h2>
+    <div class="card">
+      <ol class="q-list">
+        <li>EHEC感染症は感染症法上どのように位置づけられているか。</li>
+        <li>本症例で行われた接触者調査・感染源調査の内容を説明しなさい。</li>
+        <li>PBL4(レジオネラ症の集団発生)と、本症例(EHECの集団感染)の公衆衛生対応には、どのような共通点・相違点があるか。</li>
+      </ol>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>考えてみた &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 21: 解説7 ============ -->
+  <section class="stage" data-stage="21">
+    <div class="kind-label ui">解説 7</div>
+    <h2 class="stage-title">公衆衛生対応</h2>
+    <div class="card">
+      <p><strong>①感染症法上の位置づけ:</strong><br>
+      腸管出血性大腸菌感染症は<strong>3類感染症</strong>に分類され、全数把握対象疾患である。診断した医師は直ちに保健所へ届け出る義務がある。</p>
+      <p><strong>②接触者調査・感染源調査:</strong><br>
+      本症例では、家族全員および同じバーベキューに参加した親戚の便培養検査が実施され、親戚の子供2名が同一株のO157:H7陽性と判明した。保健所はバーベキュー会場および食材供給元を調査し、牛肉(ハンバーガー用挽肉)から同一株のO157:H7が検出され、食材供給元に対して行政指導が実施された。</p>
+      <p><strong>③PBL4との比較:</strong><br>
+      PBL4のレジオネラ症は、共通の環境曝露源(冷却塔)からのエアロゾル吸入による集団感染であり、感染源(冷却塔)の特定・消毒が対策の中心となる(4類感染症)。本症例のEHEC感染症は、共通の食品(牛肉)を介した食中毒としての集団感染であり、食材のトレースバック調査と、汚染源(食肉処理・加熱不十分)への行政指導が対策の中心となる(3類感染症)。どちらも「個人の治療」だけでなく「感染源・共通曝露源の特定と除去」という公衆衛生的アプローチが不可欠である点は共通している。</p>
+      <aside class="note ui">感染症法の分類(3類・4類など)は、想定される感染経路(ヒト-ヒト感染のリスクの有無、環境由来か食品由来かなど)に応じて、届出後の対応の重点を左右する。</aside>
+    </div>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>理解した &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 22: 振り返り確認7 ============ -->
+  <section class="stage" data-stage="22">
+    <div class="kind-label check ui">振り返り・確認 7</div>
+    <h2 class="stage-title">自分の理解を確認する</h2>
+    <details class="check ui">
+      <summary>EHEC感染症は感染症法上何類に分類されるか？</summary>
+      <div class="answer">3類感染症。</div>
+    </details>
+    <details class="check ui">
+      <summary>本症例の感染源はどのように特定されたか？</summary>
+      <div class="answer">保健所によるバーベキュー会場・食材供給元の調査により、牛肉(ハンバーガー用挽肉)から患者と同一株のO157:H7が検出され特定された。</div>
+    </details>
+    <details class="check ui">
+      <summary>PBL4とPBL5の公衆衛生対応の共通点・相違点を説明できるか？</summary>
+      <div class="answer">共通点:感染源・共通曝露源の特定と除去という公衆衛生的アプローチが不可欠な点。相違点:PBL4は環境曝露源(冷却塔)からの集団感染、PBL5は食品を介した食中毒であり、それぞれ調査対象や感染症法上の分類(4類/3類)が異なる。</div>
+    </details>
+    <div class="nav-row"><button class="back-btn ui" data-back>&larr; 戻る</button><button class="next-btn ui" data-next>まとめへ &nbsp;→</button></div>
+  </section>
+
+  <!-- ============ Stage 23: まとめ ============ -->
+  <section class="stage end-card" data-stage="23">
+    <div class="kind-label ui">まとめ</div>
+    <h2 class="stage-title" style="text-align:left;">第5回のまとめ</h2>
+    <div class="card" style="text-align:left;">
+      <p>今回は、加熱不十分な牛肉を介した集団食中毒としてのEHEC/STEC感染症の一例を通じて、消化管の解剖と下痢の病態、小児の脱水評価と体液生理、志賀毒素とHUSの病態生理、診断検査の解釈、「治療しないことの重要性」、モニタリングと小児の重症度スケール、そして公衆衛生対応という、小児感染症診療に特有の視点を含む一連の流れを辿った。</p>
+      <p>本症例はHUSを発症せず、支持療法(輸液療法・禁忌薬の回避・毎日のモニタリング)のみで、病日11に退院、その後の便培養陰性化確認を経て、病日28に完全な回復に至った。</p>
+    </div>
+    <p class="ui" style="font-size:0.85rem;">次回:PBLシリーズ、続く</p>
+    <div class="nav-row" style="justify-content:center; margin-top:32px;">
+      <button class="back-btn ui" data-back style="margin-right:0;">&larr; 見直す</button>
+    </div>
+  </section>
+
+  <footer class="ui">
+    本テキストは AI(Claude, Anthropic)を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+
+</div>
+
+<div id="caseModalOverlay" class="case-modal-overlay">
+  <div class="case-modal" role="dialog" aria-modal="true" aria-labelledby="caseModalTitle">
+    <div class="case-modal-head">
+      <span id="caseModalTitle" class="kind-label ui">症例</span>
+      <button id="caseModalClose" class="case-modal-close ui" type="button" aria-label="閉じる">✕</button>
+    </div>
+    <div class="case-modal-body">
+      <p><strong>患者:</strong> 5歳、男児</p>
+      <p><strong>主訴:</strong> 水様下痢、血便、腹痛</p>
+      <p><strong>現病歴:</strong><br>
+      3日前(病日1)から水様下痢(1日7〜8回)、腹痛、嘔吐2回。近医でウイルス性胃腸炎として対症療法。1日前(病日3)から血便出現、本日(病日4)血便増悪・顔色不良で受診。</p>
+      <p><strong>曝露歴:</strong> 1週間前に家族でバーベキュー、牛肉(加熱不十分の可能性)摂取。親戚の子供2名も同時期に発症(後日EHEC感染と判明)。</p>
+      <table class="vitals-table">
+        <tr><td>意識レベル</td><td>清明</td></tr>
+        <tr><td>体温</td><td>37.2℃</td></tr>
+        <tr><td>血圧</td><td>95/58 mmHg</td></tr>
+        <tr><td>脈拍</td><td>110回/分・整</td></tr>
+        <tr><td>呼吸数</td><td>22回/分</td></tr>
+        <tr><td>SpO2</td><td>98%(室内気)</td></tr>
+        <tr><td>体重</td><td class="flag">18.5 kg(通常19.0 kg)</td></tr>
+      </table>
+      <p><strong>身体所見:</strong> 左下腹部に強い圧痛。口腔粘膜やや乾燥、CRT2秒、涙あり、眼窩陥凹なし。</p>
+      <p><strong>便所見:</strong> 水様便、鮮血混入(+++、大量)、粘液あり。</p>
+      <hr style="border:none; border-top:1px dashed var(--line); margin:20px 0;">
+      <p class="kind-label ui" style="margin-bottom:10px;">検査所見(血液検査・尿検査)</p>
+      <p><strong>血算:</strong> WBC15,200、Hb12.8/Ht38%(正常)、Plt28.5万(正常)、破砕赤血球なし</p>
+      <p><strong>生化学:</strong> BUN18、Cr0.4(正常)、Na138、LDH245(正常上限)</p>
+      <p><strong>血清:</strong> CRP2.8(軽度上昇)</p>
+      <p><strong>尿検査:</strong> 蛋白陰性、潜血陰性、比重1.025、ケトン1+</p>
+      <p style="font-size:0.85rem; color:var(--ink-soft);">※便培養・Shiga毒素検査の結果は、診断検査の問題で別途提示する。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stages = Array.from(document.querySelectorAll('.stage'));
+  const track = document.getElementById('progressTrack');
+  let current = 0;
+
+  stages.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'progress-dot' + (i === 0 ? ' current' : '');
+    dot.setAttribute('aria-label', '場面 ' + (i + 1) + ' へ移動');
+    dot.addEventListener('click', () => goToStage(i));
+    track.appendChild(dot);
+  });
+
+  function updateProgress(){
+    const dots = track.children;
+    for(let i=0; i<dots.length; i++){
+      dots[i].classList.remove('current','done');
+      if(i < current) dots[i].classList.add('done');
+      if(i === current) dots[i].classList.add('current');
+    }
+  }
+
+  function goToStage(i){
+    if(i < 0 || i >= stages.length || i === current) return;
+    stages[current].classList.remove('visible');
+    current = i;
+    stages[current].classList.add('visible');
+    updateProgress();
+    stages[current].scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  document.querySelectorAll('[data-next]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current + 1));
+  });
+
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => goToStage(current - 1));
+  });
+
+  const caseTrigger = document.getElementById('caseModalTrigger');
+  const caseOverlay = document.getElementById('caseModalOverlay');
+  const caseClose = document.getElementById('caseModalClose');
+
+  function openCaseModal(){
+    caseOverlay.classList.add('open');
+  }
+  function closeCaseModal(){
+    caseOverlay.classList.remove('open');
+  }
+
+  caseTrigger.addEventListener('click', openCaseModal);
+  caseClose.addEventListener('click', closeCaseModal);
+  caseOverlay.addEventListener('click', (e) => {
+    if(e.target === caseOverlay) closeCaseModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && caseOverlay.classList.contains('open')) closeCaseModal();
+  });
+</script>
+
+</body>
+</html>
