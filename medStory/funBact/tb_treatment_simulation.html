@@ -730,8 +730,8 @@ const STAGES = [
   {label:'自覚症状', val:'なし'}
  ],
  tasks:[
-  {id:'t16', title:'結核と感染症法の分類', q:'結核は感染症法上、何類感染症に分類されるか。',
-   opts:['二類感染症','一類感染症','三類感染症','五類感染症'], correct:0,
+  {id:'t16', title:'結核と感染症法の分類', q:'結核は感染症法上、何類感染症に分類されるか。', noShuffle:true,
+   opts:['一類感染症','二類感染症','三類感染症','五類感染症'], correct:1,
    explain:'結核は感染症法上「二類感染症」に分類され、診断した医師には直ちに届け出る義務(第12条)、そして入院・通院医療費の公費負担(第37条・第37条の2)などの枠組みが設けられている。'}
  ],
  dialogues:{
@@ -878,13 +878,23 @@ function refreshPeopleCard(c){
  }
 }
 
+function shuffleArray(arr){
+ for(let i=arr.length-1;i>0;i--){
+  const j = Math.floor(Math.random()*(i+1));
+  const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+ }
+ return arr;
+}
+
 function buildTaskEl(t){
  const wrap = document.createElement('div');
  wrap.className = 'task';
  wrap.id = 'task-'+t.id;
+ let order = t.opts.map((_,i)=>i);
+ if(!t.noShuffle){ order = shuffleArray(order); }
  let optsHtml = '';
- t.opts.forEach((o,i)=>{
-  optsHtml += '<button class="opt-btn" data-i="'+i+'">'+o+'</button>';
+ order.forEach(origIdx=>{
+  optsHtml += '<button class="opt-btn" data-i="'+origIdx+'">'+t.opts[origIdx]+'</button>';
  });
  wrap.innerHTML =
   '<div class="task-icon">🩺 '+t.title+'</div>' +
