@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>結核診療シミュレーション ― 主治医のカルテ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f1e8;
+  --bg-card:#fdfaf3;
+  --bg-card2:#f8f3e6;
+  --ink:#2b2620;
+  --ink-soft:#5a5245;
+  --line:#d8cfba;
+  --line-strong:#b9ac8f;
+  --seal:#a8402f;
+  --c-patient:#4d6f8c;
+  --c-patient-bg:#e7edf1;
+  --c-hoken:#4c7a52;
+  --c-hoken-bg:#e6efe4;
+  --c-kango:#a24a5d;
+  --c-kango-bg:#f2e3e6;
+  --c-family:#b17a2c;
+  --c-family-bg:#f3ead9;
+  --ok:#3f7d4f;
+  --bad:#a8402f;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0;padding:0;
+  height:100dvh;
+  overflow:hidden;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Noto Sans JP","Noto Serif JP",serif;
+  -webkit-tap-highlight-color:transparent;
+}
+body{
+  background-image:
+    radial-gradient(circle at 10% 8%, rgba(184,166,120,0.10), transparent 45%),
+    radial-gradient(circle at 90% 90%, rgba(184,166,120,0.10), transparent 45%);
+}
+h1,h2,h3,h4{ font-family:"Zen Antique", serif; font-weight:400; letter-spacing:.03em; margin:0; color:var(--ink); }
+.mono{ font-family:"JetBrains Mono", monospace; }
+button{ font-family:inherit; cursor:pointer; }
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:var(--line-strong); border-radius:4px; }
+
+#app{ display:flex; flex-direction:column; height:100%; max-width:1180px; margin:0 auto; }
+
+header{
+  flex:0 0 auto;
+  background:linear-gradient(180deg,var(--bg-card),var(--bg-card2));
+  border-bottom:2px solid var(--line-strong);
+  padding:10px 14px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.chart-title{ display:flex; align-items:baseline; gap:8px; flex:1 1 240px; min-width:0; }
+.chart-title h1{ font-size:1.05rem; white-space:nowrap; }
+.chart-sub{ font-size:.72rem; color:var(--ink-soft); }
+.badge{
+  font-size:.68rem; padding:2px 8px; border:1px solid var(--line-strong);
+  border-radius:999px; background:var(--bg-card); color:var(--ink-soft); white-space:nowrap;
+}
+.badge.phase{ background:var(--c-patient-bg); color:var(--c-patient); border-color:var(--c-patient); font-weight:600;}
+#score-wrap{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+#score-bar{ width:110px; height:8px; background:var(--line); border-radius:4px; overflow:hidden; }
+#score-fill{ height:100%; background:var(--seal); width:0%; transition:width .3s; }
+#score-text{ font-size:.72rem; color:var(--ink-soft); white-space:nowrap; }
+#glossary-btn, #advance-note-btn{
+  border:1px solid var(--line-strong); background:var(--bg-card); color:var(--ink);
+  padding:7px 12px; border-radius:999px; font-size:.78rem; min-height:36px;
+}
+
+#tab-bar{
+  flex:0 0 auto; display:flex; background:var(--bg-card2); border-bottom:1px solid var(--line-strong);
+}
+.tab-btn{
+  flex:1; border:none; background:transparent; padding:11px 6px; font-size:.78rem;
+  color:var(--ink-soft); border-bottom:3px solid transparent; min-height:44px;
+}
+.tab-btn.active{ color:var(--seal); border-bottom-color:var(--seal); font-weight:600; background:var(--bg-card); }
+
+main{ flex:1 1 auto; overflow:hidden; display:flex; min-height:0; }
+.tab-content{ display:none; flex:1 1 auto; min-height:0; }
+.tab-content.active{ display:flex; flex-direction:column; }
+#stage-panel{ flex:1 1 auto; overflow-y:auto; padding:16px 16px 100px; }
+.static-panel{ overflow-y:auto; padding:16px 16px 40px; display:none; }
+.static-panel.active{ display:block; }
+
+.people-note{ font-size:.74rem; color:var(--ink-soft); margin:0 0 8px; }
+.people-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:10px; margin-bottom:6px; }
+.people-card{
+  display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:10px;
+  border:2px solid var(--line-strong); background:var(--bg-card); text-align:left;
+  min-height:56px; position:relative; width:100%;
+}
+.people-card .avatar{
+  width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:"Zen Antique",serif; font-size:1.05rem; flex:none;
+}
+.people-card .info{ flex:1; min-width:0; }
+.people-card .info .nm{ font-size:.78rem; font-weight:600; line-height:1.3; }
+.people-card .info .st{ font-size:.68rem; color:var(--seal); margin-top:2px; }
+.people-card.read .info .st{ color:var(--ok); }
+.people-card.unread{ box-shadow:0 0 0 3px rgba(168,64,47,.16); animation:pulse 1.8s ease-in-out infinite; }
+@keyframes pulse{ 0%,100%{ box-shadow:0 0 0 3px rgba(168,64,47,.16);} 50%{ box-shadow:0 0 0 3px rgba(168,64,47,.36);} }
+.people-card .unread-dot{
+  position:absolute; top:6px; right:8px; width:10px; height:10px; border-radius:50%; background:var(--seal);
+}
+
+.link-card{
+  background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:16px; margin-bottom:14px;
+}
+.link-title{ font-size:.92rem; font-weight:600; margin-bottom:6px; }
+.link-desc{ font-size:.8rem; color:var(--ink-soft); line-height:1.7; margin-bottom:12px; }
+.link-btn{
+  display:inline-block; background:var(--ink); color:var(--bg-card); text-decoration:none;
+  padding:9px 18px; border-radius:999px; font-size:.8rem; min-height:40px; line-height:22px;
+}
+
+.stage-head{ margin-bottom:10px; }
+.stage-head .day{ font-size:.72rem; color:var(--ink-soft); }
+.stage-head h2{ font-size:1.3rem; margin-top:2px; }
+.narrative{
+  background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:14px 16px; margin:12px 0; line-height:1.9; font-size:.92rem;
+}
+.narrative p{ margin:0 0 .7em; }
+.narrative p:last-child{ margin-bottom:0; }
+
+.monitor-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin:12px 0; }
+.monitor-card{
+  background:var(--bg-card2); border:1px dashed var(--line-strong); border-radius:8px;
+  padding:8px 10px; font-size:.72rem; color:var(--ink-soft);
+}
+.monitor-card .label{ font-size:.68rem; color:var(--ink-soft); display:flex; align-items:center; gap:4px; }
+.monitor-card .val{ font-family:"JetBrains Mono",monospace; font-size:.85rem; color:var(--ink); margin-top:2px; }
+.monitor-card.warn .val{ color:var(--seal); }
+
+.section-label{
+  font-family:"Zen Antique",serif; font-size:.95rem; margin:18px 0 8px; padding-left:8px;
+  border-left:4px solid var(--seal); color:var(--ink);
+}
+
+.task{
+  background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:12px 14px; margin-bottom:10px;
+}
+.task.done{ border-color:var(--ok); }
+.task-q{ font-size:.9rem; margin-bottom:10px; line-height:1.6; }
+.task-icon{ font-size:.78rem; color:var(--ink-soft); margin-bottom:4px; }
+.opts{ display:flex; flex-direction:column; gap:8px; }
+.opt-btn{
+  text-align:left; padding:10px 12px; border-radius:8px; border:1px solid var(--line-strong);
+  background:var(--bg-card2); font-size:.85rem; min-height:44px; line-height:1.5;
+  transition:background .15s;
+}
+.opt-btn:hover{ background:#eee4cd; }
+.opt-btn:disabled{ cursor:default; }
+.opt-btn.correct{ background:#e3efe3; border-color:var(--ok); color:var(--ok); font-weight:600; }
+.opt-btn.incorrect{ background:#f5e4e1; border-color:var(--bad); color:var(--bad); }
+.retry-hint{
+  margin-top:8px; padding:8px 12px; background:#f5e4e1; border-radius:8px;
+  font-size:.8rem; color:var(--bad); border-left:3px solid var(--bad);
+}
+.explain{
+  margin-top:10px; padding:10px 12px; background:var(--bg-card2); border-radius:8px;
+  font-size:.82rem; line-height:1.7; color:var(--ink-soft); border-left:3px solid var(--seal);
+}
+.seal-stamp{
+  display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
+  border:2px solid var(--seal); color:var(--seal); border-radius:6px; font-family:"Zen Antique",serif;
+  font-size:.72rem; transform:rotate(-8deg); margin-right:6px; flex:none;
+}
+
+#advance-wrap{
+  position:sticky; bottom:0; margin-top:20px; padding:12px 0 4px; background:linear-gradient(180deg,transparent,var(--bg) 30%);
+  display:flex; justify-content:center;
+}
+#advance-btn{
+  background:var(--seal); color:#fdfaf3; border:none; padding:13px 30px; border-radius:999px;
+  font-size:.92rem; font-weight:600; letter-spacing:.05em; min-height:48px; box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+#advance-btn:disabled{ background:var(--line-strong); color:#fff; box-shadow:none; }
+#advance-btn .need{ font-size:.7rem; display:block; font-weight:400; opacity:.9; }
+
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(30,26,20,.45); display:none; align-items:flex-end;
+  justify-content:center; z-index:50;
+}
+.modal-backdrop.open{ display:flex; }
+.modal{
+  background:var(--bg-card); width:100%; max-width:560px; max-height:82dvh; border-radius:16px 16px 0 0;
+  display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--line-strong); border-bottom:none;
+}
+@media(min-width:700px){
+  .modal-backdrop{ align-items:center; }
+  .modal{ border-radius:16px; border-bottom:1px solid var(--line-strong); max-height:80dvh; }
+}
+.modal-head{
+  padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; flex:0 0 auto;
+}
+.modal-head .badge-circ{ width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:"Zen Antique",serif; }
+.modal-head h3{ font-size:1rem; flex:1; }
+.modal-close{ background:none; border:none; font-size:1.3rem; color:var(--ink-soft); padding:6px 10px; min-height:36px; }
+.modal-body{ padding:16px; overflow-y:auto; flex:1 1 auto; }
+.chat-line{ display:flex; margin-bottom:12px; gap:8px; }
+.chat-line.player{ flex-direction:row-reverse; }
+.chat-bubble{
+  max-width:82%; padding:10px 13px; border-radius:14px; font-size:.86rem; line-height:1.7;
+  background:var(--bg-card2); border:1px solid var(--line);
+}
+.chat-line.player .chat-bubble{ background:var(--c-patient-bg); border-color:var(--c-patient); }
+.chat-name{ font-size:.68rem; color:var(--ink-soft); margin-bottom:3px; }
+.modal-foot{ padding:10px 16px 16px; flex:0 0 auto; }
+.next-btn{
+  width:100%; background:var(--ink); color:var(--bg-card); border:none; padding:12px; border-radius:8px;
+  font-size:.85rem; min-height:44px;
+}
+.next-btn:disabled{ background:var(--line-strong); }
+
+#glossary-modal .modal, #advance-modal .modal{ max-width:640px; }
+.gloss-item{ margin-bottom:16px; padding-bottom:14px; border-bottom:1px dashed var(--line); }
+.gloss-item:last-child{ border-bottom:none; }
+.gloss-item h4{ font-size:.92rem; color:var(--seal); margin-bottom:5px; }
+.gloss-item p{ font-size:.83rem; line-height:1.8; color:var(--ink-soft); margin:0; }
+.gloss-cat{
+  font-family:"Zen Antique",serif; font-size:.82rem; color:var(--ink); background:var(--bg-card2);
+  padding:6px 10px; border-radius:6px; margin:18px 0 10px; border-left:4px solid var(--seal);
+}
+.gloss-cat:first-child{ margin-top:0; }
+
+.cover{
+  position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px;
+  overflow-y:auto;
+}
+.cover-card{
+  max-width:520px; width:100%; background:var(--bg-card); border:1px solid var(--line-strong); border-radius:16px;
+  padding:32px 26px; text-align:center; margin:auto;
+}
+.cover-card h1{ font-size:1.5rem; line-height:1.5; margin-bottom:14px; }
+.cover-card .lead{ font-size:.85rem; color:var(--ink-soft); line-height:1.9; margin-bottom:20px; text-align:left; }
+.cover-card .lead b{ color:var(--ink); }
+.start-btn{
+  background:var(--seal); color:#fff; border:none; padding:14px 36px; border-radius:999px; font-size:1rem;
+  font-weight:600; min-height:48px;
+}
+.role-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0; text-align:left; }
+.role-chip{ font-size:.74rem; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card2); }
+
+footer{
+  flex:0 0 auto; font-size:.65rem; color:var(--ink-soft); text-align:center; line-height:1.7;
+  padding:8px 14px; border-top:1px solid var(--line); background:var(--bg-card2);
+}
+
+.score-report{ text-align:left; }
+.score-row{
+  display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 8px;
+  border-bottom:1px dashed var(--line); font-size:.82rem; border-radius:6px; min-height:44px;
+  background:none; border-left:3px solid transparent; text-align:left; width:100%;
+}
+.score-row.was-wrong{ background:#fdf3d0; border-left-color:#c9971f; }
+.score-row .mark{ font-weight:700; white-space:nowrap; }
+.score-row .mark.ok{ color:var(--ok); }
+.score-row .mark.retry{ color:#a3781a; }
+.score-row .qtitle{ flex:1; text-align:left; }
+.score-row .chev{ color:var(--ink-soft); font-size:.9rem; }
+
+@media(max-width:640px){
+  #stage-panel{ padding:12px 12px 90px; }
+  .static-panel{ padding:12px 12px 30px; }
+  .chart-title h1{ font-size:.92rem; }
+  .tab-btn{ font-size:.7rem; padding:10px 4px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="chart-title">
+      <h1>結核診療シミュレーション</h1>
+      <span class="chart-sub">主治医のカルテ ― 田中太郎さん(45歳・男性)</span>
+    </div>
+    <span class="badge phase" id="phase-badge">未開始</span>
+    <span class="badge" id="stage-badge">―</span>
+    <div id="score-wrap">
+      <div id="score-bar"><div id="score-fill"></div></div>
+      <span id="score-text" class="mono">0/0</span>
+    </div>
+    <button id="glossary-btn">📖 用語ノート</button>
+    <button id="advance-note-btn">🔎 発展</button>
+  </header>
+
+  <nav id="tab-bar">
+    <button class="tab-btn active" data-tab="play">▶ プレイ画面</button>
+    <button class="tab-btn" data-tab="guide">📘 解説(目的・操作方法)</button>
+    <button class="tab-btn" data-tab="links">🔗 リンク</button>
+  </nav>
+
+  <main>
+    <div class="tab-content active" id="tab-play">
+      <div id="stage-panel"></div>
+    </div>
+
+    <div class="tab-content static-panel" id="tab-guide">
+      <div class="stage-head"><h2>この教材の目的</h2></div>
+      <div class="narrative">
+        <p>本シミュレーションは、肺結核と診断された患者(田中太郎さん)の<b>入院初日から治療完了までの約6か月間</b>を主治医として診療する形式で、以下を学ぶことを目的としています。</p>
+        <p>・標準治療A(2HREZ/4HR)と副作用モニタリングの考え方<br>
+        ・空気予防策(陰圧個室隔離・N95マスク)と隔離解除の判断基準<br>
+        ・DOTS(直接服薬確認療法)と地域連携<br>
+        ・接触者健診とLTBI(潜在性結核感染症)治療<br>
+        ・感染症法に基づく届出(第12条)、入院・通院医療費の公費負担(第37条・第37条の2)</p>
+      </div>
+      <div class="stage-head" style="margin-top:22px;"><h2>操作方法</h2></div>
+      <div class="narrative">
+        <p><b>① 経過を読む</b> ― 各ターン(週または月)の冒頭に、患者の経過・検査結果が表示されます。</p>
+        <p><b>② 登場人物と必ず話す</b> ― そのターンに登場する<b>患者・保健師・看護師・家族</b>のカードが「登場人物と話す」欄に表示されます。<u>全員のカードをタップして対話を確認しないと、次のターンに進めません。</u>これは実際の診療で複数の職種・立場の話を聞くことを疑似体験するための必須ステップです。</p>
+        <p><b>③ 本日の判断に回答する</b> ― クイズ形式の設問にすべて回答します。選択すると正誤と解説(朱印つき)が表示されます。</p>
+        <p><b>④ 次のステージへ進む</b> ― ②③がすべて完了すると画面下部のボタンが有効になります。全9ターン終了後、総括レポート(スコア・振り返り)が表示されます。</p>
+        <p><b>⑤ 用語ノート・発展</b> ― 画面右上の「📖 用語ノート」からDOTSやLTBIなどの基本用語を、「🔎 発展」からHRESZ各剤の作用機序・耐性結核・NTMなど、より詳しい内容をいつでも確認できます。</p>
+      </div>
+    </div>
+
+    <div class="tab-content static-panel" id="tab-links">
+      <div class="stage-head"><h2>参考リンク</h2></div>
+      <div class="link-card">
+        <div class="link-title">潜在性結核感染症治療レジメンの見直し(厚生労働省)</div>
+        <div class="link-desc">本教材で採用しているLTBI標準治療(INH+RFP 3~4か月など)の根拠となる資料です。</div>
+        <a class="link-btn" href="https://www.mhlw.go.jp/content/10906000/000814559.pdf" target="_blank" rel="noopener noreferrer">PDFを開く ↗</a>
+      </div>
+      <div class="link-card">
+        <div class="link-title">細菌楽プラットフォーム Hub</div>
+        <div class="link-desc">結核以外の感染症・抗菌薬教育コンテンツ一覧はこちらから。</div>
+        <a class="link-btn" href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener noreferrer">Hubを開く ↗</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    本ゲームは AI（Claude, Anthropic）を用いて作成された医学教育コンテンツです。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="dialogue-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="badge-circ" id="dlg-avatar"></div>
+      <h3 id="dlg-title">―</h3>
+      <button class="modal-close" id="dlg-close">✕</button>
+    </div>
+    <div class="modal-body" id="dlg-body"></div>
+    <div class="modal-foot">
+      <button class="next-btn" id="dlg-next">次へ</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="glossary-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="badge-circ" style="background:var(--c-hoken-bg);color:var(--c-hoken);">📖</div>
+      <h3>用語ノート</h3>
+      <button class="modal-close" id="gloss-close">✕</button>
+    </div>
+    <div class="modal-body" id="gloss-body"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="advance-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="badge-circ" style="background:var(--c-kango-bg);color:var(--c-kango);">🔎</div>
+      <h3>発展 ― もう一歩詳しく</h3>
+      <button class="modal-close" id="advance-close">✕</button>
+    </div>
+    <div class="modal-body" id="advance-body"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="review-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="badge-circ" style="background:var(--c-family-bg);color:var(--c-family);">🩺</div>
+      <h3 id="review-title">―</h3>
+      <button class="modal-close" id="review-close">✕</button>
+    </div>
+    <div class="modal-body" id="review-body"></div>
+  </div>
+</div>
+
+<div class="cover" id="cover-intro">
+  <div class="cover-card">
+    <h1>結核診療シミュレーション<br>― 主治医の半年間 ―</h1>
+    <div class="lead">
+      あなたは呼吸器内科の<b>主治医</b>です。肺結核と診断された田中太郎さん(45歳・男性)の入院初日から治療完了まで、約6か月間の診療を担当します。<br><br>
+      <b>患者</b>・<b>保健師</b>・<b>看護師</b>・<b>患者家族</b>との対話を通じて、標準治療・空気予防策・DOTS・接触者健診・感染症法の届出や公費負担制度について学びます。
+    </div>
+    <div class="role-grid">
+      <div class="role-chip"><b>患</b> 患者本人との面談</div>
+      <div class="role-chip"><b>保</b> 保健師と接触者健診</div>
+      <div class="role-chip"><b>看</b> 看護師と院内手続き</div>
+      <div class="role-chip"><b>家</b> 家族への説明・支援</div>
+    </div>
+    <button class="start-btn" id="start-btn">診療を開始する</button>
+  </div>
+</div>
+
+<script>
+(function(){
+
+/* ============ キャラクター定義 ============ */
+const CH = {
+  patient:{name:'患者 田中太郎さん', kanji:'患', color:'var(--c-patient)', bg:'var(--c-patient-bg)'},
+  hoken:{name:'保健師 山田さん', kanji:'保', color:'var(--c-hoken)', bg:'var(--c-hoken-bg)'},
+  kango:{name:'病棟看護師', kanji:'看', color:'var(--c-kango)', bg:'var(--c-kango-bg)'},
+  family:{name:'家族(妻・恵子さん)', kanji:'家', color:'var(--c-family)', bg:'var(--c-family-bg)'}
+};
+
+/* ============ 用語ノート ============ */
+const GLOSSARY = [
+ {t:'標準治療A(2HREZ/4HR)', d:'薬剤感受性肺結核に対する標準治療。強化期2か月はイソニアジド(H)・リファンピシン(R)・ピラジナミド(Z)・エタンブトール(E)の4剤併用、継続期4か月はH・Rの2剤とする、計6か月の抗結核薬による化学療法。イソニアジドによる末梢神経障害予防のためビタミンB6(ピリドキシン)を併用することが多い。'},
+ {t:'ガフキー号数', d:'喀痰塗抹検査で顕微鏡下の抗酸菌数を半定量的に表す日本独自の指標(0号~10号)。号数が大きいほど排菌量が多く、感染性が高いと考えられる。国際的にはWHO方式(1+~3+等)も用いられる。'},
+ {t:'空気予防策(飛沫核感染対策)', d:'結核菌は咳などで生じる微小な飛沫核として空気中を漂い、離れた距離でも感染しうる(空気感染)。医療機関では陰圧個室への隔離、医療従事者によるN95マスクの着用、十分な換気(目安として1時間あたり12回以上の換気)などで対応する。'},
+ {t:'隔離解除の考え方', d:'排菌陽性の肺結核患者では、臨床症状の改善に加え、異なる日に採取した喀痰の塗抹検査が連続して陰性であることを確認したうえで空気予防策の解除を検討する。塗抹陽性のみで感染性の高さを判断し、培養結果が出るまで漫然と隔離を継続する必要はない。'},
+ {t:'LTBI(潜在性結核感染症)', d:'結核菌に感染しているが発病していない状態。IGRAやツベルクリン反応で感染を確認し、胸部X線等で活動性結核を除外したうえで診断する。日本におけるLTBI標準治療は、イソニアジド(INH)単剤6か月、イソニアジド+リファンピシン(INH+RFP)併用3~4か月、またはリファンピシン(RFP)単剤4か月である。INH+RFP 3~4か月療法はINH 6か月・9か月療法と同等の発病予防効果があり副作用の面でも大きな違いがないことから、LTBI治療レジメンの一つとして位置づけられている。RFP単剤4か月は、原則としてINHが使用できない場合の代替とされるが、活動性結核がないことの確認と確実な服薬遵守を前提に、INHによる副作用が問題となりうる場合に用いることも提案されている。'},
+ {t:'IGRA(インターフェロンγ遊離試験)', d:'結核菌に特異的な抗原で血液中のT細胞を刺激し、放出されるインターフェロンγを測定する検査。BCG接種の影響を受けにくく、結核感染の有無を判定するのに用いられる。曝露直後は反応が出ないことがあるため、初回評価に加えて曝露から8~10週後(ウィンドウ期間後)に再検査することがある。'},
+ {t:'接触者健診の考え方', d:'感染性の高い患者(排菌陽性・空洞ありなど)と診断された場合、保健所が中心となり接触者を洗い出し、接触の濃厚さに応じて優先順位をつけて健診を行う。同居家族など濃厚接触者を最優先とし、初回評価と、曝露から8~10週後の再評価(ウィンドウ期間後)を組み合わせて評価する。'},
+ {t:'DOTS(直接服薬確認療法)', d:'Directly Observed Treatment, Short-course。医療者や保健師が服薬を直接確認することで、治療の中断・不規則な服薬による治療失敗や薬剤耐性結核の発生を防ぐための服薬支援の枠組み。入院中は病院DOTS、退院後は保健所・地域DOTSとして継続される。'},
+ {t:'感染症法上の結核の位置づけ', d:'結核は感染症法上「二類感染症」に分類される。医師は結核患者と診断したときは直ちに(遅滞なく)最寄りの保健所長を経由して都道府県知事に届け出る義務がある(感染症法第12条)。'},
+ {t:'感染症法 第37条・第37条の2', d:'結核患者の医療費については、感染症法に公費負担の規定がある。第37条は入院医療に係る費用、第37条の2は通院(外来)医療に係る費用について、それぞれ公費負担(自己負担は原則1割・世帯の所得等に応じた上限あり、制度により概ね医療費の大部分を公費で負担)を定めている。手続には申請書の提出が必要であり、医療機関側の申請支援も重要となる。'},
+ {t:'副作用モニタリングの基本的な考え方', d:'抗結核薬は肝機能障害・視力障害・皮疹・高尿酸血症などの副作用を起こしうるため、定期的な問診・検査でモニタリングする。軽度で無症状な肝逸脱酵素上昇や尿酸値上昇のみで直ちに薬剤を中止するのではなく、症状の有無や上昇の程度(目安として基準値上限の3~5倍以上など)を踏まえて治療継続の可否を判断する。'},
+ {t:'病型分類の読み方(例:rII2)', d:'喀痰の排菌状況(r:排菌陽性/n:排菌陰性など)、病巣の広がり(I~III度など)、空洞の程度を組み合わせて病型を簡潔に表記する分類法。rII2は「排菌陽性・中等度の病巣・空洞を伴う」ことを示す一例として本ゲームでは扱っている。'}
+];
+
+/* ============ 発展(もう一歩詳しく) ============ */
+const ADVANCED = [
+ {cat:'標準治療薬 HRESZ 各剤の作用機序と副作用', t:'H:イソニアジド(INH)', d:'プロドラッグであり、菌が持つ酵素(KatG)によって活性化されたのち、細胞壁の主要な脂質であるミコール酸の合成を阻害する。早期の高い殺菌効果が特徴。主な副作用は肝障害と末梢神経障害で、末梢神経障害の予防にビタミンB6(ピリドキシン)を併用することが多い。まれに中枢神経症状もみられる。'},
+ {cat:'標準治療薬 HRESZ 各剤の作用機序と副作用', t:'R:リファンピシン(RFP)', d:'DNA依存性RNAポリメラーゼのβサブユニットに結合し、RNA合成を阻害する。増殖が緩やかな菌にも効果が及ぶため(sterilizing activity)、治療期間の短縮に大きく寄与する。主な副作用は肝障害、消化器症状、尿や涙などの体液が赤橙色になること、そして肝薬物代謝酵素を誘導することによる強い薬物相互作用である。'},
+ {cat:'標準治療薬 HRESZ 各剤の作用機序と副作用', t:'E:エタンブトール(EB)', d:'細胞壁を構成するアラビノガラクタンの合成を阻害する。他剤への耐性の有無がまだ判明していない治療初期の段階で、耐性化の進行を防ぐ目的で4剤目として併用される。主な副作用は視神経障害(視力低下、赤緑色覚異常)であり、定期的な視機能のモニタリングが重要になる。'},
+ {cat:'標準治療薬 HRESZ 各剤の作用機序と副作用', t:'S:ストレプトマイシン(SM)', d:'アミノグリコシド系の注射薬で、30Sリボソームサブユニットに結合しタンパク質合成を阻害する。歴史的には主要な抗結核薬の一つだが、現在の初回標準治療の中心ではなく、耐性結核の治療などで選択されることがある。主な副作用は腎障害と第VIII脳神経障害(聴力障害・めまい)。'},
+ {cat:'標準治療薬 HRESZ 各剤の作用機序と副作用', t:'Z:ピラジナミド(PZA)', d:'プロドラッグで、菌体内でピラジノ酸に変換されてはじめて作用する。炎症巣内のような酸性環境や、他剤が効きにくい活動性の低い菌集団にも効果を発揮する点が特徴で、治療期間の短縮に寄与している。主な副作用は肝障害、高尿酸血症、関節痛。'},
+ {cat:'なぜ多剤併用・4剤なのか', t:'なぜ結核治療は多剤併用なのか', d:'結核菌は病巣内の菌量が多く、自然発生的な耐性変異を持つ菌が一定の頻度で存在する。単剤治療ではその耐性菌だけが生き残り増殖してしまう(選択される)ため治療が失敗しやすい。イソニアジドとリファンピシンの両方に同時に耐性を獲得する確率は、それぞれ単独に耐性を獲得する確率よりはるかに低いため、複数の薬剤を組み合わせることが治療成功の理論的な基盤になっている。'},
+ {cat:'なぜ多剤併用・4剤なのか', t:'なぜピラジナミドで治療期間を短縮できるのか', d:'ピラジナミドは酸性環境や、増殖が緩やかで他剤の効きにくい菌集団に対して活性を持つ。こうした“しぶとく残る菌”を早期にたたけることが、標準治療の期間短縮(強化期を含めた計6か月への短縮)に寄与しているとされる。'},
+ {cat:'なぜ多剤併用・4剤なのか', t:'なぜエタンブトールを最初から併用するのか', d:'治療開始時点ではイソニアジドなどへの耐性の有無がまだ分かっていない。もし気づかないまま耐性菌にイソニアジド・リファンピシンなど少数の薬剤だけで治療してしまうと、実質的に単剤治療に近い状態になり耐性がさらに進んでしまう。エタンブトールを含めた4剤併用で開始することで、感受性結果が判明するまでの間、レジメン全体を守る役割を果たす。'},
+ {cat:'HRESZ以外の抗結核薬', t:'耐性結核・副作用時に用いる薬剤群', d:'フルオロキノロン系(レボフロキサシン、モキシフロキサシン)、オキサゾリジノン系(リネゾリド)、比較的新しい薬剤であるベダキリン・プレトマニド・デラマニド、そのほかクロファジミン、シクロセリン/テリジドン、エチオナミド/プロチオナミド、パラアミノサリチル酸(PAS)、アミカシン、メロペネム/アモキシシリン・クラブラン酸などが、標準治療薬が使用できない場合や耐性結核の治療で用いられる。'},
+ {cat:'耐性結核', t:'MDR-TBの定義', d:'MDR-TB(多剤耐性結核)は、少なくともイソニアジドとリファンピシンの両方に耐性を持つ結核と定義される。'},
+ {cat:'耐性結核', t:'XDR-TBの定義と治療薬', d:'定義は近年更新されている。新しい定義では、MDR-TBまたはリファンピシン耐性結核(MDR/RR-TB)に加えてフルオロキノロン系薬剤への耐性があり、さらにベダキリンまたはリネゾリドの少なくとも一方にも耐性を持つものを指す。従来の定義は「MDR-TB+任意のフルオロキノロン耐性+少なくとも1つの注射剤への耐性」であり、両方を知っておくと文献を読む際に混乱しにくい。治療は耐性パターンに応じた全経口の多剤併用が中心で、代表的な短期レジメンとしてベダキリン+プレトマニド+リネゾリドの3剤(BPaL)、これにモキシフロキサシンを加えた4剤(BPaLM)などが国際的に用いられている。'},
+ {cat:'感染症法・検査室管理', t:'特定病原体等としての取り扱いについて', d:'結核菌は、培養操作やエアロゾルが発生しうる検査操作において高度な曝露対策が求められる病原体であり、検査室ではBSL-3相当の管理が重視される。ただし、感染症法上の「特定病原体等」の何種に区分されるか、届出や所持に関する具体的な規制の内容は、感染症法施行規則や病原体等管理規程の条文に基づいて定められている事項であり、本教材では断定的な数字を示さず、実務にあたる際は最新の法令および所属機関の関連規程を必ず確認することを前提とする。結核菌の「臨床対応(患者診療)」「検査室内での取り扱い」「法令上の分類」は、それぞれ別の枠組みであると整理して学ぶとよい。'},
+ {cat:'BCG・ツベルクリン反応・IGRA', t:'BCGとIGRAの関係', d:'IGRAで用いる抗原(ESAT-6・CFP-10など)はBCGワクチン株には含まれていない領域に由来するため、IGRAの結果はBCG接種歴の影響をほとんど受けない。一方でツベルクリン反応(TST/PPD)はBCGと共通する抗原に反応するため、BCG接種歴があると偽陽性になりうる。そのため、日本のようにBCG接種率が高い集団では、IGRAの方が特異度の面で有利とされる。'},
+ {cat:'BCG・ツベルクリン反応・IGRA', t:'PPDとIGRAの違い', d:'PPD(ツベルクリン反応、TST)は皮内注射を行い48~72時間後に発赤・硬結の大きさを判定する検査で、2回の受診が必要になる。BCGや一部の非結核性抗酸菌の影響を受けやすいという弱点がある。IGRAは採血のみで行え、判定が客観的で、BCGの影響をほとんど受けないが、検査体制や費用面での制約がある。両者に共通する重要な限界として、いずれの検査も「結核に感染しているかどうか」を見ているにすぎず、活動性結核とLTBI(潜在性結核感染症)を区別することはできない。'},
+ {cat:'BCG・ツベルクリン反応・IGRA', t:'コッホ現象', d:'すでに結核に感染している人にBCG接種やツベルクリン反応を行うと、通常より強い発赤・硬結・潰瘍・早期の痂皮化など、局所反応が強く出ることがある現象。既感染者が持つ強い細胞性免疫反応の表れと理解され、乳幼児などでは自然感染に気づくきっかけになることがある。'},
+ {cat:'病型・病態', t:'肺外結核', d:'結核菌が肺以外の臓器で病巣を作るもの。リンパ節、胸膜、脊椎・骨関節、髄膜、腎、消化管など、全身のさまざまな部位に生じうる。'},
+ {cat:'病型・病態', t:'粟粒結核', d:'結核菌が血流に乗って全身に播種し、複数の臓器に粟粒大(1~2mm程度)の小さな結節が多数出現する重症な病型。免疫が低下した人や乳幼児では特に注意が必要とされる。'},
+ {cat:'検査法', t:'NAAT(核酸増幅検査)・PCR', d:'喀痰などの検体から結核菌の遺伝子を直接増幅して検出する検査。塗抹検査より感度が高く、培養検査より短時間で結果が得られる利点がある。リファンピシン耐性に関わる遺伝子変異(rpoB遺伝子など)を同時に調べられる検査法もあり、本ゲームの症例でも入院時にリファンピシン耐性遺伝子の結果を先行して確認している。'},
+ {cat:'検査法', t:'LAMP法', d:'Loop-Mediated Isothermal Amplificationの略。一定の温度で遺伝子を増幅できる検査法で、複雑な温度制御の機器を必要としにくく、比較的簡便・迅速に結核菌の遺伝子を検出できる。'},
+ {cat:'検査法', t:'薬剤感受性検査', d:'分離された結核菌が、それぞれの抗結核薬に対してどの程度反応するかを調べる検査。培養を用いて実際の発育の有無をみる表現型検査と、耐性に関わる遺伝子変異の有無を調べる遺伝子(分子)検査があり、後者は結果が出るまでの時間が短いという利点がある。'},
+ {cat:'分子疫学', t:'VNTR(可変数タンデムリピート)', d:'結核菌のゲノム上にある反復配列の繰り返し回数の違いを利用して、菌株どうしが近縁かどうかを推定する型別検査。個々の患者の診断のための検査ではなく、接触者調査や院内・地域での感染伝播経路を解析する分子疫学のための検査として用いられる。同じ型(パターン)であることは近縁株である可能性を示すが、それだけで直接の感染連鎖を証明するものではなく、接触状況などの疫学情報と合わせて解釈する必要がある。'},
+ {cat:'非結核性抗酸菌(NTM)', t:'非結核性抗酸菌(NTM)とは', d:'結核菌群(<i>Mycobacterium tuberculosis</i> complex)やらい菌以外の抗酸菌の総称。土壌や水回りなど環境中に広く存在し、通常はヒトからヒトへほとんど感染しない点が結核菌と大きく異なる。代表的な菌種として<i>Mycobacterium avium</i> complex(MAC)などが呼吸器感染症の原因となることが知られている。'},
+ {cat:'非結核性抗酸菌(NTM)', t:'IGRA陽性となりうるNTM', d:'NTMの多くはIGRAで用いる抗原(ESAT-6・CFP-10)を持たないためIGRAには反応しないが、一部の菌種(<i>Mycobacterium kansasii</i>、<i>Mycobacterium marinum</i>、<i>Mycobacterium szulgai</i>など)はこれらと共通する領域を持つため、IGRAが陽性になることがある。したがって、IGRA陽性という結果だけで結核感染と即断せず、症状・画像所見・培養や遺伝子検査の結果と合わせて総合的に判断することが重要である。'}
+];
+
+/* ============ ステージデータ ============ */
+const STAGES = [
+
+/* ---------------- 第1週 ---------------- */
+{
+ id:'w1', phase:'入院', label:'第1週', day:'入院1日目 (Day 0)',
+ narrative:[
+  '田中太郎さん、45歳男性、建設作業員。2週間前からの咳嗽・微熱・体重減少(3kg)で近医を受診したが改善せず、当院呼吸器内科を紹介受診した。',
+  '胸部X線で右上肺野に空洞を伴う浸潤影を認め、喀痰塗抹検査は<b>ガフキー5号</b>、喀痰PCR検査で結核菌群陽性。臨床病型は<b>rII2</b>(排菌陽性・中等度病巣・空洞2型)。喀痰から抽出した結核菌のリファンピシン耐性遺伝子は<b>陰性</b>であることが確認されている。HIV検査は陰性。',
+  '肺結核(喀痰塗抹陽性・空洞あり)と診断し、本日入院となった。'
+ ],
+ monitors:[
+  {label:'皮疹', val:'なし'}, {label:'視力異常', val:'なし'},
+  {label:'AST/ALT', val:'22 / 18 U/L (基準内)'}, {label:'尿酸値', val:'5.0 mg/dL (基準内)'}
+ ],
+ tasks:[
+  {id:'t1', title:'空気予防策', q:'排菌陽性の肺結核患者の病室入室時、医療従事者が着用すべき防護具として適切なのはどれか。',
+   opts:['サージカルマスク','N95マスク(微粒子用マスク)','フェイスシールドのみ','防護具は不要'], correct:1,
+   explain:'結核菌は咳などで生じる微小な飛沫核として空気中に漂い感染する(空気感染)。医療従事者は入室時にN95マスクを着用し、患者は陰圧個室に隔離のうえ、可能であれば患者自身にはサージカルマスクの着用を指導する。'},
+  {id:'t2', title:'標準治療の開始', q:'薬剤感受性が疑われる肺結核に対する標準治療Aとして開始すべき抗結核薬の組み合わせはどれか。',
+   opts:['イソニアジド(H)+リファンピシン(R)の2剤','リファンピシン(R)単剤','イソニアジド(H)単剤','イソニアジド(H)+リファンピシン(R)+ピラジナミド(Z)+エタンブトール(E)の4剤'], correct:3,
+   explain:'標準治療Aは強化期2か月をH・R・Z・Eの4剤併用(2HREZ)、継続期4か月をH・Rの2剤(4HR)とする計6か月レジメン。イソニアジドによる末梢神経障害予防のためビタミンB6(ピリドキシン)を併用する。'},
+  {id:'t3', title:'感染症法の届出', q:'看護師「先生、結核は感染症法上の二類感染症です。保健所への届出はいつまでに行う必要がありますか?」',
+   opts:['1週間以内に届け出る','退院時にまとめて届け出る','直ちに(遅滞なく)届け出る','症状が改善してから届け出る'], correct:2,
+   explain:'感染症法第12条により、医師は結核と診断したときは直ちに最寄りの保健所長を経由して都道府県知事に届け出る義務がある。届出により保健所が接触者健診等の対応を開始できる。'},
+  {id:'t4', title:'接触者健診の優先順位', q:'保健師「田中さんの届出を受理しました。接触者健診を進めたいのですが、まず誰を優先して評価すべきでしょうか。」',
+   opts:['同居家族(妻・長女15歳・次女8歳)を最優先で評価する','職場の同僚10名を最優先で評価する','培養結果が判明するまで健診は行わない','近隣住民全員を対象に一斉に健診する'], correct:0,
+   explain:'排菌陽性・空洞ありで感染性が高いと考えられるため、接触の程度が濃厚な同居家族をまず優先して評価する。職場等の接触者は接触の頻度・環境(密閉空間での長時間接触など)に応じて順次評価する。培養結果を待つ必要はない。'}
+ ],
+ dialogues:{
+  patient:[
+   {from:'npc', text:'先生、結核と言われて驚いています…しばらく個室に隔離されるんですよね。仕事や家族のことが心配です。'},
+   {from:'player', text:'ご心配だと思います。まずは薬をきちんと飲み続けることが大切です。菌の量が減れば個室から出られる見込みも出てきます。'},
+   {from:'npc', text:'薬は何種類も飲むと聞きました。全部で6か月もかかるんですか…'},
+   {from:'player', text:'はい。最初の2か月は4種類、その後の4か月は2種類に減ります。途中でやめてしまうと菌が薬に効きにくくなる(耐性化)おそれがあるので、保健師さんとも協力して最後まで一緒に治療していきましょう。'}
+  ],
+  family:[
+   {from:'npc', text:'恵子です。夫が結核だなんて…子どもたちにうつっていないでしょうか。'},
+   {from:'player', text:'ご心配ですね。今後、保健所の保健師さんが中心となって、ご家族の検査(問診・胸部X線・血液検査)を進めていきます。'},
+   {from:'npc', text:'私も一緒に住んでいますが、私は大丈夫でしょうか…治療費のことも心配です。'},
+   {from:'player', text:'奥様の検査結果もこれから確認していきます。もし感染が確認されても、発病を防ぐ治療がありますし、結核に関する医療費には公的な補助制度もありますので、追ってご案内します。'}
+  ]
+ }
+},
+
+/* ---------------- 第2週 ---------------- */
+{
+ id:'w2', phase:'入院', label:'第2週', day:'入院8~14日目',
+ narrative:[
+  '治療開始から1週間が経過。咳嗽・倦怠感はやや軽減してきている。',
+  '定期の副作用モニタリングを実施したところ、AST/ALTと尿酸値にごく軽度の上昇がみられた。皮疹・視力異常はなく、本人にも自覚症状はない。'
+ ],
+ monitors:[
+  {label:'皮疹', val:'なし'}, {label:'視力異常', val:'なし'},
+  {label:'AST/ALT', val:'38 / 41 U/L (軽度上昇・基準上限の2倍未満)', warn:true},
+  {label:'尿酸値', val:'6.8 mg/dL (軽度上昇)', warn:true},
+  {label:'胸部X線', val:'浸潤影 やや縮小傾向'}
+ ],
+ tasks:[
+  {id:'t5', title:'軽度の肝機能・尿酸値上昇への対応', q:'無症状で、肝機能(AST/ALT)・尿酸値の軽度上昇(基準上限の2~3倍未満)を認めた場合の対応として適切なのはどれか。',
+   opts:['直ちにピラジナミド(Z)を中止する','4剤すべてを中止し、原因精査を優先する','エタンブトール(E)のみ中止する','標準治療を継続し、症状の有無と検査値の推移を注意深く経過観察する'], correct:3,
+   explain:'抗結核薬による軽度で無症状の肝逸脱酵素・尿酸値上昇はしばしば見られる。目安として基準値上限の3~5倍以上への上昇や症状(嘔気・黄疸等)を伴う場合に薬剤の減量・中止を検討する。軽度・無症状の段階で安易に主要薬剤(特にリファンピシンやピラジナミド)を中止すると治療効果が損なわれるため、まずは継続しつつ経過を追う。'}
+ ],
+ dialogues:{
+  hoken:[
+   {from:'npc', text:'山田です。奥様・長女さん・次女さんについて、初回評価(問診・胸部X線・IGRA採血)を実施し、現在結果待ちです。'},
+   {from:'player', text:'ありがとうございます。次女さんは8歳とのことですが、対象年齢的には問題ないですか?'},
+   {from:'npc', text:'はい、5歳以上なので通常どおりIGRAで評価しています。5歳未満のお子さんの場合は反応が出にくいことがあるため、症状や画像所見も重視しながら、より積極的に予防的な治療を検討することもあります。'}
+  ],
+  patient:[
+   {from:'npc', text:'先生、ここ数日は咳もだいぶ楽になってきた気がします。食欲も出てきました。'},
+   {from:'player', text:'良い傾向ですね。血液検査で肝臓の値と尿酸値が少しだけ上がっていますが、今のところ軽度で無症状ですので、このまま治療を続けながら注意して見ていきます。もし体がだるい、皮膚や白目が黄色くなる、といった症状が出たらすぐに教えてください。'}
+  ]
+ }
+},
+
+/* ---------------- 第3週 ---------------- */
+{
+ id:'w3', phase:'入院', label:'第3週', day:'入院15~21日目',
+ narrative:[
+  '症状はさらに改善し、咳嗽はほぼ消失。倦怠感も軽度となった。',
+  '肝機能・尿酸値は先週とほぼ同程度で横ばいであり、症状もないため治療を継続している。',
+  '胸部X線では浸潤影の改善が明瞭となった。隔離解除の判定に向けて、喀痰塗抹検査のオーダーを検討する時期である。'
+ ],
+ monitors:[
+  {label:'皮疹', val:'なし'}, {label:'視力異常', val:'なし'},
+  {label:'AST/ALT', val:'40 / 43 U/L (横ばい)'},
+  {label:'尿酸値', val:'6.9 mg/dL (横ばい)'},
+  {label:'胸部X線', val:'浸潤影 改善傾向 明瞭'}
+ ],
+ tasks:[
+  {id:'t6', title:'隔離解除に向けた検査オーダー', q:'空気予防策(陰圧個室隔離)の解除を判定するために、喀痰について指示すべき検査はどれか。',
+   opts:['血液検査のみで判定する','異なる日に採取した喀痰塗抹検査を連続して行い、陰性を確認する','胸部CTのみで判定する','患者の自覚症状の改善のみで判定する'], correct:1,
+   explain:'塗抹陽性肺結核の隔離解除は、臨床的な改善に加えて、異なる日に採取した喀痰の塗抹検査が連続して陰性であることを確認したうえで判断する。今週から3日連続の喀痰塗抹検査をオーダーする。'},
+  {id:'t7', title:'妻のLTBI治療レジメン', q:'保健師「奥様のIGRAが陽性、胸部X線に異常なくLTBI(潜在性結核感染症)と診断されました。治療レジメンはどうしましょうか。」',
+   opts:['イソニアジド+リファンピシン(INH+RFP)併用3~4か月を提案し、他のレジメンも含め相談する','LTBIは治療せず経過観察のみでよい','症状が出るまで様子を見て、発病してから治療する','家族全員に同じ量の抗結核薬4剤を6か月投与する'], correct:0,
+   explain:'LTBI治療により発病リスクを大きく下げられる(治療しない場合と比べて発病予防効果はおおむね90%前後とされる)ため、経過観察のみとするのは適切でない。日本におけるLTBI標準治療は、イソニアジド(INH)単剤6か月、INH+リファンピシン(RFP)併用3~4か月、またはRFP単剤4か月であり、いずれも選択肢となる。特にINH+RFP 3~4か月療法はINH単剤6か月・9か月療法と同等の発病予防効果があり副作用の面でも大きな違いがないとされ、治療期間が短く服薬完遂率の面でも利点があることから、レジメンの一つとして提案しやすい。'}
+ ],
+ dialogues:{
+  kango:[
+   {from:'npc', text:'先生、今週から隔離解除の判定に向けて喀痰の塗抹検査を連日オーダーする件、承知しました。3日分の検体容器を準備しておきますね。'}
+  ],
+  family:[
+   {from:'npc', text:'私のIGRAが陽性だったと聞きました。私も結核になるということでしょうか…'},
+   {from:'player', text:'いいえ、今のところ胸部X線に異常はなく、結核を発病しているわけではありません。結核菌に感染はしているが発病していない「潜在性結核感染症(LTBI)」という状態です。治療によって発病するリスクを大きく下げられますので、保健師さんと一緒にレジメンを相談していきましょう。'}
+  ]
+ }
+},
+
+/* ---------------- 第4週(1か月) ---------------- */
+{
+ id:'w4', phase:'入院', label:'第4週(入院1か月)', day:'入院22~28日目',
+ narrative:[
+  '3日連続で行った喀痰塗抹検査は、いずれも陰性であった。',
+  '入院時に採取した喀痰の培養結果が判明し、結核菌培養陽性(確定)。培養には約4週間を要するため、この時期に結果が出るのは想定どおりである。',
+  '月1回の胸部CTを実施したところ、空洞は縮小傾向にある。'
+ ],
+ monitors:[
+  {label:'喀痰塗抹(3日連続)', val:'陰性 / 陰性 / 陰性'},
+  {label:'喀痰培養(入院時検体)', val:'陽性(確定)'},
+  {label:'胸部CT', val:'空洞 縮小傾向'},
+  {label:'AST/ALT・尿酸値', val:'横ばい・無症状のため治療継続中'}
+ ],
+ tasks:[
+  {id:'t8', title:'隔離解除の判定', q:'異なる日に採取した喀痰塗抹検査が3回連続で陰性となったことを確認した。次に取るべき対応はどれか。',
+   opts:['培養結果が完全に陰性化するまでさらに数か月隔離を継続する','塗抹陰性でも念のため半年間は個室隔離を継続する','空気予防策(陰圧個室隔離)の解除を指示し、退院・地域DOTSへの移行を検討する','解除は保健所の判断のみで決定するため主治医は関与しない'], correct:2,
+   explain:'臨床的改善と喀痰塗抹の連続陰性が確認できたため、空気予防策の解除は妥当な判断である。培養結果の陰性化を待つ必要はない。解除後は退院し、地域(保健所)DOTSへ移行することが多い。'},
+  {id:'t9', title:'入院医療費の公費申請', q:'看護師「先生、田中さんの結核医療費について、今月分の公費申請書の記載をお願いします。」根拠となる制度はどれか。',
+   opts:['医療費はすべて患者の全額自己負担となる','感染症法第37条により、結核患者の入院医療費の多くが公費で負担される','感染症法第37条の2により入院医療費が負担される(第37条は通院用)','結核医療費に公費負担制度は存在しない'], correct:1,
+   explain:'感染症法第37条は結核患者の「入院」医療に係る費用の公費負担を、第37条の2は「通院(外来)」医療に係る費用の公費負担を定めている。現在は入院中のため第37条に基づく申請となる。手続には申請書の提出が必要であり、看護師・医療機関側の申請支援も重要である。'}
+ ],
+ dialogues:{
+  hoken:[
+   {from:'npc', text:'長女さん・次女さんについては、初回のIGRAはまだ判定が難しい時期のため、曝露から8~10週後(ウィンドウ期間後)に再検査を予定しています。'},
+   {from:'player', text:'承知しました。職場の同僚の方々の状況はいかがですか?'},
+   {from:'npc', text:'10名について保健所が訪問し、接触の程度を確認しています。密閉空間で長時間一緒に作業していた方を優先して評価を進めているところです。'}
+  ],
+  patient:[
+   {from:'npc', text:'先生、個室から出られると聞きました!退院はできるんでしょうか。'},
+   {from:'player', text:'はい、菌の排出はほぼ落ち着いたと判断できますので、個室隔離は解除します。退院後は、保健師さんによる地域でのDOTS(服薬確認)に切り替えて、引き続き治療を続けていただきます。'}
+  ]
+ }
+},
+
+/* ---------------- 第2か月(退院後・外来) ---------------- */
+{
+ id:'m2', phase:'外来', label:'第2か月', day:'退院後・強化期完了',
+ narrative:[
+  '空気予防策の解除後まもなく退院。以後は保健師による地域DOTS(当初は週2回の訪問)のもとで治療を継続している。',
+  '治療開始から2か月が経過し、強化期(2HREZ)が完了する時期となった。入院時に採取した検体の薬剤感受性結果が判明した。'
+ ],
+ monitors:[
+  {label:'薬剤感受性結果', val:'イソニアジド・リファンピシン・ピラジナミド・エタンブトール いずれも感受性良好'},
+  {label:'胸部X線', val:'浸潤影 さらに改善'},
+  {label:'AST/ALT・尿酸値', val:'横ばい~やや改善傾向、無症状'}
+ ],
+ tasks:[
+  {id:'t11', title:'強化期から継続期への切替', q:'標準治療A(2HREZ/4HR)において、強化期(4剤併用)は何か月間行うのが基本か。',
+   opts:['1か月間のみでよい','6か月間ずっと4剤を継続する','感受性結果が出るまでは何か月でも4剤を継続する','2か月間行い、その後は継続期としてH・Rの2剤に切り替える'], correct:3,
+   explain:'標準治療Aは強化期2か月(2HREZ)ののち、継続期4か月をH・Rの2剤(4HR)とする計6か月レジメン。今回、薬剤感受性結果も良好であり、予定どおり継続期へ切り替える。'},
+  {id:'t12', title:'通院医療費の公費申請', q:'看護師「今回から外来通院になりましたが、公費申請の根拠条文は入院中と同じでよいですか?」',
+   opts:['いいえ、通院(外来)医療費は感染症法第37条の2に基づいて申請する','はい、入院中と同じ第37条のままでよい','通院になったら公費負担は終了する','外来では申請書は不要になる'], correct:0,
+   explain:'感染症法第37条は入院医療費、第37条の2は通院(外来)医療費の公費負担を定めている。退院・外来移行に伴い、申請の根拠条文も第37条の2に切り替わる。'},
+  {id:'t13', title:'長女のウィンドウ期間再評価', q:'保健師「長女さん(15歳)は初回IGRA陰性でしたが、8週後の再検査で陽転(陽性化)しました。対応はどうしましょうか。」',
+   opts:['再検査での陽転は検査誤差として無視してよい','症状がなければ何もせず終診とする','胸部X線で活動性結核を除外したうえでLTBI治療の開始を検討する','直ちに入院させ標準治療A(4剤)を開始する'], correct:2,
+   explain:'曝露直後は反応が出にくいため、初回陰性でもウィンドウ期間(8~10週)後に再検査を行う。再検査で陽転した場合は新たな感染と考え、胸部X線等で活動性結核を除外したうえでLTBI治療の開始を検討する。活動性結核でなければ4剤の標準治療は不要である。'}
+ ],
+ dialogues:{
+  hoken:[
+   {from:'npc', text:'次女さん(8歳)は8週後の再検査でも陰性のままでした。経過観察は終了としてよいと考えています。'},
+   {from:'player', text:'ありがとうございます。良かったです。'},
+   {from:'npc', text:'職場の同僚10名については、大半が陰性でしたが、特に接触の濃厚だった1名について精査を継続しています。'}
+  ],
+  family:[
+   {from:'npc', text:'私の治療(イソニアジド+リファンピシンの併用、3~4か月の予定)も順調です。副作用も今のところありません。ただ、この治療の費用も心配で…'},
+   {from:'player', text:'LTBIの治療も結核対策の一環として公費負担の対象になりますので、保健所にご確認いただくと安心です。'}
+  ]
+ }
+},
+
+/* ---------------- 第3か月 ---------------- */
+{
+ id:'m3', phase:'外来', label:'第3か月', day:'継続期(4HR) 1か月目',
+ narrative:[
+  '継続期(イソニアジド+リファンピシンの2剤)に入り、症状は消失、全身状態は良好。',
+  '地域DOTSのもとで週2回の服薬確認訪問を継続しており、服薬アドヒアランスは良好である。'
+ ],
+ monitors:[
+  {label:'胸部X線', val:'さらに改善'},
+  {label:'AST/ALT・尿酸値', val:'基準値内に近づきつつある(4剤から2剤に減量後)'}
+ ],
+ tasks:[
+  {id:'t14', title:'DOTSの目的', q:'保健師が行っている地域DOTS(直接服薬確認療法)の主な目的は何か。',
+   opts:['入院期間をできるだけ延長すること','服薬アドヒアランスを確保し、治療失敗や薬剤耐性結核の発生を防ぐこと','医療費をできるだけ増やすこと','患者を監視し、服薬しなければ罰則を科すこと'], correct:1,
+   explain:'DOTSは服薬状況を医療者・保健師が直接確認することで、不規則な服薬や自己中断による治療失敗・再発、さらには薬剤耐性結核の発生を防ぐための服薬支援の枠組みである。懲罰的な監視が目的ではない。'}
+ ],
+ dialogues:{
+  patient:[
+   {from:'npc', text:'先生、そろそろ仕事に戻りたいのですが、いつ頃から可能でしょうか。'},
+   {from:'player', text:'排菌のない状態が続いており、全身状態も良好ですので、体力面と相談しながら段階的な職場復帰を考えていきましょう。保健師さんとも情報共有しますね。'}
+  ],
+  kango:[
+   {from:'npc', text:'先生、今月分の公費申請書(第37条の2・通院医療)の記載をお願いします。'}
+  ]
+ }
+},
+
+/* ---------------- 第4か月 ---------------- */
+{
+ id:'m4', phase:'外来', label:'第4か月', day:'継続期(4HR) 2か月目',
+ narrative:[
+  '治療は順調に経過。副作用の再燃なく、AST/ALT・尿酸値はいずれも基準値内に落ち着いている。',
+  '妻のLTBI治療(イソニアジド+リファンピシン併用、3~4か月)がまもなく完了する見込みとの報告があった。'
+ ],
+ monitors:[
+  {label:'AST/ALT', val:'26 / 24 U/L (基準内)'},
+  {label:'尿酸値', val:'5.4 mg/dL (基準内)'}
+ ],
+ tasks:[
+  {id:'t15', title:'LTBI治療の意義', q:'LTBI(潜在性結核感染症)と診断された家族に対して治療を行う意義として最も適切なのはどれか。',
+   opts:['LTBIは治療してもしなくても発病率は変わらない','LTBI治療により逆に発病リスクが高まる','LTBIの人は他人に感染させるため隔離が必要である','治療により将来の発病リスクを大きく下げることができる'], correct:3,
+   explain:'LTBIは発病していない状態であり他者への感染性はないが、将来発病するリスクがある。適切な治療により発病リスクをおおむね90%前後低下させられるとされ、家族内発病の予防に重要である。'}
+ ],
+ dialogues:{
+  family:[
+   {from:'npc', text:'先生、私の治療(イソニアジド+リファンピシン併用)がもうすぐ終わります。副作用もなく順調でした。'},
+   {from:'player', text:'それは何よりです。田中さんの治療も継続期に入り順調ですので、このまま治療完遂を目指しましょう。'}
+  ]
+ }
+},
+
+/* ---------------- 第5か月 ---------------- */
+{
+ id:'m5', phase:'外来', label:'第5か月', day:'継続期(4HR) 3か月目',
+ narrative:[
+  '長女のLTBI治療も開始から順調に経過しているとの報告があった。',
+  '田中さん本人も体調は良好で、職場に段階的に復帰している。'
+ ],
+ monitors:[
+  {label:'胸部X線', val:'空洞はほぼ縮小、改善維持'},
+  {label:'自覚症状', val:'なし'}
+ ],
+ tasks:[
+  {id:'t16', title:'結核と感染症法の分類', q:'結核は感染症法上、何類感染症に分類されるか。',
+   opts:['二類感染症','一類感染症','三類感染症','五類感染症'], correct:0,
+   explain:'結核は感染症法上「二類感染症」に分類され、診断した医師には直ちに届け出る義務(第12条)、そして入院・通院医療費の公費負担(第37条・第37条の2)などの枠組みが設けられている。'}
+ ],
+ dialogues:{
+  hoken:[
+   {from:'npc', text:'長女さんのLTBI治療は問題なく続いています。次女さんは経過観察終了のまま、症状なく経過しています。'}
+  ]
+ }
+},
+
+/* ---------------- 第6か月(治療完了) ---------------- */
+{
+ id:'m6', phase:'外来', label:'第6か月(治療完了)', day:'継続期(4HR) 4か月目・治療終了',
+ narrative:[
+  '継続期4か月が終了し、標準治療A(2HREZ/4HR)の計6か月間の治療が完遂となった。',
+  '喀痰培養は陰性を維持し、胸部X線・CTでも空洞の縮小・浸潤影の改善を確認した。自覚症状なく、副作用の再燃もない。'
+ ],
+ monitors:[
+  {label:'喀痰培養', val:'陰性 継続'},
+  {label:'胸部X線/CT', val:'空洞縮小・浸潤影改善'},
+  {label:'副作用', val:'なし(経過を通じて軽度の一過性上昇のみ)'}
+ ],
+ tasks:[
+  {id:'t17', title:'治療終了の判定', q:'標準治療A(2HREZ/4HR)における総治療期間の目安は何か月か。',
+   opts:['3か月','1年','6か月','2か月'], correct:2,
+   explain:'強化期2か月(2HREZ)+継続期4か月(4HR)の計6か月が標準治療Aの基本的な治療期間である。空洞があり2か月時点でも培養陽性が持続する場合などは継続期を延長する(計7~9か月とする)ことが検討される場合もある。'}
+ ],
+ dialogues:{
+  patient:[
+   {from:'npc', text:'先生、半年間お世話になりました。やっと肩の荷が下りた気がします。'},
+   {from:'player', text:'お疲れさまでした。決められた治療をきちんと完遂できたことが何よりです。今後は定期的な経過観察で、再燃がないか確認していきましょう。'}
+  ],
+  hoken:[
+   {from:'npc', text:'ご家族全員、LTBI治療も無事に完了し、発病もなく経過しています。田中さんのケースは、ご本人・ご家族・職場も含めて対応できた良い例だったと思います。'}
+  ],
+  family:[
+   {from:'npc', text:'私も長女も治療を終えることができました。本当にありがとうございました。'}
+  ]
+ }
+}
+];
+
+/* ============ 状態管理 ============ */
+let cur = 0;
+let taskState = {}; // id -> {chosen:idx, correct:bool} (set only once the correct answer is chosen)
+let wrongAttempts = {}; // id -> number of incorrect attempts before getting it right
+let dlgOpen = {}; // char -> true once opened in current stage
+let curDlgChar = null;
+
+function stage(){ return STAGES[cur]; }
+
+function stageTasks(){ return stage().tasks || []; }
+
+function stagePeople(){
+ const s = stage();
+ if(!s.dialogues) return [];
+ return ['patient','hoken','kango','family'].filter(c => s.dialogues[c]);
+}
+
+function isStageComplete(){
+ const tasksDone = stageTasks().every(t => taskState[t.id] !== undefined);
+ const peopleDone = stagePeople().every(c => dlgOpen[c]);
+ return tasksDone && peopleDone;
+}
+
+function totalTasksAll(){
+ return STAGES.reduce((n,s)=> n + (s.tasks?s.tasks.length:0), 0);
+}
+function totalCorrectAll(){
+ let n=0;
+ Object.keys(taskState).forEach(id=>{ if(taskState[id].correct && !(wrongAttempts[id]>0)) n++; });
+ return n;
+}
+
+function updateHeader(){
+ document.getElementById('phase-badge').textContent = stage().phase;
+ document.getElementById('stage-badge').textContent = stage().label;
+ const total = totalTasksAll();
+ const correct = totalCorrectAll();
+ document.getElementById('score-text').textContent = correct + '/' + total;
+ document.getElementById('score-fill').style.width = (total? (correct/total*100):0) + '%';
+}
+
+function renderStage(){
+ dlgOpen = {};
+ const s = stage();
+ updateHeader();
+ const panel = document.getElementById('stage-panel');
+ let html = '';
+ html += '<div class="stage-head"><div class="day mono">' + s.day + '</div><h2>' + s.label + '</h2></div>';
+ html += '<div class="narrative">' + s.narrative.map(p=>'<p>'+p+'</p>').join('') + '</div>';
+ if(s.monitors && s.monitors.length){
+  html += '<div class="section-label">定期モニタリング</div><div class="monitor-grid">';
+  s.monitors.forEach(m=>{
+   html += '<div class="monitor-card'+(m.warn?' warn':'')+'"><div class="label">'+m.label+'</div><div class="val">'+m.val+'</div></div>';
+  });
+  html += '</div>';
+ }
+ const people = stagePeople();
+ if(people.length){
+  html += '<div class="section-label">登場人物と話す(全員必須)</div>';
+  html += '<div class="people-note">タップして対話を確認してください。全員と話すまで次のステージへ進めません。</div>';
+  html += '<div class="people-grid" id="people-list"></div>';
+ }
+ if(stageTasks().length){
+  html += '<div class="section-label">本日の判断</div><div id="task-list"></div>';
+ }
+ html += '<div id="advance-wrap"><button id="advance-btn" disabled>次のステージへ進む<span class="need" id="advance-need"></span></button></div>';
+ panel.innerHTML = html;
+
+ if(people.length){
+  const plist = document.getElementById('people-list');
+  people.forEach(c=> plist.appendChild(buildPeopleCard(c)));
+ }
+ if(stageTasks().length){
+  const list = document.getElementById('task-list');
+  stageTasks().forEach(t=>{
+   list.appendChild(buildTaskEl(t));
+  });
+ }
+ refreshAdvance();
+ document.getElementById('advance-btn').onclick = ()=>{
+  if(cur < STAGES.length-1){ cur++; renderStage(); document.getElementById('stage-panel').scrollTop = 0; }
+  else { showSummary(); }
+ };
+}
+
+function buildPeopleCard(c){
+ const info = CH[c];
+ const btn = document.createElement('button');
+ btn.className = 'people-card unread';
+ btn.dataset.c = c;
+ btn.innerHTML =
+  '<div class="avatar" style="background:'+info.bg+';color:'+info.color+';">'+info.kanji+'</div>' +
+  '<div class="info"><div class="nm">'+info.name+'</div><div class="st">未読 ・ タップして話す</div></div>' +
+  '<span class="unread-dot"></span>';
+ btn.addEventListener('click', ()=> openDialogue(c));
+ return btn;
+}
+
+function refreshPeopleCard(c){
+ const btn = document.querySelector('.people-card[data-c="'+c+'"]');
+ if(!btn) return;
+ if(dlgOpen[c]){
+  btn.classList.remove('unread');
+  btn.classList.add('read');
+  btn.querySelector('.st').textContent = '確認済み ・ もう一度見る';
+  const dot = btn.querySelector('.unread-dot'); if(dot) dot.remove();
+ }
+}
+
+function buildTaskEl(t){
+ const wrap = document.createElement('div');
+ wrap.className = 'task';
+ wrap.id = 'task-'+t.id;
+ let optsHtml = '';
+ t.opts.forEach((o,i)=>{
+  optsHtml += '<button class="opt-btn" data-i="'+i+'">'+o+'</button>';
+ });
+ wrap.innerHTML =
+  '<div class="task-icon">🩺 '+t.title+'</div>' +
+  '<div class="task-q">'+t.q+'</div>' +
+  '<div class="opts">'+optsHtml+'</div>';
+ wrap.querySelectorAll('.opt-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+   if(taskState[t.id] !== undefined) return; // already solved
+   const idx = parseInt(btn.dataset.i,10);
+   if(btn.disabled) return;
+   const correct = idx === t.correct;
+   if(correct){
+    taskState[t.id] = {chosen:idx, correct:true, wrongAttempts: wrongAttempts[t.id]||0};
+    wrap.querySelectorAll('.opt-btn').forEach((b,i2)=>{
+     b.disabled = true;
+     if(i2 === t.correct) b.classList.add('correct');
+    });
+    wrap.classList.add('done');
+    const existingHint = wrap.querySelector('.retry-hint');
+    if(existingHint) existingHint.remove();
+    const hadRetry = (wrongAttempts[t.id]||0) > 0;
+    const seal = hadRetry ? '<span class="seal-stamp">再挑戦</span>' : '<span class="seal-stamp">済</span>';
+    const ex = document.createElement('div');
+    ex.className = 'explain';
+    ex.innerHTML = seal + t.explain;
+    wrap.appendChild(ex);
+    updateHeader();
+    refreshAdvance();
+   } else {
+    wrongAttempts[t.id] = (wrongAttempts[t.id]||0) + 1;
+    btn.disabled = true;
+    btn.classList.add('incorrect');
+    let hint = wrap.querySelector('.retry-hint');
+    if(!hint){
+     hint = document.createElement('div');
+     hint.className = 'retry-hint';
+     wrap.appendChild(hint);
+    }
+    hint.textContent = '不正解です。他の選択肢からもう一度選んでください。';
+   }
+  });
+ });
+ return wrap;
+}
+
+function refreshAdvance(){
+ const btn = document.getElementById('advance-btn');
+ const done = isStageComplete();
+ btn.disabled = !done;
+ const remainingTasks = stageTasks().filter(t=>taskState[t.id]===undefined).length;
+ const remainingPeople = stagePeople().filter(c=>!dlgOpen[c]).length;
+ let needText = '';
+ if(!done){
+  const parts = [];
+  if(remainingPeople) parts.push('未対話 '+remainingPeople+'名');
+  if(remainingTasks) parts.push('未回答 '+remainingTasks+'件');
+  needText = parts.join(' / ');
+ }
+ const label = (cur === STAGES.length-1 && done) ? '総括レポートを見る' : '次のステージへ進む';
+ btn.innerHTML = label + (needText ? '<span class="need">'+needText+'</span>' : '');
+}
+
+/* ============ ダイアログモーダル ============ */
+const dlgBackdrop = document.getElementById('dialogue-backdrop');
+const dlgBody = document.getElementById('dlg-body');
+const dlgTitle = document.getElementById('dlg-title');
+const dlgAvatar = document.getElementById('dlg-avatar');
+const dlgNext = document.getElementById('dlg-next');
+
+function openDialogue(c){
+ curDlgChar = c;
+ dlgOpen[c] = true;
+ refreshPeopleCard(c);
+ refreshAdvance();
+ const info = CH[c];
+ dlgTitle.textContent = info.name;
+ dlgAvatar.textContent = info.kanji;
+ dlgAvatar.style.background = info.bg;
+ dlgAvatar.style.color = info.color;
+ dlgBody.innerHTML = '';
+ const lines = stage().dialogues[c];
+ lines.forEach(l=>{
+  const row = document.createElement('div');
+  row.className = 'chat-line' + (l.from==='player' ? ' player' : '');
+  const nm = l.from==='player' ? 'あなた(主治医)' : info.name;
+  row.innerHTML = '<div><div class="chat-name">'+nm+'</div><div class="chat-bubble">'+l.text+'</div></div>';
+  dlgBody.appendChild(row);
+ });
+ dlgNext.textContent = '閉じる';
+ dlgBackdrop.classList.add('open');
+}
+document.getElementById('dlg-close').onclick = ()=> dlgBackdrop.classList.remove('open');
+dlgNext.onclick = ()=> dlgBackdrop.classList.remove('open');
+dlgBackdrop.addEventListener('click', (e)=>{ if(e.target===dlgBackdrop) dlgBackdrop.classList.remove('open'); });
+
+/* ============ タブ切替 ============ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+ btn.addEventListener('click', ()=>{
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  document.getElementById('tab-play').classList.toggle('active', tab==='play');
+  document.getElementById('tab-guide').classList.toggle('active', tab==='guide');
+  document.getElementById('tab-links').classList.toggle('active', tab==='links');
+ });
+});
+
+/* ============ 用語ノート ============ */
+const glossModal = document.getElementById('glossary-modal');
+document.getElementById('glossary-btn').onclick = ()=>{
+ const body = document.getElementById('gloss-body');
+ body.innerHTML = GLOSSARY.map(g=>'<div class="gloss-item"><h4>'+g.t+'</h4><p>'+g.d+'</p></div>').join('');
+ glossModal.classList.add('open');
+};
+document.getElementById('gloss-close').onclick = ()=> glossModal.classList.remove('open');
+glossModal.addEventListener('click', (e)=>{ if(e.target===glossModal) glossModal.classList.remove('open'); });
+
+/* ============ 発展 ============ */
+const advModal = document.getElementById('advance-modal');
+document.getElementById('advance-note-btn').onclick = ()=>{
+ const body = document.getElementById('advance-body');
+ let html = '';
+ let lastCat = null;
+ ADVANCED.forEach(g=>{
+  if(g.cat !== lastCat){
+   html += '<div class="gloss-cat">'+g.cat+'</div>';
+   lastCat = g.cat;
+  }
+  html += '<div class="gloss-item"><h4>'+g.t+'</h4><p>'+g.d+'</p></div>';
+ });
+ body.innerHTML = html;
+ advModal.classList.add('open');
+};
+document.getElementById('advance-close').onclick = ()=> advModal.classList.remove('open');
+advModal.addEventListener('click', (e)=>{ if(e.target===advModal) advModal.classList.remove('open'); });
+
+/* ============ 総括レポートの設問レビュー ============ */
+const reviewModal = document.getElementById('review-modal');
+const reviewTitle = document.getElementById('review-title');
+const reviewBody = document.getElementById('review-body');
+document.getElementById('review-close').onclick = ()=> reviewModal.classList.remove('open');
+reviewModal.addEventListener('click', (e)=>{ if(e.target===reviewModal) reviewModal.classList.remove('open'); });
+
+/* ============ 総括レポート ============ */
+function showSummary(){
+ const panel = document.getElementById('stage-panel');
+ const total = totalTasksAll();
+ const correct = totalCorrectAll();
+ let rows = '';
+ STAGES.forEach(s=>{
+  (s.tasks||[]).forEach(t=>{
+   const wasWrong = (wrongAttempts[t.id]||0) > 0;
+   const markLabel = wasWrong ? 'やり直し後正解' : '一発正解';
+   const markClass = wasWrong ? 'retry' : 'ok';
+   rows += '<button class="score-row'+(wasWrong?' was-wrong':'')+'" data-id="'+t.id+'">' +
+    '<span class="qtitle">['+s.label+'] '+t.title+'</span>' +
+    '<span class="mark '+markClass+'">'+markLabel+'</span>' +
+    '<span class="chev">›</span>' +
+    '</button>';
+  });
+ });
+ document.getElementById('phase-badge').textContent = '完了';
+ document.getElementById('stage-badge').textContent = '総括レポート';
+ panel.innerHTML =
+  '<div class="stage-head"><div class="day mono">6か月間の診療を完了しました</div><h2>総括レポート</h2></div>' +
+  '<div class="narrative"><p>田中太郎さんは標準治療A(2HREZ/4HR)を完遂し、喀痰培養陰性・画像所見の改善を確認しました。家族のLTBI治療、接触者健診、感染症法に基づく届出・公費負担手続も含め、一連の結核診療の流れを一通り経験しました。</p></div>' +
+  '<div class="section-label">スコア(一発正解数): '+correct+' / '+total+'</div>' +
+  '<div class="people-note">黄色の行は一度不正解を選んでやり直した設問です。行をタップすると問題・正解・解説を確認できます。</div>' +
+  '<div class="task score-report">'+rows+'</div>' +
+  '<div class="section-label">主な学習ポイント</div>' +
+  '<div class="narrative"><p>・標準治療A(2HREZ/4HR)、空気予防策と隔離解除の考え方、喀痰塗抹/培養/感受性検査のタイムライン<br>' +
+  '・軽度・無症状な副作用(肝機能・尿酸値上昇)への対応の考え方<br>' +
+  '・DOTSによる服薬支援と接触者健診(ウィンドウ期間を含む評価)<br>' +
+  '・感染症法第12条(届出)、第37条(入院医療費)・第37条の2(通院医療費)</p></div>' +
+  '<div style="text-align:center;margin-top:20px;"><button id="restart-btn" class="opt-btn" style="display:inline-block;min-width:200px;">最初からやり直す</button></div>';
+ panel.querySelectorAll('.score-row').forEach(row=>{
+  row.addEventListener('click', ()=> openReview(row.dataset.id));
+ });
+ document.getElementById('restart-btn').onclick = ()=>{
+  cur = 0; taskState = {}; wrongAttempts = {}; dlgOpen = {};
+  renderStage();
+ };
+}
+
+function findTaskById(id){
+ for(const s of STAGES){
+  for(const t of (s.tasks||[])){
+   if(t.id === id) return {stage:s, task:t};
+  }
+ }
+ return null;
+}
+
+function openReview(id){
+ const found = findTaskById(id);
+ if(!found) return;
+ const {stage:s, task:t} = found;
+ const wasWrong = (wrongAttempts[id]||0) > 0;
+ reviewTitle.textContent = '['+s.label+'] '+t.title;
+ let optsHtml = '<div class="opts">';
+ t.opts.forEach((o,i)=>{
+  const isCorrect = i === t.correct;
+  optsHtml += '<div class="opt-btn'+(isCorrect?' correct':'')+'" style="cursor:default;">'+o+(isCorrect?' ✓':'')+'</div>';
+ });
+ optsHtml += '</div>';
+ const retryNote = wasWrong ? '<p style="margin-top:8px;color:#a3781a;">この設問は一度不正解を選び、やり直して正解しています。</p>' : '';
+ reviewBody.innerHTML =
+  '<div class="task-q">'+t.q+'</div>' + optsHtml +
+  '<div class="explain"><span class="seal-stamp">'+(wasWrong?'再挑戦':'済')+'</span>'+t.explain+'</div>' + retryNote;
+ reviewModal.classList.add('open');
+}
+
+/* ============ 起動 ============ */
+document.getElementById('start-btn').onclick = ()=>{
+ document.getElementById('cover-intro').style.display = 'none';
+ renderStage();
+};
+
+})();
+</script>
+</body>
+</html>
