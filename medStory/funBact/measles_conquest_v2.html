@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>麻疹特別区争奪戦（プロトタイプ v2）</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #f5f1e8;
+    color: #2c2620;
+    font-family: 'Noto Sans JP', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body { padding: 0 0 50px; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 0 14px; }
+
+  /* --- Header + Tabs --- */
+  .page-header { padding: 18px 14px 0; max-width: 680px; margin: 0 auto; }
+  h1 { font-family: 'Zen Antique', serif; font-size: 21px; color: #7a2e1d; margin-bottom: 3px; }
+  .subtitle { font-size: 12px; color: #766f60; margin-bottom: 14px; }
+
+  .tabbar {
+    display: flex; gap: 6px; max-width: 680px; margin: 0 auto 16px; padding: 0 14px;
+    position: sticky; top: 0; background: #f5f1e8; padding-top: 6px; padding-bottom: 6px; z-index: 10;
+    border-bottom: 1px solid #e3dcc8;
+  }
+  .tab-btn {
+    flex: 1; padding: 11px 4px; text-align: center; font-size: 13px; font-weight: 500;
+    color: #9a9384; background: none; border: none; border-bottom: 3px solid transparent;
+    cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+  }
+  .tab-btn.active { color: #7a2e1d; border-bottom-color: #b5622f; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .card {
+    background: #fdfaf3; border: 1px solid #e3dcc8; border-radius: 10px;
+    padding: 16px; margin-bottom: 14px;
+  }
+  .card h2 {
+    font-family: 'Zen Antique', serif; font-size: 15px; color: #4a4234; margin-bottom: 12px;
+    border-left: 4px solid #b5622f; padding-left: 9px;
+  }
+  .card h3 {
+    font-family: 'Zen Antique', serif; font-size: 13.5px; color: #5a5142; margin: 14px 0 6px;
+  }
+  .card p, .card li { font-size: 13px; line-height: 1.85; color: #3a342a; }
+  .card ul, .card ol { padding-left: 20px; margin-bottom: 6px; }
+  .card p { margin-bottom: 8px; }
+
+  .callout {
+    background: #f0e9d6; border: 1px solid #d8cfb8; border-radius: 8px;
+    padding: 12px 14px; font-size: 12.5px; line-height: 1.8; color: #4a4234; margin: 10px 0;
+  }
+  .clinical-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 8px 0 4px; }
+  .clinical-table th, .clinical-table td {
+    text-align: left; padding: 7px 8px; border-bottom: 1px solid #ece5d3; vertical-align: top;
+  }
+  .clinical-table th { font-size: 11px; color: #766f60; font-weight: 500; }
+  .clinical-table td.game-term { color: #7a2e1d; font-weight: 500; white-space: nowrap; }
+
+  /* --- Start screen --- */
+  .diff-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .diff-btn {
+    padding: 12px 6px; font-size: 13px; text-align: center;
+    background: #f5f1e8; border: 1.5px solid #d8cfb8; border-radius: 8px;
+    color: #4a4234; cursor: pointer;
+  }
+  .diff-btn.selected { border-color: #b5622f; background: #f0e2d4; color: #7a2e1d; font-weight: 500; }
+  .rule-note { font-size: 12px; color: #766f60; line-height: 1.8; margin-bottom: 14px; }
+  .start-btn {
+    width: 100%; padding: 15px; font-size: 16px; font-weight: 500;
+    background: #7a2e1d; color: #fdfaf3; border: none; border-radius: 8px; cursor: pointer;
+  }
+  .start-btn:active { background: #5f2416; }
+
+  /* --- Game HUD --- */
+  #game-screen { display: none; }
+  .hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .hud-box { background: #fdfaf3; border: 1px solid #e3dcc8; border-radius: 8px; padding: 9px 10px; text-align: center; }
+  .hud-box .label { font-size: 10px; color: #766f60; margin-bottom: 2px; }
+  .hud-box .num { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; color: #4a4234; }
+
+  .duel { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 16px; }
+  .duel-card {
+    flex: 1; max-width: 150px; height: 90px; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 8px; border: 1.5px solid #d8cfb8; background: #f5f1e8;
+    transition: all 0.35s ease;
+  }
+  .duel-card.face-down { color: #b3a98f; font-size: 22px; }
+  .duel-card .dc-name { font-family: 'Zen Antique', serif; font-size: 14px; margin-bottom: 3px; }
+  .duel-card .dc-desc { font-size: 10px; color: #766f60; line-height: 1.4; }
+  .duel-card.player-revealed { background: #f7ded0; border-color: #d98a63; }
+  .duel-card.ai-revealed { background: #d9ecf3; border-color: #6fa9c4; }
+  .vs-label { font-family: 'Zen Antique', serif; font-size: 13px; color: #9a9384; }
+
+  .thinking { text-align: center; font-size: 13px; color: #766f60; margin: 10px 0 16px; min-height: 18px; }
+
+  .hand { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hand-card {
+    padding: 12px 10px; border-radius: 9px; border: 1.5px solid #d8cfb8;
+    background: #f5f1e8; cursor: pointer; min-height: 76px;
+  }
+  .hand-card .hc-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .hand-card .hc-name { font-family: 'Zen Antique', serif; font-size: 14px; color: #4a4234; }
+  .hand-card .hc-cost { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #b5622f; font-weight: 600; }
+  .hand-card .hc-desc { font-size: 11px; color: #766f60; line-height: 1.5; }
+  .hand-card.disabled { opacity: 0.4; pointer-events: none; }
+  .hand-card:active { background: #e8ddc8; }
+
+  table.log { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.log th, table.log td { text-align: center; padding: 6px 4px; border-bottom: 1px solid #ece5d3; font-family: 'JetBrains Mono', monospace; }
+  table.log th { font-family: 'Noto Sans JP', sans-serif; color: #766f60; font-size: 10px; font-weight: 500; }
+  table.log td.turn-label { font-family: 'Noto Sans JP', sans-serif; }
+
+  .verdict { text-align: center; padding: 22px 16px; border-radius: 10px; margin-bottom: 14px; display: none; }
+  .verdict.fallen { background: #f7d8ce; border: 1px solid #d98a63; }
+  .verdict.contained { background: #d6ece2; border: 1px solid #6fae91; }
+  .verdict .v-title { font-family: 'Zen Antique', serif; font-size: 21px; margin-bottom: 5px; }
+  .verdict.fallen .v-title { color: #7a2e1d; }
+  .verdict.contained .v-title { color: #1f5c42; }
+  .verdict .v-sub { font-size: 13px; color: #4a4234; line-height: 1.6; }
+  .restart-btn {
+    width: 100%; padding: 13px; font-size: 15px; background: #4a4234; color: #fdfaf3;
+    border: none; border-radius: 8px; cursor: pointer; margin-top: 4px;
+  }
+
+  /* --- Links tab (placeholder) --- */
+  .placeholder { text-align: center; padding: 40px 16px; color: #9a9384; font-size: 13px; line-height: 2; }
+
+  footer {
+    max-width: 680px; margin: 22px auto 0; font-size: 11px; line-height: 1.8;
+    color: #9a9384; border-top: 1px solid #e3dcc8; padding-top: 13px; padding-left: 14px; padding-right: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>麻疹特別区争奪戦</h1>
+  <div class="subtitle">プロトタイプ v2 — 病原体側として、伏せた手でAI防御側と読み合う</div>
+</div>
+
+<div class="tabbar">
+  <button class="tab-btn active" data-tab="play">プレイ</button>
+  <button class="tab-btn" data-tab="about">解説</button>
+  <button class="tab-btn" data-tab="links">リンク</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ PLAY TAB ============ -->
+  <div class="tab-panel active" id="tab-play">
+
+    <div id="start-screen">
+      <div class="card">
+        <h2>難易度を選択</h2>
+        <div class="diff-grid" id="diff-grid">
+          <div class="diff-btn" data-r0="12" data-vax="95">イージー</div>
+          <div class="diff-btn selected" data-r0="15" data-vax="93">ノーマル</div>
+          <div class="diff-btn" data-r0="18" data-vax="90">ハード</div>
+        </div>
+        <div class="rule-note">
+          操作方法や設計意図の詳細は「解説」タブをご覧ください。ここでは簡易ルールのみ：
+          あなたは病原体側。毎ターン伏せ札を1枚選び、AI防御側も同時に伏せて選び、同時公開して結果が決まります。累計感染が区域人口に達すれば陥落、拡散が収束すれば封じ込め成立。全10ターンで決着します。
+        </div>
+        <button class="start-btn" id="start-btn">対戦開始</button>
+      </div>
+    </div>
+
+    <div id="game-screen">
+      <div class="hud">
+        <div class="hud-box"><div class="label">ターン</div><div class="num" id="hud-turn">0 / 10</div></div>
+        <div class="hud-box"><div class="label">累計感染</div><div class="num" id="hud-cases">1 / 1000</div></div>
+        <div class="hud-box"><div class="label">あなたのIP</div><div class="num" id="hud-ip">3</div></div>
+      </div>
+
+      <div class="card">
+        <h2>手札を選ぶ</h2>
+        <div class="thinking" id="thinking-text"></div>
+        <div class="duel" id="duel-area" style="display:none;">
+          <div class="duel-card face-down" id="player-duel-card">?</div>
+          <div class="vs-label">VS</div>
+          <div class="duel-card face-down" id="ai-duel-card">?</div>
+        </div>
+        <div class="hand" id="hand"></div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div class="v-title" id="verdict-title"></div>
+        <div class="v-sub" id="verdict-sub"></div>
+        <button class="restart-btn" id="restart-btn">もう一度対戦する</button>
+      </div>
+
+      <div class="card">
+        <h2>対戦ログ</h2>
+        <table class="log">
+          <thead><tr><th>ターン</th><th>あなた</th><th>AI</th><th>新規感染</th><th>累計</th></tr></thead>
+          <tbody id="log-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ ABOUT TAB ============ -->
+  <div class="tab-panel" id="tab-about">
+
+    <div class="card">
+      <h2>操作方法</h2>
+      <p>あなたは病原体側として、麻疹特別区の征服を目指します。毎ターン4枚の手札から1枚を選んで伏せます。同時にAI防御側も手札を1枚伏せて選んでおり、あなたが手を選び終えた時点で両者の手が同時に公開され、その組み合わせでそのターンの結果（新規感染者数）が決まります。</p>
+      <p>手札にはIP（感染資源）というコストがあり、毎ターン3ポイントずつ回復します。強い手ほどコストが高いため、「今すぐ強く出るか」「資源を温存して後半に賭けるか」の判断が発生します。</p>
+      <h3>あなたの手札</h3>
+      <ul>
+        <li><b>潜伏拡散</b>（IP1）：このターンは何も起きませんが、次ターンのIPが1増えます。</li>
+        <li><b>陽動</b>（IP1）：実効果はありませんが、AIの警戒パターンに「攻撃的な手」として記録されるため、AIの今後の判断を誤誘導できます。</li>
+        <li><b>集中攻撃</b>（IP2）：このターンの拡散量が1.5倍になります。</li>
+        <li><b>変異</b>（IP3）：このターンだけ基本再生産数（R0）が+3されます。</li>
+      </ul>
+      <h3>AIの手札（非公開）</h3>
+      <ul>
+        <li><b>待機</b>：何もしませんが、次ターンの資源（MP）が1増えます。</li>
+        <li><b>サーベイランス</b>：このターンの拡散量を0.8倍に抑えます。</li>
+        <li><b>緊急接種</b>：特別区の接種率が永続的に+8%されます（このゲーム内での恒久効果）。</li>
+        <li><b>隔離</b>：このターンの実効再生産数（Re）を強制的に0.8以下に抑えます。</li>
+      </ul>
+      <div class="callout">
+        AIの残り資源（MP）は画面上には表示されません。AIが「隔離」を打てるだけの余力を残しているかどうかは、あなた自身がAIの行動履歴から推測するしかない設計にしています。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>目的・設計意図</h2>
+      <p>このゲームの出発点は「病原体側を操作して身体の各エリアを征服していく」というコンセプトです。ただし病原体側で無双するだけの内容だと、ワクチンの必要性を軽視させかねないという懸念があったため、次の2点を設計上の軸にしました。</p>
+      <ol>
+        <li><b>征服の難易度そのものを、現実の疫学データで決める。</b>接種率が集団免疫閾値（HIT）を上回っている特別区は「城壁強化済み」として攻略が極端に困難になり、逆に接種率が低いほど短期間で陥落します。つまり「病原体が勝ちやすい」状態は、そのまま「現実にワクチンが足りていない状態」の再現になっています。</li>
+        <li><b>単なる数値シミュレーターでは駆け引きが生まれないため、対戦構造を追加した。</b>最初のプロトタイプはスライダーで数値を動かすだけの決定論的な計算機に近く、プレイヤーの意思決定が介入する余地がありませんでした。そこでAI防御側という「読み合う相手」を導入し、伏せ札・同時公開・ブラフ（陽動）という駆け引きの要素を足しています。</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>実際の臨床・公衆衛生との対応関係</h2>
+      <p>ゲーム中の数値やカードは、実在する疫学的な概念を単純化してモデル化したものです。対応関係は以下の通りです。</p>
+      <table class="clinical-table">
+        <thead><tr><th>ゲーム上の要素</th><th>実際の臨床・公衆衛生的な意味</th></tr></thead>
+        <tbody>
+          <tr><td class="game-term">R0（基本再生産数）</td><td>1人の感染者が、免疫を持たない集団の中で平均何人にうつすかを表す指標。麻疹はR0が12〜18と、感染症の中でも極めて高いことで知られています。</td></tr>
+          <tr><td class="game-term">Re（実効拡散係数）</td><td>実際の集団（一部に免疫保持者がいる状態）での再生産数。Re = R0 &times; (1 − 接種率) という式は、実効再生産数の考え方を単純化したものです。</td></tr>
+          <tr><td class="game-term">集団免疫閾値（HIT）</td><td>1 − 1/R0 で計算される、アウトブレイクを防ぐために必要な最低限の免疫保持率。麻疹の場合は91.7〜94.4%程度と非常に高く、数%の接種率低下が流行につながりやすいことがこの数値からもわかります。</td></tr>
+          <tr><td class="game-term">緊急接種（AI）</td><td>アウトブレイク発生時に行われる、接触者や周辺地域を対象とした緊急ワクチン接種（リング・ワクチネーションなど）に相当します。</td></tr>
+          <tr><td class="game-term">サーベイランス（AI）</td><td>積極的疫学調査・接触者追跡に相当します。早期探知によって流行の拡大を抑える公衆衛生上の実際の手法です。</td></tr>
+          <tr><td class="game-term">隔離（AI）</td><td>患者の隔離や、学校等における出席停止措置に相当します。</td></tr>
+          <tr><td class="game-term">変異（プレイヤー）</td><td>ゲーム上の演出として「感染力の一時的な増加」を表現するための抽象的な仕掛けです。実際の麻疹ウイルスがワクチンの効果を回避するような変異を頻繁に起こすわけではない点には注意が必要です。</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        本ゲームは教育目的の簡易モデルであり、実際の感染症疫学は確率的な要素（誰が誰と接触するか、スーパースプレッダーの存在など）や、年齢構成・地域特性など、ここでは省略した多くの要因に左右されます。数値の体感を掴むための教材として位置づけ、正確な流行予測のツールとしては使用しないでください。
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ LINKS TAB ============ -->
+  <div class="tab-panel" id="tab-links">
+    <div class="card">
+      <div class="placeholder">リンクは準備中です。</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+(function () {
+  // --- Tab switching ---
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // --- Game logic ---
+  const PLAYER_CARDS = [
+    { id: 'latent',  name: '潜伏拡散', cost: 1, desc: '効果なし。次ターンIP+1' },
+    { id: 'feint',   name: '陽動',     cost: 1, desc: '効果なし。AIの警戒を誘導' },
+    { id: 'focus',   name: '集中攻撃', cost: 2, desc: '今ターンの拡散量 ×1.5' },
+    { id: 'mutate',  name: '変異',     cost: 3, desc: '今ターンR0 +3' }
+  ];
+  const AI_CARDS = [
+    { id: 'wait',       name: '待機',           cost: 0, desc: '効果なし' },
+    { id: 'surveil',    name: 'サーベイランス', cost: 1, desc: '拡散量 ×0.8' },
+    { id: 'vaccinate',  name: '緊急接種',       cost: 2, desc: '接種率 永続+8%' },
+    { id: 'quarantine', name: '隔離',           cost: 3, desc: '今ターンRe上限0.8' }
+  ];
+  const POPULATION = 1000;
+  const MAX_TURNS = 10;
+
+  let state = null;
+
+  const startScreen = document.getElementById('start-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const diffGrid = document.getElementById('diff-grid');
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+  const handEl = document.getElementById('hand');
+  const duelArea = document.getElementById('duel-area');
+  const playerDuelCard = document.getElementById('player-duel-card');
+  const aiDuelCard = document.getElementById('ai-duel-card');
+  const thinkingText = document.getElementById('thinking-text');
+  const logBody = document.getElementById('log-body');
+  const verdict = document.getElementById('verdict');
+  const verdictTitle = document.getElementById('verdict-title');
+  const verdictSub = document.getElementById('verdict-sub');
+
+  let selectedDiff = { r0: 15, vax: 0.93 };
+
+  diffGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.diff-btn');
+    if (!btn) return;
+    diffGrid.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedDiff = { r0: parseFloat(btn.dataset.r0), vax: parseFloat(btn.dataset.vax) / 100 };
+  });
+
+  startBtn.addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    initGame();
+  });
+
+  restartBtn.addEventListener('click', () => {
+    gameScreen.style.display = 'none';
+    startScreen.style.display = 'block';
+    verdict.style.display = 'none';
+  });
+
+  function initGame() {
+    state = {
+      r0: selectedDiff.r0,
+      vax: selectedDiff.vax,
+      cases: 1,
+      cumulative: 1,
+      turn: 0,
+      playerIp: 3,
+      aiMp: 3,
+      playerHistory: [],
+      gameOver: false
+    };
+    logBody.innerHTML = '';
+    duelArea.style.display = 'none';
+    thinkingText.textContent = '';
+    verdict.style.display = 'none';
+    renderHud();
+    renderHand();
+  }
+
+  function renderHud() {
+    document.getElementById('hud-turn').textContent = state.turn + ' / ' + MAX_TURNS;
+    document.getElementById('hud-cases').textContent = state.cumulative.toLocaleString('ja-JP') + ' / ' + POPULATION.toLocaleString('ja-JP');
+    document.getElementById('hud-ip').textContent = state.playerIp;
+  }
+
+  function renderHand() {
+    handEl.innerHTML = '';
+    PLAYER_CARDS.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'hand-card' + (c.cost > state.playerIp ? ' disabled' : '');
+      div.innerHTML =
+        '<div class="hc-top"><span class="hc-name">' + c.name + '</span><span class="hc-cost">IP' + c.cost + '</span></div>' +
+        '<div class="hc-desc">' + c.desc + '</div>';
+      div.addEventListener('click', () => playTurn(c));
+      handEl.appendChild(div);
+    });
+  }
+
+  function chooseAiCard() {
+    const recent = state.playerHistory.slice(-3);
+    const aggressiveCount = recent.filter(id => id === 'focus' || id === 'mutate' || id === 'feint').length;
+    const weights = { wait: 1, surveil: 1, vaccinate: 1, quarantine: 1 };
+    if (aggressiveCount >= 2) { weights.quarantine = 3; weights.surveil = 2; }
+    else { weights.vaccinate = 2; weights.wait = 1.5; }
+
+    const affordable = AI_CARDS.filter(c => c.cost <= state.aiMp);
+    const pool = [];
+    affordable.forEach(c => {
+      const w = weights[c.id] || 1;
+      for (let i = 0; i < Math.round(w * 10); i++) pool.push(c);
+    });
+    if (pool.length === 0) return AI_CARDS.find(c => c.id === 'wait');
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function playTurn(playerCard) {
+    if (state.gameOver) return;
+    handEl.querySelectorAll('.hand-card').forEach(el => el.classList.add('disabled'));
+
+    const aiCard = chooseAiCard();
+
+    duelArea.style.display = 'flex';
+    playerDuelCard.className = 'duel-card face-down';
+    playerDuelCard.textContent = '?';
+    aiDuelCard.className = 'duel-card face-down';
+    aiDuelCard.textContent = '?';
+    thinkingText.textContent = 'AI防御側が対策を検討中…';
+
+    setTimeout(() => {
+      resolveTurn(playerCard, aiCard);
+    }, 650);
+  }
+
+  function resolveTurn(playerCard, aiCard) {
+    thinkingText.textContent = '';
+
+    playerDuelCard.className = 'duel-card player-revealed';
+    playerDuelCard.innerHTML = '<div class="dc-name">' + playerCard.name + '</div><div class="dc-desc">' + playerCard.desc + '</div>';
+    aiDuelCard.className = 'duel-card ai-revealed';
+    aiDuelCard.innerHTML = '<div class="dc-name">' + aiCard.name + '</div><div class="dc-desc">' + aiCard.desc + '</div>';
+
+    let baseRe = state.r0 * (1 - state.vax);
+    if (playerCard.id === 'mutate') baseRe += 3;
+    let growthMult = 1;
+    if (playerCard.id === 'focus') growthMult *= 1.5;
+    if (aiCard.id === 'surveil') growthMult *= 0.8;
+    if (aiCard.id === 'quarantine') baseRe = Math.min(baseRe, 0.8);
+
+    const newCases = Math.max(0, Math.round(state.cases * baseRe * growthMult));
+    state.cases = newCases;
+    state.cumulative += newCases;
+
+    if (aiCard.id === 'vaccinate') state.vax = Math.min(0.99, state.vax + 0.08);
+
+    state.playerIp = state.playerIp - playerCard.cost + 3 + (playerCard.id === 'latent' ? 1 : 0);
+    state.aiMp = state.aiMp - aiCard.cost + 3 + (aiCard.id === 'wait' ? 1 : 0);
+
+    state.turn++;
+    state.playerHistory.push(playerCard.id);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="turn-label">' + state.turn + '</td><td>' + playerCard.name + '</td><td>' + aiCard.name + '</td><td>' + newCases.toLocaleString('ja-JP') + '</td><td>' + state.cumulative.toLocaleString('ja-JP') + '</td>';
+    logBody.insertBefore(tr, logBody.firstChild);
+
+    renderHud();
+
+    if (state.cumulative >= POPULATION) {
+      endGame('fallen');
+      return;
+    }
+    if (state.cases < 1) {
+      endGame('contained');
+      return;
+    }
+    if (state.turn >= MAX_TURNS) {
+      endGame(baseRe >= 1 ? 'fallen' : 'contained');
+      return;
+    }
+
+    setTimeout(() => {
+      duelArea.style.display = 'none';
+      renderHand();
+    }, 1400);
+  }
+
+  function endGame(outcome) {
+    state.gameOver = true;
+    setTimeout(() => {
+      verdict.style.display = 'block';
+      verdict.className = 'verdict ' + outcome;
+      if (outcome === 'fallen') {
+        verdictTitle.textContent = '陥落 — 特別区制圧';
+        verdictSub.textContent = 'ターン' + state.turn + '、累計感染 ' + state.cumulative.toLocaleString('ja-JP') + ' 人で区域が陥落しました。';
+      } else {
+        verdictTitle.textContent = '封じ込め成立';
+        verdictSub.textContent = 'AI防御側の対応により、ターン' + state.turn + 'でアウトブレイクが収束しました。';
+      }
+      handEl.innerHTML = '';
+    }, 1200);
+  }
+})();
+</script>
+</body>
+</html>
