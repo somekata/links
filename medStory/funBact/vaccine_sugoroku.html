@@ -137,6 +137,27 @@ button:disabled{opacity:.35;cursor:not-allowed;}
 }
 .stamp .mark{font-size:1.4rem;display:block;}
 
+/* ending credit roll */
+.credit-roll{
+  margin:20px 0;padding:18px 16px;border-radius:12px;
+  background:linear-gradient(180deg,#241f1a,#332c23);color:var(--paper);
+  max-height:340px;overflow-y:auto;
+}
+.credit-roll .cr-item{
+  opacity:0;animation:crFade .6s ease forwards;padding:7px 0;
+  border-bottom:1px solid rgba(245,241,232,.12);
+}
+.credit-roll .cr-item:last-child{border-bottom:none;}
+.credit-roll .cr-age{color:var(--gold);font-family:"JetBrains Mono",monospace;font-size:.68rem;margin-right:8px;}
+.credit-roll .cr-title{font-weight:700;font-size:.85rem;}
+.credit-roll .cr-vax{font-size:.74rem;color:#cfc8b8;margin-top:2px;}
+@keyframes crFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.ending-tagline{
+  margin:22px 0 8px;text-align:center;font-family:"Noto Serif JP",serif;
+  font-size:1.05rem;line-height:2;color:var(--ink);letter-spacing:.02em;
+}
+.ending-tagline .em{color:var(--gold);font-weight:700;}
+
 footer.disclaimer{
   max-width:640px;margin:30px auto 0;padding:14px 16px 30px;
   font-size:.68rem;color:var(--ink-soft);line-height:1.7;border-top:1px solid var(--line-border);
@@ -344,6 +365,9 @@ a.link-item:hover .link-name{color:var(--ok);text-decoration:underline;}
       <div class="intro-box" id="endingText"></div>
       <h2 style="font-size:1rem;margin:16px 0 8px;"><span id="endingBookLabel">接種記録書</span>スタンプ一覧</h2>
       <div class="stamp-book" id="stampBook"></div>
+      <h2 style="font-size:1rem;margin:20px 0 8px;">🎬 これまでのワクチンの歩み</h2>
+      <div class="credit-roll" id="creditRoll"></div>
+      <div class="ending-tagline" id="endingTagline"></div>
       <div class="controls">
         <button class="primary" id="restartBtn">もう一度最初から</button>
       </div>
@@ -634,37 +658,62 @@ const VACCINE_INFO = {
     efficacy:'子宮頸がんの原因となる高リスク型HPVの持続感染・前がん病変を高い割合で防ぐ効果が報告されています。',
     specialWarning:'接種後、緊張などから立ちくらみ・失神(血管迷走神経反射)を起こすことがあるため、接種後しばらく座って様子をみます。'},
 
-  hepa:{name:'A型肝炎', route:'筋肉内または皮下', doses:'2回+6か月後追加(計3回)が目安',
+  hepa:{name:'A型肝炎', route:'筋肉内または皮下', doses:'3回(0・28日・6か月後)',
     caution:'不活化ワクチン。',
     disease:'A型肝炎', pathogen:'A型肝炎ウイルス(HAV)',
     feature:'慢性化はしないが急性肝炎を起こす。',
     transmission:'糞口感染(汚染された水・食品など)', vaccineType:'不活化ワクチン',
-    purpose:['任意','渡航'],
+    purpose:['任意','渡航'], doseOffsetDays:[0,28,182],
     efficacy:'A型肝炎の発症を防ぐ効果が期待されます。'},
 
-  typhoid:{name:'腸チフス', route:'製剤による(注射または経口)', doses:'製剤による',
-    caution:'国内未承認の製剤もあり、トラベルクリニック等での相談が必要。',
+  hepaBooster:{name:'A型肝炎(追加)', route:'筋肉内または皮下', doses:'1回(追加接種)',
+    caution:'不活化ワクチン。A型肝炎の接種歴がある人への追加接種。',
+    disease:'A型肝炎', pathogen:'A型肝炎ウイルス(HAV)',
+    feature:'慢性化はしないが急性肝炎を起こす。',
+    transmission:'糞口感染(汚染された水・食品など)', vaccineType:'不活化ワクチン',
+    purpose:['任意','渡航'], doseOffsetDays:[0],
+    efficacy:'以前の接種による免疫を再び高める効果が期待されます。'},
+
+  typhoid:{name:'腸チフス', route:'筋肉内', doses:'1回(注射)',
+    caution:'経口製剤もあるが、ここでは注射剤(不活化ワクチン)を想定。トラベルクリニック等での相談が望ましい。',
     disease:'腸チフス', pathogen:'<i>Salmonella</i> Typhi(チフス菌、血清型Typhi)',
     feature:'血清型Typhiは重症の全身感染症(腸チフス)を起こす。',
-    transmission:'糞口感染', vaccineType:'製剤による(不活化/経口弱毒生)',
-    purpose:['渡航'],
+    transmission:'糞口感染', vaccineType:'不活化ワクチン(注射剤)',
+    purpose:['渡航'], doseOffsetDays:[0],
     efficacy:'腸チフスの発症を減らす効果が期待されますが、効果は100%ではありません。'},
 
-  rabies:{name:'狂犬病(曝露前)', route:'筋肉内または皮下', doses:'3回(曝露前)',
+  rabies:{name:'狂犬病(曝露前)', route:'筋肉内または皮下', doses:'3回(0・7・28日)',
     caution:'不活化ワクチン。曝露前接種を受けていても、曝露後は追加接種(PEP)が別途必要。',
     disease:'狂犬病', pathogen:'狂犬病ウイルス',
     feature:'発症するとほぼ致死的とされる急性脳炎を起こす。',
     transmission:'感染動物の咬傷・接触', vaccineType:'不活化ワクチン',
-    purpose:['渡航','その他'],
+    purpose:['渡航','その他'], doseOffsetDays:[0,7,28],
     efficacy:'曝露前接種は、曝露後の対応(PEP)を簡略化できますが、これだけで発症を完全に防げるわけではありません。',
     specialWarning:'狂犬病は発症するとほぼ100%が死亡するとされる病気です。曝露前接種の有無にかかわらず、動物に咬まれる・引っかかれるなどの曝露があった場合は、必ず速やかに曝露後予防(PEP)を受けてください。'},
+
+  rabiesBooster:{name:'狂犬病(追加)', route:'筋肉内または皮下', doses:'1回(追加接種)',
+    caution:'不活化ワクチン。狂犬病(曝露前)の接種歴がある人への追加接種。',
+    disease:'狂犬病', pathogen:'狂犬病ウイルス',
+    feature:'発症するとほぼ致死的とされる急性脳炎を起こす。',
+    transmission:'感染動物の咬傷・接触', vaccineType:'不活化ワクチン',
+    purpose:['渡航','その他'], doseOffsetDays:[0],
+    efficacy:'以前の曝露前接種による免疫を再び高める効果が期待されます。',
+    specialWarning:'狂犬病は発症するとほぼ100%が死亡するとされる病気です。曝露前接種の有無にかかわらず、動物に咬まれる・引っかかれるなどの曝露があった場合は、必ず速やかに曝露後予防(PEP)を受けてください。'},
+
+  cholera:{name:'コレラ', route:'経口', doses:'2回(0・7日)',
+    caution:'経口弱毒生ワクチン。',
+    disease:'コレラ', pathogen:'<i>Vibrio cholerae</i>(コレラ菌)',
+    feature:'コレラ毒素により大量の水様性下痢を起こしうる。',
+    transmission:'糞口感染(汚染された水・食品など)', vaccineType:'経口弱毒生ワクチン',
+    purpose:['渡航'], doseOffsetDays:[0,7],
+    efficacy:'コレラによる下痢症を防ぐ効果が期待されますが、効果は完全ではありません。'},
 
   yellowfever:{name:'黄熱', route:'皮下', doses:'1回(長期にわたり有効とされる)',
     caution:'生ワクチン。国内では検疫所等の指定医療機関でのみ接種可能。妊娠中・重度免疫不全では要相談。',
     disease:'黄熱', pathogen:'黄熱ウイルス',
     feature:'蚊が媒介するフラビウイルス。重症例では出血傾向・肝障害を伴う。',
     transmission:'蚊媒介感染', vaccineType:'生ワクチン',
-    purpose:['渡航'], extraNote:'入国要件として接種証明書(イエローカード)を求める国がある。',
+    purpose:['渡航'], extraNote:'入国要件として接種証明書(イエローカード)を求める国がある。', doseOffsetDays:[0],
     efficacy:'黄熱の発症を防ぐ効果が長期間持続するとされています。',
     specialWarning:'黄熱も蚊が媒介する病気です。ワクチンに加えて、虫除け剤や長袖の着用など、渡航中は蚊に刺されない工夫も大切です。'},
 
@@ -677,11 +726,11 @@ const VACCINE_INFO = {
     efficacy:'侵襲性髄膜炎菌感染症のリスクを下げる効果が期待されます。'},
 
   tdBooster:{name:'破傷風トキソイド追加', route:'筋肉内', doses:'1回',
-    caution:'外傷時などに追加接種が必要になる場合がある。',
+    caution:'基礎免疫があれば通常10年程度有効とされ、外傷時などにも追加接種が必要になる場合がある。',
     disease:'ジフテリア・破傷風(追加免疫)', pathogen:'<i>Corynebacterium diphtheriae</i>・<i>Clostridium tetani</i>',
     feature:'免疫が経年で低下するため、成人での追加接種が検討される。',
     transmission:'-', vaccineType:'トキソイド',
-    purpose:['その他','渡航'],
+    purpose:['その他','渡航'], doseOffsetDays:[0],
     efficacy:'破傷風・ジフテリアに対する免疫を再び高める効果があります。'},
 
   ppsv:{name:'肺炎球菌(高齢者用)', route:'皮下または筋肉内', doses:'制度上1回(65歳以上)',
@@ -811,7 +860,8 @@ const STAGES = [
  {id:'y11-12', ageMonths:138, seg:'seg-youth', ageLabel:'11〜12歳', title:'小学校高学年',
   narrative:'',
   type:'quiz', required:['dt'], optional:[], wrong:['hpv','mr'],
-  note:'ジフテリア・破傷風の二種混合です。'},
+  note:'ジフテリア・破傷風の二種混合です。',
+  nextMessageOverride:'これでいったん定期接種は終了です。'},
 
  {id:'y12-16-hpv', ageMonths:168, seg:'seg-youth', ageLabel:'12〜16歳', title:'HPVワクチンの時期', girlOnly:true,
   narrative:'現在の定期接種の対象は女性です。',
@@ -821,22 +871,25 @@ const STAGES = [
  {id:'y15-travel', ageMonths:180, seg:'seg-youth', ageLabel:'15歳', title:'海外赴任に帯同',
   narrative:'ご両親の転勤で、海外に3年ほど住むことになりました。滞在に備えて検討すべきワクチンを選びましょう。',
   type:'quiz', required:['hepa'], optional:['typhoid','rabies','tdBooster'], wrong:['yellowfever'],
+  travelVisitSeries:true,
   note:'長期滞在では衛生状況によりA型肝炎が広く推奨されます。実際に必要なものは渡航先で大きく異なります。'},
 
  {id:'y24-us', ageMonths:288, seg:'seg-youth', ageLabel:'24歳', title:'アメリカへ留学',
   narrative:'大学の寮生活のため、大学から予防接種の証明や追加接種を求められました。',
   type:'quiz', required:['meningo'], optional:['tdBooster'], wrong:['yellowfever','typhoid'],
+  noNextAppointment:true,
   note:'寮生活を伴う米国の大学では髄膜炎菌ワクチンを求められることが多くあります。MR・水痘は幼少期の接種歴の証明で足りることが一般的です。'},
 
  {id:'y30-india', ageMonths:360, seg:'seg-adult', ageLabel:'30歳', title:'インドへ1か月旅行',
   narrative:'夏休みを利用してインドを1か月旅行することにしました。',
-  type:'quiz', required:['hepa','typhoid'], optional:['rabies','tdBooster'], wrong:['yellowfever'],
-  note:'A型肝炎・腸チフスは南アジアへの旅行で広く推奨されます。'},
+  type:'quiz', required:['hepaBooster','typhoid','cholera'], optional:['rabies','tdBooster'], wrong:['yellowfever'],
+  travelVisitSeries:true,
+  note:'A型肝炎(15歳の時に接種済みのため追加の1回)・腸チフス・コレラは南アジアへの旅行で広く推奨されます。'},
 
  {id:'y40-ghana', ageMonths:480, seg:'seg-adult', ageLabel:'40歳', title:'ガーナへ渡航',
   narrative:'仕事でガーナに渡航することになりました。',
-  type:'quiz', required:['yellowfever'], optional:['hepa','typhoid'], wrong:[],
-  note:'黄熱ワクチンは入国に際して接種証明(イエローカード)が求められることがあり、日本では検疫所等の指定機関でのみ接種できます。'},
+  type:'quiz', required:['yellowfever'], optional:['hepaBooster','typhoid','tdBooster'], wrong:[],
+  note:'黄熱ワクチンは入国に際して接種証明(イエローカード)が求められることがあり、日本では検疫所等の指定機関でのみ接種できます。A型肝炎は15歳の時に接種済みのため、追加の1回のみです。'},
 
  {id:'y65', ageMonths:780, seg:'seg-senior', ageLabel:'65歳', title:'65歳の誕生日',
   narrative:'',
@@ -874,6 +927,15 @@ function addMonths(baseDate, months){
 function stageDate(ageMonths){
   if(ageMonths===null || ageMonths===undefined || !state.birthDate) return null;
   return addMonths(state.birthDate, ageMonths);
+}
+function addDays(baseDate, days){
+  const d = new Date(baseDate.getTime());
+  d.setDate(d.getDate() + Math.round(days));
+  return d;
+}
+function getStageDate(s){
+  if(s.fixedDate) return s.fixedDate;
+  return stageDate(s.ageMonths);
 }
 function randomLot(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
@@ -966,7 +1028,7 @@ function renderBoard(){
     if(i < state.stageIdx) cls += ' done';
     else if(i === state.stageIdx) cls += ' current';
     else cls += ' locked';
-    const d = stageDate(s.ageMonths);
+    const d = getStageDate(s);
     const dateHtml = d ? `<span class="date-badge">${formatDateJP(d)}</span>` : '';
     return `<div class="${cls}">
       <div class="dot"></div>
@@ -985,9 +1047,9 @@ function renderQuizPanel(){
     showEnding();
     return;
   }
-  const s = state.activeStages[state.stageIdx];
+  let s = resolveDynamicStage(state.activeStages[state.stageIdx]);
   state.picked = new Set();
-  const d = stageDate(s.ageMonths);
+  const d = getStageDate(s);
   if(s.ageMonths !== null && s.ageMonths !== undefined){
     state.lastKnownAgeMonths = s.ageMonths;
   }
@@ -1005,6 +1067,42 @@ function renderQuizPanel(){
       <div class="controls"><button class="primary" id="nextFromInfo">次の駅へ →</button></div>
     `;
     document.getElementById('nextFromInfo').onclick = advanceStage;
+    return;
+  }
+
+  if(s.type === 'visit'){
+    const armIdxRef = {i:0};
+    const infos = s.visitDoses.map(dd=>({...VACCINE_INFO[dd.id], _dd:dd}));
+    const lines = [];
+    lines.push(`本日は、${infos.map(v=>v.name).join('、')}を接種します。`);
+    lines.push(infos.map(v=>assignAdminSite(v, armIdxRef)).join('、') + '。');
+    infos.filter(v=>v._dd.totalDoses>1).forEach(v=>{
+      lines.push(`${v.name}は${v._dd.doseIndex+1}回目/${v._dd.totalDoses}回です。`);
+    });
+    infos.filter(v=>v.specialWarning && v._dd.doseIndex===0).forEach(v=>{
+      lines.push(`<span class="warn-line">⚠ ${v.specialWarning}</span>`);
+    });
+    lines.push(s.isLastVisit ? 'これでいったん終了です。気を付けて行ってきてください。' : s.nextVisitLine);
+    panel.innerHTML = `
+      <div class="stage-tag">${s.ageLabel}</div>
+      ${d? `<div class="stage-date">${formatDateJP(d)}</div>` : ''}
+      <h2>${s.title}</h2>
+      <div class="chat-thread">
+        <div class="chat-bubble staff"><span class="chat-name">医療者(あなた)</span>${lines.join('<br>')}</div>
+        <div class="chat-bubble patient"><span class="chat-name">受診者</span>はい、わかりました。</div>
+      </div>
+      <div class="controls"><button class="primary" id="nextFromVisit">${s.isLastVisit? '次の駅へ →' : '次の受診へ →'}</button></div>
+    `;
+    document.getElementById('nextFromVisit').onclick = ()=>{
+      s.visitDoses.forEach(dd=>{
+        const info = VACCINE_INFO[dd.id];
+        state.records.push({
+          date: d, dateLabel: formatDateJP(d), name: info.name + (dd.totalDoses>1? `(${dd.doseIndex+1}回目)` : ''),
+          route: info.route, lot: randomLot(), ageMonthsAtRecord: state.lastKnownAgeMonths
+        });
+      });
+      advanceStage();
+    };
     return;
   }
 
@@ -1044,6 +1142,57 @@ function renderQuizPanel(){
     };
   });
   document.getElementById('judgeBtn').onclick = ()=>judgeStage(s);
+}
+
+/* ================= 動的な接種要否の解決 ================= */
+function wasPickedAt(stageId, vaccineId){
+  const rec = state.passedStages.find(p=>p.id===stageId);
+  return rec ? rec.picked.includes(vaccineId) : false;
+}
+function resolveDynamicStage(s){
+  if(s.id === 'y30-india' && wasPickedAt('y15-travel','rabies')){
+    return {...s, optional: s.optional.map(id => id==='rabies' ? 'rabiesBooster' : id)};
+  }
+  return s;
+}
+function tdBoosterNote(stageId){
+  if(stageId === 'y15-travel'){
+    return '破傷風トキソイドは、基礎免疫があれば通常10年程度有効とされ、15歳の時点では接種してもしなくても問題ありません。';
+  }
+  if(stageId === 'y24-us'){
+    return wasPickedAt('y15-travel','tdBooster')
+      ? '15歳の時に破傷風トキソイドを接種しているため、24歳では基本的に不要ですが、希望があれば接種できます。'
+      : '15歳の時に破傷風トキソイドを接種していないため、24歳での接種が推奨されます。';
+  }
+  if(stageId === 'y30-india'){
+    return wasPickedAt('y24-us','tdBooster')
+      ? '24歳の時に破傷風トキソイドを接種しているため、30歳では基本的に不要ですが、希望があれば接種できます。'
+      : '24歳の時に破傷風トキソイドを接種していないため、30歳での接種が推奨されます。';
+  }
+  if(stageId === 'y40-ghana'){
+    const already = wasPickedAt('y15-travel','tdBooster') || wasPickedAt('y24-us','tdBooster') || wasPickedAt('y30-india','tdBooster');
+    return already
+      ? 'これまでに破傷風トキソイドの接種歴があります。免疫の状況に応じて、40歳でも追加接種が検討されます。'
+      : 'これまで破傷風トキソイドを接種していないため、40歳での接種が推奨されます。';
+  }
+  return '';
+}
+function composedNote(s){
+  const extra = tdBoosterNote(s.id);
+  if(!extra) return s.note || '';
+  return s.note ? `${s.note} ${extra}` : extra;
+}
+function buildDoseSchedule(ids){
+  const dayMap = {};
+  ids.forEach(id=>{
+    const offsets = (VACCINE_INFO[id] && VACCINE_INFO[id].doseOffsetDays) || [0];
+    offsets.forEach((day, idx)=>{
+      dayMap[day] = dayMap[day] || [];
+      dayMap[day].push({id, doseIndex:idx, totalDoses:offsets.length});
+    });
+  });
+  const sortedDays = Object.keys(dayMap).map(Number).sort((a,b)=>a-b);
+  return {dayMap, sortedDays};
 }
 
 function shuffleArray(arr){
@@ -1090,12 +1239,27 @@ function buildDoctorDialogue(detailIds, s, stageIndex){
     lines.push(`<span class="warn-line">⚠ ${v.specialWarning}</span>`);
   });
 
-  const nextStage = state.activeStages[stageIndex+1];
-  if(nextStage){
-    const nd = stageDate(nextStage.ageMonths);
-    lines.push(nd ? `次は${formatDateJP(nd)}ごろ、また来てください。` : 'また何かあれば、いつでもいらしてください。');
+  if(s.travelVisitSeries){
+    const schedule = buildDoseSchedule(detailIds);
+    if(schedule.sortedDays.length > 1){
+      const nextDay = schedule.sortedDays[1];
+      const nextDate = addDays(getStageDate(s), nextDay);
+      lines.push(`次は${formatDateJP(nextDate)}ごろ(${nextDay}日後)、また来てください。`);
+    } else {
+      lines.push('これでいったん終了です。気を付けて行ってきてください。');
+    }
+  } else if(s.noNextAppointment){
+    // 次回受診の指示なし
+  } else if(s.nextMessageOverride){
+    lines.push(s.nextMessageOverride);
   } else {
-    lines.push('これで、今回の人生で予定していた予防接種はすべて完了です。お疲れさまでした。');
+    const nextStage = state.activeStages[stageIndex+1];
+    if(nextStage){
+      const nd = getStageDate(nextStage);
+      lines.push(nd ? `次は${formatDateJP(nd)}ごろ、また来てください。` : 'また何かあれば、いつでもいらしてください。');
+    } else {
+      lines.push('これで、今回の人生で予定していた予防接種はすべて完了です。お疲れさまでした。');
+    }
   }
 
   return lines;
@@ -1109,35 +1273,63 @@ function judgeStage(s){
 
   if(pass){
     const detailIds = [...new Set([...s.required, ...s.optional.filter(id=>state.picked.has(id))])];
-    const d = stageDate(s.ageMonths);
+    const d = getStageDate(s);
     const dateLabel = d ? formatDateJP(d) : s.ageLabel;
 
     const doctorLines = buildDoctorDialogue(detailIds, s, state.stageIdx);
+    const noteText = composedNote(s);
     feedback.innerHTML = `
       <div class="feedback ok"><div>正解です。</div></div>
       <div class="chat-thread">
         <div class="chat-bubble staff"><span class="chat-name">医療者(あなた)</span>${doctorLines.join('<br>')}</div>
         <div class="chat-bubble patient"><span class="chat-name">受診者</span>はい、わかりました。</div>
       </div>
-      ${s.note? `<div class="note-box">📝 ${s.note}</div>` : ''}
+      ${noteText? `<div class="note-box">📝 ${noteText}</div>` : ''}
       <div class="controls"><button class="primary" id="nextBtn">次の駅へ →</button></div>
     `;
     document.getElementById('nextBtn').onclick = ()=>{
-      // 母子手帳/接種記録書へ記録(複数回接種が必要なものは自動的に間隔を空けて記録)
-      detailIds.forEach(id=>{
-        const info = VACCINE_INFO[id];
-        const doseCount = info.recordDoses || 1;
-        const intervalMonths = info.recordIntervalMonths || 0;
-        for(let i=0; i<doseCount; i++){
-          const doseDate = d ? addMonths(d, i*intervalMonths) : null;
-          const doseDateLabel = doseDate ? formatDateJP(doseDate) : dateLabel;
-          const doseSuffix = doseCount > 1 ? `(${i+1}回目)` : '';
+      if(s.travelVisitSeries){
+        // 初日(0日目)分の記録のみここで登録し、以降の受診日は路線図に追加の駅として挿入する
+        const schedule = buildDoseSchedule(detailIds);
+        const day0Doses = schedule.dayMap[0] || detailIds.map(id=>({id, doseIndex:0, totalDoses:1}));
+        day0Doses.forEach(dd=>{
+          const info = VACCINE_INFO[dd.id];
           state.records.push({
-            date: doseDate, dateLabel: doseDateLabel, name: info.name + doseSuffix, route: info.route, lot: randomLot(),
-            ageMonthsAtRecord: s.ageMonths
+            date: d, dateLabel: dateLabel, name: info.name + (dd.totalDoses>1? `(${dd.doseIndex+1}回目)` : ''),
+            route: info.route, lot: randomLot(), ageMonthsAtRecord: s.ageMonths
           });
+        });
+        const restDays = schedule.sortedDays.filter(day=>day>0);
+        if(restDays.length){
+          const visitStages = restDays.map((day, idx)=>{
+            const isLast = idx === restDays.length - 1;
+            const nextDay = isLast ? null : restDays[idx+1];
+            return {
+              id: `${s.id}-day${day}`, ageMonths: s.ageMonths, fixedDate: addDays(d, day),
+              seg: s.seg, ageLabel: s.ageLabel, title: `${s.title}(受診${idx+2}回目)`,
+              type: 'visit', visitDoses: schedule.dayMap[day], isLastVisit: isLast,
+              nextVisitLine: isLast ? '' : `次は${formatDateJP(addDays(d, nextDay))}ごろ(${nextDay}日後)、また来てください。`
+            };
+          });
+          state.activeStages.splice(state.stageIdx+1, 0, ...visitStages);
         }
-      });
+      } else {
+        // 母子手帳/接種記録書へ記録(複数回接種が必要なものは自動的に間隔を空けて記録)
+        detailIds.forEach(id=>{
+          const info = VACCINE_INFO[id];
+          const doseCount = info.recordDoses || 1;
+          const intervalMonths = info.recordIntervalMonths || 0;
+          for(let i=0; i<doseCount; i++){
+            const doseDate = d ? addMonths(d, i*intervalMonths) : null;
+            const doseDateLabel = doseDate ? formatDateJP(doseDate) : dateLabel;
+            const doseSuffix = doseCount > 1 ? `(${i+1}回目)` : '';
+            state.records.push({
+              date: doseDate, dateLabel: doseDateLabel, name: info.name + doseSuffix, route: info.route, lot: randomLot(),
+              ageMonthsAtRecord: s.ageMonths
+            });
+          }
+        });
+      }
       state.passedStages.push({id:s.id, title:s.title, ageLabel:s.ageLabel, picked:detailIds});
       advanceStage();
     };
@@ -1185,6 +1377,21 @@ function showEnding(){
     const info = VACCINE_INFO[id];
     return `<div class="stamp"><span class="mark">💉</span>${info.name}<br><span class="stamp-sub">${info.route}・${info.doses}</span></div>`;
   }).join('') || '<div class="stamp">記録なし</div>';
+
+  const roll = document.getElementById('creditRoll');
+  if(roll){
+    const items = state.passedStages.filter(p=>p.picked && p.picked.length);
+    roll.innerHTML = items.map((p,i)=>`
+      <div class="cr-item" style="animation-delay:${(i*0.1).toFixed(2)}s">
+        <span class="cr-age">${p.ageLabel}</span><span class="cr-title">${p.title}</span>
+        <div class="cr-vax">${p.picked.map(id=>(VACCINE_INFO[id]&&VACCINE_INFO[id].name) || id).join('・')}</div>
+      </div>
+    `).join('') || '<div class="cr-item">記録なし</div>';
+  }
+  const tagline = document.getElementById('endingTagline');
+  if(tagline){
+    tagline.innerHTML = '頑張ったから、感染を防げた。<br><span class="em">あなたの感染だけじゃない。</span><br>まわりの、大切な誰かの感染も。';
+  }
 }
 
 document.getElementById('restartBtn').onclick = ()=>{
