@@ -97,6 +97,15 @@ main{ flex:1 1 auto; overflow:hidden; display:flex; min-height:0; }
 .static-panel.active{ display:block; }
 
 .people-note{ font-size:.74rem; color:var(--ink-soft); margin:0 0 8px; }
+.task-lock-banner{
+  display:flex; align-items:center; gap:8px; padding:11px 14px; margin-bottom:10px;
+  background:var(--bg-card2); border:1px dashed var(--line-strong); border-radius:var(--radius);
+  font-size:.8rem; color:var(--ink-soft);
+}
+#task-list.locked{
+  opacity:.4; filter:grayscale(.4); pointer-events:none; user-select:none;
+  transition:opacity .3s;
+}
 .people-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:10px; margin-bottom:6px; }
 .people-card{
   display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:10px;
@@ -838,7 +847,9 @@ function renderStage(){
   html += '<div class="people-grid" id="people-list"></div>';
  }
  if(stageTasks().length){
-  html += '<div class="section-label">本日の判断</div><div id="task-list"></div>';
+  html += '<div class="section-label">本日の判断</div>';
+  html += '<div class="task-lock-banner" id="task-lock-banner">🔒 先に上の「登場人物と話す」を全員完了してください</div>';
+  html += '<div id="task-list"></div>';
  }
  html += '<div id="advance-wrap"></div>';
  panel.innerHTML = html;
@@ -853,6 +864,7 @@ function renderStage(){
    list.appendChild(buildTaskEl(t));
   });
  }
+ refreshTaskLock();
  refreshAdvance();
 }
 
@@ -942,6 +954,15 @@ function buildTaskEl(t){
  return wrap;
 }
 
+function refreshTaskLock(){
+ const list = document.getElementById('task-list');
+ const banner = document.getElementById('task-lock-banner');
+ if(!list) return;
+ const locked = stagePeople().length > 0 && !stagePeople().every(c => dlgOpen[c]);
+ list.classList.toggle('locked', locked);
+ if(banner) banner.style.display = locked ? 'flex' : 'none';
+}
+
 function refreshAdvance(){
  const wrap = document.getElementById('advance-wrap');
  if(!wrap) return;
@@ -975,6 +996,7 @@ function openDialogue(c){
  curDlgChar = c;
  dlgOpen[c] = true;
  refreshPeopleCard(c);
+ refreshTaskLock();
  refreshAdvance();
  const info = CH[c];
  dlgTitle.textContent = info.name;
