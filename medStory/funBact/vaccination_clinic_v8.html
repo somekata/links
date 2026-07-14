@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ワクチン接種率を上げろ！ 巡回クリニック編</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --washi-light:#fdfaf3;
+    --washi-base:#f5f1e8;
+    --ink:#1c1710;
+    --dark-red:#7a2e1d;
+    --amber:#b5622f;
+    --green:#3f6b3f;
+    --danger:#a4231c;
+    --warn:#c98a1c;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--washi-base);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(122,46,29,0.04) 0, transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(181,98,47,0.05) 0, transparent 50%);
+    color:var(--ink);
+    font-family:'Noto Sans JP', sans-serif;
+    overscroll-behavior:none;
+  }
+  h1,h2,h3,.font-title{ font-family:'Zen Antique', serif; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  #app{
+    max-width:460px; margin:0 auto;
+    min-height:100dvh;
+    display:flex; flex-direction:column;
+    padding:14px 14px 8px;
+  }
+  .screen{ display:none; flex-direction:column; flex:1; min-height:0;}
+  .screen.active{ display:flex; }
+
+  .card{
+    background:var(--washi-light);
+    border:1px solid rgba(28,23,16,0.12);
+    border-radius:14px;
+    box-shadow:0 2px 8px rgba(28,23,16,0.06);
+    padding:16px;
+  }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-height:44px; padding:10px 16px; border-radius:10px; border:none;
+    font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:15px;
+    cursor:pointer; transition:transform .08s ease, opacity .15s ease;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .btn-primary{ background:var(--dark-red); color:#fff; }
+  .btn-amber{ background:var(--amber); color:#fff; }
+  .btn-outline{ background:transparent; color:var(--dark-red); border:1.5px solid var(--dark-red); }
+  .btn-ghost{ background:transparent; color:var(--ink); opacity:0.6; font-weight:500; font-size:13px; min-height:36px;}
+  .btn-block{ width:100%; }
+
+  /* ---- タイトル画面（クリニック選択） ---- */
+  #screen-title{ gap:12px; }
+  #screen-title h1{ font-size:23px; margin:2px 0 2px; color:var(--dark-red); line-height:1.4; text-align:center;}
+  #screen-title .sub{ font-size:12.5px; opacity:0.75; margin-bottom:4px; text-align:center;}
+  .edition-list{ display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex:1; padding-bottom:6px;}
+  .edition-card{
+    background:var(--washi-light); border:1.5px solid rgba(28,23,16,0.12); border-radius:14px;
+    padding:12px 14px; display:flex; align-items:center; gap:12px;
+  }
+  .edition-card.locked{ opacity:0.55; }
+  .edition-card .eicon{ font-size:30px; flex-shrink:0; width:44px; text-align:center;}
+  .edition-card .emeta{ flex:1; min-width:0; }
+  .edition-card .etitle{ font-weight:700; font-size:15px; }
+  .edition-card .esub{ font-size:11.5px; opacity:0.7; margin-top:2px; line-height:1.5;}
+  .edition-card .ebadge{ display:inline-block; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:20px; margin-top:4px;}
+  .badge-clear{ background:#dbe8db; color:var(--green); }
+  .badge-new{ background:#f8ecd4; color:var(--warn); }
+  .edition-card .ebtn{ flex-shrink:0; }
+
+  .concept-box{
+    text-align:left; font-size:12px; line-height:1.8;
+    background:var(--washi-base); border-radius:10px; padding:10px 12px;
+  }
+  .concept-box .k{ color:var(--dark-red); font-weight:700; }
+
+  /* ---- ボード画面 ---- */
+  .hud{
+    display:flex; flex-direction:column; gap:8px;
+    padding:10px 12px; margin-bottom:10px;
+    background:var(--washi-light); border-radius:12px; border:1px solid rgba(28,23,16,0.1);
+  }
+  .hud-row{ display:flex; justify-content:space-between; align-items:center; font-size:12.5px;}
+  .hud-title{ font-weight:700; }
+  .gauge-wrap{ position:relative; height:20px; background:#e7e0cf; border-radius:10px; overflow:visible; margin-top:2px;}
+  .gauge-fill{ height:100%; border-radius:10px; background:linear-gradient(90deg, var(--warn), var(--green)); transition:width .6s ease; }
+  .gauge-target-mark{ position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--dark-red); }
+  .gauge-target-label{ position:absolute; top:-18px; font-size:9.5px; color:var(--dark-red); font-weight:700; white-space:nowrap; transform:translateX(-90%); }
+  .gauge-pct{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--ink); font-family:'JetBrains Mono',monospace;}
+  .incident-badge{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--danger); font-weight:700;}
+  .subline{ font-size:11.5px; opacity:0.7; }
+
+  .board-scroll{ flex:1; overflow-y:auto; padding:6px 2px 14px; }
+  .board-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; max-width:340px; margin:0 auto; }
+  .node{
+    position:relative; aspect-ratio:1/1; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:#e9e2cf; border:2px solid rgba(28,23,16,0.15); font-size:20px;
+    transition:all .25s ease;
+  }
+  .node .num{ position:absolute; bottom:2px; right:5px; font-size:8px; font-family:'JetBrains Mono',monospace; opacity:0.5;}
+  .node.status-pending{ background:#e9e2cf; }
+  .node.status-current{
+    background:var(--washi-light); border-color:var(--dark-red);
+    box-shadow:0 0 0 4px rgba(122,46,29,0.15); animation:pulse 1.4s infinite;
+  }
+  .node.status-correct{ background:#dbe8db; border-color:var(--green); }
+  .node.status-incident{ background:#f3d3cf; border-color:var(--danger); }
+  .node.status-miss{ background:#f5e2c2; border-color:var(--warn); }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 0 4px rgba(122,46,29,0.15); }
+    50%{ box-shadow:0 0 0 8px rgba(122,46,29,0.06); }
+  }
+
+  .current-panel{ margin-top:10px; }
+  .resident-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .resident-avatar{
+    width:46px; height:46px; border-radius:50%; background:var(--washi-base);
+    display:flex; align-items:center; justify-content:center; font-size:24px;
+    border:1.5px solid rgba(28,23,16,0.15); flex-shrink:0;
+  }
+  .resident-name{ font-weight:700; font-size:15px; }
+  .resident-tag{ font-size:12px; opacity:0.65; }
+
+  .info-table{ font-size:13px; line-height:1.9; margin-bottom:12px;}
+  .info-table .row{ display:flex; gap:8px; }
+  .info-table .label{ flex:0 0 88px; opacity:0.6; }
+  .info-table .value.masked{ color:var(--amber); font-weight:700; }
+  .info-table .value.danger{ color:var(--danger); font-weight:700; }
+  .info-table .value.safe{ color:var(--green); font-weight:700; }
+
+  .action-list{ display:flex; flex-direction:column; gap:8px; }
+  .feedback-box{ margin-top:10px; padding:12px; border-radius:10px; font-size:13.5px; line-height:1.7; display:none; }
+  .feedback-box.ok{ background:#e2ecdf; border:1px solid var(--green); }
+  .feedback-box.incident{ background:#f6dcd8; border:1px solid var(--danger); }
+  .feedback-box.miss{ background:#f8ecd4; border:1px solid var(--warn); }
+  .feedback-title{ font-weight:700; margin-bottom:4px; }
+
+  /* ---- ターン結果 / 表彰 / 辞令 ---- */
+  #screen-turn-result, #screen-result, #screen-transfer{ justify-content:center; gap:14px; text-align:center; }
+  .big-pct{ font-family:'JetBrains Mono',monospace; font-size:40px; font-weight:700; color:var(--dark-red); }
+  .arrow-change{ font-size:15px; margin:6px 0 2px; }
+  .arrow-change .delta-up{ color:var(--green); font-weight:700; }
+  .arrow-change .delta-down{ color:var(--danger); font-weight:700; }
+  .stat-line{ font-size:13px; text-align:left; line-height:2; }
+  .stat-line b{ font-family:'JetBrains Mono',monospace; }
+  .trophy{ font-size:48px; }
+  .letter-icon{ font-size:44px; }
+  .letter-box{
+    text-align:left; font-size:13.5px; line-height:1.9;
+    background:var(--washi-base); border-radius:10px; padding:14px; margin-top:6px;
+  }
+  .letter-box .to{ font-size:11.5px; opacity:0.6; margin-bottom:6px;}
+  .next-clinic-preview{ display:flex; align-items:center; gap:10px; margin-top:10px; padding:10px; background:var(--washi-light); border-radius:10px; border:1px solid rgba(28,23,16,0.1);}
+  .next-clinic-preview .eicon{ font-size:28px; }
+
+  footer.disclaimer{
+    font-size:10px; line-height:1.6; color:#7a7262;
+    text-align:center; padding:10px 6px 4px; margin-top:auto;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ タイトル画面（クリニック選択） ============ -->
+  <section id="screen-title" class="screen active">
+    <h1>ワクチン接種率を<br>上げろ！</h1>
+    <div class="sub">巡回クリニック編 ー 赴任先の地域で、集団免疫率を目標まで引き上げよう</div>
+    <div class="edition-list" id="edition-list"></div>
+    <div class="concept-box">
+      <div><span class="k">適切対応率</span>：そのターンで5人に正しく対応できた割合（あなたの手際）</div>
+      <div style="margin-top:4px;"><span class="k">集団免疫率</span>：地域全体の実際の免疫状況。ターンごとの対応結果に応じて増減し、目標値を超えると達成です。</div>
+      <div style="margin-top:4px;">※免疫率が高いほど、そこからの上昇幅は小さくなります。</div>
+    </div>
+    <footer class="disclaimer">
+      本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+      二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </footer>
+  </section>
+
+  <!-- ============ ボード画面 ============ -->
+  <section id="screen-board" class="screen">
+    <div class="hud">
+      <div class="hud-row">
+        <span class="hud-title" id="hud-title">🗾 集団免疫率</span>
+        <span class="mono" id="hud-turn">ターン <span id="hud-turn-num">1</span></span>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge-fill" id="gauge-fill" style="width:80%"></div>
+        <div class="gauge-pct" id="gauge-pct">80.0%</div>
+        <div class="gauge-target-mark" id="gauge-target-mark" style="left:95%">
+          <div class="gauge-target-label" id="gauge-target-label">目標<br>95%</div>
+        </div>
+      </div>
+      <div class="hud-row">
+        <span class="subline">このターンの適切対応：<span class="mono" id="hud-turn-correct">0</span> / 5</span>
+        <span class="incident-badge">⚠️ ヒヤリハット：<span id="hud-incident">0</span></span>
+      </div>
+      <div class="hud-row">
+        <span class="subline">進行状況：<span class="mono" id="hud-progress">1 / 5</span></span>
+      </div>
+    </div>
+
+    <div class="board-scroll">
+      <div class="board-grid" id="board-grid"></div>
+      <div class="card current-panel" id="resident-card"></div>
+      <div class="feedback-box" id="feedback-box">
+        <div class="feedback-title" id="feedback-title"></div>
+        <div id="feedback-body"></div>
+        <button class="btn btn-primary btn-block" id="btn-next" style="margin-top:10px;">次の住民へ →</button>
+      </div>
+    </div>
+    <footer class="disclaimer" style="margin-top:0;">
+      本コンテンツはAI（Claude, Anthropic）を用いて作成された教育用シミュレーションです。実際の予防接種の可否は必ず医師の診察・公式ガイドラインに基づいて判断してください。
+    </footer>
+  </section>
+
+  <!-- ============ ターン結果画面 ============ -->
+  <section id="screen-turn-result" class="screen">
+    <div class="card">
+      <div style="font-size:13px; opacity:0.7;">ターン <span id="tr-turn-num"></span> 終了</div>
+      <div style="font-size:14px; margin-top:6px;">このターンの適切対応率</div>
+      <div class="big-pct"><span id="tr-turn-pct">0</span>%</div>
+      <div style="font-size:12.5px; opacity:0.7;">（<span id="tr-turn-correct"></span>/5人・ヒヤリハット<span id="tr-turn-incident"></span>件）</div>
+      <hr style="border:none; border-top:1px dashed rgba(28,23,16,0.2); margin:14px 0;">
+      <div style="font-size:14px;">地域の集団免疫率</div>
+      <div class="stat-line" style="text-align:center; margin-top:4px;">
+        <span class="mono" id="tr-before"></span>% → <span class="mono" id="tr-after"></span>%
+      </div>
+      <div class="arrow-change" id="tr-delta"></div>
+      <div class="subline" id="tr-factor-note" style="margin-top:6px;"></div>
+    </div>
+    <button class="btn btn-primary btn-block" id="btn-next-turn">次のターンへ</button>
+    <footer class="disclaimer">
+      本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。
+    </footer>
+  </section>
+
+  <!-- ============ 表彰画面 ============ -->
+  <section id="screen-result" class="screen">
+    <div class="card">
+      <div class="trophy">🏆</div>
+      <h2 style="color:var(--dark-red); margin:6px 0;" id="result-title">集団免疫達成！</h2>
+      <div style="font-size:13px; opacity:0.75;" id="result-desc">地域の集団免疫率が目標を超えました。</div>
+      <div class="big-pct" style="margin-top:8px;"><span id="result-pct">0</span>%</div>
+      <div class="stat-line" style="margin-top:10px;">
+        <div>達成までのターン数：<b id="result-turns"></b> ターン</div>
+        <div>累計ヒヤリハット：<b id="result-incident"></b> 件</div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" id="btn-to-transfer" style="display:none;">辞令を受け取る 📜</button>
+    <button class="btn btn-amber btn-block" id="btn-retry-edition">もう一度この地域に挑戦する</button>
+    <button class="btn btn-ghost" id="btn-result-to-title">クリニック選択に戻る</button>
+    <footer class="disclaimer">
+      本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+      二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </footer>
+  </section>
+
+  <!-- ============ 辞令画面 ============ -->
+  <section id="screen-transfer" class="screen">
+    <div class="card">
+      <div class="letter-icon">📜</div>
+      <h2 style="color:var(--dark-red); margin:8px 0 2px;">辞令</h2>
+      <div class="letter-box">
+        <div class="to">保健師 殿</div>
+        <div id="transfer-body">貴殿における地域の集団免疫向上への貢献を認め、下記の通り異動を命ずる。</div>
+      </div>
+      <div class="next-clinic-preview" id="next-clinic-preview"></div>
+    </div>
+    <button class="btn btn-primary btn-block" id="btn-go-next-clinic">赴任する</button>
+    <button class="btn btn-ghost" id="btn-transfer-to-title">クリニック選択に戻る</button>
+    <footer class="disclaimer">
+      本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。
+    </footer>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ===========================================================
+  // 共通パラメータ
+  // ===========================================================
+  var RESIDENTS_PER_TURN = 5;
+  var W_CORRECT  = 1.2;   // 適切対応1人あたりの集団免疫率上昇（係数1.0・満点5人で+6.0pt）
+  var W_MISS     = -0.7;  // 対応漏れ/誤り1人あたりの集団免疫率低下
+  var W_INCIDENT = -2.0;  // ヒヤリハット1件あたりの集団免疫率低下
+
+  // 上昇量の逓減係数：免疫率が高いほど、そこからの上積みは難しくなる。
+  function gainFactor(herd){ return clamp((100 - herd) / 20, 0, 1); }
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  var GIVEN_NAMES = ["はると","ゆい","そら","みお","あおい","れん","ひなた","さくら","ゆうと","こはる",
+                      "かえで","りく","のあ","つむぎ","いつき","あかり","ゆずき","そうた","みなと","ここね"];
+
+  // ===========================================================
+  // エディション定義
+  // ===========================================================
+  // 各タイプ: icon / ageLabel / history / remarkLabel / remarkSafe / remarkRisk(あれば)
+  //          / risk(true=生ワクチン接種が危険な状態) / correct('vaccinate'|'observe'|'refer')
+  //          / ok / bad / badIncident(riskがある場合のみ)
+  var EDITIONS = {
+
+    measles:{
+      key:"measles", order:1, icon:"🦠",
+      title:"麻疹編", clinicName:"第一診療所",
+      vaccineNote:"MRワクチン（麻しん風しん混合・生ワクチン）",
+      initialHerd:80, targetHerd:95,
+      typeCounts:{ A:1, B:1, C:1, D:1, E:1 },
+      historyLabel:"MR接種歴",
+      remarkLabelDefault:"基礎疾患",
+      types:{
+        A:{ icon:"👶", ageLabel:"1歳", history:"未接種", risk:false,
+            remarkSafe:"特になし（健康）", correct:"vaccinate",
+            ok:"適切な対応です。1歳になったらすぐにMRワクチン1期（1回目）の接種を受けましょう。定期接種の標準的な対象年齢です。",
+            bad:"この住民は1歳・未接種で、基礎疾患もありません。定期接種の対象なので、MRワクチンの接種（1回目）を推奨するのが適切な対応です。" },
+        B:{ icon:"👶", ageLabel:"1歳", history:"未接種", risk:true,
+            remarkRiskPool:["急性リンパ性白血病の治療中","ステロイド内服中（免疫抑制療法中）","先天性免疫不全症候群","臓器移植後で免疫抑制剤を内服中"],
+            correct:"refer",
+            ok:"適切な対応です。MRワクチンは生ワクチンのため、免疫不全がある場合は接種を見合わせ、主治医・専門医への相談が必要です。",
+            badIncident:"⚠️ 危険な対応です。免疫不全がある方に生ワクチンを接種すると、ワクチン株による重篤な感染症を起こすおそれがあります。必ず予診で基礎疾患を確認し、接種の可否を慎重に判断しましょう。",
+            bad:"免疫不全がある場合、経過観察のみで済ませず、専門医への紹介が必要です。" },
+        C:{ icon:"🎒", ageLabel:"6歳（就学前）", history:"MR 1回接種済み", risk:false,
+            remarkSafe:"特になし（健康）", correct:"vaccinate",
+            ok:"適切な対応です。就学前の1年間にMRワクチン2期（2回目）を接種することで、より確実な免疫を獲得できます。",
+            bad:"この住民はすでに1回接種済みで、就学前の対象年齢です。MRワクチンの接種（2回目）を推奨しましょう。" },
+        D:{ icon:"🎒", ageLabel:"6歳（就学前）", history:"MR 2回接種済み", risk:false,
+            remarkSafe:"特になし（健康）", correct:"observe",
+            ok:"適切な対応です。すでに2回接種が完了しており、免疫を獲得しています。追加の接種は不要です。",
+            bad:"この住民はすでに2回接種済みで、免疫を獲得しています。不要な接種は避け、経過観察でよい対応です。" },
+        E:{ icon:"🎒", ageLabel:"6歳（就学前）", history:"MR 1回接種済み", risk:true,
+            remarkRiskPool:["急性リンパ性白血病の治療中","ステロイド内服中（免疫抑制療法中）","先天性免疫不全症候群","臓器移植後で免疫抑制剤を内服中"],
+            correct:"refer",
+            ok:"適切な対応です。就学前でも基礎疾患がある場合は、2回目の接種前に専門医へ相談する必要があります。",
+            badIncident:"⚠️ 危険な対応です。免疫不全がある場合、2回目であっても生ワクチンの接種はリスクを伴います。専門医へ紹介しましょう。",
+            bad:"免疫不全がある場合、経過観察のみで済ませず、専門医への紹介が必要です。" }
+      }
+    },
+
+    rubella:{
+      key:"rubella", order:2, icon:"🌸",
+      title:"風疹編", clinicName:"第二診療所",
+      vaccineNote:"MR／風しんワクチン（生ワクチン）",
+      initialHerd:75, targetHerd:85,
+      typeCounts:{ F:1, G:1, H:1, I:1, J:1 },
+      historyLabel:"接種歴・検査歴",
+      remarkLabelDefault:"特記事項",
+      types:{
+        F:{ icon:"👶", ageLabel:"1歳", history:"未接種", risk:false,
+            remarkSafe:"特になし（健康）", correct:"vaccinate",
+            ok:"適切な対応です。1歳になったらMR（麻しん風しん混合）ワクチン1期の接種を受けましょう。風しんの定期接種もこれで完了します。",
+            bad:"この住民は1歳・未接種で健康です。MRワクチン（1期・1回目）の接種を推奨するのが適切です。" },
+        G:{ icon:"🎒", ageLabel:"6歳（就学前）", history:"MR 1回接種済み", risk:false,
+            remarkSafe:"特になし（健康）", correct:"vaccinate",
+            ok:"適切な対応です。就学前の1年間にMR2期（2回目）を接種することで、麻しん・風しん両方の免疫をより確実にできます。",
+            bad:"この住民はすでに1回接種済みで、就学前の対象年齢です。MRワクチン（2回目）の接種を推奨しましょう。" },
+        H:{ icon:"🧑", ageLabel:"42歳・男性（風しん定期接種の空白世代）", history:"風しんワクチン接種歴なし",
+            remarkLabel:"抗体検査結果", risk:false,
+            remarkSafe:"低抗体価（十分な抗体が確認できません）", correct:"vaccinate",
+            ok:"適切な対応です。抗体検査で低抗体価と判明した場合は、接種を推奨します。配偶者の妊娠を考えている場合は特に重要な対応です。",
+            bad:"この世代の男性は風しんの定期接種を受けていない可能性があります。抗体検査の結果が低い場合は、接種を推奨するのが適切です。" },
+        I:{ icon:"🧑", ageLabel:"45歳・男性（風しん定期接種の空白世代）", history:"風しんワクチン接種歴なし",
+            remarkLabel:"抗体検査結果", risk:false,
+            remarkSafe:"十分な抗体価あり", correct:"observe",
+            ok:"適切な対応です。抗体検査で十分な抗体価が確認されているため、追加の接種は不要です。",
+            bad:"この住民はすでに抗体検査で十分な抗体があることが分かっています。不要な接種は避け、経過観察でよい対応です。" },
+        J:{ icon:"🤰", ageLabel:"29歳・女性（妊娠中）", history:"風しん抗体検査：低抗体価（妊婦健診で判明）",
+            remarkLabel:"特記事項", risk:true,
+            remarkRiskPool:["現在妊娠中のため、生ワクチンの接種は禁忌です"],
+            correct:"refer",
+            ok:"適切な対応です。風しんの生ワクチンは妊娠中には接種できません。出産後、早期の接種につなげられるよう産科と連携して案内しましょう。",
+            badIncident:"⚠️ 危険な対応です。妊娠中に風しん含有生ワクチンを接種すると、胎児への影響が強く懸念されます。抗体価が低くても、妊娠中は接種せず出産後の接種を案内する必要があります。",
+            bad:"抗体価が低い場合、経過観察のみで済ませず、出産後の接種につなげるための案内・紹介が必要です。" }
+      }
+    },
+
+    varicella:{
+      key:"varicella", order:3, icon:"🌿",
+      title:"水痘編", clinicName:"第三診療所",
+      vaccineNote:"水痘ワクチン（生ワクチン）",
+      initialHerd:78, targetHerd:90,
+      typeCounts:{ K:1, L:1, M:1, N:1, O:1 },
+      historyLabel:"水痘ワクチン接種歴",
+      remarkLabelDefault:"基礎疾患",
+      types:{
+        K:{ icon:"👶", ageLabel:"1歳", history:"未接種", risk:false,
+            remarkSafe:"特になし（健康）", correct:"vaccinate",
+            ok:"適切な対応です。1歳になったら水痘ワクチン1回目の接種を受けましょう。定期接種の対象です。",
+            bad:"この住民は1歳・未接種で健康です。水痘ワクチン（1回目）の接種を推奨するのが適切です。" },
+        L:{ icon:"👶", ageLabel:"1歳6か月", history:"水痘ワクチン 1回接種済み",
+            remarkLabel:"前回接種からの経過期間", risk:false,
+            remarkSafe:"4か月経過（接種間隔の目安3か月以上を満たしています）", correct:"vaccinate",
+            ok:"適切な対応です。水痘ワクチンの2回目は1回目から3か月以上あければ接種できます。間隔の目安を満たしているため、2回目の接種を進めましょう。",
+            bad:"この住民はすでに1回目から3か月以上経過しており、2回目接種の間隔条件を満たしています。接種を推奨するのが適切です。" },
+        M:{ icon:"👶", ageLabel:"1歳4か月", history:"水痘ワクチン 1回接種済み",
+            remarkLabel:"前回接種からの経過期間", risk:false,
+            remarkSafe:"1か月経過（接種間隔の目安3か月にはまだ達していません）", correct:"observe",
+            ok:"適切な対応です。前回接種からまだ3か月経っていないため、今回は接種を見送り、間隔が空いてから改めて2回目の接種を案内しましょう。",
+            bad:"水痘ワクチンの2回目は1回目から3か月以上の間隔が必要です。この住民はまだ1か月しか経過していないため、今回は接種を見送るのが適切な対応です。" },
+        N:{ icon:"🎒", ageLabel:"3歳", history:"水痘ワクチン 2回接種済み", risk:false,
+            remarkSafe:"特になし（健康）", correct:"observe",
+            ok:"適切な対応です。すでに2回接種が完了しており、免疫を獲得しています。追加の接種は不要です。",
+            bad:"この住民はすでに2回接種済みで、免疫を獲得しています。不要な接種は避け、経過観察でよい対応です。" },
+        O:{ icon:"👶", ageLabel:"1歳", history:"未接種", risk:true,
+            remarkRiskPool:["急性リンパ性白血病の治療中","ステロイド内服中（免疫抑制療法中）","先天性免疫不全症候群","臓器移植後で免疫抑制剤を内服中"],
+            correct:"refer",
+            ok:"適切な対応です。水痘ワクチンも生ワクチンのため、免疫不全がある場合は接種を見合わせ、主治医・専門医への相談が必要です。",
+            badIncident:"⚠️ 危険な対応です。免疫不全がある方に水痘（水ぼうそう）の生ワクチンを接種すると、ワクチン株による重篤な感染症を起こすおそれがあります。必ず予診で基礎疾患を確認し、接種の可否を慎重に判断しましょう。",
+            bad:"免疫不全がある場合、経過観察のみで済ませず、専門医への紹介が必要です。" }
+      }
+    },
+
+    mumps:{
+      key:"mumps", order:4, icon:"😷",
+      title:"おたふくかぜ編", clinicName:"第四診療所",
+      vaccineNote:"おたふくかぜワクチン（生ワクチン・任意接種）",
+      initialHerd:65, targetHerd:90,
+      typeCounts:{ P:1, Q:1, R:1, S:1, T:1 },
+      historyLabel:"接種歴",
+      remarkLabelDefault:"備考",
+      types:{
+        P:{ icon:"👶", ageLabel:"1歳", history:"未接種", risk:false,
+            remarkLabel:"保護者の様子",
+            remarkSafe:"費用面（自己負担）に不安があり、接種を迷っている（医学的な禁忌はなし）", correct:"vaccinate",
+            ok:"適切な対応です。おたふくかぜワクチンは任意接種で自己負担が必要ですが、合併症（ムンプス難聴・精巣炎など）のリスクを考えるとメリットは大きく、丁寧に説明したうえで接種を勧めるのが適切です。",
+            bad:"費用への迷いはありますが、医学的な禁忌はありません。合併症リスクを丁寧に説明したうえで、接種を推奨するのが適切な対応です。" },
+        Q:{ icon:"🎒", ageLabel:"6歳（就学前）", history:"1回接種済み", risk:false,
+            remarkSafe:"特になし（健康）", correct:"vaccinate",
+            ok:"適切な対応です。おたふくかぜワクチンは任意接種ですが、2回接種することでより高い予防効果が期待できます。就学前のタイミングで2回目を勧めましょう。",
+            bad:"この住民はすでに1回接種済みで、就学前の対象年齢です。2回目の接種を推奨しましょう。" },
+        R:{ icon:"🧒", ageLabel:"4歳", history:"未接種（自然感染歴あり）", risk:false,
+            remarkLabel:"既往歴",
+            remarkSafe:"1年前におたふくかぜに罹患し、医療機関で診断が確定している", correct:"observe",
+            ok:"適切な対応です。自然感染により診断が確定している場合、通常は十分な免疫が得られているため、追加のワクチン接種は基本的に不要です。",
+            bad:"すでにおたふくかぜに罹患し診断が確定している場合、自然感染による免疫が期待できるため、追加接種は基本的に不要です。" },
+        S:{ icon:"👶", ageLabel:"8か月", history:"未接種", risk:false,
+            remarkSafe:"標準的な接種開始年齢（1歳）にまだ達していない", correct:"observe",
+            ok:"適切な対応です。おたふくかぜワクチンは標準的に1歳から接種が可能です。まだ対象年齢に達していないため、今回は見送り、1歳になってから改めて案内しましょう。",
+            bad:"この住民はまだ標準的な接種開始年齢（1歳）に達していません。今回は接種を見送り、年齢に達してから案内するのが適切です。" },
+        T:{ icon:"👶", ageLabel:"1歳", history:"未接種", risk:true,
+            remarkRiskPool:["急性リンパ性白血病の治療中","ステロイド内服中（免疫抑制療法中）","先天性免疫不全症候群","臓器移植後で免疫抑制剤を内服中"],
+            correct:"refer",
+            ok:"適切な対応です。おたふくかぜワクチンも生ワクチンのため、免疫不全がある場合は接種を見合わせ、主治医・専門医への相談が必要です。",
+            badIncident:"⚠️ 危険な対応です。免疫不全がある方に生ワクチンを接種すると、ワクチン株による重篤な感染症を起こすおそれがあります。必ず予診で基礎疾患を確認し、接種の可否を慎重に判断しましょう。",
+            bad:"免疫不全がある場合、経過観察のみで済ませず、専門医への紹介が必要です。" }
+      }
+    }
+  };
+
+  var EDITION_ORDER = ["measles","rubella","varicella","mumps"];
+
+  var ACTIONS = [
+    { key:"vaccinate", label:"ワクチンを接種する" },
+    { key:"observe",   label:"特に対応不要（経過観察のみ）" },
+    { key:"refer",     label:"接種を見合わせ、専門医へ紹介する" }
+  ];
+
+  // ===========================================================
+  // 状態
+  // ===========================================================
+  var currentKey = null;
+  var clearedEditions = {};   // { measles:true, ... } セッション内のみ保持
+  var herdImmunity = 0;
+  var turnNumber = 1;
+  var totalIncidents = 0;
+
+  var residents = [];
+  var idx = 0;
+  var turnCorrect = 0;
+  var turnMiss = 0;
+  var turnIncident = 0;
+
+  function shuffle(arr){
+    for (var i = arr.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  // ===========================================================
+  // タイトル画面（クリニック選択）
+  // ===========================================================
+  function renderTitle(){
+    var list = document.getElementById("edition-list");
+    list.innerHTML = "";
+    EDITION_ORDER.forEach(function(key){
+      var ed = EDITIONS[key];
+      var div = document.createElement("div");
+      div.className = "edition-card" + (ed.comingSoon ? " locked" : "");
+      var badge = "";
+      if (ed.comingSoon){
+        badge = '<span class="ebadge badge-new">近日追加予定</span>';
+      } else if (clearedEditions[key]){
+        badge = '<span class="ebadge badge-clear">✅ クリア済み</span>';
+      }
+      var subText = ed.comingSoon
+        ? ed.teaser
+        : (ed.vaccineNote + "／目標 集団免疫率" + ed.targetHerd + "%");
+      div.innerHTML =
+        '<div class="eicon">' + ed.icon + '</div>' +
+        '<div class="emeta">' +
+          '<div class="etitle">' + ed.title + (ed.clinicName ? '（' + ed.clinicName + '）' : '') + '</div>' +
+          '<div class="esub">' + subText + '</div>' +
+          badge +
+        '</div>';
+      if (!ed.comingSoon){
+        var btn = document.createElement("button");
+        btn.className = "btn btn-primary ebtn";
+        btn.textContent = clearedEditions[key] ? "再挑戦" : "赴任する";
+        btn.onclick = function(){ startEdition(key); };
+        div.appendChild(btn);
+      }
+      list.appendChild(div);
+    });
+  }
+
+  // ===========================================================
+  // 画面遷移
+  // ===========================================================
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+    document.getElementById(id).classList.add("active");
+  }
+
+  function startEdition(key){
+    currentKey = key;
+    var ed = EDITIONS[key];
+    herdImmunity = ed.initialHerd;
+    turnNumber = 1;
+    totalIncidents = 0;
+    startTurn();
+  }
+
+  function startTurn(){
+    var ed = EDITIONS[currentKey];
+    residents = buildResidents(ed);
+    idx = 0; turnCorrect = 0; turnMiss = 0; turnIncident = 0;
+    document.getElementById("hud-title").textContent = ed.icon + " " + ed.title + "・集団免疫率";
+    document.getElementById("gauge-target-mark").style.left = ed.targetHerd + "%";
+    document.getElementById("gauge-target-label").innerHTML = "目標<br>" + ed.targetHerd + "%";
+    renderBoard();
+    renderCurrent();
+    updateHud();
+    showScreen("screen-board");
+  }
+
+  function buildResidents(ed){
+    var pool = [];
+    Object.keys(ed.typeCounts).forEach(function(t){
+      for (var i = 0; i < ed.typeCounts[t]; i++) pool.push(t);
+    });
+    shuffle(pool);
+    var names = shuffle(GIVEN_NAMES.slice());
+
+    return pool.map(function(type, i){
+      var info = ed.types[type];
+      var remarkText = null;
+      if (info.risk && info.remarkRiskPool){
+        remarkText = info.remarkRiskPool[i % info.remarkRiskPool.length];
+      } else if (!info.risk){
+        remarkText = info.remarkSafe;
+      }
+      return {
+        id:i,
+        name:names[i % names.length] + "さん",
+        type:type,
+        icon:info.icon,
+        ageLabel:info.ageLabel,
+        history:info.history,
+        remarkLabel: info.remarkLabel || ed.remarkLabelDefault,
+        risk:!!info.risk,
+        remarkText:remarkText,
+        correct:info.correct,
+        status:"pending",
+        chosenAction:null
+      };
+    });
+  }
+
+  // ===========================================================
+  // ボード描画
+  // ===========================================================
+  function renderBoard(){
+    var grid = document.getElementById("board-grid");
+    grid.innerHTML = "";
+    residents.forEach(function(r, i){
+      var div = document.createElement("div");
+      var statusClass = "status-" + (i === idx ? "current" : r.status);
+      div.className = "node " + statusClass;
+      var icon;
+      if (r.status === "correct") icon = "✅";
+      else if (r.status === "incident") icon = "❗";
+      else if (r.status === "miss") icon = "⚠️";
+      else icon = r.icon;
+      div.innerHTML = icon + '<span class="num">' + (i + 1) + '</span>';
+      grid.appendChild(div);
+    });
+  }
+
+  // ===========================================================
+  // 現在の住民カード描画
+  // ===========================================================
+  function renderCurrent(){
+    var ed = EDITIONS[currentKey];
+    document.getElementById("feedback-box").style.display = "none";
+    document.getElementById("feedback-box").className = "feedback-box";
+
+    var r = residents[idx];
+    var card = document.getElementById("resident-card");
+
+    card.innerHTML =
+      '<div class="resident-head">' +
+        '<div class="resident-avatar">' + r.icon + '</div>' +
+        '<div><div class="resident-name">' + r.name + '</div>' +
+        '<div class="resident-tag">住民 No.' + (idx + 1) + ' / ' + RESIDENTS_PER_TURN + '</div></div>' +
+      '</div>' +
+      '<div class="info-table">' +
+        '<div class="row"><div class="label">年齢等</div><div class="value">' + r.ageLabel + '</div></div>' +
+        '<div class="row"><div class="label">' + ed.historyLabel + '</div><div class="value">' + r.history + '</div></div>' +
+        '<div class="row"><div class="label">' + r.remarkLabel + '</div><div class="value" id="remark-value"><span class="value masked">❓ 予診・検査結果の確認が必要です</span></div></div>' +
+      '</div>' +
+      '<button class="btn btn-outline btn-block" id="btn-screen" style="margin-bottom:10px;">📋 予診・検査結果を確認する</button>' +
+      '<div class="action-list" id="action-list"></div>';
+
+    document.getElementById("btn-screen").onclick = doScreen;
+
+    var list = document.getElementById("action-list");
+    list.innerHTML = "";
+    ACTIONS.forEach(function(a){
+      var btn = document.createElement("button");
+      btn.className = "btn btn-primary btn-block";
+      btn.textContent = a.label;
+      btn.disabled = true;
+      btn.dataset.key = a.key;
+      btn.onclick = function(){ handleAction(a.key); };
+      list.appendChild(btn);
+    });
+  }
+
+  function doScreen(){
+    var r = residents[idx];
+    var html = r.risk
+      ? '<span class="value danger">⚠️ ' + r.remarkText + '</span>'
+      : '<span class="value safe">' + r.remarkText + '</span>';
+    document.getElementById("remark-value").innerHTML = html;
+    document.getElementById("btn-screen").disabled = true;
+    document.getElementById("btn-screen").textContent = "✔ 確認済み";
+    document.querySelectorAll("#action-list .btn").forEach(function(b){ b.disabled = false; });
+  }
+
+  // ===========================================================
+  // 行動判定
+  // ===========================================================
+  function handleAction(actionKey){
+    var ed = EDITIONS[currentKey];
+    var r = residents[idx];
+    var info = ed.types[r.type];
+    document.querySelectorAll("#action-list .btn").forEach(function(b){ b.disabled = true; });
+    document.getElementById("btn-screen").disabled = true;
+
+    var box = document.getElementById("feedback-box");
+    var title = document.getElementById("feedback-title");
+    var body = document.getElementById("feedback-body");
+
+    if (actionKey === r.correct){
+      r.status = "correct";
+      turnCorrect++;
+      box.className = "feedback-box ok";
+      title.textContent = "✅ 適切な対応";
+      body.textContent = info.ok;
+    } else if (r.risk && actionKey === "vaccinate"){
+      r.status = "incident";
+      turnIncident++;
+      totalIncidents++;
+      box.className = "feedback-box incident";
+      title.textContent = "❗ ヒヤリハット発生";
+      body.textContent = info.badIncident;
+    } else {
+      r.status = "miss";
+      turnMiss++;
+      box.className = "feedback-box miss";
+      title.textContent = "⚠️ 対応を見直しましょう";
+      body.textContent = info.bad;
+    }
+
+    r.chosenAction = actionKey;
+    box.style.display = "block";
+    renderBoard();
+    updateHud();
+  }
+
+  function nextResident(){
+    idx++;
+    if (idx >= RESIDENTS_PER_TURN){
+      endTurn();
+      return;
+    }
+    renderBoard();
+    renderCurrent();
+    updateHud();
+  }
+
+  function updateHud(){
+    document.getElementById("gauge-fill").style.width = clamp(herdImmunity, 0, 100) + "%";
+    document.getElementById("gauge-pct").textContent = herdImmunity.toFixed(1) + "%";
+    document.getElementById("hud-turn-num").textContent = turnNumber;
+    document.getElementById("hud-turn-correct").textContent = turnCorrect;
+    document.getElementById("hud-incident").textContent = turnIncident;
+    document.getElementById("hud-progress").textContent = Math.min(idx + 1, RESIDENTS_PER_TURN) + " / " + RESIDENTS_PER_TURN;
+  }
+
+  // ===========================================================
+  // ターン終了処理
+  // ===========================================================
+  function endTurn(){
+    var ed = EDITIONS[currentKey];
+    var turnPct = Math.round((turnCorrect / RESIDENTS_PER_TURN) * 100);
+    var before = herdImmunity;
+    var factor = gainFactor(before);
+    var gainPart = turnCorrect * W_CORRECT * factor;
+    var lossPart = (turnMiss * W_MISS) + (turnIncident * W_INCIDENT);
+    var delta = gainPart + lossPart;
+    var after = clamp(before + delta, 0, 100);
+
+    document.getElementById("tr-turn-num").textContent = turnNumber;
+    document.getElementById("tr-turn-pct").textContent = turnPct;
+    document.getElementById("tr-turn-correct").textContent = turnCorrect;
+    document.getElementById("tr-turn-incident").textContent = turnIncident;
+    document.getElementById("tr-before").textContent = before.toFixed(1);
+    document.getElementById("tr-after").textContent = after.toFixed(1);
+
+    var deltaEl = document.getElementById("tr-delta");
+    var diff = after - before;
+    if (diff >= 0){
+      deltaEl.innerHTML = '<span class="delta-up">▲ +' + diff.toFixed(1) + 'pt</span>';
+    } else {
+      deltaEl.innerHTML = '<span class="delta-down">▼ ' + diff.toFixed(1) + 'pt</span>';
+    }
+
+    var maxGainThisTurn = (RESIDENTS_PER_TURN * W_CORRECT * factor).toFixed(1);
+    document.getElementById("tr-factor-note").textContent =
+      "上昇の上限目安：+" + maxGainThisTurn + "pt（免疫率" + before.toFixed(1) + "%地点の上昇係数×" + factor.toFixed(2) + "）";
+
+    herdImmunity = after;
+
+    var nextBtn = document.getElementById("btn-next-turn");
+    if (herdImmunity >= ed.targetHerd){
+      nextBtn.textContent = "表彰を受ける 🏆";
+      nextBtn.onclick = showResult;
+    } else {
+      nextBtn.textContent = "次のターンへ";
+      nextBtn.onclick = function(){ turnNumber++; startTurn(); };
+    }
+
+    showScreen("screen-turn-result");
+  }
+
+  function showResult(){
+    var ed = EDITIONS[currentKey];
+    clearedEditions[currentKey] = true;
+
+    document.getElementById("result-title").textContent = ed.title + "・集団免疫達成！";
+    document.getElementById("result-desc").textContent = ed.clinicName + "の集団免疫率が目標の" + ed.targetHerd + "%を超えました。";
+    document.getElementById("result-pct").textContent = herdImmunity.toFixed(1);
+    document.getElementById("result-turns").textContent = turnNumber;
+    document.getElementById("result-incident").textContent = totalIncidents;
+
+    var nextKey = getNextPlayableEdition(currentKey);
+    var toTransferBtn = document.getElementById("btn-to-transfer");
+    if (nextKey){
+      toTransferBtn.style.display = "inline-flex";
+      toTransferBtn.onclick = function(){ showTransfer(nextKey); };
+    } else {
+      toTransferBtn.style.display = "none";
+    }
+
+    document.getElementById("btn-retry-edition").onclick = function(){ startEdition(currentKey); };
+    document.getElementById("btn-result-to-title").onclick = backToTitle;
+
+    showScreen("screen-result");
+  }
+
+  function getNextPlayableEdition(fromKey){
+    var fromEd = EDITIONS[fromKey];
+    var candidates = EDITION_ORDER
+      .map(function(k){ return EDITIONS[k]; })
+      .filter(function(e){ return !e.comingSoon && e.order > fromEd.order; })
+      .sort(function(a,b){ return a.order - b.order; });
+    return candidates.length ? candidates[0].key : null;
+  }
+
+  // ===========================================================
+  // 辞令画面
+  // ===========================================================
+  function showTransfer(nextKey){
+    var fromEd = EDITIONS[currentKey];
+    var nextEd = EDITIONS[nextKey];
+
+    document.getElementById("transfer-body").innerHTML =
+      fromEd.clinicName + "における集団免疫率" + fromEd.targetHerd + "%達成の功績を認め、貴殿に下記の異動を命ずる。<br><br>" +
+      "着任先：<b>" + nextEd.clinicName + '（' + nextEd.title + '）</b><br>' +
+      "着任日：本日付";
+
+    var preview = document.getElementById("next-clinic-preview");
+    preview.innerHTML =
+      '<div class="eicon">' + nextEd.icon + '</div>' +
+      '<div><div style="font-weight:700; font-size:14px;">' + nextEd.title + '（' + nextEd.clinicName + '）</div>' +
+      '<div class="subline">' + nextEd.vaccineNote + '／目標 集団免疫率' + nextEd.targetHerd + '%（現状想定 ' + nextEd.initialHerd + '%）</div></div>';
+
+    document.getElementById("btn-go-next-clinic").onclick = function(){ startEdition(nextKey); };
+    document.getElementById("btn-transfer-to-title").onclick = backToTitle;
+
+    showScreen("screen-transfer");
+  }
+
+  function backToTitle(){
+    renderTitle();
+    showScreen("screen-title");
+  }
+
+  // ===========================================================
+  // 初期化
+  // ===========================================================
+  document.getElementById("btn-next").addEventListener("click", nextResident);
+  renderTitle();
+  showScreen("screen-title");
+
+})();
+</script>
+</body>
+</html>
