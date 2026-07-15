@@ -395,6 +395,114 @@
     border-top:1px solid var(--line);
   }
   em.sp{font-style:italic;}
+
+  .tab-nav{
+    display:flex;
+    max-width:640px;
+    margin:0 auto;
+    background:var(--paper-light);
+    border-bottom:1px solid var(--line);
+    position:sticky;
+    top:0;
+    z-index:300;
+  }
+  .tab-btn{
+    flex:1;
+    background:transparent;
+    border:none;
+    border-bottom:3px solid transparent;
+    padding:13px 8px;
+    font-family:"Noto Sans JP",sans-serif;
+    font-size:0.85rem;
+    font-weight:500;
+    color:#8a7d68;
+    cursor:pointer;
+    min-height:48px;
+  }
+  .tab-btn .tab-sub{
+    display:block;
+    font-size:0.65rem;
+    font-weight:400;
+    margin-top:1px;
+  }
+  .tab-btn.active{
+    color:var(--red);
+    border-bottom-color:var(--red);
+  }
+  .tab-btn:active{background:rgba(28,23,16,0.03);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  .radio-group{
+    padding:12px 8px 4px;
+  }
+  .radio-group .fg-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:500;
+    font-size:0.94rem;
+    margin-bottom:8px;
+  }
+  .radio-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 4px;
+    cursor:pointer;
+    min-height:40px;
+  }
+  .radio-row input[type="radio"]{
+    width:20px;height:20px;
+    accent-color:var(--red);
+    flex-shrink:0;
+  }
+  .radio-row .rlabel{flex:1;font-size:0.88rem;}
+  .radio-row .weight{
+    font-family:"JetBrains Mono",monospace;
+    font-size:0.75rem;
+    color:var(--amber);
+    background:rgba(181,98,47,0.1);
+    padding:2px 6px;
+    border-radius:4px;
+    flex-shrink:0;
+  }
+  .score-table{
+    width:100%;
+    border-collapse:collapse;
+    margin:10px 0 6px;
+    font-size:0.85rem;
+  }
+  .score-table th,.score-table td{
+    border:1px solid var(--line);
+    padding:6px 8px;
+    text-align:center;
+  }
+  .score-table th{
+    background:rgba(122,46,29,0.06);
+    color:var(--red);
+    font-weight:500;
+  }
+  .score-table td{font-family:"JetBrains Mono",monospace;}
+  .score-table tr.active-row td{
+    background:rgba(122,46,29,0.12);
+    font-weight:700;
+  }
+  .table-footnote{
+    font-size:0.7rem;
+    color:#8a7d68;
+    margin:4px 0 0;
+    line-height:1.6;
+  }
+  .cite-box{
+    font-size:0.72rem;
+    color:#6b5f4d;
+    background:rgba(28,23,16,0.03);
+    border-radius:6px;
+    padding:8px 10px;
+    margin-top:10px;
+    line-height:1.6;
+  }
+  .hidden{display:none !important;}
 </style>
 </head>
 <body>
@@ -405,10 +513,93 @@
   <span class="badge">DEMO / 教育用途</span>
 </header>
 
+<div class="tab-nav">
+  <button type="button" class="tab-btn active" id="tabBtnRodrigo" onclick="switchTab('rodrigo')">
+    検証済みスコア
+    <span class="tab-sub">Rodrigo 2012（7因子）</span>
+  </button>
+  <button type="button" class="tab-btn" id="tabBtnChecklist" onclick="switchTab('checklist')">
+    参考・教育用
+    <span class="tab-sub">拡張チェックリスト</span>
+  </button>
+</div>
+
 <main>
 
+  <section id="tabRodrigo" class="tab-panel active">
+
   <div class="note-box">
-    本ツールは公表文献（ATS/CDC/IDSAガイドライン、ブラジル・ペルー・ケニア・マレーシア・モロッコ等の予測モデル研究）で報告された治療中断・LTFU（Loss to Follow-Up）関連因子をもとにした<b>簡易チェックリスト型デモ</b>です。妥当性検証済みの臨床予測スコア（例：ブラジル全国レジストリモデル、T-BACCO SCORE等）そのものではなく、教育・デモンストレーション目的の試作機である点にご留意ください。
+    <b>検証済みスコア（Rodrigo T, Caylà JA, Casals M, et al. Respiratory Research. 2012;13:75.）</b><br>
+    スペインのコホート研究（バルセロナ）から得られたロジスティック回帰モデルに基づく、7因子のスコアリングツールです。合計点数と実際の中断確率の対応表が原著で公表されており（AUC 0.67、95% CI 0.65-0.70）、本ツールで唯一「妥当性検証済み」と言えるモデルです。ただし日本人集団での外部検証は行われていない点にご留意ください。
+  </div>
+
+  <div class="card">
+    <h2><span class="num">1</span>該当する因子をチェック</h2>
+    <p class="sub">各項目の重みは原著の回帰係数に基づく点数</p>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-note="出身国が診療地と異なる患者。原著コホート（バルセロナ）における因子。" value="移民">
+      <span class="ftitle">移民</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-note="同居者がいない状態。社会的支援の乏しさを反映する因子。" value="一人暮らし">
+      <span class="ftitle">一人暮らし</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="2" data-note="矯正施設・福祉施設・長期療養施設等への入所。" value="施設入所">
+      <span class="ftitle">施設入所</span>
+      <span class="weight">+2</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="2" data-note="結核治療歴（既往治療）。再治療例を含む。" value="治療歴">
+      <span class="ftitle">治療歴（既往の結核治療）</span>
+      <span class="weight">+2</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="2" data-note="治療の必要性・服薬方法に関する患者の理解が乏しいと医療者が判断した場合。" value="患者理解不良">
+      <span class="ftitle">患者理解不良</span>
+      <span class="weight">+2</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <div class="radio-group">
+      <div class="fg-title">
+        薬物使用の状況
+        <button type="button" class="info-btn" onclick="openRadioInfo(event,this)" data-note="原著では薬物使用の状況を3区分（非該当／静注薬物使用／状況不明）で評価。最も重みが大きい因子。" data-title="薬物使用の状況" aria-label="詳細を見る">ⓘ</button>
+      </div>
+      <label class="radio-row">
+        <input type="radio" name="drugStatus" value="0" data-w="0" checked>
+        <span class="rlabel">該当なし</span>
+      </label>
+      <label class="radio-row">
+        <input type="radio" name="drugStatus" value="4" data-w="4">
+        <span class="rlabel">静注薬物使用（現在）</span>
+        <span class="weight">+4</span>
+      </label>
+      <label class="radio-row">
+        <input type="radio" name="drugStatus" value="1" data-w="1">
+        <span class="rlabel">薬物使用状況不明</span>
+        <span class="weight">+1</span>
+      </label>
+    </div>
+  </div>
+
+  </section>
+
+  <section id="tabChecklist" class="tab-panel">
+
+  <div class="note-box">
+    本パネルは公表文献（ATS/CDC/IDSAガイドライン、ブラジル・ペルー・ケニア・マレーシア・モロッコ等の予測モデル研究）で報告された治療中断・LTFU（Loss to Follow-Up）関連因子をもとにした<b>簡易チェックリスト型デモ</b>です。「検証済みスコア」タブとは異なり、<b>妥当性検証を経ていない参考・教育用モデル</b>である点にご留意ください。
   </div>
 
   <div class="card">
@@ -550,9 +741,18 @@
 
   <div class="result-spacer"></div>
 
+  </section>
+
 </main>
 
-<div class="result-trigger-wrap">
+<div class="result-trigger-wrap" id="rodrigoTriggerWrap">
+  <button type="button" class="result-btn" onclick="openRodrigoResult()">
+    <span class="result-btn-label">評価結果を見る</span>
+    <span class="result-btn-score" id="rodrigoTriggerScore">スコア 0／2.2%</span>
+  </button>
+</div>
+
+<div class="result-trigger-wrap hidden" id="checklistTriggerWrap">
   <button type="button" class="result-btn" onclick="openResult()">
     <span class="result-btn-label">評価結果を見る</span>
     <span class="result-btn-score" id="triggerScore">スコア 0／目安 —%</span>
@@ -560,9 +760,56 @@
 </div>
 
 <footer>
-  本ツールは AI（Claude, Anthropic）を用いて作成されたデモンストレーション試作機です。掲載しているリスク因子・重み付け、および脱落・中断確率の推定値は複数の公表文献のOR/HR・AUC等を参考にした簡略化されたイメージ値であり、実データへの回帰フィッティングや外部妥当性検証（validation）を経た臨床予測式・臨床スコアではありません。表示される「目安レンジ」も統計学的に厳密な95%信頼区間ではなく、あくまで参考として提示するものです。実際の患者ケアにおけるリスク層別化・DOTS適応判断・介入方針の決定には、必ず日本の結核治療ガイドライン、感染症法、および専門医・保健所等の指導を参照してください。内容には誤りが含まれる可能性があります。<br><br>
+  本ツールは AI（Claude, Anthropic）を用いて作成されたデモンストレーション試作機です。<br><br>
+  「検証済みスコア」タブは Rodrigo T, Caylà JA, Casals M, et al. A Predictive Scoring Instrument for Tuberculosis Lost to Follow-Up Outcome. Respiratory Research. 2012;13:75. の公表データ（点数配分・スコア別実測中断率・AUC 0.67［95% CI 0.65-0.70］）をそのまま用いていますが、原著コホートはスペイン・バルセロナの単一施設データであり、日本人集団での外部検証は行われていません。「参考・教育用」タブは複数文献のOR/HR・AUC等を参考にした簡略化されたイメージ値であり、実データへの回帰フィッティングや妥当性検証を経ていません。いずれのタブも表示される確率・レンジは統計学的に厳密な個々の患者への95%信頼区間ではありません。<br><br>
+  実際の患者ケアにおけるリスク層別化・DOTS適応判断・介入方針の決定には、必ず日本の結核治療ガイドライン、感染症法、および専門医・保健所等の指導を参照してください。内容には誤りが含まれる可能性があります。<br><br>
   二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
 </footer>
+
+<div class="modal-overlay" id="rodrigoResultModal" onclick="closeRodrigoResultIfOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>評価結果（検証済みスコア）</h3>
+      <button type="button" class="modal-close" onclick="closeRodrigoResult()" aria-label="閉じる">×</button>
+    </div>
+
+    <div class="score-row">
+      <span class="score-label">合計スコア</span>
+      <span class="score-num" id="rodrigoScoreNum">0</span>
+    </div>
+
+    <div class="prob-block">
+      <div class="prob-caption">原著コホートにおける実測 中断確率</div>
+      <div class="prob-num" id="rodrigoProbNum">2.2%</div>
+      <div class="prob-disclaimer" id="rodrigoAnomalyNote"></div>
+      <div class="prob-disclaimer">
+        Rodrigoら（2012）の公表データによる、該当スコア区分の実測値です。AUC 0.67（95% CI 0.65-0.70）。個々の患者に対する統計学的95%信頼区間ではありません。
+      </div>
+    </div>
+
+    <table class="score-table" id="rodrigoTable">
+      <thead><tr><th>合計点数</th><th>実測中断確率</th></tr></thead>
+      <tbody>
+        <tr data-score="0"><td>0点</td><td>2.2%</td></tr>
+        <tr data-score="1"><td>1点</td><td>5.4%</td></tr>
+        <tr data-score="2"><td>2点</td><td>9.9%</td></tr>
+        <tr data-score="3"><td>3点</td><td>16.4%</td></tr>
+        <tr data-score="4"><td>4点</td><td>15%※</td></tr>
+        <tr data-score="5plus"><td>5点以上</td><td>28%</td></tr>
+      </tbody>
+    </table>
+    <p class="table-footnote">※4点の区分は、原著コホート内の該当者数が少なく3点(16.4%)より低い実測値になっています。改変せず原著のまま掲載しています。</p>
+
+    <div id="rodrigoRiskPill" class="risk-pill risk-low">低リスク</div>
+    <div class="recommend" id="rodrigoRecommendText"></div>
+
+    <div class="checked-list" id="rodrigoCheckedList"></div>
+    <div class="cite-box">
+      出典：Rodrigo T, Caylà JA, Casals M, et al. A Predictive Scoring Instrument for Tuberculosis Lost to Follow-Up Outcome. Respiratory Research. 2012;13:75. doi:10.1186/1465-9921-13-75.
+    </div>
+    <button class="reset-btn" onclick="resetRodrigoForm()">チェックをリセット</button>
+  </div>
+</div>
 
 <div class="modal-overlay" id="resultModal" onclick="closeResultIfOutside(event)">
   <div class="modal-box">
@@ -628,7 +875,7 @@ function scoreToProb(score){
 }
 
 function updateScore(){
-  const boxes = document.querySelectorAll('.factor input[type="checkbox"]');
+  const boxes = document.querySelectorAll('#tabChecklist .factor input[type="checkbox"]');
   let score = 0;
   let checkedLabels = [];
   let actions = [];
@@ -725,6 +972,7 @@ document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape'){
     closeInfo();
     closeResult();
+    closeRodrigoResult();
   }
 });
 
@@ -741,15 +989,134 @@ function closeResultIfOutside(e){
 }
 
 function resetForm(){
-  document.querySelectorAll('.factor input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('#tabChecklist .factor input[type="checkbox"]').forEach(cb=>cb.checked=false);
   updateScore();
 }
 
-document.querySelectorAll('.factor input[type="checkbox"]').forEach(cb=>{
+document.querySelectorAll('#tabChecklist .factor input[type="checkbox"]').forEach(cb=>{
   cb.addEventListener('change', updateScore);
 });
 
 updateScore();
+
+// ---- 検証済みスコア（Rodrigo T, et al. Respiratory Research 2012;13:75） ----
+// 原著の公表スコア別実測中断率。改変せずそのまま使用。
+const RODRIGO_TABLE = {0:2.2, 1:5.4, 2:9.9, 3:16.4, 4:15.0};
+const RODRIGO_HIGH_PROB = 28.0; // 5点以上
+
+function rodrigoLookup(score){
+  if(score >= 5){
+    return {prob:RODRIGO_HIGH_PROB, key:'5plus'};
+  }
+  const key = Math.max(0, score);
+  return {prob:RODRIGO_TABLE[key], key:String(key)};
+}
+
+function rodrigoUpdateScore(){
+  const boxes = document.querySelectorAll('#tabRodrigo .factor input[type="checkbox"]');
+  let score = 0;
+  let checkedLabels = [];
+  boxes.forEach(cb=>{
+    if(cb.checked){
+      score += parseInt(cb.dataset.w,10);
+      checkedLabels.push(cb.value);
+    }
+  });
+
+  const radio = document.querySelector('input[name="drugStatus"]:checked');
+  if(radio && parseInt(radio.dataset.w,10) > 0){
+    score += parseInt(radio.dataset.w,10);
+    checkedLabels.push(radio.closest('.radio-row').querySelector('.rlabel').textContent);
+  }
+
+  const { prob, key } = rodrigoLookup(score);
+
+  document.getElementById('rodrigoScoreNum').textContent = score;
+  document.getElementById('rodrigoProbNum').textContent = prob.toFixed(1).replace(/\.0$/,'') + '%';
+  document.getElementById('rodrigoTriggerScore').textContent = 'スコア ' + score + '／' + prob.toFixed(1).replace(/\.0$/,'') + '%';
+
+  document.querySelectorAll('#rodrigoTable tr').forEach(tr=>{
+    tr.classList.toggle('active-row', tr.dataset.score === key);
+  });
+
+  const anomalyEl = document.getElementById('rodrigoAnomalyNote');
+  if(key === '4'){
+    anomalyEl.textContent = '※このスコア（4点）は原著データの非単調性により、直前の3点(16.4%)より判定上の数値が下がっています。原著の実測値をそのまま反映した結果です。';
+  } else {
+    anomalyEl.textContent = '';
+  }
+
+  const pill = document.getElementById('rodrigoRiskPill');
+  const rec = document.getElementById('rodrigoRecommendText');
+
+  if(prob > 15){
+    pill.className = 'risk-pill risk-high';
+    pill.textContent = '高リスク（実測中断確率 >15%）';
+    rec.innerHTML = '<b>毎日のDOT（医療従事者による）</b>、地域DOT（自宅や職場での実施）、インセンティブ・enablersの提供、デジタル技術の併用（ビデオDOT・SMSリマインダー等）、<b>週1回以上の面談</b>を検討してください。';
+  } else if(prob >= 5){
+    pill.className = 'risk-pill risk-mid';
+    pill.textContent = '中リスク（実測中断確率 5〜15%）';
+    rec.innerHTML = '<b>週3回のDOT</b>、デジタルヘルス技術（ビデオDOT・服薬モニター等）、定期的なSMSリマインダー、<b>月2回の面談</b>を検討してください。';
+  } else {
+    pill.className = 'risk-pill risk-low';
+    pill.textContent = '低リスク（実測中断確率 <5%）';
+    rec.innerHTML = '<b>自己管理</b>を基本としつつ、定期的なフォローアップ受診の確認を継続してください。';
+  }
+
+  document.getElementById('rodrigoCheckedList').textContent =
+    checkedLabels.length ? '該当項目：' + checkedLabels.join('／') : '該当項目：なし';
+}
+
+function openRadioInfo(evt, btn){
+  evt.preventDefault();
+  evt.stopPropagation();
+  document.getElementById('modalTitle').textContent = btn.dataset.title || '';
+  document.getElementById('modalNote').textContent = btn.dataset.note || '（根拠情報なし）';
+  document.getElementById('modalActionSection').style.display = 'none';
+  document.getElementById('infoModal').classList.add('open');
+}
+
+function openRodrigoResult(){
+  document.getElementById('rodrigoResultModal').classList.add('open');
+}
+
+function closeRodrigoResult(){
+  document.getElementById('rodrigoResultModal').classList.remove('open');
+}
+
+function closeRodrigoResultIfOutside(e){
+  if(e.target.id === 'rodrigoResultModal') closeRodrigoResult();
+}
+
+function resetRodrigoForm(){
+  document.querySelectorAll('#tabRodrigo .factor input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  const defaultRadio = document.querySelector('input[name="drugStatus"][value="0"]');
+  if(defaultRadio) defaultRadio.checked = true;
+  rodrigoUpdateScore();
+}
+
+document.querySelectorAll('#tabRodrigo .factor input[type="checkbox"]').forEach(cb=>{
+  cb.addEventListener('change', rodrigoUpdateScore);
+});
+document.querySelectorAll('input[name="drugStatus"]').forEach(r=>{
+  r.addEventListener('change', rodrigoUpdateScore);
+});
+
+rodrigoUpdateScore();
+
+// ---- タブ切替 ----
+function switchTab(name){
+  document.getElementById('tabBtnRodrigo').classList.toggle('active', name === 'rodrigo');
+  document.getElementById('tabBtnChecklist').classList.toggle('active', name === 'checklist');
+  document.getElementById('tabRodrigo').classList.toggle('active', name === 'rodrigo');
+  document.getElementById('tabChecklist').classList.toggle('active', name === 'checklist');
+  document.getElementById('rodrigoTriggerWrap').classList.toggle('hidden', name !== 'rodrigo');
+  document.getElementById('checklistTriggerWrap').classList.toggle('hidden', name !== 'checklist');
+  closeInfo();
+  closeResult();
+  closeRodrigoResult();
+  window.scrollTo({top:0, behavior:'instant'});
+}
 </script>
 
 </body>
