@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>結核治療 脱落・中断リスク評価ツール（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;
+    --paper-light:#fdfaf3;
+    --ink:#1c1710;
+    --red:#7a2e1d;
+    --amber:#b5622f;
+    --low:#4d6a4a;
+    --mid:#b5622f;
+    --high:#7a2e1d;
+    --line: rgba(28,23,16,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(rgba(28,23,16,0.03) 1px, transparent 1px),
+      radial-gradient(rgba(28,23,16,0.02) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 2px 3px;
+    color:var(--ink);
+    font-family:"Noto Sans JP",sans-serif;
+    line-height:1.75;
+    min-height:100dvh;
+    padding-bottom: 100px;
+  }
+  header{
+    padding:28px 20px 20px;
+    text-align:center;
+    border-bottom:3px double var(--red);
+    background:var(--paper-light);
+  }
+  header h1{
+    font-family:"Zen Antique",serif;
+    font-size:1.5rem;
+    margin:0 0 6px;
+    color:var(--red);
+    letter-spacing:0.03em;
+  }
+  header p{
+    margin:0;
+    font-size:0.85rem;
+    color:#5a4f40;
+  }
+  .badge{
+    display:inline-block;
+    margin-top:10px;
+    font-family:"JetBrains Mono",monospace;
+    font-size:0.7rem;
+    background:var(--amber);
+    color:var(--paper-light);
+    padding:3px 10px;
+    border-radius:999px;
+    letter-spacing:0.05em;
+  }
+  main{
+    max-width:640px;
+    margin:0 auto;
+    padding:20px 16px;
+  }
+  .card{
+    background:var(--paper-light);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 16px;
+    margin-bottom:18px;
+    box-shadow:0 1px 3px rgba(28,23,16,0.06);
+  }
+  .card h2{
+    font-family:"Zen Antique",serif;
+    font-size:1.05rem;
+    color:var(--red);
+    margin:0 0 4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .card h2 .num{
+    font-family:"JetBrains Mono",monospace;
+    background:var(--red);
+    color:var(--paper-light);
+    font-size:0.75rem;
+    width:22px;height:22px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .card .sub{
+    font-size:0.78rem;
+    color:#6b5f4d;
+    margin:0 0 14px;
+  }
+  .factor{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 8px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    min-height:48px;
+  }
+  .factor:last-child{border-bottom:none;}
+  .factor input[type="checkbox"]{
+    width:22px;height:22px;
+    accent-color:var(--red);
+    flex-shrink:0;
+  }
+  .factor .ftitle{
+    flex:1;
+    font-weight:500;
+    font-size:0.94rem;
+  }
+  .factor .weight{
+    font-family:"JetBrains Mono",monospace;
+    font-size:0.75rem;
+    color:var(--amber);
+    background:rgba(181,98,47,0.1);
+    padding:2px 6px;
+    border-radius:4px;
+    flex-shrink:0;
+  }
+  .info-btn{
+    flex-shrink:0;
+    width:30px;height:30px;
+    min-width:30px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--red);
+    font-family:"Zen Antique",serif;
+    font-size:0.95rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    padding:0;
+  }
+  .info-btn:active{background:rgba(122,46,29,0.1);}
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(28,23,16,0.55);
+    z-index:1000;
+    align-items:flex-end;
+    justify-content:center;
+    padding:0;
+  }
+  .modal-overlay.open{
+    display:flex;
+  }
+  .modal-box{
+    background:var(--paper-light);
+    width:100%;
+    max-width:640px;
+    max-height:80dvh;
+    overflow-y:auto;
+    border-radius:14px 14px 0 0;
+    border-top:3px double var(--red);
+    padding:18px 18px 24px;
+    box-shadow:0 -6px 20px rgba(28,23,16,0.25);
+  }
+  @media (min-width:660px){
+    .modal-overlay{align-items:center;}
+    .modal-box{border-radius:14px;border:1px solid var(--line);border-top:3px double var(--red);}
+  }
+  .modal-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .modal-header h3{
+    font-family:"Zen Antique",serif;
+    font-size:1.1rem;
+    color:var(--red);
+    margin:0;
+  }
+  .modal-close{
+    flex-shrink:0;
+    width:32px;height:32px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+    font-size:1.1rem;
+    line-height:1;
+    cursor:pointer;
+  }
+  .modal-section{
+    margin-bottom:14px;
+  }
+  .modal-section:last-child{margin-bottom:0;}
+  .modal-section .modal-label{
+    font-family:"JetBrains Mono",monospace;
+    font-size:0.7rem;
+    letter-spacing:0.05em;
+    color:var(--amber);
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .modal-section p{
+    margin:0;
+    font-size:0.9rem;
+    line-height:1.7;
+  }
+  .modal-section.action{
+    background:rgba(181,98,47,0.07);
+    border-left:3px solid var(--amber);
+    padding:10px 12px;
+    border-radius:4px;
+  }
+  .result-spacer{
+    height: 8px;
+  }
+  .result-trigger-wrap{
+    position:fixed;
+    left:0;right:0;bottom:0;
+    z-index:400;
+    background:var(--paper-light);
+    border-top:3px double var(--red);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 12px rgba(28,23,16,0.1);
+  }
+  .result-btn{
+    width:100%;
+    max-width:640px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--red);
+    color:var(--paper-light);
+    border:none;
+    border-radius:10px;
+    padding:14px 18px;
+    min-height:48px;
+    cursor:pointer;
+    font-family:"Noto Sans JP",sans-serif;
+  }
+  .result-btn:active{background:#5f2416;}
+  .result-btn-label{
+    font-family:"Zen Antique",serif;
+    font-size:1rem;
+    letter-spacing:0.03em;
+  }
+  .result-btn-score{
+    font-family:"JetBrains Mono",monospace;
+    font-size:0.8rem;
+    opacity:0.9;
+  }
+  #resultModal .score-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:10px;
+  }
+  #resultModal .score-label{
+    font-size:0.85rem;
+    color:#5a4f40;
+  }
+  #resultModal .score-num{
+    font-family:"JetBrains Mono",monospace;
+    font-size:1.6rem;
+    font-weight:700;
+    color:var(--red);
+  }
+  .risk-pill{
+    display:inline-block;
+    font-family:"Zen Antique",serif;
+    font-size:1.05rem;
+    padding:8px 18px;
+    border-radius:8px;
+    color:var(--paper-light);
+    width:100%;
+    text-align:center;
+    margin-bottom:10px;
+  }
+  .risk-low{background:var(--low);}
+  .risk-mid{background:var(--mid);}
+  .risk-high{background:var(--high);}
+  .recommend{
+    font-size:0.85rem;
+    background:rgba(28,23,16,0.04);
+    border-left:4px solid var(--amber);
+    padding:10px 12px;
+    border-radius:4px;
+  }
+  .recommend b{color:var(--red);}
+  .checked-list{
+    font-size:0.78rem;
+    color:#6b5f4d;
+    margin-top:8px;
+  }
+  .prob-block{
+    background:rgba(28,23,16,0.03);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    text-align:center;
+  }
+  .prob-block .prob-caption{
+    font-size:0.72rem;
+    color:#7a6e5a;
+    margin-bottom:4px;
+  }
+  .prob-block .prob-num{
+    font-family:"JetBrains Mono",monospace;
+    font-size:1.9rem;
+    font-weight:700;
+    color:var(--red);
+    line-height:1.2;
+  }
+  .prob-block .prob-range{
+    font-family:"JetBrains Mono",monospace;
+    font-size:0.85rem;
+    color:var(--amber);
+    margin-top:2px;
+  }
+  .prob-block .prob-disclaimer{
+    font-size:0.68rem;
+    color:#8a7d68;
+    margin-top:6px;
+    line-height:1.5;
+  }
+  .action-card{
+    margin-top:2px;
+  }
+  .action-card h3{
+    font-family:"Zen Antique",serif;
+    font-size:0.92rem;
+    color:var(--red);
+    margin:12px 0 6px;
+  }
+  .action-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+  .action-list li{
+    font-size:0.83rem;
+    background:rgba(181,98,47,0.06);
+    border-left:3px solid var(--amber);
+    padding:8px 10px;
+    border-radius:4px;
+    margin-bottom:6px;
+  }
+  .action-list li b{
+    color:var(--red);
+  }
+  .note-box{
+    font-size:0.8rem;
+    background:rgba(122,46,29,0.05);
+    border:1px dashed var(--line);
+    border-radius:6px;
+    padding:12px 14px;
+    margin-bottom:18px;
+  }
+  .note-box b{color:var(--red);}
+  .reset-btn{
+    width:100%;
+    margin-top:10px;
+    background:transparent;
+    border:1px solid var(--line);
+    color:#6b5f4d;
+    padding:10px;
+    border-radius:6px;
+    font-family:"Noto Sans JP",sans-serif;
+    font-size:0.82rem;
+    cursor:pointer;
+    min-height:44px;
+  }
+  .reset-btn:active{background:rgba(28,23,16,0.05);}
+  footer{
+    max-width:640px;
+    margin:24px auto 0;
+    padding:16px 20px;
+    font-size:0.72rem;
+    color:#8a7d68;
+    line-height:1.6;
+    border-top:1px solid var(--line);
+  }
+  em.sp{font-style:italic;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>結核治療 脱落・中断リスク評価ツール</h1>
+  <p>治療開始前スクリーニング（デモ版）</p>
+  <span class="badge">DEMO / 教育用途</span>
+</header>
+
+<main>
+
+  <div class="note-box">
+    本ツールは公表文献（ATS/CDC/IDSAガイドライン、ブラジル・ペルー・ケニア・マレーシア・モロッコ等の予測モデル研究）で報告された治療中断・LTFU（Loss to Follow-Up）関連因子をもとにした<b>簡易チェックリスト型デモ</b>です。妥当性検証済みの臨床予測スコア（例：ブラジル全国レジストリモデル、T-BACCO SCORE等）そのものではなく、教育・デモンストレーション目的の試作機である点にご留意ください。
+  </div>
+
+  <div class="card">
+    <h2><span class="num">1</span>治療歴・臨床的因子</h2>
+    <p class="sub">エビデンス上、影響の大きい因子（重み高め）</p>
+
+    <label class="factor">
+      <input type="checkbox" data-w="2" data-cat="clinical" data-act="中断理由を丁寧に聴取し個別カウンセリングを実施。毎日DOTを基本とし、次回中断の予兆（受診間隔の空き等）を早期に把握できる体制を組む。" value="治療中断歴・再治療例" data-note="過去の治療脱落歴（HR約4.8）／再治療例（OR約2.1〜3.0）">
+      <span class="ftitle">治療中断歴・再治療例</span>
+      <span class="weight">+2</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="2" data-cat="clinical" data-act="薬剤耐性結核の治療経験がある専門医療機関への紹介・連携を検討。TDM（治療薬物モニタリング）と副作用管理体制を強化し、毎日DOTを実施。" value="薬剤耐性結核" data-note="多剤耐性・リファンピシン耐性など">
+      <span class="ftitle">薬剤耐性結核</span>
+      <span class="weight">+2</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="2" data-cat="clinical" data-act="HIV専門医と連携し、可能な限り早期のART導入を検討。ART開始後はリスクがやや低下する報告があるため、導入状況を定期的に再評価する。" value="HIV陽性でART未実施" data-note="HR約2.0。ART実施中であればリスクはやや低下">
+      <span class="ftitle">HIV陽性でART未実施</span>
+      <span class="weight">+2</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="clinical" data-act="感染性が消失するまでは毎日DOTを優先。塗抹陰性化のタイミングで訪問頻度の見直しを行う。" value="喀痰塗抹陽性" data-note="ATS/CDC/IDSAガイドラインでDOT優先適応">
+      <span class="ftitle">喀痰塗抹陽性</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="clinical" data-act="栄養状態の評価と栄養サポート（栄養補助食品の紹介・管理栄養士との連携）を実施し、体重を定期モニタリングする。" value="治療開始前の低体重" data-note="OR約2.1">
+      <span class="ftitle">低体重</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="clinical" data-act="治療開始前に想定される副作用と対処法を具体的に説明し、症状出現時にすぐ相談できる窓口（電話・オンライン等）を明確に伝える。副作用出現後は特に中断リスクが高まるため早期対応を徹底。" value="薬剤副作用の懸念・既往" data-note="副作用出現後の中断はHR約8.5と高い">
+      <span class="ftitle">薬剤副作用の懸念・既往</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>物質使用</h2>
+
+    <label class="factor">
+      <input type="checkbox" data-w="2" data-cat="substance" data-act="薬物依存症治療・地域の依存症支援機関と連携。ハームリダクションの視点を取り入れつつ、来院インセンティブ（交通費支給等）の活用を検討。" value="薬物乱用（現在・既往）" data-note="OR約2.7〜4.8。ATS/CDC/IDSAでもDOT優先適応">
+      <span class="ftitle">薬物乱用（現在または既往）</span>
+      <span class="weight">+2</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="substance" data-act="断酒支援・アルコール依存症相談窓口の紹介を検討。飲酒と服薬タイミングが重ならないよう服薬時間を調整する。" value="アルコール多飲（週1回以上）" data-note="OR約2.2〜9.2">
+      <span class="ftitle">アルコール多飲（週1回以上）</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="substance" data-act="禁煙外来・禁煙支援プログラムの案内を行う。" value="喫煙" data-note="OR約1.7〜2.7">
+      <span class="ftitle">喫煙（現在）</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>社会経済的因子</h2>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="social" data-act="福祉部門・地域の住居支援団体と連携し、居住先確保を支援。訪問可能な服薬支援（訪問DOT）の導入を検討。" value="ホームレス・住居不安定" data-note="ATS/CDC/IDSAでDOT優先適応">
+      <span class="ftitle">ホームレス・住居不安定</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="social" data-act="医療費助成制度・生活保護等の社会資源の案内。通院にかかる交通費・食費支援（インセンティブ）の活用を検討。" value="低所得・貧困" data-note="OR約4.4">
+      <span class="ftitle">低所得・貧困</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="social" data-act="専門用語を避けたわかりやすい説明資料・絵図（ピクトグラム）を用いた服薬指導を行う。" value="低学歴（中等教育未修了）" data-note="複数の予測モデルで採用されている因子">
+      <span class="ftitle">低学歴（中等教育未修了）</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="social" data-act="夜間・早朝DOT枠やビデオDOT（VDOT）など、勤務時間と両立しやすい服薬確認方法に切り替える。職場への説明・調整支援も検討。" value="就労と服薬の両立困難" data-note="モロッコの研究での独立因子">
+      <span class="ftitle">就労・生活と服薬の両立困難</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="social" data-act="精神科・関連診療科と連携。家族や介護者に説明に同席してもらい、服薬管理を分担できる体制を整える。" value="精神的・身体的障害" data-note="ATS/CDC/IDSAでDOT優先適応">
+      <span class="ftitle">精神的・身体的障害</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="social" data-act="施設スタッフと連携した施設内DOT体制を構築し、退所後のフォローアップ計画を退所前に確定しておく。" value="矯正施設・長期療養施設入所" data-note="ATS/CDC/IDSAでDOT優先適応">
+      <span class="ftitle">矯正施設・長期療養施設入所</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>年齢層</h2>
+    <p class="sub">保護因子・リスク因子が年齢層により異なる</p>
+
+    <label class="factor">
+      <input type="checkbox" data-w="1" data-cat="age" data-act="保護者を含めた服薬指導を実施し、学校（保健室等）とも連携して見守り体制を作る。" value="小児・思春期" data-note="ATS/CDC/IDSAでDOT優先適応">
+      <span class="ftitle">小児・思春期</span>
+      <span class="weight">+1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+
+    <label class="factor">
+      <input type="checkbox" data-w="-1" data-cat="age" value="50歳以上・非喫煙・支援者あり" data-note="モロッコの研究における保護因子">
+      <span class="ftitle">50歳以上かつ非喫煙・診断を知る支援者がいる</span>
+      <span class="weight" style="color:var(--low);background:rgba(77,106,74,0.1);">−1</span>
+      <button type="button" class="info-btn" onclick="openInfo(event,this)" aria-label="詳細を見る">ⓘ</button>
+    </label>
+  </div>
+
+  <div class="result-spacer"></div>
+
+</main>
+
+<div class="result-trigger-wrap">
+  <button type="button" class="result-btn" onclick="openResult()">
+    <span class="result-btn-label">評価結果を見る</span>
+    <span class="result-btn-score" id="triggerScore">スコア 0／目安 —%</span>
+  </button>
+</div>
+
+<footer>
+  本ツールは AI（Claude, Anthropic）を用いて作成されたデモンストレーション試作機です。掲載しているリスク因子・重み付け、および脱落・中断確率の推定値は複数の公表文献のOR/HR・AUC等を参考にした簡略化されたイメージ値であり、実データへの回帰フィッティングや外部妥当性検証（validation）を経た臨床予測式・臨床スコアではありません。表示される「目安レンジ」も統計学的に厳密な95%信頼区間ではなく、あくまで参考として提示するものです。実際の患者ケアにおけるリスク層別化・DOTS適応判断・介入方針の決定には、必ず日本の結核治療ガイドライン、感染症法、および専門医・保健所等の指導を参照してください。内容には誤りが含まれる可能性があります。<br><br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<div class="modal-overlay" id="resultModal" onclick="closeResultIfOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>評価結果</h3>
+      <button type="button" class="modal-close" onclick="closeResult()" aria-label="閉じる">×</button>
+    </div>
+
+    <div class="score-row">
+      <span class="score-label">合計スコア</span>
+      <span class="score-num" id="scoreNum">0</span>
+    </div>
+
+    <div class="prob-block">
+      <div class="prob-caption">推定 脱落・中断確率（目安）</div>
+      <div class="prob-num" id="probNum">—%</div>
+      <div class="prob-range" id="probRange"></div>
+      <div class="prob-disclaimer">
+        ※この数値は文献のOR/HRの傾向をもとにした簡易ロジスティック変換による<b>参考推定値</b>です。実データで妥当性検証された予測式ではなく、統計学的に厳密な95%信頼区間でもありません。範囲は不確実性の目安として提示しています。
+      </div>
+    </div>
+
+    <div id="riskPill" class="risk-pill risk-low">低リスク</div>
+    <div class="recommend" id="recommendText">
+      該当因子なし。<b>自己管理＋定期フォローアップ</b>を基本とし、治療開始後1ヶ月（中断リスクが最も高い時期）に再評価してください。
+    </div>
+
+    <div class="action-card">
+      <h3>推奨される具体的対応</h3>
+      <ul class="action-list" id="actionList"></ul>
+    </div>
+
+    <div class="checked-list" id="checkedList"></div>
+    <button class="reset-btn" onclick="resetForm()">チェックをリセット</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="infoModal" onclick="closeInfoIfOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modalTitle"></h3>
+      <button type="button" class="modal-close" onclick="closeInfo()" aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">エビデンス根拠</div>
+      <p id="modalNote"></p>
+    </div>
+    <div class="modal-section action" id="modalActionSection">
+      <div class="modal-label">推奨される対応</div>
+      <p id="modalAction"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+// 簡易ロジスティック変換：logit(p) = -2.9 + 0.5 * score
+// -2.9 はスコア0（該当因子なし）で約5%の脱落・中断率となるよう設定した目安の切片。
+// 0.5 はブラジル・ペルー・ケニア等の報告OR/HR（概ね1.7〜4.8）の対数を大まかに平均した目安の傾き。
+// いずれも実データへの回帰フィッティングによるものではなく、デモ用の簡略化されたイメージ値。
+function scoreToProb(score){
+  const logit = -2.9 + 0.5 * score;
+  return 1 / (1 + Math.exp(-logit));
+}
+
+function updateScore(){
+  const boxes = document.querySelectorAll('.factor input[type="checkbox"]');
+  let score = 0;
+  let checkedLabels = [];
+  let actions = [];
+  boxes.forEach(cb=>{
+    if(cb.checked){
+      score += parseInt(cb.dataset.w,10);
+      checkedLabels.push(cb.value);
+      if(cb.dataset.act){
+        actions.push({label:cb.value, act:cb.dataset.act});
+      }
+    }
+  });
+
+  document.getElementById('scoreNum').textContent = score;
+
+  // 推定確率と目安レンジ（logit ±0.8 を仮の不確実性幅として使用）
+  const p = scoreToProb(score);
+  const clamp = (v)=>Math.max(0.01, Math.min(0.95, v));
+  const lo = clamp(1/(1+Math.exp(-((-2.9+0.5*score)-0.8))));
+  const hi = clamp(1/(1+Math.exp(-((-2.9+0.5*score)+0.8))));
+
+  document.getElementById('probNum').textContent = (p*100).toFixed(0) + '%';
+  document.getElementById('probRange').textContent =
+    '目安レンジ：約' + (lo*100).toFixed(0) + '%〜' + (hi*100).toFixed(0) + '%';
+  document.getElementById('triggerScore').textContent =
+    'スコア ' + score + '／目安 ' + (p*100).toFixed(0) + '%';
+
+  const pill = document.getElementById('riskPill');
+  const rec = document.getElementById('recommendText');
+
+  if(score <= 0){
+    pill.className = 'risk-pill risk-low';
+    pill.textContent = '低リスク';
+    rec.innerHTML = '該当因子はほぼなし。<b>自己管理＋定期フォローアップ</b>を基本とし、治療開始後1ヶ月（中断リスクが最も高い時期）に再評価してください。';
+  } else if(score <= 2){
+    pill.className = 'risk-pill risk-mid';
+    pill.textContent = '中リスク';
+    rec.innerHTML = '<b>週2〜3回のDOTまたはデジタルアドヒアランス技術（99DOTS・ビデオDOT・服薬リマインダー等）</b>の併用を検討してください。治療開始後1ヶ月以内の早期再評価を推奨します。';
+  } else {
+    pill.className = 'risk-pill risk-high';
+    pill.textContent = '高リスク';
+    rec.innerHTML = '<b>毎日のDOT（直接監視下治療）</b>を優先的に検討してください。社会的支援（住居・就労調整・アルコール/薬物使用への介入等）の併用も考慮し、集中治療期（特に開始後4週間）は密なフォローアップを行ってください。';
+  }
+
+  const actionListEl = document.getElementById('actionList');
+  actionListEl.innerHTML = '';
+  if(actions.length === 0){
+    const li = document.createElement('li');
+    li.innerHTML = '該当する個別因子はありません。<b>標準フォローアップ</b>（定期受診の確認、開始後1ヶ月時点の再評価）を継続してください。';
+    actionListEl.appendChild(li);
+  } else {
+    actions.forEach(a=>{
+      const li = document.createElement('li');
+      li.innerHTML = '<b>' + a.label + '：</b>' + a.act;
+      actionListEl.appendChild(li);
+    });
+  }
+
+  document.getElementById('checkedList').textContent =
+    checkedLabels.length ? '該当項目：' + checkedLabels.join('／') : '該当項目：なし';
+}
+
+function openInfo(evt, btn){
+  evt.preventDefault();
+  evt.stopPropagation();
+  const label = btn.closest('.factor');
+  const input = label.querySelector('input[type="checkbox"]');
+  const title = label.querySelector('.ftitle').textContent;
+
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalNote').textContent = input.dataset.note || '（根拠情報なし）';
+
+  const act = input.dataset.act;
+  const actionSection = document.getElementById('modalActionSection');
+  if(act){
+    document.getElementById('modalAction').textContent = act;
+    actionSection.style.display = '';
+  } else {
+    actionSection.style.display = 'none';
+  }
+
+  document.getElementById('infoModal').classList.add('open');
+}
+
+function closeInfo(){
+  document.getElementById('infoModal').classList.remove('open');
+}
+
+function closeInfoIfOutside(e){
+  if(e.target.id === 'infoModal') closeInfo();
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    closeInfo();
+    closeResult();
+  }
+});
+
+function openResult(){
+  document.getElementById('resultModal').classList.add('open');
+}
+
+function closeResult(){
+  document.getElementById('resultModal').classList.remove('open');
+}
+
+function closeResultIfOutside(e){
+  if(e.target.id === 'resultModal') closeResult();
+}
+
+function resetForm(){
+  document.querySelectorAll('.factor input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  updateScore();
+}
+
+document.querySelectorAll('.factor input[type="checkbox"]').forEach(cb=>{
+  cb.addEventListener('change', updateScore);
+});
+
+updateScore();
+</script>
+
+</body>
+</html>
