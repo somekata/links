@@ -450,6 +450,18 @@
     </div>
   </section>
 
+  <section>
+    <div class="section-label">
+      <span class="num">ADVANCED SERIES</span>
+      <h2>細菌楽アドバンス</h2>
+    </div>
+    <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 14px;">細菌楽入門の発展編です。感染症法上の位置づけ、耐性機構の分子的な背景、疫学調査の手法、基礎研究の最前線まで、もう一段踏み込んだ内容を扱います。</p>
+    <div id="advanced-grid" class="grid"></div>
+    <div id="advanced-empty-state" class="empty-state" style="display:none;">
+      準備中です。順次追加していきます。
+    </div>
+  </section>
+
   <footer>
     本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
     二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
@@ -458,31 +470,39 @@
 </div>
 
 <script>
+  function renderCards(list, gridId, emptyId) {
+    const grid = document.getElementById(gridId);
+    const empty = document.getElementById(emptyId);
+    if (!list || list.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    list.forEach(p => {
+      const a = document.createElement('a');
+      a.className = 'card';
+      a.href = p.file;
+      const color = p.color || 'var(--vermillion)';
+      a.style.setProperty('--card-color', color);
+      a.innerHTML = `
+        <span class="tag">${p.tag || ''}</span>
+        <h4>${p.title}</h4>
+        <p>${p.description || ''}</p>
+      `;
+      grid.appendChild(a);
+    });
+  }
+
   fetch('pages.json')
     .then(res => res.json())
     .then(pages => {
-      const grid = document.getElementById('page-grid');
-      const empty = document.getElementById('empty-state');
-      if (!pages || pages.length === 0) {
-        empty.style.display = 'block';
-        return;
-      }
-      pages.forEach(p => {
-        const a = document.createElement('a');
-        a.className = 'card';
-        a.href = p.file;
-        const color = p.color || 'var(--vermillion)';
-        a.style.setProperty('--card-color', color);
-        a.innerHTML = `
-          <span class="tag">${p.tag || ''}</span>
-          <h4>${p.title}</h4>
-          <p>${p.description || ''}</p>
-        `;
-        grid.appendChild(a);
-      });
+      const mainPages = (pages || []).filter(p => p.series !== 'advanced');
+      const advancedPages = (pages || []).filter(p => p.series === 'advanced');
+      renderCards(mainPages, 'page-grid', 'empty-state');
+      renderCards(advancedPages, 'advanced-grid', 'advanced-empty-state');
     })
     .catch(() => {
       document.getElementById('empty-state').style.display = 'block';
+      document.getElementById('advanced-empty-state').style.display = 'block';
     });
 </script>
 
