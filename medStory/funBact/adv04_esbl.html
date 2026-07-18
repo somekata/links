@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>細菌楽アドバンス｜第4回 ESBL</title>
+<style>
+  :root{
+    --washi: #f2f1ea;
+    --washi-deep: #e7e5d8;
+    --ink: #23262b;
+    --ink-soft: #464b52;
+    --indigo: #2c3e63;
+    --indigo-soft: #4a5f8a;
+    --indigo-pale: #e7ebf2;
+    --vermillion: #9c3b34;
+    --vermillion-soft: #b96a5c;
+    --gold: #a1863f;
+    --line: #cfd0c4;
+    --green: #2f6b52;
+    --green-pale: #e2ece4;
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    padding:0;
+    background: var(--washi);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(44,62,99,0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(161,134,63,0.06), transparent 40%);
+    color: var(--ink);
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "游明朝", serif;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page{
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3.5rem 1.6rem 3rem;
+  }
+  header.title-block{
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 1.8rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .series-name{
+    font-size: 0.9rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+  }
+  .series-badge{
+    display: inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--indigo);
+    background: var(--indigo-pale);
+    border: 1px solid var(--indigo-soft);
+    border-radius: 999px;
+    padding: 0.15rem 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+  .ep-num{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.15em;
+  }
+  h1.episode-title{
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--indigo);
+    margin: 0.4rem 0 0.6rem;
+    letter-spacing: 0.04em;
+  }
+  .episode-sub{
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+  .back-link{
+    display: block;
+    text-align: center;
+    font-size: 0.8rem;
+    margin-top: 1rem;
+  }
+  .back-link a{ color: var(--indigo); text-decoration: none; }
+
+  .lead{
+    background: var(--washi-deep);
+    border-left: 3px solid var(--gold);
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 2.4rem;
+    font-size: 0.98rem;
+  }
+  .lead p{ margin: 0.4rem 0; }
+
+  section{ margin-bottom: 2.6rem; }
+  .section-label{
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1.1rem;
+  }
+  .section-label .num{
+    font-size: 0.85rem;
+    color: var(--indigo-soft);
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  .section-label h2{
+    font-size: 1.15rem;
+    margin: 0;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+  .essay p{ margin: 0.7rem 0; }
+
+  i.sp{ font-style: italic; }
+
+  sup.cite{ font-size: 0.72em; margin-left: 1px; }
+  sup.cite a{ color: var(--indigo-soft); text-decoration: none; font-weight: 700; }
+  sup.cite a:hover{ text-decoration: underline; }
+
+  .method-card{
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.3rem 1.5rem;
+    margin: 1rem 0;
+  }
+  .method-card h4{
+    margin: 0 0 0.5rem;
+    font-size: 1.02rem;
+    color: var(--indigo);
+  }
+  .method-card p{ margin: 0.5rem 0; font-size: 0.94rem; }
+  .tag-row{ margin: 0.4rem 0 0.7rem; display:flex; flex-wrap:wrap; gap:0.4rem; }
+  .tag{
+    display:inline-block;
+    font-size: 0.74rem;
+    background: var(--indigo-pale);
+    color: var(--indigo);
+    border-radius: 6px;
+    padding: 0.15rem 0.6rem;
+    letter-spacing: 0.02em;
+  }
+  .tag.warn{ background: #f4e6e2; color: var(--vermillion); }
+  .tag.gold{ background: #f2ead2; color: var(--gold); }
+  .tag.ok{ background: var(--green-pale); color: var(--green); }
+
+  .plain-list{ padding-left: 1.3rem; margin: 0.6rem 0; }
+  .plain-list li{ margin-bottom: 0.5rem; font-size: 0.94rem; }
+
+  table.taxo-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0;
+    font-size: 0.88rem;
+  }
+  table.taxo-table th{
+    width: 6.5em;
+    text-align: left;
+    color: var(--ink-soft);
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    font-weight: 500;
+  }
+  table.taxo-table td{
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .compare-box{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.1rem 0;
+  }
+  .compare-box .col{
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+  }
+  .compare-box .col h5{
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+    color: var(--indigo);
+  }
+  .compare-box .col.alt h5{ color: var(--vermillion); }
+  .compare-box ul{ margin: 0; padding-left: 1.1rem; font-size: 0.88rem; }
+  .compare-box li{ margin-bottom: 0.35rem; }
+  @media (max-width: 560px){
+    .compare-box{ grid-template-columns: 1fr; }
+  }
+
+  table.summary-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.86rem;
+  }
+  table.summary-table th{
+    background: var(--indigo-pale);
+    color: var(--indigo);
+    padding: 0.55rem 0.6rem;
+    text-align: left;
+    border: 1px solid var(--line);
+  }
+  table.summary-table td{
+    padding: 0.55rem 0.6rem;
+    border: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.summary-table td.warn-cell{ background: #faf1ee; }
+  table.summary-table td.ok-cell{ background: var(--green-pale); }
+
+  .summary-box{
+    background: var(--washi-deep);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin: 1.1rem 0;
+    font-size: 0.92rem;
+  }
+  .summary-box h4{ margin: 0 0 0.5rem; color: var(--indigo); font-size: 0.98rem; }
+
+  .warn-box{
+    background: #faf1ee;
+    border: 1px solid var(--vermillion-soft);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin: 1.1rem 0;
+    font-size: 0.92rem;
+  }
+  .warn-box h4{ margin: 0 0 0.5rem; color: var(--vermillion); font-size: 0.98rem; }
+
+  aside.digression{
+    background: #fdfaf1;
+    border: 1px dashed var(--gold);
+    border-radius: 10px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 0.92rem;
+  }
+  aside.digression .digression-label{
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+  aside.digression h4{ margin: 0 0 0.5rem; color: var(--ink); font-size: 1rem; }
+  aside.digression p{ margin: 0.5rem 0; }
+
+  .quiz{
+    background: var(--washi-deep);
+    border-radius: 10px;
+    padding: 1.3rem 1.5rem;
+    margin: 1rem 0;
+  }
+  .quiz p.q{ font-weight: 700; margin: 0 0 0.6rem; }
+  .quiz details{ margin-top: 0.4rem; }
+  .quiz summary{
+    cursor: pointer;
+    color: var(--indigo);
+    font-size: 0.9rem;
+  }
+  .quiz .a{ margin-top: 0.5rem; font-size: 0.92rem; }
+
+  .refs{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 1rem;
+  }
+  .refs summary{ cursor: pointer; color: var(--indigo-soft); font-size: 0.86rem; }
+  .refs ol{ padding-left: 1.4rem; margin-top: 0.8rem; }
+  .refs li{ margin-bottom: 0.55rem; scroll-margin-top: 1.2rem; }
+
+  footer{
+    border-top: 1px solid var(--line);
+    margin-top: 2.5rem;
+    padding-top: 1.2rem;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="title-block">
+    <div class="series-badge">細菌楽アドバンス</div><br>
+    <div class="series-name">細菌楽入門・発展編</div>
+    <div class="ep-num">第4回</div>
+    <h1 class="episode-title">ESBL</h1>
+    <div class="episode-sub">名前は一つ、中身は広がり続ける——「どこまでがESBLか」という問い</div>
+    <div class="back-link"><a href="index.html">← 細菌楽入門トップへ</a></div>
+  </header>
+
+  <div class="lead">
+    <p>
+      第3回でAmpC β-ラクタマーゼを扱いました。第4回はその対になる存在、ESBL（基質特異性拡張型β-ラクタマーゼ）です。ESBLは細菌楽入門・第5回でも触れましたが、今回はその名称の成り立ち、現在主流のCTX-M型がなぜ主役になったのか、そして「ESBLという概念はどこまで広げてよいのか」という、実はまだ決着のついていない議論まで踏み込みます。
+    </p>
+    <p>
+      あらかじめ範囲を明確にしておきます。本エピソードで主に扱うESBLは、<strong>CTX-M型を含むAmbler class Aのうち、セファロスポリン系薬（第4世代まで）を分解しうるβ-ラクタマーゼ</strong>を原則とします。Class D（OXA型）やClass C由来の拡張型（ESAC）にも触れますが、これらは「概念がどこまで広がるか」を理解するための参照点として扱い、深掘りは今後の回に譲ります。文中の肩付き番号は、末尾の「引用文献」に対応しています。
+    </p>
+  </div>
+
+  <section>
+    <div class="section-label">
+      <span class="num">01</span>
+      <h2>ESBLの古典的定義</h2>
+    </div>
+    <div class="essay">
+      <p>
+        ESBL（Extended-Spectrum β-Lactamase）は、Bush-Jacoby機能分類の<strong>Group 2be</strong>、Ambler分子分類の<strong>Class A</strong>に位置づけられるβ-ラクタマーゼです<sup class="cite"><a href="#ref3">3</a>,<a href="#ref13">13</a>,<a href="#ref15">15</a></sup>。基質スペクトルは、拡張スペクトルセファロスポリン（第3世代）とモノバクタム（アズトレオナム）に及びますが、<strong>セファマイシン（セフォキシチン）とカルバペネムは加水分解しない</strong>という枠に収まります<sup class="cite"><a href="#ref2">2</a></sup>。
+      </p>
+      <p>
+        阻害薬に対しては、クラブラン酸・タゾバクタム・スルバクタムに<strong>感受性</strong>を示します。これは前回扱ったAmpC（これらの阻害薬に耐性）との最大の違いであり、治療選択（β-ラクタマーゼ阻害薬配合剤が効くかどうか）に直結する一点です<sup class="cite"><a href="#ref1">1</a></sup>。
+      </p>
+    </div>
+    <table class="summary-table">
+      <tr><th>特徴</th><th>ESBL（Class A）</th><th>AmpC（Class C）</th></tr>
+      <tr><td>Bush-Jacoby分類</td><td>Group 2be</td><td>Group 1</td></tr>
+      <tr><td>クラブラン酸・タゾバクタム感受性</td><td>感受性</td><td>耐性</td></tr>
+      <tr><td>セフォキシチン感受性</td><td>感受性</td><td>耐性</td></tr>
+      <tr><td>カルバペネム感受性</td><td colspan="2">両者とも通常感受性（カルバペネマーゼ非産生時）</td></tr>
+      <tr><td>主な遺伝的局在</td><td>プラスミド</td><td>染色体（誘導型）またはプラスミド</td></tr>
+      <tr><td>誘導性</td><td>なし</td><td>あり（染色体性の場合）</td></tr>
+    </table>
+    <p style="font-size:0.88rem; color:var(--ink-soft);">主な産生菌は<i class="sp">E. coli</i>、<i class="sp">Klebsiella pneumoniae</i>、<i class="sp">K. oxytoca</i>、<i class="sp">Proteus mirabilis</i>です<sup class="cite"><a href="#ref1">1</a></sup>。</p>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">02</span>
+      <h2>名称と概念の変遷——狭域から拡張へ</h2>
+    </div>
+    <div class="essay">
+      <p>
+        「ESBL」という名前自体、一直線に生まれたわけではありません。抗菌薬開発との軍拡競争の中で、呼び名が段階的に書き換えられてきた歴史があります<sup class="cite"><a href="#ref4">4</a>,<a href="#ref5">5</a>,<a href="#ref6">6</a>,<a href="#ref7">7</a>,<a href="#ref19">19</a></sup>。
+      </p>
+    </div>
+    <table class="summary-table">
+      <tr><th>時期</th><th>用語</th><th>基質</th><th>代表例</th></tr>
+      <tr><td>1940年代〜1960年代</td><td>Narrow-spectrum β-lactamase（ペニシリナーゼ）</td><td>ペニシリンのみ</td><td>黄色ブドウ球菌のペニシリナーゼ</td></tr>
+      <tr><td>1960年代〜1980年代初頭</td><td>Broad-spectrum β-lactamase</td><td>ペニシリン系＋第1世代セファロスポリン</td><td>TEM-1（1965年）、SHV-1</td></tr>
+      <tr><td>1980年代初頭</td><td>Extended broad-spectrum β-lactamase</td><td>＋第3世代セファロスポリン、アズトレオナム</td><td>SHV-2（1983年）、TEM-3（1984〜87年）</td></tr>
+      <tr><td>1980年代中期〜現在</td><td>Extended-spectrum β-lactamase（ESBL）</td><td>同上（用語を簡略化）</td><td>TEM型・SHV型変異株、後にCTX-M型</td></tr>
+    </table>
+    <p style="font-size:0.92rem; color:var(--ink-soft);">
+      「Extended broad-spectrum」という当初の名称は、親酵素（broad-spectrum β-lactamase）との関係性を強調したものでしたが、冗長であったため「Extended-spectrum β-lactamase」に簡略化され、国際的に定着しました<sup class="cite"><a href="#ref4">4</a></sup>。最初のTEM型β-ラクタマーゼであるTEM-1は、1965年にギリシャの患者テモネイラ（Temoneira）から分離された大腸菌に由来し、その名がそのまま酵素名になっています<sup class="cite"><a href="#ref2">2</a></sup>。
+      </p>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">03</span>
+      <h2>CTX-M型の台頭——現在主流の理由</h2>
+    </div>
+    <div class="essay">
+      <p>
+        TEM型・SHV型ESBLが親酵素からの点変異で生まれたのに対し、<strong>CTX-M型はまったく異なる由来</strong>を持ちます。<i class="sp">Kluyvera</i>属という環境細菌から、水平遺伝子伝播によって<em>de novo</em>で獲得された酵素です<sup class="cite"><a href="#ref2">2</a></sup>。名称の由来は、セフォタキシム（cefotaxime）への活性と、最初の分離地ミュンヘン（Munich）から来ています。
+      </p>
+      <p>
+        2000年以降、CTX-M型は世界的に急増し、市中感染の大腸菌と院内感染の肺炎桿菌の両方でTEM型・SHV型を数のうえで置き換えました<sup class="cite"><a href="#ref9">9</a>,<a href="#ref10">10</a></sup>。現在、米国を含む世界的に<strong>CTX-M-15が最も頻度の高いESBL</strong>とされ、多くは国際的な拡散クローンである<i class="sp">E. coli</i> ST131（特にClade C2）と関連しています<sup class="cite"><a href="#ref1">1</a>,<a href="#ref11">11</a></sup>。CTX-M-14はCTX-M-15に次いで頻度が高く東南アジアで多く、CTX-M-27は日本とヨーロッパで新興し、ST131 Clade C1-M27と関連することが知られています<sup class="cite"><a href="#ref2">2</a></sup>。
+      </p>
+    </div>
+    <div class="method-card">
+      <h4>CTX-M優位の背景</h4>
+      <ul class="plain-list" style="margin-bottom:0;">
+        <li>プラスミド（IncF、IncI、IncKなど）や挿入配列（ISEcp1、orf477など）による水平遺伝子伝播</li>
+        <li><i class="sp">E. coli</i> ST131をはじめとする国際的拡散クローンの存在（ST405、ST38、ST648、ST410、ST1193など）</li>
+        <li>食用動物における抗菌薬使用や環境リザーバーの拡大</li>
+        <li>国際旅行と衛生設備アクセスの格差</li>
+      </ul>
+      <p style="margin-top:0.6rem; margin-bottom:0; font-size:0.88rem; color:var(--ink-soft);">2000年以前、市中でのESBL産生菌の糞便保菌はほぼ知られていませんでしたが、2000年以降は世界的に有意に増加し、特に発展途上国で顕著です<sup class="cite"><a href="#ref9">9</a></sup>。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">04</span>
+      <h2>セフェピムとESBL——「感受性でも使わない」という原則</h2>
+    </div>
+    <div class="warn-box">
+      <h4>⚠ IDSA 2024ガイダンスの明確な立場</h4>
+      <p style="margin-bottom:0;">
+        IDSAは、単純性膀胱炎を除き、<strong>ESBL産生Enterobacterales（ESBL-E）感染症に対してセフェピムの使用を推奨していません</strong>。これは、in vitroの薬剤感受性試験でセフェピム感受性と判定された場合でも同じです<sup class="cite"><a href="#ref1">1</a>,<a href="#ref12">12</a>,<a href="#ref18">18</a></sup>。
+      </p>
+    </div>
+    <div class="method-card">
+      <h4>なぜ「感受性」が信用できないのか</h4>
+      <ul class="plain-list" style="margin-bottom:0;">
+        <li><strong>ESBLはセフェピムを加水分解する能力を持つ</strong>。特にCTX-M型は標準的な接種菌量でもセフェピム耐性を示すことが多い<sup class="cite"><a href="#ref1">1</a>,<a href="#ref8">8</a></sup></li>
+        <li>TEM型・SHV型は見かけ上セフェピム感受性を示すことがあるが、<strong>接種菌量効果（inoculum effect）</strong>が顕著で、菌量を増やすと感受性が低下する<sup class="cite"><a href="#ref16">16</a></sup></li>
+        <li>2010年以降、多くの検査室でESBL確認試験が廃止され、MICに基づく報告に移行した結果、以前なら「全セファロスポリン耐性」と報告されていた株の一部が「セフェピム感受性」として再分類されるようになった<sup class="cite"><a href="#ref17">17</a></sup></li>
+        <li>臨床試験では、セフェピムMICが1〜2 µg/mLの株でも治療失敗が報告されている（腎盂腎炎・cUTI試験でセフェピム群が早期中止、院内肺炎試験でセフェピム群31%・イミペネム/シラスタチン群0%が臨床的失敗）<sup class="cite"><a href="#ref1">1</a></sup></li>
+      </ul>
+    </div>
+    <table class="summary-table">
+      <tr><th>特徴</th><th>ESBL（Class A）</th><th>AmpC（Class C、第3回参照）</th></tr>
+      <tr><td>セフェピム加水分解</td><td>あり（特にCTX-M型）</td><td>あり（誘導型・過剰産生型）</td></tr>
+      <tr><td>セフェピムin vitro感受性</td><td>変動あり（TEM/SHV型で見かけ上感受性、CTX-M型で耐性が多い）</td><td>通常感受性（誘導前）</td></tr>
+      <tr><td>IDSA推奨</td><td class="warn-cell">単純性膀胱炎を除き使用を推奨しない</td><td class="ok-cell">第一選択または代替選択肢</td></tr>
+    </table>
+    <p style="font-size:0.92rem; color:var(--ink-soft);">
+      同じ「セフェピム」という薬剤が、ESBLでは避けるべき、AmpCでは推奨される——この対照は、ESBLとAmpCを正確に鑑別することの臨床的な重みを物語っています。腎盂腎炎・複雑性尿路感染症ではセフェピムを避け、菌血症・肺炎などの重症感染症でも感受性が示されていても推奨されません。単純性膀胱炎に限り、経験的治療としてセフェピムが開始され臨床的改善があれば変更不要とされています<sup class="cite"><a href="#ref1">1</a></sup>。
+    </p>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">05</span>
+      <h2>どこまでがESBLか——概念拡張の議論</h2>
+    </div>
+    <div class="essay">
+      <p>
+        ESBLの多くはClass Aですが、実は<strong>Class D（OXA型）にもESBL様の性質を持つ変異株</strong>が存在し、<strong>Class C（AmpC由来）にも基質スペクトルが拡張した酵素</strong>が存在します。「ESBL」という言葉をどこまで広げてよいのか、これは決着のついていない論点です。
+      </p>
+    </div>
+    <div class="method-card">
+      <h4>Class D——OXA型ESBL</h4>
+      <p style="margin-bottom:0;">
+        OXA型β-ラクタマーゼの一部の変異株は、クラブラン酸への感受性が可変的でありながら、拡張スペクトルセファロスポリンを加水分解する性質を獲得しています。これらはClass Aの古典的ESBLとは阻害薬プロファイルが異なるため、「ESBL」と呼ぶこと自体に注意が必要です<sup class="cite"><a href="#ref2">2</a></sup>。
+      </p>
+    </div>
+    <div class="method-card">
+      <h4>Class C由来——拡張スペクトルAmpC（ESAC）</h4>
+      <p>
+        第3回で扱った通り、AmpC（Class C）の一部にもΩ-ループやH-10/R2-ループの変異によって基質スペクトルが拡張し、セフェピムや場合によりカルバペネムまで加水分解するようになった酵素があります（CMY-37、<i class="sp">Acinetobacter baumannii</i>の自然AmpCなど）。Philipponらはこれを<strong>ESAC（Extended-Spectrum AmpC）</strong>と呼び、Bush-Jacoby Group 1eに位置づけることで、古典的ESBL（Class A）との混同を避けることを提案しています<sup class="cite"><a href="#ref14">14</a></sup>。
+      </p>
+      <p style="margin-bottom:0; font-size:0.88rem; color:var(--ink-soft);">
+        ESACはクラブラン酸に耐性、セファマイシンにも耐性という点で、古典的ESBLとは阻害薬プロファイルが正反対です。「基質が拡張した」という現象は共通していても、酵素としての性質はまったく異なります。
+      </p>
+    </div>
+    <div class="method-card">
+      <h4>拡張分類の一例——ESBL M・ESBL CARBAという提案</h4>
+      <p>
+        一部の研究者は、ESBLを<strong>ESBL A（Class A）・ESBL M（Miscellaneous：Class C由来のプラスミド性AmpCやClass D）・ESBL CARBA（カルバペネムを分解する酵素）</strong>という3グループに再編する分類を提案しています<sup class="cite"><a href="#ref2">2</a></sup>。
+      </p>
+      <p style="margin-bottom:0;">
+        この提案は分子的多様性を反映する試みですが、クラブラン酸に耐性のAmpCを「ESBL」に含めたり、カルバペネム分解酵素（カルバペネマーゼ）まで「ESBL」の枠に入れたりする点で、古典的定義と衝突します。「ESBL」と聞いてクラブラン酸配合剤が効くと誤解されるリスクや、カルバペネマーゼとの境界が曖昧になるリスクが指摘されています。
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">06</span>
+      <h2>ESBLという名称、今後どう使うべきか——結論の出ていない議論</h2>
+    </div>
+    <div class="essay">
+      <p>
+        「ESBLという言葉をどこまで使い続けるべきか」は、専門家の間でもまだ広く決着した議論ではありません。おおよそ次のような立場が並立しています。
+      </p>
+    </div>
+    <div class="compare-box">
+      <div class="col">
+        <h5>狭義の定義を維持する立場</h5>
+        <ul>
+          <li>ESBL＝Ambler Class Aに限定し、Class C由来はESAC、カルバペネマーゼは別枠として明確に呼び分ける</li>
+          <li>IDSA・多くの主要ガイドラインが採用する実務上の姿勢<sup class="cite"><a href="#ref1">1</a></sup></li>
+          <li>治療選択（β-ラクタマーゼ阻害薬配合剤が効くか）との対応が一目でわかる</li>
+        </ul>
+      </div>
+      <div class="col alt">
+        <h5>広義・機能的定義を維持する立場</h5>
+        <ul>
+          <li>Livermore（2008）は、ESBLという用語自体は現代的な広い用法（TEM/SHVと似た表現型を示すがルーツの異なる酵素も含む）を維持しつつ、常に酵素ファミリーを明記する（「CTX-M型ESBL」「OXA型ESBL」のように）ことを提案<sup class="cite"><a href="#ref4">4</a></sup></li>
+          <li>分子的多様性の広がりを一つの言葉で受け止められる</li>
+          <li>ただし「ESBL」を単独で使うと誤解を招くため、常に修飾語とセットで使う運用上の負荷がある</li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size:0.92rem; color:var(--ink-soft);">
+      いずれの立場も一長一短があり、「厳密な定義に絞り込むか」「ESACのように名称そのものを分けるか」「広義のまま使うが修飾語を必須にするか」という3方向の解決策のうち、どれか一つに収束したとは言えないのが現状です。細菌楽としては、当面は<strong>臨床的な文脈ではClass A（クラブラン酸感受性）に限定して「ESBL」を使い、Class C由来の拡張型には「ESAC」、カルバペネム分解酵素には「カルバペネマーゼ」という言葉を使い分ける</strong>という、IDSAに近い狭義の立場を基本方針としつつ、この呼称の議論自体がまだ動いている、という前提を持っておくのがよいでしょう。
+    </p>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">07</span>
+      <h2>本エピソードで扱うESBLの範囲（再確認）</h2>
+    </div>
+    <div class="summary-box">
+      <h4>スコープの明示</h4>
+      <p style="margin-bottom:0;">
+        05・06章で見た通り「ESBL」という言葉が指しうる範囲は文献によって揺れます。本シリーズでは今後、原則として<strong>CTX-M型を含むAmbler class Aのうち、セファロスポリン系薬（第1〜4世代）を分解しうるβ-ラクタマーゼ</strong>を「ESBL」として扱います。Class D（OXA型ESBL）やClass C由来の拡張型（ESAC）は、原則として別の回で個別に深掘りする対象とし、本回では概念整理のための参照点にとどめています。
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">08</span>
+      <h2>まとめ表</h2>
+    </div>
+    <table class="summary-table">
+      <tr><th>切り口</th><th>ポイント</th></tr>
+      <tr><td>古典的定義</td><td>Ambler Class A、Bush-Jacoby Group 2be。クラブラン酸感受性、セフォキシチン感受性、カルバペネム感受性</td></tr>
+      <tr><td>名称の変遷</td><td>Narrow-spectrum→Broad-spectrum（TEM-1、SHV-1）→Extended broad-spectrum（TEM-3、SHV-2）→Extended-spectrum（ESBL）</td></tr>
+      <tr><td>現在の主流</td><td>CTX-M型（特にCTX-M-15）。<i class="sp">Kluyvera</i>属由来、水平伝播、<i class="sp">E. coli</i> ST131クローンと関連</td></tr>
+      <tr><td>セフェピムとの関係</td><td>ESBLはセフェピムを加水分解しうる。感受性判定でも使用は推奨されない（単純性膀胱炎を除く）</td></tr>
+      <tr><td>概念の広がり</td><td>Class D（OXA型ESBL）、Class C由来の拡張型（ESAC）まで「ESBL」と呼ぶ提案があるが、古典的定義とは阻害薬プロファイルが異なり臨床的混乱のリスクがある</td></tr>
+      <tr><td>名称論争</td><td>狭義維持派・広義維持派（修飾語必須）のいずれにも一理あり、決着していない</td></tr>
+      <tr><td>本シリーズの立場</td><td>当面はClass A・第4世代までのセファロスポリン分解酵素を「ESBL」として扱う</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">Q</span>
+      <h2>おさらいクイズ</h2>
+    </div>
+    <div class="quiz">
+      <p class="q">Q1. ESBLとAmpCを鑑別する最大のポイントはどれでしょう？　①カルバペネムへの感受性　②クラブラン酸・タゾバクタムへの感受性　③グラム染色性状　④コロニーの匂い</p>
+      <details><summary>答えを見る</summary><p class="a">②。ESBLはクラブラン酸・タゾバクタムに感受性ですが、AmpCはこれらに耐性を示します。カルバペネムへの感受性は両者とも通常保たれているため鑑別点にはなりません。</p></details>
+    </div>
+    <div class="quiz">
+      <p class="q">Q2. CTX-M型ESBLがTEM型・SHV型と最も異なる点はどれでしょう？</p>
+      <details><summary>答えを見る</summary><p class="a">起源です。TEM型・SHV型は親酵素（TEM-1、SHV-1）からの点変異で生じますが、CTX-M型はKluyvera属という別の細菌から水平遺伝子伝播によりde novoで獲得された酵素です。</p></details>
+    </div>
+    <div class="quiz">
+      <p class="q">Q3. ESBL産生菌による菌血症で、in vitro試験でセフェピム感受性と判定された場合、IDSA 2024ガイダンスの立場として正しいのはどれでしょう？</p>
+      <details><summary>答えを見る</summary><p class="a">単純性膀胱炎を除き、感受性が示されていてもセフェピムの使用は推奨されません。ESBLはセフェピムを加水分解しうる上、接種菌量効果やMIC測定の不正確性があり、臨床試験でも治療失敗が報告されているためです。</p></details>
+    </div>
+    <div class="quiz">
+      <p class="q">Q4. 「ESAC（Extended-Spectrum AmpC）」という用語が提案されている理由として最も適切なのはどれでしょう？</p>
+      <details><summary>答えを見る</summary><p class="a">基質スペクトルが拡張したClass C由来の酵素を、古典的ESBL（Class A、クラブラン酸感受性）と混同しないようにするためです。ESACはクラブラン酸に耐性という点で、古典的ESBLとは阻害薬プロファイルが逆になります。</p></details>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <span class="num">refs</span>
+      <h2>引用文献</h2>
+    </div>
+    <details class="refs">
+      <summary>引用文献一覧を表示</summary>
+      <ol>
+        <li id="ref1">Tamma PD, Heil EL, Justo JA, et al. Infectious Diseases Society of America 2024 Guidance on the Treatment of Antimicrobial-Resistant Gram-Negative Infections. Clin Infect Dis. 2024:ciae403. doi:10.1093/cid/ciae403.</li>
+        <li id="ref2">Ur Rahman S, Ali T, Ali I, et al. The Growing Genetic and Functional Diversity of Extended Spectrum Beta-Lactamases. BioMed Res Int. 2018;2018:9519718. doi:10.1155/2018/9519718.</li>
+        <li id="ref3">Macesic N, Uhlemann AC, Peleg AY. Multidrug-Resistant Gram-Negative Bacterial Infections. Lancet. 2025;405(10474):257-272. doi:10.1016/S0140-6736(24)02081-6.</li>
+        <li id="ref4">Livermore DM. Defining an Extended-Spectrum Beta-Lactamase. Clin Microbiol Infect. 2008;14 Suppl 1:3-10. doi:10.1111/j.1469-0691.2007.01857.x.</li>
+        <li id="ref5">Jacoby GA, Archer GL. New Mechanisms of Bacterial Resistance to Antimicrobial Agents. N Engl J Med. 1991;324(9):601-12. doi:10.1056/NEJM199102283240906.</li>
+        <li id="ref6">Bush K. Extended-Spectrum Beta-Lactamases in North America, 1987-2006. Clin Microbiol Infect. 2008;14 Suppl 1:134-43. doi:10.1111/j.1469-0691.2007.01848.x.</li>
+        <li id="ref7">Yassara S, Zeouk I, Jaouhar S, Sbiti M, Bekhti K. Extended-Spectrum Beta-Lactamases: Definition, History, an Update on Their Genetic Environment and Detection Methods. J Med Microbiol. 2025;74(6). doi:10.1099/jmm.0.002033.</li>
+        <li id="ref8">Jacoby GA, Munoz-Price LS. The New β-Lactamases. N Engl J Med. 2005;352(4):380-91. doi:10.1056/NEJMra041359.</li>
+        <li id="ref9">Woerther PL, Burdet C, Chachaty E, Andremont A. Trends in Human Fecal Carriage of Extended-Spectrum β-Lactamases in the Community: Toward the Globalization of CTX-M. Clin Microbiol Rev. 2013;26(4):744-58. doi:10.1128/CMR.00023-13.</li>
+        <li id="ref10">Bevan ER, Jones AM, Hawkey PM. Global Epidemiology of CTX-M β-Lactamases: Temporal and Geographical Shifts in Genotype. J Antimicrob Chemother. 2017;72(8):2145-2155. doi:10.1093/jac/dkx146.</li>
+        <li id="ref11">Peirano G, Pitout JDD. Extended-Spectrum β-Lactamase-Producing Enterobacteriaceae: Update on Molecular Epidemiology and Treatment Options. Drugs. 2019;79(14):1529-1541. doi:10.1007/s40265-019-01180-3.</li>
+        <li id="ref12">Harris PN, Tambyah PA, Paterson DL. β-Lactam and β-Lactamase Inhibitor Combinations in the Treatment of Extended-Spectrum β-Lactamase Producing Enterobacteriaceae: Time for a Reappraisal? Lancet Infect Dis. 2015;15(4):475-85. doi:10.1016/S1473-3099(14)70950-8.</li>
+        <li id="ref13">Pfaller MA, Segreti J. Overview of the Epidemiological Profile and Laboratory Detection of Extended-Spectrum Beta-Lactamases. Clin Infect Dis. 2006;42 Suppl 4:S153-63. doi:10.1086/500662.</li>
+        <li id="ref14">Philippon A, Arlet G, Labia R, Iorga BI. Class C β-Lactamases: Molecular Characteristics. Clin Microbiol Rev. 2022;35(3):e0015021. doi:10.1128/cmr.00150-21.</li>
+        <li id="ref15">Bush K, Jacoby GA. Updated Functional Classification of Beta-Lactamases. Antimicrob Agents Chemother. 2010;54(3):969-76. doi:10.1128/AAC.01009-09.</li>
+        <li id="ref16">Nguyen HM, Shier KL, Graber CJ. Determining a Clinical Framework for Use of Cefepime and β-Lactam/β-Lactamase Inhibitors in the Treatment of Infections Caused by Extended-Spectrum-β-Lactamase-Producing Enterobacteriaceae. J Antimicrob Chemother. 2014;69(4):871-80. doi:10.1093/jac/dkt450.</li>
+        <li id="ref17">Wang P, Hu F, Xiong Z, et al. Susceptibility of Extended-Spectrum-Beta-Lactamase-Producing Enterobacteriaceae According to the New CLSI Breakpoints. J Clin Microbiol. 2011;49(9):3127-31. doi:10.1128/JCM.00222-11.</li>
+        <li id="ref18">Arnold MJ. Resistant Bacterial Infections: Guidelines From the Infectious Diseases Society of America. Am Fam Physician. 2024;110(2):207-209.</li>
+        <li id="ref19">Gutkind GO, Di Conza J, Power P, Radice M. β-Lactamase-Mediated Resistance: A Biochemical, Epidemiological and Genetic Overview. Curr Pharm Des. 2013;19(2):164-208.</li>
+      </ol>
+    </details>
+  </section>
+
+  <footer>
+    本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+
+</div>
+</body>
+</html>
