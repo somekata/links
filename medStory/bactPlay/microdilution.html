@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微量液体希釈法 MIC測定シミュレーター</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+
+            /* ウェル状態のカラー */
+            --clear-medium: rgba(219, 234, 254, 0.6); /* 透明な培地 */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header { text-align: center; margin-bottom: 12px; width: 100%; max-width: 900px; }
+        header h1 { font-size: 22px; font-weight: 600; color: #334155; }
+
+        .main-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* タブナビゲーション */
+        .tab-nav {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto 14px auto;
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 6px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover { background: rgba(255, 255, 255, 0.7); }
+
+        .tab-btn.active {
+            background: #ffffff;
+            color: #334155;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+
+        .tab-panel { display: none; }
+
+        .tab-panel.active {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .organism-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .btn-organism {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-organism.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+        }
+
+        .speed-group { display: flex; align-items: center; gap: 8px; }
+
+        /* 実験中に表示するステータス行（菌液接種&培養で切り替わる） */
+        .status-line {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+        }
+
+        .status-line .status-hint { font-weight: 500; color: #94a3b8; }
+
+        .control-panel.is-running .organism-selector,
+        .control-panel.is-running .speed-group {
+            display: none;
+        }
+
+        .control-panel.is-running .status-line {
+            display: flex;
+        }
+
+        .action-buttons { display: flex; gap: 10px; }
+
+        .btn-group { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+        .btn-toggle { padding: 6px 12px; border: none; background: white; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; }
+        .btn-toggle.active { background: #475569; color: white; }
+
+        .btn-main { padding: 10px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+        .btn-start { background: #10b981; color: white; }
+        .btn-start:hover:not(:disabled) { background: #059669; }
+        .btn-start:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .btn-reset { background: #94a3b8; color: white; }
+        .btn-reset:hover { background: #64748b; }
+
+        /* 96well風 プレートステージ */
+        .stage {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 40px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* インキュベーターHUD（タイマー＆プログレス） */
+        .incubator-hud {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 710px;
+            max-width: 100%;
+            margin-bottom: 25px;
+            background: #f8fafc;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .timer-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #475569;
+            white-space: nowrap;
+            background: #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 4px;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .progress-bar-container {
+            flex-grow: 1;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: #3b82f6;
+            transition: width 0.1s linear;
+        }
+
+        /* マルチチャンネルピペットの表現 */
+        .multi-pipette {
+            position: absolute;
+            top: 65px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            width: 710px;
+            max-width: calc(100% - 16px);
+            height: 12px;
+            background: #64748b;
+            border-radius: 4px;
+            opacity: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+        }
+
+        .pipette-tip {
+            width: 4px;
+            height: 25px;
+            background: rgba(226, 232, 240, 0.9);
+            border: 1px solid #94a3b8;
+            border-bottom-left-radius: 2px;
+            border-bottom-right-radius: 2px;
+        }
+
+        .plate-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            width: 710px;
+            max-width: 100%;
+            margin-top: 15px;
+        }
+
+        .well-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .well-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #64748b;
+            font-family: monospace;
+            text-align: center;
+        }
+
+        .well {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #cbd5e1;
+            background: var(--clear-medium);
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.02);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bacterial-button {
+            width: 14px;
+            height: 14px;
+            background: #eab308;
+            border-radius: 50%;
+            opacity: 0;
+            filter: blur(1px);
+            box-shadow: 0 0 4px rgba(234, 179, 8, 0.8);
+            transform: scale(0.2);
+        }
+
+        .status-label {
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #475569;
+            text-align: center;
+        }
+
+        .result-panel {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .result-title { font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .mic-value { font-family: monospace; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 16px; font-weight: bold; color: #ef4444; }
+
+        /* 使い方タブ */
+        .howto-box {
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-color);
+        }
+
+        .howto-box h2 {
+            font-size: 16px;
+            color: #334155;
+            margin-bottom: 10px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 10px;
+        }
+
+        .howto-box h2:not(:first-child) { margin-top: 20px; }
+        .howto-box ol, .howto-box ul { padding-left: 22px; margin-top: 6px; }
+        .howto-box li { margin-bottom: 4px; }
+        .howto-box p { margin-bottom: 8px; }
+
+        /* リンクタブ */
+        .link-list {
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+        }
+
+        .link-list h2 {
+            font-size: 16px;
+            color: #334155;
+            margin-bottom: 12px;
+            border-left: 4px solid #10b981;
+            padding-left: 10px;
+        }
+
+        .link-item {
+            display: block;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+        }
+
+        .link-item:hover {
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+
+        .link-item .link-title { font-weight: 700; font-size: 14px; color: #2563eb; }
+        .link-item .link-desc { font-size: 12px; color: #64748b; margin-top: 3px; }
+        .link-note { font-size: 12px; color: #94a3b8; margin-top: 10px; }
+
+        /* フッター（注意書き） */
+        .site-footer {
+            width: 100%;
+            max-width: 900px;
+            margin: 12px auto 0 auto;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 11px;
+            line-height: 1.7;
+            color: #94a3b8;
+            text-align: left;
+        }
+
+        .footer-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 2px 0;
+            font-family: inherit;
+        }
+
+        .footer-toggle:hover { color: #64748b; }
+        .footer-detail { display: none; margin-top: 8px; }
+        .footer-detail.open { display: block; }
+
+        /* レスポンシブ調整（iPhone等で1画面に収まるようコンパクト化） */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            header { margin-bottom: 8px; }
+            header h1 { font-size: 17px; }
+
+            .tab-nav { padding: 4px; margin-bottom: 8px; gap: 4px; }
+            .tab-btn { padding: 8px 4px; font-size: 11px; }
+
+            .main-container { padding: 12px; gap: 10px; border-radius: 12px; }
+            .control-panel { padding: 10px; gap: 10px; }
+
+            .organism-selector { gap: 8px; }
+            .btn-organism { padding: 8px; font-size: 12px; }
+
+            .action-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                padding-top: 10px;
+            }
+            .speed-group { justify-content: space-between; }
+            .status-line { font-size: 12px; padding: 7px 12px; }
+            .action-buttons { width: 100%; }
+            .action-buttons .btn-main { flex: 1; padding: 8px 12px; font-size: 13px; }
+
+            .stage { padding: 14px 6px 12px 6px; }
+
+            .incubator-hud { gap: 8px; padding: 6px 10px; margin-bottom: 12px; }
+            .timer-display { font-size: 11px; min-width: 84px; padding: 3px 6px; }
+
+            .multi-pipette { top: 38px; padding: 0 6px; }
+            .pipette-tip { width: 3px; height: 16px; }
+
+            .plate-row { gap: 3px; margin-top: 10px; }
+            .well { width: 30px; height: 30px; border-width: 2px; }
+            .bacterial-button { width: 8px; height: 8px; }
+            .well-label { font-size: 8px; }
+            .well-container { gap: 4px; }
+
+            .status-label { font-size: 12px; margin-top: 14px; }
+
+            .result-panel { padding: 14px 16px; }
+            .result-title { font-size: 14px; }
+            .mic-value { font-size: 13px; }
+
+            .howto-box, .link-list { padding: 14px 16px; font-size: 13px; }
+            .site-footer { padding: 8px 14px; margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🧪 MIC判定（微量液体希釈法）</h1>
+</header>
+
+<div class="tab-nav">
+    <button class="tab-btn active" id="tabBtn-sim" onclick="switchTab('sim', this)">🔬 シミュレーション</button>
+    <button class="tab-btn" id="tabBtn-howto" onclick="switchTab('howto', this)">📖 使い方</button>
+    <button class="tab-btn" id="tabBtn-links" onclick="switchTab('links', this)">🔗 リンク</button>
+</div>
+
+<div class="main-container">
+
+    <!-- タブ①: シミュレーション -->
+    <div class="tab-panel active" id="tab-sim">
+
+    <div class="control-panel" id="controlPanel">
+        <div class="organism-selector">
+            <button class="btn-organism active" data-org="susceptible" onclick="selectOrganism('susceptible')">
+                感受性株 (Susceptible)<br><small>想定MIC: 0.5 μg/mL</small>
+            </button>
+            <button class="btn-organism" data-org="resistant" onclick="selectOrganism('resistant')">
+                耐性株 (Resistant)<br><small>想定MIC: 16 μg/mL</small>
+            </button>
+        </div>
+
+        <div class="action-row">
+            <div class="speed-group">
+                <span style="font-size: 12px; font-weight: bold; color: #64748b;">インキュベート速度:</span>
+                <div class="btn-group">
+                    <button class="btn-toggle" data-speed="2" onclick="setSpeed(2, this)">Slow</button>
+                    <button class="btn-toggle active" data-speed="1" onclick="setSpeed(1, this)">Normal</button>
+                    <button class="btn-toggle" data-speed="0.16" onclick="setSpeed(0.16, this)">Fast</button>
+                </div>
+            </div>
+
+            <!-- 接種&培養後はここに切り替わる（設定行を隠して省スペース化） -->
+            <div class="status-line" id="statusLine">
+                <span>🧫 <span id="statusText"></span></span>
+                <span class="status-hint">菌種変更はリセットから</span>
+            </div>
+
+            <div class="action-buttons">
+                <button id="startBtn" class="btn-start btn-main" onclick="runSimulation()">菌液接種 & 培養</button>
+                <button class="btn-main btn-reset" onclick="resetSimulation()">リセット</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="stage" id="stage">
+        <!-- 培養インジケーターHUD -->
+        <div class="incubator-hud">
+            <div class="timer-display" id="timerDisplay">培養時間: 00h 00m</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="multi-pipette" id="pipette">
+            <div class="pipette-tip"></div>
+            <div class="pipette-tip"></div>
+            <div class="pipette-tip"></div>
+            <div class="pipette-tip"></div>
+            <div class="pipette-tip"></div>
+            <div class="pipette-tip"></div>
+            <div class="pipette-tip"></div>
+            <div class="pipette-tip"></div>
+            <div class="pipette-tip"></div>
+        </div>
+
+        <div class="plate-row">
+            <div class="well-container"><div class="well" id="well-gpc"><div class="bacterial-button"></div></div><div class="well-label">GPC</div></div>
+            <div class="well-container"><div class="well" id="well-025"><div class="bacterial-button"></div></div><div class="well-label">0.25</div></div>
+            <div class="well-container"><div class="well" id="well-05"><div class="bacterial-button"></div></div><div class="well-label">0.5</div></div>
+            <div class="well-container"><div class="well" id="well-1"><div class="bacterial-button"></div></div><div class="well-label">1</div></div>
+            <div class="well-container"><div class="well" id="well-2"><div class="bacterial-button"></div></div><div class="well-label">2</div></div>
+            <div class="well-container"><div class="well" id="well-4"><div class="bacterial-button"></div></div><div class="well-label">4</div></div>
+            <div class="well-container"><div class="well" id="well-8"><div class="bacterial-button"></div></div><div class="well-label">8</div></div>
+            <div class="well-container"><div class="well" id="well-16"><div class="bacterial-button"></div></div><div class="well-label">16</div></div>
+            <div class="well-container"><div class="well" id="well-32"><div class="bacterial-button"></div></div><div class="well-label">32</div></div>
+        </div>
+
+        <div class="status-label" id="statusLabel">プレート状態: 薬剤分注済み (未接種)</div>
+    </div>
+
+    <div class="result-panel" id="resultPanel" style="display: none;">
+        <div class="result-title">
+            <span id="resultOrgName" style="font-size: 18px; color: #1e3a8a;">判定結果</span>
+            <div class="mic-value" id="micValue">MIC: -- μg/mL</div>
+        </div>
+        <div id="resultDesc" style="font-size: 13px; line-height: 1.6; color: #475569; margin-top: 5px;"></div>
+    </div>
+
+    </div>
+    <!-- /タブ①: シミュレーション -->
+
+    <!-- タブ②: 使い方 -->
+    <div class="tab-panel" id="tab-howto">
+        <div class="howto-box">
+            <p style="margin-bottom: 16px; color: #57606f;">薬剤濃度の希釈列における混濁・沈渣（発育）の有無から、最小発育阻止濃度（MIC）を同定するシミュレーションです。</p>
+
+            <h2>基本操作</h2>
+            <ol>
+                <li>菌種選択パネルから「感受性株」または「耐性株」を選びます。</li>
+                <li><strong>インキュベート速度</strong>（Slow / Normal / Fast）を選択します。</li>
+                <li><strong>「菌液接種 &amp; 培養」</strong>ボタンを押すと、マルチチャンネルピペットが全ウェルへ同時に菌液を接種し、35℃培養後の発育（混濁）変化が再生されます。培養時間タイマー（0〜18h）で進行状況を確認できます。</li>
+                <li>結果パネルにMIC値と解説が表示されます。</li>
+                <li><strong>「リセット」</strong>ボタンで未接種の状態に戻り、別の菌種を試せます。</li>
+            </ol>
+
+            <h2>微量液体希釈法とMICの読み方</h2>
+            <p>96ウェルプレートなどに2倍階段希釈した抗菌薬を分注し、一定量の菌液を接種して培養します。各ウェルの発育（混濁・沈渣）の有無を観察し、発育を完全に阻止した最小の濃度を最小発育阻止濃度（MIC）として判定します。</p>
+            <ul>
+                <li><strong>GPC（Growth Positive Control）</strong>：薬剤を含まない発育対照ウェル。菌が生存していれば必ず発育（混濁）します。ここで発育が見られない場合、接種した菌液自体に問題がある可能性があり、判定は無効となります。</li>
+                <li>濃度を上げていくにつれて発育が抑制され、あるウェルから先で発育が見られなくなります。その「発育なし」の最小濃度がMICです。</li>
+            </ul>
+
+            <h2>感受性（S）・耐性（R）の判定</h2>
+            <p>得られたMIC値を、CLSIやEUCASTなどが定めるブレイクポイント（臨床的な感受性・耐性の判定基準値）と比較することで、感受性（Susceptible）・中間（Intermediate）・耐性（Resistant）のいずれかに分類されます。ブレイクポイントは薬剤・菌種・感染部位によって異なるため、実際の臨床判断では必ず最新のガイドラインを参照してください。</p>
+        </div>
+    </div>
+
+    <!-- タブ③: リンク -->
+    <div class="tab-panel" id="tab-links">
+        <div class="link-list">
+            <h2>関連リンク</h2>
+            <a class="link-item" href="https://somekata.github.io/" target="_blank" rel="noopener noreferrer">
+                <div class="link-title">細菌楽（Saikingaku）ポータル</div>
+                <div class="link-desc">バイキンズ®キャラクターを用いた感染症・細菌学教育コンテンツのハブサイト</div>
+            </a>
+            <a class="link-item" href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener noreferrer">
+                <div class="link-title">bactPlatform Hub</div>
+                <div class="link-desc">細菌学関連の教材・ツール一覧</div>
+            </a>
+            <p class="link-note">※ リンク先は必要に応じて自由に追加・変更してください（HTML内の &lt;div class="tab-panel" id="tab-links"&gt; 部分を編集）。</p>
+        </div>
+    </div>
+
+</div>
+
+<footer class="site-footer">
+    <button class="footer-toggle" id="footerToggle" onclick="toggleFooter()">ⓘ 生成AIについて・注意事項</button>
+    <div class="footer-detail" id="footerDetail">
+        本コンテンツはChatGPTによるプロンプト設計、Google Geminiによるコード生成、Claude（Anthropic）による最終調整という複数の生成AIを組み合わせて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+        二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </div>
+</footer>
+
+<script>
+    const profiles = {
+        susceptible: {
+            name: "感受性株 (Susceptible)",
+            growth: { 'gpc': true, '025': true, '05': false, '1': false, '2': false, '4': false, '8': false, '16': false, '32': false },
+            mic: "0.5",
+            desc: "低濃度の薬剤（0.5 μg/mL）で完全に発育が阻止されました。この抗菌薬に対して臨床的に十分な感受性（Susceptible）を有していると判定されます。"
+        },
+        resistant: {
+            name: "耐性株 (Resistant)",
+            growth: { 'gpc': true, '025': true, '05': true, '1': true, '2': true, '4': true, '8': true, '16': false, '32': false },
+            mic: "16",
+            desc: "高濃度（8 μg/mL以下）のウェルでも旺盛に発育（混濁・沈渣）が認められ、MICは16 μg/mLとなりました。ブレイクポイントを超えており、本薬剤に対する耐性（Resistant）を示します。"
+        }
+    };
+
+    const state = {
+        currentOrg: 'susceptible',
+        speedModifier: 1.0,
+        isAnimating: false,
+        timerInterval: null
+    };
+
+    const elements = {
+        startBtn: document.getElementById('startBtn'),
+        status: document.getElementById('statusLabel'),
+        pipette: document.getElementById('pipette'),
+        panel: document.getElementById('resultPanel'),
+        micValue: document.getElementById('micValue'),
+        orgName: document.getElementById('resultOrgName'),
+        desc: document.getElementById('resultDesc'),
+        timer: document.getElementById('timerDisplay'),
+        progress: document.getElementById('progressBar'),
+        controlPanel: document.getElementById('controlPanel'),
+        statusText: document.getElementById('statusText')
+    };
+
+    const wells = {
+        'gpc': document.getElementById('well-gpc'),
+        '025': document.getElementById('well-025'),
+        '05': document.getElementById('well-05'),
+        '1': document.getElementById('well-1'),
+        '2': document.getElementById('well-2'),
+        '4': document.getElementById('well-4'),
+        '8': document.getElementById('well-8'),
+        '16': document.getElementById('well-16'),
+        '32': document.getElementById('well-32')
+    };
+
+    function selectOrganism(key) {
+        if (state.isAnimating) return;
+        state.currentOrg = key;
+        document.querySelectorAll('.btn-organism').forEach(b => b.classList.remove('active'));
+        document.querySelector(`[data-org="${key}"]`).classList.add('active');
+        resetSimulation();
+    }
+
+    function setSpeed(val, elem) {
+        state.speedModifier = val;
+        document.querySelectorAll('.speed-group .btn-toggle').forEach(b => b.classList.remove('active'));
+        elem.classList.add('active');
+    }
+
+    // タイマーカウントアップ関数（培養時間0〜18hを可視化）
+    function startTimerAnimation(durationMs, callback) {
+        const totalHours = 18; // ターゲット培養時間
+        const startTime = performance.now();
+
+        state.timerInterval = setInterval(() => {
+            const elapsed = performance.now() - startTime;
+            let progressRatio = elapsed / durationMs;
+
+            if (progressRatio >= 1) {
+                progressRatio = 1;
+                clearInterval(state.timerInterval);
+            }
+
+            elements.progress.style.width = `${progressRatio * 100}%`;
+
+            const currentTotalMinutes = Math.floor(progressRatio * totalHours * 60);
+            const hours = Math.floor(currentTotalMinutes / 60);
+            const minutes = currentTotalMinutes % 60;
+
+            const hStr = String(hours).padStart(2, '0');
+            const mStr = String(minutes).padStart(2, '0');
+            elements.timer.textContent = `培養時間: ${hStr}h ${mStr}m`;
+
+            if (progressRatio === 1 && callback) {
+                callback();
+            }
+        }, 30); // 30ms間隔でスムーズに描画
+    }
+
+    function runSimulation() {
+        if (state.isAnimating) return;
+        state.isAnimating = true;
+        elements.startBtn.disabled = true;
+        elements.startBtn.textContent = '培養中…';
+        elements.panel.style.display = 'none';
+
+        const p = profiles[state.currentOrg];
+        const t = state.speedModifier;
+
+        // 設定パネルをステータス表示へ切り替え（表示の工夫：省スペース化＋進行状況の明示）
+        const activeSpeedBtn = document.querySelector('.speed-group .btn-toggle.active');
+        const speedLabel = activeSpeedBtn ? activeSpeedBtn.textContent.trim() : '';
+        elements.statusText.textContent = `${p.name} ／ ${speedLabel}`;
+        elements.controlPanel.classList.add('is-running');
+
+        Object.values(wells).forEach(w => {
+            w.style.transition = `background-color ${0.3 * t}s ease`;
+            w.querySelector('.bacterial-button').style.transition = `opacity ${0.3 * t}s ease, transform ${0.3 * t}s ease`;
+        });
+
+        // --- ① 菌液接種フェーズ ---
+        elements.status.textContent = "全ウェルへ菌液を同時に一斉接種中...";
+        elements.pipette.style.transition = `opacity ${0.1 * t}s ease, transform ${0.2 * t}s cubic-bezier(0.25, 1, 0.5, 1)`;
+        elements.pipette.style.opacity = '1';
+        elements.pipette.style.transform = 'translateX(-50%) translateY(20px)';
+
+        // --- ② 培養フェーズ（タイマー連動） ---
+        setTimeout(() => {
+            elements.pipette.style.opacity = '0';
+            elements.pipette.style.transform = 'translateX(-50%) translateY(-20px)';
+            elements.status.textContent = "インキュベーター内培養中 (35℃)...";
+
+            const incubationDuration = 300 * t;
+
+            startTimerAnimation(incubationDuration, () => {
+                for (let key in wells) {
+                    const isGrowth = p.growth[key];
+                    if (isGrowth) {
+                        wells[key].style.backgroundColor = 'rgba(234, 179, 8, 0.25)';
+                        const btn = wells[key].querySelector('.bacterial-button');
+                        btn.style.opacity = '1';
+                        btn.style.transform = 'scale(1)';
+                    } else {
+                        wells[key].style.backgroundColor = 'var(--clear-medium)';
+                    }
+                }
+                elements.status.textContent = "判定中...";
+
+                setTimeout(() => {
+                    elements.status.textContent = "判定完了";
+                    elements.orgName.textContent = p.name;
+                    elements.micValue.textContent = `MIC: ${p.mic} μg/mL`;
+                    elements.desc.textContent = p.desc;
+                    elements.panel.style.display = 'flex';
+
+                    state.isAnimating = false;
+                    elements.startBtn.disabled = false;
+                    elements.startBtn.textContent = '菌液接種 & 培養';
+                }, 400 * t);
+            });
+
+        }, 300 * t);
+    }
+
+    function resetSimulation() {
+        if (state.timerInterval) {
+            clearInterval(state.timerInterval);
+        }
+        state.isAnimating = false;
+        elements.startBtn.disabled = false;
+        elements.startBtn.textContent = '菌液接種 & 培養';
+        elements.status.textContent = "プレート状態: 薬剤分注済み (未接種)";
+        elements.timer.textContent = "培養時間: 00h 00m";
+        elements.progress.style.width = "0%";
+        elements.panel.style.display = 'none';
+
+        // 設定パネルを元の表示へ戻す
+        elements.controlPanel.classList.remove('is-running');
+
+        for (let key in wells) {
+            wells[key].style.backgroundColor = 'var(--clear-medium)';
+            const btn = wells[key].querySelector('.bacterial-button');
+            btn.style.opacity = '0';
+            btn.style.transform = 'scale(0.2)';
+        }
+
+        elements.pipette.style.transition = 'none';
+        elements.pipette.style.opacity = '0';
+        elements.pipette.style.transform = 'translateX(-50%) translateY(-20px)';
+    }
+
+    // タブ切り替え制御
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        btnElement.classList.add('active');
+        if (tabId !== 'sim' && state.timerInterval) {
+            clearInterval(state.timerInterval);
+        }
+    }
+
+    // フッター（注意書き）の開閉制御
+    function toggleFooter() {
+        const detail = document.getElementById('footerDetail');
+        const btn = document.getElementById('footerToggle');
+        const isOpen = detail.classList.toggle('open');
+        btn.textContent = isOpen ? '▲ 生成AIについて・注意事項' : 'ⓘ 生成AIについて・注意事項';
+    }
+</script>
+
+</body>
+</html>
