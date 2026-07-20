@@ -758,9 +758,9 @@
             <div class="speed-group">
                 <span style="font-size: 12px; font-weight: bold; color: #64748b;">カルチベート速度:</span>
                 <div class="btn-group">
-                    <button class="btn-toggle" data-speed="36" onclick="setSpeed(36, this)" title="結果が出るまで約30秒">Slow</button>
-                    <button class="btn-toggle active" data-speed="12" onclick="setSpeed(12, this)" title="結果が出るまで約10秒">Normal</button>
-                    <button class="btn-toggle" data-speed="2.4" onclick="setSpeed(2.4, this)" title="結果が出るまで約2秒">Fast</button>
+                    <button class="btn-toggle" data-speed="23.58" onclick="setSpeed(23.58, this)" title="結果が出るまで約30秒">Slow</button>
+                    <button class="btn-toggle active" data-speed="7.86" onclick="setSpeed(7.86, this)" title="結果が出るまで約10秒">Normal</button>
+                    <button class="btn-toggle" data-speed="1.57" onclick="setSpeed(1.57, this)" title="結果が出るまで約2秒">Fast</button>
                 </div>
             </div>
 
@@ -878,10 +878,6 @@
     <div class="tab-panel" id="tab-links">
         <div class="link-list">
             <h2>関連リンク</h2>
-            <a class="link-item" href="https://somekata.github.io/" target="_blank" rel="noopener noreferrer">
-                <div class="link-title">細菌楽（Saikingaku）ポータル</div>
-                <div class="link-desc">バイキンズ®キャラクターを用いた感染症・細菌学教育コンテンツのハブサイト</div>
-            </a>
             <a class="link-item" href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener noreferrer">
                 <div class="link-title">bactPlatform Hub</div>
                 <div class="link-desc">細菌学関連の教材・ツール一覧</div>
@@ -943,7 +939,7 @@
 
     const state = {
         currentOrg: 'salmonella',
-        speedModifier: 1.0,
+        speedModifier: 7.86,
         isAnimating: false,
         bubbles: [],
         canvasFrameId: null,
@@ -976,9 +972,14 @@
         progressTime: document.getElementById('progressTime')
     };
 
-    // 速度倍率1のときの合計所要時間（ms）。速度ボタンの値(36/12/2.4)は
-    // このベース時間に対して「結果が出るまで約30秒/10秒/2秒」になるよう逆算した倍率。
-    const BASE_DURATION_MS = 834;
+    // 速度倍率1のときの各フェーズの基準所要時間（ms）。
+    // フェーズ1＝採取〜穿刺〜斜面塗抹（培養タイマーはまだ表示・開始しない）
+    // フェーズ2＝斜面塗抹完了後の引き上げ・退避・培養（ここで培養タイマーが0%から始まる）
+    const PHASE1_BASE_MS = 680;
+    const PHASE2_REACTION_BASE_MS = 444; // 引き上げ+退避+色調変化+ガス+H2S+最終判定
+    const PHASE2_TOTAL_BASE_MS = PHASE2_REACTION_BASE_MS / 0.75; // 判定完了が培養18h(75%)に来るよう逆算
+    // 速度ボタンの値(23.58/7.86/1.57)は、(PHASE1+PHASE2_TOTAL)の合計基準時間に対して
+    // 「結果が出るまで約30秒/10秒/2秒」になるよう逆算した倍率。
 
     function initCanvas() {
         nodes.canvas.width = nodes.tube.clientWidth;
@@ -1004,20 +1005,33 @@
     // 【修正】白金線"先端"がステージ内のどの座標に来てほしいかを指定すると、
     // loop-tip自身の実測オフセット（offsetLeft/offsetTop）から逆算してloop-holderのtop/leftを設定する。
     // これにより試験管や白金線のサイズがブレークポイントで変化しても常に正しい位置に描画される。
-    function setLoopTipPosition(stageX, stageY) {
-        const tipOffsetX = nodes.loopTip.offsetLeft + nodes.loopTip.offsetWidth / 2;
-        const tipOffsetY = nodes.loopTip.offsetTop + nodes.loopTip.offsetHeight / 2;
-        nodes.loop.style.left = `${stageX - tipOffsetX}px`;
-        nodes.loop.style.top = `${stageY - tipOffsetY}px`;
+    //
+    // 【重要】回転(rotateDeg)を伴う場合、transform-origin（loop-holderの上端中央）を中心に
+    // 先端の見た目の位置が動くため、それを打ち消すように逆算してtop/leftを設定する。
+    // これをしないと、斜面塗抹時（回転あり）に先端が意図した位置から大きくズレて
+    // 試験管の外側にはみ出して見えるバグになる。
+    function setLoopTipPosition(stageX, stageY, rotateDeg = 0) {
+        const tipLocalX = nodes.loopTip.offsetLeft + nodes.loopTip.offsetWidth / 2;
+        const tipLocalY = nodes.loopTip.offsetTop + nodes.loopTip.offsetHeight / 2;
+        const pivotX = nodes.loop.offsetWidth / 2; // transform-origin: top center
+        const pivotY = 0;
+
+        const rad = rotateDeg * Math.PI / 180;
+        const dx = tipLocalX - pivotX;
+        const dy = tipLocalY - pivotY;
+        const rotatedX = pivotX + (dx * Math.cos(rad) - dy * Math.sin(rad));
+        const rotatedY = pivotY + (dx * Math.sin(rad) + dy * Math.cos(rad));
+
+        nodes.loop.style.left = `${stageX - rotatedX}px`;
+        nodes.loop.style.top = `${stageY - rotatedY}px`;
+        nodes.loop.style.transform = `rotate(${rotateDeg}deg)`;
     }
 
     // 白金線の初期（未使用）位置：ステージ左上・画面外(上)へ退避
     function setLoopDefault() {
         nodes.loop.style.transition = 'none';
         const stageRect = nodes.stage.getBoundingClientRect();
-        nodes.loop.style.left = `${stageRect.width * 0.22}px`;
-        nodes.loop.style.top = '-260px';
-        nodes.loop.style.transform = 'rotate(0deg)';
+        setLoopTipPosition(stageRect.width * 0.22, -260, 0);
         nodes.colony.style.opacity = '0';
         nodes.colony.style.transform = 'scale(0.5)';
     }
@@ -1081,8 +1095,6 @@
 
         const p = profiles[state.currentOrg];
         const tStep = state.speedModifier;
-        // 反応（白金線の動き・色調変化・ガス・H2S）は培養18h相当（バー全体の75%）で完結させる
-        const reactionTStep = tStep * (CULTURE_TARGET_HOURS / CULTURE_FULL_HOURS);
 
         // 設定パネルをステータス表示へ切り替え（表示の工夫：省スペース化＋進行状況の明示）
         const activeSpeedBtn = document.querySelector('.speed-group .btn-toggle.active');
@@ -1091,105 +1103,145 @@
         nodes.statusText.textContent = `${orgLabel} ／ ${speedLabel}`;
         nodes.controlPanel.classList.add('is-running');
 
-        // 時間経過の可視化：バーは培養24h相当（100%）まで到達する所要時間ぶんタイマーを起動
-        startProgressTimer(BASE_DURATION_MS * tStep);
-
-        nodes.slant.style.transition = `background-color ${0.2 * reactionTStep}s ease`;
-        nodes.butt.style.transition = `background-color ${0.2 * reactionTStep}s ease`;
-        nodes.h2s.style.transition = `opacity ${0.2 * reactionTStep}s ease`;
-        nodes.gasGap.style.transition = `height ${0.2 * reactionTStep}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
-
         // 【修正】白金線の目標座標を、実際のステージ・試験管のレイアウトから毎回計測して算出する。
-        // （従来は固定pxのtranslateYで移動しており、試験管の中心と大きくズレたり、
-        //   ステージの表示範囲を超えて針先が見えなくなる問題があったため）
         const stageRect = nodes.stage.getBoundingClientRect();
         const tubeRect = nodes.tube.getBoundingClientRect();
         const buttRect = nodes.butt.getBoundingClientRect();
         const slantRect = nodes.slant.getBoundingClientRect();
 
         const tubeCenterX = tubeRect.left - stageRect.left + tubeRect.width / 2;
+        const tubeAboveY = tubeRect.top - stageRect.top - 16; // 試験管口のすぐ上（穿刺前の待機位置）
         const buttDepthY = buttRect.top - stageRect.top + buttRect.height - 14; // 高層部の底近くまで穿刺
-        const slantSurfaceY = slantRect.top - stageRect.top + slantRect.height * 0.35; // 斜面表面付近
         const pickupX = stageRect.width * 0.22;
         const pickupY = stageRect.height * 0.42;
+
+        // 斜面部は clip-path: polygon(0% 100%, 100% 0%, 100% 100%) の対角線が実際の「斜面」。
+        // f=0（左下・高層部側）→f=1（右上・試験管口側）として、対角線上の座標を求める関数。
+        const slantLeft = slantRect.left - stageRect.left;
+        const slantBottom = slantRect.bottom - stageRect.top;
+        const slantPointAt = (f) => ({
+            x: slantLeft + f * slantRect.width,
+            y: slantBottom - f * slantRect.height
+        });
+
+        // 穿刺したX位置（試験管の中心）が対角線上のどの位置(f)にあたるかを求め、
+        // そこを「垂直に引き上げた先端が斜面へ最初に触れる点」とする（＝穿刺と同じX＝真上への移動を維持）。
+        const slantEntryF = (tubeCenterX - slantLeft) / slantRect.width;
+        const slantEntry = slantPointAt(slantEntryF);
+        // 塗抹はそこから対角線に沿って試験管口側（f方向プラス）へ実際に位置を動かしながら塗り広げる。
+        const slantSweepF = Math.min(slantEntryF + 0.34, 0.92);
+        const slantSweepEnd = slantPointAt(slantSweepF);
 
         const setLoopTween = (duration, timing = 'ease-in-out') => {
             nodes.loop.style.transition = `top ${duration}s ${timing}, left ${duration}s ${timing}, transform ${duration}s ${timing}`;
         };
 
+        // ============================================================
+        // フェーズ1：採取〜穿刺〜斜面塗抹。培養タイマーはまだ開始しない。
+        // ============================================================
+
         // --- ① 白金線降下：菌コロニー（採取）の擬似演出 ---
-        setLoopTween(0.13 * reactionTStep);
-        setLoopTipPosition(pickupX, pickupY);
-        nodes.loop.style.transform = 'rotate(0deg)';
+        setLoopTween(0.13 * tStep);
+        setLoopTipPosition(pickupX, pickupY, 0);
 
         setTimeout(() => {
             nodes.colony.style.opacity = '1';
             nodes.colony.style.transform = 'scale(1)';
-        }, 78 * reactionTStep);
+        }, 90 * tStep);
 
-        // --- ② 試験管内への進入・高層部穿刺（試験管の中心軸を正確に狙う） ---
+        // --- ② 試験管口の真上まで移動（穿刺の準備） ---
         setTimeout(() => {
-            setLoopTween(0.16 * reactionTStep);
-            setLoopTipPosition(tubeCenterX, buttDepthY);
-            nodes.loop.style.transform = 'rotate(0deg)';
+            setLoopTween(0.14 * tStep);
+            setLoopTipPosition(tubeCenterX, tubeAboveY, 0);
+        }, 130 * tStep);
+
+        // --- ③ 真上から垂直に穿刺（高層部の底近くまで一直線に） ---
+        setTimeout(() => {
+            setLoopTween(0.15 * tStep, 'ease-in');
+            setLoopTipPosition(tubeCenterX, buttDepthY, 0);
             nodes.label.textContent = "高層部へ穿刺中...";
-        }, 156 * reactionTStep);
+        }, 270 * tStep);
 
-        // --- ③ 白金線を抜く＆斜面へのジグザグ塗抹 ---
+        // --- ④ まっすぐ斜面部の高さまで引き上げる（水平移動なし・斜面上の対応点へ着地） ---
         setTimeout(() => {
-            setLoopTween(0.13 * reactionTStep, 'linear');
-            setLoopTipPosition(tubeCenterX, slantSurfaceY);
-            nodes.loop.style.transform = 'rotate(10deg)';
+            setLoopTween(0.11 * tStep);
+            setLoopTipPosition(slantEntry.x, slantEntry.y, 0);
+        }, 420 * tStep);
+
+        // --- ⑤ 先端を斜面の傾き（対角線）に沿って塗抹しながら移動 ---
+        setTimeout(() => {
+            setLoopTween(0.15 * tStep, 'linear');
+            setLoopTipPosition(slantSweepEnd.x, slantSweepEnd.y, 12);
             nodes.label.textContent = "斜面部へ塗抹中...";
-        }, 325 * reactionTStep);
+        }, 530 * tStep);
 
-        // --- ④ 白金線の完全退避 ---
+        // ============================================================
+        // フェーズ2：斜面塗抹が完了した瞬間から培養タイマーを0%で開始する。
+        // ============================================================
         setTimeout(() => {
-            setLoopTween(0.1 * reactionTStep, 'ease-in');
-            setLoopTipPosition(pickupX, -260);
-            nodes.loop.style.transform = 'rotate(0deg)';
-            nodes.colony.style.opacity = '0';
-            nodes.label.textContent = "インキュベーター内培養中 (37℃, 24h)...";
-        }, 468 * reactionTStep);
+            // 時間経過の可視化：バーは培養24h相当（100%）まで到達する所要時間ぶんタイマーを起動
+            startProgressTimer(PHASE2_TOTAL_BASE_MS * tStep);
 
-        // --- ⑤ 培養（色調変化・ガス・硫化水素）の順次発現 ---
-        setTimeout(() => {
-            // 【修正】高層部の色も菌種プロファイル(p.butt)に従って設定する。
-            // （従来は常に酸性色=黄に固定されており、非発酵菌(K/K)を後で追加した場合に誤表示となる潜在バグだった）
-            nodes.butt.style.backgroundColor = (p.butt === 'A') ? 'var(--acid-yellow)' : 'var(--alkaline-red)';
+            // 白金線の退避・色調変化・ガス・H2Sは培養18h相当（フェーズ2の75%）で完結させる
+            const reactionTStep = tStep * (CULTURE_TARGET_HOURS / CULTURE_FULL_HOURS);
 
-            // 斜面部の色変化
-            if (p.slant === 'A') {
-                nodes.slant.style.backgroundColor = 'var(--acid-yellow)';
-            } else {
-                nodes.slant.style.backgroundColor = 'var(--alkaline-red)';
-            }
+            nodes.slant.style.transition = `background-color ${0.2 * reactionTStep}s ease`;
+            nodes.butt.style.transition = `background-color ${0.2 * reactionTStep}s ease`;
+            nodes.h2s.style.transition = `opacity ${0.2 * reactionTStep}s ease`;
+            nodes.gasGap.style.transition = `height ${0.2 * reactionTStep}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
 
-            // ガス産生
-            if (p.gas) {
-                setTimeout(() => {
-                    nodes.gasGap.style.height = '18px';
-                    generateGasBubbles();
-                }, 78 * reactionTStep);
-            }
+            // --- ⑥ まっすぐ試験管の上まで引き上げる（水平移動なし） ---
+            setLoopTween(0.11 * reactionTStep);
+            setLoopTipPosition(tubeCenterX, tubeAboveY, 0);
 
-            // 硫化水素（H2S）反応
-            if (p.h2s) {
-                setTimeout(() => {
-                    nodes.h2s.style.opacity = (state.currentOrg === 'typhi') ? '0.55' : '0.98';
-                }, 130 * reactionTStep);
-            }
-
-            // 最終結果ボード出力
+            // --- ⑦ 白金線の完全退避 ---
             setTimeout(() => {
-                nodes.label.textContent = "判定完了";
-                showFinalResult(p);
-                state.isAnimating = false;
-                nodes.startBtn.disabled = false;
-                nodes.startBtn.textContent = '接 種 & 培 養';
-            }, 234 * reactionTStep);
+                setLoopTween(0.1 * reactionTStep, 'ease-in');
+                setLoopTipPosition(pickupX, -260, 0);
+                nodes.colony.style.opacity = '0';
+                nodes.label.textContent = "インキュベーター内培養中 (37℃, 24h)...";
+            }, 110 * reactionTStep);
 
-        }, 600 * reactionTStep);
+            // --- 培養（色調変化・ガス・硫化水素）の順次発現 ---
+            setTimeout(() => {
+                // 【修正】高層部の色も菌種プロファイル(p.butt)に従って設定する。
+                // （従来は常に酸性色=黄に固定されており、非発酵菌(K/K)を後で追加した場合に誤表示となる潜在バグだった）
+                nodes.butt.style.backgroundColor = (p.butt === 'A') ? 'var(--acid-yellow)' : 'var(--alkaline-red)';
+
+                // 斜面部の色変化
+                if (p.slant === 'A') {
+                    nodes.slant.style.backgroundColor = 'var(--acid-yellow)';
+                } else {
+                    nodes.slant.style.backgroundColor = 'var(--alkaline-red)';
+                }
+
+                // ガス産生
+                if (p.gas) {
+                    setTimeout(() => {
+                        nodes.gasGap.style.height = '18px';
+                        generateGasBubbles();
+                    }, 78 * reactionTStep);
+                }
+
+                // 硫化水素（H2S）反応
+                if (p.h2s) {
+                    setTimeout(() => {
+                        nodes.h2s.style.opacity = (state.currentOrg === 'typhi') ? '0.55' : '0.98';
+                    }, 130 * reactionTStep);
+                }
+
+                // 最終結果ボード出力
+                setTimeout(() => {
+                    nodes.label.textContent = "判定完了";
+                    showFinalResult(p);
+                    state.isAnimating = false;
+                    nodes.startBtn.disabled = false;
+                    nodes.startBtn.textContent = '接 種 & 培 養';
+                }, 234 * reactionTStep);
+
+            }, 210 * reactionTStep);
+
+        }, PHASE1_BASE_MS * tStep);
     }
 
     // ガス気泡の描画ロジック
