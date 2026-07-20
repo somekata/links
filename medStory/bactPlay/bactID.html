@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroScan WalkAway 自動同定シミュレーター</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #9b59b6;
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --text-color: #f3f4f6;
+            --border-color: #374151;
+            --muted-color: #9ca3af;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        header { text-align: center; margin-bottom: 14px; }
+        h1 { margin-bottom: 4px; color: #fff; font-size: 22px; }
+
+        /* タブナビゲーション */
+        .tab-nav {
+            display: flex;
+            gap: 6px;
+            max-width: 1200px;
+            margin: 0 auto 16px auto;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 6px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--muted-color);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover { background: rgba(255,255,255,0.05); }
+
+        .tab-btn.active {
+            background: var(--bg-color);
+            color: #fff;
+            box-shadow: 0 0 0 1px var(--secondary-color) inset;
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: flex; flex-direction: column; gap: 20px; }
+
+        .control-panel {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .select-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .select-box label { font-size: 13px; color: var(--muted-color); }
+
+        select {
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            background: #111827;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .btn {
+            padding: 12px 25px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+        }
+        .btn-inject { background-color: #2563eb; }
+        .btn-inject:disabled { background-color: #4b5563; color: #9ca3af; cursor: not-allowed; }
+        .btn-culture { background-color: #059669; }
+        .btn-culture:disabled { background-color: #4b5563; color: #9ca3af; cursor: not-allowed; }
+        .btn-reset { background-color: #4b5563; }
+
+        /* 実験中に表示するステータス行（省スペース化） */
+        .status-line {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            background: #111827;
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 8px;
+        }
+        .status-line .status-hint { font-weight: 500; color: var(--muted-color); }
+        .control-panel.is-running .select-box { display: none; }
+        .control-panel.is-running .status-line { display: flex; }
+
+        .timeline-container {
+            background: #111827;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar-bg { background-color: #1f2937; height: 14px; border-radius: 7px; overflow: hidden; }
+        .progress-bar { background: linear-gradient(90deg, #a855f7, #06b6d4); height: 100%; width: 0%; transition: width 0.1s linear; }
+
+        /* 96ウェルプレート */
+        .panel-wrapper {
+            background: #0f172a;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+            overflow-x: auto;
+        }
+
+        .plate-grid {
+            display: grid;
+            grid-template-columns: 30px repeat(12, 1fr);
+            gap: 8px;
+            min-width: 850px;
+        }
+
+        .grid-header { text-align: center; font-size: 0.8rem; font-weight: bold; color: #64748b; line-height: 28px; }
+        .row-label { text-align: center; font-weight: bold; color: #64748b; line-height: 28px; }
+
+        .well {
+            aspect-ratio: 1;
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 50%;
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.7);
+            transition: background-color 1.5s ease, box-shadow 1s ease, filter 1s ease;
+            position: relative;
+        }
+        .well.injected { background-color: #334155; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); }
+        .well.active-glow { filter: brightness(1.3); }
+
+        .plate-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            margin-top: 14px;
+            font-size: 11px;
+            color: var(--muted-color);
+        }
+        .plate-legend span { display: inline-flex; align-items: center; gap: 5px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+        /* 同定結果レポート */
+        .report-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border-left: 6px solid #4b5563;
+        }
+        .report-card.done { border-left-color: #06b6d4; }
+        .report-card.warning { border-left-color: #ea580c; }
+
+        .report-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .report-table th, .report-table td { padding: 10px; border: 1px solid var(--border-color); text-align: left; font-size: 0.9rem; }
+        .report-table th { background: #111827; width: 30%; }
+
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .badge-waiting { background: #4b5563; }
+        .badge-running { background: #d97706; animation: pulse 1s infinite alternate; }
+        .badge-success { background: #064e3b; color: #6ee7b7; }
+        .badge-warn { background: #7f1d1d; color: #fca5a5; }
+
+        @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+
+        /* 使い方タブ */
+        .howto-box {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .howto-box i { font-style: italic; }
+        .howto-box h2 {
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--secondary-color);
+            padding-left: 10px;
+        }
+        .howto-box h2:not(:first-child) { margin-top: 20px; }
+        .howto-box ol, .howto-box ul { padding-left: 22px; margin-top: 6px; }
+        .howto-box li { margin-bottom: 4px; }
+        .howto-box p { margin-bottom: 8px; color: #d1d5db; }
+        .howto-box table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .howto-box th, .howto-box td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: left; vertical-align: top; }
+        .howto-box th { background: #111827; color: #fff; font-weight: 700; }
+
+        /* リンクタブ */
+        .link-list {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+        }
+        .link-list h2 {
+            font-size: 16px; color: #fff; margin-bottom: 12px;
+            border-left: 4px solid #06b6d4; padding-left: 10px;
+        }
+        .link-item {
+            display: block; padding: 12px 16px; margin-bottom: 10px;
+            background: #111827; border: 1px solid var(--border-color); border-radius: 8px;
+            text-decoration: none; color: var(--text-color); transition: all 0.2s ease;
+        }
+        .link-item:hover { border-color: #06b6d4; transform: translateY(-1px); }
+        .link-item .link-title { font-weight: 700; font-size: 14px; color: #22d3ee; }
+        .link-item .link-desc { font-size: 12px; color: var(--muted-color); margin-top: 3px; }
+        .link-note { font-size: 12px; color: #6b7280; margin-top: 10px; }
+
+        /* フッター */
+        .site-footer {
+            max-width: 1200px;
+            margin: 16px auto 0 auto;
+            padding: 10px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 11px;
+            line-height: 1.7;
+            color: #6b7280;
+        }
+        .footer-toggle {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: transparent; border: none; color: #6b7280;
+            font-size: 11px; font-weight: 700; cursor: pointer; padding: 2px 0; font-family: inherit;
+        }
+        .footer-toggle:hover { color: var(--muted-color); }
+        .footer-detail { display: none; margin-top: 8px; }
+        .footer-detail.open { display: block; }
+
+        /* レスポンシブ調整（iPhone等で1画面に収まるようコンパクト化） */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            header { margin-bottom: 10px; }
+            h1 { font-size: 17px; }
+
+            .tab-nav { padding: 4px; margin-bottom: 10px; gap: 4px; }
+            .tab-btn { padding: 8px 4px; font-size: 11px; }
+
+            .control-panel { padding: 12px; gap: 10px; }
+            .flex-row { flex-direction: column; align-items: stretch; gap: 10px; }
+            .select-box { min-width: 0; }
+            select { font-size: 13px; padding: 9px 10px; }
+            .btn-group { flex-direction: column; }
+            .btn { width: 100%; padding: 11px 16px; font-size: 13px; }
+            .status-line { font-size: 12px; padding: 8px 12px; }
+
+            .timeline-container { padding: 10px; }
+            .timeline-header { font-size: 11px; flex-direction: column; }
+
+            .panel-wrapper { padding: 8px; overflow-x: visible; }
+            .plate-grid { grid-template-columns: 15px repeat(12, 1fr); gap: 2px; min-width: 0; }
+            .grid-header, .row-label { font-size: 7px; line-height: 18px; }
+            .well { border-width: 1px; }
+            .plate-legend { font-size: 9px; gap: 5px 10px; }
+
+            .report-card { padding: 14px 16px; }
+            .report-title { font-size: 14px; }
+            .report-table th, .report-table td { padding: 7px; font-size: 12px; }
+
+            .howto-box, .link-list { padding: 14px 16px; font-size: 13px; }
+            .site-footer { padding: 8px 14px; margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🔬 MicroScan WalkAway</h1>
+    </header>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" id="tabBtn-sim" onclick="switchTab('sim', this)">🔬 シミュレーション</button>
+        <button class="tab-btn" id="tabBtn-howto" onclick="switchTab('howto', this)">📖 使い方</button>
+        <button class="tab-btn" id="tabBtn-links" onclick="switchTab('links', this)">🔗 リンク</button>
+    </div>
+
+    <!-- タブ①: シミュレーション -->
+    <div class="tab-panel active" id="tab-sim">
+
+    <!-- コントロールパネル -->
+    <div class="control-panel" id="controlPanel">
+        <div class="flex-row">
+            <div class="select-box">
+                <label>1. 使用するMicroScanパネルを選択:</label>
+                <select id="panel-select" onchange="updateBacteriaOptions()">
+                    <option value="neg_rapid">Rapid Neg ID3 パネル（グラム陰性桿菌用／約2.5時間）</option>
+                    <option value="pos_rapid">Rapid Pos ID パネル（ブドウ球菌属用／約2時間・蛍光基質）</option>
+                    <option value="pos_standard">Pos ID パネル（腸球菌・連鎖球菌用／約24時間）</option>
+                </select>
+            </div>
+
+            <div class="select-box">
+                <label>2. 接種する分離菌株を選択:</label>
+                <select id="bacteria-select"></select>
+            </div>
+
+            <div class="btn-group">
+                <button id="btn-inject" class="btn btn-inject" onclick="injectPlate()">パネルに菌液を接種</button>
+                <button id="btn-culture" class="btn btn-culture" onclick="startWalkAway()" disabled>WalkAwayにセットして測定開始</button>
+                <button class="btn btn-reset" onclick="resetAll()">リセット</button>
+            </div>
+        </div>
+
+        <!-- 接種後はここに切り替わる（設定を隠して省スペース化） -->
+        <div class="status-line" id="statusLine">
+            <span>🧫 <span id="statusText"></span></span>
+            <span class="status-hint">菌種変更はリセットから</span>
+        </div>
+
+        <div class="timeline-container">
+            <div class="timeline-header">
+                <div>システムステータス: <span id="status-badge" class="status-badge badge-waiting">待機中</span> <span id="status-text">パネルの設定と菌の接種を行ってください。</span></div>
+                <div id="time-display">経過時間: 0.0 時間 / 目標: -- 時間</div>
+            </div>
+            <div class="progress-bar-bg">
+                <div id="progress" class="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 96ウェル マイクロプレート -->
+    <div class="panel-wrapper">
+        <div class="plate-grid" id="plate"></div>
+        <div class="plate-legend">
+            <span><span class="legend-dot" style="background:#eab308;"></span>糖発酵系</span>
+            <span><span class="legend-dot" style="background:#7c3aed;"></span>アミノ酸脱炭酸・アリルアミダーゼ系</span>
+            <span><span class="legend-dot" style="background:#0284c7;"></span>クエン酸利用</span>
+            <span><span class="legend-dot" style="background:#0f172a; border:1px solid #475569;"></span>エスクリン加水分解（黒変）</span>
+            <span><span class="legend-dot" style="background:#38bdf8;"></span>蛍光基質（MU系）</span>
+            <span><span class="legend-dot" style="background:#a3e635;"></span>蛍光基質（AMC系）</span>
+            <span><span class="legend-dot" style="background:#84cc16;"></span>薬剤感受性（MIC・Comboパネルのみ）</span>
+        </div>
+    </div>
+
+    <!-- 自動解析レポート -->
+    <div id="report" class="report-card">
+        <div class="report-title">📊 WalkAway リアルタイム自動解析データリーダ</div>
+        <div id="report-text">
+            パネルが装置にセットされ、指定時間のインキュベーションおよび光学スキャンが完了すると、ここに光学同定レポートが生成されます。
+        </div>
+    </div>
+
+    </div>
+    <!-- /タブ①: シミュレーション -->
+
+    <!-- タブ②: 使い方 -->
+    <div class="tab-panel" id="tab-howto">
+        <div class="howto-box">
+            <p>細菌の生化学的性状検査を自動化した機器「MicroScan WalkAway」による同定プロセスをシミュレーションします。96ウェルのマイクロプレートに含まれる生化学試薬・蛍光基質が、接種した菌の代謝によって発色・発光するようすを再現しています。</p>
+
+            <h2>基本操作</h2>
+            <ol>
+                <li>使用する<strong>MicroScanパネル</strong>を選択します（グラム陰性菌用・グラム陽性ブドウ球菌用・グラム陽性腸球菌/連鎖球菌用の3種類）。</li>
+                <li>接種する<strong>分離菌株</strong>を選択します。</li>
+                <li><strong>「パネルに菌液を接種」</strong>を押すと、96ウェル全体に菌液が分注されます。</li>
+                <li><strong>「WalkAwayにセットして測定開始」</strong>を押すと、装置内でのインキュベーションと光学スキャンが再生されます。パネルの種類によって所要時間が異なります。</li>
+                <li>測定が完了すると、同定結果レポート（菌種名・同定確率・装置コメント）が表示されます。</li>
+                <li><strong>「リセット」</strong>で未接種の状態に戻り、別のパネル・菌株を試せます。</li>
+            </ol>
+
+            <h2>パネルの種類と所要時間</h2>
+            <p>MicroScan WalkAwayには、対象菌群によって判定原理・所要時間の異なる複数のパネルがあります。</p>
+            <table>
+                <tr><th>パネル</th><th>対象</th><th>所要時間</th><th>原理</th></tr>
+                <tr><td>Rapid Neg ID3</td><td>グラム陰性桿菌（腸内細菌科・非発酵菌）</td><td>約2〜2.5時間</td><td>蛍光基質による酵素活性検出</td></tr>
+                <tr><td>Rapid Pos ID</td><td>ブドウ球菌属</td><td>約2時間</td><td>蛍光基質（42試験）</td></tr>
+                <tr><td>Pos ID（標準）</td><td>腸球菌・連鎖球菌</td><td>約18〜24時間（一部48時間）</td><td>発色基質・従来法の改良版（18試験）</td></tr>
+            </table>
+            <p style="margin-top:8px;">初回判定（迅速パネル）では約80%前後の精度にとどまり、追加試験を経て24時間後には90〜96%程度まで精度が向上するのが一般的です。</p>
+
+            <h2>96ウェルの区画（本シミュレーションでの簡略化表示）</h2>
+            <ul>
+                <li><strong>糖発酵系</strong>：グルコース・ラクトース・マンニトールなどの糖を分解できるかを発色で判定（陽性＝黄、陰性＝赤〜ピンク）。</li>
+                <li><strong>アミノ酸脱炭酸・アリルアミダーゼ系</strong>：リジン脱炭酸酵素、オルニチン脱炭酸酵素、PYR（ピロリドニルアリルアミダーゼ）などのアミノ酸代謝酵素を検出（陽性＝紫）。</li>
+                <li><strong>クエン酸利用・エスクリン加水分解</strong>：クエン酸を唯一の炭素源として利用できるか（陽性＝青）、エスクリンを加水分解し培地を黒変させるか（陽性＝黒変）を判定。</li>
+                <li><strong>蛍光基質系（MU・AMC）</strong>：β-ガラクトシダーゼやβ-グルクロニダーゼなどの酵素活性を、紫外線励起下での蛍光発光として検出（WalkAwayの迅速パネルの主軸）。</li>
+                <li><strong>薬剤感受性（MIC）</strong>：同定と薬剤感受性試験を組み合わせたComboパネルでのみ、抗菌薬濃度列における発育の有無を判定します。</li>
+            </ul>
+
+            <h2>同定精度と限界</h2>
+            <p><i>Escherichia coli</i>、<i>Klebsiella pneumoniae</i>、<i>Pseudomonas aeruginosa</i>などは95%以上の高精度で同定できる一方、<i>Salmonella</i>属（誤同定率17.9%の報告あり）や連鎖球菌、一部のコアグラーゼ陰性ブドウ球菌（<i>Staphylococcus lugdunensis</i>など）では同定精度が低下し、追加の生化学試験や確認試験が必要になることがあります。非発酵グラム陰性桿菌全体でも、初回同定精度は66.4%程度にとどまり、追加試験後に74.6%程度まで向上するとされています。</p>
+            <p>近年は、MALDI-TOF質量分析法が数分程度で高精度（95%前後）に菌種同定できる手法として急速に普及しており、MicroScanのような生化学的自動同定システムは、MALDI-TOFでの同定が難しい場合の補助や、薬剤感受性試験との組み合わせで用いられることが増えています。</p>
+        </div>
+    </div>
+
+    <!-- タブ③: リンク -->
+    <div class="tab-panel" id="tab-links">
+        <div class="link-list">
+            <h2>関連リンク</h2>
+            <a class="link-item" href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener noreferrer">
+                <div class="link-title">bactPlatform Hub</div>
+                <div class="link-desc">細菌学関連の教材・ツール一覧</div>
+            </a>
+            <p class="link-note">※ リンク先は必要に応じて自由に追加・変更してください（HTML内の &lt;div class="tab-panel" id="tab-links"&gt; 部分を編集）。</p>
+        </div>
+    </div>
+
+</div>
+
+<footer class="site-footer">
+    <button class="footer-toggle" id="footerToggle" onclick="toggleFooter()">ⓘ 生成AIについて・注意事項</button>
+    <div class="footer-detail" id="footerDetail">
+        本コンテンツは学術文献（Journal of Clinical Microbiology等に掲載された評価研究）を参考資料としつつ、ChatGPTによるプロンプト設計、Google Geminiによるコード生成、Claude（Anthropic）による最終調整という複数の生成AIを組み合わせて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・添付文書・専門家の指導を参照してください。<br>
+        二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </div>
+</footer>
+
+<script>
+    // 96ウェルをカラーの生化学試験ゾーンに区分けするための配色定義
+    function getWellTypeColors(row, col) {
+        if (col <= 2) {
+            return { neg: '#9f1239', pos: '#eab308', glow: '0 0 10px #eab308' }; // 糖発酵系
+        } else if (col <= 4) {
+            return { neg: '#ca8a04', pos: '#7c3aed', glow: '0 0 10px #a78bfa' }; // アミノ酸脱炭酸・アリルアミダーゼ系
+        } else if (col <= 6) {
+            if ((row.charCodeAt(0) + col) % 2 === 0) {
+                return { neg: '#166534', pos: '#0284c7', glow: '0 0 10px #38bdf8' }; // クエン酸
+            } else {
+                return { neg: '#78350f', pos: '#0f172a', glow: 'inset 0 0 5px #000' }; // エスクリン黒変
+            }
+        } else if (col <= 8) {
+            return { neg: '#1e3a8a', pos: '#38bdf8', glow: '0 0 15px #e0f2fe, inset 0 2px 2px #fff' }; // MU系蛍光基質
+        } else if (col <= 10) {
+            return { neg: '#064e3b', pos: '#a3e635', glow: '0 0 15px #ccfbf1, inset 0 2px 2px #fff' }; // AMC系蛍光基質
+        } else {
+            return { neg: '#1e40af', pos: '#84cc16', glow: '0 0 8px #a3e635' }; // 薬剤感受性(MIC)
+        }
+    }
+
+    // 資料（学術文献の評価研究）に基づく菌種プロファイル
+    const panelConfig = {
+        neg_rapid: {
+            label: 'Rapid Neg ID3 パネル',
+            targetHours: 2.5,
+            bacteria: [
+                { id: 'ec', name: 'Escherichia coli（大腸菌）', type: 'success', prob: '99.1%', posPattern: 0.65,
+                  notes: 'インドール陽性・運動性陽性・乳糖発酵陽性・β-グルクロニダーゼ陽性（約95%）という典型パターンを示し、MicroScanでは最も同定精度が高い菌種の一つです。蛍光基質ウェルが強く発光しました。' },
+                { id: 'kp', name: 'Klebsiella pneumoniae（肺炎桿菌）', type: 'success', prob: '98.0%', posPattern: 0.80,
+                  notes: '運動性陰性（K. pneumoniaeの重要な鑑別点）、ウレアーゼ陽性、クエン酸利用陽性、オルニチン脱炭酸酵素陰性というプロファイルが明瞭に一致しました。糖発酵ウェルもほぼ全て陽性化しています。' },
+                { id: 'pm', name: 'Proteus mirabilis（変形菌）', type: 'success', prob: '95.2%', posPattern: 0.45,
+                  notes: 'インドール陰性・運動性陽性（遊走性）・ウレアーゼ迅速陽性・オルニチン脱炭酸酵素陽性というP. mirabilis特有のパターンです。文献報告での同定精度は95.2%です。' },
+                { id: 'ecl', name: 'Enterobacter cloacae（エンテロバクター）', type: 'success', prob: '95.3%', posPattern: 0.75,
+                  notes: '運動性陽性・リジン/オルニチン脱炭酸酵素陽性・クエン酸利用陽性・VP陽性という組み合わせで、染色体性AmpC産生菌に特徴的なプロファイルです。文献報告での同定精度は95.3%です。' },
+                { id: 'sm', name: 'Serratia marcescens（セラチア）', type: 'success', prob: '92.6%', posPattern: 0.55,
+                  notes: 'DNase陽性（特徴的所見）、リジン/オルニチン脱炭酸酵素陽性、乳糖発酵陰性〜遅延陽性というパターンを示しました。文献報告での同定精度は92.6%とやや低めです。' },
+                { id: 'cf', name: 'Citrobacter freundii（シトロバクター）', type: 'success', prob: '90.5%', posPattern: 0.50,
+                  notes: 'インドール陰性・硫化水素産生陽性・リジン脱炭酸酵素陰性・オルニチン脱炭酸酵素陽性というパターンで、近縁のC. koseri（インドール陽性）との鑑別点が明瞭に現れています。' },
+                { id: 'sal', name: 'Salmonella属の一種（誤同定に注意）', type: 'warning', prob: '48.5%', posPattern: 0.45,
+                  notes: '【注意】糖・アミノ酸ウェルの一部が非定型的な中間色を示し、確率が低下しました。文献では28株中5株（17.9%）が誤同定されると報告されており、本サンプルもそれに近い非定型パターンです。KIA＋MIU-TDA＋ONPGなど追加の手動比色試験を推奨します。' },
+                { id: 'shi', name: 'Shigella属の一種（大腸菌と近縁）', type: 'warning', prob: '58.0%', posPattern: 0.20,
+                  notes: '【注意】運動性陰性・リジン脱炭酸酵素陰性という点はE. coliとの重要な鑑別点ですが、遺伝学的に非常に近縁なため蛍光基質パターンが類似し、確信度がやや低下しています。' },
+                { id: 'pa', name: 'Pseudomonas aeruginosa（緑膿菌）', type: 'success', prob: '97.0%', posPattern: 0.25,
+                  notes: '糖発酵ウェルは陰性（酸化的代謝のため赤のまま）ですが、オキシダーゼ陽性・42℃発育陽性・クエン酸利用陽性といった非発酵菌特有のプロファイルがシャープに現れました。' },
+                { id: 'ab', name: 'Acinetobacter属（非発酵菌・要追加試験）', type: 'warning', prob: '66.4%', posPattern: 0.15,
+                  notes: '【注意】オキシダーゼ陰性（Pseudomonasとの鑑別点）、運動性陰性という所見は得られましたが、色・蛍光の変化に乏しく確信度が中程度にとどまりました。非発酵菌全体の初回同定精度は66.4%、追加試験後74.6%と報告されています。' }
+            ]
+        },
+        pos_rapid: {
+            label: 'Rapid Pos ID パネル',
+            targetHours: 2,
+            bacteria: [
+                { id: 'sa', name: 'Staphylococcus aureus（黄色ブドウ球菌）', type: 'success', prob: '91.5%', posPattern: 0.55,
+                  notes: 'コアグラーゼ陽性・マンニトール発酵陽性・DNase陽性というS. aureusの典型パターンです。MicroScan Rapid Pos IDパネルでの同定精度は90%以上と報告されています。' },
+                { id: 'se', name: 'Staphylococcus epidermidis（表皮ブドウ球菌）', type: 'success', prob: '94.6%', posPattern: 0.35,
+                  notes: 'コアグラーゼ陰性・ノボビオシン感受性・ウレアーゼ陽性・PYR陰性という最も頻度の高いコアグラーゼ陰性ブドウ球菌（CoNS）のパターンです。Combo Pos 28パネルでの同定精度は94.6%です。' },
+                { id: 'ssap', name: 'Staphylococcus saprophyticus（腐性ブドウ球菌）', type: 'success', prob: '91.0%', posPattern: 0.30,
+                  notes: 'コアグラーゼ陰性・ノボビオシン耐性（他のCoNSとの重要な鑑別点）というパターンが明瞭です。尿路感染症由来検体で重要な菌種です。' },
+                { id: 'slug', name: 'Staphylococcus lugdunensis（要確認）', type: 'warning', prob: '62.0%', posPattern: 0.40,
+                  notes: '【注意】オルニチン脱炭酸酵素陽性（重要な鑑別点）、PYR陽性という所見がありますが、クランピングファクターがスライド法で弱陽性となりS. aureusと誤認されるリスクがあります。MicroScanでの同定精度は50〜75%と低めです。' }
+            ]
+        },
+        pos_standard: {
+            label: 'Pos ID パネル（標準）',
+            targetHours: 24,
+            bacteria: [
+                { id: 'efs', name: 'Enterococcus faecalis（腸球菌）', type: 'success', prob: '100%', posPattern: 0.50,
+                  notes: '胆汁エスクリン陽性（黒変）・6.5%食塩耐性陽性・D-キシロース酸性化陰性・マンニトール酸性化陽性というE. faecalis特有のパターンです。文献報告での同定精度は100%（77/77株）です。' },
+                { id: 'efm', name: 'Enterococcus faecium（腸球菌）', type: 'success', prob: '100%', posPattern: 0.45,
+                  notes: '胆汁エスクリン陽性・6.5%食塩耐性陽性に加え、D-キシロース酸性化陽性・マンニトール酸性化陰性というE. faecalisとの鑑別パターンが明瞭に現れました。文献報告での同定精度は100%（14/14株）です。' },
+                { id: 'spn', name: 'Streptococcus pneumoniae（肺炎球菌・要確認）', type: 'warning', prob: '58.0%', posPattern: 0.25,
+                  notes: '【注意】α溶血陽性という所見は得られましたが、連鎖球菌全般でMicroScanの同定精度はやや低く、不一致が報告されています。オプトヒン感受性試験・胆汁溶解試験（ゴールドスタンダード）による確認を推奨します。' },
+                { id: 'gas', name: 'β溶血性連鎖球菌（A群疑い・要確認）', type: 'warning', prob: '70.0%', posPattern: 0.30,
+                  notes: '【注意】β溶血陽性・PYR陽性というA群連鎖球菌に矛盾しない所見ですが、連鎖球菌の自動同定は不一致が多いとされ、バシトラシン感受性試験やLancefield血清型別による確認が望まれます。' }
+            ]
+        }
+    };
+
+    function buildPlate() {
+        const plate = document.getElementById('plate');
+        plate.innerHTML = '';
+
+        plate.appendChild(document.createElement('div'));
+        for (let i = 1; i <= 12; i++) {
+            const label = document.createElement('div');
+            label.className = 'grid-header';
+            label.innerText = i;
+            plate.appendChild(label);
+        }
+
+        const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        rows.forEach(row => {
+            const label = document.createElement('div');
+            label.className = 'row-label';
+            label.innerText = row;
+            plate.appendChild(label);
+
+            for (let col = 1; col <= 12; col++) {
+                const well = document.createElement('div');
+                well.className = 'well';
+                well.id = `well-${row}-${col}`;
+                plate.appendChild(well);
+            }
+        });
+    }
+
+    function updateBacteriaOptions() {
+        const panelKey = document.getElementById('panel-select').value;
+        const bSelect = document.getElementById('bacteria-select');
+        bSelect.innerHTML = '';
+
+        panelConfig[panelKey].bacteria.forEach(bact => {
+            const opt = document.createElement('option');
+            opt.value = bact.id;
+            opt.innerText = bact.name;
+            bSelect.appendChild(opt);
+        });
+        resetAllVisualsOnly();
+    }
+
+    function injectPlate() {
+        document.getElementById('panel-select').disabled = true;
+        document.getElementById('bacteria-select').disabled = true;
+        document.getElementById('btn-inject').disabled = true;
+        document.getElementById('btn-culture').disabled = false;
+
+        // ステータス表示へ切り替え（表示の工夫：省スペース化＋選択内容の明示）
+        const panelKey = document.getElementById('panel-select').value;
+        const bactId = document.getElementById('bacteria-select').value;
+        const currentPanel = panelConfig[panelKey];
+        const selectedBact = currentPanel.bacteria.find(b => b.id === bactId);
+        document.getElementById('statusText').textContent = `${currentPanel.label} ／ ${selectedBact.name}`;
+        document.getElementById('controlPanel').classList.add('is-running');
+
+        const badge = document.getElementById('status-badge');
+        badge.className = "status-badge badge-running";
+        badge.innerText = "接種完了";
+        document.getElementById('status-text').innerText = "透明な菌液をすべてのウェルに分注しました。WalkAway装置内へ搬入可能です。";
+
+        const wells = document.querySelectorAll('.well');
+        wells.forEach(w => w.classList.add('injected'));
+    }
+
+    let timer = null;
+    function startWalkAway() {
+        document.getElementById('btn-culture').disabled = true;
+
+        const panelKey = document.getElementById('panel-select').value;
+        const bactId = document.getElementById('bacteria-select').value;
+        const currentPanel = panelConfig[panelKey];
+        const selectedBact = currentPanel.bacteria.find(b => b.id === bactId);
+
+        const targetHours = currentPanel.targetHours;
+        let currentHours = 0;
+
+        const progress = document.getElementById('progress');
+        const timeDisplay = document.getElementById('time-display');
+        const badge = document.getElementById('status-badge');
+        badge.className = "status-badge badge-running";
+        badge.innerText = "培養・スキャン中";
+        document.getElementById('status-text').innerText = `37℃インキュベーション作動中。ウェルの色がリアルタイムに変色しています...`;
+
+        const intervalTime = 80;
+        const totalSteps = 30;
+        const hourStep = targetHours / totalSteps;
+
+        timer = setInterval(() => {
+            currentHours += hourStep;
+            if (currentHours > targetHours) currentHours = targetHours;
+
+            const percent = (currentHours / targetHours) * 100;
+            progress.style.width = percent + '%';
+            timeDisplay.innerText = `経過時間: ${currentHours.toFixed(1)} 時間 / 目標: ${targetHours} 時間`;
+
+            const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+            rows.forEach(row => {
+                for (let col = 1; col <= 12; col++) {
+                    const well = document.getElementById(`well-${row}-${col}`);
+                    const colors = getWellTypeColors(row, col);
+                    const seed = (row.charCodeAt(0) * col * 13) % 100 / 100;
+
+                    if (percent > 10) {
+                        if (seed < selectedBact.posPattern) {
+                            well.style.backgroundColor = colors.pos;
+                            if (percent > 70 && colors.glow) {
+                                well.style.boxShadow = colors.glow;
+                                well.classList.add('active-glow');
+                            }
+                        } else {
+                            well.style.backgroundColor = colors.neg;
+                        }
+                    }
+                }
+            });
+
+            if (currentHours >= targetHours) {
+                clearInterval(timer);
+                displayReport(selectedBact);
+            }
+        }, intervalTime);
+    }
+
+    function displayReport(bact) {
+        const badge = document.getElementById('status-badge');
+        const report = document.getElementById('report');
+
+        if (bact.type === 'success') {
+            badge.className = "status-badge badge-success";
+            badge.innerText = "同定完了";
+            report.className = "report-card done";
+        } else {
+            badge.className = "status-badge badge-warn";
+            badge.innerText = "要確認";
+            report.className = "report-card warning";
+        }
+        document.getElementById('status-text').innerText = "96ウェルの吸光度・蛍光エンドポイント測定が完了しました。";
+
+        const randomBiotype = Math.floor(10000000 + Math.random() * 90000000);
+
+        document.getElementById('report-text').innerHTML = `
+            <p>光度計が読み取った色のマルチカラーパターンおよび蛍光シグナル解析結果：</p>
+            <table class="report-table">
+                <tr><th>解析同定された菌種</th><td style="font-size:1.05rem; font-weight:bold; color:#06b6d4;">${bact.name}</td></tr>
+                <tr><th>同定確率 (Probability)</th><td style="font-weight:bold; color:${bact.type === 'success' ? '#34d399' : '#f87171'}">${bact.prob}</td></tr>
+                <tr><th>MicroScan Biotype数値</th><td><code>${randomBiotype}</code></td></tr>
+                <tr><th>装置判定コメント</th><td>${bact.notes}</td></tr>
+            </table>
+            <p style="font-size:0.85rem; color:#9ca3af; margin-top:15px;">💡 <strong>ウェル区画の解説：</strong>列1〜2は糖発酵系（黄＝陽性、赤＝陰性）、列3〜4はアミノ酸脱炭酸・アリルアミダーゼ系（紫＝陽性）、列5〜6はクエン酸利用またはエスクリン加水分解、列7〜10はWalkAwayの迅速判定の主軸である蛍光基質（青白・黄緑の発光）、列11〜12は薬剤感受性試験（Comboパネルのみ）を再現しています。</p>
+        `;
+    }
+
+    function resetAllVisualsOnly() {
+        clearInterval(timer);
+        document.getElementById('progress').style.width = '0%';
+        document.getElementById('time-display').innerText = "経過時間: 0.0 時間 / 目標: -- 時間";
+        document.getElementById('status-badge').className = "status-badge badge-waiting";
+        document.getElementById('status-badge').innerText = "待機中";
+        document.getElementById('status-text').innerText = "パネルの設定と菌の接種を行ってください。";
+        document.getElementById('report').className = "report-card";
+        document.getElementById('report-text').innerText = "パネルが装置にセットされ、指定時間のインキュベーションおよび光学スキャンが完了すると、ここに光学同定レポートが生成されます。";
+        buildPlate();
+    }
+
+    function resetAll() {
+        document.getElementById('panel-select').disabled = false;
+        document.getElementById('bacteria-select').disabled = false;
+        document.getElementById('btn-inject').disabled = false;
+        document.getElementById('btn-culture').disabled = true;
+        document.getElementById('controlPanel').classList.remove('is-running');
+        resetAllVisualsOnly();
+    }
+
+    // タブ切り替え制御
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        btnElement.classList.add('active');
+        if (tabId !== 'sim' && timer) {
+            clearInterval(timer);
+        }
+    }
+
+    // フッター（注意書き）の開閉制御
+    function toggleFooter() {
+        const detail = document.getElementById('footerDetail');
+        const btn = document.getElementById('footerToggle');
+        const isOpen = detail.classList.toggle('open');
+        btn.textContent = isOpen ? '▲ 生成AIについて・注意事項' : 'ⓘ 生成AIについて・注意事項';
+    }
+
+    window.onload = function () {
+        updateBacteriaOptions();
+    };
+</script>
+
+</body>
+</html>
