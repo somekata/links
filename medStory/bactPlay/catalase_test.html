@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>インタラクティブ微生物検査：カタラーゼ試験</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --text-color: #2c3e50;
+            --border-color: #d1d8e0;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+            --glass-shine: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 60%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 12px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #34495e;
+        }
+
+        /* メインコンテナ */
+        .main-container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255,255,255,0.7);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* コントロールパネル */
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            background: rgba(236, 240, 241, 0.6);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+
+        /* 実験中に表示するステータス行（実験開始で切り替わる） */
+        .status-line {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            font-size: 13px;
+            font-weight: 700;
+            color: #34495e;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+        }
+
+        .status-line .status-hint {
+            font-weight: 500;
+            color: #95a5a6;
+        }
+
+        /* 実験開始～リセットまでは設定項目を隠し、ステータス行に切り替える */
+        .control-panel.is-running .control-group {
+            display: none;
+        }
+
+        .control-panel.is-running .status-line {
+            display: flex;
+        }
+
+        /* トグル＆ボタンボタン */
+        .btn-group {
+            display: flex;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: white;
+        }
+
+        .btn-toggle {
+            padding: 8px 16px;
+            border: none;
+            background: white;
+            font-size: 13px;
+            font-weight: 600;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-toggle.active[data-type="pos"] {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-toggle.active[data-type="neg"] {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-toggle.active[data-type="speed"] {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-main {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .btn-start {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-start:hover:not(:disabled) { background: #219653; transform: translateY(-1px); }
+        .btn-start:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; }
+
+        .btn-reset {
+            background: #95a5a6;
+            color: white;
+        }
+        .btn-reset:hover { background: #7f8c8d; transform: translateY(-1px); }
+
+        /* 実験ステージエリア */
+        .stage {
+            position: relative;
+            width: 100%;
+            height: 480px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px;
+            transition: border-color 0.4s ease;
+        }
+
+        .stage.result-pos {
+            border-color: rgba(231, 76, 60, 0.5);
+        }
+
+        .stage.result-neg {
+            border-color: rgba(52, 152, 219, 0.5);
+        }
+
+        /* 検査室のクリーンなグリッド背景を薄く模写 */
+        .stage::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: linear-gradient(rgba(240,240,240,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(240,240,240,0.5) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 各種実験器具オブジェクト */
+        .bench-item {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* シャーレ (Petri Dish) */
+        .petri-dish {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(245, 246, 250, 0.4);
+            border: 4px solid rgba(200, 214, 229, 0.8);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08), inset 0 4px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .petri-dish::after {
+            content: '';
+            position: absolute;
+            width: 92%;
+            height: 92%;
+            border-radius: 50%;
+            border: 2px solid rgba(200, 214, 229, 0.5);
+            box-shadow: inset 0 0 15px rgba(255,255,255,0.8);
+        }
+
+        /* 培地 (Agar) */
+        .agar {
+            width: 88%;
+            height: 88%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f7d794 0%, #f5cd79 100%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        /* 菌コロニー (Staphylococcus aureus 想定の黄金〜黄色) */
+        .colony-group {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+        }
+
+        .colony {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fff2a3 0%, #f1c40f 70%, #d4ac0d 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15), inset 0 -1px 2px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .colony:hover {
+            transform: scale(1.05);
+        }
+
+        /* ターゲットとなる中心の大きめコロニー */
+        .colony.target {
+            width: 24px;
+            height: 24px;
+            top: 45%;
+            left: 45%;
+        }
+
+        /* 周囲の雑多なコロニー */
+        .colony.s1 { width: 12px; height: 12px; top: 25%; left: 35%; }
+        .colony.s2 { width: 16px; height: 15px; top: 60%; left: 30%; }
+        .colony.s3 { width: 14px; height: 14px; top: 35%; left: 60%; }
+        .colony.s4 { width: 10px; height: 10px; top: 55%; left: 65%; }
+
+        /* スライドガラス */
+        .slide-glass {
+            width: 260px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            outline: 2px solid rgba(189, 195, 199, 0.4);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.06), inset 0 0 10px rgba(255,255,255,0.3);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ガラスの斜め反射光光沢 */
+        .slide-glass::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--glass-shine);
+            pointer-events: none;
+        }
+
+        /* つや消しフロスト部分（持ち手部） */
+        .slide-glass-frost {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 45px;
+            height: 100%;
+            background: rgba(220, 225, 230, 0.6);
+            border-right: 1px solid rgba(180, 185, 190, 0.5);
+        }
+
+        /* H2O2 水滴 (Hydrogen Peroxide Drop) */
+        .fluid-drop {
+            position: absolute;
+            width: 55px;
+            height: 40px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.8) 0%, rgba(240,248,255,0.4) 50%, rgba(200,230,255,0.3) 100%);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08), inset 0 2px 5px rgba(255,255,255,0.7), inset -2px -4px 8px rgba(0,100,255,0.05);
+            left: 55%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            overflow: visible;
+        }
+
+        /* 水滴表面のハイライト光沢 */
+        .fluid-drop::after {
+            content: '';
+            position: absolute;
+            top: 4px; left: 8px;
+            width: 14px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.8);
+            transform: rotate(-15deg);
+        }
+
+        /* 泡の描画キャンバス（水滴と完全に同期した領域に配置） */
+        .bubble-canvas {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 95px;
+            height: 80px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 爪楊枝 (Toothpick) */
+        .toothpick {
+            position: absolute;
+            width: 180px;
+            height: 6px;
+            /* 木製のリアルな質感質感をグラデーションで表現 */
+            background: linear-gradient(to bottom, #e4c396 0%, #d4b285 40%, #b9976b 100%);
+            border-radius: 2px;
+            box-shadow: 2px 5px 10px rgba(0,0,0,0.15);
+            top: 150px;
+            left: calc(50% - 90px);
+            z-index: 100;
+            transform-origin: left center;
+            transform: rotate(45deg); /* 初期角度 */
+            pointer-events: none;
+        }
+
+        /* 爪楊枝の尖った先端部（左側を先端とする） */
+        .toothpick::before {
+            content: '';
+            position: absolute;
+            left: -18px;
+            top: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 3px 18px 3px 0;
+            border-color: transparent #e4c396 transparent transparent;
+        }
+
+        /* 先端に付着する菌体（初期状態は不可視） */
+        .bacterial-load {
+            position: absolute;
+            left: -12px;
+            top: -1px;
+            width: 10px;
+            height: 8px;
+            background: radial-gradient(circle at center, #fff4b3 0%, #f1c40f 80%);
+            border-radius: 50%;
+            opacity: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transform: scale(0.5);
+            z-index: 101;
+        }
+
+        /* 結果判定サインボード */
+        .result-board {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            opacity: 0;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 50;
+            text-align: center;
+        }
+
+        .result-board.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .result-board.pos {
+            background: #fde8e7;
+            color: #c0392b;
+            border: 2px solid #e74c3c;
+        }
+
+        .result-board.neg {
+            background: #e3f2fd;
+            color: #2980b9;
+            border: 2px solid #3498db;
+        }
+
+        /* 解説・ガイダンス文面 */
+        .guidance-box {
+            background: #f8f9fa;
+            border-left: 4px solid #bdc3c7;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #57606f;
+        }
+
+        .guidance-box strong {
+            color: var(--text-color);
+        }
+
+        /* レスポンシブ調整（iPhone等で1画面に収まるようコンパクト化） */
+        @media(max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            header {
+                margin-bottom: 8px;
+            }
+            header h1 {
+                font-size: 17px;
+            }
+            .tab-nav {
+                padding: 4px;
+                margin-bottom: 8px;
+                gap: 4px;
+            }
+            .tab-btn {
+                padding: 8px 4px;
+                font-size: 11px;
+            }
+            .main-container {
+                padding: 12px;
+                gap: 10px;
+                border-radius: 12px;
+            }
+            .control-panel {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 10px;
+                gap: 8px;
+            }
+            .control-group {
+                justify-content: space-between;
+            }
+            .control-label {
+                font-size: 11px;
+            }
+            .btn-toggle {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .btn-main {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            .status-line {
+                font-size: 12px;
+                padding: 7px 12px;
+            }
+            .stage {
+                flex-direction: column;
+                height: 320px;
+                justify-content: space-between;
+                align-items: center;
+                padding: 14px 10px;
+            }
+            .toothpick {
+                width: 130px;
+                top: 128px;
+                left: calc(50% - 65px);
+            }
+            .toothpick::before {
+                border-width: 3px 14px 3px 0;
+            }
+            .petri-dish {
+                width: 108px;
+                height: 108px;
+            }
+            .colony.target { width: 16px; height: 16px; }
+            .colony.s1 { width: 8px; height: 8px; }
+            .colony.s2 { width: 11px; height: 10px; }
+            .colony.s3 { width: 9px; height: 9px; }
+            .colony.s4 { width: 7px; height: 7px; }
+            .slide-glass {
+                width: 160px;
+                height: 58px;
+            }
+            .result-board {
+                font-size: 13px;
+                padding: 7px 18px;
+                bottom: 10px;
+            }
+            .howto-box, .link-list {
+                padding: 14px 16px;
+                font-size: 13px;
+            }
+            .site-footer {
+                padding: 8px 14px;
+                margin-top: 10px;
+            }
+        }
+
+        /* タブナビゲーション */
+        .tab-nav {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto 14px auto;
+            background: rgba(236, 240, 241, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 6px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #7f8c8d;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .tab-btn.active {
+            background: #ffffff;
+            color: #34495e;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 使い方タブ */
+        .howto-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-color);
+        }
+
+        .howto-box h2 {
+            font-size: 16px;
+            color: #34495e;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+
+        .howto-box h2:not(:first-child) {
+            margin-top: 20px;
+        }
+
+        .howto-box ol,
+        .howto-box ul {
+            padding-left: 22px;
+            margin-top: 6px;
+        }
+
+        .howto-box li {
+            margin-bottom: 4px;
+        }
+
+        /* リンクタブ */
+        .link-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+        }
+
+        .link-list h2 {
+            font-size: 16px;
+            color: #34495e;
+            margin-bottom: 12px;
+            border-left: 4px solid #27ae60;
+            padding-left: 10px;
+        }
+
+        .link-item {
+            display: block;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+        }
+
+        .link-item:hover {
+            border-color: #3498db;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+
+        .link-item .link-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #2980b9;
+        }
+
+        .link-item .link-desc {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 3px;
+        }
+
+        .link-note {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 10px;
+        }
+
+        /* フッター（注意書き） */
+        .site-footer {
+            width: 100%;
+            max-width: 1000px;
+            margin: 12px auto 0 auto;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 11px;
+            line-height: 1.7;
+            color: #95a5a6;
+            text-align: left;
+        }
+
+        .footer-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: transparent;
+            border: none;
+            color: #95a5a6;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 2px 0;
+            font-family: inherit;
+        }
+
+        .footer-toggle:hover {
+            color: #7f8c8d;
+        }
+
+        .footer-detail {
+            display: none;
+            margin-top: 8px;
+        }
+
+        .footer-detail.open {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🧫 カタラーゼ試験</h1>
+</header>
+
+<div class="tab-nav">
+    <button class="tab-btn active" id="tabBtn-sim" onclick="switchTab('sim', this)">🔬 シミュレーション</button>
+    <button class="tab-btn" id="tabBtn-howto" onclick="switchTab('howto', this)">📖 使い方</button>
+    <button class="tab-btn" id="tabBtn-links" onclick="switchTab('links', this)">🔗 リンク</button>
+</div>
+
+<div class="main-container">
+
+    <!-- タブ①: シミュレーション -->
+    <div class="tab-panel active" id="tab-sim">
+
+    <!-- 設定・操作パネル -->
+    <div class="control-panel" id="controlPanel">
+        <div class="control-group">
+            <span class="control-label">対象菌種区分:</span>
+            <div class="btn-group">
+                <button class="btn-toggle active" data-type="pos" onclick="setMode(true)">Positive (陽性株)</button>
+                <button class="btn-toggle" data-type="neg" onclick="setMode(false)">Negative (陰性株)</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">アニメーション速度:</span>
+            <div class="btn-group">
+                <button class="btn-toggle" data-type="speed" data-speed="2" onclick="setSpeed(2, this)">Slow</button>
+                <button class="btn-toggle active" data-type="speed" data-speed="1" onclick="setSpeed(1, this)">Normal</button>
+                <button class="btn-toggle" data-type="speed" data-speed="0.5" onclick="setSpeed(0.5, this)">Fast</button>
+            </div>
+        </div>
+
+        <!-- 実験開始後はここに切り替わる（設定行を隠して省スペース化） -->
+        <div class="status-line" id="statusLine">
+            <span>🧪 <span id="statusText"></span></span>
+            <span class="status-hint">設定変更はリセットから</span>
+        </div>
+
+        <div style="flex-grow: 1; display: flex; gap: 10px; justify-content: flex-end;">
+            <button id="startBtn" class="btn-main btn-start" onclick="runSimulation()">実験開始</button>
+            <button class="btn-main btn-reset" onclick="resetSimulation()">リセット</button>
+        </div>
+    </div>
+
+    <!-- 実験ステージエリア -->
+    <div class="stage" id="stage">
+        
+        <!-- 左側：シャーレとコロニー -->
+        <div class="bench-item petri-dish" id="petriDish">
+            <div class="agar">
+                <div class="colony-group">
+                    <div class="colony s1"></div>
+                    <div class="colony s2"></div>
+                    <div class="colony target" id="targetColony"></div>
+                    <div class="colony s3"></div>
+                    <div class="colony s4"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中央〜右側を自在に動くリアル爪楊枝 -->
+        <div class="toothpick" id="toothpick">
+            <div class="bacterial-load" id="bacterialLoad"></div>
+        </div>
+
+        <!-- 右側：スライドガラスとH2O2 -->
+        <div class="bench-item slide-glass" id="slideGlass">
+            <div class="slide-glass-frost"></div>
+            <div class="fluid-drop" id="fluidDrop">
+                <!-- 泡描画用のHTML5 Canvas -->
+                <canvas class="bubble-canvas" id="bubbleCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 結果表示ボード -->
+        <div class="result-board" id="resultBoard">Catalase Positive</div>
+    </div>
+
+    </div>
+    <!-- /タブ①: シミュレーション -->
+
+    <!-- タブ②: 使い方 -->
+    <div class="tab-panel" id="tab-howto">
+        <div class="howto-box">
+            <p style="margin-bottom: 16px; color: #57606f;">細菌の識別・同定における酵素活性検査のシミュレーションです。</p>
+            <h2>基本操作</h2>
+            <ol>
+                <li><strong>対象菌種区分</strong>で「Positive（陽性株）」または「Negative（陰性株）」を選択します。</li>
+                <li><strong>アニメーション速度</strong>で Slow / Normal / Fast を選択します。</li>
+                <li><strong>「実験開始」</strong>ボタンを押すと、爪楊枝がコロニーを採取し、スライドガラス上のH<sub>2</sub>O<sub>2</sub>（過酸化水素水）滴に接触させるアニメーションが再生されます。</li>
+                <li>陽性株の場合は気泡（酸素）の発生が、陰性株の場合は無反応が表示されます。</li>
+                <li><strong>「リセット」</strong>ボタンで初期状態に戻り、再度試行できます。</li>
+            </ol>
+            <h2>読み方のポイント</h2>
+            <ul>
+                <li>気泡（シュワシュワとした反応）が見られれば <strong>カタラーゼ陽性</strong>です。</li>
+                <li>反応が見られなければ <strong>カタラーゼ陰性</strong>です。</li>
+                <li>実際の検査では、少量の菌体をスライドガラスに塗布し、3%過酸化水素水を滴下して数秒〜数十秒以内の気泡発生の有無を判定します。血液寒天培地上のコロニーを用いる場合、赤血球のカタラーゼによる偽陽性に注意が必要です。</li>
+            </ul>
+            <h2>検査の原理</h2>
+            <p>カタラーゼ試験は、細菌が過酸化水素（H<sub>2</sub>O<sub>2</sub>）を水（H<sub>2</sub>O）と酸素（O<sub>2</sub>）に分解する酵素「カタラーゼ」を有するかを確認する基幹検査です。特にグラム陽性球菌において、ブドウ球菌属（<em>Staphylococcus</em>属：陽性）とレンサ球菌属（<em>Streptococcus</em>属：陰性）を迅速に鑑別するために必須のステップとなります。</p>
+            <h2>学習のねらい</h2>
+            <p>カタラーゼ試験は、グラム陽性球菌の初期鑑別（ブドウ球菌属とレンサ球菌属の区別）に用いられる基本的な検査です。本シミュレーションで一連の手技と反応の流れを視覚的に確認し、実技・国家試験対策の理解を深めることを目的としています。</p>
+        </div>
+    </div>
+
+    <!-- タブ③: リンク -->
+    <div class="tab-panel" id="tab-links">
+        <div class="link-list">
+            <h2>関連リンク</h2>
+            <a class="link-item" href="https://somekata.github.io/" target="_blank" rel="noopener noreferrer">
+                <div class="link-title">細菌楽（Saikingaku）ポータル</div>
+                <div class="link-desc">バイキンズ®キャラクターを用いた感染症・細菌学教育コンテンツのハブサイト</div>
+            </a>
+            <a class="link-item" href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener noreferrer">
+                <div class="link-title">bactPlatform Hub</div>
+                <div class="link-desc">細菌学関連の教材・ツール一覧</div>
+            </a>
+            <p class="link-note">※ リンク先は必要に応じて自由に追加・変更してください（HTML内の &lt;div class="tab-panel" id="tab-links"&gt; 部分を編集）。</p>
+        </div>
+    </div>
+
+</div>
+
+<footer class="site-footer">
+    <button class="footer-toggle" id="footerToggle" onclick="toggleFooter()">ⓘ 生成AIについて・注意事項</button>
+    <div class="footer-detail" id="footerDetail">
+        本コンテンツはChatGPTによるプロンプト設計、Google Geminiによるコード生成、Claude（Anthropic）による最終調整という複数の生成AIを組み合わせて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+        二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </div>
+</footer>
+
+<script>
+    // 状態管理オブジェクト
+    const state = {
+        isPositive: true,       // カタラーゼ陽性フラグ
+        speedModifier: 1.0,     // アニメーション速度の倍率係数
+        isAnimating: false,     // アニメーション実行中フラグ
+        animationFrameId: null, // CanvasループのフレームID
+        bubbles: []            // 生成されたアクティブな泡の配列
+    };
+
+    // DOM要素のキャッシュ
+    const nodes = {
+        toothpick: document.getElementById('toothpick'),
+        bacterialLoad: document.getElementById('bacterialLoad'),
+        targetColony: document.getElementById('targetColony'),
+        petriDish: document.getElementById('petriDish'),
+        slideGlass: document.getElementById('slideGlass'),
+        fluidDrop: document.getElementById('fluidDrop'),
+        canvas: document.getElementById('bubbleCanvas'),
+        ctx: document.getElementById('bubbleCanvas').getContext('2d'),
+        resultBoard: document.getElementById('resultBoard'),
+        startBtn: document.getElementById('startBtn'),
+        stage: document.getElementById('stage'),
+        controlPanel: document.getElementById('controlPanel'),
+        statusText: document.getElementById('statusText')
+    };
+
+    // Canvasの初期解像度マッピング (高DPI対応)
+    function initCanvas() {
+        const rect = nodes.canvas.getBoundingClientRect();
+        nodes.canvas.width = rect.width * 2;
+        nodes.canvas.height = rect.height * 2;
+        nodes.ctx.scale(2, 2);
+    }
+    window.addEventListener('resize', initCanvas);
+    initCanvas();
+
+    // 陽性・陰性動作モードの切り替え設定
+    function setMode(isPos) {
+        if(state.isAnimating) return;
+        state.isPositive = isPos;
+        
+        // トグルボタンのクラス制御
+        document.querySelectorAll('[data-type="pos"], [data-type="neg"]').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-type="${isPos ? 'pos' : 'neg'}"]`).classList.add('active');
+    }
+
+    // 再生速度の調整
+    function setSpeed(speedVal, element) {
+        state.speedModifier = speedVal;
+        document.querySelectorAll('[data-type="speed"]').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    // 要素の絶対座標（ステージ内の相対位置算出用）を取得
+    function getRelativeCoords(element, parent) {
+        const eRect = element.getBoundingClientRect();
+        const pRect = parent.getBoundingClientRect();
+        return {
+            x: eRect.left - pRect.left + (eRect.width / 2),
+            y: eRect.top - pRect.top + (eRect.height / 2)
+        };
+    }
+
+    // 爪楊枝の初期静止状態へ配置
+    function setToothpickDefault() {
+        nodes.toothpick.style.transition = 'none';
+        const stageWidth = nodes.stage.clientWidth;
+        if(window.innerWidth > 768) {
+            nodes.toothpick.style.left = 'calc(50% - 90px)';
+            nodes.toothpick.style.top = '160px';
+        } else {
+            nodes.toothpick.style.left = 'calc(50% - 65px)';
+            nodes.toothpick.style.top = '128px';
+        }
+        nodes.toothpick.style.transform = 'rotate(45deg)';
+        nodes.bacterialLoad.style.opacity = '0';
+        nodes.bacterialLoad.style.transform = 'scale(0.5)';
+    }
+
+    // アニメーションシミュレーションの統合トリガー関数
+    function runSimulation() {
+        if (state.isAnimating) return;
+        state.isAnimating = true;
+        nodes.startBtn.disabled = true;
+        nodes.startBtn.textContent = '実験中…';
+
+        // 設定パネルをステータス表示へ切り替え（表示の工夫：省スペース化＋進行状況の明示）
+        const modeBtn = document.querySelector('[data-type="pos"].active, [data-type="neg"].active');
+        const speedBtn = document.querySelector('[data-type="speed"].active');
+        nodes.statusText.textContent = `${modeBtn ? modeBtn.textContent.trim() : ''} ／ ${speedBtn ? speedBtn.textContent.trim() : ''}`;
+        nodes.controlPanel.classList.add('is-running');
+
+        // ボードとキャンバスの初期化
+        nodes.resultBoard.className = 'result-board';
+        nodes.stage.classList.remove('result-pos', 'result-neg');
+        state.bubbles = [];
+        nodes.ctx.clearRect(0, 0, nodes.canvas.width, nodes.canvas.height);
+
+        // 各主要チェックポイントの座標計算
+        const colonyPos = getRelativeCoords(nodes.targetColony, nodes.stage);
+        const dropPos = getRelativeCoords(nodes.fluidDrop, nodes.stage);
+        
+        // 速度係数に基づき、各ステップの遷移時間を規定（秒）
+        const t1 = 1.5 * state.speedModifier; 
+        const t2 = 0.6 * state.speedModifier; 
+        const t3 = 1.6 * state.speedModifier; 
+
+        // 爪楊枝の制御用CSSトランジション設定関数
+        const setTween = (duration, timing = 'ease-in-out') => {
+            nodes.toothpick.style.transition = `left ${duration}s ${timing}, top ${duration}s ${timing}, transform ${duration}s ${timing}`;
+        };
+
+        // 【ステップ①】 コロニー（採取位置）へ向けて前進運動
+        setTween(t1);
+        // 先端(左端)が重なるようにオフセット調整
+        nodes.toothpick.style.left = `${colonyPos.x + 10}px`;
+        nodes.toothpick.style.top = `${colonyPos.y - 15}px`;
+        nodes.toothpick.style.transform = 'rotate(35deg)';
+
+        // 【ステップ②】 菌の擦り取りアクション
+        setTimeout(() => {
+            setTween(t2, 'linear');
+            nodes.toothpick.style.left = `${colonyPos.x - 5}px`;
+            nodes.toothpick.style.top = `${colonyPos.y - 2}px`;
+            nodes.toothpick.style.transform = 'rotate(15deg)';
+            
+            // 擦り取りの瞬間に爪楊枝先端へ徐々に菌体が出現
+            setTimeout(() => {
+                nodes.bacterialLoad.style.transition = `all ${t2}s ease`;
+                nodes.bacterialLoad.style.opacity = '0.95';
+                nodes.bacterialLoad.style.transform = 'scale(1.1)';
+            }, (t2 * 1000) / 3);
+
+        }, t1 * 1000);
+
+        // 【ステップ③】 H2O2試薬水滴へ向け移動
+        setTimeout(() => {
+            setTween(t3);
+            nodes.toothpick.style.left = `${dropPos.x + 8}px`;
+            nodes.toothpick.style.top = `${dropPos.y - 8}px`;
+            nodes.toothpick.style.transform = 'rotate(40deg)';
+        }, (t1 + t2) * 1000);
+
+        // 【ステップ④・⑤】 水滴へ接地、及びリアクション開始
+        setTimeout(() => {
+            // 水滴内部への押し込みと微振動演出
+            setTween(0.3, 'ease-out');
+            nodes.toothpick.style.left = `${dropPos.x - 2}px`;
+            nodes.toothpick.style.top = `${dropPos.y - 2}px`;
+
+            if (state.isPositive) {
+                // 陽性反応時のシュワシュワエフェクト展開
+                startBubbleGeneration();
+                setTimeout(() => {
+                    nodes.resultBoard.textContent = "Catalase Positive (陽性)";
+                    nodes.resultBoard.classList.add('visible', 'pos');
+                    nodes.stage.classList.add('result-pos');
+                    state.isAnimating = false;
+                    nodes.startBtn.disabled = false;
+                    nodes.startBtn.textContent = '実験開始';
+                }, 1000);
+            } else {
+                // 陰性反応時（無反応）
+                setTimeout(() => {
+                    nodes.resultBoard.textContent = "Catalase Negative (陰性)";
+                    nodes.resultBoard.classList.add('visible', 'neg');
+                    nodes.stage.classList.add('result-neg');
+                    state.isAnimating = false;
+                    nodes.startBtn.disabled = false;
+                    nodes.startBtn.textContent = '実験開始';
+                }, 1200);
+            }
+        }, (t1 + t2 + t3) * 1000);
+    }
+
+    // リアルな泡（微細気泡集合体）のクラス定義
+    class Bubble {
+        constructor(canvasWidth, canvasHeight) {
+            // 水滴の中心付近から湧き出る設計
+            this.canvasWidth = canvasWidth;
+            this.canvasHeight = canvasHeight;
+            
+            // 初期位置を水滴の中心部(47, 40)前後にランダム分布
+            this.x = 42 + Math.random() * 12;
+            this.y = 45 + Math.random() * 10;
+            
+            // カタラーゼ反応特有の微細な「シュワシュワ感」を出すため、大小様々なサイズを混在
+            this.radius = 0.6 + Math.pow(Math.random(), 2.5) * 4.2; 
+            
+            // 上昇速度のランダム性
+            this.speedY = 0.4 + Math.random() * 0.9;
+            
+            // 左右へ揺れるサイン波用のパラメータ
+            this.swingRange = 0.2 + Math.random() * 0.7;
+            this.swingSpeed = 0.05 + Math.random() * 0.1;
+            this.angle = Math.random() * Math.PI * 2;
+            
+            // 寿命(ライフタイム)。上部に達するか途中で自然消滅する確率
+            this.life = 1.0;
+            this.decay = 0.008 + Math.random() * 0.015;
+            
+            // 泡同士の重なりと立体感を出すための透明度設定
+            this.alpha = 0.4 + Math.random() * 0.45;
+        }
+
+        update() {
+            this.y -= this.speedY; // 上昇移動
+            this.angle += this.swingSpeed;
+            this.x += Math.sin(this.angle) * this.swingRange; // 左右への揺らぎ
+            
+            // 上部に近づくにつれて徐々にフェードアウト
+            if (this.y < 25) {
+                this.life -= this.decay * 2;
+            } else {
+                this.life -= this.decay;
+            }
+        }
+
+        draw(ctx) {
+            if (this.life <= 0) return;
+            
+            ctx.save();
+            ctx.globalAlpha = this.alpha * this.life;
+            
+            // 泡の輪郭と透明なインナーグラデーション
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            
+            // 立体感を際立たせる白のハイライト付きグラデーション
+            const gradient = ctx.createRadialGradient(
+                this.x - this.radius * 0.3, 
+                this.y - this.radius * 0.3, 
+                this.radius * 0.1, 
+                this.x, this.y, this.radius
+            );
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            gradient.addColorStop(0.4, 'rgba(245, 253, 255, 0.3)');
+            gradient.addColorStop(0.9, 'rgba(180, 220, 240, 0.6)');
+            gradient.addColorStop(1, 'rgba(140, 190, 230, 0.8)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // ごく薄い外郭輪郭線
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 0.4;
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+    }
+
+    // 泡生成ループの制御
+    function startBubbleGeneration() {
+        if(state.animationFrameId) {
+            cancelAnimationFrame(state.animationFrameId);
+        }
+        
+        const maxBubbles = 180; // 画面内に同時に存在できる最大気泡数
+        const logicalWidth = nodes.canvas.width / 2;
+        const logicalHeight = nodes.canvas.height / 2;
+
+        function loop() {
+            // 反応初期〜中期に毎フレーム大量に新規泡を供給
+            if (state.bubbles.length < maxBubbles) {
+                // 1フレームあたり2〜5個のペースで密に生成し「シュワシュワ感」を濃密に再現
+                const spawnCount = Math.floor(Math.random() * 4) + 2;
+                for(let i=0; i<spawnCount; i++) {
+                    state.bubbles.push(new Bubble(logicalWidth, logicalHeight));
+                }
+            }
+
+            // Canvasをリフレッシュ
+            nodes.ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+
+            // 各気泡の更新および再描画処理
+            for (let i = state.bubbles.length - 1; i >= 0; i--) {
+                const b = state.bubbles[i];
+                b.update();
+                b.draw(nodes.ctx);
+
+                // 寿命が尽きた泡の削除
+                if (b.life <= 0 || b.y < -10) {
+                    state.bubbles.splice(i, 1);
+                }
+            }
+
+            // ループを維持
+            state.animationFrameId = requestAnimationFrame(loop);
+        }
+
+        loop();
+    }
+
+    // すべての状態の初期化（リセット）
+    function resetSimulation() {
+        if(state.animationFrameId) {
+            cancelAnimationFrame(state.animationFrameId);
+            state.animationFrameId = null;
+        }
+        state.bubbles = [];
+        state.isAnimating = false;
+        nodes.startBtn.disabled = false;
+        nodes.startBtn.textContent = '実験開始';
+
+        // 設定パネルを元の表示へ戻す
+        nodes.controlPanel.classList.remove('is-running');
+
+        // Canvasのクリア
+        nodes.ctx.clearRect(0, 0, nodes.canvas.width, nodes.canvas.height);
+        
+        // UIボードの非表示化
+        nodes.resultBoard.className = 'result-board';
+        nodes.stage.classList.remove('result-pos', 'result-neg');
+        
+        // 爪楊枝を初期配置へ戻す
+        setToothpickDefault();
+    }
+
+    // ロード時の初期配置確定
+    setToothpickDefault();
+
+    // タブ切り替え制御
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+        document.getElementById('tab-' + tabId).classList.add('active');
+        btnElement.classList.add('active');
+
+        // シミュレーション実行中にタブを離れた場合の後片付け
+        if (tabId !== 'sim' && state.animationFrameId) {
+            cancelAnimationFrame(state.animationFrameId);
+        }
+    }
+
+    // フッター（注意書き）の開閉制御
+    function toggleFooter() {
+        const detail = document.getElementById('footerDetail');
+        const btn = document.getElementById('footerToggle');
+        const isOpen = detail.classList.toggle('open');
+        btn.textContent = isOpen ? '▲ 生成AIについて・注意事項' : 'ⓘ 生成AIについて・注意事項';
+    }
+</script>
+
+</body>
+</html>
