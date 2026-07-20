@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI（トリプルシュガーアイアン）培地 判定シミュレーター</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+
+            /* 培地カラー定義 */
+            --uninoculated: #d946ef; /* 未接種：鮮やかな赤紫（フェノールレッド） */
+            --alkaline-red: #ef4444; /* 斜面アルカリ化（赤色） */
+            --acid-yellow: #fbbf24;  /* 高層/斜面酸性化（黄色） */
+            --h2s-black: #0f172a;    /* 硫化水素産生（黒色） */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 12px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* タブナビゲーション */
+        .tab-nav {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto 14px auto;
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 6px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .tab-btn.active {
+            background: #ffffff;
+            color: #334155;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 菌種選択パネル */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .organism-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .btn-organism {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .btn-organism i {
+            font-style: italic;
+        }
+
+        .btn-organism:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+        }
+
+        .btn-organism.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+        }
+
+        .speed-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 実験中に表示するステータス行（接種&培養で切り替わる） */
+        .status-line {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+        }
+
+        .status-line .status-hint {
+            font-weight: 500;
+            color: #94a3b8;
+        }
+
+        .control-panel.is-running .organism-selector,
+        .control-panel.is-running .speed-group {
+            display: none;
+        }
+
+        .control-panel.is-running .status-line {
+            display: flex;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-group {
+            display: flex;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-toggle {
+            padding: 6px 12px;
+            border: none;
+            background: white;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .btn-toggle.active {
+            background: #475569;
+            color: white;
+        }
+
+        .btn-main {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+        .btn-start:hover:not(:disabled) { background: #059669; }
+        .btn-start:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        .btn-reset {
+            background: #94a3b8;
+            color: white;
+        }
+        .btn-reset:hover { background: #64748b; }
+
+        /* 実験ステージ */
+        .stage {
+            position: relative;
+            width: 100%;
+            height: 480px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        /* 背景クリーンライン */
+        .stage::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: linear-gradient(rgba(241,245,249,0.6) 1px, transparent 1px);
+            background-size: 100% 30px;
+            pointer-events: none;
+        }
+
+        /* 実験器具エリア */
+        .item-container {
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .item-label {
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* 白金線 (Inoculating Needle) */
+        .loop-holder {
+            position: absolute;
+            top: -260px; /* 初期は画面外(上)。JSのsetLoopDefault()で毎回明示的に設定される */
+            left: 120px;
+            width: 8px;
+            height: 220px;
+            background: linear-gradient(to right, #475569, #334155);
+            border-radius: 2px;
+            z-index: 100;
+            transform-origin: top center;
+        }
+
+        /* 金属線のシャフト部分 */
+        .loop-wire {
+            position: absolute;
+            bottom: -100px;
+            left: 3px;
+            width: 2px;
+            height: 100px;
+            background: #94a3b8;
+        }
+
+        /* 直針の先端（TSIは高層部穿刺のため直針を使用） */
+        .loop-tip {
+            position: absolute;
+            bottom: -106px;
+            left: 2px;
+            width: 4px;
+            height: 6px;
+            background: #64748b;
+            border-radius: 1px;
+        }
+
+        /* 付着した菌体 */
+        .bacterial-colony {
+            position: absolute;
+            bottom: -108px;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            background: #fef08a;
+            border-radius: 50%;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        /* 試験管 (Test Tube) */
+        .test-tube {
+            position: relative;
+            width: 70px;
+            height: 340px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(226, 232, 240, 0.8);
+            border-bottom-left-radius: 35px;
+            border-bottom-right-radius: 35px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05), inset -5px 0 15px rgba(255,255,255,0.6);
+            overflow: hidden;
+        }
+
+        /* ガラス管ガラスハイライト */
+        .test-tube::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 8px; width: 6px; height: 95%;
+            background: linear-gradient(to right, rgba(255,255,255,0.3), rgba(255,255,255,0));
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* 培地構造体 (高層部と斜面部を内包) */
+        .medium-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 240px; /* 培地の全体の高さ */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        /* 斜面部 (Slant) */
+        .slant-part {
+            position: absolute;
+            bottom: 110px; /* 高層部の上 */
+            left: 0;
+            width: 100%;
+            height: 90px;
+            background: var(--uninoculated);
+            clip-path: polygon(0% 100%, 100% 0%, 100% 100%);
+            transition: background-color 1s ease;
+            z-index: 2;
+        }
+
+        /* 高層部 (Butt) */
+        .butt-part {
+            position: relative;
+            width: 100%;
+            height: 110px;
+            background: var(--uninoculated);
+            transition: background-color 1s ease, transform 0.5s ease;
+            z-index: 1;
+        }
+
+        /* 硫化水素による黒色化レイヤー（高層部にオーバーレイ） */
+        .h2s-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--h2s-black);
+            opacity: 0;
+            transition: opacity 1.2s ease;
+            z-index: 3;
+        }
+
+        /* ガス発生による培地の亀裂・持ち上がりアニメーション用コンテナ */
+        .gas-gap {
+            position: absolute;
+            bottom: 35px;
+            left: 0;
+            width: 100%;
+            height: 0;
+            background: #ffffff; /* 隙間（空気層）を表現 */
+            transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1;
+        }
+
+        /* 結果表示サイン */
+        .result-panel {
+            flex-grow: 1;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .result-title i {
+            font-style: italic;
+        }
+
+        .result-formula {
+            display: inline-block;
+            font-family: monospace;
+            background: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .result-details {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #475569;
+        }
+
+        .result-details ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        /* ガス気泡を描画するCanvas */
+        .gas-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        /* 使い方タブ */
+        .howto-box {
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-color);
+        }
+
+        .howto-box i {
+            font-style: italic;
+        }
+
+        .howto-box h2 {
+            font-size: 16px;
+            color: #334155;
+            margin-bottom: 10px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 10px;
+        }
+
+        .howto-box h2:not(:first-child) {
+            margin-top: 20px;
+        }
+
+        .howto-box ol,
+        .howto-box ul {
+            padding-left: 22px;
+            margin-top: 6px;
+        }
+
+        .howto-box li {
+            margin-bottom: 4px;
+        }
+
+        .howto-box p {
+            margin-bottom: 8px;
+        }
+
+        .howto-box table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .howto-box th,
+        .howto-box td {
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .howto-box th {
+            background: #f1f5f9;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        /* リンクタブ */
+        .link-list {
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+        }
+
+        .link-list h2 {
+            font-size: 16px;
+            color: #334155;
+            margin-bottom: 12px;
+            border-left: 4px solid #10b981;
+            padding-left: 10px;
+        }
+
+        .link-item {
+            display: block;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+        }
+
+        .link-item:hover {
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+
+        .link-item .link-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #2563eb;
+        }
+
+        .link-item .link-desc {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
+        .link-note {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 10px;
+        }
+
+        /* フッター（注意書き） */
+        .site-footer {
+            width: 100%;
+            max-width: 1000px;
+            margin: 12px auto 0 auto;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 11px;
+            line-height: 1.7;
+            color: #94a3b8;
+            text-align: left;
+        }
+
+        .footer-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 2px 0;
+            font-family: inherit;
+        }
+
+        .footer-toggle:hover {
+            color: #64748b;
+        }
+
+        .footer-detail {
+            display: none;
+            margin-top: 8px;
+        }
+
+        .footer-detail.open {
+            display: block;
+        }
+
+        /* レスポンシブ調整（iPhone等で1画面に収まるようコンパクト化） */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            header { margin-bottom: 8px; }
+            header h1 { font-size: 17px; }
+
+            .tab-nav { padding: 4px; margin-bottom: 8px; gap: 4px; }
+            .tab-btn { padding: 8px 4px; font-size: 11px; }
+
+            .main-container { padding: 12px; gap: 10px; border-radius: 12px; }
+            .control-panel { padding: 10px; gap: 10px; }
+
+            .organism-selector {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .btn-organism { padding: 8px; font-size: 12px; }
+
+            .action-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                padding-top: 10px;
+            }
+            .speed-group { justify-content: space-between; }
+            .status-line { font-size: 12px; padding: 7px 12px; }
+            .action-buttons { width: 100%; }
+            .action-buttons .btn-main { flex: 1; padding: 8px 12px; font-size: 13px; }
+
+            .stage {
+                gap: 30px;
+                height: 300px;
+                padding: 16px 10px;
+            }
+            .test-tube { width: 52px; height: 240px; }
+            .medium-container { height: 168px; }
+            .slant-part { height: 62px; bottom: 106px; }
+            .butt-part { height: 106px; }
+            .gas-gap { bottom: 24px; }
+            .loop-holder { width: 6px; }
+
+            .result-panel { padding: 14px 16px; }
+            .result-title { font-size: 14px; }
+            .result-formula { font-size: 12px; }
+            .result-details { font-size: 12px; }
+
+            .howto-box, .link-list { padding: 14px 16px; font-size: 13px; }
+            .site-footer { padding: 8px 14px; margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🧪 TSI培地判定</h1>
+</header>
+
+<div class="tab-nav">
+    <button class="tab-btn active" id="tabBtn-sim" onclick="switchTab('sim', this)">🔬 シミュレーション</button>
+    <button class="tab-btn" id="tabBtn-howto" onclick="switchTab('howto', this)">📖 使い方</button>
+    <button class="tab-btn" id="tabBtn-links" onclick="switchTab('links', this)">🔗 リンク</button>
+</div>
+
+<div class="main-container">
+
+    <!-- タブ①: シミュレーション -->
+    <div class="tab-panel active" id="tab-sim">
+
+    <!-- 菌種設定＆操作コントロール -->
+    <div class="control-panel" id="controlPanel">
+        <div class="organism-selector">
+            <button class="btn-organism active" data-org="salmonella" onclick="selectOrganism('salmonella')">
+                <i>Salmonella</i><br><small>(一般のサルモネラ)</small>
+            </button>
+            <button class="btn-organism" data-org="typhi" onclick="selectOrganism('typhi')">
+                <i>Salmonella</i> Typhi<br><small>(チフス菌)</small>
+            </button>
+            <button class="btn-organism" data-org="shigella" onclick="selectOrganism('shigella')">
+                <i>Shigella</i><br><small>(赤痢菌)</small>
+            </button>
+            <button class="btn-organism" data-org="ecoli" onclick="selectOrganism('ecoli')">
+                <i>Escherichia coli</i><br><small>(大腸菌)</small>
+            </button>
+        </div>
+
+        <div class="action-row">
+            <div class="speed-group">
+                <span style="font-size: 12px; font-weight: bold; color: #64748b;">カルチベート速度:</span>
+                <div class="btn-group">
+                    <button class="btn-toggle" data-speed="2" onclick="setSpeed(2, this)">Slow</button>
+                    <button class="btn-toggle active" data-speed="1" onclick="setSpeed(1, this)">Normal</button>
+                    <button class="btn-toggle" data-speed="0.16" onclick="setSpeed(0.16, this)">Fast</button>
+                </div>
+            </div>
+
+            <!-- 接種&培養後はここに切り替わる（設定行を隠して省スペース化） -->
+            <div class="status-line" id="statusLine">
+                <span>🧫 <span id="statusText"></span></span>
+                <span class="status-hint">菌種変更はリセットから</span>
+            </div>
+
+            <div class="action-buttons">
+                <button id="startBtn" class="btn-main btn-start" onclick="runSimulation()">接 種 & 培 養</button>
+                <button class="btn-main btn-reset" onclick="resetSimulation()">リセット</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 視覚シミュレーション領域 -->
+    <div class="stage" id="stage">
+
+        <!-- 白金線 (穿刺および斜面塗抹用) -->
+        <div class="loop-holder" id="loopHolder">
+            <div class="loop-wire"></div>
+            <div class="loop-tip" id="loopTip"></div>
+            <div class="bacterial-colony" id="bacterialColony"></div>
+        </div>
+
+        <!-- TSI傾斜試験管 -->
+        <div class="item-container">
+            <div class="test-tube" id="testTube">
+                <div class="medium-container" id="mediumContainer">
+                    <!-- 斜面部 -->
+                    <div class="slant-part" id="slantPart"></div>
+                    <!-- 高層部 -->
+                    <div class="butt-part" id="buttPart">
+                        <div class="h2s-layer" id="h2sLayer"></div>
+                    </div>
+                    <!-- ガスクラックによる培地分断用ギャップ -->
+                    <div class="gas-gap" id="gasGap"></div>
+                </div>
+                <!-- 内部ガス気泡アニメーション用 -->
+                <canvas class="gas-canvas" id="gasCanvas"></canvas>
+            </div>
+            <div class="item-label" id="tubeLabel">TSI培地 (未接種)</div>
+        </div>
+    </div>
+
+    <!-- 動的判定解説表示 -->
+    <div class="result-panel" id="resultPanel" style="display: none;">
+        <div class="result-title">
+            <span id="organismName" style="font-size: 18px; color: #1e3a8a;">菌種名</span>
+            <div class="result-formula" id="resultFormula">K/A H2S(+) Gas(+)</div>
+        </div>
+        <div class="result-details" id="resultDetails">
+            <!-- 動的に解説テキストをマッピング -->
+        </div>
+    </div>
+
+    </div>
+    <!-- /タブ①: シミュレーション -->
+
+    <!-- タブ②: 使い方 -->
+    <div class="tab-panel" id="tab-howto">
+        <div class="howto-box">
+            <p style="margin-bottom: 16px; color: #57606f;">斜面部と高層部の色調変化・ガス・硫化水素産生から紐解く腸内細菌同定のシミュレーションです。</p>
+
+            <h2>基本操作</h2>
+            <ol>
+                <li>菌種選択パネルから対象菌種を選びます。</li>
+                <li><strong>カルチベート速度</strong>（Slow / Normal / Fast）を選択します。</li>
+                <li><strong>「接種 &amp; 培養」</strong>ボタンを押すと、白金線が高層部への穿刺・斜面部への塗抹を行い、37℃・24時間培養後の色調変化が再生されます。</li>
+                <li>結果パネルに判定式（K/A・A/A等）と解説が表示されます。</li>
+                <li><strong>「リセット」</strong>ボタンで未接種の状態に戻り、別の菌種を試せます。</li>
+            </ol>
+
+            <h2>TSI培地の判定パターン</h2>
+            <p>TSI（Triple Sugar Iron）培地は、斜面部（ブドウ糖・乳糖・白糖の分解）と高層部（ブドウ糖の分解・ガス・硫化水素産生）の色調変化により、腸内細菌科やグラム陰性桿菌のスクリーニングを行います。</p>
+            <table>
+                <tr><th>判定パターン</th><th>意味</th><th>代表菌</th></tr>
+                <tr>
+                    <td>斜面赤 / 高層黄（K/A）</td>
+                    <td>ブドウ糖のみ発酵</td>
+                    <td><i>Shigella</i>、<i>Salmonella</i> Typhi</td>
+                </tr>
+                <tr>
+                    <td>斜面黄 / 高層黄（A/A）</td>
+                    <td>複数の糖を発酵</td>
+                    <td><i>Escherichia coli</i>、<i>Klebsiella pneumoniae</i></td>
+                </tr>
+                <tr>
+                    <td>斜面赤 / 高層赤（K/K）または無変化</td>
+                    <td>糖非発酵</td>
+                    <td><i>Pseudomonas aeruginosa</i>、<i>Acinetobacter</i></td>
+                </tr>
+            </table>
+
+            <h2>硫化水素・ガス産生</h2>
+            <ul>
+                <li><strong>硫化水素（H₂S）産生</strong>：培地中の硫黄化合物から硫化水素を産生し、鉄と反応して高層部が黒色沈殿を形成します。代表菌：<i>Salmonella</i>、<i>Proteus</i>。</li>
+                <li><strong>ガス産生</strong>：糖発酵時に二酸化炭素や水素ガスを産生し、培地の亀裂や寒天の持ち上がりとして観察されます。代表菌：<i>Escherichia coli</i>、<i>Salmonella</i>。</li>
+            </ul>
+
+            <h2>チフス菌（<i>Salmonella</i> Typhi）の特徴</h2>
+            <p>一般のサルモネラと同様にブドウ糖のみを発酵し（K/A）ますが、チフス菌はガスを産生せず、硫化水素の産生量も一般のサルモネラに比べて少量にとどまります。この「弱いH₂S・ガス陰性」という所見は、一般のサルモネラとの鑑別点として重要です。</p>
+
+            <h2>臨床的な活用</h2>
+            <p>TSI培地は、リジン鉄培地（LIA）や尿素培地と組み合わせることで、腸内細菌科の病原菌（サルモネラ、赤痢菌など）の迅速なスクリーニングが可能です。これら3培地の組み合わせにより、便培養からの腸内病原菌の初期認識を信頼性高く行えます。現代では培養に依存しないmultiplex PCRパネルなどの分子生物学的検査法も利用可能ですが、TSI培地は依然として費用対効果の高いスクリーニング手段として重要です。</p>
+        </div>
+    </div>
+
+    <!-- タブ③: リンク -->
+    <div class="tab-panel" id="tab-links">
+        <div class="link-list">
+            <h2>関連リンク</h2>
+            <a class="link-item" href="https://somekata.github.io/" target="_blank" rel="noopener noreferrer">
+                <div class="link-title">細菌楽（Saikingaku）ポータル</div>
+                <div class="link-desc">バイキンズ®キャラクターを用いた感染症・細菌学教育コンテンツのハブサイト</div>
+            </a>
+            <a class="link-item" href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener noreferrer">
+                <div class="link-title">bactPlatform Hub</div>
+                <div class="link-desc">細菌学関連の教材・ツール一覧</div>
+            </a>
+            <p class="link-note">※ リンク先は必要に応じて自由に追加・変更してください（HTML内の &lt;div class="tab-panel" id="tab-links"&gt; 部分を編集）。</p>
+        </div>
+    </div>
+
+</div>
+
+<footer class="site-footer">
+    <button class="footer-toggle" id="footerToggle" onclick="toggleFooter()">ⓘ 生成AIについて・注意事項</button>
+    <div class="footer-detail" id="footerDetail">
+        本コンテンツはOpenEvidenceによる医学文献調査、ChatGPTによるプロンプト設計、Google Geminiによるコード生成、Claude（Anthropic）による最終調整という複数の生成AIツールを組み合わせて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+        二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </div>
+</footer>
+
+<script>
+    // 各菌種の生化学的プロファイル設定
+    const profiles = {
+        salmonella: {
+            name: "<i>Salmonella</i>（一般のサルモネラ）",
+            slant: "K",      // 赤色 (アルカリ)
+            butt: "A",       // 黄色 (酸性)
+            h2s: true,       // 硫化水素産生 強
+            gas: true,       // ガス産生 あり
+            formula: "斜面:赤 / 高層:黄 (K/A), H₂S(+), Gas(+)",
+            desc: "ブドウ糖のみを発酵するため、高層部は酸性（黄）に変化しますが、乳糖・白糖は非発酵なため斜面部は酸化されてアルカリ性（赤）を維持します。強い硫化水素（H₂S）産生により高層部全域に鉄と反応した黒色沈殿が形成され、同時にガス産生による培地の亀裂や押し上げが観察されます。"
+        },
+        typhi: {
+            name: "<i>Salmonella</i> Typhi（チフス菌）",
+            slant: "K",
+            butt: "A",
+            h2s: true,       // 硫化水素産生 微量〜弱
+            gas: false,      // チフス菌はガス非産生
+            formula: "斜面:赤 / 高層:黄 (K/A), H₂S(弱+), Gas(-)",
+            desc: "一般のサルモネラ同様にブドウ糖のみを発酵（K/A）しますが、チフス菌の特徴として菌株特有の代謝プロファイルによりガスは産生しません。また、硫化水素の産生量も一般のサルモネラ菌に比べて少なく、高層部と斜面部の境界面あたりに微量〜軽微な黒色化を形成するにとどまるケースが多く見られます。"
+        },
+        shigella: {
+            name: "<i>Shigella</i>（赤痢菌）",
+            slant: "K",
+            butt: "A",
+            h2s: false,
+            gas: false,
+            formula: "斜面:赤 / 高層:黄 (K/A), H₂S(-), Gas(-)",
+            desc: "乳糖・白糖は非発酵で、ブドウ糖のみを厳密に発酵します。そのため斜面は赤、高層は黄色の典型的な（K/A）パターンを示します。ガス産生能を持たず、硫化水素も産生しないため、高層部の亀裂や黒色化は一切見られず非常にクリーンな陰性像を示します。"
+        },
+        ecoli: {
+            name: "<i>Escherichia coli</i>（大腸菌）",
+            slant: "A",      // 黄色 (酸性)
+            butt: "A",       // 黄色 (酸性)
+            h2s: false,
+            gas: true,
+            formula: "斜面:黄 / 高層:黄 (A/A), H₂S(-), Gas(+)",
+            desc: "ブドウ糖に加えて乳糖や白糖を活発に高速で発酵するため、培地全体に大量の酸が供給されます。これにより、斜面部・高層部ともに完全な酸性（黄/黄：A/A）を呈します。また、糖代謝に付随して二酸化炭素や水素などの混成ガスを旺盛に産生するため、寒天内部に大きな亀裂が生じたり、高層部が底面から一気に持ち上がったりする顕著なガス構造変化が生じます。"
+        }
+    };
+
+    const state = {
+        currentOrg: 'salmonella',
+        speedModifier: 1.0,
+        isAnimating: false,
+        bubbles: [],
+        canvasFrameId: null
+    };
+
+    const nodes = {
+        loop: document.getElementById('loopHolder'),
+        loopTip: document.getElementById('loopTip'),
+        colony: document.getElementById('bacterialColony'),
+        tube: document.getElementById('testTube'),
+        slant: document.getElementById('slantPart'),
+        butt: document.getElementById('buttPart'),
+        h2s: document.getElementById('h2sLayer'),
+        gasGap: document.getElementById('gasGap'),
+        canvas: document.getElementById('gasCanvas'),
+        ctx: document.getElementById('gasCanvas').getContext('2d'),
+        label: document.getElementById('tubeLabel'),
+        panel: document.getElementById('resultPanel'),
+        orgName: document.getElementById('organismName'),
+        formula: document.getElementById('resultFormula'),
+        details: document.getElementById('resultDetails'),
+        startBtn: document.getElementById('startBtn'),
+        stage: document.getElementById('stage'),
+        controlPanel: document.getElementById('controlPanel'),
+        statusText: document.getElementById('statusText')
+    };
+
+    function initCanvas() {
+        nodes.canvas.width = nodes.tube.clientWidth;
+        nodes.canvas.height = nodes.tube.clientHeight;
+    }
+    window.addEventListener('resize', initCanvas);
+    initCanvas();
+
+    function selectOrganism(orgKey) {
+        if (state.isAnimating) return;
+        state.currentOrg = orgKey;
+        document.querySelectorAll('.btn-organism').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-org="${orgKey}"]`).classList.add('active');
+        resetSimulation();
+    }
+
+    function setSpeed(val, elem) {
+        state.speedModifier = val;
+        document.querySelectorAll('.speed-group .btn-toggle').forEach(btn => btn.classList.remove('active'));
+        elem.classList.add('active');
+    }
+
+    // 【修正】白金線"先端"がステージ内のどの座標に来てほしいかを指定すると、
+    // loop-tip自身の実測オフセット（offsetLeft/offsetTop）から逆算してloop-holderのtop/leftを設定する。
+    // これにより試験管や白金線のサイズがブレークポイントで変化しても常に正しい位置に描画される。
+    function setLoopTipPosition(stageX, stageY) {
+        const tipOffsetX = nodes.loopTip.offsetLeft + nodes.loopTip.offsetWidth / 2;
+        const tipOffsetY = nodes.loopTip.offsetTop + nodes.loopTip.offsetHeight / 2;
+        nodes.loop.style.left = `${stageX - tipOffsetX}px`;
+        nodes.loop.style.top = `${stageY - tipOffsetY}px`;
+    }
+
+    // 白金線の初期（未使用）位置：ステージ左上・画面外(上)へ退避
+    function setLoopDefault() {
+        nodes.loop.style.transition = 'none';
+        const stageRect = nodes.stage.getBoundingClientRect();
+        nodes.loop.style.left = `${stageRect.width * 0.22}px`;
+        nodes.loop.style.top = '-260px';
+        nodes.loop.style.transform = 'rotate(0deg)';
+        nodes.colony.style.opacity = '0';
+        nodes.colony.style.transform = 'scale(0.5)';
+    }
+
+    function runSimulation() {
+        if (state.isAnimating) return;
+        state.isAnimating = true;
+        nodes.startBtn.disabled = true;
+        nodes.startBtn.textContent = '培養中…';
+        nodes.panel.style.display = 'none';
+
+        const p = profiles[state.currentOrg];
+        const tStep = state.speedModifier;
+
+        // 設定パネルをステータス表示へ切り替え（表示の工夫：省スペース化＋進行状況の明示）
+        const activeSpeedBtn = document.querySelector('.speed-group .btn-toggle.active');
+        const orgLabel = p.name.replace(/<[^>]+>/g, '');
+        const speedLabel = activeSpeedBtn ? activeSpeedBtn.textContent.trim() : '';
+        nodes.statusText.textContent = `${orgLabel} ／ ${speedLabel}`;
+        nodes.controlPanel.classList.add('is-running');
+
+        nodes.slant.style.transition = `background-color ${0.2 * tStep}s ease`;
+        nodes.butt.style.transition = `background-color ${0.2 * tStep}s ease`;
+        nodes.h2s.style.transition = `opacity ${0.2 * tStep}s ease`;
+        nodes.gasGap.style.transition = `height ${0.2 * tStep}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+
+        // 【修正】白金線の目標座標を、実際のステージ・試験管のレイアウトから毎回計測して算出する。
+        // （従来は固定pxのtranslateYで移動しており、試験管の中心と大きくズレたり、
+        //   ステージの表示範囲を超えて針先が見えなくなる問題があったため）
+        const stageRect = nodes.stage.getBoundingClientRect();
+        const tubeRect = nodes.tube.getBoundingClientRect();
+        const buttRect = nodes.butt.getBoundingClientRect();
+        const slantRect = nodes.slant.getBoundingClientRect();
+
+        const tubeCenterX = tubeRect.left - stageRect.left + tubeRect.width / 2;
+        const buttDepthY = buttRect.top - stageRect.top + buttRect.height - 14; // 高層部の底近くまで穿刺
+        const slantSurfaceY = slantRect.top - stageRect.top + slantRect.height * 0.35; // 斜面表面付近
+        const pickupX = stageRect.width * 0.22;
+        const pickupY = stageRect.height * 0.42;
+
+        const setLoopTween = (duration, timing = 'ease-in-out') => {
+            nodes.loop.style.transition = `top ${duration}s ${timing}, left ${duration}s ${timing}, transform ${duration}s ${timing}`;
+        };
+
+        // --- ① 白金線降下：菌コロニー（採取）の擬似演出 ---
+        setLoopTween(0.13 * tStep);
+        setLoopTipPosition(pickupX, pickupY);
+        nodes.loop.style.transform = 'rotate(0deg)';
+
+        setTimeout(() => {
+            nodes.colony.style.opacity = '1';
+            nodes.colony.style.transform = 'scale(1)';
+        }, 78 * tStep);
+
+        // --- ② 試験管内への進入・高層部穿刺（試験管の中心軸を正確に狙う） ---
+        setTimeout(() => {
+            setLoopTween(0.16 * tStep);
+            setLoopTipPosition(tubeCenterX, buttDepthY);
+            nodes.loop.style.transform = 'rotate(0deg)';
+            nodes.label.textContent = "高層部へ穿刺中...";
+        }, 156 * tStep);
+
+        // --- ③ 白金線を抜く＆斜面へのジグザグ塗抹 ---
+        setTimeout(() => {
+            setLoopTween(0.13 * tStep, 'linear');
+            setLoopTipPosition(tubeCenterX, slantSurfaceY);
+            nodes.loop.style.transform = 'rotate(10deg)';
+            nodes.label.textContent = "斜面部へ塗抹中...";
+        }, 325 * tStep);
+
+        // --- ④ 白金線の完全退避 ---
+        setTimeout(() => {
+            setLoopTween(0.1 * tStep, 'ease-in');
+            setLoopTipPosition(pickupX, -260);
+            nodes.loop.style.transform = 'rotate(0deg)';
+            nodes.colony.style.opacity = '0';
+            nodes.label.textContent = "インキュベーター内培養中 (37℃, 24h)...";
+        }, 468 * tStep);
+
+        // --- ⑤ 培養（色調変化・ガス・硫化水素）の順次発現 ---
+        setTimeout(() => {
+            // 【修正】高層部の色も菌種プロファイル(p.butt)に従って設定する。
+            // （従来は常に酸性色=黄に固定されており、非発酵菌(K/K)を後で追加した場合に誤表示となる潜在バグだった）
+            nodes.butt.style.backgroundColor = (p.butt === 'A') ? 'var(--acid-yellow)' : 'var(--alkaline-red)';
+
+            // 斜面部の色変化
+            if (p.slant === 'A') {
+                nodes.slant.style.backgroundColor = 'var(--acid-yellow)';
+            } else {
+                nodes.slant.style.backgroundColor = 'var(--alkaline-red)';
+            }
+
+            // ガス産生
+            if (p.gas) {
+                setTimeout(() => {
+                    nodes.gasGap.style.height = '18px';
+                    generateGasBubbles();
+                }, 78 * tStep);
+            }
+
+            // 硫化水素（H2S）反応
+            if (p.h2s) {
+                setTimeout(() => {
+                    nodes.h2s.style.opacity = (state.currentOrg === 'typhi') ? '0.55' : '0.98';
+                }, 130 * tStep);
+            }
+
+            // 最終結果ボード出力
+            setTimeout(() => {
+                nodes.label.textContent = "判定完了";
+                showFinalResult(p);
+                state.isAnimating = false;
+                nodes.startBtn.disabled = false;
+                nodes.startBtn.textContent = '接 種 & 培 養';
+            }, 234 * tStep);
+
+        }, 600 * tStep);
+    }
+
+    // ガス気泡の描画ロジック
+    function generateGasBubbles() {
+        if (state.canvasFrameId) cancelAnimationFrame(state.canvasFrameId);
+
+        for(let i=0; i<35; i++) {
+            state.bubbles.push({
+                x: 10 + Math.random() * (nodes.canvas.width - 20),
+                y: 200 + Math.random() * 80,
+                r: 1 + Math.random() * 4,
+                alpha: 0.3 + Math.random() * 0.5,
+                vx: -0.2 + Math.random() * 0.4,
+                vy: -0.1 - Math.random() * 0.3
+            });
+        }
+
+        function drawLoop() {
+            nodes.ctx.clearRect(0, 0, nodes.canvas.width, nodes.canvas.height);
+            let active = false;
+
+            state.bubbles.forEach(b => {
+                b.x += b.vx;
+                b.y += b.vy;
+                b.alpha -= (state.speedModifier < 0.3) ? 0.02 : 0.003;
+
+                if (b.alpha > 0) {
+                    active = true;
+                    nodes.ctx.save();
+                    nodes.ctx.globalAlpha = b.alpha;
+                    nodes.ctx.beginPath();
+                    nodes.ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                    const grad = nodes.ctx.createRadialGradient(b.x-b.r*0.2, b.y-b.r*0.2, b.r*0.1, b.x, b.y, b.r);
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(1, '#94a3b8');
+                    nodes.ctx.fillStyle = grad;
+                    nodes.ctx.fill();
+                    nodes.ctx.restore();
+                }
+            });
+
+            if (active) {
+                state.canvasFrameId = requestAnimationFrame(drawLoop);
+            }
+        }
+        drawLoop();
+    }
+
+    function showFinalResult(p) {
+        nodes.orgName.innerHTML = p.name;
+        nodes.formula.textContent = p.formula;
+        nodes.details.innerHTML = `<p>${p.desc}</p>`;
+        nodes.panel.style.display = 'flex';
+    }
+
+    function resetSimulation() {
+        if (state.canvasFrameId) {
+            cancelAnimationFrame(state.canvasFrameId);
+            state.canvasFrameId = null;
+        }
+        state.isAnimating = false;
+        state.bubbles = [];
+        nodes.startBtn.disabled = false;
+        nodes.startBtn.textContent = '接 種 & 培 養';
+
+        // 設定パネルを元の表示へ戻す
+        nodes.controlPanel.classList.remove('is-running');
+
+        // 各種エレメントを初期状態に復元
+        nodes.slant.style.backgroundColor = 'var(--uninoculated)';
+        nodes.butt.style.backgroundColor = 'var(--uninoculated)';
+        nodes.h2s.style.opacity = '0';
+        nodes.gasGap.style.height = '0px';
+        nodes.label.textContent = "TSI培地 (未接種)";
+        nodes.panel.style.display = 'none';
+        nodes.ctx.clearRect(0, 0, nodes.canvas.width, nodes.canvas.height);
+
+        // 白金線のポジション巻き戻し
+        setLoopDefault();
+    }
+
+    // 初期配置確定
+    setLoopDefault();
+
+    // タブ切り替え制御
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+        document.getElementById('tab-' + tabId).classList.add('active');
+        btnElement.classList.add('active');
+
+        // シミュレーション実行中にタブを離れた場合の後片付け
+        if (tabId !== 'sim' && state.canvasFrameId) {
+            cancelAnimationFrame(state.canvasFrameId);
+        }
+    }
+
+    // フッター（注意書き）の開閉制御
+    function toggleFooter() {
+        const detail = document.getElementById('footerDetail');
+        const btn = document.getElementById('footerToggle');
+        const isOpen = detail.classList.toggle('open');
+        btn.textContent = isOpen ? '▲ 生成AIについて・注意事項' : 'ⓘ 生成AIについて・注意事項';
+    }
+</script>
+
+</body>
+</html>
