@@ -336,30 +336,51 @@
         .footer-detail { display: none; margin-top: 8px; }
         .footer-detail.open { display: block; }
 
-        /* レスポンシブ調整（iPhone等） */
+        /* レスポンシブ調整（iPhone等：1画面に収まるよう徹底的にコンパクト化） */
         @media (max-width: 768px) {
-            body { padding: 10px; }
-            header h1 { font-size: 17px; margin-bottom: 8px; }
+            body { padding: 8px; }
+            header h1 { font-size: 15px; margin-bottom: 6px; line-height: 1.3; }
 
-            .tab-nav { padding: 4px; gap: 4px; margin-bottom: 8px; }
-            .tab-btn { padding: 8px 4px; font-size: 11px; }
+            .tab-nav { padding: 3px; gap: 3px; margin-bottom: 6px; }
+            .tab-btn { padding: 7px 4px; font-size: 10.5px; }
 
-            .card-bg-panel { padding: 14px; border-radius: 10px; }
+            .card-bg-panel { padding: 12px; border-radius: 10px; }
 
-            .panel { padding: 14px; }
-            .panel h2 { font-size: 1rem; }
+            .workspace { gap: 8px; }
+            .panel { padding: 8px 10px; }
+            .panel h2 {
+                font-size: 0.8rem;
+                margin: 0 0 6px 0;
+                padding-left: 7px;
+                border-left-width: 3px;
+            }
 
-            select, button { padding: 10px; font-size: 0.9rem; }
+            .form-group { margin-bottom: 8px; }
+            label { font-size: 0.75rem; margin-bottom: 3px; }
 
-            .stage-container { height: 340px; }
-            #sim-canvas { width: 100%; max-width: 260px; height: auto; }
+            select, button { padding: 7px; font-size: 0.82rem; margin-bottom: 6px; }
+            hr { margin: 8px 0 !important; }
 
-            .timer-display { font-size: 1.05rem; padding: 8px; }
-            .status-box { font-size: 0.85rem; padding: 12px; }
+            .stage-container { height: 175px; }
+            .incubator-badge { top: 6px; right: 6px; padding: 3px 7px; font-size: 0.7rem; }
+            #sim-canvas { width: auto; height: 160px; max-width: 100%; }
+
+            .timer-display { font-size: 0.9rem; padding: 6px; margin-bottom: 6px; }
+            #angle-slider { margin-top: 4px; }
+            .status-box { font-size: 0.75rem; padding: 8px 10px; min-height: 0; margin-top: 8px; line-height: 1.4; }
+
+            #btn-reset { margin-top: 8px; margin-bottom: 0; }
 
             .howto-box { font-size: 13px; }
             .howto-box table { font-size: 12px; }
-            .site-footer { padding: 8px 14px; margin-top: 10px; }
+            .site-footer { padding: 8px 14px; margin-top: 8px; }
+        }
+
+        /* さらに小さい画面（iPhone SE等）向けの追加圧縮 */
+        @media (max-width: 380px) {
+            .stage-container { height: 150px; }
+            #sim-canvas { height: 135px; }
+            .status-box { font-size: 0.7rem; padding: 6px 8px; }
         }
     </style>
 </head>
@@ -380,37 +401,39 @@
     <div class="tab-panel active" id="tab-sim">
         <div class="workspace">
             <div class="panel">
-                <h2>1. 菌の準備・接種</h2>
+                <div id="prepControls">
+                    <h2>1. 菌の準備・接種</h2>
 
-                <div class="form-group">
-                    <label for="bacteria-select">被検菌コロニーの選択:</label>
-                    <select id="bacteria-select">
-                        <option value="">-- 菌種を選択してください --</option>
-                        <option value="aureus">黄色ブドウ球菌 (<i>S. aureus</i>)</option>
-                        <option value="epidermidis">表皮ブドウ球菌 (<i>S. epidermidis</i>)</option>
-                    </select>
+                    <div class="form-group">
+                        <label for="bacteria-select">被検菌コロニーの選択:</label>
+                        <select id="bacteria-select">
+                            <option value="">-- 菌種を選択してください --</option>
+                            <option value="aureus">黄色ブドウ球菌 (<i>S. aureus</i>)</option>
+                            <option value="epidermidis">表皮ブドウ球菌 (<i>S. epidermidis</i>)</option>
+                        </select>
+                    </div>
+
+                    <button id="btn-inoculate" onclick="inoculate()">ウサギ血漿(0.5ml)に接種</button>
                 </div>
 
-                <button id="btn-inoculate" onclick="inoculate()">ウサギ血漿(0.5ml)に接種</button>
+                <div id="incubationControls" style="display: none;">
+                    <h2>2. 培養と観察（判定）</h2>
+                    <div class="timer-display">経過時間: <span id="time-count">0</span> 時間</div>
 
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
+                    <button id="btn-incubation" onclick="advanceTime()" disabled>37℃培養を進める (+1時間)</button>
 
-                <h2>2. 培養と観察（判定）</h2>
-                <div class="timer-display">経過時間: <span id="time-count">0</span> 時間</div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="angle-slider">試験管を傾ける (判定): <span id="angle-view">0</span>°</label>
+                        <input type="range" id="angle-slider" min="0" max="80" value="0" disabled oninput="updateTiltAngle(this.value)">
+                    </div>
 
-                <button id="btn-incubation" onclick="advanceTime()" disabled>37℃培養を進める (+1時間)</button>
-
-                <div class="form-group" style="margin-top: 15px;">
-                    <label for="angle-slider">試験管を傾ける (判定): <span id="angle-view">0</span>°</label>
-                    <input type="range" id="angle-slider" min="0" max="80" value="0" disabled oninput="updateTiltAngle(this.value)">
+                    <button id="btn-shake" class="btn-danger" onclick="shakeTube()" disabled>試験管を強く振る ⚠️</button>
                 </div>
-
-                <button id="btn-shake" class="btn-danger" onclick="shakeTube()" disabled>試験管を強く振る ⚠️</button>
 
                 <button id="btn-reset" class="btn-reset" onclick="resetExperiment()">実験をリセット</button>
             </div>
 
-            <div class="panel" style="display: flex; flex-direction: column;">
+            <div class="panel" id="stagePanel" style="display: flex; flex-direction: column;">
                 <h2>3. 試験管の様子 (37℃恒温槽内)</h2>
                 <div class="stage-container" id="stage">
                     <div class="incubator-badge">37℃</div>
@@ -733,6 +756,9 @@
         elems.btnShake.disabled = false;
         elems.timeCount.innerText = 0;
 
+        document.getElementById('prepControls').style.display = 'none';
+        document.getElementById('incubationControls').style.display = 'block';
+
         const name = appState.bacteria === "aureus" ? "黄色ブドウ球菌" : "表皮ブドウ球菌";
         updateStatus(`${name} を血漿(0.5ml)に接種しました。37℃で培養を開始します。`, "normal");
 
@@ -808,6 +834,9 @@
 
     function resetExperiment() {
         appState = { bacteria: "", hours: 0, isInoculated: false, isCoagulated: false, isBroken: false, tiltAngle: 0 };
+
+        document.getElementById('prepControls').style.display = 'block';
+        document.getElementById('incubationControls').style.display = 'none';
 
         elems.bacteria.disabled = false;
         elems.bacteria.value = "";
