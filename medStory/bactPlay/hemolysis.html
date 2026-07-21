@@ -773,11 +773,12 @@
           }
 
           // 2. コロニー自体の描写（全菌種、透過光時は光を遮る黒っぽい丸粒）
+          // コロニーの間隔を狭め、数を増やして密な集落のように見せる
           const currentColonyColor = isBacklight ? data.lightColony : data.normalColony;
           streaks.forEach((p, i) => {
-            if (i % 3 === 0) {
+            if (i % 2 === 0) {
               ctx.beginPath();
-              ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+              ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
               ctx.fillStyle = currentColonyColor;
               ctx.fill();
             }
@@ -804,10 +805,26 @@
       if (!isDrawing || isIncubated) return;
       const pos = getCanvasPos(e);
       const dist = Math.hypot(pos.x - 150, pos.y - 150);
-      if (dist < 145) {
-        streaks.push({ x: pos.x, y: pos.y, isNewStroke: false });
-        drawPlate();
+      if (dist >= 145) return;
+
+      // スワイプが速いとポイント間隔が空くため、一定間隔でコロニー用の点を補間する
+      const last = streaks[streaks.length - 1];
+      const colonySpacing = 4; // コロニー間隔(px) を狭くするための補間ピッチ
+      if (last) {
+        const dx = pos.x - last.x;
+        const dy = pos.y - last.y;
+        const segDist = Math.hypot(dx, dy);
+        if (segDist > colonySpacing) {
+          const steps = Math.floor(segDist / colonySpacing);
+          for (let s = 1; s <= steps; s++) {
+            const t = (s * colonySpacing) / segDist;
+            streaks.push({ x: last.x + dx * t, y: last.y + dy * t, isNewStroke: false });
+          }
+        }
       }
+
+      streaks.push({ x: pos.x, y: pos.y, isNewStroke: false });
+      drawPlate();
     }
 
     function stopStreak() {
