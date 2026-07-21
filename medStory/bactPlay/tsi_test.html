@@ -442,8 +442,20 @@
             top: 0; left: 0; width: 100%; height: 100%;
             background: var(--h2s-black);
             opacity: 0;
-            transition: opacity 1.2s ease;
+            transition: opacity 1.2s ease, background 1.2s ease;
             z-index: 3;
+        }
+
+        /* チフス菌など弱いH2S産生：高層部全体でなく、斜面部との境界（高層部上端）のみ
+           薄く黒色化するグラデーション表現に切り替える */
+        .h2s-layer.h2s-weak {
+            background: linear-gradient(
+                to bottom,
+                rgba(15, 23, 42, 0.75) 0%,
+                rgba(15, 23, 42, 0.45) 8%,
+                rgba(15, 23, 42, 0.15) 20%,
+                rgba(15, 23, 42, 0) 38%
+            );
         }
 
         /* ガス発生による培地の亀裂・持ち上がりアニメーション用コンテナ */
@@ -1226,7 +1238,14 @@
                 // 硫化水素（H2S）反応
                 if (p.h2s) {
                     setTimeout(() => {
-                        nodes.h2s.style.opacity = (state.currentOrg === 'typhi') ? '0.55' : '0.98';
+                        if (state.currentOrg === 'typhi') {
+                            // チフス菌：高層部全体ではなく、斜面部との境界付近のみ薄く黒色化
+                            nodes.h2s.classList.add('h2s-weak');
+                            nodes.h2s.style.opacity = '1';
+                        } else {
+                            nodes.h2s.classList.remove('h2s-weak');
+                            nodes.h2s.style.opacity = '0.98';
+                        }
                     }, 130 * reactionTStep);
                 }
 
@@ -1317,6 +1336,7 @@
         nodes.slant.style.backgroundColor = 'var(--uninoculated)';
         nodes.butt.style.backgroundColor = 'var(--uninoculated)';
         nodes.h2s.style.opacity = '0';
+        nodes.h2s.classList.remove('h2s-weak');
         nodes.gasGap.style.height = '0px';
         nodes.label.textContent = "TSI培地 (未接種)";
         nodes.panel.style.display = 'none';
