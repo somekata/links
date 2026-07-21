@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>レンサ球菌 溶血性観察シミュレータ</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #1a1a1e;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      margin: 0 0 5px 0;
+      font-size: 1.5rem;
+      color: #ffffff;
+    }
+    p.subtitle {
+      margin: 0 0 20px 0;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+    .main-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      max-width: 1000px;
+      width: 100%;
+      justify-content: center;
+    }
+    .control-panel {
+      flex: 1;
+      min-width: 300px;
+      background: #2a2a30;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .section-title {
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #88c0d0;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+      margin-bottom: 5px;
+    }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    button.select-btn {
+      padding: 10px 14px;
+      background: #3b4252;
+      color: #eceff4;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    button.select-btn:hover {
+      background: #4c566a;
+    }
+    button.select-btn.active {
+      border-color: #88c0d0;
+      background: #434c5e;
+      font-weight: bold;
+    }
+    .action-btn {
+      padding: 12px;
+      background: #5e81ac;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+    .action-btn:hover { background: #81a1c1; }
+    .action-btn:disabled {
+      background: #4c566a;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .toggle-light {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #3b4252;
+      padding: 10px 15px;
+      border-radius: 6px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #4c566a;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #ebcb8b; }
+    input:checked + .slider:before { transform: translateX(22px); }
+
+    .viewport {
+      flex: 1;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    .petri-dish-wrapper {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      background: #111;
+      padding: 10px;
+      transition: background 0.3s;
+    }
+    .petri-dish-wrapper.backlight {
+      background: #ffffff;
+      box-shadow: 0 0 35px rgba(255, 255, 255, 0.85);
+    }
+    canvas {
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      cursor: crosshair;
+      display: block;
+    }
+    .info-card {
+      width: 100%;
+      background: #2a2a30;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .info-card h3 {
+      margin: 0 0 5px 0;
+      font-size: 1rem;
+      color: #a3be8c;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      background: #4c566a;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>レンサ球菌 溶血性シミュレータ</h1>
+  <p class="subtitle">菌を選択して血液寒天培地に画線（白金線でスワイプ）してください</p>
+
+  <div class="main-container">
+    <div class="control-panel">
+      <div class="section-title">1. 菌種の選択</div>
+      <div class="btn-group">
+        <button class="select-btn active" onclick="selectBacteria('S. pneumoniae')">
+          <i>Streptococcus pneumoniae</i><br>
+          <small>（肺炎球菌）</small>
+        </button>
+        <button class="select-btn" onclick="selectBacteria('S. pyogenes')">
+          <i>Streptococcus pyogenes</i><br>
+          <small>（A群化膿レンサ球菌）</small>
+        </button>
+        <button class="select-btn" onclick="selectBacteria('S. mutans')">
+          <i>Streptococcus mutans</i><br>
+          <small>（ミュータンス菌）</small>
+        </button>
+      </div>
+
+      <div class="section-title">2. 培養処理</div>
+      <button class="action-btn" id="incubateBtn" onclick="startIncubation()">37℃で24時間 培養する</button>
+      <button class="action-btn" style="background:#d08f70; margin-top:-5px;" onclick="resetPlate()">培地をリセット</button>
+
+      <div class="section-title">3. 観察オプション</div>
+      <div class="toggle-light">
+        <span>蛍光灯（シャーレをすかしてみる）</span>
+        <label class="switch">
+          <input type="checkbox" id="lightToggle" onchange="toggleBacklight(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="petri-dish-wrapper" id="dishWrapper">
+        <canvas id="plateCanvas" width="300" height="300"></canvas>
+      </div>
+
+      <div class="info-card">
+        <span class="status-badge" id="statusBadge">未接種 / 培養前</span>
+        <h3 id="bacteriaTitle">Streptococcus pneumoniae</h3>
+        <div id="bacteriaDesc">
+          血液寒天培地に白金線で塗り広げ（画線）、培養ボタンを押してください。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('plateCanvas');
+    const ctx = canvas.getContext('2d');
+    const wrapper = document.getElementById('dishWrapper');
+
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = 300;
+    maskCanvas.height = 300;
+    const maskCtx = maskCanvas.getContext('2d');
+
+    let selectedBacterium = 'S. pneumoniae';
+    let streaks = [];
+    let isDrawing = false;
+    let isIncubated = false;
+    let isBacklight = false;
+
+    // コロニーのベース色定義
+    // 透過光時（lightColony）は全菌種共通で光を遮る黒っぽさ（#222426）に統一
+    const bacteriaData = {
+      'S. pneumoniae': {
+        name: 'Streptococcus pneumoniae (肺炎球菌)',
+        type: 'α溶血（不完全溶血）',
+        desc: 'ヘモグロビンがメトヘモグロビンに変性し、コロニー周辺が幅の狭い<b>ぼんやりとした灰緑色</b>に変色します。光にかざすと溶血部位が<b>透過して抜け</b>、コロニー自体は<b>光を遮って黒っぽく不透明</b>に見えます。',
+        normalColony: '#454a43',
+        lightColony: '#222426',
+        lineWidth: 10,
+        blur: 6,
+        normalFill: '#4a5046',
+        lightFill: 'rgba(215, 220, 205, 0.75)'
+      },
+      'S. pyogenes': {
+        name: 'Streptococcus pyogenes (A群溶血性レンサ球菌)',
+        type: 'β溶血（完全溶血）',
+        desc: '赤血球が完全破壊（溶血）され、培地の色が完全に抜けます。光にかざすと<b>溶血領域全体が明るく透けて見え</b>、その中心に<b>黒っぽいコロニーのシルエット</b>がくっきりと浮かび上がります。',
+        normalColony: '#e0e6ed',
+        lightColony: '#222426',
+        lineWidth: 18,
+        blur: 0,
+        normalFill: '#cf8f60',
+        lightFill: '#fff3ad'
+      },
+      'S. mutans': {
+        name: 'Streptococcus mutans (ミュータンス菌)',
+        type: 'γ溶血（非溶血）',
+        desc: '溶血性を持たないため、培地の赤色に変化はありません。光にかざしても培地全体は暗いままで、コロニー部がわずかに光を遮って黒っぽく見えます。',
+        normalColony: '#f0f4f8',
+        lightColony: '#222426',
+        lineWidth: 0,
+        blur: 0,
+        normalFill: null,
+        lightFill: null
+      }
+    };
+
+    function init() {
+      drawPlate();
+
+      canvas.addEventListener('mousedown', startStreak);
+      canvas.addEventListener('mousemove', streak);
+      canvas.addEventListener('mouseup', stopStreak);
+      canvas.addEventListener('mouseleave', stopStreak);
+
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        startStreak({ clientX: touch.clientX, clientY: touch.clientY });
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        streak({ clientX: touch.clientX, clientY: touch.clientY });
+      });
+      canvas.addEventListener('touchend', stopStreak);
+    }
+
+    function drawPlate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = canvas.width / 2 - 2;
+
+      let baseGrad = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, radius);
+      if (isBacklight) {
+        baseGrad.addColorStop(0, '#580808');
+        baseGrad.addColorStop(1, '#330303');
+      } else {
+        baseGrad.addColorStop(0, '#a31515');
+        baseGrad.addColorStop(1, '#700909');
+      }
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.fillStyle = baseGrad;
+      ctx.fill();
+
+      if (streaks.length > 0) {
+        if (!isIncubated) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          streaks.forEach((p, index) => {
+            if (index === 0 || p.isNewStroke) {
+              ctx.moveTo(p.x, p.y);
+            } else {
+              ctx.lineTo(p.x, p.y);
+            }
+          });
+          ctx.stroke();
+        } else {
+          const data = bacteriaData[selectedBacterium];
+
+          // 1. 溶血帯（バックグラウンドの透過・変性領域）の描写
+          if (data.normalFill) {
+            maskCtx.clearRect(0, 0, 300, 300);
+            maskCtx.fillStyle = '#ffffff';
+            maskCtx.strokeStyle = '#ffffff';
+            maskCtx.lineWidth = data.lineWidth;
+            maskCtx.lineCap = 'round';
+            maskCtx.lineJoin = 'round';
+
+            maskCtx.beginPath();
+            streaks.forEach((p, index) => {
+              if (index === 0 || p.isNewStroke) {
+                maskCtx.moveTo(p.x, p.y);
+              } else {
+                maskCtx.lineTo(p.x, p.y);
+              }
+            });
+            maskCtx.stroke();
+
+            streaks.forEach(p => {
+              maskCtx.beginPath();
+              maskCtx.arc(p.x, p.y, data.lineWidth / 2, 0, Math.PI * 2);
+              maskCtx.fill();
+            });
+
+            maskCtx.globalCompositeOperation = 'source-in';
+            maskCtx.fillStyle = isBacklight ? data.lightFill : data.normalFill;
+            maskCtx.fillRect(0, 0, 300, 300);
+            maskCtx.globalCompositeOperation = 'source-over';
+
+            ctx.save();
+            if (data.blur > 0) {
+              ctx.filter = `blur(${data.blur}px)`;
+            }
+
+            if (isBacklight && selectedBacterium === 'S. pyogenes') {
+              ctx.shadowColor = '#fff182';
+              ctx.shadowBlur = 12;
+            } else if (!isBacklight && selectedBacterium === 'S. pyogenes') {
+              ctx.shadowColor = '#d98b52';
+              ctx.shadowBlur = 4;
+            }
+            
+            ctx.drawImage(maskCanvas, 0, 0);
+            ctx.restore();
+          }
+
+          // 2. コロニー自体の描写（全菌種、透過光時は光を遮る黒っぽい丸粒）
+          const currentColonyColor = isBacklight ? data.lightColony : data.normalColony;
+          streaks.forEach((p, i) => {
+            if (i % 3 === 0) {
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+              ctx.fillStyle = currentColonyColor;
+              ctx.fill();
+            }
+          });
+        }
+      }
+
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = isBacklight ? 'rgba(255,255,255,0.7)' : 'rgba(220,220,220,0.3)';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function startStreak(e) {
+      if (isIncubated) return;
+      isDrawing = true;
+      const pos = getCanvasPos(e);
+      streaks.push({ x: pos.x, y: pos.y, isNewStroke: true });
+      drawPlate();
+    }
+
+    function streak(e) {
+      if (!isDrawing || isIncubated) return;
+      const pos = getCanvasPos(e);
+      const dist = Math.hypot(pos.x - 150, pos.y - 150);
+      if (dist < 145) {
+        streaks.push({ x: pos.x, y: pos.y, isNewStroke: false });
+        drawPlate();
+      }
+    }
+
+    function stopStreak() {
+      isDrawing = false;
+    }
+
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function selectBacteria(type) {
+      selectedBacterium = type;
+      const btns = document.querySelectorAll('.select-btn');
+      btns.forEach(btn => {
+        btn.classList.toggle('active', btn.innerText.includes(type));
+      });
+      updateInfoCard();
+      resetPlate();
+    }
+
+    function startIncubation() {
+      if (streaks.length === 0) {
+        alert('まず培地に白金線で画線（ドラッグ）してください。');
+        return;
+      }
+      isIncubated = true;
+      document.getElementById('incubateBtn').disabled = true;
+      document.getElementById('statusBadge').innerText = '培養完了（24h後）';
+      document.getElementById('statusBadge').style.background = '#a3be8c';
+      document.getElementById('statusBadge').style.color = '#2e3440';
+      drawPlate();
+    }
+
+    function resetPlate() {
+      streaks = [];
+      isIncubated = false;
+      document.getElementById('incubateBtn').disabled = false;
+      document.getElementById('statusBadge').innerText = '未接種 / 培養前';
+      document.getElementById('statusBadge').style.background = '#4c566a';
+      document.getElementById('statusBadge').style.color = '#eceff4';
+      drawPlate();
+    }
+
+    function toggleBacklight(enabled) {
+      isBacklight = enabled;
+      wrapper.classList.toggle('backlight', enabled);
+      drawPlate();
+    }
+
+    function updateInfoCard() {
+      const data = bacteriaData[selectedBacterium];
+      document.getElementById('bacteriaTitle').innerText = data.name;
+      document.getElementById('bacteriaDesc').innerHTML = `
+        <b>溶血性:</b> ${data.type}<br><br>
+        ${data.desc}
+      `;
+    }
+
+    init();
+  </script>
+</body>
+</html>

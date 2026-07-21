@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>バーチャル コアグラーゼ試験</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --border: #d1d5db;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: var(--bg);
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            color: var(--primary);
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 25px;
+            margin-top: 25px;
+        }
+
+        @media (max-width: 850px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .panel h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+            padding-left: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        button:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-reset {
+            background-color: #6b7280;
+            margin-top: 20px;
+        }
+        .btn-reset:hover {
+            background-color: #4b5563;
+        }
+
+        .stage-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 450px;
+            background: #e5e7eb;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #d1d5db;
+        }
+
+        .incubator-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #f59e0b;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        #sim-canvas {
+            background-color: transparent;
+        }
+
+        .shaking {
+            animation: shake 0.1s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px); }
+            50% { transform: translate(-1px, -1px); }
+            100% { transform: translate(1px, -1px); }
+        }
+
+        .timer-display {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--primary);
+            text-align: center;
+            background: #edf2f7;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            min-height: 60px;
+        }
+
+        .status-box.warning {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .status-box.success {
+            border-left-color: #10b981;
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        #angle-slider {
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>バーチャル コアグラーゼ試験シミュレーター</h1>
+    
+    <div class="workspace">
+        <div class="panel">
+            <h2>1. 菌の準備・接種</h2>
+            
+            <div class="form-group">
+                <label for="bacteria-select">被検菌コロニーの選択:</label>
+                <select id="bacteria-select">
+                    <option value="">-- 菌種を選択してください --</option>
+                    <option value="aureus">黄色ブドウ球菌 (S. aureus)</option>
+                    <option value="epidermidis">表皮ブドウ球菌 (S. epidermidis)</option>
+                </select>
+            </div>
+
+            <button id="btn-inoculate" onclick="inoculate()">ウサギ血漿(0.5ml)に接種</button>
+            
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
+
+            <h2>2. 培養と観察（判定）</h2>
+            <div class="timer-display">経過時間: <span id="time-count">0</span> 時間</div>
+            
+            <button id="btn-incubation" onclick="advanceTime()" disabled>37℃培養を進める (+1時間)</button>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="angle-slider">試験管を傾ける (判定): <span id="angle-view">0</span>°</label>
+                <input type="range" id="angle-slider" min="0" max="80" value="0" disabled oninput="updateTiltAngle(this.value)">
+            </div>
+            
+            <button id="btn-shake" class="btn-danger" onclick="shakeTube()" disabled>試験管を強く振る ⚠️</button>
+            
+            <button id="btn-reset" class="btn-reset" onclick="resetExperiment()">実験をリセット</button>
+        </div>
+
+        <div class="panel" style="display: flex; flex-direction: column;">
+            <h2>3. 試験管の様子 (37℃恒温槽内)</h2>
+            <div class="stage-container" id="stage">
+                <div class="incubator-badge">37℃</div>
+                <canvas id="sim-canvas" width="300" height="420"></canvas>
+            </div>
+            
+            <div class="status-box" id="status-message">
+                左パネルで菌種を選択し、「接種」ボタンを押して実験を開始してください。
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('sim-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 試験管の幾何パラメータ
+    const tube = {
+        pivotX: 150,        // 回転軸X
+        pivotY: 340,        // 回転軸Y (底の少し上)
+        width: 46,          // 内幅
+        height: 250,        // 全高
+        borderRadius: 23,   // 丸底の半径
+        liquidHeight: 50    // 0.5ml時の液高 (直立時)
+    };
+
+    const colors = {
+        liquid: 'rgba(254, 240, 138, 0.85)',
+        gel: 'rgba(251, 191, 36, 0.95)',
+        broken: 'rgba(217, 119, 6, 0.75)'
+    };
+
+    let appState = {
+        bacteria: "",
+        hours: 0,
+        isInoculated: false,
+        isCoagulated: false,
+        isBroken: false,
+        tiltAngle: 0
+    };
+
+    const elems = {
+        bacteria: document.getElementById("bacteria-select"),
+        btnInoculate: document.getElementById("btn-inoculate"),
+        btnIncubation: document.getElementById("btn-incubation"),
+        slider: document.getElementById("angle-slider"),
+        angleView: document.getElementById("angle-view"),
+        btnShake: document.getElementById("btn-shake"),
+        timeCount: document.getElementById("time-count"),
+        statusMsg: document.getElementById("status-message"),
+        stage: document.getElementById("stage")
+    };
+
+    function init() {
+        drawScene();
+    }
+
+    // メイン描画関数
+    function drawScene() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const rad = appState.tiltAngle * (Math.PI / 180);
+
+        ctx.save();
+        
+        // 1. 試験管の回転軸に移動して傾ける
+        ctx.translate(tube.pivotX, tube.pivotY);
+        ctx.rotate(rad);
+
+        // 2. ガラス試験管の描画
+        drawGlassTubeLocal();
+
+        if (appState.isInoculated) {
+            if (appState.isCoagulated) {
+                // 【凝固している場合】試験管と一緒に固まって傾く
+                drawCoagulatedGelLocal();
+            } else {
+                // 【液体の場合】試験管の内部で厳密にクリッピングして描画
+                ctx.save();
+                clipTubeInnerLocal(); // 試験管の内側のみ切り抜き設定
+
+                // 3. 水平な液面を描くため、逆回転させて世界座標の「水平」に戻す
+                ctx.rotate(-rad);
+
+                // 4. 体積保存される水面のY位置計算
+                const w = tube.width;
+                const h0 = tube.liquidHeight;
+                let surfaceY;
+
+                if (rad < 0.9) { // 約50度以下（液面が両壁に接する状態）
+                    surfaceY = -h0 * Math.cos(rad);
+                } else { // 50度超（底の角に液体が集まる状態）
+                    surfaceY = (w / 2) * Math.sin(rad) - Math.sqrt(2 * w * h0 * Math.sin(rad) * Math.cos(rad));
+                }
+
+                // 5. 液体を描画（クリップされているので試験管の外には絶対出ない）
+                ctx.fillStyle = appState.isBroken ? colors.broken : colors.liquid;
+                ctx.beginPath();
+                ctx.rect(-200, surfaceY, 400, 400); // 水平線より下を塗りつぶし
+                ctx.fill();
+
+                // 液面の表面ハイライト
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.fillRect(-200, surfaceY, 400, 2);
+
+                ctx.restore(); // クリップ解除
+            }
+        }
+
+        ctx.restore(); // 全体の回転解除
+    }
+
+    // ローカル座標系での試験管ガラス描画
+    function drawGlassTubeLocal() {
+        const w = tube.width;
+        const h = tube.height;
+        const r = tube.borderRadius;
+        const x = -w / 2;
+        const y = -h + r;
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.lineWidth = 4;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, r);
+        ctx.arcTo(x, r + r, x + r, r + r, r);
+        ctx.arcTo(x + w, r + r, x + w, r, r);
+        ctx.lineTo(x + w, y);
+        ctx.stroke();
+        ctx.fill();
+    }
+
+    // 試験管内側のクリッピングパス
+    function clipTubeInnerLocal() {
+        const w = tube.width - 4;
+        const h = tube.height - 2;
+        const r = tube.borderRadius - 2;
+        const x = -w / 2;
+        const y = -h + r;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, r);
+        ctx.arcTo(x, r + r, x + r, r + r, r);
+        ctx.arcTo(x + w, r + r, x + w, r, r);
+        ctx.lineTo(x + w, y);
+        ctx.closePath();
+        ctx.clip();
+    }
+
+    // ローカル座標系でのゲル（固まり）描画
+    function drawCoagulatedGelLocal() {
+        ctx.fillStyle = colors.gel;
+        const w = tube.width - 4;
+        const r = tube.borderRadius - 2;
+        const x = -w / 2;
+        const h = tube.liquidHeight;
+
+        ctx.beginPath();
+        ctx.moveTo(x, -h);
+        ctx.lineTo(x + w, -h);
+        ctx.lineTo(x + w, r);
+        ctx.arcTo(x + w, r + r, x + w - r, r + r, r);
+        ctx.arcTo(x, r + r, x, r, r);
+        ctx.lineTo(x, -h);
+        ctx.closePath();
+        ctx.fill();
+
+        // 表面の弾力・粘性ライン
+        ctx.strokeStyle = 'rgba(217, 119, 6, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 4, -h);
+        ctx.quadraticCurveTo(0, -h + 4, x + w - 4, -h);
+        ctx.stroke();
+    }
+
+    // --- 操作ロジック ---
+
+    function inoculate() {
+        if (!elems.bacteria.value) { alert("菌種を選択してください。"); return; }
+        
+        appState.bacteria = elems.bacteria.value;
+        appState.isInoculated = true;
+        appState.hours = 0;
+        appState.isCoagulated = false;
+        appState.isBroken = false;
+        appState.tiltAngle = 0;
+
+        elems.bacteria.disabled = true;
+        elems.btnInoculate.disabled = true;
+        elems.btnIncubation.disabled = false;
+        elems.slider.disabled = false;
+        elems.slider.value = 0;
+        elems.angleView.innerText = 0;
+        elems.btnShake.disabled = false;
+        elems.timeCount.innerText = 0;
+
+        const name = appState.bacteria === "aureus" ? "黄色ブドウ球菌" : "表皮ブドウ球菌";
+        updateStatus(`${name} を血漿(0.5ml)に接種しました。37℃で培養を開始します。`, "normal");
+        
+        drawScene();
+    }
+
+    function advanceTime() {
+        if (!appState.isInoculated || appState.hours >= 24) return;
+        
+        appState.hours++;
+        elems.timeCount.innerText = appState.hours;
+
+        if (appState.bacteria === "aureus" && appState.hours >= 3 && !appState.isBroken) {
+            appState.isCoagulated = true;
+        }
+
+        let msg = `37℃培養 ${appState.hours}時間経過。`;
+        if ([1, 3, 6, 24].includes(appState.hours)) {
+            msg += " 判定タイミングです。スライダーで試験管を傾けて確認してください。";
+        }
+        updateStatus(msg, "normal");
+
+        if (appState.hours >= 24) elems.btnIncubation.disabled = true;
+
+        drawScene();
+    }
+
+    function updateTiltAngle(angle) {
+        appState.tiltAngle = parseInt(angle);
+        elems.angleView.innerText = appState.tiltAngle;
+        
+        drawScene();
+        
+        if (appState.tiltAngle >= 50) {
+            evaluateResult();
+        }
+    }
+
+    function evaluateResult() {
+        if (!appState.isInoculated) return;
+
+        if (appState.isBroken) {
+            updateStatus("⚠️ 凝固組織が破壊されています。判定不能（偽陰性）。", "warning");
+        } else if (appState.isCoagulated) {
+            updateStatus(`【判定: 陽性 (＋)】<br>ゼリー状に凝固しています。試験管を傾けても（${appState.tiltAngle}°）血漿は底に固着したまま流れません。（${appState.bacteria === 'aureus' ? '黄色ブドウ球菌' : ''}）`, "success");
+        } else {
+            let note = appState.hours < 24 ? "【観察中】サラサラとした液体のままです。傾けると底の角に流れます。まだ凝固していないため培養を継続。" : "【判定: 陰性 (－)】<br>24時間後も液状のままです。傾けると流れて固まりません（コアグラーゼ非産生）。";
+            updateStatus(note, "normal");
+        }
+    }
+
+    function shakeTube() {
+        if (!appState.isInoculated) return;
+        if (appState.tiltAngle > 10) { alert("試験管を立てた状態で振ってください。"); return; }
+
+        elems.stage.classList.add("shaking");
+        elems.btnShake.disabled = true;
+
+        setTimeout(() => {
+            elems.stage.classList.remove("shaking");
+            elems.btnShake.disabled = false;
+
+            if (appState.isCoagulated) {
+                appState.isCoagulated = false;
+                appState.isBroken = true;
+                updateStatus("⚠️ 強く振ったため、固まっていたゲルの網目構造が破壊されて液体状に戻ってしまいました！（偽陰性のリスク）", "warning");
+            } else {
+                updateStatus("試験管を振りました。（※凝固判定時の強振は厳禁です）", "warning");
+            }
+            drawScene();
+        }, 800);
+    }
+
+    function resetExperiment() {
+        appState = { bacteria: "", hours: 0, isInoculated: false, isCoagulated: false, isBroken: false, tiltAngle: 0 };
+        
+        elems.bacteria.disabled = false;
+        elems.bacteria.value = "";
+        elems.btnInoculate.disabled = false;
+        elems.btnIncubation.disabled = true;
+        elems.slider.disabled = true;
+        elems.slider.value = 0;
+        elems.angleView.innerText = 0;
+        elems.btnShake.disabled = true;
+        elems.timeCount.innerText = 0;
+        updateStatus("左パネルで菌種を選択し、「接種」ボタンを押して実験を開始してください。", "normal");
+        
+        drawScene();
+    }
+
+    function updateStatus(text, type) {
+        elems.statusMsg.innerHTML = text;
+        elems.statusMsg.className = "status-box";
+        if (type === "warning") elems.statusMsg.classList.add("warning");
+        if (type === "success") elems.statusMsg.classList.add("success");
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
