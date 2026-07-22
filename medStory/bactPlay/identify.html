@@ -890,11 +890,13 @@
     }
     function drawCoagulaseScene(mode) {
         ctx.clearRect(0, 0, 300, 300);
+        const rad = coagTilted ? 50 * Math.PI / 180 : 0;
+
         ctx.save();
         ctx.translate(150, 260);
-        if (coagTilted) ctx.rotate(50 * Math.PI / 180);
+        ctx.rotate(rad);
 
-        // 試験管
+        // 試験管ガラス（局所座標系で描画。試験管そのものは常にこの向き）
         ctx.strokeStyle = '#94a3b8';
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.lineWidth = 3;
@@ -907,6 +909,7 @@
         ctx.stroke(); ctx.fill();
 
         if (mode === 'clot') {
+            // 陽性（凝固）：ゼリー状に固まっているため、試験管と一緒に固まった形のまま傾く
             ctx.fillStyle = 'rgba(251,191,36,0.95)';
             ctx.beginPath();
             ctx.moveTo(-23, -90);
@@ -916,16 +919,44 @@
             ctx.arcTo(-23, -6, -23, -30, 22);
             ctx.closePath();
             ctx.fill();
+            ctx.strokeStyle = 'rgba(217,119,6,0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-19, -90);
+            ctx.quadraticCurveTo(0, -85, 19, -90);
+            ctx.stroke();
         } else if (mode === 'liquid') {
+            // 陰性（液状）：試験管の内側でクリップし、液面は常に水平になるよう描画
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(-23, -186);
+            ctx.lineTo(-23, -30);
+            ctx.arcTo(-23, -7, 0, -7, 23);
+            ctx.arcTo(23, -7, 23, -30, 23);
+            ctx.lineTo(23, -186);
+            ctx.closePath();
+            ctx.clip();
+
+            ctx.rotate(-rad); // 世界座標の「水平」に戻す
+
+            const w = 46;      // 試験管の内幅
+            const h0 = 60;     // 直立時の液高
+            let surfaceY;
+            if (rad < 0.9) {
+                surfaceY = -h0 * Math.cos(rad);
+            } else {
+                surfaceY = (w / 2) * Math.sin(rad) - Math.sqrt(2 * w * h0 * Math.sin(rad) * Math.cos(rad));
+            }
+
             ctx.fillStyle = 'rgba(254,240,138,0.85)';
             ctx.beginPath();
-            ctx.moveTo(-23, -90);
-            ctx.lineTo(23, -90);
-            ctx.lineTo(23, -30);
-            ctx.arcTo(23, -6, 0, -6, 22);
-            ctx.arcTo(-23, -6, -23, -30, 22);
-            ctx.closePath();
+            ctx.rect(-200, surfaceY, 400, 400);
             ctx.fill();
+
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fillRect(-200, surfaceY, 400, 2);
+
+            ctx.restore();
         }
         ctx.restore();
 
