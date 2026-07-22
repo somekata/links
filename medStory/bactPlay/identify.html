@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>グラム陽性球菌 同定トレーニング</title>
+<style>
+    :root {
+        --primary: #2c3e50;
+        --bg: #f0f4f8;
+        --card-bg: #ffffff;
+        --border: #d1d5db;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        background-color: var(--bg);
+        color: #333;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+    }
+
+    .container { max-width: 1000px; margin: 0 auto; }
+
+    header h1 {
+        font-size: 1.4rem;
+        color: var(--primary);
+        text-align: center;
+        margin: 0 0 14px 0;
+    }
+
+    i { font-style: italic; }
+
+    /* タブナビゲーション */
+    .tab-nav {
+        display: flex;
+        gap: 6px;
+        margin: 0 auto 14px auto;
+        background: #e2e8f0;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 6px;
+    }
+    .tab-btn {
+        flex: 1;
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+    .tab-btn:hover { background: rgba(255, 255, 255, 0.7); }
+    .tab-btn.active { background: #ffffff; color: #1e40af; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .card-bg-panel { background: var(--card-bg); padding: 24px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+
+    /* 進捗ステップ */
+    .flow-track {
+        display: flex;
+        justify-content: space-between;
+        gap: 4px;
+        margin-bottom: 16px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 8px;
+    }
+    .flow-step {
+        flex: 1;
+        text-align: center;
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 700;
+        position: relative;
+        padding-top: 22px;
+    }
+    .flow-step::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 50%;
+        transform: translateX(-50%);
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px #cbd5e1;
+    }
+    .flow-step.done { color: #10b981; }
+    .flow-step.done::before { background: #10b981; box-shadow: 0 0 0 1px #10b981; }
+    .flow-step.current { color: #1e40af; }
+    .flow-step.current::before { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+
+    .workspace { display: grid; grid-template-columns: 340px 1fr; gap: 25px; }
+    @media (max-width: 850px) { .workspace { grid-template-columns: 1fr; } }
+
+    .panel { background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+    .panel h2 {
+        font-size: 1.05rem; margin-top: 0; color: #1e40af;
+        border-left: 4px solid #3b82f6; padding-left: 10px;
+    }
+    .panel h3 { font-size: 0.92rem; color: #334155; margin: 14px 0 6px 0; }
+
+    .panel-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .panel-head-row h2 { margin: 0; }
+    .btn-reset-mini {
+        width: auto; flex-shrink: 0; padding: 6px 10px; margin: 0; font-size: 11px; font-weight: 700;
+        background: #f1f5f9; color: #64748b; border: 1px solid var(--border); box-shadow: none; border-radius: 6px;
+    }
+    .btn-reset-mini:hover { background: #e2e8f0; color: #475569; transform: none; }
+
+    #mrsaControls { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
+
+    .info-box {
+        background: #f8fafc; border: 1px solid var(--border);
+        border-radius: 8px; padding: 12px 14px; font-size: 0.88rem; color: #475569; margin-bottom: 14px;
+    }
+
+    button {
+        width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1;
+        font-size: 1rem; box-sizing: border-box;
+        background-color: #3b82f6; color: white; border: none; cursor: pointer;
+        font-weight: bold; transition: all 0.2s; margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2); font-family: inherit;
+    }
+    button:hover:not(:disabled) { background-color: #2563eb; transform: translateY(-1px); }
+    button:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-secondary { background-color: #6b7280; }
+    .btn-secondary:hover:not(:disabled) { background-color: #4b5563; }
+    .btn-success { background-color: #10b981; }
+    .btn-success:hover:not(:disabled) { background-color: #059669; }
+
+
+    select {
+        width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;
+        font-size: 0.95rem; margin-bottom: 10px; font-family: inherit; background: #fff;
+    }
+
+    .stage-container {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        min-height: 340px; background: #e5e7eb; border-radius: 8px; position: relative;
+        overflow: hidden; border: 2px solid #d1d5db; padding: 10px;
+    }
+    .stage-badge {
+        position: absolute; top: 12px; left: 12px; background: #1e40af; color: #fff;
+        padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; z-index: 5;
+    }
+
+    .status-box {
+        margin-top: 16px; padding: 14px; background: #fff; border-left: 4px solid #3b82f6;
+        border-radius: 4px; font-size: 0.92rem; min-height: 44px;
+    }
+    .status-box.warning { border-left-color: #ef4444; background: #fef2f2; color: #991b1b; }
+    .status-box.success { border-left-color: #10b981; background: #ecfdf5; color: #065f46; }
+    .status-box.wrong { border-left-color: #f59e0b; background: #fffbeb; color: #92400e; }
+
+    .result-card {
+        margin-top: 14px; padding: 16px; border-radius: 8px; background: #ecfdf5;
+        border: 1px solid #a7f3d0; text-align: center;
+    }
+    .result-card .sp-name { font-size: 1.2rem; font-weight: 800; color: #065f46; }
+    .result-card .sp-latin { font-size: 0.95rem; color: #047857; margin-bottom: 6px; }
+    .path-trail {
+        font-size: 0.8rem; color: #64748b; background: #f8fafc; border: 1px solid var(--border);
+        border-radius: 6px; padding: 8px 10px; margin-top: 10px; text-align: left; line-height: 1.9;
+    }
+    .path-trail b { color: #1e40af; }
+
+    /* 使い方タブ */
+    .howto-box { font-size: 14px; line-height: 1.8; color: #333; }
+    .howto-box h2 { font-size: 16px; color: #1e40af; margin: 22px 0 10px 0; border-left: 4px solid #3b82f6; padding-left: 10px; }
+    .howto-box h2:first-child { margin-top: 0; }
+    .howto-box h3 { font-size: 14.5px; color: #334155; margin: 14px 0 6px 0; }
+    .howto-box p { margin-bottom: 8px; }
+    .howto-box ol, .howto-box ul { padding-left: 22px; margin-top: 6px; margin-bottom: 10px; }
+    .howto-box li { margin-bottom: 4px; }
+    .howto-box table { width: 100%; border-collapse: collapse; margin: 10px 0 16px 0; font-size: 13px; }
+    .howto-box th, .howto-box td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+    .howto-box th { background: #f1f5f9; color: #334155; font-weight: 700; }
+    .note-box {
+        background: #f8fafc; border: 1px solid var(--border); border-left: 4px solid #f59e0b;
+        border-radius: 6px; padding: 10px 14px; font-size: 13px; margin: 10px 0; color: #475569;
+    }
+
+    /* リンクタブ */
+    .link-list h2 { font-size: 16px; color: #334155; margin: 0 0 12px 0; border-left: 4px solid #10b981; padding-left: 10px; }
+    .link-item {
+        display: block; padding: 12px 16px; margin-bottom: 10px; background: #f8fafc;
+        border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: #333; transition: all 0.2s ease;
+    }
+    .link-item:hover { border-color: #3b82f6; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+    .link-item .link-title { font-weight: 700; font-size: 14px; color: #2563eb; }
+    .link-item .link-desc { font-size: 12px; color: #64748b; margin-top: 3px; }
+    .link-note { font-size: 12px; color: #94a3b8; margin-top: 10px; }
+
+    /* フッター */
+    .site-footer {
+        max-width: 1000px; margin: 16px auto 0 auto; padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.7); border: 1px solid var(--border); border-radius: 10px;
+        font-size: 11px; line-height: 1.7; color: #94a3b8; text-align: left;
+    }
+    .footer-toggle {
+        display: inline-flex; align-items: center; gap: 5px; background: transparent; border: none;
+        color: #94a3b8; font-size: 11px; font-weight: 700; cursor: pointer; padding: 2px 0; font-family: inherit;
+    }
+    .footer-toggle:hover { color: #64748b; }
+    .footer-detail { display: none; margin-top: 8px; }
+    .footer-detail.open { display: block; }
+
+    /* レスポンシブ（iPhone対応） */
+    @media (max-width: 768px) {
+        body { padding: 8px; }
+        header h1 { font-size: 15px; margin-bottom: 6px; line-height: 1.3; }
+        .tab-nav { padding: 3px; gap: 3px; margin-bottom: 6px; }
+        .tab-btn { padding: 7px 4px; font-size: 10.5px; }
+        .card-bg-panel { padding: 12px; border-radius: 10px; }
+        .workspace { gap: 8px; }
+        .panel { padding: 10px 10px; }
+        .panel h2 { font-size: 0.85rem; margin: 0 0 6px 0; padding-left: 7px; border-left-width: 3px; }
+        .panel-head-row { margin-bottom: 8px; }
+        .panel-head-row h2 { margin: 0; }
+        .btn-reset-mini { padding: 5px 8px; font-size: 10px; }
+        .flow-track { padding: 8px 4px; margin-bottom: 8px; }
+        .flow-step { font-size: 9px; padding-top: 18px; }
+        .flow-step::before { width: 13px; height: 13px; }
+        select, button { padding: 9px; font-size: 0.85rem; margin-bottom: 6px; }
+        .stage-container { min-height: 210px; padding: 6px; }
+        #sim-canvas { width: 100%; max-width: 260px; height: auto; }
+        .status-box { font-size: 0.78rem; padding: 8px 10px; min-height: 0; margin-top: 8px; line-height: 1.4; }
+        .info-box { font-size: 0.78rem; padding: 8px 10px; margin-bottom: 8px; }
+        .result-card { padding: 10px; }
+        .result-card .sp-name { font-size: 1rem; }
+        .howto-box { font-size: 13px; }
+        .howto-box table { font-size: 12px; }
+        .site-footer { padding: 8px 14px; margin-top: 8px; }
+    }
+    @media (max-width: 380px) {
+        .stage-container { min-height: 190px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🧩 グラム陽性球菌 同定トレーニング</h1>
+    </header>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" id="tabBtn-sim" onclick="switchTab('sim', this)">🔬 シミュレーション</button>
+        <button class="tab-btn" id="tabBtn-howto" onclick="switchTab('howto', this)">📖 使い方・解説</button>
+        <button class="tab-btn" id="tabBtn-links" onclick="switchTab('links', this)">🔗 リンク</button>
+    </div>
+
+    <!-- タブ①: シミュレーション -->
+    <div class="tab-panel active" id="tab-sim">
+
+        <div class="flow-track" id="flowTrack">
+            <div class="flow-step" id="fs0">グラム染色</div>
+            <div class="flow-step" id="fs1">カタラーゼ</div>
+            <div class="flow-step" id="fs2">コアグラーゼ/溶血</div>
+            <div class="flow-step" id="fs3">同定</div>
+        </div>
+
+        <div class="workspace">
+            <div class="panel">
+                <div class="panel-head-row">
+                    <h2 id="panelTitle">1. 検体の準備</h2>
+                    <button id="btnResetTop" class="btn-reset-mini" onclick="confirmReset()" title="最初からやり直す">↺ 最初から</button>
+                </div>
+                <div id="ctrl0">
+                    <div class="info-box">未知の検体（グラム陽性球菌）が届きました。まずはグラム染色像を観察しましょう。</div>
+                    <button onclick="startCase()">🧫 検体を受け取る</button>
+                </div>
+
+                <div id="ctrl1" style="display:none;">
+                    <div class="info-box" id="gramInfo"></div>
+                    <button onclick="goStage(2)">次へ：カタラーゼ試験を行う</button>
+                </div>
+
+                <div id="ctrl2" style="display:none;">
+                    <div class="info-box">培地上に発育したコロニーを拾い、あらかじめスライドガラス上に置いた<b>3%過酸化水素水（オキシドール）</b>の滴に浸して反応を観察します。</div>
+                    <button id="btnDrop" onclick="placeDrop()">💧 スライドにH₂O₂を1滴置く</button>
+                    <button id="btnPick" onclick="touchColony()" disabled>🧫 培地からコロニーを拾ってH₂O₂につける</button>
+                    <button id="btnNextFromCatalase" onclick="goStage(3)" disabled>次へ：鑑別検査を行う</button>
+                </div>
+
+                <div id="ctrl3" style="display:none;">
+                    <div class="info-box" id="branchInfo"></div>
+                    <button id="btnBranchRun" onclick="runBranchTest()">▶ 検査を実施する</button>
+                    <button id="btnNextFromBranch" onclick="goStage(4)" disabled>次へ：同定する</button>
+                </div>
+
+                <div id="ctrl4" style="display:none;">
+                    <div class="info-box">これまでの所見から、菌種を予想してみましょう。</div>
+                    <select id="guessSelect">
+                        <option value="">-- 予想する菌種を選択 --</option>
+                        <option value="aureus">黄色ブドウ球菌（S. aureus）</option>
+                        <option value="epidermidis">表皮ブドウ球菌（S. epidermidis）</option>
+                        <option value="pyogenes">化膿レンサ球菌（S. pyogenes）</option>
+                        <option value="pneumoniae">肺炎球菌（S. pneumoniae）</option>
+                        <option value="faecalis">腸球菌（フェカリス）（E. faecalis）</option>
+                    </select>
+                    <button class="btn-success" onclick="judgeGuess()">✅ 判定する</button>
+
+                    <div id="mrsaControls" style="display:none;">
+                        <div class="info-box">黄色ブドウ球菌と判明しました。続けて<b>ディスクアッセイ（セフォキシチンディスク法）</b>でMRSAかMSSAかを判定しましょう。</div>
+                        <button id="btnMrsa" onclick="runMrsaAssay()">🧫 セフォキシチンディスク試験を行う</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" id="stagePanel" style="display: flex; flex-direction: column;">
+                <h2>観察エリア</h2>
+                <div class="stage-container" id="stage">
+                    <div class="stage-badge" id="stageBadge">検体未着手</div>
+                    <canvas id="sim-canvas" width="300" height="300"></canvas>
+                </div>
+
+                <div class="status-box" id="status-message">
+                    左パネルの「検体を受け取る」から開始してください。
+                </div>
+
+                <div class="result-card" id="resultCard" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- タブ②: 使い方・解説 -->
+    <div class="tab-panel" id="tab-howto">
+        <div class="card-bg-panel howto-box">
+            <p>グラム陽性球菌の代表的な菌種を、<b>カタラーゼ試験</b>と、その結果に応じて選択する<b>鑑別検査（コアグラーゼ試験または溶血性試験）</b>を組み合わせて同定する練習ができるシミュレーターです。実際の細菌検査室で行われる同定の考え方（検査の組み合わせによる絞り込み）を疑似体験できます。</p>
+
+            <h2>基本操作</h2>
+            <ol>
+                <li>「検体を受け取る」を押すと、ランダムに未知のグラム陽性球菌（5菌種のいずれか）が出題されます。</li>
+                <li>グラム染色像（ブドウの房状 or 連鎖状の配列）を観察します。</li>
+                <li><b>カタラーゼ試験（スライド法）</b>：スライドガラス上にH₂O₂を1滴置き、そこへコロニーを浸けて、酸素の気泡が発生するか（陽性）、発生しないか（陰性）を観察します。</li>
+                <li>カタラーゼ陽性なら<b>コアグラーゼ試験</b>、陰性なら<b>溶血性試験</b>という鑑別検査に進みます（結果に応じて自動的に切り替わります）。</li>
+                <li>最後に予想した菌種を選び、「判定する」で答え合わせをします。</li>
+                <li>「新しい検体で最初から」で何度でも繰り返し練習できます。</li>
+            </ol>
+
+            <h2>カタラーゼ試験の原理</h2>
+            <p>カタラーゼは過酸化水素（H₂O₂）を水と酸素に分解する酵素です（2H₂O₂ → 2H₂O + O₂）。この反応で発生する酸素ガスが泡として観察されるため、カタラーゼ産生菌かどうかを肉眼で簡便に判定できます。</p>
+            <p>グラム陽性球菌の初期分類において最も重要なスクリーニング検査であり、<i>Staphylococcus</i>属（ブドウ球菌属）は<b>カタラーゼ陽性</b>、<i>Streptococcus</i>属（レンサ球菌属）や<i>Enterococcus</i>属（腸球菌属）は<b>カタラーゼ陰性</b>という原則で大きく二分されます。</p>
+            <div class="note-box">血液寒天培地由来のコロニーを用いると、培地中の赤血球カタラーゼの混入により偽陽性となることがあるため注意が必要です。</div>
+
+            <h2>鑑別検査（カタラーゼ結果に応じて選択）</h2>
+            <h3>カタラーゼ陽性 → コアグラーゼ試験</h3>
+            <p>コアグラーゼはウサギ血漿を凝固させる酵素様タンパク質です。<i>Staphylococcus aureus</i>（黄色ブドウ球菌）は陽性、コアグラーゼ陰性ブドウ球菌（CoNS、例：<i>S. epidermidis</i>）は陰性となります。詳しい原理は「コアグラーゼ試験シミュレーター」で確認できます。</p>
+
+            <h3>カタラーゼ陰性 → 溶血性試験</h3>
+            <p>血液寒天培地上でのコロニー周囲の溶血パターンにより、レンサ球菌属・腸球菌属をさらに鑑別します。詳しい原理は「溶血性試験シミュレーター」で確認できます。</p>
+            <table>
+                <tr><th>溶血パターン</th><th>代表菌種</th><th>特徴</th></tr>
+                <tr><td>β溶血（完全溶血）</td><td><i>Streptococcus pyogenes</i>（A群）</td><td>コロニー周囲が完全に透明化する</td></tr>
+                <tr><td>α溶血（不完全溶血）</td><td><i>Streptococcus pneumoniae</i>など</td><td>コロニー周囲が緑褐色に変化する</td></tr>
+                <tr><td>γ溶血（非溶血）</td><td><i>Enterococcus faecalis</i>など</td><td>コロニー周囲に変化がみられない</td></tr>
+            </table>
+
+            <h2>黄色ブドウ球菌と判定された場合：MRSA/MSSA判定</h2>
+            <p><i>Staphylococcus aureus</i>（黄色ブドウ球菌）と同定された場合、続けて<b>セフォキシチンディスク拡散法</b>によるMRSA/MSSA判定を体験できます。ミュラー・ヒントン寒天培地に菌液を一面塗抹し、セフォキシチン（FOX）ディスクを置いて培養したのち、ディスク周囲の阻止円（発育が阻止された透明な帯）の大きさで判定します。</p>
+            <ul>
+                <li>阻止円が大きい：メチシリン<b>感性</b>（MSSA）</li>
+                <li>阻止円がほとんど形成されない：メチシリン<b>耐性</b>（MRSA）</li>
+            </ul>
+            <div class="note-box">実際の判定はCLSI（臨床検査標準協議会）が定める阻止円直径のブレイクポイントに基づいて行われます。本シミュレーターは原理を体験するための簡易モデルであり、正確な判定基準は必ず最新のCLSI文書等で確認してください。</div>
+
+            <h2>さらに鑑別を進めるには</h2>
+            <p>本シミュレーターでは代表的な5菌種のみを扱っていますが、実際の臨床検査ではさらに以下のような追加検査で鑑別を進めます。</p>
+            <ul>
+                <li><b>オプトヒン感受性試験・胆汁溶解試験</b>：<i>S. pneumoniae</i>と他のα溶血性レンサ球菌（口腔レンサ球菌群など）の鑑別</li>
+                <li><b>PYR試験・胆汁エスクリン試験</b>：<i>Enterococcus</i>属とD群レンサ球菌の鑑別</li>
+                <li><b>ランスフィールド分類（群別抗原）</b>：β溶血性レンサ球菌のさらなる群別（A群・B群など）</li>
+            </ul>
+            <div class="note-box">本ツールは学習用の簡易モデルです。実際の同定にあたっては、必ず標準的な検査手順書・微生物同定装置の結果と照合してください。</div>
+        </div>
+    </div>
+
+    <!-- タブ③: リンク -->
+    <div class="tab-panel" id="tab-links">
+        <div class="card-bg-panel link-list">
+            <h2>関連リンク</h2>
+            <a class="link-item" href="index.html">
+                <div class="link-title">🧫 細菌楽 検査シミュレーター集トップ</div>
+                <div class="link-desc">他の検査シミュレーターの一覧に戻る</div>
+            </a>
+            <a class="link-item" href="coagulase_test.html">
+                <div class="link-title">🧫 コアグラーゼ試験シミュレーター</div>
+                <div class="link-desc">黄色ブドウ球菌とCoNSの鑑別を、時間経過つきで詳しく学ぶ教材</div>
+            </a>
+            <a class="link-item" href="hemolysis.html">
+                <div class="link-title">🩸 溶血性試験シミュレーター</div>
+                <div class="link-desc">レンサ球菌の溶血パターン（α・β・γ）を詳しく観察する教材</div>
+            </a>
+            <a class="link-item" href="tsi_test.html">
+                <div class="link-title">🧪 TSI培地判定シミュレーター</div>
+                <div class="link-desc">腸内細菌科の生化学的鑑別を学ぶ教材</div>
+            </a>
+            <a class="link-item" href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener noreferrer">
+                <div class="link-title">bactPlatform Hub</div>
+                <div class="link-desc">細菌学関連の教材・ツール一覧</div>
+            </a>
+            <p class="link-note">※ リンク先は必要に応じて自由に追加・変更してください。</p>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <button class="footer-toggle" id="footerToggle" onclick="toggleFooter()">ⓘ 生成AIについて・注意事項</button>
+        <div class="footer-detail" id="footerDetail">
+            本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+            二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+        </div>
+    </footer>
+</div>
+
+<script>
+    // ---------- タブ・フッター制御 ----------
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        btnElement.classList.add('active');
+    }
+    function toggleFooter() {
+        const detail = document.getElementById('footerDetail');
+        const btn = document.getElementById('footerToggle');
+        const isOpen = detail.classList.toggle('open');
+        btn.textContent = isOpen ? '▲ 生成AIについて・注意事項' : 'ⓘ 生成AIについて・注意事項';
+    }
+
+    // ---------- 菌種データベース ----------
+    const DB = {
+        aureus: {
+            name: '黄色ブドウ球菌', latin: 'Staphylococcus aureus', arrangement: 'cluster',
+            catalase: true, coagulase: true, hemolysis: null,
+            comment: '皮膚軟部組織感染・菌血症・感染性心内膜炎など多彩な感染症の原因菌。カタラーゼ陽性かつコアグラーゼ陽性はブドウ球菌属の中でも臨床上最も重要な菌種であることを意味します。'
+        },
+        epidermidis: {
+            name: '表皮ブドウ球菌', latin: 'Staphylococcus epidermidis', arrangement: 'cluster',
+            catalase: true, coagulase: false, hemolysis: null,
+            comment: '皮膚常在菌でありながら、カテーテル関連血流感染など院内感染の原因ともなるコアグラーゼ陰性ブドウ球菌（CoNS）の代表種です。'
+        },
+        pyogenes: {
+            name: '化膿レンサ球菌', latin: 'Streptococcus pyogenes', arrangement: 'chain',
+            catalase: false, coagulase: null, hemolysis: 'beta',
+            comment: 'A群レンサ球菌。咽頭炎・猩紅熱・皮膚感染や、まれに劇症型溶血性レンサ球菌感染症の原因となります。血液寒天培地で完全なβ溶血を示すのが特徴です。'
+        },
+        pneumoniae: {
+            name: '肺炎球菌', latin: 'Streptococcus pneumoniae', arrangement: 'diplococci',
+            catalase: false, coagulase: null, hemolysis: 'alpha',
+            comment: '肺炎・中耳炎・細菌性髄膜炎の主要な原因菌。グラム染色でランセット型（先端がとがった）の双球菌として観察されるのが特徴です。α溶血を示す菌種は複数あるため、実際にはオプトヒン感受性試験や胆汁溶解試験で最終確認します。'
+        },
+        faecalis: {
+            name: '腸球菌（フェカリス）', latin: 'Enterococcus faecalis', arrangement: 'chain',
+            catalase: false, coagulase: null, hemolysis: 'gamma',
+            comment: '腸管常在菌で、尿路感染症や医療関連感染の原因となることがあります。溶血性を示さない（γ溶血＝非溶血）ことが多いのが特徴です。'
+        }
+    };
+    const IDS = Object.keys(DB);
+
+    // ---------- 状態 ----------
+    let state = { unknown: null, stage: 0, catalaseDone: false, branchDone: false, catalaseResult: null };
+
+    const canvas = document.getElementById('sim-canvas');
+    const ctx = canvas.getContext('2d');
+    // iOS Safari 旧バージョン対策（roundRect未対応環境向けフォールバック）
+    if (!ctx.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+            this.beginPath();
+            this.moveTo(x + r, y);
+            this.arcTo(x + w, y, x + w, y + h, r);
+            this.arcTo(x + w, y + h, x, y + h, r);
+            this.arcTo(x, y + h, x, y, r);
+            this.arcTo(x, y, x + w, y, r);
+            this.closePath();
+            return this;
+        };
+    }
+    const badge = document.getElementById('stageBadge');
+    const statusBox = document.getElementById('status-message');
+    const resultCard = document.getElementById('resultCard');
+
+    function setStatus(text, type) {
+        statusBox.innerHTML = text;
+        statusBox.className = 'status-box';
+        if (type) statusBox.classList.add(type);
+    }
+
+    function updateFlowTrack() {
+        for (let i = 0; i <= 3; i++) {
+            const el = document.getElementById('fs' + i);
+            el.classList.remove('done', 'current');
+            if (i < state.stage) el.classList.add('done');
+            else if (i === state.stage) el.classList.add('current');
+        }
+    }
+
+    function showCtrl(n) {
+        for (let i = 0; i <= 4; i++) document.getElementById('ctrl' + i).style.display = 'none';
+        document.getElementById('ctrl' + n).style.display = 'block';
+    }
+
+    // ---------- ケース開始 ----------
+    function startCase() {
+        const id = IDS[Math.floor(Math.random() * IDS.length)];
+        state = { unknown: id, stage: 1, catalaseDone: false, branchDone: false, catalaseResult: null, mrsaStatus: Math.random() < 0.5 };
+        resultCard.style.display = 'none';
+        document.getElementById('mrsaControls').style.display = 'none';
+        badge.textContent = '検体 #' + Math.floor(1000 + Math.random() * 9000);
+        goStage(1);
+    }
+
+    function goStage(n) {
+        state.stage = n;
+        updateFlowTrack();
+        showCtrl(n);
+        document.getElementById('panelTitle').textContent =
+            n === 1 ? '2. グラム染色像の観察' :
+            n === 2 ? '3. カタラーゼ試験' :
+            n === 3 ? '4. 鑑別検査' :
+            n === 4 ? '5. 同定' : '1. 検体の準備';
+
+        if (n === 1) {
+            const b = DB[state.unknown];
+            document.getElementById('gramInfo').innerHTML =
+                'グラム染色の結果、<b>グラム陽性球菌</b>が観察されました。配列は<b>' +
+                arrangementLabel(b.arrangement) +
+                '</b>です。';
+            drawGram(b.arrangement);
+            setStatus('紫色に染まる球菌が観察されます。配列パターンにも注目してください。', null);
+        }
+        if (n === 2) {
+            drawSlideIdle();
+            document.getElementById('btnDrop').disabled = false;
+            document.getElementById('btnPick').disabled = true;
+            document.getElementById('btnNextFromCatalase').disabled = true;
+            setStatus('「スライドにH₂O₂を1滴置く」を押しましょう。', null);
+        }
+        if (n === 3) {
+            const b = DB[state.unknown];
+            const branchIsCoagulase = state.catalaseResult === true;
+            document.getElementById('branchInfo').innerHTML = branchIsCoagulase
+                ? 'カタラーゼ<b>陽性</b>でした。ブドウ球菌属が疑われます。続けて<b>コアグラーゼ試験</b>（ウサギ血漿への接種）を行い、<i>S. aureus</i>かCoNSかを鑑別します。'
+                : 'カタラーゼ<b>陰性</b>でした。レンサ球菌属・腸球菌属が疑われます。続けて<b>溶血性試験</b>（血液寒天培地）を行い、溶血パターンを確認します。';
+            document.getElementById('btnBranchRun').disabled = false;
+            document.getElementById('btnNextFromBranch').disabled = true;
+            if (branchIsCoagulase) { drawCoagulaseIdle(); setStatus('「検査を実施する」を押してウサギ血漿に接種しましょう。', null); }
+            else { drawHemolysisIdle(); setStatus('「検査を実施する」を押して血液寒天培地に塗抹培養しましょう。', null); }
+        }
+        if (n === 4) {
+            document.getElementById('guessSelect').value = '';
+            document.getElementById('mrsaControls').style.display = 'none';
+            drawUnknownSilhouette();
+            setStatus('これまでの所見をふまえて、菌種を予想してみましょう。', null);
+        }
+    }
+
+    function confirmReset() {
+        if (state.stage === 0) { resetAll(); return; }
+        if (window.confirm('現在の検体の進行状況が失われます。本当に最初からやり直しますか？')) {
+            resetAll();
+        }
+    }
+
+    function resetAll() {
+        state = { unknown: null, stage: 0, catalaseDone: false, branchDone: false, catalaseResult: null, mrsaStatus: false };
+        updateFlowTrack();
+        showCtrl(0);
+        document.getElementById('panelTitle').textContent = '1. 検体の準備';
+        document.getElementById('mrsaControls').style.display = 'none';
+        badge.textContent = '検体未着手';
+        resultCard.style.display = 'none';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setStatus('左パネルの「検体を受け取る」から開始してください。', null);
+    }
+
+    // ================= 描画：グラム染色 =================
+    function arrangementLabel(arrangement) {
+        return arrangement === 'cluster' ? 'ブドウの房状（クラスター）'
+            : arrangement === 'diplococci' ? 'ランセット型の双球菌（ペア）'
+            : '連鎖状（チェーン）';
+    }
+    function drawGram(arrangement) {
+        ctx.clearRect(0, 0, 300, 300);
+        // 視野（顕微鏡風の円形視野）
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(150, 150, 140, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.fillStyle = '#fdf6ee';
+        ctx.fillRect(0, 0, 300, 300);
+
+        ctx.fillStyle = '#6b3fa0';
+        if (arrangement === 'cluster') {
+            for (let g = 0; g < 5; g++) {
+                const cx = 70 + Math.random() * 160;
+                const cy = 70 + Math.random() * 160;
+                const n = 10 + Math.floor(Math.random() * 8);
+                for (let i = 0; i < n; i++) {
+                    const dx = (Math.random() - 0.5) * 34;
+                    const dy = (Math.random() - 0.5) * 34;
+                    ctx.beginPath();
+                    ctx.arc(cx + dx, cy + dy, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        } else if (arrangement === 'diplococci') {
+            // ランセット型（先端がとがった）双球菌のペアを視野内に散在させる
+            for (let p = 0; p < 16; p++) {
+                const cx = 60 + Math.random() * 180;
+                const cy = 60 + Math.random() * 180;
+                const angle = Math.random() * Math.PI * 2;
+                const ox = Math.cos(angle) * 6.5;
+                const oy = Math.sin(angle) * 6.5;
+                [-1, 1].forEach(sign => {
+                    ctx.save();
+                    ctx.translate(cx + ox * sign, cy + oy * sign);
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 6, 4, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+            }
+        } else {
+            for (let c = 0; c < 6; c++) {
+                let x = 40 + Math.random() * 60;
+                let y = 40 + Math.random() * 220;
+                const len = 6 + Math.floor(Math.random() * 5);
+                const angle = Math.random() * Math.PI;
+                for (let i = 0; i < len; i++) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    x += Math.cos(angle) * 11;
+                    y += Math.sin(angle) * 11;
+                }
+            }
+        }
+        ctx.restore();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(150, 150, 140, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('グラム染色 ×1000（模式図）', 150, 292);
+    }
+
+    // ================= 描画：カタラーゼ試験（スライド法） =================
+    // 手順：①スライドガラスにH2O2を1滴置く → ②培地上のコロニーをつまようじ等で拾い、その滴に浸ける → ③反応（泡）を観察
+    const DROP_X = 150, DROP_Y = 90;          // スライド上のH2O2滴の位置
+    const DISH_CX = 150, DISH_CY = 215, DISH_R = 62; // 培地（シャーレ）の位置・大きさ
+    const COLONY_SRC_X = 122, COLONY_SRC_Y = 197;    // 培地上のコロニーの位置
+
+    let bubbleParticles = [];
+    let dropY = 35, dropVisible = false, dropPlaced = false;
+    let pickX = COLONY_SRC_X, pickY = COLONY_SRC_Y, pickVisible = false, colonyOnStick = false, colonyMerged = false;
+
+    function drawSlideIdle() {
+        bubbleParticles = [];
+        dropY = 35; dropVisible = false; dropPlaced = false;
+        pickX = COLONY_SRC_X; pickY = COLONY_SRC_Y; pickVisible = false; colonyOnStick = false; colonyMerged = false;
+        drawCatalaseScene();
+    }
+
+    function drawCatalaseScene() {
+        ctx.clearRect(0, 0, 300, 300);
+
+        // スライドガラス（上部）
+        ctx.fillStyle = '#dbeafe';
+        ctx.strokeStyle = '#93c5fd';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(40, 58, 220, 62, 8);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#93c5fd';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('スライドガラス', 150, 51);
+
+        // ドロッパー
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(140, 6, 20, 22);
+        ctx.beginPath();
+        ctx.moveTo(140, 28); ctx.lineTo(160, 28); ctx.lineTo(150, 40); ctx.closePath();
+        ctx.fill();
+
+        // 落下中のH2O2一滴
+        if (dropVisible) {
+            ctx.fillStyle = 'rgba(96,165,250,0.85)';
+            ctx.beginPath();
+            ctx.ellipse(150, dropY, 5, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // スライド上に置かれたH2O2の滴
+        if (dropPlaced) {
+            ctx.fillStyle = colonyMerged ? 'rgba(229,217,182,0.9)' : 'rgba(147,197,253,0.75)';
+            ctx.beginPath();
+            ctx.ellipse(DROP_X, DROP_Y, 16, 11, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(96,165,250,0.7)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        // 培地（シャーレ）：下部。スライドとは別の容器であることを示す
+        ctx.fillStyle = '#f2e8d0';
+        ctx.beginPath();
+        ctx.arc(DISH_CX, DISH_CY, DISH_R, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#c9b880';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        // シャーレのフチ（立体感）
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(DISH_CX, DISH_CY, DISH_R - 6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 培地上のコロニー（まだ拾っていない場合のみ表示）
+        if (!colonyOnStick && !colonyMerged) {
+            ctx.fillStyle = '#e5d9b6';
+            ctx.beginPath();
+            ctx.arc(COLONY_SRC_X, COLONY_SRC_Y, 11, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#d6c48e';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        // 他の散在コロニー（雰囲気付け）
+        ctx.fillStyle = 'rgba(213,196,142,0.7)';
+        [[172, 205, 6], [135, 235, 5], [165, 240, 4]].forEach(c => {
+            ctx.beginPath();
+            ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        ctx.fillStyle = '#a9926a';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('培地（コロニー）', DISH_CX, DISH_CY + DISH_R + 14);
+
+        // つまようじ（コロニーを拾って運ぶ棒）
+        if (pickVisible) {
+            ctx.strokeStyle = '#a97c50';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(pickX, pickY - 55);
+            ctx.lineTo(pickX, pickY);
+            ctx.stroke();
+            if (colonyOnStick) {
+                ctx.fillStyle = '#e5d9b6';
+                ctx.beginPath();
+                ctx.arc(pickX, pickY, 7, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // 泡
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.strokeStyle = 'rgba(148,163,184,0.6)';
+        bubbleParticles.forEach(b => {
+            ctx.globalAlpha = b.alpha;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    // ① H2O2をスライドに1滴置く
+    function placeDrop() {
+        if (dropPlaced) return;
+        document.getElementById('btnDrop').disabled = true;
+
+        dropVisible = true;
+        dropY = 35;
+        const fallInterval = setInterval(() => {
+            dropY += 5;
+            drawCatalaseScene();
+            if (dropY >= DROP_Y) {
+                clearInterval(fallInterval);
+                dropVisible = false;
+                dropPlaced = true;
+                drawCatalaseScene();
+                setStatus('スライド上にH₂O₂の滴が置かれました。次に、培地上のコロニーを拾ってこの滴に浸けましょう。', null);
+                document.getElementById('btnPick').disabled = false;
+            }
+        }, 16);
+    }
+
+    // ② 培地からコロニーを拾ってH2O2の滴に浸ける
+    function touchColony() {
+        if (!dropPlaced || colonyMerged) return;
+        document.getElementById('btnPick').disabled = true;
+        const b = DB[state.unknown];
+        state.catalaseResult = b.catalase;
+
+        pickVisible = true;
+        pickX = COLONY_SRC_X; pickY = COLONY_SRC_Y;
+        colonyOnStick = true;
+        setStatus('つまようじで培地上のコロニーを拾っています…', null);
+
+        const steps = 30;
+        let i = 0;
+        const moveInterval = setInterval(() => {
+            i++;
+            const t = i / steps;
+            pickX = COLONY_SRC_X + (DROP_X - COLONY_SRC_X) * t;
+            pickY = COLONY_SRC_Y + (DROP_Y - COLONY_SRC_Y) * t;
+            drawCatalaseScene();
+            if (i >= steps) {
+                clearInterval(moveInterval);
+                colonyOnStick = false;
+                colonyMerged = true;
+                pickVisible = false;
+                drawCatalaseScene();
+                if (b.catalase) {
+                    setStatus('ブクブクと泡が発生しています…！酸素ガスが発生する反応です。', null);
+                    spawnBubbles();
+                } else {
+                    setStatus('泡は発生しません。コロニーが滴に混ざるのみで変化はみられません。', null);
+                    finishCatalase();
+                }
+            }
+        }, 16);
+    }
+
+    function spawnBubbles() {
+        let spawnCount = 0;
+        const spawnInterval = setInterval(() => {
+            for (let i = 0; i < 3; i++) {
+                bubbleParticles.push({
+                    x: DROP_X - 12 + Math.random() * 24,
+                    y: DROP_Y + Math.random() * 6,
+                    r: 2 + Math.random() * 4,
+                    vy: 0.6 + Math.random() * 1.2,
+                    vx: (Math.random() - 0.5) * 0.6,
+                    alpha: 0.9
+                });
+            }
+            spawnCount++;
+            if (spawnCount > 18) clearInterval(spawnInterval);
+        }, 90);
+
+        function animateBubbles() {
+            bubbleParticles.forEach(b => {
+                b.y -= b.vy;
+                b.x += b.vx;
+                if (b.y < 15) b.alpha -= 0.04;
+            });
+            bubbleParticles = bubbleParticles.filter(b => b.alpha > 0 && b.y > -5);
+            drawCatalaseScene();
+            if (bubbleParticles.length > 0 || spawnCount <= 18) {
+                requestAnimationFrame(animateBubbles);
+            } else {
+                setStatus('【カタラーゼ試験：陽性 (＋)】<br>泡（酸素）の発生を確認しました。ブドウ球菌属が示唆されます。', 'success');
+                finishCatalase();
+            }
+        }
+        requestAnimationFrame(animateBubbles);
+    }
+
+    function finishCatalase() {
+        document.getElementById('btnNextFromCatalase').disabled = false;
+    }
+
+    // ================= 描画：コアグラーゼ試験（簡易版） =================
+    let coagTilted = false;
+    function drawCoagulaseIdle() {
+        coagTilted = false;
+        drawCoagulaseScene('empty');
+    }
+    function drawCoagulaseScene(mode) {
+        ctx.clearRect(0, 0, 300, 300);
+        ctx.save();
+        ctx.translate(150, 260);
+        if (coagTilted) ctx.rotate(50 * Math.PI / 180);
+
+        // 試験管
+        ctx.strokeStyle = '#94a3b8';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-25, -190);
+        ctx.lineTo(-25, -30);
+        ctx.arcTo(-25, -5, 0, -5, 25);
+        ctx.arcTo(25, -5, 25, -30, 25);
+        ctx.lineTo(25, -190);
+        ctx.stroke(); ctx.fill();
+
+        if (mode === 'clot') {
+            ctx.fillStyle = 'rgba(251,191,36,0.95)';
+            ctx.beginPath();
+            ctx.moveTo(-23, -90);
+            ctx.lineTo(23, -90);
+            ctx.lineTo(23, -30);
+            ctx.arcTo(23, -6, 0, -6, 22);
+            ctx.arcTo(-23, -6, -23, -30, 22);
+            ctx.closePath();
+            ctx.fill();
+        } else if (mode === 'liquid') {
+            ctx.fillStyle = 'rgba(254,240,138,0.85)';
+            ctx.beginPath();
+            ctx.moveTo(-23, -90);
+            ctx.lineTo(23, -90);
+            ctx.lineTo(23, -30);
+            ctx.arcTo(23, -6, 0, -6, 22);
+            ctx.arcTo(-23, -6, -23, -30, 22);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.restore();
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(mode === 'empty' ? 'ウサギ血漿(0.25ml)入り試験管' : (coagTilted ? '試験管を傾けています' : '37℃・24時間培養後'), 150, 285);
+    }
+
+    // ================= 描画：溶血性試験（簡易版） =================
+    function drawHemolysisIdle() {
+        drawHemolysisScene(null);
+    }
+    function drawHemolysisScene(type) {
+        ctx.clearRect(0, 0, 300, 300);
+        // 血液寒天培地
+        const grad = ctx.createRadialGradient(150, 150, 10, 150, 150, 130);
+        grad.addColorStop(0, '#8b1a2b');
+        grad.addColorStop(1, '#5e0f1c');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(150, 150, 130, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#3a0a12';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        if (type) {
+            // 溶血帯
+            if (type === 'beta') {
+                ctx.fillStyle = 'rgba(250, 240, 210, 0.9)';
+                ctx.beginPath();
+                ctx.arc(150, 150, 48, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'alpha') {
+                ctx.fillStyle = 'rgba(107, 142, 90, 0.55)';
+                ctx.beginPath();
+                ctx.arc(150, 150, 42, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // コロニー
+            ctx.fillStyle = '#f5f5f0';
+            ctx.beginPath();
+            ctx.arc(150, 150, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#d6d6cc';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = '#c9c9c9';
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('（未接種）', 150, 154);
+        }
+
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('血液寒天培地', 150, 292);
+    }
+
+    // ================= 鑑別検査の実行 =================
+    function runBranchTest() {
+        document.getElementById('btnBranchRun').disabled = true;
+        const b = DB[state.unknown];
+        const isCoagulase = state.catalaseResult === true;
+
+        setStatus('反応を確認しています…', null);
+
+        setTimeout(() => {
+            if (isCoagulase) {
+                const mode = b.coagulase ? 'clot' : 'liquid';
+                drawCoagulaseScene(mode);
+                setTimeout(() => {
+                    coagTilted = true;
+                    drawCoagulaseScene(mode);
+                    if (b.coagulase) {
+                        setStatus('【コアグラーゼ試験：陽性 (＋)】<br>ゼリー状に凝固し、試験管を傾けても流れません。', 'success');
+                    } else {
+                        setStatus('【コアグラーゼ試験：陰性 (－)】<br>サラサラの液体のままで、傾けると流れます。', null);
+                    }
+                    document.getElementById('btnNextFromBranch').disabled = false;
+                }, 700);
+            } else {
+                drawHemolysisScene(b.hemolysis);
+                const label = b.hemolysis === 'beta' ? 'β溶血（完全溶血）：コロニー周囲が完全に透明化しています。'
+                    : b.hemolysis === 'alpha' ? 'α溶血（不完全溶血）：コロニー周囲が緑褐色に変化しています。'
+                    : 'γ溶血（非溶血）：コロニー周囲に変化はみられません。';
+                setStatus('【溶血性試験の結果】<br>' + label, b.hemolysis === 'gamma' ? null : 'success');
+                document.getElementById('btnNextFromBranch').disabled = false;
+            }
+        }, 800);
+    }
+
+    // ================= 同定判定 =================
+    function drawUnknownSilhouette() {
+        ctx.clearRect(0, 0, 300, 300);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath();
+        ctx.arc(150, 140, 60, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 40px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('？', 150, 155);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('この菌はなに？', 150, 230);
+    }
+
+    function judgeGuess() {
+        const guess = document.getElementById('guessSelect').value;
+        if (!guess) { alert('菌種を選択してください。'); return; }
+
+        const b = DB[state.unknown];
+        const correct = guess === state.unknown;
+
+        const catalaseTxt = b.catalase ? 'カタラーゼ陽性' : 'カタラーゼ陰性';
+        const branchTxt = b.catalase
+            ? 'コアグラーゼ' + (b.coagulase ? '陽性' : '陰性')
+            : (b.hemolysis === 'beta' ? 'β溶血' : b.hemolysis === 'alpha' ? 'α溶血' : 'γ溶血');
+
+        resultCard.style.display = 'block';
+        resultCard.innerHTML =
+            '<div class="sp-name">' + (correct ? '🎉 正解！ ' : '結果：') + b.name + '</div>' +
+            '<div class="sp-latin"><i>' + b.latin + '</i></div>' +
+            '<p style="font-size:13px;color:#065f46;text-align:left;margin:6px 0 0 0;">' + b.comment + '</p>' +
+            '<div class="path-trail"><b>同定の道筋：</b> グラム陽性球菌（' + arrangementLabel(b.arrangement) + '）→ ' + catalaseTxt + ' → ' + branchTxt + ' → <b>' + b.name + '</b></div>';
+
+        setStatus(correct
+            ? '正解です！検査結果の組み合わせから正しく同定できました。'
+            : 'あなたの予想は「' + (DB[guess] ? DB[guess].name : guess) + '」でしたが、正解は「' + b.name + '」でした。下の解説を確認してください。',
+            correct ? 'success' : 'wrong');
+
+        drawFinalIcon(b);
+
+        // 黄色ブドウ球菌の場合は、続けてMRSA/MSSA判定（ディスクアッセイ）を提示
+        const mrsaBox = document.getElementById('mrsaControls');
+        if (state.unknown === 'aureus') {
+            mrsaBox.style.display = 'block';
+            document.getElementById('btnMrsa').disabled = false;
+        } else {
+            mrsaBox.style.display = 'none';
+        }
+    }
+
+    // ================= MRSA/MSSA判定（セフォキシチンディスク法） =================
+    function runMrsaAssay() {
+        document.getElementById('btnMrsa').disabled = true;
+        setStatus('ミュラー・ヒントン寒天培地に塗抹し、セフォキシチンディスクを置いて35℃で培養しています…', null);
+
+        setTimeout(() => {
+            const isMrsa = state.mrsaStatus;
+            drawMrsaPlate(isMrsa);
+
+            const resultHtml = isMrsa
+                ? '【ディスクアッセイ：耐性 (MRSA)】<br>ディスク周囲にほとんど阻止円が形成されず、菌がディスクのすぐ際まで発育しています。'
+                : '【ディスクアッセイ：感性 (MSSA)】<br>ディスク周囲に明瞭な阻止円（発育阻止帯）が形成されています。';
+            setStatus(resultHtml, isMrsa ? 'warning' : 'success');
+
+            resultCard.innerHTML += '<div class="path-trail"><b>MRSA/MSSA判定：</b>' +
+                (isMrsa ? 'MRSA（メチシリン耐性黄色ブドウ球菌）' : 'MSSA（メチシリン感性黄色ブドウ球菌）') +
+                '（セフォキシチンディスク拡散法）</div>';
+        }, 900);
+    }
+
+    function drawMrsaPlate(isMrsa) {
+        ctx.clearRect(0, 0, 300, 300);
+        const cx = 150, cy = 150, r = 130;
+
+        // ミュラー・ヒントン寒天上の菌の一面発育（ローン）
+        ctx.fillStyle = '#c9c2a6';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#a99a6b';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // 阻止円（感性なら大きく、耐性ならごく小さい）
+        const zoneR = isMrsa ? 22 : 62;
+        ctx.fillStyle = '#eee3c4';
+        ctx.beginPath();
+        ctx.arc(cx, cy, zoneR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ディスク
+        ctx.fillStyle = '#fdfaf3';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('FOX', cx, cy + 3);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('セフォキシチンディスク（ミュラー・ヒントン寒天）', 150, 292);
+    }
+
+    function drawFinalIcon(b) {
+        ctx.clearRect(0, 0, 300, 300);
+        ctx.fillStyle = '#ecfdf5';
+        ctx.beginPath();
+        ctx.arc(150, 130, 70, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.fillStyle = '#065f46';
+        ctx.font = 'bold 40px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('✓', 150, 145);
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText(b.name, 150, 225);
+    }
+
+    // ---------- 初期化 ----------
+    window.onload = function () {
+        updateFlowTrack();
+        setStatus('左パネルの「検体を受け取る」から開始してください。', null);
+    };
+</script>
+
+</body>
+</html>
