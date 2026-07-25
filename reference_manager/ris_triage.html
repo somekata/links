@@ -64,6 +64,12 @@
     background:var(--card);font-size:13px;color:var(--ink);
   }
   .search:focus{outline:none;border-color:var(--teal);}
+  select.filter{
+    padding:9px 10px;border:1.5px solid var(--rule);border-radius:3px;
+    background:var(--card);font-size:13px;color:var(--ink);
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+  select.filter:focus{outline:none;border-color:var(--teal);}
   .action-btn{
     background:var(--card);color:var(--ink);border:1.5px solid var(--ink);
     border-radius:3px;padding:8px 14px;font-size:13px;font-weight:600;
@@ -219,7 +225,16 @@
   <div class="toolbar">
     <button class="file-btn" id="importBtn">+ Import .ris file(s)</button>
     <input type="file" id="fileInput" accept=".ris" multiple>
-    <input type="text" class="search" id="searchBox" placeholder="Filter by author, journal, year, or title...">
+    <input type="text" class="search" id="searchBox" placeholder="Filter by author, journal, or title...">
+    <select class="filter" id="yearFilter"><option value="">All years</option></select>
+    <select class="filter" id="prioFilter">
+      <option value="">All priorities</option>
+      <option value="5">Priority 5</option>
+      <option value="4">Priority 4</option>
+      <option value="3">Priority 3</option>
+      <option value="2">Priority 2</option>
+      <option value="1">Priority 1</option>
+    </select>
     <button class="action-btn" id="exportCsvBtn" disabled>Export CSV (checked)</button>
     <button class="action-btn" id="exportHtmlBtn" disabled>Export HTML (checked)</button>
     <button class="action-btn primary" id="exportPdfBtn" disabled>Export PDF (checked)</button>
@@ -426,6 +441,7 @@ fileInput.addEventListener('change', (e)=>{
       });
       pending--;
       if (pending === 0){
+        updateYearFilterOptions();
         render();
       }
     };
@@ -434,7 +450,17 @@ fileInput.addEventListener('change', (e)=>{
   fileInput.value = '';
 });
 
+function updateYearFilterOptions(){
+  const sel = document.getElementById('yearFilter');
+  const current = sel.value;
+  const years = [...new Set(refs.map(r=>String(r.year||'')).filter(Boolean))].sort((a,b)=>b-a);
+  sel.innerHTML = '<option value="">All years</option>' + years.map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+  if (years.includes(current)) sel.value = current;
+}
+
 document.getElementById('searchBox').addEventListener('input', render);
+document.getElementById('yearFilter').addEventListener('change', render);
+document.getElementById('prioFilter').addEventListener('change', render);
 
 document.querySelectorAll('thead th[data-key]').forEach(th=>{
   th.addEventListener('click', ()=>{
@@ -447,15 +473,19 @@ document.querySelectorAll('thead th[data-key]').forEach(th=>{
 
 function getFiltered(){
   const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const yf = document.getElementById('yearFilter').value;
+  const pf = document.getElementById('prioFilter').value;
   let list = refs;
   if (q){
-    list = refs.filter(r =>
+    list = list.filter(r =>
       (r.firstAuthor||'').toLowerCase().includes(q) ||
       (r.journal||'').toLowerCase().includes(q) ||
       (r.year||'').toLowerCase().includes(q) ||
       (r.title||'').toLowerCase().includes(q)
     );
   }
+  if (yf) list = list.filter(r => String(r.year||'') === yf);
+  if (pf) list = list.filter(r => String(r.priority) === pf);
   if (sortKey){
     list = [...list].sort((a,b)=>{
       let av = a[sortKey], bv = b[sortKey];
