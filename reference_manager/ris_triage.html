@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Reference Triage — RIS Catalog</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#F5F1E6;
+    --paper-dark:#EDE6D6;
+    --ink:#1F2A22;
+    --ink-soft:#4B5A4F;
+    --rule:#C9BFA5;
+    --oxblood:#7A2E28;
+    --teal:#2C5F5A;
+    --teal-soft:#DCE9E6;
+    --card:#FFFDF8;
+    --amber:#B9862E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px;}
+
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px solid var(--ink);
+    padding-bottom:14px;margin-bottom:18px;
+    flex-wrap:wrap;gap:10px;
+  }
+  header.top h1{
+    font-family:Georgia,'Times New Roman',serif;
+    font-size:28px;font-weight:700;margin:0;letter-spacing:0.3px;
+  }
+  header.top .sub{
+    font-size:12px;color:var(--ink-soft);letter-spacing:0.08em;text-transform:uppercase;
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+  .count-badge{
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;
+    font-size:13px;color:var(--ink-soft);
+  }
+
+  .toolbar{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    margin-bottom:16px;
+  }
+  .file-btn{
+    background:var(--ink);color:var(--paper);
+    border:none;border-radius:3px;
+    padding:9px 16px;font-size:13px;font-weight:600;
+    cursor:pointer;letter-spacing:0.02em;
+  }
+  .file-btn:hover{background:var(--teal);}
+  input[type=file]{display:none;}
+  .search{
+    flex:1;min-width:180px;
+    padding:9px 12px;border:1.5px solid var(--rule);border-radius:3px;
+    background:var(--card);font-size:13px;color:var(--ink);
+  }
+  .search:focus{outline:none;border-color:var(--teal);}
+  .action-btn{
+    background:var(--card);color:var(--ink);border:1.5px solid var(--ink);
+    border-radius:3px;padding:8px 14px;font-size:13px;font-weight:600;
+    cursor:pointer;
+  }
+  .action-btn:hover{background:var(--teal-soft);border-color:var(--teal);}
+  .action-btn.primary{background:var(--oxblood);color:#fff;border-color:var(--oxblood);}
+  .action-btn.primary:hover{background:#5f221d;}
+  .action-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .empty-state{
+    border:2px dashed var(--rule);border-radius:6px;
+    padding:60px 20px;text-align:center;color:var(--ink-soft);
+    font-family:Georgia,serif;font-size:15px;
+  }
+
+  table{width:100%;border-collapse:collapse;background:var(--card);
+    border:1px solid var(--rule);border-radius:2px;overflow:hidden;}
+  thead th{
+    text-align:left;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--ink-soft);padding:10px 12px;border-bottom:2px solid var(--ink);
+    cursor:pointer;user-select:none;white-space:nowrap;
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+  thead th:hover{color:var(--teal);}
+  thead th.sorted::after{content:" " attr(data-arrow);}
+  tbody tr{border-bottom:1px solid var(--paper-dark);cursor:pointer;}
+  tbody tr:hover{background:var(--teal-soft);}
+  tbody td{padding:9px 12px;font-size:14px;vertical-align:middle;}
+  td.au{font-weight:600;}
+  td.jo{color:var(--ink-soft);font-style:italic;}
+  td.yr{font-family:'SFMono-Regular',Menlo,Consolas,monospace;color:var(--ink-soft);}
+  td.chk{width:36px;text-align:center;}
+  td.pr{width:70px;}
+  input[type=checkbox]{width:16px;height:16px;accent-color:var(--oxblood);cursor:pointer;}
+  .prio-input{
+    width:52px;padding:4px 4px;border:1px solid var(--rule);border-radius:3px;
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:13px;text-align:center;
+    background:#fff;cursor:pointer;
+  }
+  .prio-input:focus{outline:none;border-color:var(--amber);}
+  .prio-input option[value="5"]{font-weight:700;}
+
+  .bulk-label{
+    font-size:12.5px;color:var(--ink-soft);
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+  .prio-scale{display:flex;gap:4px;}
+  .prio-btn{
+    width:28px;height:28px;border:1.5px solid var(--rule);border-radius:4px;
+    background:var(--card);color:var(--ink);font-weight:700;font-size:13px;
+    cursor:pointer;font-family:'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+  .prio-btn:hover{border-color:var(--amber);background:#FBF0DC;}
+  .prio-btn[data-p="5"]{border-color:var(--oxblood);}
+  .prio-btn[data-p="5"]:hover{background:var(--oxblood);color:#fff;}
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(31,42,34,0.55);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .overlay.show{display:flex;}
+  .card{
+    background:var(--card);max-width:640px;width:100%;max-height:82vh;overflow-y:auto;
+    border-radius:6px;padding:28px 30px;position:relative;
+    border-top:6px solid var(--oxblood);
+    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  }
+  .card .close{
+    position:absolute;top:14px;right:16px;background:none;border:none;
+    font-size:22px;color:var(--ink-soft);cursor:pointer;line-height:1;
+  }
+  .card .close:hover{color:var(--oxblood);}
+  .card h2{font-family:Georgia,serif;font-size:20px;margin:4px 0 10px;line-height:1.35;padding-right:20px;}
+  .card .meta{
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:12.5px;
+    color:var(--teal);margin-bottom:16px;letter-spacing:0.02em;
+  }
+  .card .authors{font-size:13.5px;color:var(--ink-soft);margin-bottom:14px;line-height:1.5;}
+  .card .label{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-soft);
+    margin-bottom:4px;margin-top:16px;font-family:'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+  .card .abstract{font-size:14px;line-height:1.6;white-space:pre-wrap;}
+  .card .doi a{color:var(--teal);font-size:13px;word-break:break-all;}
+
+  footer.stat{
+    margin-top:14px;font-size:12px;color:var(--ink-soft);
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+
+  .tabs{
+    display:flex;gap:4px;margin-bottom:18px;border-bottom:1.5px solid var(--rule);
+  }
+  .tab-btn{
+    background:none;border:none;padding:9px 16px;font-size:13.5px;font-weight:600;
+    color:var(--ink-soft);cursor:pointer;border-bottom:3px solid transparent;
+    margin-bottom:-1.5px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  .tab-btn:hover{color:var(--ink);}
+  .tab-btn.active{color:var(--oxblood);border-bottom-color:var(--oxblood);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .help{max-width:720px;}
+  .help h2{
+    font-family:Georgia,'Times New Roman',serif;font-size:19px;margin:26px 0 8px;
+  }
+  .help h2:first-child{margin-top:4px;}
+  .help p, .help li{font-size:14px;line-height:1.7;color:var(--ink);}
+  .help ol, .help ul{padding-left:22px;margin:6px 0 14px;}
+  .help .step-card{
+    background:var(--card);border:1px solid var(--rule);border-radius:5px;
+    padding:16px 18px;margin-bottom:12px;
+  }
+  .help .step-card b{color:var(--oxblood);}
+  .help code{
+    background:var(--paper-dark);padding:1px 6px;border-radius:3px;
+    font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:12.5px;
+  }
+  .help a{color:var(--teal);}
+  .notice-box{
+    border:1.5px solid var(--amber);background:#FBF3E0;border-radius:5px;
+    padding:14px 18px;font-size:13px;line-height:1.6;color:var(--ink-soft);
+    margin-top:24px;
+  }
+  .notice-box b{color:var(--ink);}
+
+  .site-footer{
+    margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);
+    font-size:11.5px;line-height:1.7;color:var(--ink-soft);
+  }
+  .site-footer a{color:var(--teal);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Reference Triage</h1>
+      <div class="sub">RIS import &middot; sort &middot; filter &middot; priority &middot; export</div>
+    </div>
+    <div class="count-badge" id="countBadge">0 references loaded</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="triage">Triage</button>
+    <button class="tab-btn" data-tab="help">使い方 / How to use</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-triage">
+  <div class="toolbar">
+    <button class="file-btn" id="importBtn">+ Import .ris file(s)</button>
+    <input type="file" id="fileInput" accept=".ris" multiple>
+    <input type="text" class="search" id="searchBox" placeholder="Filter by author, journal, year, or title...">
+    <button class="action-btn" id="exportCsvBtn" disabled>Export CSV (checked)</button>
+    <button class="action-btn primary" id="exportPdfBtn" disabled>Export PDF (checked)</button>
+  </div>
+
+  <div class="toolbar" id="bulkBar" style="display:none;">
+    <span class="bulk-label" id="bulkLabel">0 checked</span>
+    <span class="bulk-label">Set priority to:</span>
+    <div class="prio-scale" id="bulkScale">
+      <button type="button" class="prio-btn" data-p="1">1</button>
+      <button type="button" class="prio-btn" data-p="2">2</button>
+      <button type="button" class="prio-btn" data-p="3">3</button>
+      <button type="button" class="prio-btn" data-p="4">4</button>
+      <button type="button" class="prio-btn" data-p="5">5</button>
+    </div>
+    <button class="action-btn" id="checkAllBtn">Check all shown</button>
+    <button class="action-btn" id="uncheckAllBtn">Uncheck all</button>
+  </div>
+
+  <div id="emptyState" class="empty-state">
+    No references loaded yet. Click <strong>+ Import .ris file(s)</strong> to begin — multiple files are supported.
+  </div>
+
+  <table id="refTable" style="display:none;">
+    <thead>
+      <tr>
+        <th class="chk"></th>
+        <th data-key="firstAuthor">First Author</th>
+        <th data-key="journal">Journal</th>
+        <th data-key="year">Year</th>
+        <th data-key="priority">Priority</th>
+      </tr>
+    </thead>
+    <tbody id="refBody"></tbody>
+  </table>
+
+  <footer class="stat" id="statLine"></footer>
+  </div>
+
+  <div class="tab-panel help" id="tab-help">
+    <h2>1. Zotero などから .ris ファイルをダウンロードする</h2>
+    <div class="step-card">
+      <b>Zotero の場合</b><br>
+      書誌情報をエクスポートしたいコレクション（またはライブラリ全体）を右クリック → <code>Export Collection...</code>（またはExport Library...）を選択 →
+      形式（Format）で <code>RIS</code> を選び、<code>Export</code> をクリックしてください。<br>
+      複数のコレクションを別々に書き出した場合は、複数の <code>.ris</code> ファイルができますが、このツールは複数ファイルを一度にまとめて読み込めます。
+    </div>
+    <div class="step-card">
+      <b>EndNote / Mendeley など他の文献管理ツールの場合</b><br>
+      多くの文献管理ソフトは "Export" メニューから <code>RIS</code> 形式を選択できます。PubMedやGoogle Scholarから直接RISをダウンロードできる場合もあります。
+    </div>
+
+    <h2>2. このツールに読み込む</h2>
+    <div class="step-card">
+      「Triage」タブに戻り、<b>+ Import .ris file(s)</b> ボタンをクリックして、ダウンロードした <code>.ris</code> ファイルを選択してください（複数選択可）。
+      表に First Author / Journal / Year が一覧表示されます。
+    </div>
+
+    <h2>3. 絞り込み・並び替え</h2>
+    <ul>
+      <li>検索ボックスで著者名・雑誌名・年・タイトルを横断的にフィルターできます</li>
+      <li>列見出し（First Author / Journal / Year / Priority）をクリックするとソートされます</li>
+      <li>行をクリックすると、タイトル・著者全員・Abstract・DOIリンクを含む詳細が表示されます</li>
+    </ul>
+
+    <h2>4. 優先度をつける</h2>
+    <ul>
+      <li>各行の Priority 列は1〜5の5段階（数字が大きいほど優先度が高い、デフォルト3）</li>
+      <li>複数の論文をチェックすると画面下に一括操作バーが現れ、1〜5のボタンで優先度をまとめて設定できます</li>
+    </ul>
+
+    <h2>5. 書き出す</h2>
+    <ul>
+      <li><b>Export CSV</b>：チェックした論文をCSV形式でダウンロード</li>
+      <li><b>Export PDF</b>：チェックした論文を優先度の高い順に並べ、First Author, Journal, Year, Priority のあとにタイトルとAbstractが続く形式で出力</li>
+    </ul>
+
+    <h2>関連リンク</h2>
+    <p>
+      <a href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener">bactPlatform</a>
+    </p>
+
+    <div class="notice-box">
+      <b>注意事項</b><br>
+      本ツールはAI（Claude, Anthropic）を用いて作成されました。動作や出力結果には誤りが含まれる可能性があります。文献の選定や優先順位付けの最終判断は、必ずご自身の確認のもとで行ってください。<br>
+      ファイルの読み込み・処理はすべてブラウザ内で完結し、外部サーバーへの送信は行われません。
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    本ツールは AI（Claude, Anthropic）を用いて作成されました。内容や動作には誤りが含まれる可能性があります。重要な判断には必ずご自身での確認をお願いします。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <button class="close" id="closeCard">&times;</button>
+    <div class="meta" id="modalMeta"></div>
+    <h2 id="modalTitle"></h2>
+    <div class="authors" id="modalAuthors"></div>
+    <div class="label">Abstract</div>
+    <div class="abstract" id="modalAbstract"></div>
+    <div class="label">DOI</div>
+    <div class="doi" id="modalDoi"></div>
+  </div>
+</div>
+
+<script>
+let refs = [];
+let nextId = 1;
+let sortKey = null;
+let sortDir = 1;
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=> b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=> p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+function parseRis(text){
+  // Line-based state machine. A naive text.split(/ER\s*-\s*.../) on the whole
+  // blob is unsafe: it also matches "ER-" wherever it appears mid-word inside
+  // an abstract (e.g. "PER-1"), silently truncating records. Instead, only
+  // treat a line as the start/end marker when the WHOLE line is that tag.
+  const allLines = text.split(/\r?\n/);
+  const out = [];
+  let rec = null;
+  let lastTag = null;
+
+  function pushIfValid(){
+    if (rec && rec.title){
+      rec.firstAuthor = rec.authors[0] || '(no author)';
+      out.push(rec);
+    }
+  }
+
+  for (const line of allLines){
+    const m = line.match(/^([A-Z][A-Z0-9])(\s*-\s*)(.*)$/);
+
+    if (m && m[1] === 'TY'){
+      pushIfValid(); // in case a previous record was missing a proper ER line
+      rec = {authors:[], title:'', year:'', journal:'', abstract:'', doi:''};
+      lastTag = 'TY';
+      continue;
+    }
+    if (!rec) continue; // ignore anything before the first TY
+
+    if (m && m[1] === 'ER' && m[3].trim() === ''){
+      pushIfValid();
+      rec = null;
+      lastTag = null;
+      continue;
+    }
+
+    if (m){
+      const tag = m[1], val = m[3].trim();
+      lastTag = tag;
+      if (tag === 'AU') rec.authors.push(val);
+      else if (tag === 'TI' || tag === 'T1') rec.title = rec.title || val;
+      else if (tag === 'PY' || tag === 'Y1') rec.year = rec.year || (val.match(/\d{4}/)||[val])[0];
+      else if (tag === 'T2') rec.journal = rec.journal || val;
+      else if (tag === 'J2') rec.journal = val; // prefer abbreviated journal if present
+      else if (tag === 'AB' || tag === 'N2') rec.abstract = rec.abstract ? rec.abstract + ' ' + val : val;
+      else if (tag === 'DO') rec.doi = val;
+    } else {
+      // Continuation line: many RIS exports wrap long AB/TI fields onto
+      // subsequent lines without repeating the tag. Append to whichever
+      // field was most recently populated instead of silently dropping it.
+      const cont = line.trim();
+      if (!cont) continue;
+      if (lastTag === 'AB' || lastTag === 'N2'){
+        rec.abstract = rec.abstract ? rec.abstract + ' ' + cont : cont;
+      } else if (lastTag === 'TI' || lastTag === 'T1'){
+        rec.title = rec.title ? rec.title + ' ' + cont : cont;
+      }
+    }
+  }
+  pushIfValid(); // handle a final record not terminated by an ER line
+
+  return out;
+}
+
+const fileInput = document.getElementById('fileInput');
+const importBtn = document.getElementById('importBtn');
+importBtn.addEventListener('click', ()=> fileInput.click());
+
+fileInput.addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files);
+  let pending = files.length;
+  if (!pending) return;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const parsed = parseRis(ev.target.result);
+      parsed.forEach(r=>{
+        r.id = nextId++;
+        r.checked = false;
+        r.priority = 3;
+        refs.push(r);
+      });
+      pending--;
+      if (pending === 0){
+        render();
+      }
+    };
+    reader.readAsText(file);
+  });
+  fileInput.value = '';
+});
+
+document.getElementById('searchBox').addEventListener('input', render);
+
+document.querySelectorAll('thead th[data-key]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if (sortKey === key) sortDir *= -1;
+    else { sortKey = key; sortDir = 1; }
+    render();
+  });
+});
+
+function getFiltered(){
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  let list = refs;
+  if (q){
+    list = refs.filter(r =>
+      (r.firstAuthor||'').toLowerCase().includes(q) ||
+      (r.journal||'').toLowerCase().includes(q) ||
+      (r.year||'').toLowerCase().includes(q) ||
+      (r.title||'').toLowerCase().includes(q)
+    );
+  }
+  if (sortKey){
+    list = [...list].sort((a,b)=>{
+      let av = a[sortKey], bv = b[sortKey];
+      if (sortKey === 'priority'){
+        av = Number(av); bv = Number(bv);
+      } else if (sortKey === 'year'){
+        av = Number(av)||0; bv = Number(bv)||0;
+      } else {
+        av = (av||'').toLowerCase(); bv = (bv||'').toLowerCase();
+      }
+      if (av < bv) return -1*sortDir;
+      if (av > bv) return 1*sortDir;
+      return 0;
+    });
+  }
+  return list;
+}
+
+function render(){
+  const list = getFiltered();
+  const body = document.getElementById('refBody');
+  const table = document.getElementById('refTable');
+  const empty = document.getElementById('emptyState');
+
+  document.getElementById('countBadge').textContent = refs.length + ' reference' + (refs.length===1?'':'s') + ' loaded';
+
+  document.querySelectorAll('thead th[data-key]').forEach(th=>{
+    th.classList.remove('sorted');
+    if (th.dataset.key === sortKey){
+      th.classList.add('sorted');
+      th.setAttribute('data-arrow', sortDir === 1 ? '\u25B2' : '\u25BC');
+    }
+  });
+
+  if (refs.length === 0){
+    empty.style.display = 'block';
+    table.style.display = 'none';
+  } else {
+    empty.style.display = 'none';
+    table.style.display = 'table';
+  }
+
+  body.innerHTML = '';
+  list.forEach(r=>{
+    const tr = document.createElement('tr');
+
+    const tdChk = document.createElement('td');
+    tdChk.className = 'chk';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = r.checked;
+    chk.addEventListener('click', (e)=>{ e.stopPropagation(); r.checked = chk.checked; updateButtons(); });
+    tdChk.appendChild(chk);
+
+    const tdAu = document.createElement('td');
+    tdAu.className = 'au';
+    tdAu.textContent = r.firstAuthor;
+
+    const tdJo = document.createElement('td');
+    tdJo.className = 'jo';
+    tdJo.textContent = r.journal || '—';
+
+    const tdYr = document.createElement('td');
+    tdYr.className = 'yr';
+    tdYr.textContent = r.year || '—';
+
+    const tdPr = document.createElement('td');
+    tdPr.className = 'pr';
+    const pin = document.createElement('select');
+    pin.className = 'prio-input';
+    [1,2,3,4,5].forEach(v=>{
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      if (Number(r.priority) === v) opt.selected = true;
+      pin.appendChild(opt);
+    });
+    pin.addEventListener('click', (e)=> e.stopPropagation());
+    pin.addEventListener('change', ()=>{ r.priority = Number(pin.value); });
+    tdPr.appendChild(pin);
+
+    tr.appendChild(tdChk);
+    tr.appendChild(tdAu);
+    tr.appendChild(tdJo);
+    tr.appendChild(tdYr);
+    tr.appendChild(tdPr);
+
+    tr.addEventListener('click', ()=> openModal(r));
+    body.appendChild(tr);
+  });
+
+  document.getElementById('statLine').textContent =
+    list.length + ' shown \u00b7 ' + refs.filter(r=>r.checked).length + ' checked';
+
+  updateButtons();
+}
+
+function updateButtons(){
+  const n = refs.filter(r=>r.checked).length;
+  document.getElementById('exportCsvBtn').disabled = n === 0;
+  document.getElementById('exportPdfBtn').disabled = n === 0;
+
+  const bulkBar = document.getElementById('bulkBar');
+  if (n > 0 && refs.length > 0){
+    bulkBar.style.display = 'flex';
+    document.getElementById('bulkLabel').textContent = n + ' checked';
+  } else if (refs.length > 0) {
+    bulkBar.style.display = 'flex';
+    document.getElementById('bulkLabel').textContent = '0 checked';
+  } else {
+    bulkBar.style.display = 'none';
+  }
+}
+
+document.getElementById('bulkScale').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.prio-btn');
+  if (!btn) return;
+  const p = Number(btn.dataset.p);
+  refs.filter(r=>r.checked).forEach(r=> r.priority = p);
+  render();
+});
+
+document.getElementById('checkAllBtn').addEventListener('click', ()=>{
+  getFiltered().forEach(r=> r.checked = true);
+  render();
+});
+document.getElementById('uncheckAllBtn').addEventListener('click', ()=>{
+  getFiltered().forEach(r=> r.checked = false);
+  render();
+});
+
+function openModal(r){
+  document.getElementById('modalMeta').textContent =
+    (r.journal || '') + '  \u00b7  ' + (r.year || '') + (r.priority ? '  \u00b7  Priority ' + r.priority : '');
+  document.getElementById('modalTitle').textContent = r.title;
+  document.getElementById('modalAuthors').textContent = r.authors.join('; ') || '(no authors listed)';
+  document.getElementById('modalAbstract').textContent = r.abstract || '(no abstract available)';
+  const doiEl = document.getElementById('modalDoi');
+  if (r.doi){
+    doiEl.innerHTML = '<a href="https://doi.org/' + r.doi + '" target="_blank">' + r.doi + '</a>';
+  } else {
+    doiEl.textContent = '—';
+  }
+  document.getElementById('overlay').classList.add('show');
+}
+document.getElementById('closeCard').addEventListener('click', ()=>{
+  document.getElementById('overlay').classList.remove('show');
+});
+document.getElementById('overlay').addEventListener('click', (e)=>{
+  if (e.target.id === 'overlay') document.getElementById('overlay').classList.remove('show');
+});
+
+function checkedSorted(){
+  let list = refs.filter(r=>r.checked);
+  list.sort((a,b)=> Number(b.priority) - Number(a.priority));
+  return list;
+}
+
+function csvEscape(s){
+  s = String(s == null ? '' : s);
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+
+// jsPDF's built-in fonts (Helvetica/Times/Courier) only support WinAnsi encoding.
+// Greek letters, math symbols, and smart typography silently fail to render and
+// also throw off splitTextToSize's width calculations, causing text to overflow
+// the page margin. Replace them with safe ASCII equivalents before layout.
+const PDF_SAFE_MAP = {
+  '\u03b1':'alpha','\u03b2':'beta','\u03b3':'gamma','\u03b4':'delta','\u03b5':'epsilon',
+  '\u03b8':'theta','\u03bb':'lambda','\u03bc':'u','\u03c0':'pi','\u03c3':'sigma',
+  '\u03c4':'tau','\u03c6':'phi','\u03c7':'chi','\u03c8':'psi','\u03c9':'omega',
+  '\u0391':'Alpha','\u0392':'Beta','\u0393':'Gamma','\u0394':'Delta','\u0395':'Epsilon',
+  '\u0398':'Theta','\u039b':'Lambda','\u03a0':'Pi','\u03a3':'Sigma','\u03a6':'Phi',
+  '\u03a7':'Chi','\u03a8':'Psi','\u03a9':'Omega',
+  '\u2264':'<=','\u2265':'>=','\u2260':'!=','\u2248':'~',
+  '\u00d7':'x','\u00f7':'/','\u00b1':'+/-','\u00b0':'deg',
+  '\u2018':"'",'\u2019':"'",'\u201c':'"','\u201d':'"',
+  '\u2013':'-','\u2014':'-','\u2212':'-',
+  '\u2026':'...', '\u2032':"'", '\u2033':'"',
+  '\u00b5':'u', '\u2192':'->', '\u2190':'<-',
+  '\u0393\u2019':'', // stray combos occasionally seen from bad OCR text
+};
+function pdfSafe(str){
+  str = String(str == null ? '' : str);
+  let out = '';
+  for (const ch of str){
+    if (PDF_SAFE_MAP.hasOwnProperty(ch)) out += PDF_SAFE_MAP[ch];
+    else if (ch.charCodeAt(0) > 255) out += ''; // drop anything else non-WinAnsi rather than mis-measure it
+    else out += ch;
+  }
+  return out;
+}
+
+document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
+  const list = checkedSorted();
+  const rows = [['First Author','Journal','Year','Priority','Title','DOI','Abstract']];
+  list.forEach(r=>{
+    rows.push([r.firstAuthor, r.journal, r.year, r.priority, r.title, r.doi, r.abstract]);
+  });
+  const csv = rows.map(row=>row.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'reference_triage_selected.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'a4'});
+  const marginL = 48, marginR = 48, pageW = 595.28, pageH = 841.89;
+  const usableW = pageW - marginL - marginR;
+  let y = 56;
+
+  const list = checkedSorted();
+
+  function ensureSpace(lines){
+    if (y + lines > pageH - 50){ doc.addPage(); y = 56; }
+  }
+
+  list.forEach((r, idx)=>{
+    const header = pdfSafe(r.firstAuthor) + ', ' + pdfSafe(r.journal || '\u2014') + ', ' + (r.year || '\u2014') + ', Priority: ' + (r.priority || '\u2014');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    const headerLines = doc.splitTextToSize(header, usableW);
+    ensureSpace(headerLines.length*14 + 10);
+    doc.text(headerLines, marginL, y);
+    y += headerLines.length*14 + 2;
+
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(10.5);
+    const titleLines = doc.splitTextToSize(pdfSafe(r.title), usableW);
+    ensureSpace(titleLines.length*13 + 6);
+    doc.text(titleLines, marginL, y);
+    y += titleLines.length*13 + 8;
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9.5);
+    const abs = pdfSafe(r.abstract || '(no abstract available)');
+    const absLines = doc.splitTextToSize(abs, usableW);
+    absLines.forEach(line=>{
+      ensureSpace(13);
+      doc.text(line, marginL, y);
+      y += 12.5;
+    });
+
+    y += 16;
+    if (idx < list.length - 1){
+      ensureSpace(10);
+      doc.setDrawColor(200,200,200);
+      doc.line(marginL, y-8, pageW-marginR, y-8);
+    }
+  });
+
+  doc.save('reference_triage_selected.pdf');
+});
+
+render();
+</script>
+</body>
+</html>
