@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PubMed → RIS 変換ツール</title>
+<style>
+  :root{
+    --bg:#f7f8fa;
+    --card:#ffffff;
+    --border:#d9dde3;
+    --accent:#2563eb;
+    --accent-dark:#1d4ed8;
+    --text:#000000;
+    --muted:#5b6472;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
+  }
+  header{
+    background:var(--card);
+    border-bottom:1px solid var(--border);
+    padding:20px 24px;
+  }
+  header h1{
+    margin:0 0 4px 0;
+    font-size:20px;
+  }
+  header p{
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+  }
+  main{
+    max-width:1200px;
+    margin:0 auto;
+    padding:24px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;}
+  }
+  .panel{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+  }
+  .panel h2{
+    font-size:15px;
+    margin:0 0 10px 0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  textarea{
+    width:100%;
+    min-height:420px;
+    resize:vertical;
+    font-family:"SFMono-Regular",Consolas,"Courier New",monospace;
+    font-size:13px;
+    padding:10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:#fbfbfc;
+    color:var(--text);
+  }
+  .controls{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+  button, .file-label{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:9px 16px;
+    border-radius:6px;
+    font-size:14px;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  button:hover, .file-label:hover{background:var(--accent-dark);}
+  button.secondary{
+    background:#fff;
+    color:var(--accent);
+    border:1px solid var(--accent);
+  }
+  button.secondary:hover{background:#eef2ff;}
+  input[type=file]{display:none;}
+  .status{
+    font-size:13px;
+    color:var(--muted);
+    margin-top:8px;
+    min-height:18px;
+  }
+  .status.ok{color:#0a7a3d;}
+  .status.err{color:#c0342c;}
+  footer{
+    max-width:1200px;
+    margin:0 auto;
+    padding:16px 24px 32px 24px;
+    font-size:11px;
+    color:var(--muted);
+    border-top:1px solid var(--border);
+    margin-top:12px;
+  }
+  .badge{
+    font-size:11px;
+    color:var(--muted);
+    font-weight:normal;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PubMed形式 → RIS形式 変換ツール</h1>
+  <p>PubMedからエクスポートした「PubMed」形式（.txt / .nbib）のテキストを、EndNoteやZoteroなどで読み込める RIS 形式に変換します。</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>入力：PubMed形式 <span class="badge">貼り付け または ファイル読込</span></h2>
+    <textarea id="input" placeholder="PubMedの「Send to > Citation manager」または「Format: PubMed」でダウンロードしたテキストをここに貼り付けてください。&#10;&#10;例：&#10;PMID- 25506949&#10;OWN - NLM&#10;TI  - Title of the article.&#10;AB  - Abstract text...&#10;FAU - Smith, John A&#10;AU  - Smith JA&#10;TA  - N Engl J Med&#10;JT  - The New England journal of medicine&#10;DP  - 2015 Jan 1&#10;VI  - 372&#10;IP  - 1&#10;PG  - 1-9&#10;"></textarea>
+    <div class="controls">
+      <label class="file-label" for="fileInput">ファイルを選択</label>
+      <input type="file" id="fileInput" accept=".txt,.nbib,.text">
+      <button id="convertBtn">RISに変換</button>
+      <button id="clearBtn" class="secondary">クリア</button>
+    </div>
+    <div class="status" id="inputStatus"></div>
+  </section>
+
+  <section class="panel">
+    <h2>出力：RIS形式 <span class="badge" id="recordCount"></span></h2>
+    <textarea id="output" readonly placeholder="変換結果がここに表示されます。"></textarea>
+    <div class="controls">
+      <button id="downloadBtn">.ris をダウンロード</button>
+      <button id="copyBtn" class="secondary">コピー</button>
+    </div>
+    <div class="status" id="outputStatus"></div>
+  </section>
+</main>
+
+<footer>
+  本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  const inputEl = document.getElementById('input');
+  const outputEl = document.getElementById('output');
+  const inputStatus = document.getElementById('inputStatus');
+  const outputStatus = document.getElementById('outputStatus');
+  const recordCount = document.getElementById('recordCount');
+
+  document.getElementById('fileInput').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt){
+      inputEl.value = evt.target.result;
+      inputStatus.textContent = `ファイル「${file.name}」を読み込みました。`;
+      inputStatus.className = 'status ok';
+    };
+    reader.onerror = function(){
+      inputStatus.textContent = 'ファイルの読み込みに失敗しました。';
+      inputStatus.className = 'status err';
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', function(){
+    inputEl.value = '';
+    outputEl.value = '';
+    inputStatus.textContent = '';
+    outputStatus.textContent = '';
+    recordCount.textContent = '';
+  });
+
+  document.getElementById('convertBtn').addEventListener('click', function(){
+    try{
+      const records = parsePubMed(inputEl.value);
+      if(records.length === 0){
+        outputEl.value = '';
+        outputStatus.textContent = '変換できるレコードが見つかりませんでした。入力形式をご確認ください。';
+        outputStatus.className = 'status err';
+        recordCount.textContent = '';
+        return;
+      }
+      const risText = records.map(recordToRis).join('\n');
+      outputEl.value = risText;
+      outputStatus.textContent = `${records.length} 件のレコードを変換しました。`;
+      outputStatus.className = 'status ok';
+      recordCount.textContent = `(${records.length} 件)`;
+    }catch(err){
+      outputStatus.textContent = '変換中にエラーが発生しました: ' + err.message;
+      outputStatus.className = 'status err';
+    }
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', function(){
+    if(!outputEl.value.trim()){
+      outputStatus.textContent = '先に変換を実行してください。';
+      outputStatus.className = 'status err';
+      return;
+    }
+    const blob = new Blob([outputEl.value], {type:'application/x-research-info-systems;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `pubmed_export_${ts}.ris`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', function(){
+    if(!outputEl.value.trim()) return;
+    navigator.clipboard.writeText(outputEl.value).then(function(){
+      outputStatus.textContent = 'クリップボードにコピーしました。';
+      outputStatus.className = 'status ok';
+    }, function(){
+      outputEl.select();
+      document.execCommand('copy');
+      outputStatus.textContent = 'クリップボードにコピーしました。';
+      outputStatus.className = 'status ok';
+    });
+  });
+
+  // ---- PubMed形式のパース ----
+  // 各フィールドは "TAG- value" または "TAG - value"（タグは2〜4文字、6桁目付近にダッシュ）。
+  // 継続行は先頭が空白（インデント）で始まる。レコードは空行、またはPMID行の出現で区切る。
+  function parsePubMed(text){
+    const lines = text.replace(/\r\n/g, '\n').split('\n');
+    const records = [];
+    let current = null;
+    let lastTag = null;
+
+    // 新規フィールド行: 行頭（空白なし）に2〜4文字の英字タグ、その後 " - " または "- "
+    const fieldRe = /^([A-Za-z][A-Za-z0-9]{1,3})\s*-\s?(.*)$/;
+
+    for(const rawLine of lines){
+      const line = rawLine.replace(/\s+$/, '');
+
+      if(line.trim() === ''){
+        // 空行はレコード区切り
+        if(current && Object.keys(current).length > 0){
+          records.push(current);
+        }
+        current = null;
+        lastTag = null;
+        continue;
+      }
+
+      const startsWithSpace = /^\s/.test(rawLine);
+      const m = !startsWithSpace ? line.match(fieldRe) : null;
+
+      if(m){
+        const tag = m[1].trim();
+        const value = m[2];
+        if(tag === 'PMID' && current && Object.keys(current).length > 0){
+          records.push(current);
+          current = null;
+        }
+        if(!current) current = {};
+        if(!current[tag]) current[tag] = [];
+        current[tag].push(value);
+        lastTag = tag;
+      } else if(startsWithSpace && current && lastTag){
+        // 継続行: 直前のフィールドに連結
+        const arr = current[lastTag];
+        const idx = arr.length - 1;
+        arr[idx] = (arr[idx] + ' ' + line.trim()).trim();
+      }
+      // current が null かつフィールド行でない孤立行は無視する
+    }
+    if(current && Object.keys(current).length > 0){
+      records.push(current);
+    }
+    return records;
+  }
+
+  function get(rec, tag){
+    return rec[tag] ? rec[tag] : [];
+  }
+  function getFirst(rec, tag){
+    return rec[tag] && rec[tag].length ? rec[tag][0] : '';
+  }
+
+  // Publication Type -> RIS TY
+  function mapType(ptList){
+    const joined = ptList.join(' | ').toLowerCase();
+    if(joined.includes('review')) return 'JOUR';
+    if(joined.includes('letter')) return 'JOUR';
+    if(joined.includes('case reports')) return 'JOUR';
+    return 'JOUR'; // PubMedの大半は雑誌論文。RISの型もJOURで統一する。
+  }
+
+  function extractYear(dp){
+    if(!dp) return '';
+    const m = dp.match(/\d{4}/);
+    return m ? m[0] : '';
+  }
+
+  function extractDateParts(dp){
+    // "2015 Jan 1" のような文字列を YYYY/MM/DD 風に整形（可能な範囲で）
+    if(!dp) return '';
+    const months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',
+      jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+    const yearM = dp.match(/\d{4}/);
+    const year = yearM ? yearM[0] : '';
+    const monM = dp.match(/[A-Za-z]{3,}/);
+    const mon = monM ? months[monM[0].toLowerCase().slice(0,3)] || '' : '';
+    const dayM = dp.match(/\b(\d{1,2})\b(?!\d{3})/);
+    let day = '';
+    if(dayM && dayM[1].length <= 2 && !dp.startsWith(dayM[1])){
+      day = dayM[1].padStart(2,'0');
+    }
+    if(!year) return '';
+    return `${year}${mon ? '/' + mon : '/'}${mon && day ? '/' + day : (mon ? '' : '')}`;
+  }
+
+  function extractDoi(rec){
+    const aids = get(rec, 'AID').concat(get(rec, 'LID'));
+    for(const a of aids){
+      const m = a.match(/^(.*?)\s*\[doi\]/i);
+      if(m) return m[1].trim();
+      if(/^10\.\d{4,9}\/\S+$/.test(a.trim())) return a.trim();
+    }
+    return '';
+  }
+
+  function splitPages(pg){
+    if(!pg) return {sp:'', ep:''};
+    const parts = pg.split('-');
+    if(parts.length === 1) return {sp: parts[0].trim(), ep:''};
+    let sp = parts[0].trim();
+    let ep = parts[1].trim();
+    // 末尾ページが省略形（例: 123-30 → 130）の場合を補完
+    if(ep.length < sp.length){
+      const prefix = sp.slice(0, sp.length - ep.length);
+      ep = prefix + ep;
+    }
+    return {sp, ep};
+  }
+
+  function cleanMesh(term){
+    return term.replace(/^\*/, '').replace(/\/.*$/, '').trim();
+  }
+
+  function esc(v){
+    return (v || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function recordToRis(rec){
+    const lines = [];
+    const push = (tag, value) => {
+      const v = esc(value);
+      if(v) lines.push(`${tag}  - ${v}`);
+    };
+
+    lines.push(`TY  - ${mapType(get(rec,'PT'))}`);
+
+    // 著者: FAUを優先、なければAU
+    const authors = get(rec,'FAU').length ? get(rec,'FAU') : get(rec,'AU');
+    authors.forEach(a => push('AU', a));
+
+    push('TI', getFirst(rec,'TI') || getFirst(rec,'BTI'));
+
+    const jt = getFirst(rec,'JT');
+    const ta = getFirst(rec,'TA');
+    if(jt) push('T2', jt);
+    if(ta) push('JO', ta);
+    if(ta) push('JF', ta);
+
+    const dp = getFirst(rec,'DP');
+    const year = extractYear(dp);
+    if(year) push('PY', year);
+    const da = extractDateParts(dp);
+    if(da) push('DA', da);
+
+    push('VL', getFirst(rec,'VI'));
+    push('IS', getFirst(rec,'IP'));
+
+    const pg = getFirst(rec,'PG');
+    const {sp, ep} = splitPages(pg);
+    if(sp) push('SP', sp);
+    if(ep) push('EP', ep);
+
+    const ab = get(rec,'AB').join(' ');
+    if(ab) push('AB', ab);
+
+    const issn = getFirst(rec,'IS_ISSN') || getFirst(rec,'IS');
+    // 注意: PubMed形式のISフィールドはISSNだが、上でIPをIssueとして使用済み。
+    // ISSNらしき値（ハイフンを含む8桁）のみ採用する。
+    const isVal = getFirst(rec,'IS');
+    if(isVal && /^\d{4}-\d{3}[\dX]$/.test(isVal.trim())) push('SN', isVal);
+
+    const doi = extractDoi(rec);
+    if(doi) push('DO', doi);
+
+    const pmid = getFirst(rec,'PMID');
+    if(pmid){
+      push('AN', pmid);
+      push('UR', `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`);
+    }
+
+    const la = getFirst(rec,'LA');
+    if(la) push('LA', la);
+
+    const pl = getFirst(rec,'PL');
+    if(pl) push('CY', pl);
+
+    const mh = get(rec,'MH');
+    mh.forEach(m => push('KW', cleanMesh(m)));
+
+    const ot = get(rec,'OT');
+    ot.forEach(o => push('KW', o.replace(/^\*/, '')));
+
+    lines.push('ER  - ');
+    return lines.join('\n') + '\n';
+  }
+
+})();
+</script>
+
+</body>
+</html>
