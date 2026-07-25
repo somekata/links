@@ -221,6 +221,7 @@
     <input type="file" id="fileInput" accept=".ris" multiple>
     <input type="text" class="search" id="searchBox" placeholder="Filter by author, journal, year, or title...">
     <button class="action-btn" id="exportCsvBtn" disabled>Export CSV (checked)</button>
+    <button class="action-btn" id="exportHtmlBtn" disabled>Export HTML (checked)</button>
     <button class="action-btn primary" id="exportPdfBtn" disabled>Export PDF (checked)</button>
   </div>
 
@@ -554,6 +555,7 @@ function render(){
 function updateButtons(){
   const n = refs.filter(r=>r.checked).length;
   document.getElementById('exportCsvBtn').disabled = n === 0;
+  document.getElementById('exportHtmlBtn').disabled = n === 0;
   document.getElementById('exportPdfBtn').disabled = n === 0;
 
   const bulkBar = document.getElementById('bulkBar');
@@ -662,6 +664,228 @@ document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
   a.click();
   URL.revokeObjectURL(url);
 });
+
+document.getElementById('exportHtmlBtn').addEventListener('click', ()=>{
+  const list = checkedSorted();
+  const payload = list.map(r=>({
+    firstAuthor: r.firstAuthor, journal: r.journal, year: r.year,
+    priority: r.priority, title: r.title, authors: r.authors, abstract: r.abstract, doi: r.doi
+  }));
+  const html = buildExportHtml(payload);
+  const blob = new Blob([html], {type:'text/html;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'reference_triage_selected.html';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+function buildExportHtml(data){
+  const dataJson = JSON.stringify(data).replace(/</g, '\u003c');
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Reference List</title>
+<style>
+  :root{
+    --paper:#F5F1E6; --ink:#1F2A22; --ink-soft:#4B5A4F; --rule:#C9BFA5;
+    --oxblood:#7A2E28; --teal:#2C5F5A; --teal-soft:#DCE9E6; --card:#FFFDF8; --amber:#B9862E;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;margin:0;padding:28px 24px 60px;}
+  .wrap{max-width:1040px;margin:0 auto;}
+  h1{font-family:Georgia,'Times New Roman',serif;font-size:24px;border-bottom:3px solid var(--ink);padding-bottom:12px;margin-bottom:16px;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+  .search{flex:1;min-width:180px;padding:8px 12px;border:1.5px solid var(--rule);border-radius:3px;background:var(--card);font-size:13px;}
+  .search:focus{outline:none;border-color:var(--teal);}
+  select.filter{padding:8px 10px;border:1.5px solid var(--rule);border-radius:3px;background:var(--card);font-size:13px;font-family:'SFMono-Regular',Menlo,Consolas,monospace;}
+  select.filter:focus{outline:none;border-color:var(--teal);}
+  label.chk-filter{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);font-family:'SFMono-Regular',Menlo,Consolas,monospace;white-space:nowrap;}
+  .action-btn{background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-radius:3px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .action-btn:hover{background:var(--teal-soft);border-color:var(--teal);}
+  .action-btn.primary{background:var(--oxblood);color:#fff;border-color:var(--oxblood);}
+  .action-btn.primary:hover{background:#5f221d;}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--rule);}
+  thead th{text-align:left;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-soft);padding:10px 12px;border-bottom:2px solid var(--ink);cursor:pointer;font-family:'SFMono-Regular',Menlo,Consolas,monospace;white-space:nowrap;}
+  thead th.sorted::after{content:" " attr(data-arrow);}
+  tbody tr.row{border-bottom:1px solid #EDE6D6;cursor:pointer;}
+  tbody tr.row:hover{background:var(--teal-soft);}
+  tbody td{padding:9px 12px;font-size:13.5px;vertical-align:middle;}
+  td.au{font-weight:600;} td.jo{color:var(--ink-soft);font-style:italic;}
+  td.yr{font-family:'SFMono-Regular',Menlo,Consolas,monospace;color:var(--ink-soft);}
+  td.chk{width:32px;text-align:center;} td.pr{width:64px;}
+  input[type=checkbox]{width:15px;height:15px;accent-color:var(--oxblood);}
+  select.prio{width:48px;padding:3px;border:1px solid var(--rule);border-radius:3px;font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:12.5px;text-align:center;background:#fff;}
+  .detail{background:var(--card);border-top:4px solid var(--oxblood);border-radius:4px;padding:14px 18px;margin:0 0 10px;font-size:13.5px;line-height:1.6;}
+  .detail .meta{font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:12px;color:var(--teal);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .detail .close-btn{background:none;border:1px solid var(--rule);border-radius:3px;font-size:11px;color:var(--ink-soft);padding:3px 8px;cursor:pointer;font-family:'SFMono-Regular',Menlo,Consolas,monospace;}
+  .detail .close-btn:hover{border-color:var(--oxblood);color:var(--oxblood);}
+  .detail h3{font-family:Georgia,serif;font-size:16px;margin:2px 0 8px;}
+  .detail .authors{color:var(--ink-soft);margin-bottom:8px;}
+  .foot{margin-top:14px;font-size:11px;color:var(--ink-soft);font-family:'SFMono-Regular',Menlo,Consolas,monospace;}
+  @media print{
+    .toolbar{display:none;}
+    body{background:#fff;padding:0;}
+    .wrap{max-width:100%;}
+    table{border:none;}
+    thead th{border-bottom:2px solid #000;}
+    tbody tr{break-inside:avoid;}
+    .detail{break-inside:avoid;}
+    .detail .close-btn{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Reference List</h1>
+  <div class="toolbar">
+    <input type="text" class="search" id="searchBox" placeholder="Filter by author, journal, or title...">
+    <select class="filter" id="yearFilter"><option value="">All years</option></select>
+    <select class="filter" id="prioFilter">
+      <option value="">All priorities</option>
+      <option value="5">Priority 5</option>
+      <option value="4">Priority 4</option>
+      <option value="3">Priority 3</option>
+      <option value="2">Priority 2</option>
+      <option value="1">Priority 1</option>
+    </select>
+    <label class="chk-filter"><input type="checkbox" id="checkedOnly">Checked only</label>
+    <button class="action-btn" id="checkAllBtn">Check all shown</button>
+    <button class="action-btn" id="uncheckAllBtn">Uncheck all shown</button>
+    <button class="action-btn" id="openAllBtn">Open all</button>
+    <button class="action-btn" id="closeAllBtn">Close all</button>
+    <button class="action-btn primary" id="printBtn">Print</button>
+  </div>
+  <table id="refTable">
+    <thead><tr>
+      <th class="chk"></th>
+      <th data-key="firstAuthor">First Author</th>
+      <th data-key="journal">Journal</th>
+      <th data-key="year">Year</th>
+      <th data-key="priority">Priority</th>
+    </tr></thead>
+    <tbody id="refBody"></tbody>
+  </table>
+  <div class="foot" id="statLine"></div>
+</div>
+<script>
+let refs = ${dataJson}.map((r,i)=>Object.assign({id:i, checked:true}, r));
+let sortKey=null, sortDir=1;
+let openIds = new Set(refs.map(r=>r.id)); // abstracts open by default
+
+// populate year filter options
+const years = [...new Set(refs.map(r=>String(r.year||'')).filter(Boolean))].sort((a,b)=>b-a);
+const yearSel = document.getElementById('yearFilter');
+years.forEach(y=>{
+  const opt = document.createElement('option');
+  opt.value = y; opt.textContent = y;
+  yearSel.appendChild(opt);
+});
+
+function getFiltered(){
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const yf = document.getElementById('yearFilter').value;
+  const pf = document.getElementById('prioFilter').value;
+  const checkedOnly = document.getElementById('checkedOnly').checked;
+  let list = refs;
+  if (q){
+    list = list.filter(r =>
+      (r.firstAuthor||'').toLowerCase().includes(q) ||
+      (r.journal||'').toLowerCase().includes(q) ||
+      (r.title||'').toLowerCase().includes(q)
+    );
+  }
+  if (yf) list = list.filter(r => String(r.year||'') === yf);
+  if (pf) list = list.filter(r => String(r.priority) === pf);
+  if (checkedOnly) list = list.filter(r => r.checked);
+  if (sortKey){
+    list = [...list].sort((a,b)=>{
+      let av=a[sortKey], bv=b[sortKey];
+      if (sortKey==='priority' || sortKey==='year'){ av=Number(av)||0; bv=Number(bv)||0; }
+      else { av=(av||'').toLowerCase(); bv=(bv||'').toLowerCase(); }
+      if (av<bv) return -1*sortDir;
+      if (av>bv) return 1*sortDir;
+      return 0;
+    });
+  }
+  return list;
+}
+
+function render(){
+  const list = getFiltered();
+  const body = document.getElementById('refBody');
+  body.innerHTML = '';
+  document.querySelectorAll('thead th[data-key]').forEach(th=>{
+    th.classList.remove('sorted');
+    if (th.dataset.key === sortKey){ th.classList.add('sorted'); th.setAttribute('data-arrow', sortDir===1?'\u25B2':'\u25BC'); }
+  });
+  list.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.className = 'row';
+    tr.innerHTML =
+      '<td class="chk"><input type="checkbox" ' + (r.checked?'checked':'') + '></td>' +
+      '<td class="au"></td><td class="jo"></td><td class="yr"></td>' +
+      '<td class="pr"><select class="prio">' + [1,2,3,4,5].map(v=>'<option value="'+v+'"'+(Number(r.priority)===v?' selected':'')+'>'+v+'</option>').join('') + '</select></td>';
+    tr.children[1].textContent = r.firstAuthor;
+    tr.children[2].textContent = r.journal || '\u2014';
+    tr.children[3].textContent = r.year || '\u2014';
+    tr.querySelector('input[type=checkbox]').addEventListener('click', e=>{ e.stopPropagation(); r.checked = e.target.checked; });
+    tr.querySelector('select').addEventListener('click', e=> e.stopPropagation());
+    tr.querySelector('select').addEventListener('change', e=>{ r.priority = Number(e.target.value); });
+    tr.addEventListener('click', ()=> toggleOpen(r.id));
+    body.appendChild(tr);
+
+    if (openIds.has(r.id)){
+      const trDetail = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 5;
+      td.innerHTML = '<div class="detail">' +
+        '<div class="meta"><span>' + (r.journal||'') + ' &middot; ' + (r.year||'') + ' &middot; Priority ' + r.priority + '</span>' +
+        '<button class="close-btn" type="button">Close</button></div>' +
+        '<h3></h3><div class="authors"></div>' +
+        '<div class="abs"></div>' +
+        (r.doi ? '<div style="margin-top:8px;font-size:12px;"><a href="https://doi.org/'+r.doi+'" target="_blank">'+r.doi+'</a></div>' : '') +
+        '</div>';
+      td.querySelector('h3').textContent = r.title;
+      td.querySelector('.authors').textContent = (r.authors||[]).join('; ');
+      td.querySelector('.abs').textContent = r.abstract || '(no abstract available)';
+      td.querySelector('.close-btn').addEventListener('click', e=>{ e.stopPropagation(); toggleOpen(r.id); });
+      trDetail.appendChild(td);
+      body.appendChild(trDetail);
+    }
+  });
+  document.getElementById('statLine').textContent = list.length + ' of ' + refs.length + ' shown \u00b7 ' + refs.filter(r=>r.checked).length + ' checked';
+}
+
+function toggleOpen(id){
+  if (openIds.has(id)) openIds.delete(id); else openIds.add(id);
+  render();
+}
+
+document.getElementById('searchBox').addEventListener('input', render);
+document.getElementById('yearFilter').addEventListener('change', render);
+document.getElementById('prioFilter').addEventListener('change', render);
+document.getElementById('checkedOnly').addEventListener('change', render);
+document.querySelectorAll('thead th[data-key]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if (sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=1; }
+    render();
+  });
+});
+document.getElementById('checkAllBtn').addEventListener('click', ()=>{ getFiltered().forEach(r=> r.checked=true); render(); });
+document.getElementById('uncheckAllBtn').addEventListener('click', ()=>{ getFiltered().forEach(r=> r.checked=false); render(); });
+document.getElementById('openAllBtn').addEventListener('click', ()=>{ refs.forEach(r=> openIds.add(r.id)); render(); });
+document.getElementById('closeAllBtn').addEventListener('click', ()=>{ openIds.clear(); render(); });
+document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+render();
+<\/script>
+</body>
+</html>`;
+}
+
 
 document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
   const { jsPDF } = window.jspdf;
