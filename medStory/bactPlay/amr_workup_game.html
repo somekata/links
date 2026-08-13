@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>耐性菌ワークアップ実技演習 ─ CIM/eTest/PCR体験デモ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1b1e24;
+    --panel:#242832;
+    --panel-2:#2b303c;
+    --line:rgba(255,255,255,.09);
+    --ink:#e9ecf1;
+    --sub:#9aa3b2;
+    --accent:#5fa8d3;
+    --accent-2:#7fd3a3;
+    --warn:#e0a33e;
+    --bad:#e2665c;
+    --good:#5fc084;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 640px at 10% -8%, #262c37 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Noto Sans JP',sans-serif;
+    min-height:100vh;
+    padding:30px 16px 10px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .disp{font-family:'Zen Maru Gothic',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .wrap{width:100%; max-width:920px;}
+
+  header{margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:16px;}
+  .eyebrow{font-size:11.5px; letter-spacing:.14em; color:var(--accent); font-weight:700;}
+  h1{margin:4px 0 0; font-size:clamp(20px,3.6vw,28px); font-weight:900;}
+  .lede{margin:6px 0 0; font-size:13.5px; line-height:1.8; color:var(--sub); max-width:680px;}
+
+  /* stepper */
+  .stepper{
+    display:flex; gap:4px; margin-bottom:22px; overflow-x:auto; padding-bottom:4px;
+  }
+  .step-pill{
+    flex:1; min-width:88px;
+    text-align:center;
+    padding:8px 4px 7px;
+    border-radius:9px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    font-size:10.5px;
+    color:var(--sub);
+    font-weight:700;
+    position:relative;
+  }
+  .step-pill .num{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--sub); margin-bottom:2px;
+  }
+  .step-pill.active{ background:linear-gradient(180deg,#2f3a45,#242e38); border-color:var(--accent); color:var(--ink);}
+  .step-pill.active .num{ color:var(--accent);}
+  .step-pill.done{ border-color:rgba(95,192,132,.5);}
+  .step-pill.done .num{ color:var(--good);}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:22px;
+    margin-bottom:16px;
+  }
+  .panel h2{ margin:0 0 6px; font-size:16px; font-weight:900;}
+  .panel .hint{ font-size:12.5px; color:var(--sub); line-height:1.75; margin-bottom:16px;}
+
+  /* case select */
+  .case-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;}
+  .case-card{
+    background:var(--panel-2); border:1.5px solid var(--line); border-radius:12px;
+    padding:16px; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .case-card:hover{ border-color:var(--accent);}
+  .case-card.selected{ border-color:var(--accent); background:#28323c;}
+  .case-card .tag{ font-size:10px; color:var(--accent); font-weight:700; letter-spacing:.08em;}
+  .case-card h3{ margin:6px 0 4px; font-size:15px; font-family:'Zen Maru Gothic',sans-serif;}
+  .case-card p{ margin:0; font-size:12px; color:var(--sub); line-height:1.7;}
+
+  /* identification panel */
+  .id-panel{
+    margin-top:16px; padding:16px; border-radius:12px; background:var(--panel-2); border:1px solid var(--line);
+  }
+  .id-panel h4{ margin:0 0 12px; font-size:12.5px; color:var(--accent-2); font-weight:700;}
+  .id-tests{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px;}
+  .id-test{
+    background:#20242c; border:1px solid var(--line); border-radius:9px; padding:10px 12px;
+  }
+  .id-test .t-name{ font-size:10.5px; color:var(--sub); font-weight:700; margin-bottom:4px;}
+  .id-test .t-val{ font-size:13px; font-weight:700;}
+  .maldi{ font-size:11px; color:var(--sub); margin-bottom:6px; font-weight:700;}
+  .maldi-row{ display:flex; align-items:center; gap:8px; margin-bottom:5px;}
+  .maldi-row .sp-name{ width:150px; font-size:11.5px; font-style:italic; flex:none;}
+  .maldi-bar-bg{ flex:1; height:10px; background:#181b21; border-radius:5px; overflow:hidden;}
+  .maldi-bar-fill{ height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:5px;}
+  .maldi-row .sc{ width:38px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--sub);}
+
+  /* tables */
+  table.data{ width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.data th, table.data td{ padding:8px 8px; border-bottom:1px solid var(--line); text-align:left;}
+  table.data th{ color:var(--sub); font-weight:700; font-size:11px;}
+  .bp-note{ font-size:11px; color:var(--sub); margin-top:6px;}
+
+  .btn-row{ display:flex; gap:6px; flex-wrap:wrap;}
+  .choice-btn{
+    padding:6px 12px; border-radius:8px; border:1px solid var(--line);
+    background:var(--panel-2); color:var(--ink); font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .choice-btn.picked{ border-color:var(--accent); background:#2c3f4c; color:var(--accent);}
+  .choice-btn.picked.S{ border-color:var(--good); background:#233a2e; color:var(--good);}
+  .choice-btn.picked.I{ border-color:var(--warn); background:#3a3323; color:var(--warn);}
+  .choice-btn.picked.R{ border-color:var(--bad); background:#3a2626; color:var(--bad);}
+
+  /* etest strip */
+  .etest-block{ margin-bottom:20px; padding-bottom:16px; border-bottom:1px dashed var(--line);}
+  .etest-block:last-child{ border-bottom:none;}
+  .etest-drug{ font-weight:700; font-size:13.5px; margin-bottom:8px;}
+  .strip{
+    position:relative; height:96px; border-radius:6px; overflow:hidden;
+    background:repeating-linear-gradient(45deg, rgba(111,156,90,.55) 0 4px, rgba(111,156,90,.3) 4px 8px), #55503a;
+    border:1px solid var(--line);
+    margin-bottom:10px;
+  }
+  .strip .inhibit{
+    position:absolute; top:0; bottom:0; right:0;
+    background:#efe6cf;
+    clip-path: polygon(22% 0%, 100% 0%, 100% 100%, 22% 100%, 0% 66%, 0% 34%);
+  }
+  .boundary-line{
+    position:absolute; top:4px; bottom:4px; width:2px;
+    background:var(--warn); box-shadow:0 0 5px var(--warn);
+    z-index:5; pointer-events:none;
+  }
+  .strip-bar{
+    position:absolute; left:4px; right:4px; top:50%; transform:translateY(-50%);
+    height:30px; background:#f7f2e2; border-top:1px solid #8a7a4a; border-bottom:1px solid #8a7a4a;
+    box-shadow:0 1px 4px rgba(0,0,0,.3);
+  }
+  .strip-tick{
+    position:absolute; transform:translateX(-50%);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-size:8.5px; font-weight:700; color:#4a4030;
+    cursor:pointer; padding:1px 2px; border-radius:3px; white-space:nowrap; height:14px;
+  }
+  .strip-tick:hover{ background:rgba(95,168,211,.25);}
+  .strip-tick.picked{ background:var(--accent); color:#fff;}
+  .strip-tick.auto-mic{
+    background:#e0a33e; color:#1c1f24; font-weight:900;
+    box-shadow:0 0 0 2px #1c1f24, 0 0 8px 2px rgba(224,163,62,.8);
+    z-index:2;
+  }
+  .strip .locked-msg{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:var(--sub); background:rgba(27,30,36,.55);
+  }
+  .ticks{ display:flex; justify-content:space-between; gap:3px;}
+  .tick-btn{
+    flex:1; font-family:'JetBrains Mono',monospace; font-size:10px; text-align:center;
+    padding:5px 2px; border-radius:6px; border:1px solid var(--line); background:var(--panel-2);
+    color:var(--sub); cursor:pointer;
+  }
+  .tick-btn.picked{ border-color:var(--accent); color:var(--accent); background:#2c3f4c;}
+  .run-btn{
+    margin-top:8px; font-size:11.5px; padding:6px 12px; border-radius:8px; border:1px solid var(--accent);
+    background:transparent; color:var(--accent); cursor:pointer; font-weight:700;
+  }
+
+  /* mechanism test - procedure + plates */
+  .proc-steps{ display:flex; gap:8px; margin:14px 0 18px; flex-wrap:wrap;}
+  .proc-step{
+    flex:1; min-width:110px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:9px 10px; position:relative;
+  }
+  .proc-step.active{ border-color:var(--accent);}
+  .proc-step .p-num{
+    display:inline-flex; align-items:center; justify-content:center; width:18px;height:18px; border-radius:50%;
+    background:var(--accent); color:#0e1216; font-size:10px; font-weight:900; margin-bottom:6px;
+  }
+  .proc-step .p-label{ font-size:11px; line-height:1.5; color:var(--ink);}
+
+  .plates-row{ display:flex; gap:22px; flex-wrap:wrap; margin-top:6px;}
+  .plate-col{ text-align:center;}
+  .plate-title{ font-size:12px; font-weight:700; margin-bottom:8px;}
+  .plate-svg{ background:#efe6cf; border-radius:50%; }
+  .plate-caption{ font-size:11px; color:var(--sub); margin-top:8px; max-width:200px;}
+  .plate-caption b{ color:var(--ink);}
+
+  /* mechanism test */
+  .mech-option{
+    display:block; width:100%; text-align:left; padding:10px 12px; margin-bottom:6px;
+    border-radius:9px; border:1px solid var(--line); background:var(--panel-2);
+    color:var(--ink); font-size:12.5px; cursor:pointer;
+  }
+  .mech-option.picked{ border-color:var(--accent); background:#2c3f4c;}
+  .result-box{
+    margin-top:12px; padding:12px 14px; border-radius:10px; background:#20242c; border:1px solid var(--line);
+    font-size:12.5px; line-height:1.8;
+  }
+  .result-box b{ color:var(--accent-2);}
+  .incubate{
+    display:inline-block; margin-left:8px; font-size:11px; color:var(--sub);
+  }
+
+  /* PCR gel */
+  .gel-wrap{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;}
+  .gel{
+    background:#12151a; border-radius:8px; padding:14px 12px; width:340px; height:220px;
+    position:relative; border:1px solid var(--line);
+  }
+  .lane{
+    position:absolute; bottom:14px; width:20px; background:transparent;
+  }
+  .band{
+    position:absolute; height:6px; border-radius:2px; background:#dfe6ee; opacity:.9;
+    box-shadow:0 0 6px rgba(255,255,255,.25);
+  }
+  .lane-label{ position:absolute; bottom:-2px; font-size:8px; color:var(--sub); text-align:center; width:20px; left:0;}
+  .gene-options{ display:flex; flex-direction:column; gap:6px; min-width:200px;}
+
+  /* report */
+  .report-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:600px){ .report-grid{ grid-template-columns:1fr;} }
+  .field label{ display:block; font-size:11.5px; color:var(--sub); margin-bottom:6px; font-weight:700;}
+  select{
+    width:100%; padding:9px 10px; border-radius:8px; background:var(--panel-2); color:var(--ink);
+    border:1px solid var(--line); font-size:12.5px;
+  }
+
+  /* nav */
+  .nav-row{ display:flex; justify-content:space-between; margin-top:6px;}
+  button.nav{
+    padding:10px 18px; border-radius:9px; border:none; font-weight:700; font-size:13px; cursor:pointer;
+    font-family:'Zen Maru Gothic',sans-serif;
+  }
+  button.nav.next{ background:linear-gradient(180deg,#5fa8d3,#3f7ea3); color:#fff; box-shadow:0 3px 0 #2a5a75;}
+  button.nav.next:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none;}
+  button.nav.back{ background:transparent; color:var(--sub); border:1px solid var(--line);}
+
+  /* scorecard */
+  .score-item{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+    padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .score-item:last-child{ border-bottom:none;}
+  .score-item .label{ font-size:12.5px; font-weight:700;}
+  .score-item .detail{ font-size:11.5px; color:var(--sub); margin-top:3px; line-height:1.7;}
+  .mark{
+    flex:none; width:26px;height:26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center; font-weight:900; font-size:14px;
+  }
+  .mark.correct{ background:#233a2e; color:var(--good);}
+  .mark.wrong{ background:#3a2626; color:var(--bad);}
+  .total-score{
+    text-align:center; padding:20px 0 8px; font-family:'Zen Maru Gothic',sans-serif;
+  }
+  .total-score .num{ font-size:40px; font-weight:900; color:var(--accent-2);}
+  .total-score .out{ font-size:14px; color:var(--sub);}
+
+  footer{
+    width:100%; max-width:920px; margin:30px 0 24px; padding-top:14px; border-top:1px solid var(--line);
+    font-size:10.5px; line-height:1.8; color:#6b7178; white-space:pre-line;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">耐性菌ワークアップ実技演習 ─ プロトタイプ</div>
+    <h1 class="disp">検査室ワークフロー体験デモ</h1>
+    <p class="lede">菌番号の選択 → ディスク拡散法によるSIR確認 → eTestでのMIC測定 → 耐性機序確認検査(mCIM/eCIM等) → PCRによる遺伝子確認 → 最終報告 → 正誤判定、という実際の検査室の流れをそのまま7ステップで体験します。</p>
+  </header>
+
+  <div class="stepper" id="stepper"></div>
+
+  <div id="stepArea"></div>
+
+  <footer>本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。
+二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+※ブレイクポイント値・バンド位置・MIC値は本デモ用に簡略化した数値であり、実際のCLSI/EUCAST基準値とは異なります。</footer>
+</div>
+
+<script>
+/* ---------------- data ---------------- */
+
+const STEP_NAMES = ["菌番号選択","SIR確認","eTest(MIC)","耐性機序検査","PCR遺伝子確認","最終報告","正誤判定"];
+
+const DISK_DRUGS = [
+  {key:'mem', name:'メロペネム', unit:'mm', S:23, I:20},
+  {key:'caz', name:'セフタジジム', unit:'mm', S:21, I:18},
+  {key:'ami', name:'アミカシン', unit:'mm', S:17, I:15},
+  {key:'cip', name:'シプロフロキサシン', unit:'mm', S:21, I:16},
+];
+
+const ETEST_DRUGS = [
+  {key:'mem_e', name:'メロペネム', S:1, R:4, ticks:[0.25,0.38,0.5,0.75,1,1.5,2,3,4,6,8,12,16,24,32]},
+  {key:'col_e', name:'コリスチン', S:2, R:4, ticks:[0.125,0.19,0.25,0.38,0.5,0.75,1,1.5,2,3,4,6,8,12,16,24]},
+];
+
+const GEL_GENES = ['KPC','NDM','OXA-48','IMP','VIM','CTX-M(ESBL)','(検出なし)'];
+const GENE_BAND_Y = { 'CTX-M(ESBL)':40, 'OXA-48':55, 'IMP':80, 'KPC':100, 'VIM':125, 'NDM':150 };
+const MECH_CLASS_OPTIONS = ['セリン型カルバペネマーゼ','メタロβラクタマーゼ(MBL)','ESBL(基質特異性拡張型)','薬剤排出ポンプ亢進'];
+
+const CASES = [
+  {
+    id:1,
+    label:'検体 No.1',
+    tag:'血液培養 / ICU',
+    infoLine:'グラム染色: グラム陰性桿菌',
+    idClues:{
+      indole:'陰性', motility:'陰性(非運動性)', macConkey:'粘稠性(ムコイド)のピンクコロニー',
+      maldi:[ {name:'Klebsiella pneumoniae', score:2.31}, {name:'Escherichia coli', score:1.74}, {name:'Enterobacter cloacae', score:1.40} ]
+    },
+    organismCorrect:'Klebsiella pneumoniae',
+    organismOptions:['Klebsiella pneumoniae','Escherichia coli','Pseudomonas aeruginosa','Acinetobacter baumannii'],
+    disk:{ mem:14, caz:8, ami:19, cip:9 },
+    etest:{ mem_e:16, col_e:1 },
+    correctMech:'mCIM',
+    mCIMResult:'陽性', mCIMZone:8,
+    needsECIM:true,
+    eCIMResult:'陰性(MBLではない)', eCIMZone:9,
+    mechClassCorrect:'セリン型カルバペネマーゼ',
+    mechClassOptions:MECH_CLASS_OPTIONS,
+    geneCorrect:'KPC',
+    geneBandY: GENE_BAND_Y['KPC'],
+  },
+  {
+    id:2,
+    label:'検体 No.2',
+    tag:'尿培養 / 一般病棟',
+    infoLine:'グラム染色: グラム陰性桿菌',
+    idClues:{
+      indole:'陽性', motility:'陽性(運動性あり)', macConkey:'非粘稠性のピンクコロニー(乳糖分解)',
+      maldi:[ {name:'Escherichia coli', score:2.45}, {name:'Klebsiella pneumoniae', score:1.52}, {name:'Citrobacter freundii', score:1.31} ]
+    },
+    organismCorrect:'Escherichia coli',
+    organismOptions:['Klebsiella pneumoniae','Escherichia coli','Pseudomonas aeruginosa','Acinetobacter baumannii'],
+    disk:{ mem:12, caz:6, ami:18, cip:10 },
+    etest:{ mem_e:32, col_e:8 },
+    correctMech:'mCIM',
+    mCIMResult:'陽性', mCIMZone:7,
+    needsECIM:true,
+    eCIMResult:'陽性(MBL疑い)', eCIMZone:18,
+    mechClassCorrect:'メタロβラクタマーゼ(MBL)',
+    mechClassOptions:MECH_CLASS_OPTIONS,
+    geneCorrect:'NDM',
+    geneBandY: GENE_BAND_Y['NDM'],
+  },
+  {
+    id:3,
+    label:'検体 No.3',
+    tag:'喀痰培養 / 呼吸器内科',
+    infoLine:'グラム染色: グラム陰性桿菌',
+    idClues:{
+      indole:'陰性', motility:'陰性(非運動性)', macConkey:'粘稠性(ムコイド)のピンクコロニー',
+      maldi:[ {name:'Klebsiella pneumoniae', score:2.28}, {name:'Klebsiella oxytoca', score:1.69}, {name:'Enterobacter cloacae', score:1.35} ]
+    },
+    organismCorrect:'Klebsiella pneumoniae',
+    organismOptions:['Klebsiella pneumoniae','Escherichia coli','Pseudomonas aeruginosa','Acinetobacter baumannii'],
+    disk:{ mem:21, caz:22, ami:19, cip:9 },
+    etest:{ mem_e:3, col_e:0.5 },
+    correctMech:'mCIM',
+    mCIMResult:'陽性', mCIMZone:9,
+    needsECIM:true,
+    eCIMResult:'陰性(MBLではない)', eCIMZone:10,
+    mechClassCorrect:'セリン型カルバペネマーゼ',
+    mechClassOptions:MECH_CLASS_OPTIONS,
+    geneCorrect:'OXA-48',
+    geneBandY: GENE_BAND_Y['OXA-48'],
+  },
+  {
+    id:4,
+    label:'検体 No.4',
+    tag:'気管吸引痰 / ICU',
+    infoLine:'グラム染色: グラム陰性桿菌(非発酵菌)',
+    idClues:{
+      oxidase:'陽性', indole:'陰性(非発酵菌のため参考所見)', motility:'陽性(運動性あり)', macConkey:'乳糖非分解、緑色色素様の集落',
+      maldi:[ {name:'Pseudomonas aeruginosa', score:2.38}, {name:'Stenotrophomonas maltophilia', score:1.44}, {name:'Acinetobacter baumannii', score:1.20} ]
+    },
+    organismCorrect:'Pseudomonas aeruginosa',
+    organismOptions:['Pseudomonas aeruginosa','Acinetobacter baumannii','Klebsiella pneumoniae','Escherichia coli'],
+    disk:{ mem:10, caz:9, ami:15, cip:8 },
+    etest:{ mem_e:24, col_e:1 },
+    correctMech:'mCIM',
+    mCIMResult:'陽性', mCIMZone:8,
+    needsECIM:true,
+    eCIMResult:'陽性(MBL疑い)', eCIMZone:20,
+    mechClassCorrect:'メタロβラクタマーゼ(MBL)',
+    mechClassOptions:MECH_CLASS_OPTIONS,
+    geneCorrect:'IMP',
+    geneBandY: GENE_BAND_Y['IMP'],
+  },
+  {
+    id:5,
+    label:'検体 No.5',
+    tag:'創部培養 / 外科病棟',
+    infoLine:'グラム染色: グラム陰性桿菌',
+    idClues:{
+      indole:'陽性', motility:'陽性(運動性あり)', macConkey:'非粘稠性のピンクコロニー(乳糖分解)',
+      maldi:[ {name:'Escherichia coli', score:2.41}, {name:'Klebsiella pneumoniae', score:1.48}, {name:'Citrobacter freundii', score:1.22} ]
+    },
+    organismCorrect:'Escherichia coli',
+    organismOptions:['Klebsiella pneumoniae','Escherichia coli','Pseudomonas aeruginosa','Acinetobacter baumannii'],
+    disk:{ mem:27, caz:12, ami:20, cip:11 },
+    etest:{ mem_e:0.5, col_e:0.5 },
+    correctMech:'二重ディスク拡散法',
+    ddPositive:true,
+    mechClassCorrect:'ESBL(基質特異性拡張型)',
+    mechClassOptions:MECH_CLASS_OPTIONS,
+    geneCorrect:'CTX-M(ESBL)',
+    geneBandY: GENE_BAND_Y['CTX-M(ESBL)'],
+  }
+];
+
+/* ---------------- state ---------------- */
+let step = 0;
+let state = {
+  caseId:null,
+  diskAns:{},      // key -> 'S'|'I'|'R'
+  etestMic:{},     // key -> value
+  etestSIR:{},     // key -> 'S'|'I'|'R'
+  mechChosenTest:null,
+  mCIMRan:false,
+  eCIMChosen:false,
+  eCIMRan:false,
+  ddRun:false,
+  mechClass:null,
+  geneAns:null,
+  report:{ organism:null, mechClass:null, gene:null, memSIR:null }
+};
+
+function currentCase(){ return CASES.find(c=>c.id===state.caseId); }
+
+function classify(value, S, I){
+  // for disk: higher = more susceptible
+  if(value>=S) return 'S';
+  if(value>=I) return 'I';
+  return 'R';
+}
+function classifyMic(value, S, R){
+  // for MIC: lower = more susceptible
+  if(value<=S) return 'S';
+  if(value>=R) return 'R';
+  return 'I';
+}
+
+/* ---------------- render ---------------- */
+function renderStepper(){
+  const el = document.getElementById('stepper');
+  el.innerHTML = STEP_NAMES.map((name,i)=>{
+    let cls='step-pill';
+    if(i===step) cls+=' active';
+    else if(i<step) cls+=' done';
+    return `<div class="${cls}"><span class="num">${i+1}</span>${name}</div>`;
+  }).join('');
+}
+
+function setStep(n){
+  step = n;
+  renderStepper();
+  renderStep();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function navRow(canNext, nextLabel){
+  return `<div class="nav-row">
+    <button class="nav back" id="btnBack" ${step===0?'disabled style="opacity:.2"':''}>戻る</button>
+    <button class="nav next" id="btnNext" ${canNext?'':'disabled'}>${nextLabel||'次へ'}</button>
+  </div>`;
+}
+
+function bindNav(onNext){
+  const back = document.getElementById('btnBack');
+  const next = document.getElementById('btnNext');
+  if(back) back.addEventListener('click', ()=>{ if(step>0) setStep(step-1); });
+  if(next) next.addEventListener('click', onNext);
+}
+
+function renderStep(){
+  const area = document.getElementById('stepArea');
+  if(step===0) return renderCaseSelect(area);
+  if(step===1) return renderDisk(area);
+  if(step===2) return renderEtest(area);
+  if(step===3) return renderMech(area);
+  if(step===4) return renderPCR(area);
+  if(step===5) return renderReport(area);
+  if(step===6) return renderScore(area);
+}
+
+/* --- step 0 --- */
+function renderCaseSelect(area){
+  const c = currentCase();
+  const idPanel = c ? `
+    <div class="id-panel">
+      <h4>簡易同定検査パネル ─ ${c.label}</h4>
+      <div class="id-tests">
+        <div class="id-test"><div class="t-name">インドール試験</div><div class="t-val">${c.idClues.indole}</div></div>
+        <div class="id-test"><div class="t-name">運動性検査</div><div class="t-val">${c.idClues.motility}</div></div>
+        <div class="id-test"><div class="t-name">MacConkey寒天 性状</div><div class="t-val">${c.idClues.macConkey}</div></div>
+        ${c.idClues.oxidase ? `<div class="id-test"><div class="t-name">オキシダーゼ試験</div><div class="t-val">${c.idClues.oxidase}</div></div>` : ''}
+      </div>
+      <div class="maldi">MALDI-TOF MS 同定スコア(上位候補)</div>
+      ${c.idClues.maldi.map(m=>`
+        <div class="maldi-row">
+          <div class="sp-name">${m.name}</div>
+          <div class="maldi-bar-bg"><div class="maldi-bar-fill" style="width:${m.score/3*100}%"></div></div>
+          <div class="sc">${m.score.toFixed(2)}</div>
+        </div>`).join('')}
+      <div style="font-size:10.5px;color:var(--sub);margin-top:6px">※スコア2.0以上で信頼性の高い属・種同定とされます。この情報は後の「最終報告」で菌種を選ぶ際の根拠になります。カルバペネマーゼ遺伝子(KPC/NDMなど)の検出結果だけでは菌種は確定できません。</div>
+    </div>` : '';
+
+  area.innerHTML = `
+    <div class="panel">
+      <h2 class="disp">検体(菌)の番号を選ぶ</h2>
+      <div class="hint">担当する検体を選択してください。グラム染色に加え、簡易同定検査(生化学的性状・MALDI-TOF)の結果が開示されます。</div>
+      <div class="case-grid" id="caseGrid">
+        ${CASES.map(c=>`
+          <div class="case-card ${state.caseId===c.id?'selected':''}" data-id="${c.id}">
+            <div class="tag">${c.tag}</div>
+            <h3 class="disp">${c.label}</h3>
+            <p>${c.infoLine}</p>
+          </div>`).join('')}
+      </div>
+      ${idPanel}
+      ${navRow(state.caseId!==null)}
+    </div>
+  `;
+  area.querySelectorAll('.case-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      state.caseId = Number(card.dataset.id);
+      // reset downstream state when switching case
+      state.diskAns={}; state.etestMic={}; state.etestSIR={};
+      state.mechChosenTest=null; state.mCIMRan=false; state.eCIMChosen=false; state.eCIMRan=false; state.ddRun=false; state.mechClass=null;
+      state.geneAns=null;
+      state.report={organism:null,mechClass:null,gene:null,memSIR:null};
+      renderCaseSelect(area);
+    });
+  });
+  bindNav(()=>setStep(1));
+}
+
+/* --- step 1: disk diffusion --- */
+function renderDisk(area){
+  const c = currentCase();
+  const rows = DISK_DRUGS.map(d=>{
+    const zone = c.disk[d.key];
+    const picked = state.diskAns[d.key];
+    return `
+      <tr>
+        <td>${d.name}</td>
+        <td class="mono">${zone} mm</td>
+        <td class="mono" style="color:var(--sub)">S≥${d.S} / I=${d.I}-${d.S-1} / R≤${d.I-1}</td>
+        <td>
+          <div class="btn-row">
+            ${['S','I','R'].map(v=>`<button class="choice-btn ${picked===v?'picked '+v:''}" data-drug="${d.key}" data-val="${v}">${v}</button>`).join('')}
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="panel">
+      <h2 class="disp">ディスク拡散法(Kirby-Bauer法) ─ SIR判定</h2>
+      <div class="hint">${c.label}の阻止円直径が計測されました。ブレイクポイント表と照合し、各薬剤のS(感性)/I(中間)/R(耐性)を判定してください。</div>
+      <table class="data">
+        <tr><th>抗菌薬</th><th>阻止円</th><th>判定基準</th><th>あなたの判定</th></tr>
+        ${rows}
+      </table>
+      <div class="bp-note">阻止円が大きいほど感性(S)側に近づきます。</div>
+      ${navRow(Object.keys(state.diskAns).length===DISK_DRUGS.length)}
+    </div>
+  `;
+  area.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.diskAns[btn.dataset.drug] = btn.dataset.val;
+      renderDisk(area);
+    });
+  });
+  bindNav(()=>setStep(2));
+}
+
+/* --- step 2: eTest --- */
+function renderEtest(area){
+  const c = currentCase();
+  const blocks = ETEST_DRUGS.map(d=>{
+    const trueMic = c.etest[d.key];
+    const cultured = revealedEtest.has(d.key);
+    const sir = state.etestSIR[d.key];
+    const idx = d.ticks.indexOf(trueMic);
+    const tickPositions = d.ticks.map((t,i)=> 4 + (i/(d.ticks.length-1))*92 );
+    // inhibition zone's left edge (and the guide line) land exactly on the tick position for trueMic
+    const micPosPct = tickPositions[idx];
+    const boundaryPct = 100 - micPosPct;
+    return `
+    <div class="etest-block">
+      <div class="etest-drug">${d.name} <span class="mono" style="color:var(--sub);font-size:11px">S≤${d.S}μg/mL ／ R≥${d.R}μg/mL</span></div>
+      <div class="strip" data-drug="${d.key}">
+        ${cultured ? `<div class="inhibit" style="width:${boundaryPct}%"></div><div class="boundary-line" style="left:${micPosPct}%"></div>` : `<div class="locked-msg">「実施する」を押すと培養結果(阻止帯)が現れます</div>`}
+        ${cultured ? `<div class="strip-bar">
+            ${d.ticks.map((t,i)=>`<div class="strip-tick ${t===trueMic?'auto-mic':''}" style="left:${tickPositions[i]}%; top:${i%2===0?'0':'15px'}">${t}</div>`).join('')}
+          </div>` : ''}
+      </div>
+      ${!cultured ? `<button class="run-btn" data-run="${d.key}">eTestを実施する(一晩培養)</button>` : `
+        <div style="margin-top:8px;font-size:12px;color:var(--sub)">阻止帯(クリーム色)がストリップと交わる点(オレンジで強調表示)から、MICは自動的に <b class="mono" style="color:var(--ink)">${trueMic} μg/mL</b> と読み取られました。この値をもとにSIRを判定してください。</div>
+        <div class="btn-row" style="margin-top:8px">
+          ${['S','I','R'].map(v=>`<button class="choice-btn ${sir===v?'picked '+v:''}" data-sirdrug="${d.key}" data-sirval="${v}">${v}</button>`).join('')}
+        </div>
+      `}
+    </div>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="panel">
+      <h2 class="disp">E-test(勾配濃度ストリップ法) ─ MIC測定</h2>
+      <div class="hint">寒天培地にE-testストリップを置いて一晩培養すると、ストリップ周囲に阻止帯(菌が発育しない透明な領域)が葉状に形成されます。阻止帯とストリップが交わる点からMICが自動算出されるので、その値をもとにSIRを判定してください。まず「実施する」で培養結果を表示させてください。</div>
+      ${blocks}
+      ${navRow(ETEST_DRUGS.every(d=>state.etestSIR[d.key]))}
+    </div>
+  `;
+
+  area.querySelectorAll('[data-run]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.run;
+      btn.textContent = '培養中...';
+      btn.disabled = true;
+      setTimeout(()=>{
+        revealedEtest.add(key);
+        state.etestMic[key] = c.etest[key];
+        renderEtest(area);
+      }, 500);
+    });
+  });
+  area.querySelectorAll('[data-sirdrug]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.etestSIR[btn.dataset.sirdrug] = btn.dataset.sirval;
+      renderEtest(area);
+    });
+  });
+  bindNav(()=>setStep(3));
+}
+const revealedEtest = new Set();
+
+/* --- plate SVG helper --- */
+function zoneRadiusPx(mm){ return Math.min(74, 10 + Math.max(0,mm-6)*3.2); }
+function renderPlateSVG(mm, idSuffix){
+  const r = zoneRadiusPx(mm);
+  return `
+  <svg class="plate-svg" width="160" height="160" viewBox="0 0 160 160">
+    <defs>
+      <pattern id="lawn${idSuffix}" width="9" height="9" patternUnits="userSpaceOnUse">
+        <rect width="9" height="9" fill="#efe6cf"/>
+        <circle cx="4.5" cy="4.5" r="1.7" fill="#6f9c5a" opacity="0.6"/>
+      </pattern>
+    </defs>
+    <circle cx="80" cy="80" r="76" fill="url(#lawn${idSuffix})" stroke="#c9b57a" stroke-width="2"/>
+    <circle cx="80" cy="80" r="${r}" fill="#efe6cf" stroke="#8a7a4a" stroke-width="1.4" stroke-dasharray="4 3"/>
+    <circle cx="80" cy="80" r="9" fill="#3a4a56" stroke="#fff" stroke-width="1.5"/>
+    <text x="80" y="83.5" text-anchor="middle" font-size="7" fill="#fff" font-family="JetBrains Mono, monospace">MEM</text>
+  </svg>`;
+}
+
+/* --- synergy (double-disk ESBL) plate SVG helper --- */
+function renderSynergyPlateSVG(positive, idSuffix){
+  const rAMC = positive ? 30 : 14;
+  const rCAZ = positive ? 34 : 15;
+  return `
+  <svg class="plate-svg" width="160" height="160" viewBox="0 0 160 160">
+    <defs>
+      <pattern id="lawnD${idSuffix}" width="9" height="9" patternUnits="userSpaceOnUse">
+        <rect width="9" height="9" fill="#efe6cf"/>
+        <circle cx="4.5" cy="4.5" r="1.7" fill="#6f9c5a" opacity="0.6"/>
+      </pattern>
+    </defs>
+    <circle cx="80" cy="80" r="76" fill="url(#lawnD${idSuffix})" stroke="#c9b57a" stroke-width="2"/>
+    <circle cx="55" cy="80" r="${rAMC}" fill="#efe6cf" stroke="#8a7a4a" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.92"/>
+    <circle cx="105" cy="80" r="${rCAZ}" fill="#efe6cf" stroke="#8a7a4a" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.92"/>
+    <circle cx="55" cy="80" r="8" fill="#3a4a56" stroke="#fff" stroke-width="1.3"/>
+    <text x="55" y="83" text-anchor="middle" font-size="6.5" fill="#fff" font-family="JetBrains Mono, monospace">AMC</text>
+    <circle cx="105" cy="80" r="8" fill="#3a4a56" stroke="#fff" stroke-width="1.3"/>
+    <text x="105" y="83" text-anchor="middle" font-size="6.5" fill="#fff" font-family="JetBrains Mono, monospace">CAZ</text>
+  </svg>`;
+}
+
+/* --- step 3: mechanism test (mCIM/eCIM or double-disk ESBL) --- */
+function renderMech(area){
+  const c = currentCase();
+  const memR = state.diskAns.mem==='R' || state.etestSIR.mem_e==='R';
+  const testOptions = ['mCIM(修正カルバペネム不活化法)','ニトロセフィン法','二重ディスク拡散法(ESBL確認)','コンビネーションディスク法'];
+  const matches = state.mechChosenTest && state.mechChosenTest.startsWith(c.correctMech);
+
+  // procedure timeline state (mCIM path only)
+  const stage = !state.mechChosenTest ? 0
+    : (!state.mCIMRan ? 1
+    : (!state.eCIMChosen ? 2
+    : (!state.eCIMRan ? 3 : 4)));
+  const procLabels = [
+    '被検菌をMH ブロスに懸濁し、メロペネムディスクを浸漬',
+    '(eCIMのみ)懸濁液にEDTAを添加',
+    'ディスクを E.coli ATCC25922 塗布プレートへ静置',
+    '35℃で一晩培養',
+    '阻止円を測定・判定'
+  ];
+  const procTimeline = `
+    <div class="proc-steps">
+      ${procLabels.map((p,i)=>`<div class="proc-step ${i===stage?'active':''}"><span class="p-num">${i+1}</span><div class="p-label">${p}</div></div>`).join('')}
+    </div>`;
+
+  let mcimHtml = '';
+  if(state.mechChosenTest){
+    if(matches && c.correctMech==='mCIM'){
+      if(!state.mCIMRan){
+        mcimHtml = `<button class="run-btn" id="runMCIM">4時間浸漬 → プレートに静置 → 培養する</button>`;
+      } else {
+        const posNeg = c.mCIMResult==='陽性';
+        mcimHtml = `
+        <div class="plates-row">
+          <div class="plate-col">
+            <div class="plate-title">mCIM プレート</div>
+            ${renderPlateSVG(c.mCIMZone,'m1')}
+            <div class="plate-caption">阻止円 <b>${c.mCIMZone}mm</b><br>
+              判定: <b style="color:${posNeg?'var(--bad)':'var(--good)'}">${c.mCIMResult}</b><br>
+              ${posNeg ? '生育が円板近くまで及んでおり、メロペネムが分解されたことを示唆(カルバペネマーゼ産生疑い)' : '広い阻止円が保たれており、薬剤が分解されていないことを示唆'}
+            </div>
+          </div>
+        </div>`;
+        if(c.mCIMResult==='陽性' && c.needsECIM){
+          if(!state.eCIMChosen){
+            mcimHtml += `<button class="run-btn" id="runECIMchoose" style="margin-top:14px">EDTAを添加してeCIMを追加実施する</button>`;
+          } else if(!state.eCIMRan){
+            mcimHtml += `<div class="incubate">培養中...</div>`;
+          } else {
+            const diff = c.eCIMZone - c.mCIMZone;
+            const isMBL = diff >= 5;
+            mcimHtml += `
+            <div class="plates-row" style="margin-top:16px">
+              <div class="plate-col">
+                <div class="plate-title">mCIM プレート(参考)</div>
+                ${renderPlateSVG(c.mCIMZone,'m2')}
+                <div class="plate-caption">阻止円 <b>${c.mCIMZone}mm</b></div>
+              </div>
+              <div class="plate-col">
+                <div class="plate-title">eCIM プレート(EDTA添加)</div>
+                ${renderPlateSVG(c.eCIMZone,'e2')}
+                <div class="plate-caption">阻止円 <b>${c.eCIMZone}mm</b><br>
+                  mCIMとの差: <b>${diff>=0?'+':''}${diff}mm</b><br>
+                  判定: <b style="color:${isMBL?'var(--warn)':'var(--good)'}">${c.eCIMResult}</b>
+                </div>
+              </div>
+            </div>
+            <div class="result-box" style="margin-top:12px">
+              阻止円の差が<b>5mm以上</b>大きくなった場合、EDTAによる金属イオンのキレートで酵素活性が阻害されたと解釈し、<b>メタロβラクタマーゼ(MBL)</b>を疑います。差が小さければセリン型カルバペネマーゼ(KPC・OXA-48型等)を疑います。PCRを実施するまでは、どちらの遺伝子型かはこの検査だけでは特定できません。
+            </div>
+            <div style="margin-top:14px">
+              <label style="font-size:11.5px;color:var(--sub);font-weight:700;display:block;margin-bottom:6px">この結果から推定される耐性機序を選択</label>
+              <div class="btn-row">
+                ${c.mechClassOptions.map(m=>`<button class="choice-btn ${state.mechClass===m?'picked':''}" data-mech="${m}">${m}</button>`).join('')}
+              </div>
+            </div>`;
+          }
+        }
+      }
+    } else if(matches && c.correctMech==='二重ディスク拡散法'){
+      if(!state.ddRun){
+        mcimHtml = `<button class="run-btn" id="runDD">アモキシシリン/クラブラン酸(AMC)とセフタジジム(CAZ)のディスクを20mm間隔で近接配置し、培養する</button>`;
+      } else {
+        mcimHtml = `
+        <div class="plates-row">
+          <div class="plate-col">
+            <div class="plate-title">二重ディスク拡散法プレート</div>
+            ${renderSynergyPlateSVG(c.ddPositive,'dd1')}
+            <div class="plate-caption">
+              判定: <b style="color:${c.ddPositive?'var(--warn)':'var(--good)'}">${c.ddPositive?'陽性(相乗効果あり)':'陰性'}</b><br>
+              ${c.ddPositive ? 'CAZ側の阻止円がAMC側に向かって拡大し、二つの阻止円が融合(鍵穴状)しています。クラブラン酸によるβラクタマーゼ阻害でセフタジジムの効果が回復したことを示し、ESBL産生を示唆します。' : '二つの阻止円は独立しており、相乗効果は見られません。'}
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <label style="font-size:11.5px;color:var(--sub);font-weight:700;display:block;margin-bottom:6px">この結果から推定される耐性機序を選択</label>
+          <div class="btn-row">
+            ${c.mechClassOptions.map(m=>`<button class="choice-btn ${state.mechClass===m?'picked':''}" data-mech="${m}">${m}</button>`).join('')}
+          </div>
+        </div>`;
+      }
+    } else {
+      mcimHtml = `<div class="result-box">この検査は今回の感受性パターンの確認には適していません。ディスク拡散・eTestの結果(特にメロペネムとセフタジジムの感受性パターン)を振り返り、適切な検査を選び直してください。</div>`;
+    }
+  }
+
+  const testDone = c.correctMech==='mCIM' ? state.eCIMRan : (c.correctMech==='二重ディスク拡散法' ? state.ddRun : false);
+
+  area.innerHTML = `
+    <div class="panel">
+      <h2 class="disp">耐性機序確認検査</h2>
+      <div class="hint">ディスク拡散・eTestの結果、メロペネムへの耐性 ${memR?'<b style="color:var(--bad)">あり</b>':'なし'} が示唆されています。この結果を踏まえ、適切な確認検査を選んでください。</div>
+      <div>
+        ${testOptions.map(t=>`<button class="mech-option ${state.mechChosenTest===t?'picked':''}" data-test="${t}">${t}</button>`).join('')}
+      </div>
+      ${matches && c.correctMech==='mCIM' ? procTimeline : ''}
+      ${mcimHtml}
+      ${navRow(!!(testDone && state.mechClass))}
+    </div>
+  `;
+  area.querySelectorAll('[data-test]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.mechChosenTest = btn.dataset.test;
+      state.mCIMRan=false; state.eCIMChosen=false; state.eCIMRan=false; state.ddRun=false; state.mechClass=null;
+      renderMech(area);
+    });
+  });
+  const runBtn = document.getElementById('runMCIM');
+  if(runBtn) runBtn.addEventListener('click', ()=>{
+    runBtn.textContent='培養中...'; runBtn.disabled=true;
+    setTimeout(()=>{ state.mCIMRan=true; renderMech(area); }, 600);
+  });
+  const runECIMChoose = document.getElementById('runECIMchoose');
+  if(runECIMChoose) runECIMChoose.addEventListener('click', ()=>{
+    state.eCIMChosen = true;
+    renderMech(area);
+    setTimeout(()=>{ state.eCIMRan=true; renderMech(area); }, 700);
+  });
+  const runDD = document.getElementById('runDD');
+  if(runDD) runDD.addEventListener('click', ()=>{
+    runDD.textContent='培養中...'; runDD.disabled=true;
+    setTimeout(()=>{ state.ddRun=true; renderMech(area); }, 600);
+  });
+  area.querySelectorAll('[data-mech]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.mechClass = btn.dataset.mech;
+      renderMech(area);
+    });
+  });
+  bindNav(()=>setStep(4));
+}
+
+/* --- step 4: PCR gel --- */
+function renderPCR(area){
+  const c = currentCase();
+  const laneGenes = {'ラダー':null,'検体':c.geneBandY,'CTX-M':GENE_BAND_Y['CTX-M(ESBL)'],'OXA-48':GENE_BAND_Y['OXA-48'],'IMP':GENE_BAND_Y['IMP'],'KPC':GENE_BAND_Y['KPC'],'VIM':GENE_BAND_Y['VIM'],'NDM':GENE_BAND_Y['NDM']};
+  const laneKeys = Object.keys(laneGenes);
+  const laneWidth = 20, margin = 16, gap=(340-margin-laneKeys.length*laneWidth)/(laneKeys.length-1);
+
+  const ladderBands = [40,60,80,100,120,140,160,180].map(y=>`<div class="band" style="bottom:${y}px;left:8px;width:20px;opacity:.5;height:3px"></div>`).join('');
+
+  let lanesHtml = '';
+  laneKeys.forEach((lk,i)=>{
+    const x = 8 + i*(laneWidth+gap);
+    if(lk==='ラダー'){
+      lanesHtml += ladderBands.replace(/left:8px/g, `left:${x}px`);
+    } else {
+      const y = laneGenes[lk];
+      lanesHtml += `<div class="band" style="bottom:${y}px;left:${x}px;width:${laneWidth}px"></div>`;
+    }
+    lanesHtml += `<div class="lane-label" style="left:${x}px">${lk}</div>`;
+  });
+
+  area.innerHTML = `
+    <div class="panel">
+      <h2 class="disp">PCRによる耐性遺伝子確認</h2>
+      <div class="hint">検体のPCR産物を、カルバペネマーゼ・ESBL遺伝子スクリーニングパネルの陽性対照(CTX-M・OXA-48・IMP・KPC・VIM・NDM)とともに電気泳動しました。検体レーンのバンド位置を各対照レーンと比較し、該当する遺伝子を選んでください。</div>
+      <div class="gel-wrap">
+        <div class="gel">${lanesHtml}</div>
+        <div class="gene-options">
+          ${GEL_GENES.map(g=>`<button class="choice-btn ${state.geneAns===g?'picked':''}" data-gene="${g}" style="text-align:left">${g}</button>`).join('')}
+        </div>
+      </div>
+      ${navRow(!!state.geneAns)}
+    </div>
+  `;
+  area.querySelectorAll('[data-gene]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.geneAns = btn.dataset.gene;
+      renderPCR(area);
+    });
+  });
+  bindNav(()=>setStep(5));
+}
+
+/* --- step 5: final report --- */
+function renderReport(area){
+  const c = currentCase();
+  const memSIROptions = ['S','I','R'];
+  area.innerHTML = `
+    <div class="panel">
+      <h2 class="disp">最終報告の作成</h2>
+      <div class="hint">これまでの検査結果を踏まえ、報告書に記載する項目を選択してください。</div>
+      <div class="report-grid">
+        <div class="field">
+          <label>菌種</label>
+          <select id="repOrganism">
+            <option value="">選択してください</option>
+            ${c.organismOptions.map(o=>`<option value="${o}" ${state.report.organism===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>メロペネム 最終判定(S/I/R)</label>
+          <select id="repMem">
+            <option value="">選択してください</option>
+            ${memSIROptions.map(o=>`<option value="${o}" ${state.report.memSIR===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>耐性機序</label>
+          <select id="repMech">
+            <option value="">選択してください</option>
+            ${c.mechClassOptions.map(o=>`<option value="${o}" ${state.report.mechClass===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>検出された耐性遺伝子</label>
+          <select id="repGene">
+            <option value="">選択してください</option>
+            ${GEL_GENES.map(o=>`<option value="${o}" ${state.report.gene===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      ${navRow(state.report.organism && state.report.memSIR && state.report.mechClass && state.report.gene, '判定する')}
+    </div>
+  `;
+  document.getElementById('repOrganism').addEventListener('change', e=>state.report.organism=e.target.value);
+  document.getElementById('repMem').addEventListener('change', e=>state.report.memSIR=e.target.value);
+  document.getElementById('repMech').addEventListener('change', e=>state.report.mechClass=e.target.value);
+  document.getElementById('repGene').addEventListener('change', e=>{
+    state.report.gene=e.target.value;
+    // re-render to update next-button state
+    renderReport(area);
+  });
+  ['repOrganism','repMem','repMech'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', ()=>renderReport(area));
+  });
+  bindNav(()=>setStep(6));
+}
+
+/* --- step 6: scoring --- */
+function renderScore(area){
+  const c = currentCase();
+  const items = [];
+
+  // disk items
+  DISK_DRUGS.forEach(d=>{
+    const zone = c.disk[d.key];
+    const correct = classify(zone, d.S, d.I);
+    const given = state.diskAns[d.key];
+    items.push({
+      label:`ディスク拡散: ${d.name}`,
+      ok: given===correct,
+      detail:`阻止円 ${zone}mm → 正解: ${correct} ／ あなたの回答: ${given||'未回答'}`
+    });
+  });
+
+  // etest items
+  ETEST_DRUGS.forEach(d=>{
+    const trueMic = c.etest[d.key];
+    const correctSIR = classifyMic(trueMic, d.S, d.R);
+    const givenSIR = state.etestSIR[d.key];
+    items.push({
+      label:`E-test: ${d.name} SIR判定(MIC ${trueMic}μg/mL)`,
+      ok: givenSIR===correctSIR,
+      detail:`正解: ${correctSIR} ／ あなたの判定: ${givenSIR||'未回答'}`
+    });
+  });
+
+  // mechanism test choice
+  items.push({
+    label:'耐性機序確認検査の選択',
+    ok: state.mechChosenTest && state.mechChosenTest.startsWith(c.correctMech),
+    detail:`正解: ${c.correctMech} ／ あなたの選択: ${state.mechChosenTest||'未回答'}`
+  });
+  items.push({
+    label:'耐性機序の分類',
+    ok: state.mechClass === c.mechClassCorrect,
+    detail:`正解: ${c.mechClassCorrect} ／ あなたの回答: ${state.mechClass||'未回答'}`
+  });
+
+  // PCR
+  items.push({
+    label:'PCRによる耐性遺伝子の同定',
+    ok: state.geneAns === c.geneCorrect,
+    detail:`正解: ${c.geneCorrect} ／ あなたの回答: ${state.geneAns||'未回答'}`
+  });
+
+  // report
+  items.push({
+    label:'最終報告: 菌種',
+    ok: state.report.organism === c.organismCorrect,
+    detail:`正解: ${c.organismCorrect} ／ あなたの回答: ${state.report.organism||'未回答'}`
+  });
+  const memCorrectSIR = classifyMic(c.etest.mem_e, ETEST_DRUGS[0].S, ETEST_DRUGS[0].R);
+  items.push({
+    label:'最終報告: メロペネム SIR',
+    ok: state.report.memSIR === memCorrectSIR,
+    detail:`正解: ${memCorrectSIR} ／ あなたの回答: ${state.report.memSIR||'未回答'}`
+  });
+  items.push({
+    label:'最終報告: 耐性機序',
+    ok: state.report.mechClass === c.mechClassCorrect,
+    detail:`正解: ${c.mechClassCorrect} ／ あなたの回答: ${state.report.mechClass||'未回答'}`
+  });
+  items.push({
+    label:'最終報告: 耐性遺伝子',
+    ok: state.report.gene === c.geneCorrect,
+    detail:`正解: ${c.geneCorrect} ／ あなたの回答: ${state.report.gene||'未回答'}`
+  });
+
+  const okCount = items.filter(i=>i.ok).length;
+
+  area.innerHTML = `
+    <div class="panel">
+      <h2 class="disp">正誤判定 ─ ${c.label}</h2>
+      <div class="total-score">
+        <div class="num">${okCount} / ${items.length}</div>
+        <div class="out">正解</div>
+      </div>
+      ${items.map(i=>`
+        <div class="score-item">
+          <div>
+            <div class="label">${i.label}</div>
+            <div class="detail">${i.detail}</div>
+          </div>
+          <div class="mark ${i.ok?'correct':'wrong'}">${i.ok?'○':'×'}</div>
+        </div>
+      `).join('')}
+      <div class="nav-row">
+        <button class="nav back" id="btnBack2">戻る</button>
+        <button class="nav next" id="btnRestart">別の検体に挑戦する</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('btnBack2').addEventListener('click', ()=>setStep(5));
+  document.getElementById('btnRestart').addEventListener('click', ()=>{
+    state = {
+      caseId:null, diskAns:{}, etestMic:{}, etestSIR:{}, mechChosenTest:null,
+      mCIMRan:false, eCIMChosen:false, eCIMRan:false, ddRun:false, mechClass:null, geneAns:null,
+      report:{organism:null,mechClass:null,gene:null,memSIR:null}
+    };
+    revealedEtest.clear();
+    setStep(0);
+  });
+}
+
+/* init */
+renderStepper();
+renderStep();
+</script>
+</body>
+</html>
