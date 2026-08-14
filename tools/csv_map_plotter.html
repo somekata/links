@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>位置データマッピングツール</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f5f1e8;
+    --panel: #fbf8f1;
+    --ink: #2b2620;
+    --sub: #6b6355;
+    --line: #ddd3bd;
+    --accent: #8a5a3b;
+    --accent-soft: #c98a5e;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100dvh;overflow:hidden;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Noto Sans JP",sans-serif;
+  }
+  #app{
+    display:flex;
+    height:100dvh;
+  }
+  header.topbar{
+    position:fixed;top:0;left:0;right:0;height:56px;
+    display:flex;align-items:center;gap:12px;
+    padding:0 20px;
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    z-index:20;
+  }
+  header.topbar h1{
+    font-family:"Zen Antique",serif;
+    font-size:18px;
+    font-weight:400;
+    margin:0;
+    letter-spacing:0.02em;
+  }
+  #main-row{
+    display:flex;
+    width:100%;
+    padding-top:56px;
+    height:100dvh;
+  }
+  #sidebar{
+    width:340px;
+    min-width:340px;
+    background:var(--panel);
+    border-right:1px solid var(--line);
+    overflow-y:auto;
+    padding:18px 18px 90px 18px;
+    -webkit-overflow-scrolling:touch;
+  }
+  #sidebar h2{
+    font-family:"Zen Antique",serif;
+    font-size:14px;
+    font-weight:400;
+    color:var(--accent);
+    margin:20px 0 8px 0;
+    border-bottom:1px solid var(--line);
+    padding-bottom:6px;
+  }
+  #sidebar h2:first-of-type{margin-top:0;}
+  textarea#csvInput{
+    width:100%;
+    height:140px;
+    resize:vertical;
+    font-family:"JetBrains Mono",monospace;
+    font-size:12px;
+    padding:10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .hint{
+    font-size:11px;
+    color:var(--sub);
+    margin:6px 0 0 0;
+    line-height:1.5;
+  }
+  .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  button, .filebtn{
+    appearance:none;
+    border:1px solid var(--accent);
+    background:var(--accent);
+    color:#fff;
+    padding:9px 14px;
+    border-radius:6px;
+    font-size:13px;
+    font-family:"Noto Sans JP",sans-serif;
+    cursor:pointer;
+    min-height:38px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    transition:opacity .15s;
+  }
+  button:hover, .filebtn:hover{opacity:0.85;}
+  button.secondary{
+    background:transparent;
+    color:var(--accent);
+  }
+  input[type=file]{display:none;}
+  #status{
+    font-size:12px;
+    color:var(--sub);
+    margin-top:8px;
+    min-height:16px;
+  }
+  #status.error{color:#b23b3b;}
+  #status.ok{color:#3b7a4a;}
+  .field{margin-top:10px;}
+  .field label{
+    display:block;
+    font-size:11px;
+    color:var(--sub);
+    margin-bottom:4px;
+  }
+  select{
+    width:100%;
+    padding:7px 8px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#fff;
+    font-size:12px;
+    color:var(--ink);
+  }
+  #legend{
+    margin-top:10px;
+    padding:10px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-size:11px;
+    color:var(--sub);
+  }
+  #legend .bar{
+    height:10px;
+    border-radius:5px;
+    margin:6px 0;
+    background:linear-gradient(to right, #f3c98a, #8a5a3b);
+  }
+  #legend .labels{display:flex;justify-content:space-between;font-family:"JetBrains Mono",monospace;}
+  table#pointTable{
+    width:100%;
+    border-collapse:collapse;
+    font-size:11px;
+    font-family:"JetBrains Mono",monospace;
+  }
+  table#pointTable th, table#pointTable td{
+    border-bottom:1px solid var(--line);
+    padding:4px 4px;
+    text-align:left;
+  }
+  table#pointTable th{color:var(--sub);font-weight:600;}
+  table#pointTable tr:hover{background:#f0e8d8;cursor:pointer;}
+  #map{
+    flex:1;
+    height:100%;
+  }
+  .leaflet-popup-content{
+    font-family:"Noto Sans JP",sans-serif;
+    font-size:12px;
+  }
+  .leaflet-popup-content b{color:var(--accent);}
+  footer.disclaimer{
+    position:fixed;
+    bottom:0;left:340px;right:0;
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    font-size:10px;
+    color:var(--sub);
+    padding:6px 14px;
+    line-height:1.5;
+    z-index:15;
+  }
+  @media (max-width:760px){
+    #sidebar{position:fixed;top:56px;left:0;bottom:0;z-index:30;transform:translateX(-100%);transition:transform .2s;width:85%;}
+    #sidebar.open{transform:translateX(0);box-shadow:2px 0 12px rgba(0,0,0,0.2);}
+    footer.disclaimer{left:0;}
+    #sidebarToggle{display:inline-flex;}
+  }
+  #sidebarToggle{display:none;margin-left:auto;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1>位置データマッピングツール</h1>
+    <button id="sidebarToggle" class="secondary" style="min-height:32px;">☰ データ</button>
+  </header>
+  <div id="main-row">
+    <div id="sidebar">
+      <h2>1. データ入力</h2>
+      <p class="hint">CSV形式（ヘッダー行あり）を貼り付けるか、ファイルを読み込んでください。<br>列: id, Latitude, Longitude, count</p>
+      <textarea id="csvInput" placeholder="id,Latitude,Longitude,count&#10;1,34.6465,135.5090,25&#10;2,34.6984,135.5125,20"></textarea>
+      <div class="row">
+        <label class="filebtn">
+          ファイルを選択
+          <input type="file" id="fileInput" accept=".csv,text/csv" />
+        </label>
+        <button id="plotBtn">プロット</button>
+        <button id="sampleBtn" class="secondary">サンプル</button>
+      </div>
+      <div id="status"></div>
+
+      <h2>2. 表示設定</h2>
+      <div class="field">
+        <label>マーカーサイズの基準</label>
+        <select id="sizeMode">
+          <option value="sqrt" selected>count に比例（面積）</option>
+          <option value="linear">count に比例（半径）</option>
+          <option value="fixed">固定サイズ</option>
+        </select>
+      </div>
+      <div id="legend">
+        <div>凡例（count）</div>
+        <div class="bar"></div>
+        <div class="labels"><span id="legendMin">-</span><span id="legendMax">-</span></div>
+      </div>
+
+      <h2>3. データ一覧（<span id="pointCount">0</span>件）</h2>
+      <table id="pointTable">
+        <thead><tr><th>id</th><th>lat</th><th>lng</th><th>count</th></tr></thead>
+        <tbody id="pointTableBody"></tbody>
+      </table>
+    </div>
+    <div id="map"></div>
+  </div>
+</div>
+<footer class="disclaimer">
+本ツールは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+  var map = L.map('map', {zoomControl:true}).setView([34.6465, 135.5090], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  var markerLayer = L.layerGroup().addTo(map);
+  var currentPoints = [];
+
+  var csvInput = document.getElementById('csvInput');
+  var fileInput = document.getElementById('fileInput');
+  var statusEl = document.getElementById('status');
+  var sizeMode = document.getElementById('sizeMode');
+  var pointCountEl = document.getElementById('pointCount');
+  var pointTableBody = document.getElementById('pointTableBody');
+  var legendMin = document.getElementById('legendMin');
+  var legendMax = document.getElementById('legendMax');
+  var sidebar = document.getElementById('sidebar');
+  var sidebarToggle = document.getElementById('sidebarToggle');
+
+  sidebarToggle.addEventListener('click', function(){
+    sidebar.classList.toggle('open');
+  });
+
+  fileInput.addEventListener('change', function(e){
+    var f = e.target.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      csvInput.value = ev.target.result;
+      setStatus('ファイルを読み込みました: ' + f.name, 'ok');
+    };
+    reader.onerror = function(){
+      setStatus('ファイルの読み込みに失敗しました。', 'error');
+    };
+    reader.readAsText(f, 'UTF-8');
+  });
+
+  document.getElementById('sampleBtn').addEventListener('click', function(){
+    csvInput.value = "id,Latitude,Longitude,count\n1,34.6465,135.5090,25\n2,34.6984,135.5125,20\n3,34.6813,135.5220,8\n4,34.7025,135.4959,42\n5,34.6337,135.5080,15";
+    setStatus('サンプルデータを入力しました。', 'ok');
+  });
+
+  document.getElementById('plotBtn').addEventListener('click', function(){
+    plot();
+    sidebar.classList.remove('open');
+  });
+
+  sizeMode.addEventListener('change', function(){
+    if(currentPoints.length) renderMarkers(currentPoints);
+  });
+
+  function setStatus(msg, cls){
+    statusEl.textContent = msg;
+    statusEl.className = cls || '';
+  }
+
+  // シンプルなCSVパーサー（カンマ区切り、ダブルクオート対応）
+  function parseCSV(text){
+    var lines = text.replace(/\r\n/g, '\n').replace(/\r/g,'\n').split('\n').filter(function(l){return l.trim().length>0;});
+    if(lines.length < 2) throw new Error('データ行が不足しています（ヘッダー行＋データ行が必要です）。');
+
+    function splitLine(line){
+      var out = [], cur = '', inQuotes = false;
+      for(var i=0;i<line.length;i++){
+        var c = line[i];
+        if(c === '"'){
+          if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; }
+          else inQuotes = !inQuotes;
+        } else if(c === ',' && !inQuotes){
+          out.push(cur); cur='';
+        } else {
+          cur += c;
+        }
+      }
+      out.push(cur);
+      return out.map(function(s){return s.trim();});
+    }
+
+    var header = splitLine(lines[0]).map(function(h){return h.toLowerCase();});
+    function findCol(cands){
+      for(var i=0;i<cands.length;i++){
+        var idx = header.indexOf(cands[i]);
+        if(idx !== -1) return idx;
+      }
+      return -1;
+    }
+    var idIdx = findCol(['id']);
+    var latIdx = findCol(['latitude','lat']);
+    var lngIdx = findCol(['longitude','lng','lon']);
+    var countIdx = findCol(['count','value','n']);
+
+    if(latIdx === -1 || lngIdx === -1){
+      throw new Error('Latitude / Longitude 列が見つかりません。ヘッダー行を確認してください。');
+    }
+
+    var points = [];
+    for(var r=1;r<lines.length;r++){
+      var cols = splitLine(lines[r]);
+      if(cols.length < 2) continue;
+      var lat = parseFloat(cols[latIdx]);
+      var lng = parseFloat(cols[lngIdx]);
+      if(isNaN(lat) || isNaN(lng)) continue;
+      var count = countIdx !== -1 ? parseFloat(cols[countIdx]) : 1;
+      if(isNaN(count)) count = 1;
+      var id = idIdx !== -1 ? cols[idIdx] : String(r);
+      points.push({id:id, lat:lat, lng:lng, count:count});
+    }
+    if(points.length === 0) throw new Error('有効なデータ行がありませんでした。緯度経度の値を確認してください。');
+    return points;
+  }
+
+  function plot(){
+    try{
+      var points = parseCSV(csvInput.value);
+      currentPoints = points;
+      renderMarkers(points);
+      renderTable(points);
+      setStatus(points.length + ' 件のデータをプロットしました。', 'ok');
+    } catch(err){
+      setStatus(err.message, 'error');
+    }
+  }
+
+  function colorForRatio(t){
+    // 薄いオレンジ(#f3c98a) -> 濃い茶(#8a5a3b) の補間
+    var c1 = [243,201,138], c2 = [138,90,59];
+    var r = Math.round(c1[0] + (c2[0]-c1[0])*t);
+    var g = Math.round(c1[1] + (c2[1]-c1[1])*t);
+    var b = Math.round(c1[2] + (c2[2]-c1[2])*t);
+    return 'rgb('+r+','+g+','+b+')';
+  }
+
+  function renderMarkers(points){
+    markerLayer.clearLayers();
+    var counts = points.map(function(p){return p.count;});
+    var min = Math.min.apply(null, counts);
+    var max = Math.max.apply(null, counts);
+    if(min === max){ min = 0; }
+
+    legendMin.textContent = Math.min.apply(null, counts);
+    legendMax.textContent = Math.max.apply(null, counts);
+
+    var mode = sizeMode.value;
+    var bounds = [];
+
+    points.forEach(function(p){
+      var ratio = (max - min) === 0 ? 0.5 : (p.count - min) / (max - min);
+      var radius;
+      if(mode === 'fixed'){
+        radius = 10;
+      } else if(mode === 'linear'){
+        radius = 6 + ratio * 24;
+      } else { // sqrt -> 面積比例
+        radius = 6 + Math.sqrt(ratio) * 24;
+      }
+      var marker = L.circleMarker([p.lat, p.lng], {
+        radius: radius,
+        color: '#5c3a24',
+        weight: 1,
+        fillColor: colorForRatio(ratio),
+        fillOpacity: 0.75
+      });
+      marker.bindPopup(
+        '<b>id: ' + escapeHtml(String(p.id)) + '</b><br>' +
+        'lat: ' + p.lat + '<br>' +
+        'lng: ' + p.lng + '<br>' +
+        'count: ' + p.count
+      );
+      marker.addTo(markerLayer);
+      bounds.push([p.lat, p.lng]);
+    });
+
+    if(bounds.length){
+      map.fitBounds(bounds, {padding:[30,30], maxZoom:16});
+    }
+  }
+
+  function renderTable(points){
+    pointCountEl.textContent = points.length;
+    pointTableBody.innerHTML = '';
+    points.forEach(function(p){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escapeHtml(String(p.id))+'</td><td>'+p.lat+'</td><td>'+p.lng+'</td><td>'+p.count+'</td>';
+      tr.addEventListener('click', function(){
+        map.setView([p.lat, p.lng], 16);
+      });
+      pointTableBody.appendChild(tr);
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // 初期表示用サンプル
+  csvInput.value = "id,Latitude,Longitude,count\n1,34.6465,135.5090,25\n2,34.6984,135.5125,20";
+  plot();
+})();
+</script>
+</body>
+</html>
