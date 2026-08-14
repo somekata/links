@@ -190,6 +190,8 @@
   .normalize-row{ flex-direction:row; align-items:center; }
   .toggle.big{ font-size:13px; color: var(--ink); display:flex; align-items:center; gap:8px; }
   .toggle.big input{ width:15px; height:15px; }
+  label.toggle{ display:inline-flex; align-items:center; gap:7px; font-size:13px; color: var(--ink); cursor:pointer; user-select:none; }
+  label.toggle input{ accent-color: var(--primary); width:14px; height:14px; cursor:pointer; }
 
   footer.disclaimer{
     margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
@@ -333,12 +335,14 @@
       <div class="card">
         <h2>箱ひげ図</h2>
         <p class="desc">最小値・第1四分位数・中央値・第3四分位数・最大値（1.5×IQRを超える値は外れ値として表示）。ひし形は平均点。</p>
+        <label class="toggle" style="margin-bottom:10px; display:inline-flex;"><input type="checkbox" id="chk-showpoints">実際の分布を点で表示（jitter plot）</label>
         <div class="chart-box"><canvas id="box-canvas" height="220"></canvas></div>
         <div class="legend">
           <span><span class="dot" style="background:var(--primary)"></span>箱（Q1〜Q3）</span>
           <span><span class="dot" style="background:var(--amber)"></span>中央値</span>
           <span><span class="dot" style="background:var(--secondary)"></span>平均（◆）</span>
           <span><span class="dot" style="background:var(--alert)"></span>外れ値</span>
+          <span id="legend-points" style="display:none;"><span class="dot" style="background:var(--secondary); opacity:.55;"></span>実測値（1点＝1名、縦方向にジッター表示）</span>
         </div>
       </div>
       <div class="card">
@@ -482,7 +486,7 @@
         <table>
           <tbody>
             <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">概要</td><td style="text-align:left;">受験者数・最低点・最高点・平均・中央値・標準偏差・四分位数など基本統計量の一覧。</td></tr>
-            <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">箱ひげ図</td><td style="text-align:left;">五数要約（最小・Q1・中央値・Q3・最大）と平均（◆）、外れ値（1.5×IQRを超える値）を表示。</td></tr>
+            <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">箱ひげ図</td><td style="text-align:left;">五数要約（最小・Q1・中央値・Q3・最大）と平均（◆）、外れ値（1.5×IQRを超える値）を表示。「実際の分布を点で表示」にチェックすると、個々の受験者の得点を1名1点として下部にジッター表示（縦方向のばらつきは見やすさのためのランダム表示で、値自体には意味がありません）。</td></tr>
             <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">ヒストグラム</td><td style="text-align:left;">10点刻みの度数分布と、度数・相対度数・累積度数の対応表。</td></tr>
             <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">合格点未満</td><td style="text-align:left;">「採点設定」で指定した合格点（デフォルト60点）に満たない受験者を得点の低い順に一覧表示（人数はタブ横のバッジにも表示）。</td></tr>
             <tr><td style="text-align:left; font-weight:700; white-space:nowrap;">出力</td><td style="text-align:left;">現在の分析結果を HTMLレポート／統計サマリーCSV／合格点未満リストCSV／Word文書 として保存。</td></tr>
@@ -763,17 +767,29 @@ function renderScoreBar(stats){
 }
 
 /* ---------------- Box plot canvas ---------------- */
+// Deterministic pseudo-random jitter (0..1) so point positions stay stable
+// across re-renders instead of reshuffling every time the chart redraws.
+function jitterRand(i){
+  const s = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+  return s - Math.floor(s);
+}
+
 function renderBoxplot(stats){
   const canvas = document.getElementById('box-canvas');
+  const showPoints = !!document.getElementById('chk-showpoints')?.checked;
   const dpr = window.devicePixelRatio || 1;
   const cssW = getChartWidth();
-  const cssH = 220;
+  const stripH = 54;
+  const cssH = 220 + (showPoints ? stripH : 0);
   canvas.width = cssW * dpr;
   canvas.height = cssH * dpr;
   canvas.style.height = cssH + 'px';
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   ctx.clearRect(0,0,cssW,cssH);
+
+  const legendPts = document.getElementById('legend-points');
+  if(legendPts) legendPts.style.display = showPoints ? 'flex' : 'none';
 
   const domainMax = stats.domainMax;
   const pass = stats.passDisp;
@@ -836,6 +852,23 @@ function renderBoxplot(stats){
   ctx.setLineDash([]);
   ctx.fillStyle = '#B8443B'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign='center';
   ctx.fillText(fmt(pass,1) + '点', x(pass), y0-18);
+
+  // ---- Actual distribution (jitter/strip plot) ----
+  if(showPoints){
+    const stripY0 = y0 + boxH/2 + 40 + 30; // below axis ticks/labels
+    const stripBandH = stripH - 20;
+    ctx.font = '10.5px sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = '#8A948E';
+    ctx.fillText('実測値（縦方向はジッター表示のみ、値には意味なし）', padL, stripY0 - 6);
+    stats.scoresSorted.forEach((v,i)=>{
+      const px = x(v);
+      const py = stripY0 + jitterRand(i) * stripBandH;
+      const under = v < pass;
+      ctx.beginPath();
+      ctx.arc(px, py, 2.6, 0, Math.PI*2);
+      ctx.fillStyle = under ? 'rgba(184,68,59,0.55)' : 'rgba(59,89,117,0.5)';
+      ctx.fill();
+    });
+  }
 }
 
 /* ---------------- Histogram ---------------- */
@@ -983,6 +1016,7 @@ function applySettingsFromInputs(){
   el.addEventListener('change', ()=>{ applySettingsFromInputs(); renderAll(); });
 });
 chkNormalize.addEventListener('change', ()=>{ applySettingsFromInputs(); renderAll(); });
+document.getElementById('chk-showpoints').addEventListener('change', ()=>{ renderBoxplot(currentStats); });
 
 /* ---------------- File upload (click / drag & drop) ---------------- */
 function loadFile(file){
