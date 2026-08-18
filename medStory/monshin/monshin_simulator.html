@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初めての問診シミュレーター</title>
+<style>
+  :root{
+    --ink:#1c2b22;
+    --paper:#f3efe4;
+    --paper-deep:#eae3d2;
+    --moss:#1f4d3a;
+    --moss-deep:#123626;
+    --moss-soft:#e4ece5;
+    --gold:#b9852f;
+    --gold-soft:#f6ecd6;
+    --wrong:#8a3b32;
+    --wrong-soft:#f3e3df;
+    --line:#d8cfba;
+    --white:#fffdf8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% -10%, rgba(31,77,58,0.07), transparent 45%),
+      radial-gradient(circle at 100% 0%, rgba(185,133,47,0.08), transparent 40%),
+      var(--paper);
+    color:var(--ink);
+    font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+    line-height:1.75;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .shell{
+    width:100%;
+    max-width:720px;
+    padding:0 18px 40px;
+  }
+  header.top{
+    width:100%;
+    background:var(--moss-deep);
+    color:var(--white);
+    padding:22px 18px 20px;
+    text-align:center;
+    box-shadow:0 4px 18px rgba(18,54,38,0.25);
+    position:relative;
+  }
+  header.top .kicker{
+    font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    letter-spacing:0.4em;
+    font-size:12px;
+    color:#cfe3d5;
+    margin:0 0 6px;
+  }
+  header.top h1{
+    font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    font-size:24px;
+    margin:0;
+    font-weight:700;
+    letter-spacing:0.05em;
+  }
+  nav.top-nav{
+    width:100%;
+    max-width:720px;
+    display:flex;
+    gap:6px;
+    padding:10px 18px 0;
+    justify-content:center;
+  }
+  nav.top-nav button.nav-btn{
+    flex:1;
+    max-width:180px;
+    background:var(--white);
+    border:1px solid var(--line);
+    color:#6b6250;
+    padding:9px 8px;
+    border-radius:20px;
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    letter-spacing:.03em;
+  }
+  nav.top-nav button.nav-btn.active{
+    background:var(--moss-deep);
+    border-color:var(--moss-deep);
+    color:#fff;
+    font-weight:700;
+  }
+  div.sub-nav{
+    width:100%;
+    max-width:720px;
+    display:flex;
+    gap:8px;
+    padding:8px 18px 0;
+    justify-content:center;
+  }
+  div.sub-nav button.subnav-btn{
+    background:var(--white);
+    border:1px solid var(--line);
+    color:var(--moss-deep);
+    padding:6px 14px;
+    border-radius:20px;
+    font-size:12.5px;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  div.sub-nav button.subnav-btn:disabled{
+    color:#c7c0ab;
+    cursor:not-allowed;
+  }
+  .case-list-menu{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:14px;
+  }
+  button.case-list-btn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    text-align:left;
+    border:1px solid var(--line);
+    background:var(--white);
+    border-radius:10px;
+    padding:11px 14px;
+    font-size:14px;
+    font-family:inherit;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  button.case-list-btn:hover{border-color:var(--moss);}
+  button.case-list-btn.clb-done{
+    background:var(--moss-soft);
+    border-color:var(--moss);
+  }
+  .clb-num{
+    flex:0 0 auto;
+    min-width:26px;
+    height:26px;
+    border-radius:50%;
+    background:var(--paper-deep);
+    color:var(--moss-deep);
+    font-size:11px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .clb-title{flex:1;}
+  .clb-check{color:var(--moss-deep);font-weight:700;}
+  .progress-wrap{
+    width:100%;
+    max-width:720px;
+    padding:16px 18px 0;
+  }
+  .progress-track{
+    display:flex;
+    gap:6px;
+  }
+  .progress-seg{
+    flex:1;
+    height:6px;
+    border-radius:4px;
+    background:var(--line);
+    overflow:hidden;
+  }
+  .progress-seg > i{
+    display:block;
+    height:100%;
+    width:0%;
+    background:var(--moss);
+    transition:width .4s ease;
+  }
+  .progress-label{
+    margin:8px 2px 0;
+    font-size:12px;
+    color:#6b6250;
+    display:flex;
+    justify-content:space-between;
+  }
+  .stage{
+    margin-top:18px;
+  }
+  .card{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px 20px;
+    margin-bottom:16px;
+    box-shadow:0 2px 10px rgba(28,43,34,0.05);
+  }
+  .speaker{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .avatar{
+    flex:0 0 auto;
+    width:46px;height:46px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    font-weight:700;
+    font-size:18px;
+    color:var(--white);
+  }
+  .avatar.master{background:var(--moss);}
+  .avatar.patient{background:#4a5a8a;}
+  .name-tag{
+    font-size:11px;
+    color:#8a8168;
+    margin:0 0 3px;
+    letter-spacing:.05em;
+  }
+  .bubble{
+    background:var(--paper-deep);
+    border-radius:2px 14px 14px 14px;
+    padding:12px 14px;
+    font-size:15px;
+    flex:1;
+  }
+  .bubble.patient-bubble{background:#eceef6;}
+  h2.section-title{
+    font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    font-size:19px;
+    margin:0 0 10px;
+    color:var(--moss-deep);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  h2.section-title .tag{
+    font-size:11px;
+    background:var(--moss-soft);
+    color:var(--moss-deep);
+    padding:3px 9px;
+    border-radius:20px;
+    font-family:inherit;
+    letter-spacing:.05em;
+  }
+  .patient-info{
+    font-size:14px;
+    color:#4b4738;
+    background:var(--paper-deep);
+    border-radius:10px;
+    padding:10px 14px;
+    margin:12px 0;
+  }
+  .choices{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:14px;
+  }
+  button.choice{
+    text-align:left;
+    border:1px solid var(--line);
+    background:var(--white);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:14.5px;
+    cursor:pointer;
+    color:var(--ink);
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    transition:border-color .15s, background .15s, transform .1s;
+    font-family:inherit;
+  }
+  button.choice .letter{
+    flex:0 0 auto;
+    width:22px;height:22px;
+    border-radius:50%;
+    background:var(--paper-deep);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;
+    font-weight:700;
+    color:var(--moss-deep);
+  }
+  button.choice:hover:not(:disabled){
+    border-color:var(--moss);
+    transform:translateY(-1px);
+  }
+  button.choice:disabled{cursor:default;}
+  button.choice.correct{
+    background:var(--moss-soft);
+    border-color:var(--moss);
+  }
+  button.choice.correct .letter{background:var(--moss);color:#fff;}
+  button.choice.wrong{
+    background:var(--wrong-soft);
+    border-color:var(--wrong);
+    opacity:.85;
+  }
+  button.choice.wrong .letter{background:var(--wrong);color:#fff;}
+  button.choice.dim{opacity:.45;}
+  .reply-block{
+    margin-top:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .feedback{
+    padding:12px 14px;
+    border-radius:10px;
+    font-size:14px;
+    background:var(--gold-soft);
+    border-left:4px solid var(--gold);
+  }
+  .feedback.negative{
+    background:var(--wrong-soft);
+    border-left:4px solid var(--wrong);
+  }
+  .feedback .label{
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:.05em;
+    color:var(--moss-deep);
+    margin-bottom:4px;
+    display:block;
+  }
+  .btn-row{
+    margin-top:18px;
+    display:flex;
+    justify-content:flex-end;
+  }
+  button.primary{
+    background:var(--moss-deep);
+    color:#fff;
+    border:none;
+    padding:11px 22px;
+    border-radius:30px;
+    font-size:14.5px;
+    cursor:pointer;
+    font-family:inherit;
+    letter-spacing:.03em;
+    box-shadow:0 3px 10px rgba(18,54,38,0.25);
+  }
+  button.primary:hover{background:var(--moss);}
+  button.primary:disabled{
+    background:#cfc9b8;
+    box-shadow:none;
+    cursor:not-allowed;
+  }
+  ul.review-list{
+    margin:10px 0 0;
+    padding-left:20px;
+  }
+  ul.review-list li{
+    margin-bottom:8px;
+    font-size:14.5px;
+  }
+  .score-pill{
+    display:inline-block;
+    font-size:12px;
+    background:var(--moss-soft);
+    color:var(--moss-deep);
+    padding:4px 12px;
+    border-radius:20px;
+    margin-bottom:12px;
+  }
+  .bonus-badge{
+    display:inline-block;
+    font-size:11px;
+    letter-spacing:.08em;
+    background:var(--gold);
+    color:#fff;
+    padding:3px 10px;
+    border-radius:20px;
+    margin-bottom:10px;
+  }
+  .case-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:14px 0 4px;
+  }
+  .case-chip{
+    font-size:12px;
+    background:var(--paper-deep);
+    padding:5px 10px;
+    border-radius:20px;
+    color:#6b6250;
+  }
+  .case-chip.done{
+    background:var(--moss-soft);
+    color:var(--moss-deep);
+  }
+  .final-score{
+    text-align:center;
+    padding:10px 0 4px;
+  }
+  .final-score .num{
+    font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    font-size:44px;
+    color:var(--moss-deep);
+  }
+  .final-score .den{
+    font-size:15px;
+    color:#7c7460;
+  }
+  i.taxon{font-style:italic;}
+  .explainer-list{
+    margin:14px 0 0;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .explainer-item{
+    border-left:3px solid var(--moss);
+    padding:2px 0 2px 12px;
+  }
+  .explainer-item .ex-label{
+    font-size:12px;
+    font-weight:700;
+    color:var(--moss-deep);
+    letter-spacing:.04em;
+    margin:0 0 3px;
+  }
+  .explainer-item .ex-text{
+    font-size:14.5px;
+    margin:0;
+  }
+  .form-meta{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px 18px;
+    font-size:13.5px;
+    margin:12px 0 4px;
+    background:var(--paper-deep);
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .form-meta div{display:flex;justify-content:space-between;gap:8px;}
+  .form-meta .k{color:#8a8168;flex:0 0 auto;}
+  .form-meta .v{text-align:right;font-weight:600;}
+  .form-note{
+    font-size:12px;
+    color:#8a8168;
+    margin:10px 2px 0;
+  }
+  .form-section{margin-top:18px;}
+  .form-section-title{
+    font-size:13px;
+    font-weight:700;
+    color:var(--moss-deep);
+    margin-bottom:7px;
+    letter-spacing:.02em;
+  }
+  .form-section-title .hint{
+    font-weight:400;
+    color:#8a8168;
+    font-size:11.5px;
+    margin-left:4px;
+  }
+  .chk-row{display:flex;flex-wrap:wrap;gap:6px 8px;}
+  .chk{
+    font-size:12.5px;
+    padding:4px 9px;
+    border-radius:6px;
+    background:var(--white);
+    border:1px solid var(--line);
+    color:#a39c86;
+  }
+  .chk.checked{
+    background:var(--moss-soft);
+    border-color:var(--moss);
+    color:var(--moss-deep);
+    font-weight:700;
+  }
+  .quote-box{
+    margin-top:8px;
+    font-size:13.5px;
+    background:var(--white);
+    border:1px dashed var(--line);
+    border-radius:8px;
+    padding:9px 11px;
+    color:#4b4738;
+  }
+  .form-inline{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    font-size:13px;
+    color:#4b4738;
+    margin-bottom:8px;
+  }
+  .form-inline b{color:var(--moss-deep);}
+  .link-card{
+    display:block;
+    text-decoration:none;
+    color:var(--ink);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:12px;
+    background:var(--paper-deep);
+  }
+  .link-card .lc-title{
+    font-weight:700;
+    color:var(--moss-deep);
+    font-size:15px;
+    margin:0 0 4px;
+  }
+  .link-card .lc-desc{
+    font-size:13px;
+    color:#5a5443;
+    margin:0;
+  }
+  .link-card .lc-url{
+    font-size:11.5px;
+    color:#a39c86;
+    margin:6px 0 0;
+  }
+  .about-steps{
+    margin:10px 0 0;
+    padding-left:20px;
+  }
+  .about-steps li{margin-bottom:8px;font-size:14.5px;}
+  footer.disclaimer{
+    max-width:720px;
+    width:100%;
+    margin:10px auto 0;
+    padding:16px 18px 30px;
+    font-size:11.5px;
+    color:#8a8168;
+    line-height:1.8;
+    text-align:center;
+    border-top:1px solid var(--line);
+  }
+  @media (max-width:480px){
+    header.top h1{font-size:20px;}
+    .card{padding:18px 14px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <p class="kicker">問 診 道 場</p>
+  <h1>初めての問診シミュレーター</h1>
+</header>
+
+<nav class="top-nav">
+  <button class="nav-btn active" data-view="main" onclick="switchView('main')">メイン画面</button>
+  <button class="nav-btn" data-view="about" onclick="switchView('about')">解説</button>
+  <button class="nav-btn" data-view="links" onclick="switchView('links')">リンク</button>
+</nav>
+
+<div class="sub-nav" id="subNav">
+  <button class="subnav-btn" id="backBtn" onclick="goBack()">← 戻る</button>
+  <button class="subnav-btn" onclick="openCaseList()">📋 症例一覧</button>
+</div>
+
+<div class="progress-wrap" id="progressWrap">
+  <div class="progress-track" id="progressTrack"></div>
+  <div class="progress-label">
+    <span id="progressLabel">師匠の指南</span>
+    <span id="progressScore"></span>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="stage" id="stage"></div>
+</div>
+
+<footer class="disclaimer">
+  本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+/* ---------------------------------------------------------
+   データ定義
+   各症例は steps（5段階）を持つ：
+   0: 主訴の聞き方（開放型 vs 閉鎖型 vs 決めつけ）
+   1: 症状の性状・経過
+   2: 曝露歴・生活歴（広く尋ねる）
+   3: 曝露歴の絞り込み（具体的な項目を挙げて尋ねる）
+   4: 既往歴・家族歴
+   各選択肢には 患者の返答(patientReply) と 師匠の講評(feedback) を持たせる。
+--------------------------------------------------------- */
+const FAMILY_OPTIONS = ["高血圧","糖尿病","がん","心臓病","喘息・アレルギー","感染症","特になし"];
+const PAST_OPTIONS = ["高血圧","糖尿病","喘息","心臓病","腎臓病","肝臓病","手術歴","感染症","特になし"];
+const ALLERGY_OPTIONS = ["薬","食べ物","金属","ラテックス","なし"];
+const CONTRA_OPTIONS = ["妊娠中・可能性あり","授乳中","腎臓の病気","肝臓の病気","使えないと言われた治療がある","特になし"];
+
+const lecture = {
+  title:"問診の基本 〜師匠より〜",
+  lines:[
+    "よく来たな。今日から問診の稽古を始めよう。まずは基本の型を三つだけ覚えてほしい。",
+    "一つ目。主訴はまず開放型（オープンエンド）の質問で聞く。ただし、受付で問診票にすでに主訴を書いてもらっている場合、「今日はどうされましたか」とまっさらに聞き直すのは不自然だ。「〇〇がおつらいのですね。もう少し詳しく教えてください」というように、すでに分かっている情報をふまえたうえで、開いた形で聞くとよい。決めつけず、患者さん自身の言葉で語ってもらうのが出発点だ。",
+    "二つ目。聞き方には流れがある。①開放的傾聴（自由に話してもらう）→②誘導的傾聴（気になる点を絞って聞く）→③仮説検証的傾聴（鑑別を絞るための質問）という三段階を、行ったり来たりしながら進める。広く尋ねても患者さんがうまく思い出せないことは多い。そのときは「この1週間で〇〇は?」というように、具体的な項目を一つずつ挙げて絞り込んでいくのがコツだ。",
+    "三つ目。既往歴や家族歴も欠かさず確認すること。基礎疾患や続発症のリスク、周囲での流行状況を知る手がかりになる。「なぜ今日受診したのか」という受診理由の深掘りや、患者さんの解釈・不安（解釈モデル）を尋ねる姿勢、うなずきなどの態度も、信頼関係づくりの大切な技だ。",
+    "さて、口で言うのは簡単だが、実際にやってみないと身につかん。これから八人の患者さんが訪れる。一緒に問診してみよう。"
+  ],
+  cta:"稽古を始める"
+};
+
+const cases = [
+  {
+    key:"mycoplasma",
+    title:"症例１：マイコプラズマ肺炎",
+    patient:"22歳・男性（大学生）",
+    complaint:"5日前からの乾いた咳と微熱（37.8℃）",
+    intro:"すみません…咳がずっと続いていて、しんどくて来ました。",
+    form:{
+      name:"田中 大輔", furigana:"たなか だいすけ",
+      dob:"2004年3月14日", age:22, gender:"男性",
+      address:"大阪府大阪市阿倍野区旭町1-2-3", phone:"090-1234-5601",
+      informant:null,
+      complaintOptions:["せき","発熱","のどの痛み","息苦しさ","痰がからむ"],
+      complaintChecked:["せき","発熱"],
+      complaintFree:"5日前から咳が続いています。",
+      historyOnset:"5日前", historySeverity:"中くらい", historyTrend:"だんだん悪化している",
+      historyOptions:["乾いた咳","湿った咳","頭痛","強いだるさ","胸の痛み"],
+      historyChecked:["乾いた咳","頭痛"],
+      historyFree:"夜も咳き込んで眠れないことがあります。",
+      familyChecked:["特になし"], familyFree:"",
+      pastChecked:["特になし"], pastFree:"",
+      medications:"なし", medNoteBook:false,
+      allergyChecked:["なし"], allergyFree:"",
+      contraindicationChecked:["特になし"], contraindicationFree:""
+    },
+    steps:[
+      {
+        prompt:"問診票を見ると「せき・発熱」が主訴として書かれている。まず、どのように問診を切り出すべきか？",
+        options:[
+          {text:"「咳がおつらそうですね。いつからか、どんな咳か、もう少し詳しく教えてください」",correct:true,
+           patientReply:"5日前から乾いた咳が続いていて、だんだん咳き込みがひどくなってきました。少し熱っぽい感じもあります。",
+           feedback:"問診票にすでに書かれている主訴を踏まえ、共感を示したうえで開いた形で尋ねるのがよい。ゼロから「今日はどうされましたか」と聞き直すより、患者さんも話しやすくなる。"},
+          {text:"「熱は何度ありますか？」とまず数値を確認する",correct:false,
+           patientReply:"37度8分くらいです。",
+           feedback:"数値は得られたが、閉じた質問で始めると患者さんが語れたはずの情報を取りこぼしやすい。"},
+          {text:"「風邪でしょうから様子を見ていいですか？」",correct:false,
+           patientReply:"え…そうなんでしょうか。よく分かりません。",
+           feedback:"聴く前に決めつけてしまっている。非誘導的・非審判的な姿勢がまず求められる。"}
+        ]
+      },
+      {
+        prompt:"症状を掘り下げるなら、次にどう聞く？",
+        options:[
+          {text:"「この咳はいつからで、どう変化してきましたか？痰は絡みますか？」",correct:true,
+           patientReply:"5日前は軽い咳でしたが、日に日にひどくなってきました。痰はあまり絡まず、乾いた咳です。夜も咳き込んで眠れないことがあります。",
+           feedback:"良い質問。マイコプラズマ肺炎は緩徐に進行する乾性咳嗽が特徴的。経過と性状（乾性か湿性か）は鑑別の要になる。"},
+          {text:"「咳止めの薬は何か飲みましたか？」",correct:false,
+           patientReply:"市販の咳止めを飲みましたが、あまり効きませんでした。",
+           feedback:"治療歴も後で有用だが、今はまず症状そのものの経過・性状を具体的に把握する方が優先度が高い。"},
+          {text:"「コロナの検査はもうしましたか？」",correct:false,
+           patientReply:"いえ、していません。",
+           feedback:"一つの疾患に飛びつくと視野が狭くなる。鑑別を広げる情報から集めよう。"}
+        ]
+      },
+      {
+        prompt:"周囲の状況について、まず広く尋ねてみよう。",
+        options:[
+          {text:"「最近、体調を崩している人が身近にいますか？」",correct:true,
+           patientReply:"うーん…特には思い浮かびませんが、そういえば少し前に大学の友人も咳をしていた気がします。",
+           feedback:"広く尋ねるのはよい入り口。ただし、はっきりとは思い出せないようだ。次はもう少し具体的に絞り込んでみよう。"},
+          {text:"「たばこは吸いますか？」",correct:false,
+           patientReply:"いいえ、吸いません。",
+           feedback:"背景情報としては有用だが、今この場面で最も特異的な質問ではない。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"この場面での優先度は低い。まずは周囲の流行状況を尋ねよう。"}
+        ]
+      },
+      {
+        prompt:"友人の咳が気になる様子。具体的な項目を挙げて絞り込んでみよう。",
+        options:[
+          {text:"「その友人とはどのくらい一緒にいましたか？学校や家庭で他にも咳をしている人は？以前似た症状で医療機関を受診し、抗菌薬が効かなかったことは？」",correct:true,
+           patientReply:"1週間前に一緒に勉強していました。サークルでも数人が同じような咳をしていると聞きました。そういえば去年も似たような咳で近くのクリニックにかかり、抗菌薬をもらいましたが、全然良くならなかったことがありました。",
+           feedback:"正解。具体的な項目（接触した期間、集団内の流行、治療歴）を一つずつ挙げて尋ねることで、思い出せなかった情報が引き出せた。集団感染や、β-ラクタム系抗菌薬が効きにくいという既往はマイコプラズマ肺炎を示唆する重要な所見。"},
+          {text:"「熱はいつ下がりましたか？」",correct:false,
+           patientReply:"まだ微熱が続いています。",
+           feedback:"すでに把握済みの情報で、今の絞り込みとしては有用性が低い。"},
+          {text:"「薬のアレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"処方の際には大切だが、診断を絞り込む今の場面では優先度が低い。"}
+        ]
+      },
+      {
+        prompt:"最後に、既往歴と家族歴も確認しておこう。",
+        options:[
+          {text:"「これまでに大きな病気にかかったことや手術を受けたことは？ご家族に同じような症状の方や持病のある方は？」",correct:true,
+           patientReply:"特に大きな病気はありません。家族は今のところ元気です。父が喘息持ちですが、今回とは関係なさそうです。",
+           feedback:"正解。既往歴・家族歴の確認は基礎疾患の把握や、重症化リスクの評価に役立つ。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"単一項目だけでは既往歴・家族歴の確認として不十分。"},
+          {text:"「血液型は何ですか？」",correct:false,
+           patientReply:"A型です。",
+           feedback:"この場面での診療上の有用性は低い情報。"}
+        ]
+      }
+    ],
+    review:[
+      "若年者に多く、緩徐に進行する乾性咳嗽が特徴的。",
+      "聴診所見に乏しいことが多く、いわゆる「歩く肺炎（walking pneumonia）」と呼ばれることがある。",
+      "家庭内・学校内など集団での流行がヒントになる。広く尋ねて手がかりが出たら、具体的な項目を挙げて絞り込む。",
+      "β-ラクタム系抗菌薬が無効だった既往は示唆的。",
+      "既往歴・家族歴を確認し、基礎疾患の有無も評価する。"
+    ],
+    explainer:[
+      {label:"原因病原体", text:"<i class=\"taxon\">Mycoplasma pneumoniae</i>（マイコプラズマ）。細胞壁を持たない特殊な細菌で、この特徴が治療薬の選択に直結する。"},
+      {label:"感染経路", text:"飛沫感染が主体。潜伏期間は2〜3週間と比較的長い。"},
+      {label:"症状", text:"緩徐に進行する乾性咳嗽、微熱、頭痛、咽頭痛。肺炎の割に聴診所見に乏しく、「歩く肺炎（walking pneumonia）」と呼ばれることがある。"},
+      {label:"好発年齢", text:"学童期〜若年成人に多く、数年周期で流行がみられる。"},
+      {label:"危険因子", text:"学校・寮など集団生活の場での接触。"},
+      {label:"診断", text:"迅速抗原検査、PCR、血清抗体価（ペア血清での上昇）、寒冷凝集反応などを組み合わせて判断する。"},
+      {label:"治療", text:"マクロライド系抗菌薬が第一選択。細胞壁を持たないためβ-ラクタム系抗菌薬は無効。マクロライド耐性例ではテトラサイクリン系・ニューキノロン系抗菌薬を検討する。"},
+      {label:"予防", text:"実用化されたワクチンはない。飛沫予防策（マスク、手指衛生）が中心。"},
+      {label:"予後", text:"多くは自然軽快する良性の経過をたどるが、まれに脳炎などの肺外合併症を伴うことがある。"},
+      {label:"感染症法上の取り扱い", text:"5類感染症（基幹定点把握対象）。"}
+    ],
+    altPhrasing:"曝露歴の絞り込みでは、こういう聞き方もできる。「風邪をひきやすい季節に、周りで長引く咳をしている人はいましたか？」というように、少し違う言い回しでも同じ情報を引き出せることがある。聞き方は一つではない。",
+    tips:[
+      {label:"混み合う外来では、質問のバランスを変えてもよい",
+       text:"混み合う外来でこの患者を診るとしよう。「咳はいつからですか」「痰は絡みますか」とテンポよく閉じた質問を重ねれば数分で終わる。ただし、それだけでは『集団感染をうかがわせる一言』のような、患者が自分から語ってはじめて出てくる情報を取りこぼしやすい。若年者の遷延する咳では、時間の許す範囲で一つだけ開いた質問を残しておくと、思わぬ手がかりに出会えることがある。"},
+      {label:"既往歴は「効かなかった治療歴」も見落とさずに",
+       text:"今回は集団感染や抗菌薬無効歴など、この症例に直結する項目を中心に尋ねた。実際にはアレルギー歴や他院での受診歴なども、時間が許せば問診票を見ながら一つずつ確認しておきたい。特に『以前の治療が効かなかった』という情報は、既往歴の欄では見落とされがちなので、意識して尋ねる価値がある。"}
+    ],
+    bonus:{
+      prompt:"もうひと頑張り：マクロライド系抗菌薬への耐性が疑われる場合、次に検討される抗菌薬系統は？",
+      options:[
+        {text:"テトラサイクリン系またはニューキノロン系",correct:true,
+         feedback:"正解。<i class=\"taxon\">Mycoplasma pneumoniae</i>は細胞壁を持たないためβ-ラクタム系は無効。マクロライド耐性例では、年齢等を考慮した上でテトラサイクリン系やニューキノロン系が選択肢となる。"},
+        {text:"第3世代セファロスポリン系",correct:false,
+         feedback:"β-ラクタム系は細胞壁合成阻害薬であり、細胞壁を持たないマイコプラズマには無効。"},
+        {text:"カルバペネム系",correct:false,
+         feedback:"こちらも細胞壁合成阻害薬であり無効。広域抗菌薬の安易な使用も避けたい。"}
+      ]
+    }
+  },
+  {
+    key:"campylobacter",
+    title:"症例２：カンピロバクター腸炎",
+    patient:"34歳・男性",
+    complaint:"3日前からの水様〜血性下痢、腹痛、発熱",
+    intro:"お腹が痛くて…下痢が続いていて、今日は血も混じっていました。",
+    form:{
+      name:"佐藤 健一", furigana:"さとう けんいち",
+      dob:"1992年5月2日", age:34, gender:"男性",
+      address:"大阪府堺市北区中百舌鳥町4-5-6", phone:"090-2345-6702",
+      informant:null,
+      complaintOptions:["腹痛","下痢","血便","発熱","吐き気"],
+      complaintChecked:["下痢","腹痛","血便"],
+      complaintFree:"3日前からお腹が痛く、下痢が続いています。今日は血が混じっていました。",
+      historyOnset:"3日前", historySeverity:"つらい", historyTrend:"変わらない",
+      historyOptions:["腹痛","下痢","血便","発熱","吐き気","嘔吐"],
+      historyChecked:["腹痛","下痢","血便","発熱"],
+      historyFree:"",
+      familyChecked:["特になし"], familyFree:"",
+      pastChecked:["特になし"], pastFree:"",
+      medications:"なし", medNoteBook:false,
+      allergyChecked:["なし"], allergyFree:"",
+      contraindicationChecked:["特になし"], contraindicationFree:""
+    },
+    steps:[
+      {
+        prompt:"問診票には「腹痛・下痢・血便」が主訴として書かれている。問診の切り出し方として最も適切なのは？",
+        options:[
+          {text:"「お腹の痛みと下痢がつらそうですね。もう少し詳しく教えてください」",correct:true,
+           patientReply:"3日前からお腹が痛くて下痢が続いています。今日は血も少し混じっていました。熱も少しあります。",
+           feedback:"問診票の主訴を踏まえ、共感を示したうえで開いた形で尋ねるのがよい。すでに書かれている情報を無視して聞き直すより、患者さんの負担も少ない。"},
+          {text:"「下痢は1日何回くらいですか？」",correct:false,
+           patientReply:"6、7回くらいです。",
+           feedback:"具体的で悪くはないが、最初の一言としては閉じすぎている。"},
+          {text:"「食あたりでしょうから、心配いりませんよ」",correct:false,
+           patientReply:"そうなんでしょうか…でも血が混じっていたので心配です。",
+           feedback:"血便を伴う下痢を軽く扱うのは危険。決めつけずにまず聴く。"}
+        ]
+      },
+      {
+        prompt:"症状の性状・重症度を確認するには？",
+        options:[
+          {text:"「血便はありますか？高熱や強い腹痛は？症状は何日続いていますか？」",correct:true,
+           patientReply:"血便は今日だけです。熱は37.8度くらい、お腹はかなり痛くて、もう3日続いています。",
+           feedback:"正解。血便・高熱・強い腹痛・3日を超える持続は、侵襲性（炎症性）下痢を示唆し、便培養など精査の適応となる重要な所見。"},
+          {text:"「吐き気はありますか？」だけを確認する",correct:false,
+           patientReply:"少しありますが、吐いてはいません。",
+           feedback:"一項目だけでは重症度評価に不十分。"},
+          {text:"「水分は摂れていますか？」",correct:false,
+           patientReply:"なんとか摂れています。",
+           feedback:"脱水評価は大切だが、まず症状の性状・重症度指標を確認する方が優先。"}
+        ]
+      },
+      {
+        prompt:"最近の食事や生活状況について、まず広く尋ねてみよう。",
+        options:[
+          {text:"「最近、何か思い当たる食事や体調を崩すきっかけはありましたか？」",correct:true,
+           patientReply:"うーん…特に思い当たりません。普段どおり食べていた気がします。",
+           feedback:"広い質問から入るのは正しい流れだが、はっきりとは思い出せないようだ。次は具体的な項目を挙げて絞り込んでみよう。"},
+          {text:"「外食はしますか？」",correct:false,
+           patientReply:"たまにします。",
+           feedback:"開始の質問としてはやや閉じている。"},
+          {text:"「お酒はよく飲みますか？」",correct:false,
+           patientReply:"週に数回飲みます。",
+           feedback:"この場面での優先度は低い。"}
+        ]
+      },
+      {
+        prompt:"はっきり思い出せない様子。具体的な項目を一つずつ挙げて絞り込んでみよう。",
+        options:[
+          {text:"「この1週間以内に、鶏肉（特に加熱が不十分なもの）を食べませんでしたか？子犬など動物との接触や、最近胃薬（PPI）の使用は？海外への渡航は？」",correct:true,
+           patientReply:"あ、そういえば…4日前に炭火焼きの鶏肉料理を食べました。よく考えたら中が少しレアだったかもしれません。動物には触れていません。胃薬も飲んでいません。渡航もしていません。",
+           feedback:"正解。具体的な項目（鶏肉、動物接触、PPI、渡航）を一つずつ挙げて尋ねることで、思い出せなかった曝露歴が引き出せることが多い。加熱不十分な鶏肉摂取はカンピロバクター感染の重要な手がかり。"},
+          {text:"「野菜はよく食べますか？」",correct:false,
+           patientReply:"はい、野菜は好きでよく食べます。",
+           feedback:"野菜摂取だけでは特異的な手がかりにならない。もう少し具体的な項目を挙げよう。"},
+          {text:"「自炊はしますか？」",correct:false,
+           patientReply:"たまにします。",
+           feedback:"一般的すぎて絞り込みになっていない。"}
+        ]
+      },
+      {
+        prompt:"最後に、既往歴と家族歴も確認しておこう。",
+        options:[
+          {text:"「これまでに胃腸の病気にかかったことは？ご家族に同じような症状の方はいますか？」",correct:true,
+           patientReply:"特に胃腸の病気はありません。家族は今のところ元気です。",
+           feedback:"正解。基礎疾患（免疫不全等）の有無や、家庭内での集団発生の可能性を確認できた。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"単一項目だけでは不十分。"},
+          {text:"「血液型は何ですか？」",correct:false,
+           patientReply:"O型です。",
+           feedback:"この場面での診療上の有用性は低い。"}
+        ]
+      }
+    ],
+    review:[
+      "水様〜血性下痢、腹痛（時に虫垂炎様に持続）、発熱が主な症状。",
+      "血便・高熱・強い腹痛・3日超の持続は侵襲性下痢を示唆し、便培養の適応。",
+      "曝露歴は広く尋ねても思い出せないことが多い。鶏肉・動物接触・PPI・渡航など具体的な項目を挙げて絞り込む。",
+      "生後6か月未満の子犬との接触、直近のPPI内服も重要な手がかり。",
+      "既往歴・家族歴を確認し、続発症として下痢消失後1〜3週間でのギラン・バレー症候群にも注意する。"
+    ],
+    explainer:[
+      {label:"原因病原体", text:"<i class=\"taxon\">Campylobacter jejuni</i>・<i class=\"taxon\">Campylobacter coli</i>。"},
+      {label:"感染経路", text:"経口感染。加熱不十分な鶏肉、非加熱の乳製品、汚染された水、動物（特に子犬）との接触が主な感染源となる。"},
+      {label:"症状", text:"発熱、腹痛（時に虫垂炎様に持続）、下痢（水様〜血性）。"},
+      {label:"好発年齢", text:"全年齢で罹患するが、若年成人に多い。"},
+      {label:"危険因子", text:"鶏肉喫食、動物接触、PPI内服、海外渡航。"},
+      {label:"診断", text:"便培養、便中抗原検査、PCR。"},
+      {label:"治療", text:"多くは自然軽快し対症療法が基本。重症例や免疫不全患者ではマクロライド系抗菌薬（アジスロマイシン等）を検討する。"},
+      {label:"予防", text:"食品の十分な加熱、調理器具の交差汚染防止、手指衛生。"},
+      {label:"予後", text:"一般に良好だが、ギラン・バレー症候群や反応性関節炎などの続発症に注意する。"},
+      {label:"感染症法上の取り扱い", text:"5類感染症（感染性胃腸炎として定点把握）。集団発生時は食中毒としての届出対象にもなり得る。"}
+    ],
+    altPhrasing:"曝露歴の絞り込みでは、こういう聞き方もできる。「ここ数日で、焼き鳥や炭火焼きなど、鶏肉を使った料理を食べる機会はありましたか？」というように、具体的な料理名から尋ねる方法もある。聞き方は一つではない。",
+    tips:[
+      {label:"食事歴は「広く→絞る」の順が効率的",
+       text:"食中毒の原因になりうる食品は多岐にわたる。いきなり「鶏肉を食べましたか」と閉じた質問を一つ出すだけでは、他の原因（生乳、未処理の水など）を聞き漏らしてしまう。まず開いた質問で候補を広げ、思い当たる話が出てから具体的な項目を挙げて閉じた質問で絞り込む、という順番が結局は効率的なことが多い。"},
+      {label:"「内服薬なし」の裏に隠れているもの",
+       text:"今回の患者は問診票の内服薬欄に「なし」と書いていたが、実際にはPPI（胃薬）を服用していた。市販薬や、症状に直接関係ないと本人が思っている薬は、内服薬欄に書かれないことがある。既往歴を聞く際に「胃薬や整腸剤など、市販のものも含めて何か飲んでいませんか」と重ねて尋ねると拾いやすい。"}
+    ],
+    bonus:{
+      prompt:"もうひと頑張り：下痢消失後1〜3週間で四肢のしびれ・脱力が出現した場合、まず疑うべき合併症は？",
+      options:[
+        {text:"ギラン・バレー症候群",correct:true,
+         feedback:"正解。<i class=\"taxon\">Campylobacter jejuni</i>感染はギラン・バレー症候群の先行感染として最も頻度が高く、成人GBS患者の25〜50%に先行感染が認められると報告されている。"},
+        {text:"反応性関節炎",correct:false,
+         feedback:"カンピロバクター感染後にみられ得る合併症だが、この時間経過・症状（しびれ・脱力）からはGBSが優先される。"},
+        {text:"溶血性尿毒症症候群（HUS）",correct:false,
+         feedback:"HUSは主にEHEC感染に関連する合併症であり、カンピロバクターでは典型的でない。"}
+      ]
+    }
+  },
+  {
+    key:"strep",
+    title:"症例３：溶連菌咽頭炎",
+    patient:"8歳・女児（保護者付き添い）",
+    complaint:"昨日からの高熱と咽頭痛、咳はない",
+    intro:"（保護者）昨日から急に高い熱が出て、のどが痛いと言っています。",
+    form:{
+      name:"山本 さくら", furigana:"やまもと さくら",
+      dob:"2018年2月20日", age:8, gender:"女性",
+      address:"大阪府豊中市曽根東町2-1-9", phone:"090-3456-7803",
+      informant:"保護者（母：山本 由美）記入",
+      complaintOptions:["発熱","のどの痛み","せき","発疹","腹痛"],
+      complaintChecked:["発熱","のどの痛み"],
+      complaintFree:"昨日の夜から急に高熱が出て、のどが痛いと言っています。",
+      historyOnset:"昨日", historySeverity:"つらそう", historyTrend:"急激に発症",
+      historyOptions:["発熱","のどの痛み","せき","発疹","嘔吐"],
+      historyChecked:["発熱","のどの痛み"],
+      historyFree:"",
+      familyChecked:["特になし"], familyFree:"",
+      pastChecked:["感染症"], pastFree:"去年、溶連菌にかかったことがあります。",
+      medications:"なし", medNoteBook:false,
+      allergyChecked:["なし"], allergyFree:"",
+      contraindicationChecked:["特になし"], contraindicationFree:""
+    },
+    steps:[
+      {
+        prompt:"問診票には「発熱・のどの痛み」が主訴として書かれている。最初の問いかけとして適切なのは？",
+        options:[
+          {text:"「高い熱とのどの痛みで大変でしたね。もう少し詳しく教えてください」",correct:true,
+           patientReply:"昨日の夜から急に高い熱が出て、のどが痛いと言っています。今朝測ったら39度でした。",
+           feedback:"保護者への問診でも、問診票の主訴を踏まえて共感を示しつつ、開いた形で自由に語ってもらうのがよい。"},
+          {text:"「熱は何度ですか？」",correct:false,
+           patientReply:"39度です。",
+           feedback:"数値の確認は大切だが、最初の一言としては情報が限定的になる。"},
+          {text:"「溶連菌でしょうか？」",correct:false,
+           patientReply:"え、そうなんでしょうか。分かりません。",
+           feedback:"聴く前から一つの診断に決めつけない。"}
+        ]
+      },
+      {
+        prompt:"症状の性状を掘り下げるには？",
+        options:[
+          {text:"「のどの痛みの程度、飲み込みにくさ、発疹の有無、腹痛や嘔吐は？咳や鼻水はありますか？」",correct:true,
+           patientReply:"喉をとても痛がっていて、水も飲みづらそうです。発疹は今のところありません。お腹は痛くないようです。咳や鼻水はほとんどありません。",
+           feedback:"正解。溶連菌性咽頭炎は突然の発熱・咽頭痛・嚥下痛が特徴で、咳や鼻汁が乏しいことが鑑別点（Centor/McIsaac基準の要素）。猩紅熱様皮疹や苺舌も参考になる。"},
+          {text:"「夜はよく眠れていますか？」",correct:false,
+           patientReply:"あまり眠れていないようです。",
+           feedback:"生活状況として有用だが、鑑別に直結する質問ではない。"},
+          {text:"「食欲はありますか？」",correct:false,
+           patientReply:"あまり食べたがりません。",
+           feedback:"一般的すぎて、この場面で最も有用な情報とは言えない。"}
+        ]
+      },
+      {
+        prompt:"周囲の状況について、まず広く尋ねてみよう。",
+        options:[
+          {text:"「最近、周りで体調を崩しているお子さんはいますか？」",correct:true,
+           patientReply:"うーん…特には思い当たりませんが、クラスでお休みしている子が何人かいるとは聞きました。",
+           feedback:"良い入り口。ただしまだ具体的ではない。もう少し絞り込んでみよう。"},
+          {text:"「予防接種は受けていますか？」",correct:false,
+           patientReply:"はい、規定通り受けています。",
+           feedback:"一般的に大切な確認だが、この場面で最も優先すべき質問ではない。"},
+          {text:"「最近旅行しましたか？」",correct:false,
+           patientReply:"いいえ、特には。",
+           feedback:"この症例では優先度が低い。"}
+        ]
+      },
+      {
+        prompt:"クラスでお休みしている子が気になる。具体的に絞り込んでみよう。",
+        options:[
+          {text:"「お休みしているお子さんの中に、のどの痛みや発熱、溶連菌と診断された子はいませんか？」",correct:true,
+           patientReply:"そういえば、同じクラスの子が先週「溶連菌」と言われてお休みしていたと聞きました。",
+           feedback:"正解。病名や症状を具体的に挙げて尋ねることで、有用な接触歴が得られた。学校内での接触歴は溶連菌感染の重要な手がかりとなる。"},
+          {text:"「その子とは仲が良いですか？」",correct:false,
+           patientReply:"普通の同級生です。",
+           feedback:"診療上の優先度は低い。"},
+          {text:"「クラスの人数は何人ですか？」",correct:false,
+           patientReply:"30人くらいです。",
+           feedback:"直接関係しない情報。"}
+        ]
+      },
+      {
+        prompt:"最後に、既往歴と家族歴も確認しておこう。",
+        options:[
+          {text:"「これまでに溶連菌やリウマチ熱、腎臓の病気にかかったことは？ご家族に同じような症状の方は？」",correct:true,
+           patientReply:"溶連菌は去年一度かかったことがあります。腎臓の病気はありません。家族は今のところ元気です。",
+           feedback:"正解。既往の溶連菌感染や続発症（リウマチ熱・腎炎）の既往確認は重要。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"単一項目だけでは不十分。"},
+          {text:"「血液型は何ですか？」",correct:false,
+           patientReply:"B型です。",
+           feedback:"この場面での診療上の有用性は低い。"}
+        ]
+      }
+    ],
+    review:[
+      "突然発症の発熱・咽頭痛・嚥下痛が典型的。",
+      "咳・鼻汁が乏しいことが、ウイルス性咽頭炎との鑑別点の一つ（Centor/McIsaac基準）。",
+      "苺舌や猩紅熱様皮疹、頸部リンパ節腫脹も参考所見。",
+      "学校・家庭内での接触歴は、広く尋ねたあと具体的な病名や症状を挙げて絞り込むとよい。",
+      "既往の溶連菌感染や、リウマチ熱・腎炎などの続発症の既往歴も確認する。"
+    ],
+    explainer:[
+      {label:"原因病原体", text:"<i class=\"taxon\">Streptococcus pyogenes</i>（A群β溶血性レンサ球菌）。"},
+      {label:"感染経路", text:"飛沫感染、接触感染。"},
+      {label:"症状", text:"突然の発熱、咽頭痛、嚥下痛。咳・鼻汁は乏しい。苺舌や猩紅熱様皮疹、頸部リンパ節腫脹を伴うことがある。"},
+      {label:"好発年齢", text:"5〜15歳の小児に多い。"},
+      {label:"危険因子", text:"保育園・学校など集団生活の場での接触。"},
+      {label:"診断", text:"迅速抗原検査、咽頭培養。臨床所見と合わせてCentor/McIsaac基準などで評価する。"},
+      {label:"治療", text:"ペニシリン系抗菌薬（アモキシシリン等）が第一選択。"},
+      {label:"予防", text:"手指衛生、飛沫予防策。"},
+      {label:"予後", text:"適切な抗菌薬治療により良好。治療の目的の一つは急性リウマチ熱などの続発症予防。"},
+      {label:"感染症法上の取り扱い", text:"5類感染症（小児科定点把握対象）。"}
+    ],
+    altPhrasing:"周囲の状況を絞り込む場面では、こういう聞き方もできる。「学校でお休みしている子が多い時期はありますか？」「先生からお便りなどで注意喚起はありましたか？」というように、保護者が把握しやすい角度から尋ねる方法もある。聞き方は一つではない。",
+    tips:[
+      {label:"保護者からの聴取は、短く区切る質問も有効",
+       text:"小児の問診を保護者から聴く場合、開いた質問だけでは要領を得ない答えが返ってくることもある。「今も熱は続いていますか」「水分は摂れていますか」のように短く区切った質問をところどころ挟むと、保護者も答えやすく、聴取のペースも整いやすい。開いた質問と閉じた質問を交互に使う感覚を持つとよい。"},
+      {label:"母子手帳・予防接種歴も既往歴の一部",
+       text:"小児の既往歴・家族歴を確認する際は、母子手帳に記録されている既往症や予防接種歴も参考になる。問診票に書かれていない情報でも、「母子手帳をお持ちでしたら見せていただけますか」と一言添えるだけで、より正確な情報が得られることがある。"}
+    ],
+    bonus:{
+      prompt:"もうひと頑張り：溶連菌性咽頭炎に対する抗菌薬治療の最も重要な目的は？",
+      options:[
+        {text:"急性リウマチ熱などの続発症予防",correct:true,
+         feedback:"正解。<i class=\"taxon\">Streptococcus pyogenes</i>（A群溶血性レンサ球菌）による咽頭炎の抗菌薬治療は、症状短縮だけでなく急性リウマチ熱などの続発症予防が重要な目的とされる。"},
+        {text:"症状を早く消すこと",correct:false,
+         feedback:"症状短縮効果もあるが、それだけが主目的ではない。"},
+        {text:"周囲への感染拡大を完全に阻止すること",correct:false,
+         feedback:"感染性を減らす効果は期待できるが、「完全な阻止」を主目的とはしていない。"}
+      ]
+    }
+  },
+  {
+    key:"influenza",
+    title:"症例４：インフルエンザ",
+    patient:"42歳・女性",
+    complaint:"昨日からの突然の高熱（39℃）、関節痛・筋肉痛、強い倦怠感",
+    intro:"昨日、急に熱が上がって、体中の節々が痛くて動けないんです。",
+    form:{
+      name:"中村 陽子", furigana:"なかむら ようこ",
+      dob:"1984年1月10日", age:42, gender:"女性",
+      address:"大阪府吹田市泉町3-4-5", phone:"090-4567-8904",
+      informant:null,
+      complaintOptions:["発熱","関節痛・筋肉痛","だるさ","のどの痛み","せき"],
+      complaintChecked:["発熱","関節痛・筋肉痛","だるさ"],
+      complaintFree:"昨日夜、急に熱が上がり、体中が痛くて動けません。",
+      historyOnset:"昨日", historySeverity:"つらい", historyTrend:"急激に発症",
+      historyOptions:["発熱","関節痛","筋肉痛","だるさ","のどの痛み","せき"],
+      historyChecked:["発熱","関節痛","筋肉痛","だるさ"],
+      historyFree:"",
+      familyChecked:["特になし"], familyFree:"",
+      pastChecked:["喘息"], pastFree:"",
+      medications:"なし", medNoteBook:false,
+      allergyChecked:["なし"], allergyFree:"",
+      contraindicationChecked:["特になし"], contraindicationFree:""
+    },
+    steps:[
+      {
+        prompt:"問診票には「発熱・関節痛・筋肉痛・だるさ」が主訴として書かれている。最初の問いかけは？",
+        options:[
+          {text:"「急な高熱と体のだるさ、おつらいですね。もう少し詳しく教えてください」",correct:true,
+           patientReply:"昨日の夜、急に熱が上がって、体中の節々が痛くて、だるくて動けないんです。",
+           feedback:"問診票の主訴を踏まえ、共感を示したうえで開いた形で尋ねるのがよい。"},
+          {text:"「インフルエンザですか？」",correct:false,
+           patientReply:"そうなのかもしれません…よく分かりません。",
+           feedback:"決めつけずに、まずは患者さんの言葉を聴こう。"},
+          {text:"「熱は何度ですか？」",correct:false,
+           patientReply:"39度です。",
+           feedback:"閉じた質問から入ると情報を取りこぼしやすい。"}
+        ]
+      },
+      {
+        prompt:"症状の性状を確認するには？",
+        options:[
+          {text:"「熱の出方は急でしたか、徐々にでしたか？節々の痛みや強いだるさは？のどの痛みや咳は？」",correct:true,
+           patientReply:"本当に急に熱が上がりました。節々が痛くて、のどは少し痛いですが咳はあまり出ません。",
+           feedback:"正解。インフルエンザは突然の高熱・全身の筋肉痛・強い倦怠感が特徴で、発症様式（急性か緩徐か）が重要な鑑別点となる。"},
+          {text:"「鼻水の色は何色ですか？」",correct:false,
+           patientReply:"透明です。",
+           feedback:"細かい情報だが、今聞くべき優先度は低い。"},
+          {text:"「体重は減りましたか？」",correct:false,
+           patientReply:"特に測っていません。",
+           feedback:"この急性疾患の評価には直接関係が薄い。"}
+        ]
+      },
+      {
+        prompt:"周囲の状況について、まず広く尋ねてみよう。",
+        options:[
+          {text:"「最近、周りで似たような症状の人はいますか？」",correct:true,
+           patientReply:"うーん、特には…あ、そういえば子供が通う小学校で学級閉鎖があったと聞きました。",
+           feedback:"良い入り口。手がかりが出てきたので、もう少し絞り込んでみよう。"},
+          {text:"「最近旅行しましたか？」",correct:false,
+           patientReply:"いいえ。",
+           feedback:"流行期の地域内感染では優先度が下がる質問。"},
+          {text:"「運動していますか？」",correct:false,
+           patientReply:"たまにウォーキングします。",
+           feedback:"この場面で最も有用な情報ではない。"}
+        ]
+      },
+      {
+        prompt:"学級閉鎖が気になる。具体的に絞り込んでみよう。",
+        options:[
+          {text:"「学級閉鎖の理由はインフルエンザか分かりますか？お子さんは今回の症状の前に発熱などありましたか？インフルエンザワクチンは接種していますか？」",correct:true,
+           patientReply:"そういえば学級閉鎖の理由はインフルエンザだったと思います。子供も数日前から熱を出していました。私は今シーズンまだワクチンを接種していません。",
+           feedback:"正解。家族・地域での流行状況とワクチン接種歴を具体的に確認することで、曝露歴が明確になった。"},
+          {text:"「お子さんは元気ですか？」",correct:false,
+           patientReply:"今はだいぶ良くなりました。",
+           feedback:"参考にはなるが具体性に欠ける。"},
+          {text:"「普段運動不足ですか？」",correct:false,
+           patientReply:"そうかもしれません。",
+           feedback:"この場面での関連性は低い。"}
+        ]
+      },
+      {
+        prompt:"最後に、既往歴と家族歴も確認しておこう。",
+        options:[
+          {text:"「喘息や糖尿病など基礎疾患は？妊娠している可能性は？ご家族に同じような症状の方は？」",correct:true,
+           patientReply:"喘息が少しあります。妊娠はしていません。家族は子供が同じような症状でした。",
+           feedback:"正解。重症化リスク因子（基礎疾患、妊娠）の確認は治療方針に直結する。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"単一項目だけでは不十分。"},
+          {text:"「血液型は何ですか？」",correct:false,
+           patientReply:"AB型です。",
+           feedback:"この場面での診療上の有用性は低い。"}
+        ]
+      }
+    ],
+    review:[
+      "突然の高熱、全身筋肉痛・関節痛、強い倦怠感が特徴的。",
+      "発症様式（急性か緩徐か）が他の上気道炎との鑑別の手がかりになる。",
+      "周囲の流行状況は広く尋ねたあと、家族や学校での具体的な状況を挙げて絞り込む。",
+      "ワクチン接種歴を確認する。",
+      "既往歴・家族歴を確認し、高齢者、妊婦、基礎疾患を持つ患者では重症化リスクを評価する。"
+    ],
+    explainer:[
+      {label:"原因病原体", text:"インフルエンザウイルス（A型・B型）。"},
+      {label:"感染経路", text:"飛沫感染、接触感染。"},
+      {label:"症状", text:"突然の高熱、筋肉痛・関節痛、強い倦怠感、咽頭痛、咳。"},
+      {label:"好発年齢", text:"全年齢で罹患し、冬季を中心に流行する。"},
+      {label:"危険因子", text:"高齢者、妊婦、基礎疾患保有者、ワクチン未接種者は重症化リスクが高い。"},
+      {label:"診断", text:"迅速抗原検査、PCR。"},
+      {label:"治療", text:"抗インフルエンザ薬（ノイラミニダーゼ阻害薬等）。発症48時間以内の投与開始が効果的とされる。"},
+      {label:"予防", text:"季節性ワクチン接種、手指衛生、咳エチケット。"},
+      {label:"予後", text:"多くは自然軽快するが、高リスク群では肺炎などの重症化に注意する。"},
+      {label:"感染症法上の取り扱い", text:"5類感染症（インフルエンザ定点把握対象）。"}
+    ],
+    altPhrasing:"周囲の流行状況を絞り込む場面では、こういう聞き方もできる。「お子さんの通う園や学校で、学級閉鎖や学年閉鎖はありましたか？」というように、より具体的な出来事を挙げて尋ねる方法もある。聞き方は一つではない。",
+    tips:[
+      {label:"流行期は、時間配分を意識して質問を絞る",
+       text:"インフルエンザが流行する時期の外来は、一人あたりにかけられる時間が限られる。典型的な症状（急な高熱、関節痛）は閉じた質問でテンポよく確認し、そのぶん重症化リスク因子（基礎疾患、妊娠の可能性など）の聴取に時間を割く、というように、症例の緊急度や流行状況に応じて時間配分を変える視点も持っておきたい。"},
+      {label:"「禁忌」欄と重ねて確認すると聞き漏らしが減る",
+       text:"問診票の「禁忌・その他」欄に妊娠の可能性や基礎疾患の記載がない場合でも、それが「本当にない」のか「書き忘れただけ」なのかは分からない。治療方針に関わる項目（妊娠可能性、腎機能・肝機能に影響する持病など）は、既往歴の質問と合わせて問診票の該当欄も見ながら確認すると、聞き漏らしを防ぎやすい。"}
+    ],
+    bonus:{
+      prompt:"もうひと頑張り：抗インフルエンザ薬の投与が最も効果的とされるのは、発症からどのくらいの時間以内か？",
+      options:[
+        {text:"48時間以内",correct:true,
+         feedback:"正解。発症48時間以内の投与開始で有効性が高いとされている。"},
+        {text:"5日以内",correct:false,
+         feedback:"5日は目安として長すぎる。できるだけ早期の投与が望ましい。"},
+        {text:"特に制限はない",correct:false,
+         feedback:"投与のタイミングは効果に影響するため、早期診断・早期治療が重要。"}
+      ]
+    }
+  },
+  {
+    key:"covid",
+    title:"症例５：新型コロナウイルス感染症",
+    patient:"35歳・男性",
+    complaint:"2日前からの発熱、咽頭痛、嗅覚障害",
+    intro:"熱と喉の痛みがあって、あと最近においが分かりにくい気がします。",
+    form:{
+      name:"高橋 直人", furigana:"たかはし なおと",
+      dob:"1991年6月30日", age:35, gender:"男性",
+      address:"大阪府枚方市岡東町6-7-8", phone:"090-5678-9005",
+      informant:null,
+      complaintOptions:["発熱","のどの痛み","においがわかりにくい","せき","だるさ"],
+      complaintChecked:["発熱","のどの痛み","においがわかりにくい"],
+      complaintFree:"2日前から熱とのどの痛みがあります。",
+      historyOnset:"2日前", historySeverity:"中くらい", historyTrend:"だんだん悪化",
+      historyOptions:["発熱","のどの痛み","嗅覚の変化","せき","だるさ"],
+      historyChecked:["発熱","のどの痛み","嗅覚の変化"],
+      historyFree:"",
+      familyChecked:["特になし"], familyFree:"",
+      pastChecked:["特になし"], pastFree:"",
+      medications:"なし", medNoteBook:false,
+      allergyChecked:["なし"], allergyFree:"",
+      contraindicationChecked:["特になし"], contraindicationFree:""
+    },
+    steps:[
+      {
+        prompt:"問診票には「発熱・のどの痛み・においがわかりにくい」が主訴として書かれている。最初の問いかけは？",
+        options:[
+          {text:"「熱とのどの痛み、においも分かりにくいとのこと、おつらいですね。もう少し詳しく教えてください」",correct:true,
+           patientReply:"2日前から熱とのどの痛みがあって、最近においが分かりにくい気がします。",
+           feedback:"問診票の主訴を踏まえ、共感を示したうえで開いた形で尋ねるのがよい。"},
+          {text:"「コロナの検査はしましたか？」",correct:false,
+           patientReply:"いえ、していません。",
+           feedback:"検査歴も大切だが、まずは症状そのものを聴くことが先。"},
+          {text:"「ただの風邪だと思いますよ」",correct:false,
+           patientReply:"そうなんでしょうか、心配で来ました。",
+           feedback:"聴く前に判断しない。"}
+        ]
+      },
+      {
+        prompt:"症状の性状を確認するには？",
+        options:[
+          {text:"「味やにおいの感じ方に変化は？咳や息苦しさは？症状はどう変化していますか？」",correct:true,
+           patientReply:"においがほとんど分からなくなりました。咳は少しありますが、息苦しさはありません。だんだん熱が上がってきている気がします。",
+           feedback:"正解。嗅覚・味覚障害は特徴的な症状の一つ。呼吸困難の有無は重症度評価に重要。"},
+          {text:"「血圧は測っていますか？」",correct:false,
+           patientReply:"測っていません。",
+           feedback:"この段階での優先度は低い。"},
+          {text:"「薬は何を飲んでいますか？」",correct:false,
+           patientReply:"解熱剤を少し飲みました。",
+           feedback:"後で確認すべき情報だが、まず症状の性状把握が先。"}
+        ]
+      },
+      {
+        prompt:"周囲の状況について、まず広く尋ねてみよう。",
+        options:[
+          {text:"「最近、周りで似たような症状の人や体調を崩している人はいますか？」",correct:true,
+           patientReply:"うーん、特には思い当たりません。",
+           feedback:"良い入り口だが、はっきりとは思い出せないようだ。もう少し具体的に尋ねてみよう。"},
+          {text:"「最近海外に行きましたか？」",correct:false,
+           patientReply:"いいえ。",
+           feedback:"流行が地域に定着している状況では優先度が下がる。"},
+          {text:"「ペットは飼っていますか？」",correct:false,
+           patientReply:"犬を飼っています。",
+           feedback:"この疾患の評価には直接関係が薄い。"}
+        ]
+      },
+      {
+        prompt:"具体的な場面を挙げて絞り込んでみよう。",
+        options:[
+          {text:"「職場や家族の中で、発熱やのどの痛みなど似た症状の人はいませんでしたか？陽性と分かっている人と接触した可能性は？」",correct:true,
+           patientReply:"そういえば、3日前に職場の同僚が体調不良で早退していました。あとで陽性だったと聞きました。",
+           feedback:"正解。具体的に接触の可能性を挙げて尋ねることで、曝露歴が明確になった。"},
+          {text:"「その同僚とは仲が良いですか？」",correct:false,
+           patientReply:"普通の同僚です。",
+           feedback:"診療上の優先度は低い。"},
+          {text:"「職場は何人くらいですか？」",correct:false,
+           patientReply:"20人くらいです。",
+           feedback:"直接関係しない情報。"}
+        ]
+      },
+      {
+        prompt:"最後に、既往歴と家族歴も確認しておこう。",
+        options:[
+          {text:"「ワクチン接種歴は？高齢、肥満、呼吸器疾患などの基礎疾患は？ご家族に同じような症状の方は？」",correct:true,
+           patientReply:"ワクチンは2回接種していますが、最近の追加接種はしていません。基礎疾患は特にありません。家族は今のところ元気です。",
+           feedback:"正解。ワクチン接種状況、基礎疾患、家族内の状況は重症化リスクの評価に重要。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"単一項目だけでは不十分。"},
+          {text:"「血液型は何ですか？」",correct:false,
+           patientReply:"A型です。",
+           feedback:"この場面での診療上の有用性は低い。"}
+        ]
+      }
+    ],
+    review:[
+      "発熱、咽頭痛に加え、嗅覚・味覚障害が特徴的な症状となり得る。",
+      "呼吸困難の有無は重症度評価において重要。",
+      "接触歴は広く尋ねたあと、職場や家族など具体的な場面を挙げて絞り込む。",
+      "ワクチン接種状況を確認する。",
+      "既往歴・家族歴を確認し、高齢、肥満、呼吸器疾患などの重症化リスク因子を評価する。"
+    ],
+    explainer:[
+      {label:"原因病原体", text:"SARS-CoV-2（新型コロナウイルス）。"},
+      {label:"感染経路", text:"飛沫・エアロゾル感染、接触感染。"},
+      {label:"症状", text:"発熱、咽頭痛、咳、嗅覚・味覚障害、倦怠感など多彩。"},
+      {label:"好発年齢", text:"全年齢で罹患する。"},
+      {label:"危険因子", text:"高齢、肥満、呼吸器疾患などの基礎疾患、ワクチン未接種は重症化リスクを高める。"},
+      {label:"診断", text:"抗原検査、PCR検査。"},
+      {label:"治療", text:"軽症例は対症療法が基本。重症化リスクが高い患者では、発症からできるだけ早期の経口抗ウイルス薬投与を検討する。薬剤によって投与可能な期間の目安が異なり、ニルマトレルビル／リトナビル（パキロビッド）とモルヌピラビルは発症5日以内、点滴投与のレムデシビルは発症7日以内とされる。同じ5日以内でも、投与開始が早いほど入院・死亡のリスク低減効果が大きいとする実臨床データもあり、「できるだけ早く」が基本方針となる。複数の選択肢がある場合、重症化予防のエビデンスがより強いニルマトレルビル／リトナビルが優先されることが多い。"},
+      {label:"予防", text:"ワクチン接種、換気、手指衛生。"},
+      {label:"予後", text:"多くは軽快するが、高リスク群では重症化のほか、罹患後症状（いわゆる後遺症）が問題となることがある。"},
+      {label:"感染症法上の取り扱い", text:"5類感染症（定点把握対象。2023年5月8日に5類感染症へ移行）。"}
+    ],
+    altPhrasing:"接触歴の絞り込みでは、こういう聞き方もできる。「最近、体調不良で仕事や学校を休んでいる人が周りにいましたか？」というように、まず「休んでいる人」から入る聞き方もある。聞き方は一つではない。",
+    tips:[
+      {label:"主観的な症状ほど、開いた質問が力を発揮する",
+       text:"嗅覚障害のような主観的な症状は、「においは分かりますか」というyes/noの質問だけでは、患者本人も気づいていない微妙な変化を言葉にしにくい。「においの感じ方に、どんな変化がありますか」というように開いた形で尋ねると、本人が言語化できていなかった変化に気づくきっかけになることがある。"},
+      {label:"接触歴はプライバシーへの配慮とセットで",
+       text:"職場や家族の感染状況を尋ねる際は、必要な範囲にとどめ、聞き方にも配慮したい。「差し支えなければ」「分かる範囲で構いませんので」といった前置きを添えるだけで、患者が話しやすくなることがある。網羅性と患者への配慮は、常に両立を意識したい。"}
+    ],
+    bonus:{
+      prompt:"もうひと頑張り：重症化リスクの高い患者で、経口抗ウイルス薬の投与開始が推奨される目安は発症から何日以内か？",
+      options:[
+        {text:"5日以内",correct:true,
+         feedback:"正解。ニルマトレルビル／リトナビルやモルヌピラビルは発症5日以内、点滴のレムデシビルは7日以内が目安とされ、いずれもできるだけ早期の投与開始が望ましい。ただしこの推奨は、入院リスクが高い「高リスク患者」が対象であり、リスク因子のない患者では抗ウイルス薬の恩恵は乏しいとされる。また、ニルマトレルビル／リトナビルはリトナビルによるCYP3A4阻害を介した薬物相互作用が多く、腎機能に応じた用量調整も必要なため、処方前の併用薬チェックが欠かせない。"},
+        {text:"10日以内",correct:false,
+         feedback:"それでは遅すぎる可能性がある。同じ5日以内の枠内でも、投与開始が早いほど入院・死亡リスクの低減効果が大きいとする報告があり、「できるだけ早く」が基本方針となる。"},
+        {text:"特に制限はない",correct:false,
+         feedback:"早期投与が効果に影響するため、タイミングは重要。また、この推奨はあくまで重症化リスクの高い患者が対象であり、リスク因子のない患者への一律の投与は想定されていない。"}
+      ]
+    }
+  },
+  {
+    key:"pertussis",
+    title:"症例６：百日咳",
+    patient:"27歳・女性",
+    complaint:"2週間以上続く発作性の咳嗽、夜間に増悪、時に嘔吐を伴う",
+    intro:"咳が2週間以上止まらなくて…咳き込むと吐いてしまうこともあります。",
+    form:{
+      name:"小林 美咲", furigana:"こばやし みさき",
+      dob:"1999年4月5日", age:27, gender:"女性",
+      address:"大阪府茨木市総持寺1-2-3", phone:"090-6789-0106",
+      informant:null,
+      complaintOptions:["せき（長引く）","発熱","のどの痛み","息苦しさ"],
+      complaintChecked:["せき（長引く）"],
+      complaintFree:"咳が2週間以上続いていて、特に夜がひどいです。",
+      historyOnset:"2週間以上前", historySeverity:"つらい", historyTrend:"変わらない〜悪化",
+      historyOptions:["発作性のせき","咳き込んだ後の嘔吐","発熱","痰がからむ"],
+      historyChecked:["発作性のせき","咳き込んだ後の嘔吐"],
+      historyFree:"",
+      familyChecked:["特になし"], familyFree:"",
+      pastChecked:["特になし"], pastFree:"",
+      medications:"なし", medNoteBook:false,
+      allergyChecked:["なし"], allergyFree:"",
+      contraindicationChecked:["特になし"], contraindicationFree:""
+    },
+    steps:[
+      {
+        prompt:"問診票には「せき（長引く）」が主訴として書かれている。最初の問いかけは？",
+        options:[
+          {text:"「咳が長く続いてつらいですね。もう少し詳しく教えてください」",correct:true,
+           patientReply:"咳が2週間以上続いていて、特に夜がひどいです。咳き込むと吐いてしまうこともあります。",
+           feedback:"問診票の主訴を踏まえ、共感を示したうえで開いた形で尋ねるのがよい。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"確認は必要だが、まずは症状そのものを聴くのが先。"},
+          {text:"「タバコの吸いすぎでは？」",correct:false,
+           patientReply:"いえ、タバコは吸いません。",
+           feedback:"決めつけずに、まず症状の経過を聴こう。"}
+        ]
+      },
+      {
+        prompt:"症状の性状を確認するには？",
+        options:[
+          {text:"「咳の発作はどのような感じですか？咳込んだ後に笛のような音や嘔吐は？発熱はありますか？」",correct:true,
+           patientReply:"咳が続けて出て、最後に「ヒュー」という音がすることがあります。咳き込んだ後に吐いてしまうこともあります。熱はほとんどありません。",
+           feedback:"正解。発作性の咳嗽、咳込み後の笛声様吸気（whoop）、咳嗽後嘔吐、発熱を伴わないことが百日咳の特徴。"},
+          {text:"「痰の色は何色ですか？」",correct:false,
+           patientReply:"あまり痰は出ません。",
+           feedback:"百日咳では痰よりも発作性の咳の性状の方が特異的。"},
+          {text:"「アレルギーの既往は？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"参考にはなるが、今は感染症としての性状聴取を優先。"}
+        ]
+      },
+      {
+        prompt:"周囲の状況について、まず広く尋ねてみよう。",
+        options:[
+          {text:"「最近、周りで長引く咳をしている人はいますか？」",correct:true,
+           patientReply:"うーん…特には思い当たりません。",
+           feedback:"良い入り口だが、まだ具体的ではない。次はもう少し絞り込んでみよう。"},
+          {text:"「喫煙歴はありますか？」",correct:false,
+           patientReply:"吸いません。",
+           feedback:"背景情報だが、この場面で最も特異的な質問ではない。"},
+          {text:"「最近の海外渡航は？」",correct:false,
+           patientReply:"いいえ。",
+           feedback:"国内でも流行し得るため、この質問の優先度は下がる。"}
+        ]
+      },
+      {
+        prompt:"具体的な項目を挙げて絞り込んでみよう。",
+        options:[
+          {text:"「職場や家庭で2週間以上続く咳をしている人は？百日咳の予防接種歴（子供の頃、成人になってからの追加接種）は？乳幼児との接触は？」",correct:true,
+           patientReply:"そういえば、職場の同僚も1ヶ月くらい咳が続いていると言っていました。ワクチンは子供の頃に受けたきりで、大人になってからは受けていません。姪が生後3ヶ月で、先週会いました。",
+           feedback:"正解。具体的に接触歴・ワクチン歴・乳児接触を挙げて尋ねることで重要な情報が得られた。ワクチン効果の減弱による成人罹患や、乳児は重症化リスクが高い点に注意する。"},
+          {text:"「その同僚とは親しいですか？」",correct:false,
+           patientReply:"普通の同僚です。",
+           feedback:"診療上の優先度は低い。"},
+          {text:"「職場の人数は何人ですか？」",correct:false,
+           patientReply:"10人くらいです。",
+           feedback:"直接関係しない情報。"}
+        ]
+      },
+      {
+        prompt:"最後に、既往歴と家族歴も確認しておこう。",
+        options:[
+          {text:"「これまでに百日咳にかかったことは？ご家族に同じような咳をしている方や基礎疾患のある方は？」",correct:true,
+           patientReply:"百日咳にかかったことはないと思います。家族は今のところ大丈夫です。",
+           feedback:"正解。既往歴・家族歴の確認で、家庭内伝播のリスクや基礎疾患を把握できた。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"単一項目だけでは不十分。"},
+          {text:"「血液型は何ですか？」",correct:false,
+           patientReply:"O型です。",
+           feedback:"この場面での診療上の有用性は低い。"}
+        ]
+      }
+    ],
+    review:[
+      "発作性の咳嗽、咳込み後の笛声様吸気（whoop）、咳嗽後嘔吐が特徴的。",
+      "発熱を伴わないことが多い。",
+      "成人ではワクチン効果の減弱により罹患・家庭内伝播が起こり得る。広く尋ねたあと接触状況を具体的に絞り込む。",
+      "乳児（特にワクチン未接種）との接触歴は重症化リスクの観点から重要。",
+      "既往歴・家族歴を確認し、家庭内伝播のリスクを評価する。"
+    ],
+    explainer:[
+      {label:"原因病原体", text:"<i class=\"taxon\">Bordetella pertussis</i>。"},
+      {label:"感染経路", text:"飛沫感染。"},
+      {label:"症状", text:"感冒様症状のカタル期の後、発作性の咳嗽・咳込み後の笛声様吸気（whoop）・咳嗽後嘔吐を特徴とする痙咳期へ移行する。成人では非典型的な遷延性咳嗽として現れることが多い。"},
+      {label:"好発年齢", text:"ワクチン未接種の乳児で重症化しやすいが、近年は成人・青年例も増加している。"},
+      {label:"危険因子", text:"ワクチン未接種または効果減弱、乳児との接触。"},
+      {label:"診断", text:"PCR、培養、血清抗体価。"},
+      {label:"治療", text:"マクロライド系抗菌薬。発症早期ほど症状軽減・伝播抑制の効果が期待できる。"},
+      {label:"予防", text:"定期予防接種（DPT-IPV等）。乳児との接触が予想される場合は特に注意し、濃厚接触者への曝露後予防を検討する。"},
+      {label:"予後", text:"乳児は無呼吸や脳症などの重症化リスクが高い。成人は比較的軽症だが咳が長引く。"},
+      {label:"感染症法上の取り扱い", text:"5類感染症（全数把握対象）。"}
+    ],
+    altPhrasing:"接触歴・ワクチン歴の絞り込みでは、こういう聞き方もできる。「咳が長引いて病院にかかった人が周りにいましたか？」「お子さんの予防接種のスケジュールで、百日咳のワクチンは受けていますか？」というように、話題を分けて尋ねる方法もある。聞き方は一つではない。",
+    tips:[
+      {label:"「もう治りかけ」という思い込みに注意",
+       text:"遷延する咳の患者は、本人が「もう治りかけている」と軽く考えていることもある。「まだ咳は続いていますか」と閉じた質問で現状を確認しつつ、発作の様子（咳き込み方、笛のような音の有無）は開いた質問で具体的に語ってもらう、というように使い分けると、症状の全体像をつかみやすい。"},
+      {label:"同居家族の構成は特に丁寧に確認する",
+       text:"百日咳は乳児で重症化しやすいため、同居家族に乳児がいるかどうかは、他の症例以上に丁寧に確認しておきたい既往歴・家族歴の項目である。「ご家族の中に、小さいお子さんや妊娠している方はいらっしゃいますか」と、家族構成そのものを尋ねる質問も有用。"}
+    ],
+    bonus:{
+      prompt:"もうひと頑張り：ワクチン未接種の乳児と接触した成人患者の場合、対応として重要なことは？",
+      options:[
+        {text:"乳児を含めた濃厚接触者への曝露後予防（抗菌薬投与）の検討",correct:true,
+         feedback:"正解。<i class=\"taxon\">Bordetella pertussis</i>感染症は乳児で無呼吸などの重症化リスクが高く、濃厚接触者への曝露後予防（マクロライド系抗菌薬など）が検討される。"},
+        {text:"特に対応は不要",correct:false,
+         feedback:"乳児への感染は重症化しうるため、対応が必要。"},
+        {text:"乳児にワクチンを緊急接種する",correct:false,
+         feedback:"ワクチンにはスケジュールがあり、曝露後の緊急接種で発症を防げるわけではない。"}
+      ]
+    }
+  },
+  {
+    key:"ehec",
+    title:"症例７：腸管出血性大腸菌（EHEC）感染症",
+    patient:"6歳・男児（保護者付き添い）",
+    complaint:"2日前からの激しい腹痛と血便、発熱は軽度",
+    intro:"（保護者）お腹をとても痛がっていて、今朝は便に血が混じっていました。",
+    form:{
+      name:"木村 蓮", furigana:"きむら れん",
+      dob:"2020年7月8日", age:6, gender:"男性",
+      address:"大阪府東大阪市長田東2-3-4", phone:"090-7890-1207",
+      informant:"保護者（父：木村 大輔）記入",
+      complaintOptions:["腹痛","血便","下痢","発熱"],
+      complaintChecked:["腹痛","血便"],
+      complaintFree:"2日前から急にお腹をとても痛がり、今朝は便に血が混じっていました。",
+      historyOnset:"2日前", historySeverity:"つらそう", historyTrend:"急激に発症",
+      historyOptions:["腹痛","血便","下痢","発熱","嘔吐"],
+      historyChecked:["腹痛","血便"],
+      historyFree:"",
+      familyChecked:["特になし"], familyFree:"",
+      pastChecked:["特になし"], pastFree:"",
+      medications:"なし", medNoteBook:false,
+      allergyChecked:["なし"], allergyFree:"",
+      contraindicationChecked:["特になし"], contraindicationFree:""
+    },
+    steps:[
+      {
+        prompt:"問診票には「腹痛・血便」が主訴として書かれている。最初の問いかけは？",
+        options:[
+          {text:"「お腹をとても痛がっているとのこと、心配ですね。もう少し詳しく教えてください」",correct:true,
+           patientReply:"2日前から急にお腹をとても痛がって、今朝は便に血が混じっていました。熱はあまり高くありません。",
+           feedback:"保護者への問診でも、問診票の主訴を踏まえて共感を示しつつ、開いた形で尋ねるのがよい。"},
+          {text:"「便秘ではないですか？」",correct:false,
+           patientReply:"いえ、下痢です。",
+           feedback:"血便を伴う下痢の訴えに対して的外れな決めつけ。"},
+          {text:"「食あたりでしょう」",correct:false,
+           patientReply:"そうなんでしょうか、血が混じっていたので心配で…",
+           feedback:"聴く前に判断しない。血便を伴う場合は特に注意深く聴取する。"}
+        ]
+      },
+      {
+        prompt:"症状の性状を確認するには？",
+        options:[
+          {text:"「便に血は混じっていますか？色や量は？お腹の痛みの強さや場所は？発熱はありますか？」",correct:true,
+           patientReply:"血は鮮やかな赤色で、量は少しです。お腹全体を痛がっています。熱は37度台前半で、あまり高くありません。",
+           feedback:"正解。激しい腹痛を伴う血便、軽度〜無熱であることが多い点がEHEC感染の特徴。"},
+          {text:"「食欲はありますか？」",correct:false,
+           patientReply:"あまり食べたがりません。",
+           feedback:"参考にはなるが、この場面で最も特異的な情報ではない。"},
+          {text:"「便秘は普段からありますか？」",correct:false,
+           patientReply:"いえ、普段は普通です。",
+           feedback:"下痢・血便の訴えに対して優先度の低い質問。"}
+        ]
+      },
+      {
+        prompt:"最近の食事について、まず広く尋ねてみよう。",
+        options:[
+          {text:"「最近、何か思い当たる食事はありますか？」",correct:true,
+           patientReply:"うーん…特には思い当たりません。いつも通り食べていたと思います。",
+           feedback:"良い入り口だが、はっきりとは思い出せないようだ。次は具体的な食品を挙げて絞り込んでみよう。"},
+          {text:"「外食はしますか？」",correct:false,
+           patientReply:"たまにします。",
+           feedback:"開始の質問としてはやや閉じている。"},
+          {text:"「普段から偏食はありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"この場面での優先度は低い。"}
+        ]
+      },
+      {
+        prompt:"はっきり思い出せない様子。具体的な食品や状況を挙げて絞り込んでみよう。",
+        options:[
+          {text:"「この1週間以内に、加熱が不十分な牛肉（生焼けのハンバーグなど）や生野菜、井戸水を口にしませんでしたか？牛などの家畜に触れる機会は？周りに同じ症状の人は？」",correct:true,
+           patientReply:"そういえば、5日前に家族でバーベキューをして、ハンバーグが少し生焼けだったかもしれません。動物には触れていません。同じバーベキューに参加した親戚の子も、お腹を壊していると聞きました。",
+           feedback:"正解。具体的な食品や状況を一つずつ挙げて尋ねることで、思い出せなかった曝露歴（加熱不十分な牛肉、集団発生の可能性）が引き出せた。"},
+          {text:"「野菜は好きですか？」",correct:false,
+           patientReply:"あまり好きではありません。",
+           feedback:"この場面での優先度は低い。"},
+          {text:"「普段の食事は誰が作りますか？」",correct:false,
+           patientReply:"主に母親が作ります。",
+           feedback:"直接関係しない情報。"}
+        ]
+      },
+      {
+        prompt:"最後に、既往歴と家族歴も確認しておこう。",
+        options:[
+          {text:"「これまでに大きな病気や腎臓の病気にかかったことは？ご家族に同じような症状の方は？」",correct:true,
+           patientReply:"大きな病気は特にありません。先ほどお話しした親戚の子以外は、家族は今のところ元気です。",
+           feedback:"正解。既往歴・家族歴の確認に加え、集団発生の可能性も改めて把握できた。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"単一項目だけでは不十分。"},
+          {text:"「血液型は何ですか？」",correct:false,
+           patientReply:"わかりません。",
+           feedback:"この場面での診療上の有用性は低い。"}
+        ]
+      }
+    ],
+    review:[
+      "激しい腹痛を伴う血便が特徴的で、発熱は軽度〜無いことが多い。",
+      "食事歴は広く尋ねても思い出せないことが多く、牛肉・生野菜・井戸水・家畜接触など具体的な項目を挙げて絞り込む。",
+      "集団発生の有無（周囲に同じ症状の人がいるか）も重要な手がかり。",
+      "既往歴・家族歴を確認する。",
+      "経過中の乏尿・顔面蒼白などHUS（溶血性尿毒症症候群）を示唆する症状に注意して経過を追う。"
+    ],
+    explainer:[
+      {label:"原因病原体", text:"志賀毒素産生性の<i class=\"taxon\">Escherichia coli</i>（腸管出血性大腸菌、EHEC）。代表的な血清型としてO157等が知られる。"},
+      {label:"感染経路", text:"経口感染。加熱不十分な食肉、生野菜、井戸水などの汚染食品・水が主な感染源で、ヒトからヒトへの二次感染も起こり得る。"},
+      {label:"症状", text:"激しい腹痛、水様〜血性下痢。発熱は軽度または伴わないことが多い。"},
+      {label:"好発年齢", text:"全年齢で罹患するが、小児・高齢者で重症化しやすい。"},
+      {label:"危険因子", text:"加熱不十分な食肉の喫食、生野菜、井戸水、家畜との接触、集団給食など集団発生の場。"},
+      {label:"診断", text:"便培養、志賀毒素の検出、血清型別。"},
+      {label:"治療", text:"対症療法（補液等）が基本。抗菌薬は志賀毒素放出を介したHUSリスクを考慮し、専門家とも相談しながら慎重に判断する。"},
+      {label:"予防", text:"食品の十分な加熱、手指衛生、二次感染予防（トイレ環境の消毒など）。"},
+      {label:"予後", text:"多くは軽快するが、小児・高齢者ではHUS（溶血性尿毒症症候群）への進展に注意が必要。"},
+      {label:"感染症法上の取り扱い", text:"3類感染症（無症状の保菌者を含め全数把握対象）。"}
+    ],
+    altPhrasing:"食事歴の絞り込みでは、こういう聞き方もできる。「ここ数日で、焼肉やバーベキューをした記憶はありますか？」というように、具体的な場面から尋ねる方法もある。聞き方は一つではない。",
+    tips:[
+      {label:"緊急度が高いときは、質問の順番を入れ替えてよい",
+       text:"血便を伴う小児の腹痛は緊急性が高いことがある。このようなときは、自由な語りをじっくり待つよりも、要点を絞った閉じた質問（血便の色・量、ぐったりしていないか等）で手早く重要所見を確認し、診察や検査を急ぐ判断が優先されることもある。型どおりの順番にこだわりすぎないことも、実際の診療では大切な視点。"},
+      {label:"家族内の同時発生は「共通の食事」から辿る",
+       text:"集団発生を疑う場合、既往歴というよりも「最近、家族や親戚で同じものを食べる機会（外食、バーベキューなど）はありましたか」というように、共通の食事の場を軸にして家族全体の状況を尋ねると、効率よく手がかりを集められる。"}
+    ],
+    bonus:{
+      prompt:"もうひと頑張り：EHEC感染が疑われる場合、抗菌薬投与について注意すべき点は？",
+      options:[
+        {text:"安易な抗菌薬投与はHUS発症のリスクを高める可能性があるため、慎重に判断する",correct:true,
+         feedback:"正解。一部の抗菌薬は志賀毒素の放出を促進し、HUS（溶血性尿毒症症候群）のリスクを高める可能性が指摘されており、抗菌薬使用の適応は専門家とも相談しながら慎重に判断する必要がある。"},
+        {text:"診断確定前でも直ちに広域抗菌薬を投与すべき",correct:false,
+         feedback:"安易な広域抗菌薬投与はむしろ避けるべき対応。"},
+        {text:"抗菌薬はいかなる場合も投与しない",correct:false,
+         feedback:"一律に禁忌というわけではなく、病状に応じた専門的判断が必要。"}
+      ]
+    }
+  },
+  {
+    key:"tb",
+    title:"症例８：結核",
+    patient:"68歳・男性",
+    complaint:"3週間以上続く咳、微熱、体重減少",
+    intro:"咳がずっと続いていて、体重も減ってきて心配で来ました。",
+    form:{
+      name:"渡辺 誠", furigana:"わたなべ まこと",
+      dob:"1957年9月12日", age:68, gender:"男性",
+      address:"大阪府八尾市本町5-6-7", phone:"090-8901-2308",
+      informant:null,
+      complaintOptions:["せき","発熱","体重減少","だるさ","血痰"],
+      complaintChecked:["せき","体重減少"],
+      complaintFree:"3週間以上前から咳が続いていて、体重も減ってきました。",
+      historyOnset:"3週間以上前", historySeverity:"中くらい", historyTrend:"変わらない〜悪化",
+      historyOptions:["痰がからむ咳","血痰","寝汗","だるさ","食欲不振"],
+      historyChecked:["痰がからむ咳","だるさ"],
+      historyFree:"",
+      familyChecked:["特になし"], familyFree:"",
+      pastChecked:["糖尿病"], pastFree:"",
+      medications:"糖尿病の薬（詳細不明）", medNoteBook:false,
+      allergyChecked:["なし"], allergyFree:"",
+      contraindicationChecked:["特になし"], contraindicationFree:""
+    },
+    steps:[
+      {
+        prompt:"問診票には「せき・体重減少」が主訴として書かれている。最初の問いかけは？",
+        options:[
+          {text:"「長引く咳と体重減少、心配ですね。もう少し詳しく教えてください」",correct:true,
+           patientReply:"3週間以上前から咳が続いていて、微熱もあります。最近体重も減ってきて心配になりました。",
+           feedback:"問診票の主訴を踏まえ、共感を示したうえで開いた形で尋ねるのがよい。長引く症状ほど、患者さん自身の言葉で経過を語ってもらうことが大切。"},
+          {text:"「咳はいつからですか？」",correct:false,
+           patientReply:"3週間くらい前からです。",
+           feedback:"数値・期間の確認は大切だが、最初の一言としては情報が限定的になる。"},
+          {text:"「歳のせいでしょう、様子を見ましょう」",correct:false,
+           patientReply:"そうなんでしょうか…でも心配で来ました。",
+           feedback:"聴く前に決めつけない。長引く咳や体重減少を安易に加齢のせいにしない。"}
+        ]
+      },
+      {
+        prompt:"症状の性状を確認するには？",
+        options:[
+          {text:"「咳の性状は？痰は？血が混じることは？寝汗や体重減少はありますか？」",correct:true,
+           patientReply:"痰が絡む咳で、時々血が混じることがあります。夜、寝汗をよくかきます。体重も2ヶ月で3キロくらい減りました。",
+           feedback:"正解。2〜3週間以上続く咳、血痰、寝汗（盗汗）、体重減少は結核を疑う古典的な症状の組み合わせ。"},
+          {text:"「熱は何度ですか？」",correct:false,
+           patientReply:"37度台前半です。",
+           feedback:"一項目のみでは不十分。他の随伴症状も合わせて確認したい。"},
+          {text:"「咳止めは飲みましたか？」",correct:false,
+           patientReply:"飲みましたが、あまり効きません。",
+           feedback:"治療歴も参考になるが、今はまず症状そのものの性状を広く把握する方が優先。"}
+        ]
+      },
+      {
+        prompt:"周囲の状況について、まず広く尋ねてみよう。",
+        options:[
+          {text:"「最近、周囲に同じような咳をしている人や、結核にかかった人はいませんか？」",correct:true,
+           patientReply:"うーん…特には思い当たりません。",
+           feedback:"良い入り口。ただしはっきりとは思い出せないようだ。次はもう少し具体的に絞り込んでみよう。"},
+          {text:"「喫煙歴はありますか？」",correct:false,
+           patientReply:"若い頃から吸っています。",
+           feedback:"重要な背景情報ではあるが、今この場面で最も優先すべき質問ではない。"},
+          {text:"「最近の旅行歴は？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"この時点ではやや先走った質問。まずは身近な接触歴から広く尋ねよう。"}
+        ]
+      },
+      {
+        prompt:"はっきり思い出せない様子。具体的な項目を挙げて絞り込んでみよう。",
+        options:[
+          {text:"「同居のご家族や職場で長引く咳をしている人は？過去に結核患者と接触した経験や、結核の既往、BCG接種歴は？結核の多い地域への渡航・滞在歴は？」",correct:true,
+           patientReply:"そういえば、若い頃に一緒に働いていた同僚が結核で入院したと聞いたことがあります。BCGは子供の頃に受けたと思います。海外には行っていません。",
+           feedback:"正解。接触歴・既往歴・渡航歴を具体的に挙げて尋ねることで、過去の結核患者との接触という重要な手がかりが得られた。"},
+          {text:"「運動はしていますか？」",correct:false,
+           patientReply:"あまりしていません。",
+           feedback:"この場面での優先度は低い。"},
+          {text:"「食生活はどうですか？」",correct:false,
+           patientReply:"普通だと思います。",
+           feedback:"一般的すぎて絞り込みになっていない。"}
+        ]
+      },
+      {
+        prompt:"最後に、既往歴と家族歴も確認しておこう。",
+        options:[
+          {text:"「糖尿病やステロイド治療など、免疫を抑える病気・治療を受けたことは？ご家族に結核にかかった方はいますか？」",correct:true,
+           patientReply:"実は糖尿病があって、薬を飲んでいます。家族に結核にかかった人はいないと思います。",
+           feedback:"正解。糖尿病やステロイド・免疫抑制薬の使用など、免疫が低下した状態は結核発症・重症化の重要な危険因子。"},
+          {text:"「アレルギーはありますか？」",correct:false,
+           patientReply:"特にありません。",
+           feedback:"単一項目だけでは不十分。"},
+          {text:"「血液型は何ですか？」",correct:false,
+           patientReply:"B型です。",
+           feedback:"この場面での診療上の有用性は低い。"}
+        ]
+      }
+    ],
+    review:[
+      "2〜3週間以上続く咳、血痰・喀血、微熱、寝汗（盗汗）、体重減少が結核を疑う古典的な症状の組み合わせ。",
+      "高齢者や糖尿病、ステロイド・免疫抑制薬の使用者など、免疫が低下した状態はハイリスク。",
+      "曝露歴は広く尋ねても思い出せないことが多く、結核患者との接触歴・既往の治療歴・BCG接種歴・渡航歴を具体的に挙げて絞り込む。",
+      "家族内発症の可能性も確認する。",
+      "症状が長引く咳を安易に加齢や喫煙のせいと決めつけないことが重要。"
+    ],
+    explainer:[
+      {label:"原因病原体", text:"<i class=\"taxon\">Mycobacterium tuberculosis</i>（結核菌）。"},
+      {label:"感染経路", text:"空気感染（飛沫核感染）。感染性のある患者の咳やくしゃみによって拡散した飛沫核を吸い込むことで感染する。"},
+      {label:"症状", text:"2週間以上続く咳、血痰・喀血、微熱、寝汗（盗汗）、体重減少、倦怠感など。"},
+      {label:"好発年齢", text:"高齢者に多いが、若年者や外国出生者での罹患も増加傾向にある。"},
+      {label:"危険因子", text:"結核患者との接触歴、高齢、糖尿病、免疫抑制状態（HIV感染、ステロイド・生物学的製剤の使用等）、低栄養、施設等での集団生活、結核高蔓延国出身・渡航歴。"},
+      {label:"診断", text:"胸部X線・CT、喀痰塗抹検査（抗酸菌染色）、喀痰培養、核酸増幅検査（PCR等）、インターフェロンγ遊離試験（IGRA）、ツベルクリン反応などを組み合わせて評価する。"},
+      {label:"治療", text:"イソニアジド、リファンピシン、ピラジナミド、エタンブトールなどの多剤併用による抗結核薬治療を原則6ヶ月以上継続する。直接服薬確認療法（DOTS）による確実な服薬管理が重要。"},
+      {label:"予防", text:"乳幼児期のBCGワクチン接種。感染性のある間は空気感染対策（N95マスク、陰圧室での管理）を行い、接触者健診を実施する。"},
+      {label:"予後", text:"適切な治療により多くは治癒するが、自己判断による治療中断は多剤耐性結核（MDR-TB）を招く恐れがある。"},
+      {label:"感染症法上の取り扱い", text:"2類感染症。診断した医師には届出義務があり、感染性のある患者は入院勧告等の対象となり得る。"}
+    ],
+    altPhrasing:"接触歴・既往歴の絞り込みでは、こういう聞き方もできる。「昔、結核で長く入院したり、療養所に入っていた知人や親戚はいましたか？」というように、時代背景を踏まえた表現に変える方法もある。聞き方は一つではない。",
+    tips:[
+      {label:"高齢者の問診は、相手のペースに合わせて使い分ける",
+       text:"高齢の患者は、一つの質問に多くの情報を含めて話してくれることもあれば、逆に聞かれたことにしか答えないこともある。開いた質問と閉じた質問を交互に使いながら、相手の話し方のペースに合わせていくと、聴き取りやすくなることが多い。"},
+      {label:"結核は「本人」だけでなく「周囲」の情報も重要",
+       text:"結核は届出や接触者健診など、公衆衛生上の対応につながる疾患である。そのため、既往歴・家族歴は本人の健康状態にとどまらず、同居家族や職場など周囲の人の状況まで、できるだけ漏れなく確認しておく重要性が、他の症例以上に高い。"}
+    ],
+    bonus:{
+      prompt:"もうひと頑張り：結核の治療で、症状が改善しても自己判断で内服を中断してはいけない最も重要な理由は？",
+      options:[
+        {text:"治療不足により多剤耐性結核が生じるおそれがあるため",correct:true,
+         feedback:"正解。治療の途中で自己判断による中断があると、生き残った菌が薬剤耐性を獲得し、多剤耐性結核（MDR-TB）を招く恐れがある。標準治療期間を確実に完遂することが重要で、DOTS（直接服薬確認療法）による支援が推奨される。"},
+        {text:"副作用が必ず起こるため",correct:false,
+         feedback:"副作用への注意は必要だが、中断してはいけない最大の理由ではない。"},
+        {text:"治療費が高くなるため",correct:false,
+         feedback:"医療費の観点は、中断を避けるべき本質的な理由ではない。"}
+      ]
+    }
+  }
+];
+
+/* ---------------------------------------------------------
+   選択肢シャッフル（正解が常にAにならないようにする）
+--------------------------------------------------------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+cases.forEach(c=>{
+  c.steps.forEach(s=>{
+    s.options = shuffle(s.options);
+  });
+  c.bonus.options = shuffle(c.bonus.options);
+  c._answered = {};
+  c._bonusAnswered = null;
+});
+
+/* ---------------------------------------------------------
+   状態管理
+   subPhase: "intro" -> "step0".."step4" -> "review" -> "bonus"
+--------------------------------------------------------- */
+let phase = "lecture";
+let caseIndex = 0;
+let subPhase = "intro";
+let score = 0;
+let maxScore = 0;
+let historyStack = [];
+
+const totalCases = cases.length;
+const STEP_ORDER = ["form","intro","step0","step1","step2","step3","step4","review","explainer","altphrase","bonus","done"];
+const PROGRESS_DENOM = STEP_ORDER.indexOf("done");
+const stageEl = document.getElementById("stage");
+const progressTrack = document.getElementById("progressTrack");
+const progressLabel = document.getElementById("progressLabel");
+const progressScore = document.getElementById("progressScore");
+const backBtn = document.getElementById("backBtn");
+
+function pushHistory(){
+  historyStack.push({phase, caseIndex, subPhase});
+}
+
+function goBack(){
+  if(historyStack.length === 0) return;
+  const prev = historyStack.pop();
+  phase = prev.phase;
+  caseIndex = prev.caseIndex;
+  subPhase = prev.subPhase;
+  render();
+}
+
+function updateNavButtons(){
+  if(backBtn) backBtn.disabled = historyStack.length === 0;
+}
+
+function buildProgressTrack(){
+  progressTrack.innerHTML = "";
+  for(let i=0;i<totalCases;i++){
+    const seg = document.createElement("div");
+    seg.className = "progress-seg";
+    const bar = document.createElement("i");
+    seg.appendChild(bar);
+    progressTrack.appendChild(seg);
+  }
+}
+buildProgressTrack();
+
+function updateProgress(){
+  const segs = progressTrack.querySelectorAll(".progress-seg > i");
+  segs.forEach((bar, idx) => {
+    if(phase === "lecture" || phase === "caselist"){
+      bar.style.width = "0%";
+    } else {
+      if(idx < caseIndex) bar.style.width = "100%";
+      else if(idx === caseIndex){
+        const p = STEP_ORDER.indexOf(subPhase);
+        bar.style.width = Math.min(100, (p/PROGRESS_DENOM)*100) + "%";
+      } else {
+        bar.style.width = "0%";
+      }
+    }
+  });
+  if(phase === "lecture"){
+    progressLabel.textContent = "師匠の指南";
+  } else if(phase === "caselist"){
+    progressLabel.textContent = "症例一覧";
+  } else if(phase === "complete"){
+    progressLabel.textContent = "全症例修了";
+  } else {
+    progressLabel.textContent = `症例 ${caseIndex+1} / ${totalCases}　${cases[caseIndex].title}`;
+  }
+  progressScore.textContent = maxScore > 0 ? `習熟度 ${score} / ${maxScore}` : "";
+}
+
+function render(){
+  updateProgress();
+  updateNavButtons();
+  if(phase === "lecture"){
+    renderLecture();
+  } else if(phase === "caselist"){
+    renderCaseList();
+  } else if(phase === "complete"){
+    renderComplete();
+  } else {
+    const c = cases[caseIndex];
+    if(subPhase === "form") renderForm(c);
+    else if(subPhase === "intro") renderCaseIntro(c);
+    else if(subPhase.startsWith("step")) renderStep(c, parseInt(subPhase.replace("step","")));
+    else if(subPhase === "review") renderReview(c);
+    else if(subPhase === "explainer") renderExplainer(c);
+    else if(subPhase === "altphrase") renderAltPhrase(c);
+    else if(subPhase === "bonus") renderBonus(c);
+  }
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function renderLecture(){
+  let html = `<div class="card">
+    <h2 class="section-title"><span class="tag">指南</span>${lecture.title}</h2>`;
+  lecture.lines.forEach(line=>{
+    html += `<div class="speaker" style="margin-bottom:14px;">
+      <div class="avatar master">師</div>
+      <div class="bubble">${line}</div>
+    </div>`;
+  });
+  html += `<div class="btn-row"><button class="primary" onclick="startCases()">${lecture.cta}</button></div>
+  </div>`;
+  stageEl.innerHTML = html;
+}
+
+function renderCaseList(){
+  let items = `<button class="case-list-btn" onclick="jumpToLecture()">
+      <span class="clb-num">指南</span>
+      <span class="clb-title">師匠の指南（最初のページ）</span>
+    </button>`;
+  cases.forEach((c,i)=>{
+    const done = c._answered && Object.keys(c._answered).length >= c.steps.length && c._bonusAnswered !== null;
+    items += `<button class="case-list-btn ${done ? "clb-done" : ""}" onclick="jumpToCase(${i})">
+      <span class="clb-num">${i+1}</span>
+      <span class="clb-title">${c.title.split("：")[1] || c.title}</span>
+      ${done ? `<span class="clb-check">✓</span>` : ""}
+    </button>`;
+  });
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">症例一覧</span>移動先を選んでください</h2>
+    <p style="color:#8a8168;font-size:12.5px;margin-top:2px;">選んだ症例は、問診票の画面から始まります。すでに回答した設問は、選んだ内容のまま振り返りとして表示されます。</p>
+    <div class="case-list-menu">${items}</div>
+  </div>`;
+}
+
+function jumpToLecture(){
+  pushHistory();
+  phase = "lecture";
+  render();
+}
+
+function jumpToCase(i){
+  pushHistory();
+  phase = "case";
+  caseIndex = i;
+  subPhase = "form";
+  render();
+}
+
+function openCaseList(){
+  pushHistory();
+  phase = "caselist";
+  render();
+}
+
+function renderForm(c){
+  const f = c.form;
+  const chk = (opts, checked) => opts.map(o=>{
+    const on = checked.includes(o);
+    return `<span class="chk ${on ? "checked":""}">${on?"☑":"☐"} ${o}</span>`;
+  }).join("");
+  const quote = (text) => text ? `<div class="quote-box">${text}</div>` : "";
+
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">受付・問診票</span>${c.title}</h2>
+    <div class="speaker">
+      <div class="avatar master">師</div>
+      <div class="bubble">診察の前に、受付で渡された問診票に目を通しておこう。患者さんが待合室で先に記入してくれたものだ。書かれていないことも多いから、それは診察室で聴いて補うことになる。</div>
+    </div>
+
+    <div class="form-meta">
+      <div><span class="k">氏名</span><span class="v">${f.name}（${f.furigana}）</span></div>
+      <div><span class="k">生年月日</span><span class="v">${f.dob}（${f.age}歳）</span></div>
+      <div><span class="k">性別</span><span class="v">${f.gender}</span></div>
+      <div><span class="k">電話番号</span><span class="v">${f.phone}</span></div>
+      <div style="grid-column:1/-1;"><span class="k">住所</span><span class="v">${f.address}</span></div>
+      ${f.informant ? `<div style="grid-column:1/-1;"><span class="k">記入者</span><span class="v">${f.informant}</span></div>` : ""}
+    </div>
+
+    <div class="form-section">
+      <p class="form-section-title">主訴　<span class="hint">今日、一番つらい症状は何ですか？（いくつでも選べます）</span></p>
+      <div class="chk-row">${chk(f.complaintOptions, f.complaintChecked)}</div>
+      ${quote(f.complaintFree)}
+    </div>
+
+    <div class="form-section">
+      <p class="form-section-title">現病歴　<span class="hint">今回の症状について教えてください</span></p>
+      <div class="form-inline">
+        <span>いつから：<b>${f.historyOnset}</b></span>
+        <span>つらさ：<b>${f.historySeverity}</b></span>
+        <span>経過：<b>${f.historyTrend}</b></span>
+      </div>
+      <div class="chk-row">${chk(f.historyOptions, f.historyChecked)}</div>
+      ${quote(f.historyFree)}
+    </div>
+
+    <div class="form-section">
+      <p class="form-section-title">家族歴　<span class="hint">血のつながったご家族に下記の病気にかかった方はいますか？</span></p>
+      <div class="chk-row">${chk(FAMILY_OPTIONS, f.familyChecked)}</div>
+      ${quote(f.familyFree)}
+    </div>
+
+    <div class="form-section">
+      <p class="form-section-title">既往歴　<span class="hint">これまでにかかった病気や、受けた手術はありますか？</span></p>
+      <div class="chk-row">${chk(PAST_OPTIONS, f.pastChecked)}</div>
+      ${quote(f.pastFree)}
+    </div>
+
+    <div class="form-section">
+      <p class="form-section-title">内服薬　<span class="hint">今飲んでいるお薬（サプリメント含む）はありますか？</span></p>
+      <div class="quote-box">${f.medications}${f.medNoteBook ? "（お薬手帳持参あり）" : "（お薬手帳の持参なし）"}</div>
+    </div>
+
+    <div class="form-section">
+      <p class="form-section-title">アレルギー　<span class="hint">薬や食べ物などでアレルギーが出たことはありますか？</span></p>
+      <div class="chk-row">${chk(ALLERGY_OPTIONS, f.allergyChecked)}</div>
+      ${quote(f.allergyFree)}
+    </div>
+
+    <div class="form-section">
+      <p class="form-section-title">禁忌・その他　<span class="hint">今日、当てはまるものがあれば教えてください</span></p>
+      <div class="chk-row">${chk(CONTRA_OPTIONS, f.contraindicationChecked)}</div>
+      ${quote(f.contraindicationFree)}
+    </div>
+
+    <p class="form-note">※ 問診票はあくまで一次情報。書かれていないことや曖昧な点は、これから始まる問診で聴いて確かめよう。</p>
+    <div class="btn-row"><button class="primary" onclick="goTo('intro')">患者を呼び入れる</button></div>
+  </div>`;
+}
+
+function renderCaseIntro(c){
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">問診開始</span>${c.title}</h2>
+    <div class="patient-info">患者：${c.patient}<br>受診理由：${c.complaint}</div>
+    <div class="speaker">
+      <div class="avatar patient">患</div>
+      <div class="bubble patient-bubble">${c.intro}</div>
+    </div>
+    <div class="speaker" style="margin-top:12px;">
+      <div class="avatar master">師</div>
+      <div class="bubble">さあ、問診を始めてみよ。まずは話をよく聴くところからだ。</div>
+    </div>
+    <div class="btn-row"><button class="primary" onclick="goTo('step0')">問診を始める</button></div>
+  </div>`;
+}
+
+const STEP_LABELS = ["主訴の聴取","症状の性状","曝露歴・生活歴（広く）","曝露歴の絞り込み","既往歴・家族歴"];
+
+function replyBlockHtml(opt){
+  return `
+    <div class="reply-block">
+      <div class="speaker">
+        <div class="avatar patient">患</div>
+        <div>
+          <p class="name-tag">患者の返答</p>
+          <div class="bubble patient-bubble">${opt.patientReply}</div>
+        </div>
+      </div>
+      <div class="speaker">
+        <div class="avatar master">師</div>
+        <div>
+          <p class="name-tag">師匠の講評</p>
+          <div class="feedback ${opt.correct ? "" : "negative"}">
+            <span class="label">${opt.correct ? "よし、その聴き方だ" : "まあ悪くはないが…"}</span>
+            ${opt.feedback}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderStep(c, si){
+  const s = c.steps[si];
+  const answeredIdx = c._answered[si];
+  let opts = "";
+  s.options.forEach((o,i)=>{
+    let cls = "";
+    let disabledAttr = "";
+    if(answeredIdx !== undefined){
+      disabledAttr = "disabled";
+      if(i === answeredIdx) cls = o.correct ? "correct" : "wrong";
+      else if(o.correct) cls = "correct";
+      else cls = "dim";
+    }
+    opts += `<button class="choice ${cls}" data-idx="${i}" ${disabledAttr} onclick="selectOption(${si},${i})">
+      <span class="letter">${String.fromCharCode(65+i)}</span>
+      <span>${o.text}</span>
+    </button>`;
+  });
+  const replyHtml = answeredIdx !== undefined ? replyBlockHtml(s.options[answeredIdx]) : "";
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">問診 ${si+1}/5・${STEP_LABELS[si]}</span>${c.title}</h2>
+    ${answeredIdx !== undefined ? `<p class="form-note" style="margin:0 0 8px;">※ この設問はすでに回答済みです（振り返り表示）。</p>` : ""}
+    <div class="patient-info">患者：${c.patient}｜受診理由：${c.complaint}</div>
+    <p style="font-weight:600;">${s.prompt}</p>
+    <div class="choices" id="choiceGroup">${opts}</div>
+    <div id="replyArea">${replyHtml}</div>
+    <div class="btn-row"><button class="primary" id="nextBtn" ${answeredIdx !== undefined ? "" : "disabled"} onclick="afterStep(${si})">次へ</button></div>
+  </div>`;
+}
+
+function selectOption(si, idx){
+  const c = cases[caseIndex];
+  if(c._answered[si] !== undefined) return;
+  const s = c.steps[si];
+  const opt = s.options[idx];
+  const group = document.getElementById("choiceGroup");
+  const buttons = group.querySelectorAll("button.choice");
+  buttons.forEach((b,i)=>{
+    b.disabled = true;
+    if(i === idx){
+      b.classList.add(opt.correct ? "correct" : "wrong");
+    } else if(s.options[i].correct){
+      b.classList.add("correct");
+    } else {
+      b.classList.add("dim");
+    }
+  });
+  c._answered[si] = idx;
+  maxScore += 3;
+  score += opt.correct ? 3 : 1;
+  const area = document.getElementById("replyArea");
+  area.innerHTML = replyBlockHtml(opt);
+  document.getElementById("nextBtn").disabled = false;
+  updateProgress();
+}
+
+function afterStep(si){
+  if(si < 4){
+    goTo("step"+(si+1));
+  } else {
+    goTo("review");
+  }
+}
+
+function renderReview(c){
+  let items = c.review.map(p=>`<li>${p}</li>`).join("");
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">師匠と振り返り</span>${c.title}</h2>
+    <div class="speaker">
+      <div class="avatar master">師</div>
+      <div class="bubble">よく聴けたな。この症例で押さえておくべき勘所を整理しておこう。</div>
+    </div>
+    <ul class="review-list">${items}</ul>
+    <div class="btn-row"><button class="primary" onclick="goTo('explainer')">疾患解説を見る</button></div>
+  </div>`;
+}
+
+function renderExplainer(c){
+  let items = c.explainer.map(e=>`
+    <div class="explainer-item">
+      <p class="ex-label">${e.label}</p>
+      <p class="ex-text">${e.text}</p>
+    </div>`).join("");
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">疾患解説</span>${c.title}</h2>
+    <div class="speaker">
+      <div class="avatar master">師</div>
+      <div class="bubble">問診で得た情報を、疾患そのものの知識と結びつけておこう。</div>
+    </div>
+    <div class="explainer-list">${items}</div>
+    <div class="btn-row"><button class="primary" onclick="goTo('altphrase')">聞き方の振り返りへ</button></div>
+  </div>`;
+}
+
+const ALTPHRASE_INTROS = [
+  "最後に一つだけ言っておこう。今回選んでもらった聞き方は、あくまで一つの型に過ぎん。同じ情報を引き出す聞き方は、他にもある。",
+  "今回も最後に一つポイントを授けよう。前回も言った通り、聞き方は一つではない。",
+  "さて、また一つ稽古をつけよう。同じ情報でも、聞き方の引き出しは一つに絞らんでよい。",
+  "毎度おなじみ、最後のひと言だ。ここで選んだ聞き方も、数ある型の一つに過ぎん。",
+  "もう分かってきたな。聞き方に唯一の正解はない、というのはここまで繰り返し言ってきた通りだ。",
+  "また一つ、引き出しを増やしておこう。聞き方は状況次第でいくらでも変えてよい。",
+  "さあ、残りわずかだ。今回もまた、別の聞き方を一つ授けておこう。",
+  "これで最後の症例だ。総仕上げに、もう一つだけ聞き方の型を見ておこう。ここまで繰り返し伝えてきた通り、聞き方は一つに縛られる必要はない。"
+];
+
+function renderAltPhrase(c){
+  const intro = ALTPHRASE_INTROS[caseIndex] || ALTPHRASE_INTROS[ALTPHRASE_INTROS.length-1];
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">別の聞き方の例</span>${c.title}</h2>
+    <div class="speaker">
+      <div class="avatar master">師</div>
+      <div class="bubble">${intro}</div>
+    </div>
+    <div class="speaker" style="margin-top:12px;">
+      <div class="avatar master">師</div>
+      <div class="bubble">${c.altPhrasing}</div>
+    </div>
+    <p class="form-note" style="margin-top:14px;">※ 聞き方に唯一の正解はありません。相手の反応を見ながら、自分なりの言葉で尋ねられるようになることが、問診上達への近道です。</p>
+
+    <div class="explainer-list" style="margin-top:16px;">
+      ${c.tips.map(t=>`
+      <div class="explainer-item">
+        <p class="ex-label">${t.label}</p>
+        <p class="ex-text">${t.text}</p>
+      </div>`).join("")}
+    </div>
+
+    <div class="btn-row"><button class="primary" onclick="goTo('bonus')">もうひと頑張りへ</button></div>
+  </div>`;
+}
+
+function renderBonus(c){
+  const b = c.bonus;
+  const answeredIdx = c._bonusAnswered;
+  let opts = "";
+  b.options.forEach((o,i)=>{
+    let cls = "";
+    let disabledAttr = "";
+    if(answeredIdx !== null){
+      disabledAttr = "disabled";
+      if(i === answeredIdx) cls = o.correct ? "correct" : "wrong";
+      else if(o.correct) cls = "correct";
+      else cls = "dim";
+    }
+    opts += `<button class="choice ${cls}" data-idx="${i}" ${disabledAttr} onclick="selectBonus(${i})">
+      <span class="letter">${String.fromCharCode(65+i)}</span>
+      <span>${o.text}</span>
+    </button>`;
+  });
+  const fbHtml = answeredIdx !== null ? bonusFeedbackHtml(b.options[answeredIdx]) : "";
+  stageEl.innerHTML = `
+  <div class="card">
+    <span class="bonus-badge">もうひと頑張り</span>
+    <h2 class="section-title">${c.title}</h2>
+    ${answeredIdx !== null ? `<p class="form-note" style="margin:0 0 8px;">※ この設問はすでに回答済みです（振り返り表示）。</p>` : ""}
+    <p style="font-weight:600;">${b.prompt}</p>
+    <div class="choices" id="bonusGroup">${opts}</div>
+    <div id="bonusFeedback">${fbHtml}</div>
+    <div class="btn-row"><button class="primary" id="bonusNext" ${answeredIdx !== null ? "" : "disabled"} onclick="afterBonus()">
+      ${caseIndex < totalCases-1 ? "次の症例へ" : "結果を見る"}
+    </button></div>
+  </div>`;
+}
+
+function bonusFeedbackHtml(opt){
+  return `<div class="feedback ${opt.correct ? "" : "negative"}">
+      <span class="label">${opt.correct ? "師匠：見事" : "師匠：惜しい"}</span>
+      ${opt.feedback}
+    </div>`;
+}
+
+function selectBonus(idx){
+  const c = cases[caseIndex];
+  if(c._bonusAnswered !== null) return;
+  const b = c.bonus;
+  const opt = b.options[idx];
+  const group = document.getElementById("bonusGroup");
+  const buttons = group.querySelectorAll("button.choice");
+  buttons.forEach((btn,i)=>{
+    btn.disabled = true;
+    if(i === idx){
+      btn.classList.add(opt.correct ? "correct" : "wrong");
+    } else if(b.options[i].correct){
+      btn.classList.add("correct");
+    } else {
+      btn.classList.add("dim");
+    }
+  });
+  c._bonusAnswered = idx;
+  maxScore += 3;
+  score += opt.correct ? 3 : 1;
+  const fb = document.getElementById("bonusFeedback");
+  fb.innerHTML = bonusFeedbackHtml(opt);
+  document.getElementById("bonusNext").disabled = false;
+  updateProgress();
+}
+
+function afterBonus(){
+  pushHistory();
+  if(caseIndex < totalCases-1){
+    caseIndex++;
+    subPhase = "form";
+  } else {
+    phase = "complete";
+  }
+  render();
+}
+
+function renderComplete(){
+  const pct = maxScore > 0 ? Math.round((score/maxScore)*100) : 0;
+  let chips = cases.map(c=>`<span class="case-chip done">${c.title.split("：")[1]}</span>`).join("");
+  let comment;
+  if(pct >= 85){
+    comment = "見事な出来だ。開放型質問から絞り込み、既往歴・家族歴の確認まで、型が身についてきておる。この調子で稽古を続けよ。";
+  } else if(pct >= 60){
+    comment = "よくやった。惜しい選択もあったが、要点はつかめている。振り返りの内容をもう一度見直しておくとよい。";
+  } else {
+    comment = "まずは八症例を通しで経験できたことに意味がある。もう一度最初から挑み、聴き方の型を体に染み込ませよ。";
+  }
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">修了</span>八症例、お疲れさま</h2>
+    <div class="final-score">
+      <div class="num">${pct}<span style="font-size:20px;">%</span></div>
+      <div class="den">習熟度スコア　${score} / ${maxScore} 点</div>
+    </div>
+    <div class="speaker" style="margin-top:10px;">
+      <div class="avatar master">師</div>
+      <div class="bubble">${comment}</div>
+    </div>
+    <div class="case-list">${chips}</div>
+    <div class="btn-row"><button class="primary" onclick="restart()">もう一度最初から</button></div>
+  </div>`;
+}
+
+function goTo(sp){
+  pushHistory();
+  subPhase = sp;
+  render();
+}
+
+function startCases(){
+  pushHistory();
+  phase = "case";
+  caseIndex = 0;
+  subPhase = "form";
+  render();
+}
+
+function restart(){
+  historyStack = [];
+  cases.forEach(c=>{ c._answered = {}; c._bonusAnswered = null; });
+  phase = "lecture";
+  caseIndex = 0;
+  subPhase = "form";
+  score = 0;
+  maxScore = 0;
+  render();
+}
+
+/* ---------------------------------------------------------
+   セクション切り替え（メイン画面／解説／リンク）
+--------------------------------------------------------- */
+let topView = "main";
+const progressWrapEl = document.getElementById("progressWrap");
+const subNavEl = document.getElementById("subNav");
+
+function switchView(v){
+  topView = v;
+  document.querySelectorAll(".nav-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.view === v);
+  });
+  if(v === "main"){
+    progressWrapEl.style.display = "";
+    if(subNavEl) subNavEl.style.display = "";
+    render();
+  } else {
+    progressWrapEl.style.display = "none";
+    if(subNavEl) subNavEl.style.display = "none";
+    if(v === "about") renderAbout();
+    else if(v === "links") renderLinks();
+  }
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function renderAbout(){
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">解説</span>このアプリについて</h2>
+    <p style="font-weight:600;margin-top:4px;">目的</p>
+    <p>本アプリは、医療系学生・研修医向けに「問診の基本」を、実際の症例を通じて体験的に学ぶことを目的としています。開放型の質問から始め、具体的な項目を挙げて絞り込み、既往歴・家族歴まで確認するという一連の流れを、代表的な8つの感染症（マイコプラズマ肺炎、カンピロバクター腸炎、溶連菌咽頭炎、インフルエンザ、新型コロナウイルス感染症、百日咳、腸管出血性大腸菌感染症、結核）で練習できます。</p>
+    <p style="font-weight:600;margin-top:16px;">操作方法</p>
+    <ol class="about-steps">
+      <li>「メイン画面」で師匠の指南を読み、稽古を始めます。</li>
+      <li>各症例では、まず受付で書かれた<strong>問診票</strong>に目を通します。書かれていない情報もあることに注意してください。</li>
+      <li>患者を呼び入れ、三択で問診の質問を選びます。選ぶたびに患者の返答と師匠の講評が表示されます。</li>
+      <li>5つの質問（主訴・症状・曝露歴を広く・曝露歴の絞り込み・既往歴／家族歴）が終わると、師匠と振り返り、疾患解説で知識を整理します。</li>
+      <li>「もうひと頑張り」で応用問題に挑戦し、次の症例に進みます。</li>
+      <li>全8症例が終わると、習熟度スコアが表示されます。</li>
+    </ol>
+    <p style="font-weight:600;margin-top:16px;">この問診の「聞き方」について（お読みください）</p>
+    <ul class="about-steps">
+      <li>各設問で示している聞き方は、あくまで一つの「例」です。実際の問診では、患者さんの答え方や反応に応じて、聞き方をその場で柔軟に変える必要があります。</li>
+      <li>選択肢として示した聞き方が、必ずしも最善とは限りません。同じ情報を引き出すための聞き方は一つではなく、他にも良い聞き方は考えられます。</li>
+      <li>本来であれば、選択肢から選ぶのではなく、自分自身の言葉で問診を組み立てる練習をすることが理想です。しかし三択形式というこのツールの性質上、そこまでは再現できていません。あくまで「型」を学ぶための一つの教材として使ってください。</li>
+      <li>このツールでは学習のねらい上、開放型（オープンエンド）の質問を多く採用していますが、実際の診療では誘導型・閉鎖型の質問（時間の節約になる反面、聞き漏らしや誘導のリスクがある）も状況に応じて多用します。開放型と閉鎖型、それぞれの長所・短所は、各症例の「別の聞き方の例」ページでも説明しています。</li>
+      <li>既往歴・家族歴についても、このツールではその症例に関連する項目を中心に扱っていますが、実際の診療では時間が許す限りできるだけ網羅的に確認し、問診票にすでに書かれている内容も一つずつ確認しながら、追加がないか尋ねることが望まれます。</li>
+    </ul>
+    <p style="margin-top:16px;color:#8a8168;font-size:12.5px;">※ 選択肢の並び順は毎回ランダムに入れ替わります。正解の位置を覚えるのではなく、聴き方の考え方そのものを身につけることを目指してください。</p>
+  </div>`;
+}
+
+function renderLinks(){
+  stageEl.innerHTML = `
+  <div class="card">
+    <h2 class="section-title"><span class="tag">リンク</span>関連コンテンツ</h2>
+    <a class="link-card" href="#">
+      <p class="lc-title">bactPlatform</p>
+      <p class="lc-desc">細菌学・感染症教育のための学習プラットフォーム。</p>
+      <p class="lc-url">URL：ご利用のプラットフォームのリンクに差し替えてください</p>
+    </a>
+    <a class="link-card" href="#">
+      <p class="lc-title">バイキンズ®キャラクター紹介</p>
+      <p class="lc-desc">感染症をわかりやすく伝えるキャラクターIP「バイキンズ®」の紹介ページ。</p>
+      <p class="lc-url">URL：ご利用のページのリンクに差し替えてください</p>
+    </a>
+    <p style="color:#8a8168;font-size:12.5px;margin-top:6px;">※ その他のコンテンツは今後追加予定です。</p>
+  </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
