@@ -531,6 +531,12 @@
     text-align:center;
     border-top:1px solid var(--line);
   }
+  footer.disclaimer .counter{
+    margin:10px 0 0;
+    font-size:11px;
+    color:#a39c86;
+    letter-spacing:.03em;
+  }
   @media (max-width:480px){
     header.top h1{font-size:20px;}
     .card{padding:18px 14px;}
@@ -570,6 +576,7 @@
 <footer class="disclaimer">
   本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
   二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  <p class="counter" id="accessCounter">アクセス数を読み込み中…</p>
 </footer>
 
 <script>
@@ -2301,6 +2308,50 @@ function renderLinks(){
 }
 
 render();
+
+/* ---------------------------------------------------------
+   アクセスカウンター
+   ・Claudeのアーティファクトとして開いている場合は window.storage を使用（共有カウンター）
+   ・GitHub Pages等、単体のHTMLとして外部公開している場合は
+     hits.sh のバッジ型カウンターにフォールバック
+     （公開URL固定: https://somekata.github.io/links/medStory/monshin/monshin_simulator.html）
+--------------------------------------------------------- */
+const COUNTER_KEY = "visits";
+const DEPLOYED_URL = "https://somekata.github.io/links/medStory/monshin/monshin_simulator.html";
+
+async function initAccessCounter(){
+  const el = document.getElementById("accessCounter");
+  if(!el) return;
+  try{
+    if(window.storage && typeof window.storage.get === "function"){
+      let current = 0;
+      try{
+        const existing = await window.storage.get(COUNTER_KEY, true);
+        current = existing && existing.value ? parseInt(existing.value, 10) || 0 : 0;
+      } catch(e){
+        current = 0;
+      }
+      current += 1;
+      await window.storage.set(COUNTER_KEY, String(current), true);
+      el.textContent = `アクセス数：${current.toLocaleString()} 回`;
+    } else {
+      // ページ自身のURLを使う（別の場所に複製・移転しても自動でそのURL用のカウンターになる）
+      const pageUrl = window.location.href.split("#")[0].split("?")[0];
+      const targetUrl = (pageUrl.startsWith("http")) ? pageUrl : DEPLOYED_URL;
+      // hits.sh はプロトコルを含めず "ドメイン/パス.svg" の形式を取る
+      const hitsPath = targetUrl.replace(/^https?:\/\//, "").replace(/\.html$/, "");
+      el.innerHTML = "アクセス数：";
+      const img = document.createElement("img");
+      img.src = `https://hits.sh/${hitsPath}.svg?label=views&color=1f4d3a&labelColor=555555&style=flat`;
+      img.alt = "アクセスカウンター";
+      img.style.verticalAlign = "middle";
+      el.appendChild(img);
+    }
+  } catch(err){
+    el.textContent = "";
+  }
+}
+initAccessCounter();
 </script>
 </body>
 </html>
