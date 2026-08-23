@@ -1,0 +1,3731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<title>バイキン探検記（仮）| TGS出展版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --washi:#f5f1e8; --washi-deep:#ece4d3; --ink:#2b2620; --ink-soft:#6b6255; --line:#d8cdb8;
+    --accent:#b5482e; --accent-soft:#e3ceb8;
+    --catch:#4c9a5b; --danger:#c94a3d; --rare:#d1a12a; --hunt:#c9703f;
+    --agar:#dcc79a; --agar-line:#a9895a;
+    --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px);
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html,body{ margin:0; padding:0; height:100%; width:100%; overscroll-behavior:none;
+    background:var(--washi); color:var(--ink); font-family:"Noto Sans JP", sans-serif; }
+  #app{ height:100dvh; width:100vw; display:grid; grid-template-rows:auto 1fr auto;
+    padding-top:var(--safe-t); padding-left:var(--safe-l); padding-right:var(--safe-r); overflow:hidden; }
+  header{ display:flex; align-items:center; justify-content:space-between; padding:8px 14px;
+    background:var(--washi); border-bottom:1px solid var(--line); }
+  header .title{ font-family:"Zen Antique", serif; font-size:16px; letter-spacing:.02em; }
+  header .title small{ display:block; font-family:"Noto Sans JP",sans-serif; font-size:10px; color:var(--ink-soft); font-weight:400; }
+  header .hud{ display:flex; gap:8px; font-family:"JetBrains Mono", monospace; font-size:11.5px; color:var(--ink-soft); }
+  header .hud span{ background:var(--washi-deep); border:1px solid var(--line); border-radius:999px; padding:3px 9px; white-space:nowrap; }
+
+  main{ position:relative; overflow:hidden; min-height:0; }
+  .panel{ position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px 14px 22px; display:none; animation:fadeIn .18s ease; }
+  .panel.active{ display:block; }
+  .panel.noscroll{ overflow:hidden; padding:0; display:none; }
+  .panel.noscroll.active{ display:flex; flex-direction:column; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:15px; margin-bottom:12px; }
+  .card h2{ font-family:"Zen Antique", serif; font-size:16px; margin:0 0 8px; color:var(--accent); }
+  .card p{ font-size:13.5px; line-height:1.75; margin:0; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:46px; padding:0 16px;
+    border-radius:11px; border:1px solid var(--line); background:var(--washi-deep); color:var(--ink);
+    font-size:13.5px; font-weight:700; font-family:"Noto Sans JP",sans-serif; cursor:pointer; }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.gold{ background:var(--rare); border-color:var(--rare); color:#3a2a05; }
+  .btn.flee{ background:#fff; border-color:var(--danger); color:var(--danger); }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .petri-deco{ width:84px; height:84px; border-radius:50%; margin:0 auto 10px;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.5), transparent 45%), var(--agar);
+    border:5px solid var(--agar-line); display:flex; align-items:center; justify-content:center; font-size:36px; }
+
+  /* ==== あそぶ ==== */
+  #gameHud{ display:flex; justify-content:space-between; align-items:center; padding:7px 12px; gap:6px;
+    font-family:"JetBrains Mono", monospace; font-size:11px; background:var(--washi-deep);
+    border-bottom:1px solid var(--line); flex:none; flex-wrap:wrap; }
+  #gameHud .lives{ letter-spacing:1px; }
+
+  #stage{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:10px; overflow:hidden; }
+  .hpbar-wrap{ width:100%; max-width:280px; }
+  .hpbar-label{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-soft); margin-bottom:2px; }
+  .hpbar{ height:10px; border-radius:999px; background:var(--washi-deep); overflow:hidden; border:1px solid var(--line); }
+  .hpbar .fill{ height:100%; background:var(--catch); transition:width .25s ease; }
+  .hpbar.enemy .fill{ background:var(--danger); }
+
+  .target-label{ font-size:12px; color:var(--ink-soft); }
+  .target-label b{ color:var(--ink); font-size:14px; font-family:"Zen Antique",serif; }
+
+  .scope-wrap{ position:relative; width:min(52vw,200px); height:min(52vw,200px); flex:none; }
+  .scope{ width:100%; height:100%; border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.5), transparent 45%), var(--agar);
+    border:6px solid var(--agar-line); box-shadow:inset 0 0 20px rgba(0,0,0,.12);
+    position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;
+    transition:box-shadow .25s ease, transform .12s ease; }
+  .scope.aligned{ box-shadow:inset 0 0 20px rgba(0,0,0,.08), 0 0 0 5px rgba(76,154,89,.4); }
+  .scope.shake{ animation:shakeAnim .35s ease; }
+  @keyframes shakeAnim{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);} 40%{transform:translateX(6px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);} }
+  .scope-ring{ position:absolute; inset:14%; border-radius:50%; border:2px dashed rgba(43,38,32,.18); }
+  .arrow-wrap{ width:52px; height:52px; display:flex; align-items:center; justify-content:center; transition:transform .12s linear; }
+  .arrow{ width:0; height:0; border-left:14px solid transparent; border-right:14px solid transparent;
+    border-bottom:38px solid var(--hunt); filter:drop-shadow(0 2px 3px rgba(0,0,0,.2)); transition:border-bottom-color .15s ease; }
+  .scope.aligned .arrow{ border-bottom-color:var(--catch); }
+  .pointer-fixed{ position:absolute; top:-2px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:9px solid var(--ink); opacity:.7; }
+  .diff-readout{ position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
+    font-size:9.5px; padding:2px 7px; border-radius:999px; background:rgba(255,255,255,.7); color:var(--ink-soft); font-family:"JetBrains Mono",monospace; }
+  .find-icon{ position:absolute; font-size:30px; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  .find-icon.show{ opacity:1; }
+
+  .dmgnum{ position:absolute; left:50%; top:36%; transform:translate(-50%,-50%);
+    font-family:"Zen Antique",serif; font-weight:700; font-size:22px; pointer-events:none;
+    animation:dmgFloat .7s ease forwards; z-index:8; }
+  .dmgnum.dealt{ color:var(--danger); }
+  .dmgnum.blocked{ color:var(--ink-soft); font-size:15px; }
+  .dmgnum.heal{ color:var(--catch); }
+  @keyframes dmgFloat{ 0%{ opacity:0; transform:translate(-50%,-30%) scale(.7);} 25%{ opacity:1; transform:translate(-50%,-60%) scale(1.15);} 100%{ opacity:0; transform:translate(-50%,-95%) scale(1);} }
+  .flash{ position:absolute; inset:0; background:rgba(201,74,61,.35); opacity:0; pointer-events:none; z-index:6; }
+  .flash.show{ opacity:1; transition:opacity .05s; }
+  .flash.fade{ opacity:0; transition:opacity .35s ease; }
+
+  .message{ min-height:16px; font-size:12px; color:var(--ink-soft); text-align:center; }
+  #simWrap{ display:none; flex-direction:column; align-items:center; gap:4px; }
+  #simWrap input[type=range]{ width:74vw; max-width:260px; }
+
+  /* オーバーレイ共通 */
+  .overlay{ position:absolute; inset:0; background:rgba(245,241,232,.97); z-index:10;
+    display:none; align-items:center; justify-content:center; padding:16px; overflow-y:auto; }
+  .overlay.show{ display:flex; }
+  #ovBattle.overlay{ padding:0; align-items:stretch; justify-content:stretch; }
+  .battle-screen .sus-box{ margin:0 12px 8px; }
+  .battle-screen .action-grid{ padding:0 10px; margin-bottom:8px; }
+  .battle-screen .util-row{ padding:0 10px calc(10px + var(--safe-b)); }
+  .ocard{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; max-width:320px; width:100%; text-align:center; }
+  .ocard h3{ font-family:"Zen Antique",serif; font-size:16px; margin:0 0 8px; color:var(--accent); }
+  .ocard h3.ok{ color:var(--catch); }
+  .ocard h3.bad{ color:var(--danger); }
+  .ocard p{ font-size:12.5px; line-height:1.7; color:var(--ink); margin:0 0 12px; }
+  .howto{ text-align:left; font-size:12.5px; line-height:1.85; color:var(--ink-soft); background:var(--washi-deep);
+    border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:12px; }
+  .howto b{ color:var(--ink); }
+
+  /* 敵情報 */
+  .enemy-img{ width:72px; height:72px; object-fit:contain; margin-bottom:2px; }
+  .enemy-name{ font-size:15px; font-weight:700; font-family:"Zen Antique",serif; }
+  .enemy-latin{ font-style:italic; font-size:11px; color:var(--ink-soft); margin:-2px 0 6px; }
+  .sus-box{ font-size:10.5px; color:var(--ink-soft); line-height:1.8; background:var(--washi-deep);
+    border:1px solid var(--line); border-radius:10px; padding:7px 9px; text-align:left; margin-bottom:8px; }
+  .sus-box .chip{ display:inline-block; margin:2px 4px 2px 0; font-family:"JetBrains Mono",monospace; font-weight:700;
+    font-size:10.5px; padding:1px 6px; border-radius:6px; }
+  .sus-box .chip.s{ background:rgba(76,154,89,.16); color:var(--catch); }
+  .sus-box .chip.r{ background:rgba(201,74,61,.14); color:var(--danger); }
+  .sus-box .chip.unk{ background:#fff; color:var(--ink-soft); border:1px dashed var(--line); }
+
+  .action-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px; }
+  .action-btn{ font-family:"JetBrains Mono",monospace; font-weight:700; font-size:11.5px; color:var(--ink);
+    background:var(--washi-deep); border:1px solid var(--line); border-radius:9px; padding:8px 3px; cursor:pointer; }
+  .action-btn .stock{ display:block; font-size:9px; font-weight:500; color:var(--ink-soft); margin-top:2px; }
+  .action-btn.hitok{ background:rgba(76,154,89,.22); border-color:var(--catch); }
+  .action-btn.hitbad{ background:rgba(201,74,61,.18); border-color:var(--danger); }
+  .action-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .util-row{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px; }
+  .util-btn{ flex:1; font-family:"Noto Sans JP",sans-serif; font-size:11px; font-weight:700;
+    background:#fff; border:1.5px solid var(--accent); color:var(--accent); border-radius:9px; padding:8px 4px; cursor:pointer; }
+  .util-btn.flee2{ border-color:var(--danger); color:var(--danger); }
+  .util-btn:disabled{ opacity:.35; cursor:not-allowed; border-color:var(--line); color:var(--ink-soft); }
+  .util-btn .stock{ display:block; font-size:9px; font-weight:500; opacity:.75; }
+
+  /* 戦闘アリーナ（弾が飛ぶ場所） */
+  .battle-screen{ width:100%; height:100%; display:flex; flex-direction:column;
+    background:radial-gradient(circle at 50% 0%, rgba(220,199,154,.35), transparent 55%), linear-gradient(#fbf8f1, var(--washi)); }
+  .battle-top{ flex:none; padding:10px 12px 4px; text-align:center; }
+  .benemy-name{ font-size:16px; font-weight:700; font-family:"Zen Antique",serif; }
+  .benemy-latin{ font-style:italic; font-size:11px; color:var(--ink-soft); margin:-2px 0 6px; }
+  .battle-arena{ position:relative; flex:1; min-height:0; overflow:hidden; }
+  .enemy-img-float{ position:absolute; left:50%; top:14%; width:min(30vw,110px); height:min(30vw,110px);
+    object-fit:contain; transform:translateX(-50%); filter:drop-shadow(0 6px 10px rgba(0,0,0,.18));
+    animation:enemyFloat 2.6s ease-in-out infinite; }
+  @keyframes enemyFloat{ 0%,100%{ transform:translateX(-50%) translateY(0) rotate(-2deg); } 50%{ transform:translateX(-50%) translateY(-10px) rotate(2deg); } }
+  .battle-arena .player-marker{ position:absolute; left:50%; bottom:6px; transform:translateX(-50%); font-size:26px; z-index:2; }
+  .action-btn.held{ transform:scale(.94); box-shadow:inset 0 2px 4px rgba(0,0,0,.15); }
+  .proj{ position:absolute; left:50%; bottom:34px; transform:translateX(-50%); transition:bottom .34s linear, opacity .34s linear; opacity:1; z-index:3; }
+  .proj.fly{ bottom:100%; opacity:.1; }
+  .proj-PCG{ width:12px; height:12px; background:#c94a3d; border-radius:50%; }
+  .proj-CEZ{ width:13px; height:13px; background:#3d7fc9; border-radius:3px; }
+  .proj-VCM{ width:15px; height:15px; background:#7a5ac9; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); }
+  .proj-CAZ{ width:15px; height:14px; background:#4c9a5b; clip-path:polygon(50% 0,0 100%,100% 100%); }
+  .proj-AZM{ width:16px; height:16px; background:#d1a12a; border-radius:50%; box-shadow:inset 0 0 0 4px #fdfaf3; }
+  .proj-MEPM{ width:22px; height:19px; background:#c9703f; clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
+  .proj-LZD{ width:22px; height:11px; background:#c94aa0; border-radius:999px; }
+  .proj-COL{ width:24px; height:24px; background:#6b6255; clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); }
+
+  .wave-progress{ font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--ink-soft); }
+  .wave-canvas-wrap{ position:relative; flex:1; min-height:0; }
+  #waveCanvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+
+  /* ずかん */
+  .zukan-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+  .zukan-cell{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; }
+  .zukan-cell.locked{ background:repeating-linear-gradient(45deg, var(--washi-deep), var(--washi-deep) 6px, var(--washi) 6px, var(--washi) 12px); color:var(--ink-soft); }
+  .zukan-cell img{ width:56px; height:56px; object-fit:contain; }
+  .zukan-cell .zname{ font-size:12px; font-weight:700; margin-top:4px; }
+  .zukan-cell .zlatin{ font-style:italic; font-size:10px; color:var(--ink-soft); }
+
+  /* ショップ */
+  .pharm-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; background:#fff;
+    border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+  .pharm-row .code{ font-family:"JetBrains Mono",monospace; font-weight:700; font-size:14px; }
+  .pharm-row .price{ font-size:11px; color:var(--ink-soft); }
+  .pharm-row .stockn{ font-size:11px; color:var(--catch); margin-left:6px; }
+  .pharm-buy{ font-family:"Zen Antique",serif; font-size:12.5px; font-weight:700; padding:8px 14px; border-radius:10px;
+    border:1px solid var(--catch); background:rgba(76,154,89,.12); color:var(--catch); cursor:pointer; flex-shrink:0; }
+  .pharm-buy:disabled{ opacity:.35; cursor:not-allowed; border-color:var(--line); color:var(--ink-soft); background:none; }
+
+  .inv-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .inv-cell{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; }
+  .inv-cell .ic{ font-size:24px; }
+  .inv-cell .nm{ font-size:11.5px; font-weight:700; margin-top:2px; }
+  .inv-cell .ct{ font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--accent); }
+
+  textarea.codebox{ width:100%; min-height:70px; font-family:"JetBrains Mono", monospace; font-size:12px;
+    border:1px solid var(--line); border-radius:10px; padding:10px; background:#fff; color:var(--ink); resize:vertical; }
+  #qrHolder{ display:flex; justify-content:center; padding:14px; background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:10px; }
+  #qrHolder svg{ width:170px; height:170px; }
+  .filebtn{ position:relative; overflow:hidden; }
+  .filebtn input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .msg-inline{ font-size:12.5px; padding:8px 10px; border-radius:8px; margin-top:8px; }
+  .msg-inline.ok{ background:#e7f3e5; color:#2f6b34; border:1px solid #bfe0ba; }
+  .msg-inline.ng{ background:#fbe8e6; color:#a13228; border:1px solid #f3c3bd; }
+
+  .about-disclaimer{ margin-top:18px; padding:12px 14px; background:var(--washi-deep); border:1px solid var(--line);
+    border-radius:10px; font-size:11px; line-height:1.7; color:var(--ink-soft); white-space:pre-line; }
+
+  nav.tabbar{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; background:var(--washi);
+    border-top:1px solid var(--line); padding-bottom:calc(6px + var(--safe-b)); padding-top:6px; }
+  nav.tabbar button{ appearance:none; border:none; background:transparent; display:flex; flex-direction:column;
+    align-items:center; gap:2px; padding:6px 2px; min-height:48px; font-family:"Noto Sans JP",sans-serif;
+    font-size:10px; color:var(--ink-soft); cursor:pointer; }
+  nav.tabbar button .ico{ font-size:19px; line-height:1; }
+  nav.tabbar button.active{ color:var(--accent); font-weight:700; }
+
+  @media (min-width:700px){ #app{ max-width:520px; margin:0 auto; border-left:1px solid var(--line); border-right:1px solid var(--line); } }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="title">バイキン探検記<small>（仮タイトル）FunFection / TGS出展版</small></div>
+    <div class="hud"><span id="headerScore">SCORE 0</span><span id="headerMoney">💰 0</span></div>
+  </header>
+
+  <main>
+    <!-- ホーム -->
+    <section class="panel active" data-panel="home">
+      <div class="card">
+        <div class="petri-deco">🧭</div>
+        <h2>ようこそ</h2>
+        <p>コンパスを頼りにフィールドを探索し、アイテムや菌を見つけよう。アイテムは拾うだけでゲット。菌に出会ったら「たたかう」か「にげる」かを選んで、抗菌薬でたちむかおう。</p>
+      </div>
+      <div class="card">
+        <h2>あそびかた</h2>
+        <div class="howto">
+          ① コンパスかスケールバーで方角を合わせて探索<br>
+          ② 見つけたのがアイテムなら自動でゲット（お金・呪文・ワクチン・検査など）<br>
+          ③ 菌に出会ったら「たたかう／にげる」を選択<br>
+          ④ 戦闘中も抗菌薬・検査・回復の呪文・にげるをいつでも選べる<br>
+          ⑤ HPが0になるとライフを1失う。ライフが尽きたらゲームオーバー
+        </div>
+      </div>
+      <button class="btn primary" data-goto="play">たんけんする ▶</button>
+    </section>
+
+    <!-- あそぶ -->
+    <section class="panel noscroll" data-panel="play">
+      <div id="gameHud">
+        <span id="hScore">SCORE 0</span>
+        <span id="hMoney">💰 0</span>
+        <span id="hLives" class="lives">❤️❤️❤️</span>
+      </div>
+
+      <div id="stage">
+        <div class="flash" id="flash"></div>
+
+        <!-- 探索中HUD -->
+        <div id="exploreHud" style="display:flex; flex-direction:column; align-items:center; gap:8px; width:100%;">
+          <div class="hpbar-wrap">
+            <div class="hpbar-label"><span>HP</span><span id="hpText">30 / 30</span></div>
+            <div class="hpbar"><div class="fill" id="hpFill" style="width:100%;"></div></div>
+          </div>
+          <div class="target-label" id="targetLabel">方角: <b>--</b></div>
+          <div class="scope-wrap">
+            <div class="pointer-fixed"></div>
+            <div class="scope" id="scope">
+              <div class="scope-ring"></div>
+              <div class="arrow-wrap" id="arrowWrap"><div class="arrow"></div></div>
+              <div class="diff-readout" id="diffReadout">--°</div>
+              <div class="find-icon" id="findIcon">？</div>
+            </div>
+          </div>
+          <div class="message" id="message">方角に向けてね</div>
+          <div id="simWrap">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft);">向き: <span id="simVal">0</span>°</div>
+            <input type="range" id="simSlider" min="0" max="359" value="0">
+          </div>
+        </div>
+
+        <!-- スタート/モード選択 -->
+        <div class="overlay show" id="ovStart">
+          <div class="ocard">
+            <h3>方角モードを選ぼう</h3>
+            <p>コンパスモードは端末の向きへのアクセス許可が必要です。拒否・非対応の場合は自動でスケールバーに切り替わります。</p>
+            <div class="row" style="flex-direction:column;">
+              <button class="btn primary" id="btnModeCompass">📡 コンパスモード</button>
+              <button class="btn gold" id="btnModeScale">🎚 スケールバーモード</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- アイテム発見 -->
+        <div class="overlay" id="ovItem">
+          <div class="ocard">
+            <h3 class="ok" id="itemTitle">アイテム発見！</h3>
+            <p id="itemBody"></p>
+            <button class="btn primary" id="btnItemOk">つづける</button>
+          </div>
+        </div>
+
+        <!-- 菌との遭遇（たたかう/にげる選択） -->
+        <div class="overlay" id="ovEncounter">
+          <div class="ocard">
+            <h3>菌が現れた！</h3>
+            <img class="enemy-img" id="encImg" src="" alt="">
+            <div class="enemy-name" id="encName"></div>
+            <div class="enemy-latin" id="encLatin"></div>
+            <p>たたかうか、にげるか選ぼう</p>
+            <div class="row" style="flex-direction:column;">
+              <button class="btn primary" id="btnEncFight">⚔️ たたかう</button>
+              <button class="btn flee" id="btnEncFlee">🏃 にげる</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 戦闘 -->
+        <div class="overlay" id="ovBattle">
+          <div class="battle-screen">
+            <div class="battle-top">
+              <div class="benemy-name" id="battleName"></div>
+              <div class="benemy-latin" id="battleLatin"></div>
+              <div class="hpbar-wrap"><div class="hpbar-label"><span>敵HP</span><span id="battleEnemyHpText"></span></div>
+                <div class="hpbar enemy"><div class="fill" id="battleEnemyHpFill" style="width:100%;"></div></div>
+              </div>
+            </div>
+            <div class="battle-arena" id="battleArena">
+              <img class="enemy-img-float" id="battleImg" src="" alt="">
+              <div class="player-marker">💊</div>
+            </div>
+            <div class="sus-box" id="battleSus"></div>
+            <div class="hpbar-wrap" style="padding:0 10px;">
+              <div class="hpbar-label"><span>自分のHP</span><span id="battlePlayerHpText"></span></div>
+              <div class="hpbar"><div class="fill" id="battlePlayerHpFill" style="width:100%;"></div></div>
+            </div>
+            <div class="action-grid" id="actionGrid"></div>
+            <div class="util-row">
+              <button class="util-btn" id="btnUseTest">🔍 検査<span class="stock" id="testStockLabel"></span></button>
+              <button class="util-btn" id="btnUseSpell">📖 回復の呪文<span class="stock" id="spellStockLabel"></span></button>
+              <button class="util-btn" id="btnUseVaccine">💉 ワクチン<span class="stock" id="vaccineStockLabel"></span></button>
+              <button class="util-btn flee2" id="btnBattleFlee">🏃 にげる</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- シューティング波 -->
+        <div class="overlay" id="ovWave">
+          <div class="battle-screen">
+            <div class="battle-top">
+              <div class="benemy-name">バイキンの波</div>
+              <div class="wave-progress" id="waveProgress">0 / 0 たいじ</div>
+            </div>
+            <div class="wave-canvas-wrap" id="waveCanvasWrap">
+              <canvas id="waveCanvas"></canvas>
+            </div>
+            <div class="hpbar-wrap" style="padding:0 10px;">
+              <div class="hpbar-label"><span>自分のHP</span><span id="wavePlayerHpText"></span></div>
+              <div class="hpbar"><div class="fill" id="wavePlayerHpFill" style="width:100%;"></div></div>
+            </div>
+            <div class="util-row" style="grid-template-columns:1fr; padding:8px 10px calc(10px + var(--safe-b));">
+              <button class="util-btn flee2" id="btnWaveFlee">🏃 にげる</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- クイズ -->
+        <div class="overlay" id="ovQuiz">
+          <div class="ocard">
+            <h3>🧠 クイズタイム！</h3>
+            <p id="quizQ"></p>
+            <div class="row" style="flex-direction:column;" id="quizChoices"></div>
+          </div>
+        </div>
+
+        <!-- ライフを失った -->
+        <div class="overlay" id="ovLifeLost">
+          <div class="ocard">
+            <h3 class="bad">やられた…</h3>
+            <p id="lifeLostBody"></p>
+            <button class="btn primary" id="btnLifeLostOk">HP回復してつづける</button>
+          </div>
+        </div>
+
+        <!-- ゲームオーバー -->
+        <div class="overlay" id="ovOver">
+          <div class="ocard">
+            <h3 class="bad">ライフがなくなった…</h3>
+            <p id="overSummary"></p>
+            <button class="btn primary" id="btnRetry">もう一度挑戦</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ずかん -->
+    <section class="panel" data-panel="zukan">
+      <div class="card">
+        <h2>ずかん <span id="zukanCount" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft);"></span></h2>
+        <p>たおした菌がここに記録されます。</p>
+      </div>
+      <div class="zukan-grid" id="zukanGrid"></div>
+
+      <div class="card" style="margin-top:14px;">
+        <h2>セーブ（ベストスコア・ずかん）</h2>
+        <div class="row"><button class="btn primary" id="btnMakeCode">コードを作る</button><button class="btn" id="btnDownloadFile">ファイルでダウンロード</button></div>
+        <div id="qrHolder" style="display:none;"></div>
+        <textarea class="codebox" id="exportCode" placeholder="「コードを作る」を押すとここに表示されます" readonly></textarea>
+        <div class="row" style="margin-top:10px;">
+          <textarea class="codebox" id="importCode" placeholder="コード（BKZ5-...）を貼り付け" style="min-height:52px;"></textarea>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn primary" id="btnImportCode">コードから復元</button>
+          <label class="btn filebtn">ファイルから復元<input type="file" id="importFile" accept=".json,.bin,.txt"></label>
+        </div>
+        <div id="importMsg"></div>
+      </div>
+    </section>
+
+    <!-- ショップ -->
+    <section class="panel" data-panel="shop">
+      <div class="card">
+        <h2>💊 抗菌薬ショップ</h2>
+        <p>所持金：<span id="shopMoney" style="font-family:'JetBrains Mono',monospace;">0</span> 💰（今回のプレイ中のみ有効）</p>
+      </div>
+      <div id="pharmacyList"></div>
+      <div class="card" style="margin-top:10px;">
+        <h2>もちもの</h2>
+        <div class="inv-grid" id="invGrid"></div>
+      </div>
+    </section>
+
+    <!-- について -->
+    <section class="panel" data-panel="about">
+      <div class="card">
+        <h2>このゲームについて</h2>
+        <p>制作・監修：染方史郎（金子幸弘／大阪公立大学大学院医学研究科細菌学教室）<br>本作はTGS出展・企画検討用のプロトタイプです。タイトル・内容は変更予定。</p>
+      </div>
+      <div class="card">
+        <h2>菌の追加について</h2>
+        <p>登場する菌は <code>SPECIES</code> 配列に1件追加するだけで増やせる構造にしてあります（画像URL・学名・HP・感受性データなど）。</p>
+      </div>
+      <div class="about-disclaimer">本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。
+二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</div>
+    </section>
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="active" data-target="home"><span class="ico">🏠</span>ホーム</button>
+    <button data-target="play"><span class="ico">🧭</span>あそぶ</button>
+    <button data-target="zukan"><span class="ico">📖</span>ずかん</button>
+    <button data-target="shop"><span class="ico">💊</span>ショップ</button>
+    <button data-target="about"><span class="ico">ℹ️</span>について</button>
+  </nav>
+</div>
+
+<script>
+//---------------------------------------------------------------------
+//
+// QR Code Generator for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
+// The word 'QR Code' is registered trademark of
+// DENSO WAVE INCORPORATED
+//  http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+
+var qrcode = function() {
+
+  //---------------------------------------------------------------------
+  // qrcode
+  //---------------------------------------------------------------------
+
+  /**
+   * qrcode
+   * @param typeNumber 1 to 40
+   * @param errorCorrectionLevel 'L','M','Q','H'
+   */
+  var qrcode = function(typeNumber, errorCorrectionLevel) {
+
+    var PAD0 = 0xEC;
+    var PAD1 = 0x11;
+
+    var _typeNumber = typeNumber;
+    var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+    var _modules = null;
+    var _moduleCount = 0;
+    var _dataCache = null;
+    var _dataList = [];
+
+    var _this = {};
+
+    var makeImpl = function(test, maskPattern) {
+
+      _moduleCount = _typeNumber * 4 + 17;
+      _modules = function(moduleCount) {
+        var modules = new Array(moduleCount);
+        for (var row = 0; row < moduleCount; row += 1) {
+          modules[row] = new Array(moduleCount);
+          for (var col = 0; col < moduleCount; col += 1) {
+            modules[row][col] = null;
+          }
+        }
+        return modules;
+      }(_moduleCount);
+
+      setupPositionProbePattern(0, 0);
+      setupPositionProbePattern(_moduleCount - 7, 0);
+      setupPositionProbePattern(0, _moduleCount - 7);
+      setupPositionAdjustPattern();
+      setupTimingPattern();
+      setupTypeInfo(test, maskPattern);
+
+      if (_typeNumber >= 7) {
+        setupTypeNumber(test);
+      }
+
+      if (_dataCache == null) {
+        _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+      }
+
+      mapData(_dataCache, maskPattern);
+    };
+
+    var setupPositionProbePattern = function(row, col) {
+
+      for (var r = -1; r <= 7; r += 1) {
+
+        if (row + r <= -1 || _moduleCount <= row + r) continue;
+
+        for (var c = -1; c <= 7; c += 1) {
+
+          if (col + c <= -1 || _moduleCount <= col + c) continue;
+
+          if ( (0 <= r && r <= 6 && (c == 0 || c == 6) )
+              || (0 <= c && c <= 6 && (r == 0 || r == 6) )
+              || (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+            _modules[row + r][col + c] = true;
+          } else {
+            _modules[row + r][col + c] = false;
+          }
+        }
+      }
+    };
+
+    var getBestMaskPattern = function() {
+
+      var minLostPoint = 0;
+      var pattern = 0;
+
+      for (var i = 0; i < 8; i += 1) {
+
+        makeImpl(true, i);
+
+        var lostPoint = QRUtil.getLostPoint(_this);
+
+        if (i == 0 || minLostPoint > lostPoint) {
+          minLostPoint = lostPoint;
+          pattern = i;
+        }
+      }
+
+      return pattern;
+    };
+
+    var setupTimingPattern = function() {
+
+      for (var r = 8; r < _moduleCount - 8; r += 1) {
+        if (_modules[r][6] != null) {
+          continue;
+        }
+        _modules[r][6] = (r % 2 == 0);
+      }
+
+      for (var c = 8; c < _moduleCount - 8; c += 1) {
+        if (_modules[6][c] != null) {
+          continue;
+        }
+        _modules[6][c] = (c % 2 == 0);
+      }
+    };
+
+    var setupPositionAdjustPattern = function() {
+
+      var pos = QRUtil.getPatternPosition(_typeNumber);
+
+      for (var i = 0; i < pos.length; i += 1) {
+
+        for (var j = 0; j < pos.length; j += 1) {
+
+          var row = pos[i];
+          var col = pos[j];
+
+          if (_modules[row][col] != null) {
+            continue;
+          }
+
+          for (var r = -2; r <= 2; r += 1) {
+
+            for (var c = -2; c <= 2; c += 1) {
+
+              if (r == -2 || r == 2 || c == -2 || c == 2
+                  || (r == 0 && c == 0) ) {
+                _modules[row + r][col + c] = true;
+              } else {
+                _modules[row + r][col + c] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    var setupTypeNumber = function(test) {
+
+      var bits = QRUtil.getBCHTypeNumber(_typeNumber);
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+      }
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+      }
+    };
+
+    var setupTypeInfo = function(test, maskPattern) {
+
+      var data = (_errorCorrectionLevel << 3) | maskPattern;
+      var bits = QRUtil.getBCHTypeInfo(data);
+
+      // vertical
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 6) {
+          _modules[i][8] = mod;
+        } else if (i < 8) {
+          _modules[i + 1][8] = mod;
+        } else {
+          _modules[_moduleCount - 15 + i][8] = mod;
+        }
+      }
+
+      // horizontal
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 8) {
+          _modules[8][_moduleCount - i - 1] = mod;
+        } else if (i < 9) {
+          _modules[8][15 - i - 1 + 1] = mod;
+        } else {
+          _modules[8][15 - i - 1] = mod;
+        }
+      }
+
+      // fixed module
+      _modules[_moduleCount - 8][8] = (!test);
+    };
+
+    var mapData = function(data, maskPattern) {
+
+      var inc = -1;
+      var row = _moduleCount - 1;
+      var bitIndex = 7;
+      var byteIndex = 0;
+      var maskFunc = QRUtil.getMaskFunction(maskPattern);
+
+      for (var col = _moduleCount - 1; col > 0; col -= 2) {
+
+        if (col == 6) col -= 1;
+
+        while (true) {
+
+          for (var c = 0; c < 2; c += 1) {
+
+            if (_modules[row][col - c] == null) {
+
+              var dark = false;
+
+              if (byteIndex < data.length) {
+                dark = ( ( (data[byteIndex] >>> bitIndex) & 1) == 1);
+              }
+
+              var mask = maskFunc(row, col - c);
+
+              if (mask) {
+                dark = !dark;
+              }
+
+              _modules[row][col - c] = dark;
+              bitIndex -= 1;
+
+              if (bitIndex == -1) {
+                byteIndex += 1;
+                bitIndex = 7;
+              }
+            }
+          }
+
+          row += inc;
+
+          if (row < 0 || _moduleCount <= row) {
+            row -= inc;
+            inc = -inc;
+            break;
+          }
+        }
+      }
+    };
+
+    var createBytes = function(buffer, rsBlocks) {
+
+      var offset = 0;
+
+      var maxDcCount = 0;
+      var maxEcCount = 0;
+
+      var dcdata = new Array(rsBlocks.length);
+      var ecdata = new Array(rsBlocks.length);
+
+      for (var r = 0; r < rsBlocks.length; r += 1) {
+
+        var dcCount = rsBlocks[r].dataCount;
+        var ecCount = rsBlocks[r].totalCount - dcCount;
+
+        maxDcCount = Math.max(maxDcCount, dcCount);
+        maxEcCount = Math.max(maxEcCount, ecCount);
+
+        dcdata[r] = new Array(dcCount);
+
+        for (var i = 0; i < dcdata[r].length; i += 1) {
+          dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
+        }
+        offset += dcCount;
+
+        var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+        var rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+        var modPoly = rawPoly.mod(rsPoly);
+        ecdata[r] = new Array(rsPoly.getLength() - 1);
+        for (var i = 0; i < ecdata[r].length; i += 1) {
+          var modIndex = i + modPoly.getLength() - ecdata[r].length;
+          ecdata[r][i] = (modIndex >= 0)? modPoly.getAt(modIndex) : 0;
+        }
+      }
+
+      var totalCodeCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalCodeCount += rsBlocks[i].totalCount;
+      }
+
+      var data = new Array(totalCodeCount);
+      var index = 0;
+
+      for (var i = 0; i < maxDcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < dcdata[r].length) {
+            data[index] = dcdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      for (var i = 0; i < maxEcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < ecdata[r].length) {
+            data[index] = ecdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      return data;
+    };
+
+    var createData = function(typeNumber, errorCorrectionLevel, dataList) {
+
+      var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+
+      var buffer = qrBitBuffer();
+
+      for (var i = 0; i < dataList.length; i += 1) {
+        var data = dataList[i];
+        buffer.put(data.getMode(), 4);
+        buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+        data.write(buffer);
+      }
+
+      // calc num max data.
+      var totalDataCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalDataCount += rsBlocks[i].dataCount;
+      }
+
+      if (buffer.getLengthInBits() > totalDataCount * 8) {
+        throw 'code length overflow. ('
+          + buffer.getLengthInBits()
+          + '>'
+          + totalDataCount * 8
+          + ')';
+      }
+
+      // end code
+      if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+        buffer.put(0, 4);
+      }
+
+      // padding
+      while (buffer.getLengthInBits() % 8 != 0) {
+        buffer.putBit(false);
+      }
+
+      // padding
+      while (true) {
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD0, 8);
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD1, 8);
+      }
+
+      return createBytes(buffer, rsBlocks);
+    };
+
+    _this.addData = function(data, mode) {
+
+      mode = mode || 'Byte';
+
+      var newData = null;
+
+      switch(mode) {
+      case 'Numeric' :
+        newData = qrNumber(data);
+        break;
+      case 'Alphanumeric' :
+        newData = qrAlphaNum(data);
+        break;
+      case 'Byte' :
+        newData = qr8BitByte(data);
+        break;
+      case 'Kanji' :
+        newData = qrKanji(data);
+        break;
+      default :
+        throw 'mode:' + mode;
+      }
+
+      _dataList.push(newData);
+      _dataCache = null;
+    };
+
+    _this.isDark = function(row, col) {
+      if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+        throw row + ',' + col;
+      }
+      return _modules[row][col];
+    };
+
+    _this.getModuleCount = function() {
+      return _moduleCount;
+    };
+
+    _this.make = function() {
+      if (_typeNumber < 1) {
+        var typeNumber = 1;
+
+        for (; typeNumber < 40; typeNumber++) {
+          var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+          var buffer = qrBitBuffer();
+
+          for (var i = 0; i < _dataList.length; i++) {
+            var data = _dataList[i];
+            buffer.put(data.getMode(), 4);
+            buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+            data.write(buffer);
+          }
+
+          var totalDataCount = 0;
+          for (var i = 0; i < rsBlocks.length; i++) {
+            totalDataCount += rsBlocks[i].dataCount;
+          }
+
+          if (buffer.getLengthInBits() <= totalDataCount * 8) {
+            break;
+          }
+        }
+
+        _typeNumber = typeNumber;
+      }
+
+      makeImpl(false, getBestMaskPattern() );
+    };
+
+    _this.createTableTag = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var qrHtml = '';
+
+      qrHtml += '<table style="';
+      qrHtml += ' border-width: 0px; border-style: none;';
+      qrHtml += ' border-collapse: collapse;';
+      qrHtml += ' padding: 0px; margin: ' + margin + 'px;';
+      qrHtml += '">';
+      qrHtml += '<tbody>';
+
+      for (var r = 0; r < _this.getModuleCount(); r += 1) {
+
+        qrHtml += '<tr>';
+
+        for (var c = 0; c < _this.getModuleCount(); c += 1) {
+          qrHtml += '<td style="';
+          qrHtml += ' border-width: 0px; border-style: none;';
+          qrHtml += ' border-collapse: collapse;';
+          qrHtml += ' padding: 0px; margin: 0px;';
+          qrHtml += ' width: ' + cellSize + 'px;';
+          qrHtml += ' height: ' + cellSize + 'px;';
+          qrHtml += ' background-color: ';
+          qrHtml += _this.isDark(r, c)? '#000000' : '#ffffff';
+          qrHtml += ';';
+          qrHtml += '"/>';
+        }
+
+        qrHtml += '</tr>';
+      }
+
+      qrHtml += '</tbody>';
+      qrHtml += '</table>';
+
+      return qrHtml;
+    };
+
+    _this.createSvgTag = function(cellSize, margin, alt, title) {
+
+      var opts = {};
+      if (typeof arguments[0] == 'object') {
+        // Called by options.
+        opts = arguments[0];
+        // overwrite cellSize and margin.
+        cellSize = opts.cellSize;
+        margin = opts.margin;
+        alt = opts.alt;
+        title = opts.title;
+      }
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      // Compose alt property surrogate
+      alt = (typeof alt === 'string') ? {text: alt} : alt || {};
+      alt.text = alt.text || null;
+      alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+
+      // Compose title property surrogate
+      title = (typeof title === 'string') ? {text: title} : title || {};
+      title.text = title.text || null;
+      title.id = (title.text) ? title.id || 'qrcode-title' : null;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var c, mc, r, mr, qrSvg='', rect;
+
+      rect = 'l' + cellSize + ',0 0,' + cellSize +
+        ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
+
+      qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+      qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
+      qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
+      qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+      qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
+          escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+      qrSvg += '>';
+      qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+          escapeXml(title.text) + '</title>' : '';
+      qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+          escapeXml(alt.text) + '</description>' : '';
+      qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+      qrSvg += '<path d="';
+
+      for (r = 0; r < _this.getModuleCount(); r += 1) {
+        mr = r * cellSize + margin;
+        for (c = 0; c < _this.getModuleCount(); c += 1) {
+          if (_this.isDark(r, c) ) {
+            mc = c*cellSize+margin;
+            qrSvg += 'M' + mc + ',' + mr + rect;
+          }
+        }
+      }
+
+      qrSvg += '" stroke="transparent" fill="black"/>';
+      qrSvg += '</svg>';
+
+      return qrSvg;
+    };
+
+    _this.createDataURL = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      return createDataURL(size, size, function(x, y) {
+        if (min <= x && x < max && min <= y && y < max) {
+          var c = Math.floor( (x - min) / cellSize);
+          var r = Math.floor( (y - min) / cellSize);
+          return _this.isDark(r, c)? 0 : 1;
+        } else {
+          return 1;
+        }
+      } );
+    };
+
+    _this.createImgTag = function(cellSize, margin, alt) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+
+      var img = '';
+      img += '<img';
+      img += '\u0020src="';
+      img += _this.createDataURL(cellSize, margin);
+      img += '"';
+      img += '\u0020width="';
+      img += size;
+      img += '"';
+      img += '\u0020height="';
+      img += size;
+      img += '"';
+      if (alt) {
+        img += '\u0020alt="';
+        img += escapeXml(alt);
+        img += '"';
+      }
+      img += '/>';
+
+      return img;
+    };
+
+    var escapeXml = function(s) {
+      var escaped = '';
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charAt(i);
+        switch(c) {
+        case '<': escaped += '&lt;'; break;
+        case '>': escaped += '&gt;'; break;
+        case '&': escaped += '&amp;'; break;
+        case '"': escaped += '&quot;'; break;
+        default : escaped += c; break;
+        }
+      }
+      return escaped;
+    };
+
+    var _createHalfASCII = function(margin) {
+      var cellSize = 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r1, r2, p;
+
+      var blocks = {
+        '██': '█',
+        '█ ': '▀',
+        ' █': '▄',
+        '  ': ' '
+      };
+
+      var blocksLastLineNoMargin = {
+        '██': '▀',
+        '█ ': '▀',
+        ' █': ' ',
+        '  ': ' '
+      };
+
+      var ascii = '';
+      for (y = 0; y < size; y += 2) {
+        r1 = Math.floor((y - min) / cellSize);
+        r2 = Math.floor((y + 1 - min) / cellSize);
+        for (x = 0; x < size; x += 1) {
+          p = '█';
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+            p = ' ';
+          }
+
+          if (min <= x && x < max && min <= y+1 && y+1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+            p += ' ';
+          }
+          else {
+            p += '█';
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          ascii += (margin < 1 && y+1 >= max) ? blocksLastLineNoMargin[p] : blocks[p];
+        }
+
+        ascii += '\n';
+      }
+
+      if (size % 2 && margin > 0) {
+        return ascii.substring(0, ascii.length - size - 1) + Array(size+1).join('▀');
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.createASCII = function(cellSize, margin) {
+      cellSize = cellSize || 1;
+
+      if (cellSize < 2) {
+        return _createHalfASCII(margin);
+      }
+
+      cellSize -= 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r, p;
+
+      var white = Array(cellSize+1).join('██');
+      var black = Array(cellSize+1).join('  ');
+
+      var ascii = '';
+      var line = '';
+      for (y = 0; y < size; y += 1) {
+        r = Math.floor( (y - min) / cellSize);
+        line = '';
+        for (x = 0; x < size; x += 1) {
+          p = 1;
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+            p = 0;
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          line += p ? white : black;
+        }
+
+        for (r = 0; r < cellSize; r += 1) {
+          ascii += line + '\n';
+        }
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.renderTo2dContext = function(context, cellSize) {
+      cellSize = cellSize || 2;
+      var length = _this.getModuleCount();
+      for (var row = 0; row < length; row++) {
+        for (var col = 0; col < length; col++) {
+          context.fillStyle = _this.isDark(row, col) ? 'black' : 'white';
+          context.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrcode.stringToBytes
+  //---------------------------------------------------------------------
+
+  qrcode.stringToBytesFuncs = {
+    'default' : function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        bytes.push(c & 0xff);
+      }
+      return bytes;
+    }
+  };
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['default'];
+
+  //---------------------------------------------------------------------
+  // qrcode.createStringToBytes
+  //---------------------------------------------------------------------
+
+  /**
+   * @param unicodeData base64 string of byte array.
+   * [16bit Unicode],[16bit Bytes], ...
+   * @param numChars
+   */
+  qrcode.createStringToBytes = function(unicodeData, numChars) {
+
+    // create conversion map.
+
+    var unicodeMap = function() {
+
+      var bin = base64DecodeInputStream(unicodeData);
+      var read = function() {
+        var b = bin.read();
+        if (b == -1) throw 'eof';
+        return b;
+      };
+
+      var count = 0;
+      var unicodeMap = {};
+      while (true) {
+        var b0 = bin.read();
+        if (b0 == -1) break;
+        var b1 = read();
+        var b2 = read();
+        var b3 = read();
+        var k = String.fromCharCode( (b0 << 8) | b1);
+        var v = (b2 << 8) | b3;
+        unicodeMap[k] = v;
+        count += 1;
+      }
+      if (count != numChars) {
+        throw count + ' != ' + numChars;
+      }
+
+      return unicodeMap;
+    }();
+
+    var unknownChar = '?'.charCodeAt(0);
+
+    return function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        if (c < 128) {
+          bytes.push(c);
+        } else {
+          var b = unicodeMap[s.charAt(i)];
+          if (typeof b == 'number') {
+            if ( (b & 0xff) == b) {
+              // 1byte
+              bytes.push(b);
+            } else {
+              // 2bytes
+              bytes.push(b >>> 8);
+              bytes.push(b & 0xff);
+            }
+          } else {
+            bytes.push(unknownChar);
+          }
+        }
+      }
+      return bytes;
+    };
+  };
+
+  //---------------------------------------------------------------------
+  // QRMode
+  //---------------------------------------------------------------------
+
+  var QRMode = {
+    MODE_NUMBER :    1 << 0,
+    MODE_ALPHA_NUM : 1 << 1,
+    MODE_8BIT_BYTE : 1 << 2,
+    MODE_KANJI :     1 << 3
+  };
+
+  //---------------------------------------------------------------------
+  // QRErrorCorrectionLevel
+  //---------------------------------------------------------------------
+
+  var QRErrorCorrectionLevel = {
+    L : 1,
+    M : 0,
+    Q : 3,
+    H : 2
+  };
+
+  //---------------------------------------------------------------------
+  // QRMaskPattern
+  //---------------------------------------------------------------------
+
+  var QRMaskPattern = {
+    PATTERN000 : 0,
+    PATTERN001 : 1,
+    PATTERN010 : 2,
+    PATTERN011 : 3,
+    PATTERN100 : 4,
+    PATTERN101 : 5,
+    PATTERN110 : 6,
+    PATTERN111 : 7
+  };
+
+  //---------------------------------------------------------------------
+  // QRUtil
+  //---------------------------------------------------------------------
+
+  var QRUtil = function() {
+
+    var PATTERN_POSITION_TABLE = [
+      [],
+      [6, 18],
+      [6, 22],
+      [6, 26],
+      [6, 30],
+      [6, 34],
+      [6, 22, 38],
+      [6, 24, 42],
+      [6, 26, 46],
+      [6, 28, 50],
+      [6, 30, 54],
+      [6, 32, 58],
+      [6, 34, 62],
+      [6, 26, 46, 66],
+      [6, 26, 48, 70],
+      [6, 26, 50, 74],
+      [6, 30, 54, 78],
+      [6, 30, 56, 82],
+      [6, 30, 58, 86],
+      [6, 34, 62, 90],
+      [6, 28, 50, 72, 94],
+      [6, 26, 50, 74, 98],
+      [6, 30, 54, 78, 102],
+      [6, 28, 54, 80, 106],
+      [6, 32, 58, 84, 110],
+      [6, 30, 58, 86, 114],
+      [6, 34, 62, 90, 118],
+      [6, 26, 50, 74, 98, 122],
+      [6, 30, 54, 78, 102, 126],
+      [6, 26, 52, 78, 104, 130],
+      [6, 30, 56, 82, 108, 134],
+      [6, 34, 60, 86, 112, 138],
+      [6, 30, 58, 86, 114, 142],
+      [6, 34, 62, 90, 118, 146],
+      [6, 30, 54, 78, 102, 126, 150],
+      [6, 24, 50, 76, 102, 128, 154],
+      [6, 28, 54, 80, 106, 132, 158],
+      [6, 32, 58, 84, 110, 136, 162],
+      [6, 26, 54, 82, 110, 138, 166],
+      [6, 30, 58, 86, 114, 142, 170]
+    ];
+    var G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+    var G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
+    var G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+
+    var _this = {};
+
+    var getBCHDigit = function(data) {
+      var digit = 0;
+      while (data != 0) {
+        digit += 1;
+        data >>>= 1;
+      }
+      return digit;
+    };
+
+    _this.getBCHTypeInfo = function(data) {
+      var d = data << 10;
+      while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+        d ^= (G15 << (getBCHDigit(d) - getBCHDigit(G15) ) );
+      }
+      return ( (data << 10) | d) ^ G15_MASK;
+    };
+
+    _this.getBCHTypeNumber = function(data) {
+      var d = data << 12;
+      while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+        d ^= (G18 << (getBCHDigit(d) - getBCHDigit(G18) ) );
+      }
+      return (data << 12) | d;
+    };
+
+    _this.getPatternPosition = function(typeNumber) {
+      return PATTERN_POSITION_TABLE[typeNumber - 1];
+    };
+
+    _this.getMaskFunction = function(maskPattern) {
+
+      switch (maskPattern) {
+
+      case QRMaskPattern.PATTERN000 :
+        return function(i, j) { return (i + j) % 2 == 0; };
+      case QRMaskPattern.PATTERN001 :
+        return function(i, j) { return i % 2 == 0; };
+      case QRMaskPattern.PATTERN010 :
+        return function(i, j) { return j % 3 == 0; };
+      case QRMaskPattern.PATTERN011 :
+        return function(i, j) { return (i + j) % 3 == 0; };
+      case QRMaskPattern.PATTERN100 :
+        return function(i, j) { return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 == 0; };
+      case QRMaskPattern.PATTERN101 :
+        return function(i, j) { return (i * j) % 2 + (i * j) % 3 == 0; };
+      case QRMaskPattern.PATTERN110 :
+        return function(i, j) { return ( (i * j) % 2 + (i * j) % 3) % 2 == 0; };
+      case QRMaskPattern.PATTERN111 :
+        return function(i, j) { return ( (i * j) % 3 + (i + j) % 2) % 2 == 0; };
+
+      default :
+        throw 'bad maskPattern:' + maskPattern;
+      }
+    };
+
+    _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+      var a = qrPolynomial([1], 0);
+      for (var i = 0; i < errorCorrectLength; i += 1) {
+        a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0) );
+      }
+      return a;
+    };
+
+    _this.getLengthInBits = function(mode, type) {
+
+      if (1 <= type && type < 10) {
+
+        // 1 - 9
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 10;
+        case QRMode.MODE_ALPHA_NUM : return 9;
+        case QRMode.MODE_8BIT_BYTE : return 8;
+        case QRMode.MODE_KANJI     : return 8;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 27) {
+
+        // 10 - 26
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 12;
+        case QRMode.MODE_ALPHA_NUM : return 11;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 10;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 41) {
+
+        // 27 - 40
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 14;
+        case QRMode.MODE_ALPHA_NUM : return 13;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 12;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else {
+        throw 'type:' + type;
+      }
+    };
+
+    _this.getLostPoint = function(qrcode) {
+
+      var moduleCount = qrcode.getModuleCount();
+
+      var lostPoint = 0;
+
+      // LEVEL1
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount; col += 1) {
+
+          var sameCount = 0;
+          var dark = qrcode.isDark(row, col);
+
+          for (var r = -1; r <= 1; r += 1) {
+
+            if (row + r < 0 || moduleCount <= row + r) {
+              continue;
+            }
+
+            for (var c = -1; c <= 1; c += 1) {
+
+              if (col + c < 0 || moduleCount <= col + c) {
+                continue;
+              }
+
+              if (r == 0 && c == 0) {
+                continue;
+              }
+
+              if (dark == qrcode.isDark(row + r, col + c) ) {
+                sameCount += 1;
+              }
+            }
+          }
+
+          if (sameCount > 5) {
+            lostPoint += (3 + sameCount - 5);
+          }
+        }
+      };
+
+      // LEVEL2
+
+      for (var row = 0; row < moduleCount - 1; row += 1) {
+        for (var col = 0; col < moduleCount - 1; col += 1) {
+          var count = 0;
+          if (qrcode.isDark(row, col) ) count += 1;
+          if (qrcode.isDark(row + 1, col) ) count += 1;
+          if (qrcode.isDark(row, col + 1) ) count += 1;
+          if (qrcode.isDark(row + 1, col + 1) ) count += 1;
+          if (count == 0 || count == 4) {
+            lostPoint += 3;
+          }
+        }
+      }
+
+      // LEVEL3
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount - 6; col += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row, col + 1)
+              &&  qrcode.isDark(row, col + 2)
+              &&  qrcode.isDark(row, col + 3)
+              &&  qrcode.isDark(row, col + 4)
+              && !qrcode.isDark(row, col + 5)
+              &&  qrcode.isDark(row, col + 6) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount - 6; row += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row + 1, col)
+              &&  qrcode.isDark(row + 2, col)
+              &&  qrcode.isDark(row + 3, col)
+              &&  qrcode.isDark(row + 4, col)
+              && !qrcode.isDark(row + 5, col)
+              &&  qrcode.isDark(row + 6, col) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      // LEVEL4
+
+      var darkCount = 0;
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount; row += 1) {
+          if (qrcode.isDark(row, col) ) {
+            darkCount += 1;
+          }
+        }
+      }
+
+      var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+      lostPoint += ratio * 10;
+
+      return lostPoint;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // QRMath
+  //---------------------------------------------------------------------
+
+  var QRMath = function() {
+
+    var EXP_TABLE = new Array(256);
+    var LOG_TABLE = new Array(256);
+
+    // initialize tables
+    for (var i = 0; i < 8; i += 1) {
+      EXP_TABLE[i] = 1 << i;
+    }
+    for (var i = 8; i < 256; i += 1) {
+      EXP_TABLE[i] = EXP_TABLE[i - 4]
+        ^ EXP_TABLE[i - 5]
+        ^ EXP_TABLE[i - 6]
+        ^ EXP_TABLE[i - 8];
+    }
+    for (var i = 0; i < 255; i += 1) {
+      LOG_TABLE[EXP_TABLE[i] ] = i;
+    }
+
+    var _this = {};
+
+    _this.glog = function(n) {
+
+      if (n < 1) {
+        throw 'glog(' + n + ')';
+      }
+
+      return LOG_TABLE[n];
+    };
+
+    _this.gexp = function(n) {
+
+      while (n < 0) {
+        n += 255;
+      }
+
+      while (n >= 256) {
+        n -= 255;
+      }
+
+      return EXP_TABLE[n];
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrPolynomial
+  //---------------------------------------------------------------------
+
+  function qrPolynomial(num, shift) {
+
+    if (typeof num.length == 'undefined') {
+      throw num.length + '/' + shift;
+    }
+
+    var _num = function() {
+      var offset = 0;
+      while (offset < num.length && num[offset] == 0) {
+        offset += 1;
+      }
+      var _num = new Array(num.length - offset + shift);
+      for (var i = 0; i < num.length - offset; i += 1) {
+        _num[i] = num[i + offset];
+      }
+      return _num;
+    }();
+
+    var _this = {};
+
+    _this.getAt = function(index) {
+      return _num[index];
+    };
+
+    _this.getLength = function() {
+      return _num.length;
+    };
+
+    _this.multiply = function(e) {
+
+      var num = new Array(_this.getLength() + e.getLength() - 1);
+
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        for (var j = 0; j < e.getLength(); j += 1) {
+          num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i) ) + QRMath.glog(e.getAt(j) ) );
+        }
+      }
+
+      return qrPolynomial(num, 0);
+    };
+
+    _this.mod = function(e) {
+
+      if (_this.getLength() - e.getLength() < 0) {
+        return _this;
+      }
+
+      var ratio = QRMath.glog(_this.getAt(0) ) - QRMath.glog(e.getAt(0) );
+
+      var num = new Array(_this.getLength() );
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        num[i] = _this.getAt(i);
+      }
+
+      for (var i = 0; i < e.getLength(); i += 1) {
+        num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i) ) + ratio);
+      }
+
+      // recursive call
+      return qrPolynomial(num, 0).mod(e);
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // QRRSBlock
+  //---------------------------------------------------------------------
+
+  var QRRSBlock = function() {
+
+    var RS_BLOCK_TABLE = [
+
+      // L
+      // M
+      // Q
+      // H
+
+      // 1
+      [1, 26, 19],
+      [1, 26, 16],
+      [1, 26, 13],
+      [1, 26, 9],
+
+      // 2
+      [1, 44, 34],
+      [1, 44, 28],
+      [1, 44, 22],
+      [1, 44, 16],
+
+      // 3
+      [1, 70, 55],
+      [1, 70, 44],
+      [2, 35, 17],
+      [2, 35, 13],
+
+      // 4
+      [1, 100, 80],
+      [2, 50, 32],
+      [2, 50, 24],
+      [4, 25, 9],
+
+      // 5
+      [1, 134, 108],
+      [2, 67, 43],
+      [2, 33, 15, 2, 34, 16],
+      [2, 33, 11, 2, 34, 12],
+
+      // 6
+      [2, 86, 68],
+      [4, 43, 27],
+      [4, 43, 19],
+      [4, 43, 15],
+
+      // 7
+      [2, 98, 78],
+      [4, 49, 31],
+      [2, 32, 14, 4, 33, 15],
+      [4, 39, 13, 1, 40, 14],
+
+      // 8
+      [2, 121, 97],
+      [2, 60, 38, 2, 61, 39],
+      [4, 40, 18, 2, 41, 19],
+      [4, 40, 14, 2, 41, 15],
+
+      // 9
+      [2, 146, 116],
+      [3, 58, 36, 2, 59, 37],
+      [4, 36, 16, 4, 37, 17],
+      [4, 36, 12, 4, 37, 13],
+
+      // 10
+      [2, 86, 68, 2, 87, 69],
+      [4, 69, 43, 1, 70, 44],
+      [6, 43, 19, 2, 44, 20],
+      [6, 43, 15, 2, 44, 16],
+
+      // 11
+      [4, 101, 81],
+      [1, 80, 50, 4, 81, 51],
+      [4, 50, 22, 4, 51, 23],
+      [3, 36, 12, 8, 37, 13],
+
+      // 12
+      [2, 116, 92, 2, 117, 93],
+      [6, 58, 36, 2, 59, 37],
+      [4, 46, 20, 6, 47, 21],
+      [7, 42, 14, 4, 43, 15],
+
+      // 13
+      [4, 133, 107],
+      [8, 59, 37, 1, 60, 38],
+      [8, 44, 20, 4, 45, 21],
+      [12, 33, 11, 4, 34, 12],
+
+      // 14
+      [3, 145, 115, 1, 146, 116],
+      [4, 64, 40, 5, 65, 41],
+      [11, 36, 16, 5, 37, 17],
+      [11, 36, 12, 5, 37, 13],
+
+      // 15
+      [5, 109, 87, 1, 110, 88],
+      [5, 65, 41, 5, 66, 42],
+      [5, 54, 24, 7, 55, 25],
+      [11, 36, 12, 7, 37, 13],
+
+      // 16
+      [5, 122, 98, 1, 123, 99],
+      [7, 73, 45, 3, 74, 46],
+      [15, 43, 19, 2, 44, 20],
+      [3, 45, 15, 13, 46, 16],
+
+      // 17
+      [1, 135, 107, 5, 136, 108],
+      [10, 74, 46, 1, 75, 47],
+      [1, 50, 22, 15, 51, 23],
+      [2, 42, 14, 17, 43, 15],
+
+      // 18
+      [5, 150, 120, 1, 151, 121],
+      [9, 69, 43, 4, 70, 44],
+      [17, 50, 22, 1, 51, 23],
+      [2, 42, 14, 19, 43, 15],
+
+      // 19
+      [3, 141, 113, 4, 142, 114],
+      [3, 70, 44, 11, 71, 45],
+      [17, 47, 21, 4, 48, 22],
+      [9, 39, 13, 16, 40, 14],
+
+      // 20
+      [3, 135, 107, 5, 136, 108],
+      [3, 67, 41, 13, 68, 42],
+      [15, 54, 24, 5, 55, 25],
+      [15, 43, 15, 10, 44, 16],
+
+      // 21
+      [4, 144, 116, 4, 145, 117],
+      [17, 68, 42],
+      [17, 50, 22, 6, 51, 23],
+      [19, 46, 16, 6, 47, 17],
+
+      // 22
+      [2, 139, 111, 7, 140, 112],
+      [17, 74, 46],
+      [7, 54, 24, 16, 55, 25],
+      [34, 37, 13],
+
+      // 23
+      [4, 151, 121, 5, 152, 122],
+      [4, 75, 47, 14, 76, 48],
+      [11, 54, 24, 14, 55, 25],
+      [16, 45, 15, 14, 46, 16],
+
+      // 24
+      [6, 147, 117, 4, 148, 118],
+      [6, 73, 45, 14, 74, 46],
+      [11, 54, 24, 16, 55, 25],
+      [30, 46, 16, 2, 47, 17],
+
+      // 25
+      [8, 132, 106, 4, 133, 107],
+      [8, 75, 47, 13, 76, 48],
+      [7, 54, 24, 22, 55, 25],
+      [22, 45, 15, 13, 46, 16],
+
+      // 26
+      [10, 142, 114, 2, 143, 115],
+      [19, 74, 46, 4, 75, 47],
+      [28, 50, 22, 6, 51, 23],
+      [33, 46, 16, 4, 47, 17],
+
+      // 27
+      [8, 152, 122, 4, 153, 123],
+      [22, 73, 45, 3, 74, 46],
+      [8, 53, 23, 26, 54, 24],
+      [12, 45, 15, 28, 46, 16],
+
+      // 28
+      [3, 147, 117, 10, 148, 118],
+      [3, 73, 45, 23, 74, 46],
+      [4, 54, 24, 31, 55, 25],
+      [11, 45, 15, 31, 46, 16],
+
+      // 29
+      [7, 146, 116, 7, 147, 117],
+      [21, 73, 45, 7, 74, 46],
+      [1, 53, 23, 37, 54, 24],
+      [19, 45, 15, 26, 46, 16],
+
+      // 30
+      [5, 145, 115, 10, 146, 116],
+      [19, 75, 47, 10, 76, 48],
+      [15, 54, 24, 25, 55, 25],
+      [23, 45, 15, 25, 46, 16],
+
+      // 31
+      [13, 145, 115, 3, 146, 116],
+      [2, 74, 46, 29, 75, 47],
+      [42, 54, 24, 1, 55, 25],
+      [23, 45, 15, 28, 46, 16],
+
+      // 32
+      [17, 145, 115],
+      [10, 74, 46, 23, 75, 47],
+      [10, 54, 24, 35, 55, 25],
+      [19, 45, 15, 35, 46, 16],
+
+      // 33
+      [17, 145, 115, 1, 146, 116],
+      [14, 74, 46, 21, 75, 47],
+      [29, 54, 24, 19, 55, 25],
+      [11, 45, 15, 46, 46, 16],
+
+      // 34
+      [13, 145, 115, 6, 146, 116],
+      [14, 74, 46, 23, 75, 47],
+      [44, 54, 24, 7, 55, 25],
+      [59, 46, 16, 1, 47, 17],
+
+      // 35
+      [12, 151, 121, 7, 152, 122],
+      [12, 75, 47, 26, 76, 48],
+      [39, 54, 24, 14, 55, 25],
+      [22, 45, 15, 41, 46, 16],
+
+      // 36
+      [6, 151, 121, 14, 152, 122],
+      [6, 75, 47, 34, 76, 48],
+      [46, 54, 24, 10, 55, 25],
+      [2, 45, 15, 64, 46, 16],
+
+      // 37
+      [17, 152, 122, 4, 153, 123],
+      [29, 74, 46, 14, 75, 47],
+      [49, 54, 24, 10, 55, 25],
+      [24, 45, 15, 46, 46, 16],
+
+      // 38
+      [4, 152, 122, 18, 153, 123],
+      [13, 74, 46, 32, 75, 47],
+      [48, 54, 24, 14, 55, 25],
+      [42, 45, 15, 32, 46, 16],
+
+      // 39
+      [20, 147, 117, 4, 148, 118],
+      [40, 75, 47, 7, 76, 48],
+      [43, 54, 24, 22, 55, 25],
+      [10, 45, 15, 67, 46, 16],
+
+      // 40
+      [19, 148, 118, 6, 149, 119],
+      [18, 75, 47, 31, 76, 48],
+      [34, 54, 24, 34, 55, 25],
+      [20, 45, 15, 61, 46, 16]
+    ];
+
+    var qrRSBlock = function(totalCount, dataCount) {
+      var _this = {};
+      _this.totalCount = totalCount;
+      _this.dataCount = dataCount;
+      return _this;
+    };
+
+    var _this = {};
+
+    var getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+
+      switch(errorCorrectionLevel) {
+      case QRErrorCorrectionLevel.L :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+      case QRErrorCorrectionLevel.M :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+      case QRErrorCorrectionLevel.Q :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+      case QRErrorCorrectionLevel.H :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+      default :
+        return undefined;
+      }
+    };
+
+    _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+
+      var rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+
+      if (typeof rsBlock == 'undefined') {
+        throw 'bad rs block @ typeNumber:' + typeNumber +
+            '/errorCorrectionLevel:' + errorCorrectionLevel;
+      }
+
+      var length = rsBlock.length / 3;
+
+      var list = [];
+
+      for (var i = 0; i < length; i += 1) {
+
+        var count = rsBlock[i * 3 + 0];
+        var totalCount = rsBlock[i * 3 + 1];
+        var dataCount = rsBlock[i * 3 + 2];
+
+        for (var j = 0; j < count; j += 1) {
+          list.push(qrRSBlock(totalCount, dataCount) );
+        }
+      }
+
+      return list;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrBitBuffer
+  //---------------------------------------------------------------------
+
+  var qrBitBuffer = function() {
+
+    var _buffer = [];
+    var _length = 0;
+
+    var _this = {};
+
+    _this.getBuffer = function() {
+      return _buffer;
+    };
+
+    _this.getAt = function(index) {
+      var bufIndex = Math.floor(index / 8);
+      return ( (_buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+    };
+
+    _this.put = function(num, length) {
+      for (var i = 0; i < length; i += 1) {
+        _this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+      }
+    };
+
+    _this.getLengthInBits = function() {
+      return _length;
+    };
+
+    _this.putBit = function(bit) {
+
+      var bufIndex = Math.floor(_length / 8);
+      if (_buffer.length <= bufIndex) {
+        _buffer.push(0);
+      }
+
+      if (bit) {
+        _buffer[bufIndex] |= (0x80 >>> (_length % 8) );
+      }
+
+      _length += 1;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrNumber
+  //---------------------------------------------------------------------
+
+  var qrNumber = function(data) {
+
+    var _mode = QRMode.MODE_NUMBER;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _data;
+
+      var i = 0;
+
+      while (i + 2 < data.length) {
+        buffer.put(strToNum(data.substring(i, i + 3) ), 10);
+        i += 3;
+      }
+
+      if (i < data.length) {
+        if (data.length - i == 1) {
+          buffer.put(strToNum(data.substring(i, i + 1) ), 4);
+        } else if (data.length - i == 2) {
+          buffer.put(strToNum(data.substring(i, i + 2) ), 7);
+        }
+      }
+    };
+
+    var strToNum = function(s) {
+      var num = 0;
+      for (var i = 0; i < s.length; i += 1) {
+        num = num * 10 + chatToNum(s.charAt(i) );
+      }
+      return num;
+    };
+
+    var chatToNum = function(c) {
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      }
+      throw 'illegal char :' + c;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrAlphaNum
+  //---------------------------------------------------------------------
+
+  var qrAlphaNum = function(data) {
+
+    var _mode = QRMode.MODE_ALPHA_NUM;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var s = _data;
+
+      var i = 0;
+
+      while (i + 1 < s.length) {
+        buffer.put(
+          getCode(s.charAt(i) ) * 45 +
+          getCode(s.charAt(i + 1) ), 11);
+        i += 2;
+      }
+
+      if (i < s.length) {
+        buffer.put(getCode(s.charAt(i) ), 6);
+      }
+    };
+
+    var getCode = function(c) {
+
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      } else if ('A' <= c && c <= 'Z') {
+        return c.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+      } else {
+        switch (c) {
+        case ' ' : return 36;
+        case '$' : return 37;
+        case '%' : return 38;
+        case '*' : return 39;
+        case '+' : return 40;
+        case '-' : return 41;
+        case '.' : return 42;
+        case '/' : return 43;
+        case ':' : return 44;
+        default :
+          throw 'illegal char :' + c;
+        }
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qr8BitByte
+  //---------------------------------------------------------------------
+
+  var qr8BitByte = function(data) {
+
+    var _mode = QRMode.MODE_8BIT_BYTE;
+    var _data = data;
+    var _bytes = qrcode.stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _bytes.length;
+    };
+
+    _this.write = function(buffer) {
+      for (var i = 0; i < _bytes.length; i += 1) {
+        buffer.put(_bytes[i], 8);
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrKanji
+  //---------------------------------------------------------------------
+
+  var qrKanji = function(data) {
+
+    var _mode = QRMode.MODE_KANJI;
+    var _data = data;
+
+    var stringToBytes = qrcode.stringToBytesFuncs['SJIS'];
+    if (!stringToBytes) {
+      throw 'sjis not supported.';
+    }
+    !function(c, code) {
+      // self test for sjis support.
+      var test = stringToBytes(c);
+      if (test.length != 2 || ( (test[0] << 8) | test[1]) != code) {
+        throw 'sjis not supported.';
+      }
+    }('\u53cb', 0x9746);
+
+    var _bytes = stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return ~~(_bytes.length / 2);
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _bytes;
+
+      var i = 0;
+
+      while (i + 1 < data.length) {
+
+        var c = ( (0xff & data[i]) << 8) | (0xff & data[i + 1]);
+
+        if (0x8140 <= c && c <= 0x9FFC) {
+          c -= 0x8140;
+        } else if (0xE040 <= c && c <= 0xEBBF) {
+          c -= 0xC140;
+        } else {
+          throw 'illegal char at ' + (i + 1) + '/' + c;
+        }
+
+        c = ( (c >>> 8) & 0xff) * 0xC0 + (c & 0xff);
+
+        buffer.put(c, 13);
+
+        i += 2;
+      }
+
+      if (i < data.length) {
+        throw 'illegal char at ' + (i + 1);
+      }
+    };
+
+    return _this;
+  };
+
+  //=====================================================================
+  // GIF Support etc.
+  //
+
+  //---------------------------------------------------------------------
+  // byteArrayOutputStream
+  //---------------------------------------------------------------------
+
+  var byteArrayOutputStream = function() {
+
+    var _bytes = [];
+
+    var _this = {};
+
+    _this.writeByte = function(b) {
+      _bytes.push(b & 0xff);
+    };
+
+    _this.writeShort = function(i) {
+      _this.writeByte(i);
+      _this.writeByte(i >>> 8);
+    };
+
+    _this.writeBytes = function(b, off, len) {
+      off = off || 0;
+      len = len || b.length;
+      for (var i = 0; i < len; i += 1) {
+        _this.writeByte(b[i + off]);
+      }
+    };
+
+    _this.writeString = function(s) {
+      for (var i = 0; i < s.length; i += 1) {
+        _this.writeByte(s.charCodeAt(i) );
+      }
+    };
+
+    _this.toByteArray = function() {
+      return _bytes;
+    };
+
+    _this.toString = function() {
+      var s = '';
+      s += '[';
+      for (var i = 0; i < _bytes.length; i += 1) {
+        if (i > 0) {
+          s += ',';
+        }
+        s += _bytes[i];
+      }
+      s += ']';
+      return s;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64EncodeOutputStream
+  //---------------------------------------------------------------------
+
+  var base64EncodeOutputStream = function() {
+
+    var _buffer = 0;
+    var _buflen = 0;
+    var _length = 0;
+    var _base64 = '';
+
+    var _this = {};
+
+    var writeEncoded = function(b) {
+      _base64 += String.fromCharCode(encode(b & 0x3f) );
+    };
+
+    var encode = function(n) {
+      if (n < 0) {
+        // error.
+      } else if (n < 26) {
+        return 0x41 + n;
+      } else if (n < 52) {
+        return 0x61 + (n - 26);
+      } else if (n < 62) {
+        return 0x30 + (n - 52);
+      } else if (n == 62) {
+        return 0x2b;
+      } else if (n == 63) {
+        return 0x2f;
+      }
+      throw 'n:' + n;
+    };
+
+    _this.writeByte = function(n) {
+
+      _buffer = (_buffer << 8) | (n & 0xff);
+      _buflen += 8;
+      _length += 1;
+
+      while (_buflen >= 6) {
+        writeEncoded(_buffer >>> (_buflen - 6) );
+        _buflen -= 6;
+      }
+    };
+
+    _this.flush = function() {
+
+      if (_buflen > 0) {
+        writeEncoded(_buffer << (6 - _buflen) );
+        _buffer = 0;
+        _buflen = 0;
+      }
+
+      if (_length % 3 != 0) {
+        // padding
+        var padlen = 3 - _length % 3;
+        for (var i = 0; i < padlen; i += 1) {
+          _base64 += '=';
+        }
+      }
+    };
+
+    _this.toString = function() {
+      return _base64;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64DecodeInputStream
+  //---------------------------------------------------------------------
+
+  var base64DecodeInputStream = function(str) {
+
+    var _str = str;
+    var _pos = 0;
+    var _buffer = 0;
+    var _buflen = 0;
+
+    var _this = {};
+
+    _this.read = function() {
+
+      while (_buflen < 8) {
+
+        if (_pos >= _str.length) {
+          if (_buflen == 0) {
+            return -1;
+          }
+          throw 'unexpected end of file./' + _buflen;
+        }
+
+        var c = _str.charAt(_pos);
+        _pos += 1;
+
+        if (c == '=') {
+          _buflen = 0;
+          return -1;
+        } else if (c.match(/^\s$/) ) {
+          // ignore if whitespace.
+          continue;
+        }
+
+        _buffer = (_buffer << 6) | decode(c.charCodeAt(0) );
+        _buflen += 6;
+      }
+
+      var n = (_buffer >>> (_buflen - 8) ) & 0xff;
+      _buflen -= 8;
+      return n;
+    };
+
+    var decode = function(c) {
+      if (0x41 <= c && c <= 0x5a) {
+        return c - 0x41;
+      } else if (0x61 <= c && c <= 0x7a) {
+        return c - 0x61 + 26;
+      } else if (0x30 <= c && c <= 0x39) {
+        return c - 0x30 + 52;
+      } else if (c == 0x2b) {
+        return 62;
+      } else if (c == 0x2f) {
+        return 63;
+      } else {
+        throw 'c:' + c;
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // gifImage (B/W)
+  //---------------------------------------------------------------------
+
+  var gifImage = function(width, height) {
+
+    var _width = width;
+    var _height = height;
+    var _data = new Array(width * height);
+
+    var _this = {};
+
+    _this.setPixel = function(x, y, pixel) {
+      _data[y * _width + x] = pixel;
+    };
+
+    _this.write = function(out) {
+
+      //---------------------------------
+      // GIF Signature
+
+      out.writeString('GIF87a');
+
+      //---------------------------------
+      // Screen Descriptor
+
+      out.writeShort(_width);
+      out.writeShort(_height);
+
+      out.writeByte(0x80); // 2bit
+      out.writeByte(0);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Global Color Map
+
+      // black
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+
+      // white
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+
+      //---------------------------------
+      // Image Descriptor
+
+      out.writeString(',');
+      out.writeShort(0);
+      out.writeShort(0);
+      out.writeShort(_width);
+      out.writeShort(_height);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Local Color Map
+
+      //---------------------------------
+      // Raster Data
+
+      var lzwMinCodeSize = 2;
+      var raster = getLZWRaster(lzwMinCodeSize);
+
+      out.writeByte(lzwMinCodeSize);
+
+      var offset = 0;
+
+      while (raster.length - offset > 255) {
+        out.writeByte(255);
+        out.writeBytes(raster, offset, 255);
+        offset += 255;
+      }
+
+      out.writeByte(raster.length - offset);
+      out.writeBytes(raster, offset, raster.length - offset);
+      out.writeByte(0x00);
+
+      //---------------------------------
+      // GIF Terminator
+      out.writeString(';');
+    };
+
+    var bitOutputStream = function(out) {
+
+      var _out = out;
+      var _bitLength = 0;
+      var _bitBuffer = 0;
+
+      var _this = {};
+
+      _this.write = function(data, length) {
+
+        if ( (data >>> length) != 0) {
+          throw 'length over';
+        }
+
+        while (_bitLength + length >= 8) {
+          _out.writeByte(0xff & ( (data << _bitLength) | _bitBuffer) );
+          length -= (8 - _bitLength);
+          data >>>= (8 - _bitLength);
+          _bitBuffer = 0;
+          _bitLength = 0;
+        }
+
+        _bitBuffer = (data << _bitLength) | _bitBuffer;
+        _bitLength = _bitLength + length;
+      };
+
+      _this.flush = function() {
+        if (_bitLength > 0) {
+          _out.writeByte(_bitBuffer);
+        }
+      };
+
+      return _this;
+    };
+
+    var getLZWRaster = function(lzwMinCodeSize) {
+
+      var clearCode = 1 << lzwMinCodeSize;
+      var endCode = (1 << lzwMinCodeSize) + 1;
+      var bitLength = lzwMinCodeSize + 1;
+
+      // Setup LZWTable
+      var table = lzwTable();
+
+      for (var i = 0; i < clearCode; i += 1) {
+        table.add(String.fromCharCode(i) );
+      }
+      table.add(String.fromCharCode(clearCode) );
+      table.add(String.fromCharCode(endCode) );
+
+      var byteOut = byteArrayOutputStream();
+      var bitOut = bitOutputStream(byteOut);
+
+      // clear code
+      bitOut.write(clearCode, bitLength);
+
+      var dataIndex = 0;
+
+      var s = String.fromCharCode(_data[dataIndex]);
+      dataIndex += 1;
+
+      while (dataIndex < _data.length) {
+
+        var c = String.fromCharCode(_data[dataIndex]);
+        dataIndex += 1;
+
+        if (table.contains(s + c) ) {
+
+          s = s + c;
+
+        } else {
+
+          bitOut.write(table.indexOf(s), bitLength);
+
+          if (table.size() < 0xfff) {
+
+            if (table.size() == (1 << bitLength) ) {
+              bitLength += 1;
+            }
+
+            table.add(s + c);
+          }
+
+          s = c;
+        }
+      }
+
+      bitOut.write(table.indexOf(s), bitLength);
+
+      // end code
+      bitOut.write(endCode, bitLength);
+
+      bitOut.flush();
+
+      return byteOut.toByteArray();
+    };
+
+    var lzwTable = function() {
+
+      var _map = {};
+      var _size = 0;
+
+      var _this = {};
+
+      _this.add = function(key) {
+        if (_this.contains(key) ) {
+          throw 'dup key:' + key;
+        }
+        _map[key] = _size;
+        _size += 1;
+      };
+
+      _this.size = function() {
+        return _size;
+      };
+
+      _this.indexOf = function(key) {
+        return _map[key];
+      };
+
+      _this.contains = function(key) {
+        return typeof _map[key] != 'undefined';
+      };
+
+      return _this;
+    };
+
+    return _this;
+  };
+
+  var createDataURL = function(width, height, getPixel) {
+    var gif = gifImage(width, height);
+    for (var y = 0; y < height; y += 1) {
+      for (var x = 0; x < width; x += 1) {
+        gif.setPixel(x, y, getPixel(x, y) );
+      }
+    }
+
+    var b = byteArrayOutputStream();
+    gif.write(b);
+
+    var base64 = base64EncodeOutputStream();
+    var bytes = b.toByteArray();
+    for (var i = 0; i < bytes.length; i += 1) {
+      base64.writeByte(bytes[i]);
+    }
+    base64.flush();
+
+    return 'data:image/gif;base64,' + base64;
+  };
+
+  //---------------------------------------------------------------------
+  // returns qrcode function.
+
+  return qrcode;
+}();
+
+// multibyte support
+!function() {
+
+  qrcode.stringToBytesFuncs['UTF-8'] = function(s) {
+    // http://stackoverflow.com/questions/18729405/how-to-convert-utf8-string-to-byte-array
+    function toUTF8Array(str) {
+      var utf8 = [];
+      for (var i=0; i < str.length; i++) {
+        var charcode = str.charCodeAt(i);
+        if (charcode < 0x80) utf8.push(charcode);
+        else if (charcode < 0x800) {
+          utf8.push(0xc0 | (charcode >> 6),
+              0x80 | (charcode & 0x3f));
+        }
+        else if (charcode < 0xd800 || charcode >= 0xe000) {
+          utf8.push(0xe0 | (charcode >> 12),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+        // surrogate pair
+        else {
+          i++;
+          // UTF-16 encodes 0x10000-0x10FFFF by
+          // subtracting 0x10000 and splitting the
+          // 20 bits of 0x0-0xFFFFF into two halves
+          charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+            | (str.charCodeAt(i) & 0x3ff));
+          utf8.push(0xf0 | (charcode >>18),
+              0x80 | ((charcode>>12) & 0x3f),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+      }
+      return utf8;
+    }
+    return toUTF8Array(s);
+  };
+
+}();
+
+(function (factory) {
+  if (typeof define === 'function' && define.amd) {
+      define([], factory);
+  } else if (typeof exports === 'object') {
+      module.exports = factory();
+  }
+}(function () {
+    return qrcode;
+}));
+
+</script>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== 定数 ===================== */
+var DIRS = [
+  {name:"北", en:"N", deg:0}, {name:"北東", en:"NE", deg:45},
+  {name:"東", en:"E", deg:90}, {name:"南東", en:"SE", deg:135},
+  {name:"南", en:"S", deg:180}, {name:"南西", en:"SW", deg:225},
+  {name:"西", en:"W", deg:270}, {name:"北西", en:"NW", deg:315}
+];
+var ATB_LIST = ["PCG","CEZ","VCM","CAZ","MEPM","COL","LZD","AZM"];
+var ATB_PRICES = { PCG:10, CEZ:15, CAZ:25, VCM:30, MEPM:40, LZD:55, COL:60, AZM:20 };
+
+var SPECIES = [
+  { id:"hai-enkyu-king", name:"ハイエンキューキン王", latin:"Streptococcus pneumoniae",
+    img:"https://somekata.github.io/baikinscharacters/img/chara1.png",
+    hp:3, points:90, weight:45, minStage:1, gram:"グラム陽性・双球菌", isPneumo:true,
+    susceptibility:{ PCG:"S", CEZ:"S", VCM:"S", CAZ:"R", MEPM:"S", COL:"R", LZD:"S", AZM:"R" } },
+  { id:"mssa", name:"ブドウキンくん (MSSA)", latin:"Staphylococcus aureus",
+    img:"https://somekata.github.io/baikinscharacters/img/chara15.png",
+    hp:3, points:80, weight:38, minStage:1, gram:"グラム陽性・ブドウ状球菌", isPneumo:false,
+    susceptibility:{ PCG:"R", CEZ:"S", VCM:"S", CAZ:"R", MEPM:"S", COL:"R", LZD:"S", AZM:"R" } },
+  { id:"mrsa", name:"耐性ブドウキン王 (MRSA)", latin:"Staphylococcus aureus",
+    img:"https://somekata.github.io/baikinscharacters/img/chara15.png",
+    hp:4, points:150, weight:17, minStage:2, gram:"グラム陽性・ブドウ状球菌", isPneumo:false, isBoss:true,
+    susceptibility:{ PCG:"R", CEZ:"R", VCM:"S", CAZ:"R", MEPM:"R", COL:"R", LZD:"S", AZM:"R" } },
+
+  { id:"influ-queen", name:"インフルエンザキンXV世女王", latin:"Haemophilus influenzae",
+    img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
+    hp:4, points:110, weight:24, minStage:2, gram:"グラム陰性・小桿菌", isPneumo:false,
+    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"S", MEPM:"S", COL:"R", LZD:"R", AZM:"S" } },
+
+  { id:"daichou-wt", name:"ダイチョーキン", latin:"Escherichia coli",
+    img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
+    hp:4, points:100, weight:26, minStage:2, gram:"グラム陰性・桿菌", isPneumo:false,
+    susceptibility:{ PCG:"R", CEZ:"S", VCM:"R", CAZ:"S", MEPM:"S", COL:"S", LZD:"R", AZM:"R" } },
+
+  { id:"mycoplasma-hime", name:"マイコプラズマ姫", latin:"Mycoplasma pneumoniae",
+    img:"https://somekata.github.io/baikinscharacters/img/chara3.png",
+    hp:4, points:130, weight:16, minStage:3, gram:"染色不能（細胞壁を持たない）", isPneumo:false,
+    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"R", COL:"R", LZD:"R", AZM:"S" } },
+
+  { id:"legionella-jiiya", name:"レジオネラ爺や", latin:"Legionella pneumophila",
+    img:"https://somekata.github.io/baikinscharacters/img/chara4.png",
+    hp:4, points:130, weight:16, minStage:3, gram:"グラム陰性桿菌（通常染色では検出困難）", isPneumo:false,
+    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"R", COL:"R", LZD:"R", AZM:"S" } },
+
+  { id:"ryokuno-king", name:"リョクノーキン", latin:"Pseudomonas aeruginosa",
+    img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
+    hp:5, points:140, weight:18, minStage:3, gram:"グラム陰性・桿菌", isPneumo:false,
+    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"S", MEPM:"S", COL:"S", LZD:"R", AZM:"R" } },
+
+  { id:"daichou-esbl", name:"ダイチョーキン ESBL産生株", latin:"Escherichia coli (ESBL)",
+    img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
+    hp:5, points:170, weight:12, minStage:3, gram:"グラム陰性・桿菌", isPneumo:false, isBoss:true,
+    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"S", COL:"S", LZD:"R", AZM:"R" } },
+
+  { id:"ryokuno-crpa", name:"リョクノーキン CRPA変異体", latin:"Pseudomonas aeruginosa (CRPA)",
+    img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
+    hp:6, points:210, weight:8, minStage:4, gram:"グラム陰性・桿菌", isPneumo:false, isBoss:true,
+    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"R", COL:"S", LZD:"R", AZM:"R" } },
+
+  { id:"daichou-cre", name:"ダイチョーキン CRE変異体", latin:"Escherichia coli (CRE)",
+    img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
+    hp:6, points:210, weight:8, minStage:4, gram:"グラム陰性・桿菌", isPneumo:false, isBoss:true,
+    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"R", COL:"S", LZD:"R", AZM:"R" } }
+];
+function speciesById(id){ for(var i=0;i<SPECIES.length;i++){ if(SPECIES[i].id===id) return SPECIES[i]; } return null; }
+
+function speciesForStage(stage){ return SPECIES.filter(function(sp){ return (sp.minStage||1) <= stage; }); }
+
+var STAGE_THRESHOLDS = [0, 150, 450, 900];
+function currentStage(){
+  var s = state.score;
+  for(var i=STAGE_THRESHOLDS.length-1; i>=0; i--){ if(s >= STAGE_THRESHOLDS[i]) return i+1; }
+  return 1;
+}
+function stageRewardMult(stage){ return 1 + (stage-1)*0.3; }
+function stageHitsNeeded(sp, stage){ return sp.hp + (stage-1); }
+
+var MAX_LIVES = 5;
+var START_LIVES = 3;
+var BASE_MAX_HP = 45;
+var MAXHP_UP_AMOUNT = 5;
+var ENEMY_HIT_DMG_MIN = 16, ENEMY_HIT_DMG_MAX = 23; // プレイヤーが攻撃成功時に与えるダメージ
+var FOE_ATK_MIN = 4, FOE_ATK_MAX = 8;                // 敵の反撃ダメージ（+ステージ補正）
+var ENEMY_ATK_INTERVAL_BASE = 2600;                  // 敵の自動反撃の間隔(ms)
+var SPELL_HEAL = 12;
+var FLEE_SUCCESS_RATE = 0.7;
+var DISCOVER_TABLE_BASE = [
+  { kind:"item", weight:50 },
+  { kind:"wave", weight:35 },
+  { kind:"boss", weight:8 },
+  { kind:"quiz", weight:7 }
+];
+
+var WAVE_FODDER = [
+  { emoji:"🦠", hp:1, points:8,  weight:50 },
+  { emoji:"🧫", hp:1, points:14, weight:30 },
+  { emoji:"🧬", hp:2, points:22, weight:15 },
+  { emoji:"👾", hp:2, points:34, weight:5 }
+];
+function waveTargetCount(stage){ return 5 + (stage-1)*2; }
+
+var QUIZ_POOL = [
+  { q:"「抗菌薬」が効くのはどんな病気？", choices:["細菌による感染症","ウイルスによるかぜ","花粉症","虫歯"], correct:0 },
+  { q:"手洗いが病気の予防に役立つのはなぜ？", choices:["病原体を洗い流せるから","手が温かくなるから","見た目がきれいになるから","力がつくから"], correct:0 },
+  { q:"医師の指示より早く抗菌薬をやめてしまうと、起こりやすいことは？", choices:["薬が効きにくい菌が残りやすい","体が軽くなる","味覚が良くなる","免疫が強くなる"], correct:0 },
+  { q:"「MRSA」の R は何の略？", choices:["Resistant（耐性）","Rapid","Red","Round"], correct:0 },
+  { q:"ワクチンの主な役割は？", choices:["病気にかかる前に免疫をつけておくこと","病気を治す薬","熱を下げること","傷を治すこと"], correct:0 },
+  { q:"「AMR」は何の略？", choices:["薬剤耐性（Antimicrobial Resistance）","急性心筋梗塞","磁気共鳴画像","応急処置"], correct:0 }
+];
+
+var FIND_ITEM_RATE = 0.55; // 発見のうちアイテムである確率（残りは菌との遭遇）
+
+var ITEM_TABLE = [
+  { kind:"money",  weight:34, icon:"💰", label:"お金" },
+  { kind:"spell",  weight:18, icon:"📖", label:"回復の呪文" },
+  { kind:"maxhp",  weight:10, icon:"💪", label:"maxHP上昇の実" },
+  { kind:"life",   weight:8,  icon:"❤️", label:"ライフ回復の羽根" },
+  { kind:"vaccine",weight:16, icon:"💉", label:"ワクチン" },
+  { kind:"test",   weight:14, icon:"🔍", label:"検査キット" }
+];
+function pickItem(){
+  var total=0,i; for(i=0;i<ITEM_TABLE.length;i++) total+=ITEM_TABLE[i].weight;
+  var r=Math.random()*total;
+  for(i=0;i<ITEM_TABLE.length;i++){ r-=ITEM_TABLE[i].weight; if(r<=0) return ITEM_TABLE[i]; }
+  return ITEM_TABLE[0];
+}
+
+/* ===================== タブ切り替え ===================== */
+var buttons = document.querySelectorAll('#tabbar button');
+var panels  = document.querySelectorAll('.panel');
+var tabActive = false;
+function activateTab(target){
+  panels.forEach(function(p){ p.classList.toggle('active', p.dataset.panel === target); });
+  buttons.forEach(function(b){ b.classList.toggle('active', b.dataset.target === target); });
+  tabActive = (target === 'play');
+  if(target === 'zukan'){ renderZukan(); }
+  if(target === 'shop'){ renderPharmacyList(); renderInventory(); }
+}
+buttons.forEach(function(b){ b.addEventListener('click', function(){ activateTab(b.dataset.target); }); });
+document.querySelectorAll('[data-goto]').forEach(function(b){ b.addEventListener('click', function(){ activateTab(b.dataset.goto); }); });
+
+/* ===================== 状態 ===================== */
+var persist = { bestScore: 0, defeated: [] };
+var state = {
+  score:0, money:0,
+  stock:{ PCG:5, CEZ:5, VCM:5, CAZ:5, MEPM:5, COL:5, LZD:5, AZM:5 },
+  inv:{ spell:1, vaccine:1, test:1 },
+  hp:BASE_MAX_HP, maxHp:BASE_MAX_HP, lives:START_LIVES,
+  heading:0, targetDir:null, aligned:false, alignedSince:0,
+  phase:"notstarted", // notstarted | searching | resolving | encounter | battle | over
+  simulateMode:false
+};
+var battle = null; // {sp, stage, hp, maxHp, revealedAll, known:{}}
+
+function $(id){ return document.getElementById(id); }
+var scope=$('scope'), arrowWrap=$('arrowWrap'), diffReadout=$('diffReadout'), targetLabel=$('targetLabel'),
+    message=$('message'), findIcon=$('findIcon'), simWrap=$('simWrap'), simSlider=$('simSlider'), simVal=$('simVal'),
+    flashEl=$('flash');
+
+function refreshHud(){
+  $('headerScore').textContent = 'SCORE ' + state.score;
+  $('headerMoney').textContent = '💰 ' + state.money;
+  $('hScore').textContent = 'SCORE ' + state.score;
+  $('hMoney').textContent = '💰 ' + state.money;
+}
+function renderLives(){
+  var s=''; for(var i=0;i<MAX_LIVES;i++){ s += (i<state.lives ? '❤️' : '🖤'); if(i>=state.lives && i>=4) break; }
+  $('hLives').textContent = '❤️'.repeat(Math.max(state.lives,0)) + '🖤'.repeat(Math.max(0, Math.min(state.lives,3)===state.lives?0:0));
+  $('hLives').textContent = '❤️'.repeat(Math.max(state.lives,0));
+}
+function renderPlayerHp(){
+  var pct = Math.max(0, Math.round(state.hp/state.maxHp*100));
+  $('hpFill').style.width = pct + '%';
+  $('hpText').textContent = state.hp + ' / ' + state.maxHp;
+}
+function flashHit(){
+  flashEl.classList.remove('fade'); flashEl.classList.add('show');
+  setTimeout(function(){ flashEl.classList.remove('show'); flashEl.classList.add('fade'); }, 90);
+}
+function shakeScope(){
+  scope.classList.remove('shake'); void scope.offsetWidth; scope.classList.add('shake');
+}
+function popDmg(container, text, cls){
+  var el = document.createElement('div');
+  el.className = 'dmgnum ' + cls;
+  el.textContent = text;
+  container.style.position = 'relative';
+  container.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 700);
+}
+
+/* ===================== セーブ ===================== */
+var SAVE_KEY = "FUNFECTION-ADVENTURE-2026";
+var SAVE_PREFIX = "BKZ5";
+function xorStr(str, key){ var out=''; for(var i=0;i<str.length;i++){ out+=String.fromCharCode(str.charCodeAt(i)^key.charCodeAt(i%key.length)); } return out; }
+function checksum(str){ var sum=0; for(var i=0;i<str.length;i++){ sum=(sum+str.charCodeAt(i)*(i+1))%9973; } return sum.toString(36).padStart(3,'0'); }
+function encodeSave(obj){ var json=JSON.stringify(obj); var xored=xorStr(json,SAVE_KEY); var b64=btoa(unescape(encodeURIComponent(xored))); return SAVE_PREFIX+'-'+checksum(b64)+'-'+b64; }
+function decodeSave(code){
+  code=(code||'').trim();
+  var m=code.match(/^BKZ5-([0-9a-z]{3})-([A-Za-z0-9+/=]+)$/);
+  if(!m){ throw new Error('コードの形式が正しくありません。'); }
+  var check=m[1], b64=m[2];
+  if(checksum(b64)!==check){ throw new Error('チェックサムが一致しません（コードが壊れているか改変されています）。'); }
+  var xored=decodeURIComponent(escape(atob(b64)));
+  var json=xorStr(xored,SAVE_KEY);
+  var obj=JSON.parse(json);
+  if(!obj || obj.v!==1){ throw new Error('未対応のセーブバージョンです。'); }
+  return obj;
+}
+function currentSaveObj(){ return { v:1, bestScore:persist.bestScore, defeated:persist.defeated, ts:Date.now() }; }
+function applySaveObj(obj){
+  persist.bestScore = obj.bestScore || 0;
+  persist.defeated = Array.isArray(obj.defeated) ? obj.defeated : [];
+  renderZukan();
+}
+$('btnMakeCode').addEventListener('click', function(){
+  var code = encodeSave(currentSaveObj());
+  $('exportCode').value = code;
+  var holder = $('qrHolder');
+  try{ var qr=qrcode(0,'M'); qr.addData(code); qr.make(); holder.innerHTML=qr.createSvgTag(4,0); holder.style.display='flex'; }
+  catch(e){ holder.style.display='none'; }
+});
+$('btnDownloadFile').addEventListener('click', function(){
+  var code = encodeSave(currentSaveObj());
+  var blob = new Blob([JSON.stringify({savedata:code})], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href=url; a.download='baikin-adventure-save.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+});
+function showImportMsg(text, ok){ var el=$('importMsg'); el.className='msg-inline '+(ok?'ok':'ng'); el.textContent=text; }
+$('btnImportCode').addEventListener('click', function(){
+  try{ var obj=decodeSave($('importCode').value); applySaveObj(obj); showImportMsg('復元しました（ベストスコア '+obj.bestScore+'）', true); }
+  catch(e){ showImportMsg('復元に失敗しました：'+e.message, false); }
+});
+$('importFile').addEventListener('change', function(ev){
+  var file = ev.target.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var text = reader.result; var code = text;
+      try{ var parsed = JSON.parse(text); if(parsed && parsed.savedata){ code = parsed.savedata; } }catch(e){}
+      var obj = decodeSave(code); applySaveObj(obj);
+      $('importCode').value = code;
+      showImportMsg('ファイルから復元しました（ベストスコア '+obj.bestScore+'）', true);
+    }catch(e){ showImportMsg('復元に失敗しました：'+e.message, false); }
+  };
+  reader.readAsText(file);
+});
+
+/* ===================== ずかん ===================== */
+function renderZukan(){
+  var grid = $('zukanGrid');
+  grid.innerHTML = '';
+  $('zukanCount').textContent = '(' + persist.defeated.length + ' / ' + SPECIES.length + ')';
+  SPECIES.forEach(function(sp){
+    var got = persist.defeated.indexOf(sp.id) !== -1;
+    var cell = document.createElement('div');
+    cell.className = 'zukan-cell' + (got ? '' : ' locked');
+    if(got){
+      cell.innerHTML = '<img src="'+sp.img+'" alt="'+sp.name+'"><div class="zname">'+sp.name+'</div><div class="zlatin">'+sp.latin+'</div>';
+    } else {
+      cell.innerHTML = '<div style="font-size:30px;">?</div><div class="zname">未発見</div>';
+    }
+    grid.appendChild(cell);
+  });
+}
+
+/* ===================== ショップ／もちもの ===================== */
+function renderPharmacyList(){
+  $('shopMoney').textContent = state.money;
+  var wrap = $('pharmacyList');
+  wrap.innerHTML = '';
+  ATB_LIST.forEach(function(code){
+    var price = ATB_PRICES[code];
+    var owned = state.stock[code] || 0;
+    var row = document.createElement('div');
+    row.className = 'pharm-row';
+    row.innerHTML = '<div><span class="code">'+code+'</span><span class="price"> ¥'+price+'</span><span class="stockn">在庫 '+owned+'</span></div>';
+    var buy = document.createElement('button');
+    buy.className = 'pharm-buy'; buy.textContent = '購入';
+    buy.disabled = state.money < price;
+    buy.addEventListener('click', function(){
+      if(state.money < price) return;
+      state.money -= price; state.stock[code] = (state.stock[code]||0) + 1;
+      refreshHud(); renderPharmacyList();
+    });
+    row.appendChild(buy);
+    wrap.appendChild(row);
+  });
+}
+function renderInventory(){
+  var wrap = $('invGrid');
+  wrap.innerHTML =
+    '<div class="inv-cell"><div class="ic">📖</div><div class="nm">回復の呪文</div><div class="ct">'+state.inv.spell+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">ワクチン</div><div class="ct">'+state.inv.vaccine+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">🔍</div><div class="nm">検査キット</div><div class="ct">'+state.inv.test+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">💪</div><div class="nm">最大HP</div><div class="ct">'+state.maxHp+'</div></div>';
+}
+
+/* ===================== 探索 ===================== */
+function currentTolerance(){ return Math.max(11, 26 - Math.floor(state.score/60)*2); }
+
+function pickTarget(){
+  var d = DIRS[Math.floor(Math.random()*DIRS.length)];
+  state.targetDir = d;
+  targetLabel.innerHTML = '方角: <b>' + d.name + ' (' + d.en + ')</b>';
+}
+function startSearching(){
+  state.phase = 'searching';
+  state.aligned = false; state.alignedSince = 0;
+  scope.classList.remove('aligned');
+  findIcon.classList.remove('show');
+  pickTarget();
+  message.textContent = '矢印がまっすぐ上を向くまで向きを変えよう';
+}
+
+function onDiscover(){
+  state.phase = 'resolving';
+  var stage = currentStage();
+  var bossPool = SPECIES.filter(function(sp){ return sp.isBoss && (sp.minStage||1) <= stage; });
+  var table = DISCOVER_TABLE_BASE.map(function(t){
+    if(t.kind === 'boss') return { kind:'boss', weight: bossPool.length ? t.weight : 0 };
+    if(t.kind === 'wave') return { kind:'wave', weight: bossPool.length ? t.weight : t.weight + 8 };
+    return t;
+  });
+  var total=0,i; for(i=0;i<table.length;i++) total+=table[i].weight;
+  var r=Math.random()*total, picked=table[table.length-1];
+  for(i=0;i<table.length;i++){ r-=table[i].weight; if(r<=0){ picked=table[i]; break; } }
+  if(picked.kind === 'item'){ resolveItemFound(); }
+  else if(picked.kind === 'wave'){ resolveWaveEncounter(stage); }
+  else if(picked.kind === 'boss'){ resolveBossEncounter(bossPool, stage); }
+  else { resolveQuiz(); }
+}
+function resolveItemFound(){
+  var item = pickItem();
+  var body = '';
+  if(item.kind === 'money'){ var amt = 15+Math.floor(Math.random()*26); state.money += amt; refreshHud(); body = amt+'円のお金を見つけた！'; }
+  else if(item.kind === 'spell'){ state.inv.spell += 1; body = '回復の呪文を手に入れた！（所持:'+state.inv.spell+'）'; }
+  else if(item.kind === 'maxhp'){ state.maxHp += MAXHP_UP_AMOUNT; state.hp = Math.min(state.maxHp, state.hp+MAXHP_UP_AMOUNT); renderPlayerHp(); body = 'maxHP上昇の実を食べた！ 最大HPが'+MAXHP_UP_AMOUNT+'上がった（'+state.maxHp+'）'; }
+  else if(item.kind === 'life'){ state.lives = Math.min(MAX_LIVES, state.lives+1); renderLives(); body = 'ライフ回復の羽根を見つけた！ ライフ+1（'+state.lives+'）'; }
+  else if(item.kind === 'vaccine'){ state.inv.vaccine += 1; body = 'ワクチンを手に入れた！（所持:'+state.inv.vaccine+'）'; }
+  else if(item.kind === 'test'){ state.inv.test += 1; body = '検査キットを手に入れた！（所持:'+state.inv.test+'）'; }
+  $('itemTitle').textContent = item.icon + ' アイテム発見！';
+  $('itemBody').textContent = body;
+  $('ovItem').classList.add('show');
+}
+$('btnItemOk').addEventListener('click', function(){
+  $('ovItem').classList.remove('show');
+  if(tabActive) startSearching();
+});
+function weightedFrom(pool){
+  var total=0,i; for(i=0;i<pool.length;i++) total+=(pool[i].weight||1);
+  var r=Math.random()*total;
+  for(i=0;i<pool.length;i++){ r-=(pool[i].weight||1); if(r<=0) return pool[i]; }
+  return pool[0];
+}
+function resolveBossEncounter(pool, stage){
+  var sp = weightedFrom(pool);
+  state.phase = 'encounter';
+  state._pendingType = 'boss';
+  state._pendingSp = sp; state._pendingStage = stage;
+  $('encImg').style.display = '';
+  $('encImg').src = sp.img; $('encImg').alt = sp.name;
+  $('encName').textContent = '【ボス】' + sp.name;
+  $('encLatin').textContent = sp.latin;
+  $('ovEncounter').classList.add('show');
+}
+function resolveWaveEncounter(stage){
+  state.phase = 'encounter';
+  state._pendingType = 'wave';
+  state._pendingStage = stage;
+  $('encImg').style.display = 'none';
+  $('encName').textContent = 'バイキンの群れ 🦠🧫🧬';
+  $('encLatin').textContent = '';
+  $('ovEncounter').classList.add('show');
+}
+function shuffleArr(arr){
+  var a = arr.slice();
+  for(var i = a.length-1; i>0; i--){
+    var j = Math.floor(Math.random()*(i+1));
+    var t = a[i]; a[i]=a[j]; a[j]=t;
+  }
+  return a;
+}
+function resolveQuiz(){
+  var q = QUIZ_POOL[Math.floor(Math.random()*QUIZ_POOL.length)];
+  var order = shuffleArr([0,1,2,3]);
+  $('quizQ').textContent = q.q;
+  var wrap = $('quizChoices'); wrap.innerHTML = '';
+  order.forEach(function(idx){
+    var btn = document.createElement('button');
+    btn.className = 'btn primary';
+    btn.textContent = q.choices[idx];
+    btn.addEventListener('click', function(){ answerQuiz(idx === q.correct); });
+    wrap.appendChild(btn);
+  });
+  $('ovQuiz').classList.add('show');
+}
+function pickQuizBonus(){
+  var r = Math.random();
+  if(r < 0.34){
+    var heal = 15; state.hp = Math.min(state.maxHp, state.hp+heal); renderPlayerHp();
+    return 'HPが'+heal+'回復した！';
+  }
+  if(r < 0.67){
+    state.inv.test += 1; renderInventory();
+    return '検査キットを1個もらった！';
+  }
+  var code = ATB_LIST[Math.floor(Math.random()*ATB_LIST.length)];
+  state.stock[code] = (state.stock[code]||0) + 2;
+  return code + 'を2個もらった！';
+}
+function answerQuiz(correct){
+  $('ovQuiz').classList.remove('show');
+  if(correct){
+    var label = pickQuizBonus();
+    message.textContent = 'せいかい！ ' + label;
+  } else {
+    message.textContent = 'ざんねん…また挑戦しよう';
+  }
+  if(tabActive) startSearching();
+}
+$('btnEncFlee').addEventListener('click', function(){
+  $('ovEncounter').classList.remove('show');
+  message.textContent = '菌からにげた。探索を続けよう';
+  if(tabActive) startSearching();
+});
+$('btnEncFight').addEventListener('click', function(){
+  $('ovEncounter').classList.remove('show');
+  if(state._pendingType === 'boss'){
+    startBattle(state._pendingSp, state._pendingStage);
+  } else {
+    startWave(state._pendingStage);
+  }
+});
+
+/* ===================== 戦闘 ===================== */
+/* ===================== シューティング波（インベーダー風） ===================== */
+var wave = null;
+var waveCanvas = $('waveCanvas'), waveCtx = waveCanvas.getContext('2d'), waveWrap = $('waveCanvasWrap');
+function resizeWaveCanvas(){
+  var W = waveWrap.clientWidth, H = waveWrap.clientHeight;
+  waveCanvas.width = W*devicePixelRatio; waveCanvas.height = H*devicePixelRatio;
+  waveCanvas.style.width = W+'px'; waveCanvas.style.height = H+'px';
+  waveCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  if(wave){ wave.W = W; wave.H = H; }
+}
+window.addEventListener('resize', resizeWaveCanvas);
+
+function pickFodder(){
+  var total=0,i; for(i=0;i<WAVE_FODDER.length;i++) total+=WAVE_FODDER[i].weight;
+  var r=Math.random()*total;
+  for(i=0;i<WAVE_FODDER.length;i++){ r-=WAVE_FODDER[i].weight; if(r<=0) return WAVE_FODDER[i]; }
+  return WAVE_FODDER[0];
+}
+function wavePointerX(clientX){
+  var rect = waveCanvas.getBoundingClientRect();
+  return Math.min(Math.max(clientX-rect.left, 18), (wave?wave.W:200)-18);
+}
+waveCanvas.addEventListener('touchmove', function(e){ e.preventDefault(); if(wave) wave.player.x = wavePointerX(e.touches[0].clientX); }, {passive:false});
+waveCanvas.addEventListener('touchstart', function(e){ if(wave) wave.player.x = wavePointerX(e.touches[0].clientX); }, {passive:false});
+waveCanvas.addEventListener('mousemove', function(e){ if(wave) wave.player.x = wavePointerX(e.clientX); });
+
+function startWave(stage){
+  state.phase = 'wave';
+  resizeWaveCanvas();
+  var W = waveWrap.clientWidth, H = waveWrap.clientHeight;
+  wave = {
+    stage:stage, need:waveTargetCount(stage), defeated:0, gained:0,
+    enemies:[], bullets:[], enemyBullets:[],
+    player:{ x:W/2, y:H-30, r:16 },
+    spawnTimer:0, fireTimer:0, atkTimer:1200, lastTs:0, W:W, H:H, over:false
+  };
+  updateWaveHud();
+  renderWavePlayerHp();
+  $('ovWave').classList.add('show');
+  wave.lastTs = performance.now();
+  requestAnimationFrame(waveTick);
+}
+function updateWaveHud(){ $('waveProgress').textContent = wave.defeated + ' / ' + wave.need + ' たいじ'; }
+function renderWavePlayerHp(){
+  $('wavePlayerHpFill').style.width = Math.max(0, Math.round(state.hp/state.maxHp*100))+'%';
+  $('wavePlayerHpText').textContent = state.hp + ' / ' + state.maxHp;
+}
+function waveSpawnEnemy(){
+  var f = pickFodder();
+  wave.enemies.push({ x:20+Math.random()*Math.max(10,wave.W-40), y:-20, r:18, hp:f.hp, maxHp:f.hp, emoji:f.emoji, points:f.points, speed:0.045+wave.stage*0.008 });
+}
+function waveEnemyFire(e){
+  wave.enemyBullets.push({ x:e.x, y:e.y+e.r, r:5, speed:0.13, dmg:4+Math.floor(Math.random()*3)+(wave.stage-1) });
+}
+function waveUpdate(dt){
+  wave.spawnTimer -= dt;
+  var interval = Math.max(650, 1500 - wave.stage*100);
+  if(wave.spawnTimer<=0 && wave.enemies.length<5 && (wave.defeated+wave.enemies.length) < wave.need+3){
+    waveSpawnEnemy(); wave.spawnTimer = interval;
+  }
+
+  wave.fireTimer -= dt;
+  if(wave.fireTimer<=0){
+    wave.bullets.push({ x:wave.player.x, y:wave.player.y-wave.player.r, r:5, speed:3.4 });
+    wave.fireTimer = 230;
+  }
+
+  wave.bullets.forEach(function(b){ b.y -= b.speed*dt; });
+  wave.bullets = wave.bullets.filter(function(b){ return b.y > -20; });
+
+  wave.enemies.forEach(function(e){ e.y += e.speed*dt; });
+  wave.enemies = wave.enemies.filter(function(e){ return e.y - e.r <= wave.H; }); // 逃した分はノーペナルティ
+
+  wave.atkTimer -= dt;
+  if(wave.atkTimer<=0 && wave.enemies.length>0){
+    waveEnemyFire(wave.enemies[Math.floor(Math.random()*wave.enemies.length)]);
+    wave.atkTimer = Math.max(550, 1400 - wave.stage*100);
+  }
+  wave.enemyBullets.forEach(function(b){ b.y += b.speed*dt; });
+  wave.enemyBullets = wave.enemyBullets.filter(function(b){
+    if(b.y - b.r > wave.H) return false;
+    var dx=b.x-wave.player.x, dy=b.y-wave.player.y;
+    if(Math.sqrt(dx*dx+dy*dy) < b.r+wave.player.r){
+      state.hp = Math.max(0, state.hp-b.dmg);
+      renderWavePlayerHp(); flashHit();
+      if(state.hp<=0 && !wave.over){ wave.over=true; setTimeout(waveLoseOut, 350); }
+      return false;
+    }
+    return true;
+  });
+
+  for(var i=wave.bullets.length-1; i>=0; i--){
+    var b = wave.bullets[i];
+    for(var j=wave.enemies.length-1; j>=0; j--){
+      var e = wave.enemies[j];
+      var dx=b.x-e.x, dy=b.y-e.y;
+      if(Math.sqrt(dx*dx+dy*dy) < b.r+e.r){
+        wave.bullets.splice(i,1);
+        e.hp -= 1;
+        if(e.hp<=0){
+          wave.gained += e.points;
+          wave.defeated += 1;
+          wave.enemies.splice(j,1);
+          updateWaveHud();
+          if(wave.defeated >= wave.need && !wave.over){ wave.over = true; setTimeout(waveClear, 300); }
+        }
+        break;
+      }
+    }
+  }
+}
+function waveDraw(){
+  var ctx = waveCtx, W = wave.W, H = wave.H;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#b5482e';
+  ctx.beginPath(); ctx.arc(wave.player.x, wave.player.y, wave.player.r, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('💊', wave.player.x, wave.player.y+5);
+
+  ctx.fillStyle = '#c9703f';
+  wave.bullets.forEach(function(b){ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle = '#6b6255';
+  wave.enemyBullets.forEach(function(b){ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); });
+
+  wave.enemies.forEach(function(e){
+    ctx.font = Math.round(e.r*1.5)+'px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(e.emoji, e.x, e.y+e.r*0.5);
+  });
+}
+function waveTick(ts){
+  if(!wave || wave.over || state.phase !== 'wave'){ return; }
+  if(!tabActive){ wave.lastTs = ts; requestAnimationFrame(waveTick); return; }
+  var dt = Math.min(ts-wave.lastTs, 48);
+  wave.lastTs = ts;
+  waveUpdate(dt);
+  waveDraw();
+  requestAnimationFrame(waveTick);
+}
+function waveClear(){
+  $('ovWave').classList.remove('show');
+  state.score += wave.gained; state.money += wave.gained;
+  refreshHud();
+  message.textContent = '波をせいあつした！（+' + wave.gained + '）';
+  wave = null;
+  state.phase = 'resolving';
+  if(tabActive) startSearching();
+}
+function waveLoseOut(){
+  $('ovWave').classList.remove('show');
+  wave = null;
+  state.lives -= 1;
+  renderLives();
+  if(state.lives <= 0){
+    state.phase = 'over';
+    if(state.score > persist.bestScore){ persist.bestScore = state.score; }
+    $('overSummary').textContent = 'スコア ' + state.score + ' ／ ベストスコア ' + persist.bestScore;
+    $('ovOver').classList.add('show');
+    return;
+  }
+  state.hp = state.maxHp; renderPlayerHp();
+  $('lifeLostBody').textContent = 'ライフを1失った（残り ' + state.lives + '）。HPを全回復して探索を続けよう。';
+  $('ovLifeLost').classList.add('show');
+}
+$('btnWaveFlee').addEventListener('click', function(){
+  if(!wave) return;
+  wave.over = true;
+  $('ovWave').classList.remove('show');
+  message.textContent = '波からにげた。探索を続けよう';
+  wave = null;
+  state.phase = 'resolving';
+  if(tabActive) startSearching();
+});
+
+function startBattle(sp, stage){
+  state.phase = 'battle';
+  var hitsNeeded = stageHitsNeeded(sp, stage);
+  battle = {
+    sp:sp, stage:stage, maxHp:hitsNeeded*20, hp:hitsNeeded*20, revealedAll:(stage===1), known:{},
+    shielded:false, atkTimer:enemyAtkInterval(stage), lastTs:0, over:false
+  };
+  $('battleImg').src = sp.img; $('battleImg').alt = sp.name;
+  $('battleName').textContent = sp.name;
+  $('battleLatin').textContent = sp.latin;
+  renderBattleHp();
+  renderBattleSus();
+  buildActionGrid();
+  renderUtilRow();
+  $('ovBattle').classList.add('show');
+  battle.lastTs = performance.now();
+  requestAnimationFrame(battleTick);
+}
+function enemyAtkInterval(stage){ return Math.max(1400, ENEMY_ATK_INTERVAL_BASE - (stage-1)*250); }
+function renderBattleHp(){
+  var pct = Math.max(0, Math.round(battle.hp/battle.maxHp*100));
+  $('battleEnemyHpFill').style.width = pct+'%';
+  $('battleEnemyHpText').textContent = Math.max(0,battle.hp) + ' / ' + battle.maxHp;
+  $('battlePlayerHpFill').style.width = Math.max(0, Math.round(state.hp/state.maxHp*100))+'%';
+  $('battlePlayerHpText').textContent = state.hp + ' / ' + state.maxHp;
+}
+function drugKnown(code){ return battle.revealedAll || battle.known[code] !== undefined; }
+function drugTrueRes(code){ return battle.sp.susceptibility[code] || 'R'; }
+function renderBattleSus(){
+  var el = $('battleSus');
+  el.innerHTML = ATB_LIST.map(function(code){
+    if(drugKnown(code)){
+      var res = drugTrueRes(code);
+      return '<span class="chip '+(res==='S'?'s':'r')+'">'+code+' '+res+'</span>';
+    }
+    return '<span class="chip unk">'+code+' ？</span>';
+  }).join('');
+}
+
+/* ボタンは戦闘開始時に1度だけ作り、以後は中身の更新のみ（長押し連打中にDOMごと差し替えないため） */
+var actionBtnEls = {};
+function buildActionGrid(){
+  stopAllHolds();
+  var grid = $('actionGrid'); grid.innerHTML = ''; actionBtnEls = {};
+  ATB_LIST.forEach(function(code){
+    var btn = document.createElement('button');
+    btn.type='button'; btn.className='action-btn'; btn.dataset.code=code;
+    attachHoldToFire(btn, code);
+    grid.appendChild(btn);
+    actionBtnEls[code] = btn;
+  });
+  updateActionButtons();
+}
+function updateActionButtons(){
+  ATB_LIST.forEach(function(code){
+    var btn = actionBtnEls[code];
+    if(!btn) return;
+    var owned = state.stock[code]||0;
+    var known = drugKnown(code);
+    btn.innerHTML = code + '<span class="stock">在庫'+owned+(known?'':'・？')+'</span>';
+    btn.disabled = owned<=0;
+  });
+}
+function renderUtilRow(){
+  $('testStockLabel').textContent = '('+state.inv.test+')';
+  $('spellStockLabel').textContent = '('+state.inv.spell+')';
+  $('vaccineStockLabel').textContent = '('+state.inv.vaccine+')';
+  $('btnUseTest').disabled = state.inv.test <= 0;
+  $('btnUseSpell').disabled = state.inv.spell <= 0;
+  $('btnUseVaccine').disabled = state.inv.vaccine <= 0;
+}
+
+/* ===== 長押しで連打・弾を飛ばす ===== */
+var holdState = {}; // code -> {startTimer, repeatTimer}
+function attachHoldToFire(btn, code){
+  function shoot(){
+    if(!battle || state.phase !== 'battle' || battle.over) return;
+    if((state.stock[code]||0) <= 0){ stopHold(); return; }
+    fireProjectile(code);
+  }
+  function startHold(e){
+    e.preventDefault();
+    if(btn.disabled) return;
+    btn.classList.add('held');
+    shoot();
+    var hs = { startTimer:null, repeatTimer:null };
+    holdState[code] = hs;
+    hs.startTimer = setTimeout(function(){ hs.repeatTimer = setInterval(shoot, 220); }, 300);
+  }
+  function stopHold(){
+    btn.classList.remove('held');
+    var hs = holdState[code];
+    if(hs){ clearTimeout(hs.startTimer); clearInterval(hs.repeatTimer); }
+    holdState[code] = null;
+  }
+  btn.addEventListener('pointerdown', startHold);
+  btn.addEventListener('pointerup', stopHold);
+  btn.addEventListener('pointerleave', stopHold);
+  btn.addEventListener('pointercancel', stopHold);
+}
+function stopAllHolds(){
+  Object.keys(holdState).forEach(function(code){
+    var hs = holdState[code];
+    if(hs){ clearTimeout(hs.startTimer); clearInterval(hs.repeatTimer); }
+  });
+  holdState = {};
+  Object.keys(actionBtnEls).forEach(function(code){ var b = actionBtnEls[code]; if(b) b.classList.remove('held'); });
+}
+window.addEventListener('pointerup', stopAllHolds);
+window.addEventListener('pointercancel', stopAllHolds);
+function fireProjectile(code){
+  var arena = $('battleArena');
+  var proj = document.createElement('div');
+  proj.className = 'proj proj-' + code;
+  arena.appendChild(proj);
+  requestAnimationFrame(function(){ proj.classList.add('fly'); });
+  setTimeout(function(){ proj.remove(); }, 320);
+  resolveShot(code);
+}
+function resolveShot(code){
+  if(!battle || state.phase !== 'battle' || battle.over) return;
+  if((state.stock[code]||0) <= 0) return;
+  state.stock[code] -= 1;
+  var known = drugKnown(code);
+  var hit = (drugTrueRes(code) === 'S');
+  var enemyCard = $('battleArena');
+  var btn = actionBtnEls[code];
+
+  setTimeout(function(){
+    if(hit){
+      var dmg = ENEMY_HIT_DMG_MIN + Math.floor(Math.random()*(ENEMY_HIT_DMG_MAX-ENEMY_HIT_DMG_MIN+1));
+      battle.hp = Math.max(0, battle.hp - dmg);
+      if(btn){ btn.classList.add('hitok'); setTimeout(function(){btn.classList.remove('hitok');},220); }
+      popDmg(enemyCard, '-'+dmg, 'dealt');
+      if(!known){ battle.known[code] = 'S'; renderBattleSus(); }
+    } else {
+      if(btn){ btn.classList.add('hitbad'); setTimeout(function(){btn.classList.remove('hitbad');},220); }
+      popDmg(enemyCard, known ? '効かない' : '？効果なし', 'blocked');
+      if(!known){ battle.known[code] = 'R'; renderBattleSus(); }
+    }
+    renderBattleHp(); updateActionButtons();
+    if(battle.hp <= 0 && !battle.over){ battle.over = true; setTimeout(function(){ winBattle(); }, 380); }
+  }, 260);
+}
+
+$('btnUseTest').addEventListener('click', function(){
+  if(!battle || state.phase!=='battle' || state.inv.test<=0) return;
+  state.inv.test -= 1;
+  battle.revealedAll = true;
+  renderBattleSus(); updateActionButtons(); renderUtilRow();
+  var enemyCard = $('battleArena');
+  popDmg(enemyCard, '検査完了！', 'heal');
+  // 検査は無料行動：敵の反撃タイマーはそのまま進む
+});
+$('btnUseSpell').addEventListener('click', function(){
+  if(!battle || state.phase!=='battle' || state.inv.spell<=0) return;
+  state.inv.spell -= 1;
+  state.hp = Math.min(state.maxHp, state.hp + SPELL_HEAL);
+  renderBattleHp(); renderUtilRow();
+  var enemyCard = $('battleArena');
+  popDmg(enemyCard, '+'+SPELL_HEAL, 'heal');
+});
+$('btnUseVaccine').addEventListener('click', function(){
+  if(!battle || state.phase!=='battle' || state.inv.vaccine<=0 || battle.shielded) return;
+  state.inv.vaccine -= 1;
+  battle.shielded = true;
+  renderUtilRow();
+  var enemyCard = $('battleArena');
+  popDmg(enemyCard, 'ワクチン準備！', 'heal');
+});
+$('btnBattleFlee').addEventListener('click', function(){ attemptFlee(); });
+
+function attemptFlee(){
+  if(!battle || state.phase !== 'battle') return;
+  var enemyCard = $('battleArena');
+  if(Math.random() < FLEE_SUCCESS_RATE){
+    stopAllHolds();
+    battle.over = true;
+    $('ovBattle').classList.remove('show');
+    message.textContent = '菌からにげきった！探索を続けよう';
+    battle = null;
+    state.phase = 'resolving';
+    if(tabActive) startSearching();
+  } else {
+    var dmg = FOE_ATK_MIN + Math.floor(Math.random()*(FOE_ATK_MAX-FOE_ATK_MIN+1)) + (battle.stage-1)*2;
+    state.hp = Math.max(0, state.hp - dmg);
+    flashHit(); shakeScope();
+    popDmg(enemyCard, '-'+dmg, 'dealt');
+    renderBattleHp();
+    if(state.hp <= 0 && !battle.over){ battle.over = true; setTimeout(function(){ loseBattle(); }, 400); }
+  }
+}
+
+/* 敵は一定間隔で自動的に反撃してくる（連打してもタイマーは変わらない） */
+function battleTick(ts){
+  if(!battle || battle.over || state.phase !== 'battle'){ return; }
+  if(!tabActive){ battle.lastTs = ts; requestAnimationFrame(battleTick); return; }
+  var dt = Math.min(ts - battle.lastTs, 60);
+  battle.lastTs = ts;
+  battle.atkTimer -= dt;
+  if(battle.atkTimer <= 0){
+    enemyPeriodicAttack();
+    battle.atkTimer = enemyAtkInterval(battle.stage);
+  }
+  requestAnimationFrame(battleTick);
+}
+function enemyPeriodicAttack(){
+  if(!battle || battle.over) return;
+  var dmg = FOE_ATK_MIN + Math.floor(Math.random()*(FOE_ATK_MAX-FOE_ATK_MIN+1)) + (battle.stage-1)*2;
+  var enemyCard = $('battleArena');
+  if(battle.shielded){
+    battle.shielded = false;
+    renderUtilRow();
+    popDmg(enemyCard, 'ワクチンで防御！', 'heal');
+  } else {
+    state.hp = Math.max(0, state.hp - dmg);
+    flashHit(); shakeScope();
+    popDmg(enemyCard, '-'+dmg, 'dealt');
+  }
+  renderBattleHp();
+  if(state.hp <= 0 && !battle.over){ battle.over = true; setTimeout(function(){ loseBattle(); }, 400); }
+}
+
+function winBattle(){
+  stopAllHolds();
+  var sp = battle.sp, stage = battle.stage;
+  var mult = stageRewardMult(stage);
+  var gained = Math.round(sp.points * mult);
+  if(persist.defeated.indexOf(sp.id) === -1){ persist.defeated.push(sp.id); }
+  state.score += gained; state.money += gained;
+  refreshHud();
+  $('ovBattle').classList.remove('show');
+  message.textContent = sp.name + ' をたおした！（+' + gained + '）';
+  battle = null;
+  state.phase = 'resolving';
+  if(tabActive) startSearching();
+}
+function loseBattle(){
+  stopAllHolds();
+  $('ovBattle').classList.remove('show');
+  battle = null;
+  state.lives -= 1;
+  renderLives();
+  if(state.lives <= 0){
+    state.phase = 'over';
+    if(state.score > persist.bestScore){ persist.bestScore = state.score; }
+    $('overSummary').textContent = 'スコア ' + state.score + ' ／ ベストスコア ' + persist.bestScore;
+    $('ovOver').classList.add('show');
+    return;
+  }
+  state.hp = state.maxHp; renderPlayerHp();
+  $('lifeLostBody').textContent = 'ライフを1失った（残り ' + state.lives + '）。HPを全回復して探索を続けよう。';
+  $('ovLifeLost').classList.add('show');
+}
+$('btnLifeLostOk').addEventListener('click', function(){
+  $('ovLifeLost').classList.remove('show');
+  state.phase = 'resolving';
+  if(tabActive) startSearching();
+});
+
+/* ===================== ゲーム開始／終了 ===================== */
+function goToGame(){
+  state.score=0; state.money=0;
+  state.stock = { PCG:5, CEZ:5, VCM:5, CAZ:5, MEPM:5, COL:5, LZD:5, AZM:5 };
+  state.inv = { spell:1, vaccine:1, test:1 };
+  state.maxHp = BASE_MAX_HP; state.hp = BASE_MAX_HP; state.lives = START_LIVES;
+  refreshHud(); renderLives(); renderPlayerHp();
+  $('ovBattle').classList.remove('show'); $('ovOver').classList.remove('show');
+  $('ovItem').classList.remove('show'); $('ovEncounter').classList.remove('show'); $('ovLifeLost').classList.remove('show');
+  $('ovWave').classList.remove('show'); $('ovQuiz').classList.remove('show');
+  if(battle){ stopAllHolds(); battle = null; }
+  if(wave){ wave.over = true; wave = null; }
+  startSearching();
+}
+$('btnRetry').addEventListener('click', function(){
+  $('ovOver').classList.remove('show');
+  goToGame();
+});
+
+/* ===================== 方角 ===================== */
+function normDeg(d){ d=d%360; if(d<0) d+=360; return d; }
+function updateHeading(h){
+  state.heading = normDeg(h);
+  if(state.phase !== 'searching') return;
+  if(!state.targetDir) return;
+  var diff = normDeg(state.targetDir.deg - state.heading);
+  if(diff > 180) diff -= 360;
+  arrowWrap.style.transform = 'rotate('+diff+'deg)';
+  diffReadout.textContent = Math.round(Math.abs(diff)) + '°';
+  var tol = currentTolerance();
+  var isAligned = Math.abs(diff) <= tol;
+  if(isAligned){
+    if(!state.aligned){ state.aligned=true; state.alignedSince=Date.now(); scope.classList.add('aligned'); findIcon.classList.add('show'); }
+    else if(Date.now()-state.alignedSince > 500){
+      findIcon.classList.remove('show');
+      onDiscover();
+    }
+  } else {
+    state.aligned=false; scope.classList.remove('aligned'); findIcon.classList.remove('show');
+  }
+}
+
+var gotOrientation = false;
+function handleOrientation(e){
+  var heading;
+  if(typeof e.webkitCompassHeading === 'number'){ heading = e.webkitCompassHeading; }
+  else if(e.alpha !== null && e.alpha !== undefined){ heading = 360 - e.alpha; }
+  if(heading === undefined || isNaN(heading)) return;
+  gotOrientation = true;
+  updateHeading(heading);
+}
+function enableSimulateMode(){
+  state.simulateMode = true;
+  simWrap.style.display = 'flex';
+  simSlider.addEventListener('input', function(){
+    simVal.textContent = simSlider.value;
+    updateHeading(parseFloat(simSlider.value));
+  });
+}
+function armFallbackCheck(){
+  setTimeout(function(){ if(!gotOrientation && !state.simulateMode){ enableSimulateMode(); } }, 1800);
+}
+function requestOrientationAndStart(){
+  var DOE = window.DeviceOrientationEvent;
+  if(DOE && typeof DOE.requestPermission === 'function'){
+    DOE.requestPermission().then(function(resp){
+      if(resp === 'granted'){ window.addEventListener('deviceorientation', handleOrientation, true); armFallbackCheck(); }
+      else { enableSimulateMode(); }
+      beginPlay();
+    }).catch(function(){ enableSimulateMode(); beginPlay(); });
+  } else if(window.DeviceOrientationEvent){
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    armFallbackCheck();
+    beginPlay();
+  } else {
+    enableSimulateMode();
+    beginPlay();
+  }
+}
+function beginPlay(){
+  $('ovStart').classList.remove('show');
+  goToGame();
+}
+$('btnModeCompass').addEventListener('click', requestOrientationAndStart);
+$('btnModeScale').addEventListener('click', function(){ enableSimulateMode(); beginPlay(); });
+
+/* 初期表示 */
+refreshHud(); renderLives(); renderPlayerHp(); renderZukan(); renderPharmacyList(); renderInventory();
+})();
+</script>
+</body>
+</html>
