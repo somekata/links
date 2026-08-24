@@ -64,6 +64,13 @@
   .hpbar .fill{ height:100%; background:var(--catch); transition:width .25s ease; }
   .hpbar.enemy .fill{ background:var(--danger); }
 
+  .quick-item-row{ display:flex; gap:6px; width:100%; max-width:300px; }
+  .quick-item-btn{ flex:1; font-family:"Noto Sans JP",sans-serif; font-size:10.5px; font-weight:700;
+    background:#fff; border:1.5px solid var(--accent); color:var(--accent); border-radius:9px; padding:7px 3px; cursor:pointer; }
+  .quick-item-btn .stock{ display:block; font-size:9px; font-weight:500; opacity:.75; }
+  .quick-item-btn:disabled{ opacity:.35; cursor:not-allowed; border-color:var(--line); color:var(--ink-soft); }
+  .quick-item-btn.protected{ background:var(--catch); border-color:var(--catch); color:#fff; }
+
   .target-label{ font-size:12px; color:var(--ink-soft); }
   .target-label b{ color:var(--ink); font-size:14px; font-family:"Zen Antique",serif; }
 
@@ -129,17 +136,20 @@
   .sus-box .chip{ display:inline-block; margin:2px 4px 2px 0; font-family:"JetBrains Mono",monospace; font-weight:700;
     font-size:10.5px; padding:1px 6px; border-radius:6px; }
   .sus-box .chip.s{ background:rgba(76,154,89,.16); color:var(--catch); }
+  .sus-box .chip.i{ background:rgba(209,161,42,.18); color:#8a6a10; }
   .sus-box .chip.r{ background:rgba(201,74,61,.14); color:var(--danger); }
   .sus-box .chip.unk{ background:#fff; color:var(--ink-soft); border:1px dashed var(--line); }
+  .sus-box{ max-height:92px; overflow-y:auto; }
 
-  .action-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px; }
+  .action-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:8px; max-height:168px; overflow-y:auto; }
+  .action-btn{ font-size:10.5px; padding:7px 2px; }
   .action-btn{ font-family:"JetBrains Mono",monospace; font-weight:700; font-size:11.5px; color:var(--ink);
     background:var(--washi-deep); border:1px solid var(--line); border-radius:9px; padding:8px 3px; cursor:pointer; }
   .action-btn .stock{ display:block; font-size:9px; font-weight:500; color:var(--ink-soft); margin-top:2px; }
   .action-btn.hitok{ background:rgba(76,154,89,.22); border-color:var(--catch); }
   .action-btn.hitbad{ background:rgba(201,74,61,.18); border-color:var(--danger); }
   .action-btn:disabled{ opacity:.35; cursor:not-allowed; }
-  .util-row{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px; }
+  .util-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:6px; }
   .util-btn{ flex:1; font-family:"Noto Sans JP",sans-serif; font-size:11px; font-weight:700;
     background:#fff; border:1.5px solid var(--accent); color:var(--accent); border-radius:9px; padding:8px 4px; cursor:pointer; }
   .util-btn.flee2{ border-color:var(--danger); color:var(--danger); }
@@ -268,6 +278,11 @@
             <div class="hpbar-label"><span>HP</span><span id="hpText">30 / 30</span></div>
             <div class="hpbar"><div class="fill" id="hpFill" style="width:100%;"></div></div>
           </div>
+          <div class="quick-item-row">
+            <button class="quick-item-btn" id="btnQuickSpell">📖 回復の呪文<span class="stock" id="quickSpellStock"></span></button>
+            <button class="quick-item-btn" id="btnQuickPCV">💉 PCV<span class="stock" id="quickPcvStock"></span></button>
+            <button class="quick-item-btn" id="btnQuickHib">💉 Hib<span class="stock" id="quickHibStock"></span></button>
+          </div>
           <div class="target-label" id="targetLabel">方角: <b>--</b></div>
           <div class="scope-wrap">
             <div class="pointer-fixed"></div>
@@ -344,7 +359,8 @@
             <div class="util-row">
               <button class="util-btn" id="btnUseTest">🔍 検査<span class="stock" id="testStockLabel"></span></button>
               <button class="util-btn" id="btnUseSpell">📖 回復の呪文<span class="stock" id="spellStockLabel"></span></button>
-              <button class="util-btn" id="btnUseVaccine">💉 ワクチン<span class="stock" id="vaccineStockLabel"></span></button>
+              <button class="util-btn" id="btnUsePCV">💉 PCV<span class="stock" id="pcvStockLabel"></span></button>
+              <button class="util-btn" id="btnUseHib">💉 Hib<span class="stock" id="hibStockLabel"></span></button>
               <button class="util-btn flee2" id="btnBattleFlee">🏃 にげる</button>
             </div>
           </div>
@@ -2772,75 +2788,86 @@ var DIRS = [
   {name:"南", en:"S", deg:180}, {name:"南西", en:"SW", deg:225},
   {name:"西", en:"W", deg:270}, {name:"北西", en:"NW", deg:315}
 ];
-var ATB_LIST = ["PCG","CEZ","VCM","CAZ","MEPM","COL","LZD","AZM"];
-var ATB_PRICES = { PCG:10, CEZ:15, CAZ:25, VCM:30, MEPM:40, LZD:55, COL:60, AZM:20 };
+var ATB_LIST = ["PCG","ABPC","SBT_ABPC","PIPC","TAZ_PIPC","CEZ","CTRX","CAZ","CFPM","MEPM","VCM","CPFX","LVFX","COL","LZD","DAP","CAM","AZM"];
+var ATB_LABELS = {PCG:"PCG", ABPC:"ABPC", SBT_ABPC:"SBT/ABPC", PIPC:"PIPC", TAZ_PIPC:"TAZ/PIPC", CEZ:"CEZ", CTRX:"CTRX", CAZ:"CAZ", CFPM:"CFPM", MEPM:"MEPM", VCM:"VCM", CPFX:"CPFX", LVFX:"LVFX", COL:"COL", LZD:"LZD", DAP:"DAP", CAM:"CAM", AZM:"AZM"};
+function atbLabel(code){ return ATB_LABELS[code] || code; }
+var ATB_PRICES = {PCG:8, ABPC:10, SBT_ABPC:18, PIPC:14, TAZ_PIPC:26, CEZ:12, CTRX:22, CAZ:28, CFPM:32, MEPM:42, VCM:30, CPFX:20, LVFX:24, COL:60, LZD:55, DAP:65, CAM:16, AZM:20};
 
 var SPECIES = [
-  { id:"hai-enkyu-king", name:"ハイエンキューキン王", latin:"Streptococcus pneumoniae",
-    img:"https://somekata.github.io/baikinscharacters/img/chara1.png",
-    hp:3, points:90, weight:45, minStage:1, gram:"グラム陽性・双球菌", isPneumo:true,
-    susceptibility:{ PCG:"S", CEZ:"S", VCM:"S", CAZ:"R", MEPM:"S", COL:"R", LZD:"S", AZM:"R" } },
-  { id:"mssa", name:"ブドウキンくん (MSSA)", latin:"Staphylococcus aureus",
-    img:"https://somekata.github.io/baikinscharacters/img/chara15.png",
-    hp:3, points:80, weight:38, minStage:1, gram:"グラム陽性・ブドウ状球菌", isPneumo:false,
-    susceptibility:{ PCG:"R", CEZ:"S", VCM:"S", CAZ:"R", MEPM:"S", COL:"R", LZD:"S", AZM:"R" } },
-  { id:"mrsa", name:"耐性ブドウキン王 (MRSA)", latin:"Staphylococcus aureus",
-    img:"https://somekata.github.io/baikinscharacters/img/chara15.png",
-    hp:4, points:150, weight:17, minStage:2, gram:"グラム陽性・ブドウ状球菌", isPneumo:false, isBoss:true,
-    susceptibility:{ PCG:"R", CEZ:"R", VCM:"S", CAZ:"R", MEPM:"R", COL:"R", LZD:"S", AZM:"R" } },
-
-  { id:"influ-queen", name:"インフルエンザキンXV世女王", latin:"Haemophilus influenzae",
-    img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
-    hp:4, points:110, weight:24, minStage:2, gram:"グラム陰性・小桿菌", isPneumo:false,
-    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"S", MEPM:"S", COL:"R", LZD:"R", AZM:"S" } },
-
-  { id:"daichou-wt", name:"ダイチョーキン", latin:"Escherichia coli",
-    img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
-    hp:4, points:100, weight:26, minStage:2, gram:"グラム陰性・桿菌", isPneumo:false,
-    susceptibility:{ PCG:"R", CEZ:"S", VCM:"R", CAZ:"S", MEPM:"S", COL:"S", LZD:"R", AZM:"R" } },
-
-  { id:"mycoplasma-hime", name:"マイコプラズマ姫", latin:"Mycoplasma pneumoniae",
-    img:"https://somekata.github.io/baikinscharacters/img/chara3.png",
-    hp:4, points:130, weight:16, minStage:3, gram:"染色不能（細胞壁を持たない）", isPneumo:false,
-    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"R", COL:"R", LZD:"R", AZM:"S" } },
-
-  { id:"legionella-jiiya", name:"レジオネラ爺や", latin:"Legionella pneumophila",
-    img:"https://somekata.github.io/baikinscharacters/img/chara4.png",
-    hp:4, points:130, weight:16, minStage:3, gram:"グラム陰性桿菌（通常染色では検出困難）", isPneumo:false,
-    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"R", COL:"R", LZD:"R", AZM:"S" } },
-
-  { id:"ryokuno-king", name:"リョクノーキン", latin:"Pseudomonas aeruginosa",
-    img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
-    hp:5, points:140, weight:18, minStage:3, gram:"グラム陰性・桿菌", isPneumo:false,
-    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"S", MEPM:"S", COL:"S", LZD:"R", AZM:"R" } },
-
-  { id:"daichou-esbl", name:"ダイチョーキン ESBL産生株", latin:"Escherichia coli (ESBL)",
-    img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
-    hp:5, points:170, weight:12, minStage:3, gram:"グラム陰性・桿菌", isPneumo:false, isBoss:true,
-    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"S", COL:"S", LZD:"R", AZM:"R" } },
-
-  { id:"ryokuno-crpa", name:"リョクノーキン CRPA変異体", latin:"Pseudomonas aeruginosa (CRPA)",
-    img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
-    hp:6, points:210, weight:8, minStage:4, gram:"グラム陰性・桿菌", isPneumo:false, isBoss:true,
-    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"R", COL:"S", LZD:"R", AZM:"R" } },
-
-  { id:"daichou-cre", name:"ダイチョーキン CRE変異体", latin:"Escherichia coli (CRE)",
-    img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
-    hp:6, points:210, weight:8, minStage:4, gram:"グラム陰性・桿菌", isPneumo:false, isBoss:true,
-    susceptibility:{ PCG:"R", CEZ:"R", VCM:"R", CAZ:"R", MEPM:"R", COL:"S", LZD:"R", AZM:"R" } }
+  { id:"pssp", name:"ハイエンキューキン", latin:"Streptococcus pneumoniae", img:"https://somekata.github.io/baikinscharacters/img/chara1.png",
+    minStage:1, hp:3, points:85, weight:28, isBoss:true,
+    susceptibility: { PCG:"S", ABPC:"S", SBT_ABPC:"S", PIPC:"S", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"R", CFPM:"S", MEPM:"S", VCM:"S", CPFX:"R", LVFX:"S", COL:"R", LZD:"S", DAP:"S", CAM:"R", AZM:"R" } },
+  { id:"prsp", name:"耐性ハイエンキューキン王", latin:"Streptococcus pneumoniae (PRSP)", img:"https://somekata.github.io/baikinscharacters/img/chara1.png",
+    minStage:2, hp:3, points:100, weight:26, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"I", CAZ:"R", CFPM:"I", MEPM:"S", VCM:"S", CPFX:"R", LVFX:"S", COL:"R", LZD:"S", DAP:"S", CAM:"R", AZM:"R" } },
+  { id:"mssa", name:"ブドウキンくん (MSSA)", latin:"Staphylococcus aureus", img:"https://somekata.github.io/baikinscharacters/img/chara15.png",
+    minStage:2, hp:3, points:100, weight:26, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"S", PIPC:"R", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"R", CFPM:"S", MEPM:"S", VCM:"S", CPFX:"S", LVFX:"S", COL:"R", LZD:"S", DAP:"S", CAM:["R","S"], AZM:["R","S"] } },
+  { id:"mrsa", name:"耐性ブドウキン王 (MRSA)", latin:"Staphylococcus aureus (MRSA)", img:"https://somekata.github.io/baikinscharacters/img/chara15.png",
+    minStage:3, hp:4, points:115, weight:24, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"S", CPFX:"R", LVFX:"R", COL:"R", LZD:"S", DAP:"S", CAM:"R", AZM:"R" } },
+  { id:"blnas", name:"インフルエンザキン", latin:"Haemophilus influenzae (BLNAS)", img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
+    minStage:1, hp:3, points:85, weight:28, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"S", SBT_ABPC:"S", PIPC:"S", TAZ_PIPC:"S", CEZ:"R", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } },
+  { id:"blnar", name:"インフルエンザキン(BLNAR型)", latin:"Haemophilus influenzae (BLNAR)", img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
+    minStage:2, hp:3, points:100, weight:26, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:["I","R"], PIPC:["I","R"], TAZ_PIPC:["S","I"], CEZ:"R", CTRX:"S", CAZ:["S","I"], CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } },
+  { id:"blpar", name:"インフルエンザキン(BLPAR型)", latin:"Haemophilus influenzae (BLPAR)", img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
+    minStage:3, hp:4, points:115, weight:24, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"S", PIPC:"R", TAZ_PIPC:"S", CEZ:"R", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } },
+  { id:"blpacr", name:"耐性インフルエンザキンXV世女王", latin:"Haemophilus influenzae (BLPACR)", img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
+    minStage:3, hp:4, points:115, weight:24, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:["I","R"], CEZ:"R", CTRX:"S", CAZ:["S","I"], CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } },
+  { id:"ecoli_abpcs", name:"ダイチョーキン(ABPC感受性株)", latin:"Escherichia coli", img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
+    minStage:3, hp:4, points:115, weight:24, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"S", SBT_ABPC:"S", PIPC:"S", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"ecoli_abpcr", name:"ダイチョーキン(ABPC耐性株)", latin:"Escherichia coli", img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
+    minStage:4, hp:4, points:130, weight:22, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"S", PIPC:"R", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"ecoli_esbl", name:"ダイチョーキン ESBL産生株", latin:"Escherichia coli (ESBL)", img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
+    minStage:5, hp:5, points:145, weight:20, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"S", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:["S","I"], MEPM:"S", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"ecoli_cre", name:"ダイチョーキン CRE変異体", latin:"Escherichia coli (CRE/CPE)", img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
+    minStage:8, hp:6, points:190, weight:14, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"kpn_s", name:"カンキンくん", latin:"Klebsiella pneumoniae", img:"https://somekata.github.io/baikinscharacters/img/chara6.png",
+    minStage:4, hp:4, points:130, weight:22, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"S", PIPC:"R", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"kpn_esbl", name:"カンキン ESBL産生株", latin:"Klebsiella pneumoniae (ESBL)", img:"https://somekata.github.io/baikinscharacters/img/chara6.png",
+    minStage:5, hp:5, points:145, weight:20, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"S", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:["S","I"], MEPM:"S", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"kpn_cre", name:"カンキン CRE変異体", latin:"Klebsiella pneumoniae (CRE/CPE)", img:"https://somekata.github.io/baikinscharacters/img/chara6.png",
+    minStage:8, hp:6, points:190, weight:14, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"pa_s", name:"リョクノーキン", latin:"Pseudomonas aeruginosa", img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
+    minStage:5, hp:5, points:145, weight:20, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"S", TAZ_PIPC:"S", CEZ:"R", CTRX:"R", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"crpa_noncarb", name:"リョクノーキン CRPA変異体(非カルバペネマーゼ型)", latin:"Pseudomonas aeruginosa (CRPA)", img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
+    minStage:7, hp:6, points:175, weight:16, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"S", TAZ_PIPC:"S", CEZ:"R", CTRX:"R", CAZ:"S", CFPM:"S", MEPM:"R", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"crpa_carb", name:"リョクノーキン CRPA変異体(カルバペネマーゼ型)", latin:"Pseudomonas aeruginosa (CRPA)", img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
+    minStage:8, hp:6, points:190, weight:14, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:["S","I","R"], LVFX:["S","I","R"], COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"dtr_pa", name:"最強リョクノーキン(DTR-PA)", latin:"Pseudomonas aeruginosa (DTR-PA)", img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
+    minStage:9, hp:7, points:205, weight:12, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"mycoplasma", name:"マイコプラズマ姫", latin:"Mycoplasma pneumoniae", img:"https://somekata.github.io/baikinscharacters/img/chara3.png",
+    minStage:6, hp:5, points:160, weight:18, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"R", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
+  { id:"legionella", name:"レジオネラ爺や", latin:"Legionella pneumophila", img:"https://somekata.github.io/baikinscharacters/img/chara4.png",
+    minStage:6, hp:5, points:160, weight:18, isBoss:true,
+    susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } }
 ];
 function speciesById(id){ for(var i=0;i<SPECIES.length;i++){ if(SPECIES[i].id===id) return SPECIES[i]; } return null; }
-
 function speciesForStage(stage){ return SPECIES.filter(function(sp){ return (sp.minStage||1) <= stage; }); }
 
-var STAGE_THRESHOLDS = [0, 150, 450, 900];
+var STAGE_THRESHOLDS = [0, 100, 220, 360, 520, 700, 900, 1150, 1450];
 function currentStage(){
   var s = state.score;
   for(var i=STAGE_THRESHOLDS.length-1; i>=0; i--){ if(s >= STAGE_THRESHOLDS[i]) return i+1; }
   return 1;
 }
-function stageRewardMult(stage){ return 1 + (stage-1)*0.3; }
-function stageHitsNeeded(sp, stage){ return sp.hp + (stage-1); }
+var MAX_STAGE = STAGE_THRESHOLDS.length;
 
 var MAX_LIVES = 5;
 var START_LIVES = 3;
@@ -2851,6 +2878,16 @@ var FOE_ATK_MIN = 4, FOE_ATK_MAX = 8;                // 敵の反撃ダメージ
 var ENEMY_ATK_INTERVAL_BASE = 2600;                  // 敵の自動反撃の間隔(ms)
 var SPELL_HEAL = 12;
 var FLEE_SUCCESS_RATE = 0.7;
+
+/* PCV(肺炎球菌)・Hib(インフルエンザ菌)ワクチンの対象菌 */
+var PNEUMO_IDS = ["pssp","prsp"];
+var HIB_IDS = ["blnas","blnar","blpar","blpacr"];
+function isProtectedAgainst(sp){
+  if(!sp) return false;
+  if(PNEUMO_IDS.indexOf(sp.id) >= 0 && state.protect.pneumo) return true;
+  if(HIB_IDS.indexOf(sp.id) >= 0 && state.protect.hib) return true;
+  return false;
+}
 var DISCOVER_TABLE_BASE = [
   { kind:"item", weight:50 },
   { kind:"wave", weight:35 },
@@ -2864,7 +2901,7 @@ var WAVE_FODDER = [
   { emoji:"🧬", hp:2, points:22, weight:15 },
   { emoji:"👾", hp:2, points:34, weight:5 }
 ];
-function waveTargetCount(stage){ return 5 + (stage-1)*2; }
+function waveTargetCount(stage){ return 5 + Math.floor((stage-1)*1.1); }
 
 var QUIZ_POOL = [
   { q:"「抗菌薬」が効くのはどんな病気？", choices:["細菌による感染症","ウイルスによるかぜ","花粉症","虫歯"], correct:0 },
@@ -2882,7 +2919,8 @@ var ITEM_TABLE = [
   { kind:"spell",  weight:18, icon:"📖", label:"回復の呪文" },
   { kind:"maxhp",  weight:10, icon:"💪", label:"maxHP上昇の実" },
   { kind:"life",   weight:8,  icon:"❤️", label:"ライフ回復の羽根" },
-  { kind:"vaccine",weight:16, icon:"💉", label:"ワクチン" },
+  { kind:"vaccinePCV",weight:8, icon:"💉", label:"PCVワクチン" },
+  { kind:"vaccineHib",weight:8, icon:"💉", label:"Hibワクチン" },
   { kind:"test",   weight:14, icon:"🔍", label:"検査キット" }
 ];
 function pickItem(){
@@ -2902,6 +2940,10 @@ function activateTab(target){
   tabActive = (target === 'play');
   if(target === 'zukan'){ renderZukan(); }
   if(target === 'shop'){ renderPharmacyList(); renderInventory(); }
+  if(tabActive){
+    renderPlayerHp();
+    if(state.phase === 'resolving'){ startSearching(); }
+  }
 }
 buttons.forEach(function(b){ b.addEventListener('click', function(){ activateTab(b.dataset.target); }); });
 document.querySelectorAll('[data-goto]').forEach(function(b){ b.addEventListener('click', function(){ activateTab(b.dataset.goto); }); });
@@ -2910,9 +2952,10 @@ document.querySelectorAll('[data-goto]').forEach(function(b){ b.addEventListener
 var persist = { bestScore: 0, defeated: [] };
 var state = {
   score:0, money:0,
-  stock:{ PCG:5, CEZ:5, VCM:5, CAZ:5, MEPM:5, COL:5, LZD:5, AZM:5 },
-  inv:{ spell:1, vaccine:1, test:1 },
+  stock:{ PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 },
+  inv:{ spell:1, vaccinePCV:1, vaccineHib:1, test:1 },
   hp:BASE_MAX_HP, maxHp:BASE_MAX_HP, lives:START_LIVES,
+  protect:{ pneumo:false, hib:false },
   heading:0, targetDir:null, aligned:false, alignedSince:0,
   phase:"notstarted", // notstarted | searching | resolving | encounter | battle | over
   simulateMode:false
@@ -2940,6 +2983,38 @@ function renderPlayerHp(){
   $('hpFill').style.width = pct + '%';
   $('hpText').textContent = state.hp + ' / ' + state.maxHp;
 }
+function renderQuickItems(){
+  $('quickSpellStock').textContent = '('+state.inv.spell+')';
+  $('btnQuickSpell').disabled = state.inv.spell <= 0 || state.hp >= state.maxHp;
+  $('quickPcvStock').textContent = state.protect.pneumo ? '接種済み' : '('+state.inv.vaccinePCV+')';
+  $('btnQuickPCV').disabled = state.inv.vaccinePCV <= 0 || state.protect.pneumo;
+  $('btnQuickPCV').classList.toggle('protected', state.protect.pneumo);
+  $('quickHibStock').textContent = state.protect.hib ? '接種済み' : '('+state.inv.vaccineHib+')';
+  $('btnQuickHib').disabled = state.inv.vaccineHib <= 0 || state.protect.hib;
+  $('btnQuickHib').classList.toggle('protected', state.protect.hib);
+}
+$('btnQuickSpell').addEventListener('click', function(){
+  if(state.inv.spell <= 0 || state.hp >= state.maxHp) return;
+  state.inv.spell -= 1;
+  state.hp = Math.min(state.maxHp, state.hp + SPELL_HEAL);
+  renderPlayerHp(); renderQuickItems();
+  popDmg($('exploreHud').querySelector('.hpbar-wrap'), '+'+SPELL_HEAL, 'heal');
+  message.textContent = '回復の呪文を使った！ HPが'+SPELL_HEAL+'回復した（'+state.hp+'/'+state.maxHp+'）';
+});
+$('btnQuickPCV').addEventListener('click', function(){
+  if(state.inv.vaccinePCV <= 0 || state.protect.pneumo) return;
+  state.inv.vaccinePCV -= 1;
+  state.protect.pneumo = true;
+  renderQuickItems();
+  message.textContent = 'PCVワクチンを接種した！ 肺炎球菌の攻撃を受けなくなる';
+});
+$('btnQuickHib').addEventListener('click', function(){
+  if(state.inv.vaccineHib <= 0 || state.protect.hib) return;
+  state.inv.vaccineHib -= 1;
+  state.protect.hib = true;
+  renderQuickItems();
+  message.textContent = 'Hibワクチンを接種した！ インフルエンザ菌の攻撃を受けなくなる';
+});
 function flashHit(){
   flashEl.classList.remove('fade'); flashEl.classList.add('show');
   setTimeout(function(){ flashEl.classList.remove('show'); flashEl.classList.add('fade'); }, 90);
@@ -3060,7 +3135,8 @@ function renderInventory(){
   var wrap = $('invGrid');
   wrap.innerHTML =
     '<div class="inv-cell"><div class="ic">📖</div><div class="nm">回復の呪文</div><div class="ct">'+state.inv.spell+'</div></div>' +
-    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">ワクチン</div><div class="ct">'+state.inv.vaccine+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">PCVワクチン</div><div class="ct">'+(state.protect.pneumo?'接種済み':state.inv.vaccinePCV)+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">Hibワクチン</div><div class="ct">'+(state.protect.hib?'接種済み':state.inv.vaccineHib)+'</div></div>' +
     '<div class="inv-cell"><div class="ic">🔍</div><div class="nm">検査キット</div><div class="ct">'+state.inv.test+'</div></div>' +
     '<div class="inv-cell"><div class="ic">💪</div><div class="nm">最大HP</div><div class="ct">'+state.maxHp+'</div></div>';
 }
@@ -3080,6 +3156,8 @@ function startSearching(){
   findIcon.classList.remove('show');
   pickTarget();
   message.textContent = '矢印がまっすぐ上を向くまで向きを変えよう';
+  renderPlayerHp();
+  renderQuickItems();
 }
 
 function onDiscover(){
@@ -3106,8 +3184,10 @@ function resolveItemFound(){
   else if(item.kind === 'spell'){ state.inv.spell += 1; body = '回復の呪文を手に入れた！（所持:'+state.inv.spell+'）'; }
   else if(item.kind === 'maxhp'){ state.maxHp += MAXHP_UP_AMOUNT; state.hp = Math.min(state.maxHp, state.hp+MAXHP_UP_AMOUNT); renderPlayerHp(); body = 'maxHP上昇の実を食べた！ 最大HPが'+MAXHP_UP_AMOUNT+'上がった（'+state.maxHp+'）'; }
   else if(item.kind === 'life'){ state.lives = Math.min(MAX_LIVES, state.lives+1); renderLives(); body = 'ライフ回復の羽根を見つけた！ ライフ+1（'+state.lives+'）'; }
-  else if(item.kind === 'vaccine'){ state.inv.vaccine += 1; body = 'ワクチンを手に入れた！（所持:'+state.inv.vaccine+'）'; }
+  else if(item.kind === 'vaccinePCV'){ state.inv.vaccinePCV += 1; body = 'PCVワクチンを手に入れた！（所持:'+state.inv.vaccinePCV+'）'; }
+  else if(item.kind === 'vaccineHib'){ state.inv.vaccineHib += 1; body = 'Hibワクチンを手に入れた！（所持:'+state.inv.vaccineHib+'）'; }
   else if(item.kind === 'test'){ state.inv.test += 1; body = '検査キットを手に入れた！（所持:'+state.inv.test+'）'; }
+  renderQuickItems();
   $('itemTitle').textContent = item.icon + ' アイテム発見！';
   $('itemBody').textContent = body;
   $('ovItem').classList.add('show');
@@ -3376,11 +3456,21 @@ $('btnWaveFlee').addEventListener('click', function(){
   if(tabActive) startSearching();
 });
 
+function resolveSusceptibility(sp){
+  var resolved = {};
+  ATB_LIST.forEach(function(code){
+    var v = sp.susceptibility[code];
+    if(Array.isArray(v)){ resolved[code] = v[Math.floor(Math.random()*v.length)]; }
+    else { resolved[code] = v; }
+  });
+  return resolved;
+}
 function startBattle(sp, stage){
   state.phase = 'battle';
-  var hitsNeeded = stageHitsNeeded(sp, stage);
+  var hitsNeeded = sp.hp;
   battle = {
     sp:sp, stage:stage, maxHp:hitsNeeded*20, hp:hitsNeeded*20, revealedAll:(stage===1), known:{},
+    resolvedSus: resolveSusceptibility(sp),
     shielded:false, atkTimer:enemyAtkInterval(stage), lastTs:0, over:false
   };
   $('battleImg').src = sp.img; $('battleImg').alt = sp.name;
@@ -3403,15 +3493,17 @@ function renderBattleHp(){
   $('battlePlayerHpText').textContent = state.hp + ' / ' + state.maxHp;
 }
 function drugKnown(code){ return battle.revealedAll || battle.known[code] !== undefined; }
-function drugTrueRes(code){ return battle.sp.susceptibility[code] || 'R'; }
+function drugTrueRes(code){ return battle.resolvedSus[code] || 'R'; }
+function chipClass(res){ return res==='S' ? 's' : (res==='I' ? 'i' : 'r'); }
 function renderBattleSus(){
   var el = $('battleSus');
   el.innerHTML = ATB_LIST.map(function(code){
+    var label = atbLabel(code);
     if(drugKnown(code)){
       var res = drugTrueRes(code);
-      return '<span class="chip '+(res==='S'?'s':'r')+'">'+code+' '+res+'</span>';
+      return '<span class="chip '+chipClass(res)+'">'+label+' '+res+'</span>';
     }
-    return '<span class="chip unk">'+code+' ？</span>';
+    return '<span class="chip unk">'+label+' ？</span>';
   }).join('');
 }
 
@@ -3435,17 +3527,19 @@ function updateActionButtons(){
     if(!btn) return;
     var owned = state.stock[code]||0;
     var known = drugKnown(code);
-    btn.innerHTML = code + '<span class="stock">在庫'+owned+(known?'':'・？')+'</span>';
+    btn.innerHTML = atbLabel(code) + '<span class="stock">在庫'+owned+(known?'':'・？')+'</span>';
     btn.disabled = owned<=0;
   });
 }
 function renderUtilRow(){
   $('testStockLabel').textContent = '('+state.inv.test+')';
   $('spellStockLabel').textContent = '('+state.inv.spell+')';
-  $('vaccineStockLabel').textContent = '('+state.inv.vaccine+')';
+  $('pcvStockLabel').textContent = state.protect.pneumo ? '接種済み' : '('+state.inv.vaccinePCV+')';
+  $('hibStockLabel').textContent = state.protect.hib ? '接種済み' : '('+state.inv.vaccineHib+')';
   $('btnUseTest').disabled = state.inv.test <= 0;
   $('btnUseSpell').disabled = state.inv.spell <= 0;
-  $('btnUseVaccine').disabled = state.inv.vaccine <= 0;
+  $('btnUsePCV').disabled = state.inv.vaccinePCV <= 0 || state.protect.pneumo;
+  $('btnUseHib').disabled = state.inv.vaccineHib <= 0 || state.protect.hib;
 }
 
 /* ===== 長押しで連打・弾を飛ばす ===== */
@@ -3503,6 +3597,7 @@ function resolveShot(code){
   var hit = (drugTrueRes(code) === 'S');
   var enemyCard = $('battleArena');
   var btn = actionBtnEls[code];
+  var label = atbLabel(code);
 
   setTimeout(function(){
     if(hit){
@@ -3510,11 +3605,11 @@ function resolveShot(code){
       battle.hp = Math.max(0, battle.hp - dmg);
       if(btn){ btn.classList.add('hitok'); setTimeout(function(){btn.classList.remove('hitok');},220); }
       popDmg(enemyCard, '-'+dmg, 'dealt');
-      if(!known){ battle.known[code] = 'S'; renderBattleSus(); }
+      if(!known){ battle.known[code] = true; renderBattleSus(); }
     } else {
       if(btn){ btn.classList.add('hitbad'); setTimeout(function(){btn.classList.remove('hitbad');},220); }
-      popDmg(enemyCard, known ? '効かない' : '？効果なし', 'blocked');
-      if(!known){ battle.known[code] = 'R'; renderBattleSus(); }
+      popDmg(enemyCard, known ? '効かない' : label+'：？効果なし', 'blocked');
+      if(!known){ battle.known[code] = true; renderBattleSus(); }
     }
     renderBattleHp(); updateActionButtons();
     if(battle.hp <= 0 && !battle.over){ battle.over = true; setTimeout(function(){ winBattle(); }, 380); }
@@ -3534,17 +3629,26 @@ $('btnUseSpell').addEventListener('click', function(){
   if(!battle || state.phase!=='battle' || state.inv.spell<=0) return;
   state.inv.spell -= 1;
   state.hp = Math.min(state.maxHp, state.hp + SPELL_HEAL);
+  battle.atkTimer = Math.max(battle.atkTimer, 700); // 回復直後に反撃が重ならないよう猶予
   renderBattleHp(); renderUtilRow();
   var enemyCard = $('battleArena');
   popDmg(enemyCard, '+'+SPELL_HEAL, 'heal');
 });
-$('btnUseVaccine').addEventListener('click', function(){
-  if(!battle || state.phase!=='battle' || state.inv.vaccine<=0 || battle.shielded) return;
-  state.inv.vaccine -= 1;
-  battle.shielded = true;
+$('btnUsePCV').addEventListener('click', function(){
+  if(!battle || state.phase!=='battle' || state.inv.vaccinePCV<=0 || state.protect.pneumo) return;
+  state.inv.vaccinePCV -= 1;
+  state.protect.pneumo = true;
   renderUtilRow();
   var enemyCard = $('battleArena');
-  popDmg(enemyCard, 'ワクチン準備！', 'heal');
+  popDmg(enemyCard, 'PCV接種！', 'heal');
+});
+$('btnUseHib').addEventListener('click', function(){
+  if(!battle || state.phase!=='battle' || state.inv.vaccineHib<=0 || state.protect.hib) return;
+  state.inv.vaccineHib -= 1;
+  state.protect.hib = true;
+  renderUtilRow();
+  var enemyCard = $('battleArena');
+  popDmg(enemyCard, 'Hib接種！', 'heal');
 });
 $('btnBattleFlee').addEventListener('click', function(){ attemptFlee(); });
 
@@ -3561,9 +3665,13 @@ function attemptFlee(){
     if(tabActive) startSearching();
   } else {
     var dmg = FOE_ATK_MIN + Math.floor(Math.random()*(FOE_ATK_MAX-FOE_ATK_MIN+1)) + (battle.stage-1)*2;
-    state.hp = Math.max(0, state.hp - dmg);
-    flashHit(); shakeScope();
-    popDmg(enemyCard, '-'+dmg, 'dealt');
+    if(isProtectedAgainst(battle.sp)){
+      popDmg(enemyCard, 'ワクチンで防御！', 'heal');
+    } else {
+      state.hp = Math.max(0, state.hp - dmg);
+      flashHit(); shakeScope();
+      popDmg(enemyCard, '-'+dmg, 'dealt');
+    }
     renderBattleHp();
     if(state.hp <= 0 && !battle.over){ battle.over = true; setTimeout(function(){ loseBattle(); }, 400); }
   }
@@ -3586,9 +3694,7 @@ function enemyPeriodicAttack(){
   if(!battle || battle.over) return;
   var dmg = FOE_ATK_MIN + Math.floor(Math.random()*(FOE_ATK_MAX-FOE_ATK_MIN+1)) + (battle.stage-1)*2;
   var enemyCard = $('battleArena');
-  if(battle.shielded){
-    battle.shielded = false;
-    renderUtilRow();
+  if(isProtectedAgainst(battle.sp)){
     popDmg(enemyCard, 'ワクチンで防御！', 'heal');
   } else {
     state.hp = Math.max(0, state.hp - dmg);
@@ -3602,8 +3708,7 @@ function enemyPeriodicAttack(){
 function winBattle(){
   stopAllHolds();
   var sp = battle.sp, stage = battle.stage;
-  var mult = stageRewardMult(stage);
-  var gained = Math.round(sp.points * mult);
+  var gained = sp.points;
   if(persist.defeated.indexOf(sp.id) === -1){ persist.defeated.push(sp.id); }
   state.score += gained; state.money += gained;
   refreshHud();
@@ -3639,10 +3744,11 @@ $('btnLifeLostOk').addEventListener('click', function(){
 /* ===================== ゲーム開始／終了 ===================== */
 function goToGame(){
   state.score=0; state.money=0;
-  state.stock = { PCG:5, CEZ:5, VCM:5, CAZ:5, MEPM:5, COL:5, LZD:5, AZM:5 };
-  state.inv = { spell:1, vaccine:1, test:1 };
+  state.stock = { PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 };
+  state.inv = { spell:1, vaccinePCV:1, vaccineHib:1, test:1 };
+  state.protect = { pneumo:false, hib:false };
   state.maxHp = BASE_MAX_HP; state.hp = BASE_MAX_HP; state.lives = START_LIVES;
-  refreshHud(); renderLives(); renderPlayerHp();
+  refreshHud(); renderLives(); renderPlayerHp(); renderQuickItems();
   $('ovBattle').classList.remove('show'); $('ovOver').classList.remove('show');
   $('ovItem').classList.remove('show'); $('ovEncounter').classList.remove('show'); $('ovLifeLost').classList.remove('show');
   $('ovWave').classList.remove('show'); $('ovQuiz').classList.remove('show');
