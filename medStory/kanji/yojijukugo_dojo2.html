@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四字熟語道場 二の巻</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E6;
+    --paper-2:#EFE7D6;
+    --ink:#2B2620;
+    --ink-soft:#5B5346;
+    --line:#D9CFB8;
+    --shu:#A6332B;
+    --shu-deep:#7E2620;
+    --gold:#B08D3F;
+    --ok:#3E6B4B;
+    --ng:#A6332B;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(43,38,32,0.05) 1px, transparent 0);
+    background-size:22px 22px;
+    color:var(--ink);
+    font-family:'Noto Sans JP', sans-serif;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:28px 18px 80px;}
+
+  /* header */
+  header{
+    text-align:center;
+    padding:18px 0 22px;
+    border-bottom:3px double var(--ink);
+    margin-bottom:22px;
+    position:relative;
+  }
+  header .kan{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:2.2rem;
+    letter-spacing:.12em;
+    color:var(--ink);
+  }
+  header .sub{
+    font-size:.78rem;
+    color:var(--ink-soft);
+    letter-spacing:.2em;
+    margin-top:6px;
+  }
+  header .seal{
+    position:absolute;
+    top:8px; right:6px;
+    width:46px;height:46px;
+    border:2.5px solid var(--shu);
+    border-radius:3px;
+    color:var(--shu);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:1.15rem;
+    transform:rotate(-4deg);
+    opacity:.85;
+  }
+
+  /* nav */
+  nav{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:center;
+    margin-bottom:26px;
+  }
+  nav button{
+    font-family:'Noto Serif JP', serif;
+    font-size:.88rem;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    padding:9px 16px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition:.15s;
+  }
+  nav button:hover{border-color:var(--gold); color:var(--ink);}
+  nav button.active{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+
+  section.view{display:none;}
+  section.view.active{display:block;}
+
+  /* --- list/search view --- */
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:14px;
+    align-items:center;
+  }
+  #searchBox{
+    flex:1 1 220px;
+    padding:10px 12px;
+    font-size:.95rem;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:var(--radius);
+    font-family:inherit;
+  }
+  #searchBox:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  #toggleAllBtn{
+    font-family:'Noto Serif JP', serif;
+    font-size:.82rem;
+    background:var(--ink);
+    color:var(--paper);
+    border:1px solid var(--ink);
+    padding:9px 16px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  #toggleAllBtn:hover{background:var(--shu-deep); border-color:var(--shu-deep);}
+  .gyou-filter{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    margin-bottom:16px;
+  }
+  .gyou-filter button{
+    font-family:'Noto Serif JP',serif;
+    font-size:.82rem;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    padding:5px 11px;
+    border-radius:14px;
+    cursor:pointer;
+  }
+  .gyou-filter button.active{
+    background:var(--shu);
+    border-color:var(--shu);
+    color:#fff;
+  }
+  .count-line{
+    font-size:.8rem;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+  }
+  @media(max-width:700px){
+    .card-grid{grid-template-columns:repeat(2, 1fr);}
+  }
+  @media(max-width:460px){
+    .card-grid{grid-template-columns:1fr;}
+  }
+  .idiom-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-left:4px solid var(--shu);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    cursor:pointer;
+  }
+  .idiom-card .term{
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:1.3rem;
+    letter-spacing:.05em;
+  }
+  .idiom-card .reading{
+    font-size:.72rem;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .idiom-card .meaning{
+    font-size:.78rem;
+    color:var(--ink-soft);
+    display:none;
+    margin-top:6px;
+    line-height:1.6;
+  }
+  .idiom-card .example{
+    font-size:.76rem;
+    color:var(--ink);
+    display:none;
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px dashed var(--line);
+    line-height:1.6;
+  }
+  .idiom-card .example::before{
+    content:"例：";
+    color:var(--gold);
+    font-weight:700;
+  }
+  .idiom-card .example .ex-term{
+    font-weight:700;
+    font-size:1.08em;
+    color:var(--shu);
+  }
+  .idiom-card.open .meaning{display:block;}
+  .idiom-card.open .example{display:block;}
+
+  /* --- quiz --- */
+  .quiz-box{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:30px 24px;
+    text-align:center;
+    position:relative;
+    min-height:280px;
+  }
+  .quiz-score{
+    font-size:.78rem;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+    letter-spacing:.05em;
+  }
+  .quiz-prompt-label{
+    font-size:.75rem;
+    color:var(--gold);
+    letter-spacing:.15em;
+    margin-bottom:10px;
+  }
+  .quiz-term{
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:2.6rem;
+    letter-spacing:.1em;
+    margin-bottom:22px;
+  }
+  .quiz-meaning-prompt{
+    font-family:'Noto Serif JP',serif;
+    font-size:1.02rem;
+    line-height:1.9;
+    max-width:560px;
+    margin:0 auto 22px;
+  }
+  .choices{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    text-align:left;
+  }
+  .choices button{
+    font-family:inherit;
+    font-size:.88rem;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    cursor:pointer;
+    line-height:1.6;
+    transition:.12s;
+    text-align:left;
+  }
+  .choices button.term-choice{
+    font-family:'Shippori Mincho',serif;
+    font-size:1.35rem;
+    text-align:center;
+  }
+  .choices button:hover:not(:disabled){border-color:var(--gold); background:#fff;}
+  .choices button.correct{background:#E4EEE6; border-color:var(--ok); color:var(--ok);}
+  .choices button.wrong{background:#F3E1DF; border-color:var(--ng); color:var(--ng);}
+  .choices button:disabled{cursor:default;}
+  .stamp{
+    position:absolute;
+    top:20px; right:26px;
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:1.6rem;
+    border:3px solid;
+    border-radius:6px;
+    padding:2px 10px;
+    transform:rotate(-8deg);
+    opacity:0;
+    transition:opacity .15s, transform .15s;
+  }
+  .stamp.show{opacity:.9; transform:rotate(-8deg) scale(1);}
+  .stamp.ok{color:var(--ok); border-color:var(--ok);}
+  .stamp.ng{color:var(--ng); border-color:var(--ng);}
+  .quiz-next{
+    margin-top:20px;
+    font-family:'Noto Serif JP',serif;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:10px 26px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    font-size:.85rem;
+    letter-spacing:.1em;
+    display:none;
+  }
+  .quiz-next.show{display:inline-block;}
+
+  /* --- matching game --- */
+  .match-status{
+    font-size:.85rem;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .match-cols{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px;
+  }
+  .match-col h3{
+    font-family:'Noto Serif JP',serif;
+    font-size:.82rem;
+    color:var(--gold);
+    letter-spacing:.15em;
+    text-align:center;
+    margin:0 0 10px;
+  }
+  .half-btn{
+    display:block;
+    width:100%;
+    font-family:'Shippori Mincho',serif;
+    font-size:1.3rem;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:10px;
+    margin-bottom:8px;
+    cursor:pointer;
+    letter-spacing:.1em;
+  }
+  .half-btn:hover:not(:disabled){border-color:var(--gold);}
+  .half-btn.selected{border-color:var(--shu); background:#FBEFEC; color:var(--shu);}
+  .half-btn.locked{background:#E4EEE6; border-color:var(--ok); color:var(--ok); cursor:default;}
+  .half-btn.shake{border-color:var(--ng); background:#F3E1DF;}
+  .new-set-btn{
+    display:block;
+    margin:20px auto 0;
+    font-family:'Noto Serif JP',serif;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:10px 26px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    font-size:.85rem;
+    letter-spacing:.1em;
+  }
+
+  footer{
+    max-width:820px;
+    margin:50px auto 0;
+    padding:16px 18px 0;
+    border-top:1px solid var(--line);
+    font-size:.68rem;
+    color:var(--ink-soft);
+    line-height:1.8;
+  }
+
+  @media(max-width:520px){
+    .choices{grid-template-columns:1fr;}
+    .quiz-term{font-size:2rem;}
+    header .kan{font-size:1.7rem;}
+  }
+
+  /* --- print --- */
+  @media print{
+    body{background:#fff; color:#000;}
+    nav, .toolbar, .gyou-filter, .count-line, .stamp{display:none !important;}
+    header .seal{display:none;}
+    section.view{display:none !important;}
+    #view-list{display:block !important;}
+    .card-grid{
+      display:grid !important;
+      grid-template-columns:repeat(3, 1fr) !important;
+      gap:8px;
+    }
+    .idiom-card{
+      break-inside:avoid;
+      page-break-inside:avoid;
+      border:1px solid #999;
+      background:#fff;
+      margin-bottom:12px;
+      padding:10px 12px;
+    }
+    .idiom-card .meaning, .idiom-card .example{display:block !important;}
+    .idiom-card .example{color:#000;}
+    .idiom-card .example .ex-term{color:#000;}
+    footer{break-inside:avoid; page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="seal">熟</div>
+    <div class="kan">四字熟語道場 二の巻</div>
+    <div class="sub">ISSHIKI YOJIJUKUGO DOJO ・ 全67語</div>
+  </header>
+
+  <nav>
+    <button data-view="list" class="active">一覧・検索</button>
+    <button data-view="quiz1">クイズ：意味を選ぶ</button>
+    <button data-view="quiz2">クイズ：熟語を選ぶ</button>
+    <button data-view="match">組み合わせゲーム</button>
+  </nav>
+
+  <!-- LIST / SEARCH -->
+  <section class="view active" id="view-list">
+    <div class="toolbar">
+      <input id="searchBox" type="text" placeholder="熟語・読み・意味で検索…">
+      <button id="toggleAllBtn" type="button">すべて開く</button>
+    </div>
+    <div class="gyou-filter" id="gyouFilter"></div>
+    <div class="count-line" id="countLine"></div>
+    <div class="card-grid" id="cardGrid"></div>
+  </section>
+
+  <!-- QUIZ 1: term -> choose meaning -->
+  <section class="view" id="view-quiz1">
+    <div class="quiz-box">
+      <div class="stamp" id="stamp1"></div>
+      <div class="quiz-score" id="score1"></div>
+      <div class="quiz-prompt-label">この四字熟語の意味は？</div>
+      <div class="quiz-term" id="quizTerm1"></div>
+      <div class="choices" id="choices1"></div>
+      <button class="quiz-next" id="next1">次の問題 →</button>
+    </div>
+  </section>
+
+  <!-- QUIZ 2: meaning -> choose term -->
+  <section class="view" id="view-quiz2">
+    <div class="quiz-box">
+      <div class="stamp" id="stamp2"></div>
+      <div class="quiz-score" id="score2"></div>
+      <div class="quiz-prompt-label">この意味を表す四字熟語は？</div>
+      <div class="quiz-meaning-prompt" id="quizMeaning2"></div>
+      <div class="choices" id="choices2"></div>
+      <button class="quiz-next" id="next2">次の問題 →</button>
+    </div>
+  </section>
+
+  <!-- MATCH GAME -->
+  <section class="view" id="view-match">
+    <div class="match-status" id="matchStatus"></div>
+    <div class="match-cols">
+      <div class="match-col">
+        <h3>上の二文字</h3>
+        <div id="upperCol"></div>
+      </div>
+      <div class="match-col">
+        <h3>下の二文字</h3>
+        <div id="lowerCol"></div>
+      </div>
+    </div>
+    <button class="new-set-btn" id="newSetBtn">新しい問題セット</button>
+  </section>
+
+  <footer>
+    掲載の四字熟語（見出し語）はユーザー指定のリストに基づき、読み仮名・意味は AI（Claude, Anthropic）が作成しました。内容には誤りが含まれる可能性があります。学習・受験対策としてご利用の際は、必ず市販の国語辞典・四字熟語辞典等で正確性をご確認ください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<script>
+const DATA = [{"term": "泰然自若", "reading": "たいぜんじじゃく", "meaning": "どんなことにも動じず、落ち着いて平然としていること。「泰然」はゆったりと落ち着いている様子。「自若」は物事に驚いたり慌てたりせず、平常心を保っている様子。", "example": "彼は非常事態でも泰然自若としていた。"}, {"term": "酒池肉林", "reading": "しゅちにくりん", "meaning": "贅を尽くした盛大な酒宴のこと。酒を池のように満たし、肉を林のように並べるという意味から。中国の殷の紂王の故事に由来する。", "example": "かつての宴は酒池肉林と称された。"}, {"term": "二律背反", "reading": "にりつはいはん", "meaning": "同じように成り立つはずの二つの命題が、互いに矛盾して両立しないこと。哲学の用語で、アンチノミーともいう。", "example": "自由と安全は二律背反の関係にある。"}, {"term": "円転滑脱", "reading": "えんてんかつだつ", "meaning": "物事の処理や人との応対が角を立てず、巧みで自在なこと。話や態度が滑らかで、状況に応じて自在に変化する様子。", "example": "彼の円転滑脱な対応に助けられた。"}, {"term": "会者定離", "reading": "えしゃじょうり", "meaning": "出会った者は、いつか必ず別れる運命にあるということ。仏教語で、この世の無常を表す言葉。", "example": "会者定離とはいえ、別れはつらいものだ。"}, {"term": "閑話休題", "reading": "かんわきゅうだい", "meaning": "それはさておき。むだ話を切り上げて、本題に戻るときに使う言葉。", "example": "閑話休題、本題に戻ろう。"}, {"term": "気宇壮大", "reading": "きうそうだい", "meaning": "心の持ち方や発想の規模が非常に大きく、立派なこと。「気宇」は心の広がりや度量のこと。", "example": "気宇壮大な計画を語る。"}, {"term": "堅忍不抜", "reading": "けんにんふばつ", "meaning": "意志が固く、どんな困難にも耐え忍んで動じないこと。「堅忍」はじっと我慢すること、「不抜」は心が揺らがないこと。", "example": "堅忍不抜の精神で困難を乗り越えた。"}, {"term": "夏炉冬扇", "reading": "かろとうせん", "meaning": "時季外れで役に立たないもの、無用の長物のたとえ。夏の火鉢と冬の扇という意味から。", "example": "今となっては夏炉冬扇の意見だ。"}, {"term": "白砂青松", "reading": "はくしゃせいしょう", "meaning": "白い砂浜と青々とした松、美しい海岸の景色のこと。日本の海岸美を表す言葉として使われる。", "example": "白砂青松の海岸を歩く。"}, {"term": "妙計奇策", "reading": "みょうけいきさく", "meaning": "人が思いつかないような、巧みで優れたはかりごとのこと。", "example": "妙計奇策を巡らせる。"}, {"term": "放歌高吟", "reading": "ほうかこうぎん", "meaning": "周りをはばからず、大きな声で歌ったり詩を吟じたりすること。", "example": "山頂で放歌高吟する。"}, {"term": "謹厳実直", "reading": "きんげんじっちょく", "meaning": "慎み深くまじめで、正直な人柄であること。「謹厳」はつつしみ深く厳格なこと、「実直」は誠実で正直なこと。", "example": "謹厳実直な人柄で信頼が厚い。"}, {"term": "四分五裂", "reading": "しぶんごれつ", "meaning": "まとまっていたものが、ばらばらに分裂すること。秩序なく入り乱れて分かれる様子。", "example": "チームは四分五裂の状態だ。"}, {"term": "和衷協同", "reading": "わちゅうきょうどう", "meaning": "心を一つにして、互いに力を合わせて事にあたること。「衷」は心のこと。", "example": "和衷協同して事業を進める。"}, {"term": "普遍妥当", "reading": "ふへんだとう", "meaning": "どのような場合にも例外なく当てはまり、真理として成り立つこと。", "example": "普遍妥当な理論を目指す。"}, {"term": "綱紀粛正", "reading": "こうきしゅくせい", "meaning": "国家や組織の規律をゆるみなく厳しく正すこと。「綱紀」は根本となる規則や秩序のこと。", "example": "綱紀粛正を図る。"}, {"term": "当意即妙", "reading": "とういそくみょう", "meaning": "その場の状況に応じて、すばやく機転を利かせて対応すること。", "example": "当意即妙な返答に感心した。"}, {"term": "質実剛健", "reading": "しつじつごうけん", "meaning": "飾り気がなくまじめで、心身ともにたくましくしっかりしていること。", "example": "質実剛健な校風で知られる。"}, {"term": "迅速果断", "reading": "じんそくかだん", "meaning": "物事をすばやく、思い切って決断し実行すること。", "example": "迅速果断な判断が求められる。"}, {"term": "英俊豪傑", "reading": "えいしゅんごうけつ", "meaning": "才知や武勇に非常に優れた人物のこと。", "example": "英俊豪傑が集う時代だった。"}, {"term": "快刀乱麻", "reading": "かいとうらんま", "meaning": "もつれて複雑な物事を、鮮やかな手際で解決すること。よく切れる刀でもつれた麻糸を断ち切るという意味から。", "example": "快刀乱麻を断つ手腕を見せた。"}, {"term": "比翼連理", "reading": "ひよくれんり", "meaning": "男女の情愛が深く、仲むつまじいことのたとえ。一つの翼と目を持つという比翼の鳥と、枝が結び合う連理の木にたとえた言葉。", "example": "比翼連理の仲だと評判の二人。"}, {"term": "安寧秩序", "reading": "あんねいちつじょ", "meaning": "世の中が穏やかに治まり、社会の秩序が保たれていること。", "example": "安寧秩序を保つ。"}, {"term": "志操堅固", "reading": "しそうけんご", "meaning": "志や信念がしっかりしていて、何事にも動じないこと。「志操」は志や主義を守り抜こうとする心のこと。", "example": "志操堅固な姿勢を貫く。"}, {"term": "隠忍自重", "reading": "いんにんじちょう", "meaning": "つらさや怒りをじっと我慢し、軽々しい行動を慎むこと。", "example": "ここは隠忍自重すべき場面だ。"}, {"term": "汗牛充棟", "reading": "かんぎゅうじゅうとう", "meaning": "蔵書が非常に多いことのたとえ。車に積めば牛が汗をかき、家に積めば棟木にまで届くほど多いという意味から。", "example": "汗牛充棟の蔵書を持つ学者。"}, {"term": "暖衣飽食", "reading": "だんいほうしょく", "meaning": "暖かい衣服を着て腹いっぱい食べる、何一つ不自由のない満ち足りた生活のたとえ。", "example": "暖衣飽食の暮らしに慣れる。"}, {"term": "遠慮会釈", "reading": "えんりょえしゃく", "meaning": "人に対して控えめに振る舞い、気を配ること。多くは「遠慮会釈もない」の形で、無遠慮な様子を表すのに使われる。", "example": "遠慮会釈もなく話しかけてきた。"}, {"term": "文人墨客", "reading": "ぶんじんぼっかく", "meaning": "詩文や書画など、風流な趣味を好み楽しむ人々のこと。", "example": "文人墨客が集う茶会。"}, {"term": "泰山北斗", "reading": "たいざんほくと", "meaning": "その道で最も権威があり、多くの人から尊敬される人物のたとえ。中国の名山「泰山」と、星の中心とされる「北斗七星」から。", "example": "この分野の泰山北斗と呼ばれる。"}, {"term": "盛者必衰", "reading": "じょうしゃひっすい", "meaning": "どんなに勢いの盛んな者も、いつか必ず衰える時が来るということ。仏教の無常観を表す言葉。", "example": "盛者必衰の理を思う。"}, {"term": "天衣無縫", "reading": "てんいむほう", "meaning": "詩や文章などが技巧を凝らさず自然で美しいこと。また、人柄が無邪気で飾り気のないこと。天人の衣には縫い目がないという伝説から。", "example": "天衣無縫な性格が愛される。"}, {"term": "竜頭蛇尾", "reading": "りゅうとうだび", "meaning": "初めは勢いが盛んだが、終わりになると振るわなくなること。頭は立派な竜だが、尾は細い蛇のようだという意味から。", "example": "計画は竜頭蛇尾に終わった。"}, {"term": "雲泥万里", "reading": "うんでいばんり", "meaning": "両者の差が非常に大きく、かけ離れていることのたとえ。雲と泥ほどの隔たりがあるという意味から。", "example": "両者の実力には雲泥万里の差がある。"}, {"term": "百八煩悩", "reading": "ひゃくはちぼんのう", "meaning": "人間が持つとされる108種類の煩悩のこと。除夜の鐘を108回つく由来とされる。", "example": "除夜の鐘で百八煩悩を払う。"}, {"term": "内憂外患", "reading": "ないゆうがいかん", "meaning": "国内の心配事と、外国から受ける脅威の両方があること。組織内の悩みと外部からの圧力の両方を指す場合にも使う。", "example": "内憂外患に悩まされる政権。"}, {"term": "眺望絶佳", "reading": "ちょうぼうぜっか", "meaning": "見晴らしが非常に素晴らしいこと。「絶佳」はこの上なく美しいこと。", "example": "山頂からの眺望絶佳な景色。"}, {"term": "巧遅拙速", "reading": "こうちせっそく", "meaning": "上手で遅いことよりも、下手でも速いことの方が優れているということ。「巧遅は拙速に如かず」を略した言葉。", "example": "巧遅拙速というが、まずは早く出そう。"}, {"term": "忙中有閑", "reading": "ぼうちゅうゆうかん", "meaning": "どんなに忙しい中にも、わずかなひまはあるものだということ。", "example": "忙中有閑を見つけて休む。"}, {"term": "主客転倒", "reading": "しゅかくてんとう", "meaning": "物事の主となるものと、従となるものの立場が逆になってしまうこと。", "example": "それでは主客転倒だ。"}, {"term": "月下氷人", "reading": "げっかひょうじん", "meaning": "男女の縁を取り持つ人、仲人のこと。月の下で縁を結ぶ老人と、氷の上で人を取り持つ人物、二つの故事が合わさった言葉。", "example": "友人の月下氷人を頼む。"}, {"term": "群雄割拠", "reading": "ぐんゆうかっきょ", "meaning": "多くの実力者たちが、それぞれの土地を根拠地として互いに勢力を争うこと。", "example": "業界は群雄割拠の様相を呈する。"}, {"term": "秋霜烈日", "reading": "しゅうそうれつじつ", "meaning": "刑罰や意志、権威などが非常に厳しく激しいことのたとえ。秋の冷たい霜と夏の激しい日差しという意味から。", "example": "秋霜烈日の裁きが下された。"}, {"term": "唯唯諾諾", "reading": "いいだくだく", "meaning": "物事の善し悪しにかかわらず、人の言いなりになること。「唯」「諾」はどちらも承知の返事を表す。", "example": "唯唯諾諾と従うばかりでは成長しない。"}, {"term": "軽挙妄動", "reading": "けいきょもうどう", "meaning": "よく考えずに、軽々しく行動すること。", "example": "軽挙妄動は慎むべきだ。"}, {"term": "小心翼々", "reading": "しょうしんよくよく", "meaning": "気が小さく、絶えずびくびくと恐れながら行動する様子。", "example": "小心翼々として日々を過ごす。"}, {"term": "昼夜兼行", "reading": "ちゅうやけんこう", "meaning": "昼も夜も休まずに、物事を続けて行うこと。", "example": "昼夜兼行で工事を進める。"}, {"term": "枝葉末節", "reading": "しようまっせつ", "meaning": "物事の本質から外れた、些細でどうでもよい部分のこと。木の幹に対する枝や葉、節のように重要でない部分という意味から。", "example": "枝葉末節にこだわりすぎるな。"}, {"term": "温厚篤実", "reading": "おんこうとくじつ", "meaning": "性格が穏やかで思いやりがあり、誠実な人柄であること。", "example": "温厚篤実な人柄で慕われる。"}, {"term": "内疎外親", "reading": "ないそがいしん", "meaning": "内心では相手を疎んじていながら、表面上は親しげに振る舞うこと。", "example": "内疎外親な態度が透けて見える。"}, {"term": "精進潔斎", "reading": "しょうじんけっさい", "meaning": "肉食や飲酒を断ち、心身のけがれを取り除いて仏事や神事に専念すること。", "example": "祭りの前に精進潔斎する。"}, {"term": "教唆扇動", "reading": "きょうさせんどう", "meaning": "人をそそのかし、あおり立てて行動を起こさせること。", "example": "教唆扇動の疑いで捜査される。"}, {"term": "破邪顕正", "reading": "はじゃけんしょう", "meaning": "誤った考えを打ち破り、正しい道理を明らかにすること。仏教語に由来する。", "example": "破邪顕正の志を持つ。"}, {"term": "傍若無人", "reading": "ぼうじゃくぶじん", "meaning": "周りの人をはばからず、自分勝手気ままにふるまうこと。", "example": "傍若無人な振る舞いに眉をひそめる。"}, {"term": "多岐亡羊", "reading": "たきぼうよう", "meaning": "学問の道があまりに多方面に分かれすぎて、真理を得るのが難しいことのたとえ。分かれ道が多すぎて、逃げた羊を見失ったという故事から。", "example": "選択肢が多すぎて多岐亡羊の状態だ。"}, {"term": "詩歌管弦", "reading": "しいかかんげん", "meaning": "詩や和歌を作り、楽器を演奏するなど、風流な遊びを楽しむこと。", "example": "詩歌管弦を楽しむ宴。"}, {"term": "高論卓説", "reading": "こうろんたくせつ", "meaning": "すぐれた議論や、卓越した意見のこと。", "example": "高論卓説に耳を傾ける。"}, {"term": "合従連衡", "reading": "がっしょうれんこう", "meaning": "その時々の利害に応じて、手を結んだり離れたりする駆け引きのこと。中国の戦国時代の外交政策に由来する言葉。", "example": "企業間の合従連衡が進む。"}, {"term": "万緑一紅", "reading": "ばんりょくいっこう", "meaning": "多くの平凡なものの中に、一つだけ際立って優れたものが混じっていることのたとえ。「紅一点」と同じ意味で使われる。", "example": "会場は万緑一紅、彼女だけが目立っていた。"}, {"term": "初志貫徹", "reading": "しょしかんてつ", "meaning": "最初に心に決めた志を、最後までやり通すこと。", "example": "初志貫徹で夢を叶えた。"}, {"term": "孤城落日", "reading": "こじょうらくじつ", "meaning": "助けもなく孤立し、勢いが衰えて心細い様子のたとえ。孤立した城と、沈みかける夕日という意味から。", "example": "孤城落日の思いで撤退を決めた。"}, {"term": "不偏不党", "reading": "ふへんふとう", "meaning": "どちらか一方に偏ることなく、公正中立な立場を保つこと。", "example": "不偏不党の立場で報道する。"}, {"term": "酔生夢死", "reading": "すいせいむし", "meaning": "これといった目的も持たず、酒に酔い夢を見ているようにぼんやりと一生を送ること。", "example": "酔生夢死の日々を送る。"}, {"term": "気炎万丈", "reading": "きえんばんじょう", "meaning": "燃え上がる炎のように、意気込みが非常に盛んなこと。", "example": "新人が気炎万丈に語る。"}, {"term": "朝令暮改", "reading": "ちょうれいぼかい", "meaning": "命令や法令が頻繁に変わって、あてにならないこと。朝に出した命令を、夕方にはもう改めるという意味から。", "example": "方針が朝令暮改で現場が混乱する。"}, {"term": "危急存亡", "reading": "ききゅうそんぼう", "meaning": "生き残れるか滅びるかの瀬戸際にある、非常に危険な状態のこと。", "example": "会社は危急存亡の秋（とき）を迎えた。"}];
+/* ---------- utils ---------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function sample(arr, n){ return shuffle(arr).slice(0,n); }
+function shortMeaning(text){
+  // 意味文の要点（最初の一文）だけを抜き出して短縮表示する
+  const m = text.match(/^(.+?[。])/);
+  return m ? m[1] : text;
+}
+function highlightTerm(example, term){
+  // 例文中の四字熟語を目立たせる（term中の正規表現特殊文字はそのままでよい：漢字のみのため）
+  if(!example) return '';
+  return example.split(term).join(`<span class="ex-term">${term}</span>`);
+}
+
+const GYOU = {
+  "あ":"あいうえおぁぃぅぇぉ","か":"かきくけこがぎぐげご","さ":"さしすせそざじずぜぞ",
+  "た":"たちつてとだぢづでど","な":"なにぬねの","は":"はひふへほばびぶべぼぱぴぷぺぽ",
+  "ま":"まみむめも","や":"やゆよゃゅょ","ら":"らりるれろ","わ":"わをん"
+};
+function gyouOf(reading){
+  const c = reading[0];
+  for(const k in GYOU){ if(GYOU[k].includes(c)) return k; }
+  return "他";
+}
+
+/* ---------- nav ---------- */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.view').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+/* ---------- LIST / SEARCH / FILTER ---------- */
+let activeGyou = null;
+const gyouFilterEl = document.getElementById('gyouFilter');
+const allBtn = document.createElement('button');
+allBtn.textContent = 'すべて';
+allBtn.className = 'active';
+allBtn.addEventListener('click', ()=>{ activeGyou=null; syncGyouButtons(allBtn); renderList(); });
+gyouFilterEl.appendChild(allBtn);
+Object.keys(GYOU).forEach(k=>{
+  const b = document.createElement('button');
+  b.textContent = k+'行';
+  b.addEventListener('click', ()=>{ activeGyou=k; syncGyouButtons(b); renderList(); });
+  gyouFilterEl.appendChild(b);
+});
+function syncGyouButtons(active){
+  gyouFilterEl.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  active.classList.add('active');
+}
+
+const searchBox = document.getElementById('searchBox');
+searchBox.addEventListener('input', renderList);
+
+let allOpen = false;
+const toggleAllBtn = document.getElementById('toggleAllBtn');
+toggleAllBtn.addEventListener('click', ()=>{
+  allOpen = !allOpen;
+  toggleAllBtn.textContent = allOpen ? 'すべて閉じる' : 'すべて開く';
+  document.querySelectorAll('.idiom-card').forEach(c=>c.classList.toggle('open', allOpen));
+});
+
+function renderList(){
+  const q = searchBox.value.trim();
+  let list = DATA;
+  if(activeGyou) list = list.filter(d=>gyouOf(d.reading)===activeGyou);
+  if(q) list = list.filter(d=>d.term.includes(q)||d.reading.includes(q)||d.meaning.includes(q));
+
+  document.getElementById('countLine').textContent = list.length + ' 件 / 全' + DATA.length + '件';
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = '';
+  list.forEach(d=>{
+    const card = document.createElement('div');
+    card.className = 'idiom-card' + (allOpen ? ' open' : '');
+    card.innerHTML = `<div class="reading">${d.reading}</div>
+      <div class="term">${d.term}</div>
+      <div class="meaning">${d.meaning}</div>
+      <div class="example">${d.example ? highlightTerm(d.example, d.term) : ''}</div>`;
+    card.addEventListener('click', ()=>card.classList.toggle('open'));
+    grid.appendChild(card);
+  });
+}
+renderList();
+
+/* ---------- QUIZ 1: term -> meaning ---------- */
+let score1 = {correct:0, total:0};
+let currentQ1 = null;
+function newQuiz1(){
+  document.getElementById('stamp1').className = 'stamp';
+  document.getElementById('next1').classList.remove('show');
+  const correct = sample(DATA,1)[0];
+  const distractors = sample(DATA.filter(d=>d!==correct), 3);
+  const options = shuffle([correct, ...distractors]);
+  currentQ1 = correct;
+  document.getElementById('quizTerm1').textContent = correct.term;
+  document.getElementById('score1').textContent = `正解 ${score1.correct} / ${score1.total} 問`;
+  const box = document.getElementById('choices1');
+  box.innerHTML='';
+  options.forEach(opt=>{
+    const b = document.createElement('button');
+    b.textContent = shortMeaning(opt.meaning);
+    b.addEventListener('click', ()=>answerQ1(b, opt===correct));
+    box.appendChild(b);
+  });
+}
+function answerQ1(btn, isCorrect){
+  document.querySelectorAll('#choices1 button').forEach(b=>b.disabled=true);
+  const stamp = document.getElementById('stamp1');
+  score1.total++;
+  if(isCorrect){
+    btn.classList.add('correct');
+    stamp.textContent='正解'; stamp.className='stamp show ok';
+    score1.correct++;
+  }else{
+    btn.classList.add('wrong');
+    stamp.textContent='不正解'; stamp.className='stamp show ng';
+    document.querySelectorAll('#choices1 button').forEach(b=>{ if(b.textContent===shortMeaning(currentQ1.meaning)) b.classList.add('correct'); });
+  }
+  document.getElementById('score1').textContent = `正解 ${score1.correct} / ${score1.total} 問`;
+  document.getElementById('next1').classList.add('show');
+}
+document.getElementById('next1').addEventListener('click', newQuiz1);
+
+/* ---------- QUIZ 2: meaning -> term ---------- */
+let score2 = {correct:0, total:0};
+let currentQ2 = null;
+function newQuiz2(){
+  document.getElementById('stamp2').className = 'stamp';
+  document.getElementById('next2').classList.remove('show');
+  const correct = sample(DATA,1)[0];
+  const distractors = sample(DATA.filter(d=>d!==correct), 3);
+  const options = shuffle([correct, ...distractors]);
+  currentQ2 = correct;
+  document.getElementById('quizMeaning2').textContent = shortMeaning(correct.meaning);
+  document.getElementById('score2').textContent = `正解 ${score2.correct} / ${score2.total} 問`;
+  const box = document.getElementById('choices2');
+  box.innerHTML='';
+  options.forEach(opt=>{
+    const b = document.createElement('button');
+    b.className='term-choice';
+    b.textContent = opt.term;
+    b.addEventListener('click', ()=>answerQ2(b, opt===correct));
+    box.appendChild(b);
+  });
+}
+function answerQ2(btn, isCorrect){
+  document.querySelectorAll('#choices2 button').forEach(b=>b.disabled=true);
+  const stamp = document.getElementById('stamp2');
+  score2.total++;
+  if(isCorrect){
+    btn.classList.add('correct');
+    stamp.textContent='正解'; stamp.className='stamp show ok';
+    score2.correct++;
+  }else{
+    btn.classList.add('wrong');
+    stamp.textContent='不正解'; stamp.className='stamp show ng';
+    document.querySelectorAll('#choices2 button').forEach(b=>{ if(b.textContent===currentQ2.term) b.classList.add('correct'); });
+  }
+  document.getElementById('score2').textContent = `正解 ${score2.correct} / ${score2.total} 問`;
+  document.getElementById('next2').classList.add('show');
+}
+document.getElementById('next2').addEventListener('click', newQuiz2);
+
+/* ---------- MATCH GAME ---------- */
+const MATCH_SET_SIZE = 6;
+let matchTerms = [];
+let matchedCount = 0;
+let selUpper = null, selLower = null;
+
+function newMatchSet(){
+  matchTerms = sample(DATA.filter(d=>d.term.length===4), MATCH_SET_SIZE);
+  matchedCount = 0;
+  selUpper = null; selLower = null;
+  const uppers = shuffle(matchTerms.map(d=>({id:d.term, half:d.term.slice(0,2)})));
+  const lowers = shuffle(matchTerms.map(d=>({id:d.term, half:d.term.slice(2,4)})));
+
+  const upperCol = document.getElementById('upperCol');
+  const lowerCol = document.getElementById('lowerCol');
+  upperCol.innerHTML=''; lowerCol.innerHTML='';
+
+  uppers.forEach(u=>{
+    const b = document.createElement('button');
+    b.className='half-btn';
+    b.textContent = u.half;
+    b.dataset.id = u.id;
+    b.addEventListener('click', ()=>selectHalf(b,'upper'));
+    upperCol.appendChild(b);
+  });
+  lowers.forEach(l=>{
+    const b = document.createElement('button');
+    b.className='half-btn';
+    b.textContent = l.half;
+    b.dataset.id = l.id;
+    b.addEventListener('click', ()=>selectHalf(b,'lower'));
+    lowerCol.appendChild(b);
+  });
+  updateMatchStatus();
+}
+
+function updateMatchStatus(){
+  document.getElementById('matchStatus').textContent =
+    `${matchedCount} / ${matchTerms.length} 組 完成`;
+}
+
+function selectHalf(btn, side){
+  if(btn.classList.contains('locked')) return;
+  if(side==='upper'){
+    if(selUpper) selUpper.classList.remove('selected');
+    selUpper = btn; btn.classList.add('selected');
+  }else{
+    if(selLower) selLower.classList.remove('selected');
+    selLower = btn; btn.classList.add('selected');
+  }
+  if(selUpper && selLower){
+    if(selUpper.dataset.id === selLower.dataset.id){
+      selUpper.classList.remove('selected'); selLower.classList.remove('selected');
+      selUpper.classList.add('locked'); selLower.classList.add('locked');
+      selUpper.disabled = true; selLower.disabled = true;
+      matchedCount++;
+      selUpper=null; selLower=null;
+      updateMatchStatus();
+      if(matchedCount === matchTerms.length){
+        document.getElementById('matchStatus').textContent = `🎉 全${matchTerms.length}組 完成！「新しい問題セット」で次へ`;
+      }
+    }else{
+      const u=selUpper, l=selLower;
+      u.classList.add('shake'); l.classList.add('shake');
+      setTimeout(()=>{
+        u.classList.remove('selected','shake');
+        l.classList.remove('selected','shake');
+      }, 420);
+      selUpper=null; selLower=null;
+    }
+  }
+}
+document.getElementById('newSetBtn').addEventListener('click', newMatchSet);
+
+/* ---------- init ---------- */
+newQuiz1();
+newQuiz2();
+newMatchSet();
+</script>
+</body>
+</html>

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四字熟語道場</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E6;
+    --paper-2:#EFE7D6;
+    --ink:#2B2620;
+    --ink-soft:#5B5346;
+    --line:#D9CFB8;
+    --shu:#A6332B;
+    --shu-deep:#7E2620;
+    --gold:#B08D3F;
+    --ok:#3E6B4B;
+    --ng:#A6332B;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(43,38,32,0.05) 1px, transparent 0);
+    background-size:22px 22px;
+    color:var(--ink);
+    font-family:'Noto Sans JP', sans-serif;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:28px 18px 80px;}
+
+  /* header */
+  header{
+    text-align:center;
+    padding:18px 0 22px;
+    border-bottom:3px double var(--ink);
+    margin-bottom:22px;
+    position:relative;
+  }
+  header .kan{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:2.2rem;
+    letter-spacing:.12em;
+    color:var(--ink);
+  }
+  header .sub{
+    font-size:.78rem;
+    color:var(--ink-soft);
+    letter-spacing:.2em;
+    margin-top:6px;
+  }
+  header .seal{
+    position:absolute;
+    top:8px; right:6px;
+    width:46px;height:46px;
+    border:2.5px solid var(--shu);
+    border-radius:3px;
+    color:var(--shu);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:1.15rem;
+    transform:rotate(-4deg);
+    opacity:.85;
+  }
+
+  /* nav */
+  nav{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:center;
+    margin-bottom:26px;
+  }
+  nav button{
+    font-family:'Noto Serif JP', serif;
+    font-size:.88rem;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    padding:9px 16px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition:.15s;
+  }
+  nav button:hover{border-color:var(--gold); color:var(--ink);}
+  nav button.active{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+
+  section.view{display:none;}
+  section.view.active{display:block;}
+
+  /* --- list/search view --- */
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:14px;
+    align-items:center;
+  }
+  #searchBox{
+    flex:1 1 220px;
+    padding:10px 12px;
+    font-size:.95rem;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:var(--radius);
+    font-family:inherit;
+  }
+  #searchBox:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  #toggleAllBtn{
+    font-family:'Noto Serif JP', serif;
+    font-size:.82rem;
+    background:var(--ink);
+    color:var(--paper);
+    border:1px solid var(--ink);
+    padding:9px 16px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  #toggleAllBtn:hover{background:var(--shu-deep); border-color:var(--shu-deep);}
+  .gyou-filter{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    margin-bottom:16px;
+  }
+  .gyou-filter button{
+    font-family:'Noto Serif JP',serif;
+    font-size:.82rem;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    padding:5px 11px;
+    border-radius:14px;
+    cursor:pointer;
+  }
+  .gyou-filter button.active{
+    background:var(--shu);
+    border-color:var(--shu);
+    color:#fff;
+  }
+  .count-line{
+    font-size:.8rem;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px,1fr));
+    gap:10px;
+  }
+  .idiom-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-left:4px solid var(--shu);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    cursor:pointer;
+  }
+  .idiom-card .term{
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:1.3rem;
+    letter-spacing:.05em;
+  }
+  .idiom-card .reading{
+    font-size:.72rem;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .idiom-card .meaning{
+    font-size:.78rem;
+    color:var(--ink-soft);
+    display:none;
+    margin-top:6px;
+    line-height:1.6;
+  }
+  .idiom-card.open .meaning{display:block;}
+
+  /* --- quiz --- */
+  .quiz-box{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:30px 24px;
+    text-align:center;
+    position:relative;
+    min-height:280px;
+  }
+  .quiz-score{
+    font-size:.78rem;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+    letter-spacing:.05em;
+  }
+  .quiz-prompt-label{
+    font-size:.75rem;
+    color:var(--gold);
+    letter-spacing:.15em;
+    margin-bottom:10px;
+  }
+  .quiz-term{
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:2.6rem;
+    letter-spacing:.1em;
+    margin-bottom:22px;
+  }
+  .quiz-meaning-prompt{
+    font-family:'Noto Serif JP',serif;
+    font-size:1.02rem;
+    line-height:1.9;
+    max-width:560px;
+    margin:0 auto 22px;
+  }
+  .choices{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    text-align:left;
+  }
+  .choices button{
+    font-family:inherit;
+    font-size:.88rem;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    cursor:pointer;
+    line-height:1.6;
+    transition:.12s;
+    text-align:left;
+  }
+  .choices button.term-choice{
+    font-family:'Shippori Mincho',serif;
+    font-size:1.35rem;
+    text-align:center;
+  }
+  .choices button:hover:not(:disabled){border-color:var(--gold); background:#fff;}
+  .choices button.correct{background:#E4EEE6; border-color:var(--ok); color:var(--ok);}
+  .choices button.wrong{background:#F3E1DF; border-color:var(--ng); color:var(--ng);}
+  .choices button:disabled{cursor:default;}
+  .stamp{
+    position:absolute;
+    top:20px; right:26px;
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:1.6rem;
+    border:3px solid;
+    border-radius:6px;
+    padding:2px 10px;
+    transform:rotate(-8deg);
+    opacity:0;
+    transition:opacity .15s, transform .15s;
+  }
+  .stamp.show{opacity:.9; transform:rotate(-8deg) scale(1);}
+  .stamp.ok{color:var(--ok); border-color:var(--ok);}
+  .stamp.ng{color:var(--ng); border-color:var(--ng);}
+  .quiz-next{
+    margin-top:20px;
+    font-family:'Noto Serif JP',serif;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:10px 26px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    font-size:.85rem;
+    letter-spacing:.1em;
+    display:none;
+  }
+  .quiz-next.show{display:inline-block;}
+
+  /* --- matching game --- */
+  .match-status{
+    font-size:.85rem;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .match-cols{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px;
+  }
+  .match-col h3{
+    font-family:'Noto Serif JP',serif;
+    font-size:.82rem;
+    color:var(--gold);
+    letter-spacing:.15em;
+    text-align:center;
+    margin:0 0 10px;
+  }
+  .half-btn{
+    display:block;
+    width:100%;
+    font-family:'Shippori Mincho',serif;
+    font-size:1.3rem;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:10px;
+    margin-bottom:8px;
+    cursor:pointer;
+    letter-spacing:.1em;
+  }
+  .half-btn:hover:not(:disabled){border-color:var(--gold);}
+  .half-btn.selected{border-color:var(--shu); background:#FBEFEC; color:var(--shu);}
+  .half-btn.locked{background:#E4EEE6; border-color:var(--ok); color:var(--ok); cursor:default;}
+  .half-btn.shake{border-color:var(--ng); background:#F3E1DF;}
+  .new-set-btn{
+    display:block;
+    margin:20px auto 0;
+    font-family:'Noto Serif JP',serif;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:10px 26px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    font-size:.85rem;
+    letter-spacing:.1em;
+  }
+
+  footer{
+    max-width:820px;
+    margin:50px auto 0;
+    padding:16px 18px 0;
+    border-top:1px solid var(--line);
+    font-size:.68rem;
+    color:var(--ink-soft);
+    line-height:1.8;
+  }
+
+  @media(max-width:520px){
+    .choices{grid-template-columns:1fr;}
+    .quiz-term{font-size:2rem;}
+    header .kan{font-size:1.7rem;}
+  }
+
+  /* --- print --- */
+  @media print{
+    body{background:#fff; color:#000;}
+    nav, .toolbar, .gyou-filter, .count-line, .stamp{display:none !important;}
+    header .seal{display:none;}
+    section.view{display:none !important;}
+    #view-list{display:block !important;}
+    .card-grid{display:block;}
+    .idiom-card{
+      break-inside:avoid;
+      page-break-inside:avoid;
+      border:1px solid #999;
+      background:#fff;
+      margin-bottom:12px;
+      padding:10px 12px;
+    }
+    .idiom-card .meaning{display:block !important; color:#000;}
+    footer{break-inside:avoid; page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="seal">熟</div>
+    <div class="kan">四字熟語道場</div>
+    <div class="sub">ISSHIKI YOJIJUKUGO DOJO ・ 全152語</div>
+  </header>
+
+  <nav>
+    <button data-view="list" class="active">一覧・検索</button>
+    <button data-view="quiz1">クイズ：意味を選ぶ</button>
+    <button data-view="quiz2">クイズ：熟語を選ぶ</button>
+    <button data-view="match">組み合わせゲーム</button>
+  </nav>
+
+  <!-- LIST / SEARCH -->
+  <section class="view active" id="view-list">
+    <div class="toolbar">
+      <input id="searchBox" type="text" placeholder="熟語・読み・意味で検索…">
+      <button id="toggleAllBtn" type="button">すべて開く</button>
+    </div>
+    <div class="gyou-filter" id="gyouFilter"></div>
+    <div class="count-line" id="countLine"></div>
+    <div class="card-grid" id="cardGrid"></div>
+  </section>
+
+  <!-- QUIZ 1: term -> choose meaning -->
+  <section class="view" id="view-quiz1">
+    <div class="quiz-box">
+      <div class="stamp" id="stamp1"></div>
+      <div class="quiz-score" id="score1"></div>
+      <div class="quiz-prompt-label">この四字熟語の意味は？</div>
+      <div class="quiz-term" id="quizTerm1"></div>
+      <div class="choices" id="choices1"></div>
+      <button class="quiz-next" id="next1">次の問題 →</button>
+    </div>
+  </section>
+
+  <!-- QUIZ 2: meaning -> choose term -->
+  <section class="view" id="view-quiz2">
+    <div class="quiz-box">
+      <div class="stamp" id="stamp2"></div>
+      <div class="quiz-score" id="score2"></div>
+      <div class="quiz-prompt-label">この意味を表す四字熟語は？</div>
+      <div class="quiz-meaning-prompt" id="quizMeaning2"></div>
+      <div class="choices" id="choices2"></div>
+      <button class="quiz-next" id="next2">次の問題 →</button>
+    </div>
+  </section>
+
+  <!-- MATCH GAME -->
+  <section class="view" id="view-match">
+    <div class="match-status" id="matchStatus"></div>
+    <div class="match-cols">
+      <div class="match-col">
+        <h3>上の二文字</h3>
+        <div id="upperCol"></div>
+      </div>
+      <div class="match-col">
+        <h3>下の二文字</h3>
+        <div id="lowerCol"></div>
+      </div>
+    </div>
+    <button class="new-set-btn" id="newSetBtn">新しい問題セット</button>
+  </section>
+
+  <footer>
+    出典：四字熟語辞典オンライン（<a href="https://yoji.jitenon.jp/cat/kyu2" style="color:inherit;">https://yoji.jitenon.jp/cat/kyu2</a>）掲載の四字熟語をもとに作成。<br>
+    本コンテンツは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。学習・受験対策としてご利用の際は、必ず市販の国語辞典・四字熟語辞典等で正確性をご確認ください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<script>
+const DATA = [{"term": "哀毀骨立", "reading": "あいきこつりつ", "meaning": "哀しみのあまり体を毀し、骨と皮ばかりになるほど痩せること。 多くは肉親の死を悼む場合にいう。"}, {"term": "握髪吐哺", "reading": "あくはつとほ", "meaning": "熱心にすぐれた人材を探し求めることのたとえ。 「握髪」は髪を握ること。 「吐哺」は食べ物を吐き出すこと。 周の初期、周公旦は食事中でも食べ物を吐き出し、入浴中でも濡れた髪を握って、面接を求める人にはすぐに面会して、すぐれた人材の登用に努めたという故事から。 「吐哺握髪」「吐哺捉髪」「吐握之労」ともいう。"}, {"term": "衣錦還郷", "reading": "いきんかんきょう", "meaning": "「故郷に錦を飾る」の語源で、出世して故郷に帰ること。 「錦」は金や銀などの糸で織り込んだ美しい絹織物のこと。"}, {"term": "一行三昧", "reading": "いちぎょうざんまい", "meaning": "一つの修行法を一心に励むこと。 または、念仏を唱えること。 「一行」は一つのことに専念すること。 「三昧」は精神を集中することで、心を安らかにすること。"}, {"term": "一目瞭然", "reading": "いちもくりょうぜん", "meaning": "ほんの少し見ただけでも、はっきりとわかること。 「一目」はほんの少しだけ見ること。 「瞭然」はしっかりとした区別があり、わかりやすいこと。 「一目了然」とも書く。"}, {"term": "一旦緩急", "reading": "いったんかんきゅう", "meaning": "いざというとき。緊急時には。 「一旦」はある朝、ある日という意味から、ひとたび、一度という意味。 「緩急」は急を要する事態のこと。 「一旦緩急あれば」という形で用いる言葉で、一度、緊急の事態が起こればという意味。"}, {"term": "一筆勾消", "reading": "いっぴつこうしょう", "meaning": "今までのものを全て取り消すこと。 「勾消」は線を引いて消すこと。 帳簿などの今までの記録の上から線を引いて消すという意味から。 中国の北宋の時代に范仲淹は、才能のない駄目な役人を名簿から消していったという故事から。 「一筆勾銷」とも書く。"}, {"term": "鬱鬱勃勃", "reading": "うつうつぼつぼつ", "meaning": "生気が満ちる様子のこと。 「鬱鬱」は植物が活発に茂ること。 「勃勃」は盛んに湧き上がること。"}, {"term": "円頓止観", "reading": "えんどんしかん", "meaning": "人格を完成した完璧な悟りの境地をいう言葉。 すべての物事を完全に備えていて、雑念がなく、直ちに悟りに到る境地のこと。 すべての存在がそのまま真実の理法にかなうことを正しく観察すること。 主に仏教の天台宗で「漸次止観」、「不定止観」と合わせて、「三種止観」と呼ばれる言葉。"}, {"term": "横眉怒目", "reading": "おうびどもく", "meaning": "きびしい表情や怒気をみなぎらせた顔つきのこと。 「横眉」は眉を吊り上げること。 「怒目」は怒りに満ちた目つきのこと。"}, {"term": "岡目八目", "reading": "おかめはちもく", "meaning": "当事者よりも、傍観者のほうが物事の情勢を正確に判断できることのたとえ。 「岡目」は、他人の行動を横から見ること。 囲碁では、対局者よりも観戦者のほうが冷静に局面を見通し、八手先まで予測できるといわれることに由来する言葉。"}, {"term": "怨親平等", "reading": "おんしんびょうどう", "meaning": "敵を憎まず、味方をひいきせず、両者を平等に扱うこと。 「怨親」は敵対する者と親しい者のこと。 もとは仏教語で、敵味方を区別することなく平等に慈しみ、極楽往生を願うこと。"}, {"term": "怨憎会苦", "reading": "おんぞうえく", "meaning": "自分が怨んだり憎んだりしている相手とも会わなければならない苦しみのこと。 仏教語でいう八苦のうちの一つ。 八苦とは「生」「老」「病」「死」「愛別離苦」「怨憎会苦」「求不得苦」「五陰盛苦」の八つの苦しみのこと。"}, {"term": "怨敵退散", "reading": "おんてきたいさん", "meaning": "「怨むべき敵よ、退散するがよい」という意味。 降伏祈願などで唱える言葉。"}, {"term": "苛政猛虎", "reading": "かせいもうこ", "meaning": "悪政は人を食べる虎よりも人々を苦しめるということ。 人々を苦しめる政治を戒める言葉。 「苛政」は人々を苦しめるひどい政治。 中国の思想家の孔子が道端で泣いている女性に出会い、その理由を聞くと姑と夫、息子が虎に殺されたといい、孔子がなぜこの地を離れないのかと聞くと、悪政がしかれていないからと答えたという故事から。 「苛政（かせい）は虎（とら）よりも猛（たけ）し」とも読む。"}, {"term": "甘言蜜語", "reading": "かんげんみつご", "meaning": "相手に気に入られるための心地よい言葉。 「蜜語」は男女の甘い語らいのことで、蜜のように甘い言葉ということから。"}, {"term": "簡単明瞭", "reading": "かんたんめいりょう", "meaning": "単純ではっきりとしていること。 「明瞭」ははっきりとしていて分かりやすいこと。"}, {"term": "蓋棺事定", "reading": "がいかんじてい", "meaning": "その人の生前の評価はあてにならず、死後になってはじめて定まること。 「蓋棺」は遺体を入れる棺の蓋を閉めるということから、死ぬことをいう。 「棺（かん）を蓋（おお）いて事（こと）定まる」とも読む。"}, {"term": "外巧内嫉", "reading": "がいこうないしつ", "meaning": "見た目はわからないようにしているが、心の中ではねたんでいること。 「外巧」は外見をうまく飾る、「内嫉」は心の中でねたむということ。"}, {"term": "蓋天蓋地", "reading": "がいてんがいち", "meaning": "この世の全てに仏の教えが広まること。 「蓋」は覆うという意味で、仏法が天地全てを覆うという意味から。 「天を蓋（おお）い地を蓋（おお）う」とも読む。"}, {"term": "瓦解土崩", "reading": "がかいどほう", "meaning": "物事が根元から崩壊して、手の施しようが無いこと。 「土崩」は盛っていた土の山が崩れること。 「瓦解」は落ちてきた瓦が砕けてばらばらになること。 「瓦解土崩」ともいう。"}, {"term": "瓦鶏陶犬", "reading": "がけいとうけん", "meaning": "格好だけが立派で、実際には役に立たないもののこと。 「陶犬」は陶製の犬のこと。 「瓦鶏」は素焼きの鶏のこと。 作り物の犬では番犬のように家を守ることはできず、作り物の鶏では夜明けを告げることはできないことから。 「瓦鶏陶犬」ともいう。"}, {"term": "玩人喪徳", "reading": "がんじんそうとく", "meaning": "人を見くびって軽く扱うと、自身の徳を失うことになるということ。 「玩人」は人を軽く見てもてあそぶこと。 「人を玩（もてあそ）べば徳を喪（うしな）う」とも読む。"}, {"term": "玩物喪志", "reading": "がんぶつそうし", "meaning": "必要の無いものに夢中になって、大切なことをなおざりにすること。 「喪志」は本来の目的を忘れること。 物に執着すれば志を失くしてしまうという意味から。 「物（もの）を玩（もてあそ）べば志（こころざし）を喪（うしな）う」とも読む。"}, {"term": "含哺鼓腹", "reading": "がんぽこふく", "meaning": "人々が豊かな生活をして、平和な世の中を楽しむこと。 「含哺」は口に食べ物を含むこと。 「鼓腹」は腹鼓を打つこと。 満腹になって満たされている様子から。 「哺（ほ）を含み腹（はら）を鼓（こ）す」とも読む。"}, {"term": "奇技淫巧", "reading": "きぎいんこう", "meaning": "「奇技」は珍しい技芸、「淫巧」はぜいたくな技巧（ぎこう）のことで、快楽だけを求めた不必要な技や度を越した技巧のこと。"}, {"term": "亀甲獣骨", "reading": "きっこうじゅうこつ", "meaning": "亀の甲羅と獣の骨のこと。 古代中国の殷の時代に、甲骨文字を刻んで占いの記録をしていたとされている。"}, {"term": "挙案斉眉", "reading": "きょあんせいび", "meaning": "夫婦の間にも礼儀を保って、お互いに尊敬しあっていること。 「案」は食事などを載せる膳のこと。 中国の後漢の梁鴻の妻である孟光は、梁鴻に食事を出すときは、膳を眉の高さまで捧げて敬っていたという故事から。 「案を挙（あ）ぐること眉（まゆ）に斉（ひと）しくす」とも読む。"}, {"term": "錦衣玉食", "reading": "きんいぎょくしょく", "meaning": "贅沢な生活のたとえ。 または、高い身分のたとえ。 美しく高級な着物と宝石のように上等な食事ということから。"}, {"term": "金亀換酒", "reading": "きんきかんしゅ", "meaning": "酒をなによりも愛すること。 または、親友を心を込めてもてなすこと。 「金亀」は亀の形をしている金の装飾品のことで、極めて価値の高いものや貴重なもののたとえ。 中国の唐の賀知章は、金亀を売って酒を買い、李白をもてなしたという故事から。"}, {"term": "錦上添花", "reading": "きんじょうてんか", "meaning": "よい出来事が重なることのたとえ。 または、美しいものに美しいものを重ねることのたとえ。 美しいあや織物の上に、美しい花を添えるという意味から。 「錦上（きんじょう）に花（はな）を添う」とも読む。"}, {"term": "玉砕瓦全", "reading": "ぎょくさいがぜん", "meaning": "名誉を守るために未練なく潔く死ぬこと（玉砕）と、名誉を捨てて無為に生き延びること（瓦全）を並べた言葉。 「玉砕」は、宝石が砕け散るように美しく名誉のために命を捧げること。 「瓦全」は、価値の低い瓦のように、何もせずただ長く生き続けること。 「大丈夫（だいじょうぶ）は寧（むし）ろ玉砕（ぎょくさい）す可（べ）く、瓦全（がぜん）たる能（あた）わず」（立派で高潔な人物は、名誉を守るために潔く命を捧げることはできても、恥を忍んで無意味に生き延びることはできない）という言葉を略した表現。"}, {"term": "吟風弄月", "reading": "ぎんぷうろうげつ", "meaning": "自然の景色を題材にして、詩を詠むこと。 「吟風」は風に吹かれながら詩歌を吟じること。 「弄月」は月を眺めて楽しむこと。 「風（かぜ）に吟（ぎん）じ月を弄（もてあそ）ぶ」とも読む。"}, {"term": "苦髪楽爪", "reading": "くがみらくづめ", "meaning": "人の苦楽の様子のことで、苦しいときは髪が早く伸び、楽をしているときは爪が早く伸びるということ。"}, {"term": "苦爪楽髪", "reading": "くづめらくがみ", "meaning": "人の苦楽の様子。 苦しい時は爪がよく伸び、楽をしている時は髪がよく伸びるということ。 「楽髪苦爪」ともいう。"}, {"term": "君子三畏", "reading": "くんしのさんい", "meaning": "君子がおそれ敬うべき三つのこと。 天命、有徳の大人、聖人の言をいう。 「君子」は人格者、「畏」はおそれ敬うこと。"}, {"term": "傾蓋知己", "reading": "けいがいのちき", "meaning": "以前からの親友のように、初めて出会った者同士がすぐに親しくなること。 「傾蓋」は車の蓋を傾けるという意味から車を止めること。 「知己」は友人という意味。"}, {"term": "犬牙相制", "reading": "けんがそうせい", "meaning": "国境でお互いに牽制しあうこと。 「犬牙」は犬の牙のことで、国境が入り組んでいることのたとえ。 「犬牙（けんが）相（あい）制す」とも読む。"}, {"term": "堅塞固塁", "reading": "けんさいこるい", "meaning": "並外れて守りの堅い砦。 「塞」と「塁」はどちらも要塞のこと。"}, {"term": "懸頭刺股", "reading": "けんとうしこ", "meaning": "苦労しながらも勉学に励むこと。 「懸頭」は縄を首にかけること。 「刺股」は穴をあけるための錐（きり）でふとももを刺すこと。 中国の漢の時代の楚の孫敬は、勉強をしているときに眠らないように、天井から下げた縄を首にかけて眠るとしまるようにして勉強を続けたという故事と、中国の戦国時代の蘇秦が眠くなるとふとももを錐で刺して、眠気を覚ましながら勉強したという二つの故事から。 「頭（こうべ）を懸（か）け股（もも）を刺す」とも読む。 「刺股懸頭」ともいう。"}, {"term": "賢明愚昧", "reading": "けんめいぐまい", "meaning": "賢いことと愚かなこと。 「賢明」は賢く道理に明るいこと。 「愚昧」は愚かで道理に暗いこと。"}, {"term": "後生可畏", "reading": "こうせいかい", "meaning": "若い人はまだ成長の途中であり、大きな可能性を秘めているため、敬うべきであるということ。 「後生」は自分よりも後に生まれてきた人のこと。 「後生（こうせい）畏（おそ）る可（べ）し」とも読む。"}, {"term": "向天吐唾", "reading": "こうてんとだ", "meaning": "他人に害を与えようとして、自分にその害が返ってくること。 天に唾を吐きかけようとして、自分の顔に落ちてくるという意味から。 「天に向かって唾を吐く」とも読み、この形で使うことが多い言葉。"}, {"term": "荒唐無稽", "reading": "こうとうむけい", "meaning": "根拠も何もなく、でたらめなこと。 「荒唐」はでたらめなこと。 「無稽」は考えるべき根拠がまるでないこと。 「無稽荒唐」ともいう。"}, {"term": "黄霧四塞", "reading": "こうむしそく", "meaning": "世界が乱れる前兆で、黄色い霧が辺り一面に満ちること。"}, {"term": "克伐怨欲", "reading": "こくばつえんよく", "meaning": "勝ち気、自慢、恨み、貪欲という四つの悪い心。 「克」は必要以上に人に勝とうとすること。 「伐」は自分の功績を誇ること。 「怨」は小さなことでも恨むこと。 「欲」は満たされることなく、欲し続けること。"}, {"term": "虎渓三笑", "reading": "こけいさんしょう", "meaning": "あることに夢中になって、他のことを全て忘れてしまうこと。 「虎渓」は中国の江西省の廬山にあったとされる谷の名前。 「三笑」は三人で笑うこと。 中国の東晋の高僧の慧遠は、廬山の寺にこもって、虎渓よりも外に出ないと誓っていたが、詩人の陶潜と道士の陸修静を見送るときに話に夢中になり、虎の吠える声で虎渓を越えてしまったことに気づき、三人で大笑いしたという故事から。"}, {"term": "虎穴虎子", "reading": "こけつこし", "meaning": "危険なことをしなければ、大きな利益や功績を得ることはできないということ。 「虎子」は虎の子ども。 虎の子どもを捕らえるためには、危険な虎の巣穴に入るしかないという意味から。 「虎穴に入らずんば虎子を得ず」を略した言葉。"}, {"term": "虎頭蛇尾", "reading": "ことうだび", "meaning": "始めは勢いがあるが、終わりになるとなくなってしまうことのたとえ。 頭は大きくて立派な虎の頭だが、尾は蛇のように細く弱々しいという意味から。"}, {"term": "虎尾春氷", "reading": "こびしゅんぴょう", "meaning": "極めて危険なことのたとえ。 または、危険なことをすることのたとえ。 虎の尾を踏んで、春の厚みの無い氷の上を歩くという意味から。 「虎尾春冰」とも書く。"}, {"term": "金輪奈落", "reading": "こんりんならく", "meaning": "物事の極限のたとえ。 または、絶対にや、どこまでもということ。 「金輪」は大地の一番の深い底。 「奈落」は地獄のこと。 仏教の言葉で、仏教の世界観での三つの大輪の一つで、大地の下にあり、下から順に風輪、水輪があって、その上にあるとされている。"}, {"term": "傲岸不遜", "reading": "ごうがんふそん", "meaning": "おごりたかぶって、人に従わず、見下す様子。 「傲岸」はいばり人を見下す、「不遜」はへりくだらない、従わないこと。"}, {"term": "塞翁失馬", "reading": "さいおうしつば", "meaning": "人生における幸福と不幸は変転きわまりなく、前もって見通すことはできないということ。目先の出来事に一喜一憂すべきではないといういましめ。 「塞翁」は、中国北方の国境の砦（塞）のそばに住んでいた老人を指す。 あるとき、この老人が飼っていた馬が逃げて塞の外(胡の地)へ出てしまった。 近所の人々が気の毒がると、老人は「これがかえって幸いにならないとも限らない」と言った。 しばらくして、その馬はすぐれた馬を連れて戻ってきた。 人々が祝うと、老人は今度は「これが災いのもとにならないとも限らない」と言った。 やがて、その良馬に乗った息子が落馬して足の骨を折り、不自由な体になってしまう。 人々が同情すると、老人はまた「これが幸いに転じないとも限らない」と言った。 のちに戦(いくさ)が起こり、若者の多くが兵に取られて命を落としたが、足を痛めていた息子は徴兵をまぬがれ、親子ともに生きながらえた。 この故事から、禍(わざわい)と福(さいわい)は表裏をなして入れ替わり、人の力では予測しがたいことのたとえとして用いられるようになった。 「塞翁之馬」ともいう。"}, {"term": "左戚右賢", "reading": "させきゆうけん", "meaning": "親族を低い地位の左側に、賢者を高い地位の右側に置くこと。 卑しいものを左側、尊ぶものを右側に置く中国の漢の時代の風習。 「右賢左戚」ともいう。"}, {"term": "沙中偶語", "reading": "さちゅうのぐうご", "meaning": "臣下同士で謀反を起こす相談をすること。 「沙中」は人のいない砂地のこと、「偶語」は向かい合って話し合うこと。 古代中国の漢の君主の劉邦の時代に、功績を上げていても褒賞がもらえずに、他に人のいない砂地で、臣下たちが謀反の相談をしていたという故事から。"}, {"term": "沙羅双樹", "reading": "さらそうじゅ", "meaning": "八十歳で入滅した釈迦の寝床にあった沙羅の木のこと。 「沙羅」は植物の名前。 釈迦が入滅したときに、釈迦の寝床の四方に二本ずつあった常緑樹である沙羅の木が、釈迦の入滅を悲しんで、一本ずつ枯れたとも、全ての木が白くなって枯れたとも言われている伝説のこと。 日本では『平家物語』の冒頭の句として有名。 「砂羅双樹」とも書く。"}, {"term": "三人成虎", "reading": "さんにんせいこ", "meaning": "真実ではないことでも、多くの人が言えばいつの間にか真実として広まるということのたとえ。 「街に虎が出たと言ったら信じるか」と尋ねると「信じない」と答えた。 「それならばもう一人別の人物が同じことを言ったら信じるか」と尋ねると「わからない」と答え、「三人ならどうか」と聞くと「信じるようになるだろう」と答えたという故事から。"}, {"term": "斬新奇抜", "reading": "ざんしんきばつ", "meaning": "物事の思いつきがこれまでにないほど新しく、独特なこと。 「斬新」は今までになく新しいこと。 「奇抜」は他の人が思いつきもしない、変わっていること。"}, {"term": "歯牙余論", "reading": "しがのよろん", "meaning": "少しの言葉や何気ない褒め言葉のこと。 「歯牙」は歯と牙のことから口の端という意味。 「余論」は余った言論のことからちょっとした言葉という意味。"}, {"term": "市虎三伝", "reading": "しこさんでん", "meaning": "真実ではないことでも、多くの人が言えばいつの間にか真実として広まるということのたとえ。 「街に虎が出たと言ったら信じるか」と尋ねると「信じない」と答えた。 「それならばもう一人別の人物が同じことを言ったら信じるか」と尋ねると「わからない」と答え、「三人ならどうか」と聞くと「信じるようになるだろう」と答えたという故事から。"}, {"term": "羞花閉月", "reading": "しゅうかへいげつ", "meaning": "容姿が極めて美しいこと。 「羞」は恥らうこと。 美しさに花も恥じらい、月も恥ずかしがって雲に隠れてしまうほどの美女という意味から。 「閉月羞花」「羞月閉花」ともいう。"}, {"term": "羞月閉花", "reading": "しゅうげつへいか", "meaning": "容姿が極めて美しいこと。 「羞」は恥らうこと。 美しさに花も恥じらい、月も恥ずかしがって雲に隠れてしまうほどの美女という意味から。 「閉月羞花」「羞月閉花」ともいう。"}, {"term": "袖手傍観", "reading": "しゅうしゅぼうかん", "meaning": "隣で何も出来ずに、ただ見ていること。 「袖手」は袖の中から手を出さないということから、何もしないこと。 大きな出来事が起きて、やらなければならないことがあるのに、何もせずにただ見ているだけでいることを非難する目的で用いることが多い言葉。 「袖手傍観」とも書く。"}, {"term": "衆酔独醒", "reading": "しゅうすいどくせい", "meaning": "周囲の全ての人が道徳を失っているが、自分だけは正しく生きているということ。 周りにいる全ての人は酒に酔っているが、自分だけは酔わずに醒めているという意味から。 古代中国の戦国時代の楚の詩人、屈原が讒言によって追放されたときに、漁師になぜさまよっているかと聞かれて返した言葉で、「衆人皆酔えるに、我独り醒めたり」を略した言葉。"}, {"term": "神采英抜", "reading": "しんさいえいばつ", "meaning": "内面も容姿も他の人よりもすぐれていること。 「神采」は心と外見。 「英抜」は他よりもずば抜けてすぐれていること。 「神彩英抜」とも書く。"}, {"term": "自家薬籠", "reading": "じかやくろう", "meaning": "自分の使いたい時に自由に使える物や技術、または人のこと。 「薬籠」は薬箱のことで、自分の家にある薬箱の中の薬はどれも役に立つものであり、必要なときに好きなように使えることから。"}, {"term": "慈眉善目", "reading": "じびぜんもく", "meaning": "「慈眉」は慈愛に満ちた眉、「善目」は正直でまじめそうな目のことから、やさしくて善良そうな顔つきのこと。"}, {"term": "熟読玩味", "reading": "じゅくどくがんみ", "meaning": "文章をしっかりと読んで、その意味を落ち着いてゆっくりと考えて味わうこと。 「熟読」は文章を繰り返し読んで、意味を十分に考えること。 「玩味」は食べ物の味をしっかりと感じながら食べるという意味で、文章の深い意味を読み取って味わうこと。 「熟読含味」とも書く。"}, {"term": "精衛塡海", "reading": "せいえいてんかい", "meaning": "実現不可能な計画を立てて失敗し、無駄な努力となること。 または、いつまでたっても悔やんでいること。 「精衛」は伝説上の小鳥の名前。 「塡海」は海を埋めること。 伝説上の皇帝炎帝の娘である女娃は東海で溺れ死んだ。 女娃は伝説上の小鳥「精衛」に化身し、自身の死んだ東海を小石や小枝などで埋めようとしたが、失敗に終わったという故事から。"}, {"term": "凄凄切切", "reading": "せいせいせつせつ", "meaning": "非常にさびしい様子のこと。 「凄切」はさびしいことで、重ねて強調した言葉。"}, {"term": "青藍氷水", "reading": "せいらんひょうすい", "meaning": "教えを受けた弟子が師匠を超えることのたとえ。 「青藍」は藍の葉を原料に青い染料を作るが、布を染めるとさらに鮮やかな青い色になるということ。 「氷水」は氷の原料は水だが、水よりも温度が低いということ。"}, {"term": "赤手空拳", "reading": "せきしゅくうけん", "meaning": "誰から手を借りることなく、自分の力だけで物事を行うこと。 武器を持たずに、素手で敵に向かっていくという意味から。 「赤手」は素手。 「空拳」は手に何も持たない拳だけのこと。"}, {"term": "刹那主義", "reading": "せつなしゅぎ", "meaning": "未来や過去のことを考えず、今が楽しければそれでよいという考えのこと。 「刹那」は仏教の言葉で、非常に短い時間、一瞬のこと。"}, {"term": "煎水作氷", "reading": "せんすいさくひょう", "meaning": "絶対に不可能なこと。 または、見当違いなやり方では、目的を果たすことは出来ないということ。 「煎」は煮るということ。 氷を作るために水を煮るという意味から。 「水を煎（に）て氷を作る」とも読む。 「煎水作冰」とも書く。"}, {"term": "戦戦慄慄", "reading": "せんせんりつりつ", "meaning": "恐怖で震えてびくびくする様子。 「戦慄」は恐怖で震えるという意味で、重ねて意味を強調した言葉。"}, {"term": "舌端月旦", "reading": "ぜったんげったん", "meaning": "言葉で人を批評すること。 「舌端」は口先、言葉。 「月旦」は人の批評をすること。または、月の始めの日のこと。 中国の後漢の時代の許劭は、若い頃に従兄の許靖や故郷の人を毎月の初めに批評していたという故事から。"}, {"term": "痩骨窮骸", "reading": "そうこつきゅうがい", "meaning": "老いて衰えた体のこと。 「痩骨」と「窮骸」はどちらも細くなって衰弱した体のこと。"}, {"term": "堆金積玉", "reading": "たいきんせきぎょく", "meaning": "巨万の富を集めること。 「堆」と「積」は積み上げること。 「金」と「玉」は金や宝石などのこと。 金や宝石などの財宝を積み上げるという意味から。"}, {"term": "大賢虎変", "reading": "たいけんこへん", "meaning": "すぐれた賢者が、時の流れに合わせて、日々自己変革すること。 または、すぐれた統治者の制度変革によって、古い制度が新しくてより良い制度に改められること。 「大賢」は徳があって立派な人。 「虎変」は虎の毛が美しく立派に生え変わること。 見事に変化や改革をすることのたとえ。"}, {"term": "戴月披星", "reading": "たいげつひせい", "meaning": "夜明け前から夜遅くまで精一杯仕事をすること。 「披星」は星を披るということから、夜が明ける前という意味。 「戴月」は月を戴くということから、夜遅くという意味。 「戴月披星」ともいう。"}, {"term": "大人虎変", "reading": "たいじんこへん", "meaning": "すぐれた賢者が、時の流れに合わせて、日に日に自己変革すること。または、すぐれた統治者の制度変革によって、古い制度が新しくてよりよい制度に改められること。 「大人」は徳があって立派な人、「虎変」は虎の毛が美しく立派に生え変わることから、変化や改革を見事にすることのたとえ。"}, {"term": "体貌閑雅", "reading": "たいぼうかんが", "meaning": "容姿が落ち着いていて上品な様子。 「体貌」は体つきと容貌、姿かたちのこと。 「閑雅」は品があって落ち着いていること。"}, {"term": "戴盆望天", "reading": "たいぼんぼうてん", "meaning": "一度に二つのことを同時にすることは出来ないということのたとえ。 頭に盆を載せたままでは、盆が邪魔になって天を見上げることは出来ないという意味から。 司馬遷が死刑を宣告された友人に送ったとされる手紙の一節から。 「盆を戴（いだ）きて天を望む」とも読む。"}, {"term": "断崖絶壁", "reading": "だんがいぜっぺき", "meaning": "非常に険しい崖のこと。 または、非常に危険な状況。 「断崖」と「絶壁」はどちらも非常に切り立った崖のことで、同じ意味の言葉を重ねて強調した言葉。"}, {"term": "池魚籠鳥", "reading": "ちぎょろうちょう", "meaning": "束縛された境遇のたとえで、主に宮仕えの役人のこと。 また、不自由な暮らしのこと。 不自由な境遇を「池の魚」と「籠（かご）の鳥」にたとえたもの。"}, {"term": "中秋玩月", "reading": "ちゅうしゅうがんげつ", "meaning": "仲秋の夜に月を見て楽しむ宴会を催すこと。 「中秋」は仲秋のことで、仲秋は秋を三分割した中の月のことで、陰暦八月十五日のこと。 「玩月」は月を見ること。または、愛でること。 「仲秋翫月」とも書く。"}, {"term": "長袖善舞", "reading": "ちょうしゅうぜんぶ", "meaning": "前もってしっかりと準備してことに臨めば成功しやすいということ。 または、元手や資質があれば成功しやすいということ。 袖が長い服のほうが、袖の短い服よりも舞う時に美しく見えるということから。 「長袖（ちょうしゅう）善く舞う」とも読む。"}, {"term": "朝成暮毀", "reading": "ちょうせいぼき", "meaning": "建物を頻繁に壊したり、作ったりすること。 建物を朝には完成させて、夜には壊すということから。 「朝（あした）に成り暮れに毀（こぼ）つ」とも読む。"}, {"term": "張眉怒目", "reading": "ちょうびどもく", "meaning": "怒った顔を言い表す言葉。 眉を吊り上げて、目を大きく見開くということから。 「眉（まゆ）を張り目を怒（いか）らす」とも読む。"}, {"term": "頂門金椎", "reading": "ちょうもんのきんつい", "meaning": "要点を的確に突く戒めや忠告のこと。 「頂門」は頭頂部。 「金椎」は金槌。 急所である頭頂部を、金槌で確実に叩くという意味から。"}, {"term": "沈鬱頓挫", "reading": "ちんうつとんざ", "meaning": "詩文に深い意味を込めすぎて、意味がなかなか理解できないこと。 「沈鬱」は気分が落ち込んでいて晴れないという意味から、文章に深い意味があって重いということ。 「頓挫」は途中でつまづくという意味から、筆勢が急に柔らかくなるということで、文章の調子に変化があることをいう。"}, {"term": "程孔傾蓋", "reading": "ていこうけいがい", "meaning": "親しく会話すること。 古くからの友人のように親しく会話すること。 「程孔」は程子と孔子。 「傾蓋」は車の蓋を傾けるという意味から車を止めること。 旅の途中に孔子と程子がたまたま出会い親しく会話したという故事から。"}, {"term": "天人冥合", "reading": "てんじんめいごう", "meaning": "天の意志と人の行いが自然と一致すること。 正しい行いをすれば、知らず知らずのうちに天の意志と一致するということ。 「冥合」は自然と一致するという意味。"}, {"term": "天造草昧", "reading": "てんぞうそうまい", "meaning": "天と地が生まれる前の渾沌としている様子。 「天造」は天が世界を作ること。 「草昧」は始まる前の秩序もなく、渾沌としている状態のこと。"}, {"term": "陶犬瓦鶏", "reading": "とうけんがけい", "meaning": "格好だけが立派で、実際には役に立たないもののこと。 「陶犬」は陶製の犬のこと。 「瓦鶏」は素焼きの鶏のこと。 作り物の犬では番犬のように家を守ることはできず、作り物の鶏では夜明けを告げることはできないことから。 「瓦鶏陶犬」ともいう。"}, {"term": "吐気揚眉", "reading": "ときようび", "meaning": "目的を成し遂げて思いっきり喜ぶこと。 または、我慢を強いられていた環境から解放されて喜ぶこと。 または、積極的な心持ちになっていて活気づいている様子。 眉を上げて息を吐くことから笑顔や活気のある様子のこと。 「眉を揚げ気を吐く」とも訓読する。 「吐気揚眉」ともいう。"}, {"term": "徒手空拳", "reading": "としゅくうけん", "meaning": "物事を始める時に、助けとなるものが何一つないこと。 「徒手」と「空拳」はどちらも手の中に何も無いという意味で、物事を始めるときに力として使うことが出来るものが何も無いことをいう。"}, {"term": "吐哺握髪", "reading": "とほあくはつ", "meaning": "熱心にすぐれた人材を探し求めることのたとえ。 「握髪」は髪を握ること。 「吐哺」は食べ物を吐き出すこと。 周の初期、周公旦は食事中でも食べ物を吐き出し、入浴中でも濡れた髪を握って、面接を求める人にはすぐに面会して、すぐれた人材の登用に努めたという故事から。 「吐哺握髪」「吐哺捉髪」「吐握之労」ともいう。"}, {"term": "吐哺捉髪", "reading": "とほそくはつ", "meaning": "熱心にすぐれた人材を探し求めることのたとえ。 「握髪」は髪を握ること。 「吐哺」は食べ物を吐き出すこと。 周の初期、周公旦は食事中でも食べ物を吐き出し、入浴中でも濡れた髪を握って、面接を求める人にはすぐに面会して、すぐれた人材の登用に努めたという故事から。 「吐哺握髪」「吐哺捉髪」「吐握之労」ともいう。"}, {"term": "頓首再拝", "reading": "とんしゅさいはい", "meaning": "頭を深く下げて丁寧にお辞儀をすること。 または、手紙の最後に記して敬意を示す言葉。 「頓首」は頭を地面につけてお辞儀をすること。 「再拝」は二度拝むという意味の言葉。"}, {"term": "土崩瓦解", "reading": "どほうがかい", "meaning": "物事が根元から崩壊して、手の施しようが無いこと。 「土崩」は盛っていた土の山が崩れること。 「瓦解」は落ちてきた瓦が砕けてばらばらになること。 「瓦解土崩」ともいう。"}, {"term": "土木形骸", "reading": "どぼくけいがい", "meaning": "自然のまま飾らずに生きることのたとえ。 「土木」は土と木のこと。 「形骸」は人の体。 土や木のように自然で飾らない姿という意味から。 「形骸（けいがい）を土木にす」とも読む。 「形骸土木」ともいう。"}, {"term": "熱願冷諦", "reading": "ねつがんれいてい", "meaning": "熱意をもって強く願うことと、冷静に本質を見定めること。"}, {"term": "念仏三昧", "reading": "ねんぶつざんまい", "meaning": "一心に念仏を唱えて雑念を払い、心を統一すること。 「念仏」は仏を思い、南無阿弥陀仏の名号を唱えること。 「三昧」は他のことを考えることなく、集中して取り組むこと。"}, {"term": "杯酒解怨", "reading": "はいしゅかいえん", "meaning": "「杯酒」は杯に注いだ酒。またはそれを飲むこと。 杯を酌み交わして、怨みを忘れるという意味。"}, {"term": "廃仏毀釈", "reading": "はいぶつきしゃく", "meaning": "仏教を排斥する運動のこと。 特に、明治元年の神仏分離令によって起きた、仏教の排斥運動を指す。寺院や仏像などの破壊が行われた。"}, {"term": "伯牙絶弦", "reading": "はくがぜつげん", "meaning": "非常に深い関係の親友を失った悲しみ。 「伯牙」は中国の春秋時代の人の名前。 琴の名手である伯牙は、自分の一番の理解者であり、親友だった鍾子期が亡くなり、自分の琴を理解してくれる人はもういないといい、琴の弦を切って、二度と弾くことはなかったという故事から。 「伯牙絶絃」とも書く。"}, {"term": "拍手喝采", "reading": "はくしゅかっさい", "meaning": "拍手をしながら大きな声で褒めたてること。 「喝采」は大きな声を出して褒めたてること。"}, {"term": "白眉最良", "reading": "はくびさいりょう", "meaning": "たくさんのものの中で一番すぐれていること。 中国三国時代、蜀の馬氏の五人兄弟はみな優秀であり、全員の字（あざな）に「常」の字がついていた。 中でも、馬良はひときわすぐれており、幼い頃から眉に白い毛が混ざっていたことから「白眉」と呼ばれ、「馬氏の五常、白眉最も良し」といわれたという故事から。"}, {"term": "白璧断獄", "reading": "はくへきだんごく", "meaning": "罪の疑わしい者には罰を与えることなく、功績の疑わしい者には賞を与えるということ。 「白璧」は白い宝石。 「断獄」は罪を犯した者を裁くこと。 中国の梁の王が判決を出しにくい事件について、陶朱公に聞くと、同じに見える宝石でも角度を変えて見れば厚さが違い、見た目は同じでも価値は違うと言われ、罪の疑わしい者には罰を与えることなく、功績の疑わしい者には賞を与えたという故事から。"}, {"term": "薄暮冥冥", "reading": "はくぼめいめい", "meaning": "日が暮れる頃の薄暗い様子。 「薄暮」は日が暮れる頃、夕暮れ。 「冥冥」は暗くてはっきりと区別できない様子。"}, {"term": "破綻百出", "reading": "はたんひゃくしゅつ", "meaning": "喋れば喋るほどぼろが出ること。 「破綻」は布の破れとほころび。 「百」は数が多いことのたとえ。 破れやほころびがたくさん出てくるという意味から。"}, {"term": "氾愛兼利", "reading": "はんあいけんり", "meaning": "たくさんの人々を同じように愛して、利益を公平に分かち合うこと。 「氾愛」は全ての人々を平等に愛すること。 「兼利」は利益を分かち合うこと。 中国の戦国時代、荘子が墨子の思想について述べた言葉から。 「氾（ひろ）く愛し兼ねて利（り）す」とも読む。"}, {"term": "半醒半睡", "reading": "はんせいはんすい", "meaning": "意識がはっきりしていない状態。 半分目覚めていて、半分寝ているということから。 「半睡半醒」ともいう。"}, {"term": "汎濫停蓄", "reading": "はんらんていちく", "meaning": "深く広い学識があること。 「汎濫」は水が溢れるということから、学識が広いことのたとえ。 「停蓄」は水がたまるということから、学識が深いことのたとえ。"}, {"term": "馬鹿果報", "reading": "ばかかほう", "meaning": "思ってもいないことで大きな幸運が手に入ること。または、愚かな人は人から憎しみを受けることがないので、幸せな人生を送ることができるということ。"}, {"term": "抜本塞源", "reading": "ばっぽんそくげん", "meaning": "災いの原因になるものを完全に取り除くこと。 「抜本」は木の根を引き抜くこと。 「塞源」は水源を塞ぐこと。 中国の春秋時代、晋が周を攻めようとしたときに、周の景王は晋の平公に使いを出し、周を攻めることは、同族の本家である周をないがしろにして、木の根を抜き、水源を塞ぐようなものだと言ったという故事から。 「本（もと）を抜き源（みなもと）を塞（ふさ）ぐ」とも読む。"}, {"term": "抜山蓋世", "reading": "ばつざんがいせい", "meaning": "山を引き抜き、世をおおいつくすほどに、勢いが強く気力の盛んなさま。 人並みはずれた威勢や気概をいう。 「抜山」は山を引き抜く意で、たぐいまれな力の強さを、「蓋世」は世をおおう意で、天下を圧するほどの気概を表す。 『史記』項羽本紀に載る項羽の「垓下の歌」の一句「力は山を抜き、気は世を蓋う」に基づく。楚漢の戦いの末、垓下で漢軍に包囲され四面楚歌に陥った項羽が、みずからの力と気概を誇りながらも滅びを悟って歌ったもので、この一句から生まれた言い回し。 「山を抜き世を蓋（おお）う」とも読む。"}, {"term": "馬良白眉", "reading": "ばりょうはくび", "meaning": "たくさんのものの中で一番すぐれていること。 中国三国時代、蜀の馬氏の五人兄弟はみな優秀であり、全員の字（あざな）に「常」の字がついていた。 中でも、馬良はひときわすぐれており、幼い頃から眉に白い毛が混ざっていたことから「白眉」と呼ばれ、「馬氏の五常、白眉最も良し」といわれたという故事から。"}, {"term": "披星戴月", "reading": "ひせいたいげつ", "meaning": "夜明け前から夜遅くまで精一杯仕事をすること。 「披星」は星を披るということから、夜が明ける前という意味。 「戴月」は月を戴くということから、夜遅くという意味。 「戴月披星」ともいう。"}, {"term": "氷消瓦解", "reading": "ひょうしょうがかい", "meaning": "物事がばらばらになること。または、完全に無くなること。 氷が解けて消えるように、屋根の瓦の一部分の崩壊から全体が次々と崩れるように、ばらばらになるという意味から。 「氷（こおり）と消え瓦（かわら）と解く」とも読む。 「氷」は「冰」、「消」は「銷」とも書く。 「瓦解氷消」ともいう。"}, {"term": "眉間一尺", "reading": "びかんいっしゃく", "meaning": "「眉間」は眉の間のことで、それが広いという意味から、賢人の相のたとえ。"}, {"term": "眉目秀麗", "reading": "びもくしゅうれい", "meaning": "顔立ちが美しく整っている様子。 主に男性に対して使う言葉。 「眉目」は眉と目のことから、顔立ちという意味。 「秀麗」は他よりも優れていて、美しく整っている様子。"}, {"term": "眉目清秀", "reading": "びもくせいしゅう", "meaning": "顔のつくりが美しく整っている様子。 主に男性に対して使う言葉。 「眉目」は眉と目のことで、顔のつくりという意味。 「清秀」は他よりも優れていて、美しく整っている様子。"}, {"term": "風流三昧", "reading": "ふうりゅうざんまい", "meaning": "自然を親しんで、詩歌や書画などの高尚な遊びに夢中になること。 「風流」は上品で風情があること。 「三昧」はほかのことを忘れて熱中すること。"}, {"term": "粉愁香怨", "reading": "ふんしゅうこうえん", "meaning": "美しい女性が怨み悲しむ様子。 「粉」はおしろい、「香」はお香のことで、どちらも化粧をした美しい女性のたとえ。"}, {"term": "舞文弄法", "reading": "ぶぶんろうほう", "meaning": "自分の都合のいいように、法律の条文を解釈して乱用すること。 「舞」と「弄」はどちらも、好き勝手な解釈をすること。 「文を舞（ま）わし法を弄（もてあそ）ぶ」とも読む。"}, {"term": "閉月羞花", "reading": "へいげつしゅうか", "meaning": "容姿が極めて美しいこと。 「羞」は恥らうこと。 美しさに花も恥じらい、月も恥ずかしがって雲に隠れてしまうほどの美女という意味から。 「閉月羞花」「羞月閉花」ともいう。"}, {"term": "閉口頓首", "reading": "へいこうとんしゅ", "meaning": "どうしようもなく困り果てること。 または、言い負かされて返答することが出来なくなること。 「閉口」は口を閉じて何も言わない様子のことで、困り果てた状態を意味する。 「頓首」は頭を地面につけるようにおじぎすること。"}, {"term": "平沙万里", "reading": "へいさばんり", "meaning": "非常に大きい砂漠のこと。 「平沙」は平坦で広大な砂原のこと。 「沙」は”砂”と同じ意味。 「万里」ははるか遠くまで広がっている様子。"}, {"term": "報怨以徳", "reading": "ほうえんいとく", "meaning": "受けた怨みに対して、恩徳を持って接して恩恵を与えること。 「怨みに報（むく）ゆるに徳を以（も）ってす」とも読む。"}, {"term": "方底円蓋", "reading": "ほうていえんがい", "meaning": "物事が上手くかみ合わないことのたとえ。 「方」は四角形。 「円」は円形。 底が四角形の容器に円形の蓋ということから。"}, {"term": "蜂房水渦", "reading": "ほうぼうすいか", "meaning": "数多くの家屋が集中して立ち並んでいる様子。 建物が蜂の巣の穴のように隣り合っていて、水の渦巻きのように連なっているという意味から。"}, {"term": "法華三昧", "reading": "ほっけざんまい", "meaning": "心を集中して法華経の奥義を極めること。 「三昧」は一つのことだけに心を集中して取り組むこと。"}, {"term": "貌合心離", "reading": "ぼうごうしんり", "meaning": "表面は親密さを装って交際してはいるが誠意がないことのたとえ。 「貌」は表に見せている形ということで、表向きは合わせてはいるが、心は離れているという意味から。"}, {"term": "名詮自性", "reading": "みょうせんじしょう", "meaning": "仏教語で、名はそのものの本質を表すということ。 「名詮」はその名に備わっている、「自性」はそのものの本質のこと。"}, {"term": "無影無踪", "reading": "むえいむそう", "meaning": "どこへ行ったのかわからないこと。 「踪」は足跡のことで、影も足跡も存在しないという意味。"}, {"term": "冥頑不霊", "reading": "めいがんふれい", "meaning": "道理がわからず、頑固で思考が鈍いひとのこと。 「冥頑」は頑固で道理がわからないこと、「不霊」は頭の働きが鈍いという意味。"}, {"term": "盲亀浮木", "reading": "もうきふぼく", "meaning": "非常に出会うことが難しいこと。または非常に珍しいこと。 「盲亀」は盲目の亀、「浮木」は流木のこと。 大海に住む盲目の亀が、百年に一度海面に浮かんでくる時に、小さな穴の開いた海を漂う流木の中に首を入れるという寓話（ぐうわ）から。"}, {"term": "冶金踊躍", "reading": "やきんようやく", "meaning": "自分が置かれている今の立場に満足できないこと。 「冶金」は金属を溶かすこと、「踊躍」は勢いよく飛び跳ねることで、溶かされた金属がるつぼの中で、勢いよく跳ねて外へ出ようとすることから。"}, {"term": "右賢左戚", "reading": "ゆうけんさせき", "meaning": "親族を低い地位の左側に、賢者を高い地位の右側に置くこと。 卑しいものを左側、尊ぶものを右側に置く中国の漢の時代の風習。 「右賢左戚」ともいう。"}, {"term": "雄心勃勃", "reading": "ゆうしんぼつぼつ", "meaning": "雄々しい勇気が、溢れ出してくること。 「雄心」は雄々しい心や勇気。 「勃勃」は勢いよくわき起こること。"}, {"term": "妖怪変化", "reading": "ようかいへんげ", "meaning": "人知を超えた怪しい化け物のこと。 「妖怪」「変化」ともに化け物という意味。"}, {"term": "妖言惑衆", "reading": "ようげんわくしゅう", "meaning": "怪しげな言説で世の人々を惑わすこと。 「妖言」は怪しい噂や風説のこと。"}, {"term": "羊質虎皮", "reading": "ようしつこひ", "meaning": "外見は立派だが、中身が伴わないこと。 虎の皮を羊に被せることから。 「虎皮羊質」ともいう。"}, {"term": "揚眉吐気", "reading": "ようびとき", "meaning": "目的を成し遂げて思いっきり喜ぶこと。 または、我慢を強いられていた環境から解放されて喜ぶこと。 または、積極的な心持ちになっていて活気づいている様子。 眉を上げて息を吐くことから笑顔や活気のある様子のこと。 「眉を揚げ気を吐く」とも訓読する。 「吐気揚眉」ともいう。"}, {"term": "沃野千里", "reading": "よくやせんり", "meaning": "よく肥えた平地がどこまでも広がっていること。 「里」は距離の単位で、「千里」は非常に長い距離のたとえ。 「沃埜千里」とも書く。"}, {"term": "抑揚頓挫", "reading": "よくようとんざ", "meaning": "文や声の調子を上げ下げして変えたり、勢いを変えたりすること。 または、勢いが急になくなること。"}, {"term": "藍田生玉", "reading": "らんでんしょうぎょく", "meaning": "名家から家柄に見合ったすぐれた子弟が生まれること。 「藍田」は中国の陝西省にある山の名前で、美しい宝石の産地。 宝石の名産地から美しい宝石が産出されるという意味から。 「藍田（らんでん）玉（ぎょく）を生ず」とも読む。"}, {"term": "冷嘲熱罵", "reading": "れいちょうねつば", "meaning": "冷ややかに嘲笑して、激しく罵倒すること。 「冷嘲」は冷ややかに嘲る、「熱罵」は熱く罵るという意味。"}, {"term": "冷土荒堆", "reading": "れいどこうたい", "meaning": "冷ややかで荒れた盛り土という意味から、墓のこと。 「堆」は土を高く盛ることや盛った土そのもの。"}, {"term": "籠鳥恋雲", "reading": "ろうちょうれんうん", "meaning": "捕らえられている者が自由を望むことのたとえ。 籠の中の鳥が空を恋しがるという意味から。"}];
+
+/* ---------- utils ---------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function sample(arr, n){ return shuffle(arr).slice(0,n); }
+function shortMeaning(text){
+  // 意味文の要点（最初の一文）だけを抜き出して短縮表示する
+  const m = text.match(/^(.+?[。])/);
+  return m ? m[1] : text;
+}
+
+const GYOU = {
+  "あ":"あいうえおぁぃぅぇぉ","か":"かきくけこがぎぐげご","さ":"さしすせそざじずぜぞ",
+  "た":"たちつてとだぢづでど","な":"なにぬねの","は":"はひふへほばびぶべぼぱぴぷぺぽ",
+  "ま":"まみむめも","や":"やゆよゃゅょ","ら":"らりるれろ","わ":"わをん"
+};
+function gyouOf(reading){
+  const c = reading[0];
+  for(const k in GYOU){ if(GYOU[k].includes(c)) return k; }
+  return "他";
+}
+
+/* ---------- nav ---------- */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.view').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+/* ---------- LIST / SEARCH / FILTER ---------- */
+let activeGyou = null;
+const gyouFilterEl = document.getElementById('gyouFilter');
+const allBtn = document.createElement('button');
+allBtn.textContent = 'すべて';
+allBtn.className = 'active';
+allBtn.addEventListener('click', ()=>{ activeGyou=null; syncGyouButtons(allBtn); renderList(); });
+gyouFilterEl.appendChild(allBtn);
+Object.keys(GYOU).forEach(k=>{
+  const b = document.createElement('button');
+  b.textContent = k+'行';
+  b.addEventListener('click', ()=>{ activeGyou=k; syncGyouButtons(b); renderList(); });
+  gyouFilterEl.appendChild(b);
+});
+function syncGyouButtons(active){
+  gyouFilterEl.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  active.classList.add('active');
+}
+
+const searchBox = document.getElementById('searchBox');
+searchBox.addEventListener('input', renderList);
+
+let allOpen = false;
+const toggleAllBtn = document.getElementById('toggleAllBtn');
+toggleAllBtn.addEventListener('click', ()=>{
+  allOpen = !allOpen;
+  toggleAllBtn.textContent = allOpen ? 'すべて閉じる' : 'すべて開く';
+  document.querySelectorAll('.idiom-card').forEach(c=>c.classList.toggle('open', allOpen));
+});
+
+function renderList(){
+  const q = searchBox.value.trim();
+  let list = DATA;
+  if(activeGyou) list = list.filter(d=>gyouOf(d.reading)===activeGyou);
+  if(q) list = list.filter(d=>d.term.includes(q)||d.reading.includes(q)||d.meaning.includes(q));
+
+  document.getElementById('countLine').textContent = list.length + ' 件 / 全' + DATA.length + '件';
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = '';
+  list.forEach(d=>{
+    const card = document.createElement('div');
+    card.className = 'idiom-card' + (allOpen ? ' open' : '');
+    card.innerHTML = `<div class="reading">${d.reading}</div>
+      <div class="term">${d.term}</div>
+      <div class="meaning">${d.meaning}</div>`;
+    card.addEventListener('click', ()=>card.classList.toggle('open'));
+    grid.appendChild(card);
+  });
+}
+renderList();
+
+/* ---------- QUIZ 1: term -> meaning ---------- */
+let score1 = {correct:0, total:0};
+let currentQ1 = null;
+function newQuiz1(){
+  document.getElementById('stamp1').className = 'stamp';
+  document.getElementById('next1').classList.remove('show');
+  const correct = sample(DATA,1)[0];
+  const distractors = sample(DATA.filter(d=>d!==correct), 3);
+  const options = shuffle([correct, ...distractors]);
+  currentQ1 = correct;
+  document.getElementById('quizTerm1').textContent = correct.term;
+  document.getElementById('score1').textContent = `正解 ${score1.correct} / ${score1.total} 問`;
+  const box = document.getElementById('choices1');
+  box.innerHTML='';
+  options.forEach(opt=>{
+    const b = document.createElement('button');
+    b.textContent = shortMeaning(opt.meaning);
+    b.addEventListener('click', ()=>answerQ1(b, opt===correct));
+    box.appendChild(b);
+  });
+}
+function answerQ1(btn, isCorrect){
+  document.querySelectorAll('#choices1 button').forEach(b=>b.disabled=true);
+  const stamp = document.getElementById('stamp1');
+  score1.total++;
+  if(isCorrect){
+    btn.classList.add('correct');
+    stamp.textContent='正解'; stamp.className='stamp show ok';
+    score1.correct++;
+  }else{
+    btn.classList.add('wrong');
+    stamp.textContent='不正解'; stamp.className='stamp show ng';
+    document.querySelectorAll('#choices1 button').forEach(b=>{ if(b.textContent===shortMeaning(currentQ1.meaning)) b.classList.add('correct'); });
+  }
+  document.getElementById('score1').textContent = `正解 ${score1.correct} / ${score1.total} 問`;
+  document.getElementById('next1').classList.add('show');
+}
+document.getElementById('next1').addEventListener('click', newQuiz1);
+
+/* ---------- QUIZ 2: meaning -> term ---------- */
+let score2 = {correct:0, total:0};
+let currentQ2 = null;
+function newQuiz2(){
+  document.getElementById('stamp2').className = 'stamp';
+  document.getElementById('next2').classList.remove('show');
+  const correct = sample(DATA,1)[0];
+  const distractors = sample(DATA.filter(d=>d!==correct), 3);
+  const options = shuffle([correct, ...distractors]);
+  currentQ2 = correct;
+  document.getElementById('quizMeaning2').textContent = shortMeaning(correct.meaning);
+  document.getElementById('score2').textContent = `正解 ${score2.correct} / ${score2.total} 問`;
+  const box = document.getElementById('choices2');
+  box.innerHTML='';
+  options.forEach(opt=>{
+    const b = document.createElement('button');
+    b.className='term-choice';
+    b.textContent = opt.term;
+    b.addEventListener('click', ()=>answerQ2(b, opt===correct));
+    box.appendChild(b);
+  });
+}
+function answerQ2(btn, isCorrect){
+  document.querySelectorAll('#choices2 button').forEach(b=>b.disabled=true);
+  const stamp = document.getElementById('stamp2');
+  score2.total++;
+  if(isCorrect){
+    btn.classList.add('correct');
+    stamp.textContent='正解'; stamp.className='stamp show ok';
+    score2.correct++;
+  }else{
+    btn.classList.add('wrong');
+    stamp.textContent='不正解'; stamp.className='stamp show ng';
+    document.querySelectorAll('#choices2 button').forEach(b=>{ if(b.textContent===currentQ2.term) b.classList.add('correct'); });
+  }
+  document.getElementById('score2').textContent = `正解 ${score2.correct} / ${score2.total} 問`;
+  document.getElementById('next2').classList.add('show');
+}
+document.getElementById('next2').addEventListener('click', newQuiz2);
+
+/* ---------- MATCH GAME ---------- */
+const MATCH_SET_SIZE = 6;
+let matchTerms = [];
+let matchedCount = 0;
+let selUpper = null, selLower = null;
+
+function newMatchSet(){
+  matchTerms = sample(DATA.filter(d=>d.term.length===4), MATCH_SET_SIZE);
+  matchedCount = 0;
+  selUpper = null; selLower = null;
+  const uppers = shuffle(matchTerms.map(d=>({id:d.term, half:d.term.slice(0,2)})));
+  const lowers = shuffle(matchTerms.map(d=>({id:d.term, half:d.term.slice(2,4)})));
+
+  const upperCol = document.getElementById('upperCol');
+  const lowerCol = document.getElementById('lowerCol');
+  upperCol.innerHTML=''; lowerCol.innerHTML='';
+
+  uppers.forEach(u=>{
+    const b = document.createElement('button');
+    b.className='half-btn';
+    b.textContent = u.half;
+    b.dataset.id = u.id;
+    b.addEventListener('click', ()=>selectHalf(b,'upper'));
+    upperCol.appendChild(b);
+  });
+  lowers.forEach(l=>{
+    const b = document.createElement('button');
+    b.className='half-btn';
+    b.textContent = l.half;
+    b.dataset.id = l.id;
+    b.addEventListener('click', ()=>selectHalf(b,'lower'));
+    lowerCol.appendChild(b);
+  });
+  updateMatchStatus();
+}
+
+function updateMatchStatus(){
+  document.getElementById('matchStatus').textContent =
+    `${matchedCount} / ${matchTerms.length} 組 完成`;
+}
+
+function selectHalf(btn, side){
+  if(btn.classList.contains('locked')) return;
+  if(side==='upper'){
+    if(selUpper) selUpper.classList.remove('selected');
+    selUpper = btn; btn.classList.add('selected');
+  }else{
+    if(selLower) selLower.classList.remove('selected');
+    selLower = btn; btn.classList.add('selected');
+  }
+  if(selUpper && selLower){
+    if(selUpper.dataset.id === selLower.dataset.id){
+      selUpper.classList.remove('selected'); selLower.classList.remove('selected');
+      selUpper.classList.add('locked'); selLower.classList.add('locked');
+      selUpper.disabled = true; selLower.disabled = true;
+      matchedCount++;
+      selUpper=null; selLower=null;
+      updateMatchStatus();
+      if(matchedCount === matchTerms.length){
+        document.getElementById('matchStatus').textContent = `🎉 全${matchTerms.length}組 完成！「新しい問題セット」で次へ`;
+      }
+    }else{
+      const u=selUpper, l=selLower;
+      u.classList.add('shake'); l.classList.add('shake');
+      setTimeout(()=>{
+        u.classList.remove('selected','shake');
+        l.classList.remove('selected','shake');
+      }, 420);
+      selUpper=null; selLower=null;
+    }
+  }
+}
+document.getElementById('newSetBtn').addEventListener('click', newMatchSet);
+
+/* ---------- init ---------- */
+newQuiz1();
+newQuiz2();
+newMatchSet();
+</script>
+</body>
+</html>
