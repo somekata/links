@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>対義語・類義語道場</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E6;
+    --paper-2:#EFE7D6;
+    --ink:#2B2620;
+    --ink-soft:#5B5346;
+    --line:#D9CFB8;
+    --shu:#A6332B;
+    --shu-deep:#7E2620;
+    --ai:#2B5F73;
+    --ai-deep:#1F4756;
+    --gold:#B08D3F;
+    --ok:#3E6B4B;
+    --ng:#A6332B;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:radial-gradient(circle at 1px 1px, rgba(43,38,32,0.05) 1px, transparent 0);
+    background-size:22px 22px;
+    color:var(--ink);
+    font-family:'Noto Sans JP', sans-serif;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:840px;margin:0 auto;padding:28px 18px 80px;}
+
+  header{
+    text-align:center;
+    padding:18px 0 22px;
+    border-bottom:3px double var(--ink);
+    margin-bottom:18px;
+    position:relative;
+  }
+  header .kan{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:2.05rem;
+    letter-spacing:.1em;
+  }
+  header .sub{
+    font-size:.78rem;
+    color:var(--ink-soft);
+    letter-spacing:.15em;
+    margin-top:6px;
+  }
+  header .seal{
+    position:absolute;
+    top:8px; right:6px;
+    width:46px;height:46px;
+    border:2.5px solid var(--shu);
+    border-radius:3px;
+    color:var(--shu);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:1.15rem;
+    transform:rotate(-4deg);
+    opacity:.85;
+  }
+  .legend{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    font-size:.76rem;
+    color:var(--ink-soft);
+    margin-bottom:24px;
+  }
+  .legend span.dot{
+    display:inline-block;
+    width:10px;height:10px;
+    border-radius:50%;
+    margin-right:5px;
+    vertical-align:middle;
+  }
+  .legend .anto .dot{background:var(--shu);}
+  .legend .syn .dot{background:var(--ai);}
+
+  nav{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:center;
+    margin-bottom:26px;
+  }
+  nav button{
+    font-family:'Noto Serif JP', serif;
+    font-size:.88rem;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    padding:9px 16px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition:.15s;
+  }
+  nav button:hover{border-color:var(--gold); color:var(--ink);}
+  nav button.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+  section.view{display:none;}
+  section.view.active{display:block;}
+
+  /* --- list/search --- */
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; align-items:center;}
+  #searchBox{
+    flex:1 1 220px;
+    padding:10px 12px;
+    font-size:.95rem;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:var(--radius);
+    font-family:inherit;
+  }
+  #searchBox:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  #toggleAllBtn{
+    font-family:'Noto Serif JP', serif;
+    font-size:.82rem;
+    background:var(--ink);
+    color:var(--paper);
+    border:1px solid var(--ink);
+    padding:9px 16px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  #toggleAllBtn:hover{background:var(--shu-deep); border-color:var(--shu-deep);}
+
+  .type-filter{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:16px;}
+  .type-filter button{
+    font-family:'Noto Serif JP',serif;
+    font-size:.82rem;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    padding:5px 13px;
+    border-radius:14px;
+    cursor:pointer;
+  }
+  .type-filter button.active{background:var(--gold); border-color:var(--gold); color:#fff;}
+
+  .count-line{font-size:.8rem; color:var(--ink-soft); margin-bottom:10px;}
+
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+  }
+  @media(max-width:700px){ .card-grid{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:460px){ .card-grid{grid-template-columns:1fr;} }
+
+  .pair-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-left:4px solid var(--ink-soft);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    cursor:pointer;
+  }
+  .pair-card.antonym{border-left-color:var(--shu);}
+  .pair-card.synonym{border-left-color:var(--ai);}
+  .pair-card .chip{
+    display:inline-block;
+    font-size:.68rem;
+    padding:1px 8px;
+    border-radius:10px;
+    margin-bottom:6px;
+    letter-spacing:.05em;
+  }
+  .pair-card.antonym .chip{background:#F3E1DF; color:var(--shu-deep);}
+  .pair-card.synonym .chip{background:#DFEBF0; color:var(--ai-deep);}
+  .pair-card .pair-line{
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:1.2rem;
+    letter-spacing:.03em;
+  }
+  .pair-card .sym{
+    color:var(--gold);
+    margin:0 4px;
+    font-weight:400;
+  }
+  .pair-card .reading-line{
+    font-size:.7rem;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .pair-card .meanings{display:none; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);}
+  .pair-card.open .meanings{display:block;}
+  .pair-card .m-item{font-size:.76rem; color:var(--ink); margin-bottom:5px; line-height:1.6;}
+  .pair-card .m-item b{font-family:'Shippori Mincho',serif; font-weight:700; margin-right:4px;}
+
+  /* --- quiz --- */
+  .quiz-box{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:30px 24px;
+    text-align:center;
+    position:relative;
+    min-height:280px;
+  }
+  .quiz-score{font-size:.78rem; color:var(--ink-soft); margin-bottom:14px; letter-spacing:.05em;}
+  .quiz-prompt-label{font-size:.8rem; color:var(--gold); letter-spacing:.1em; margin-bottom:14px;}
+  .quiz-word{
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:2.4rem;
+    letter-spacing:.1em;
+    margin-bottom:24px;
+  }
+  .choices{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .choices button{
+    font-family:'Shippori Mincho',serif;
+    font-size:1.35rem;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px;
+    cursor:pointer;
+    text-align:center;
+    transition:.12s;
+  }
+  .choices button:hover:not(:disabled){border-color:var(--gold); background:#fff;}
+  .choices button.correct{background:#E4EEE6; border-color:var(--ok); color:var(--ok);}
+  .choices button.wrong{background:#F3E1DF; border-color:var(--ng); color:var(--ng);}
+  .choices button:disabled{cursor:default;}
+  .stamp{
+    position:absolute; top:20px; right:26px;
+    font-family:'Shippori Mincho',serif; font-weight:700; font-size:1.6rem;
+    border:3px solid; border-radius:6px; padding:2px 10px;
+    transform:rotate(-8deg); opacity:0; transition:opacity .15s, transform .15s;
+  }
+  .stamp.show{opacity:.9;}
+  .stamp.ok{color:var(--ok); border-color:var(--ok);}
+  .stamp.ng{color:var(--ng); border-color:var(--ng);}
+  .quiz-next{
+    margin-top:20px;
+    font-family:'Noto Serif JP',serif;
+    background:var(--ink); color:var(--paper); border:none;
+    padding:10px 26px; border-radius:var(--radius); cursor:pointer;
+    font-size:.85rem; letter-spacing:.1em; display:none;
+  }
+  .quiz-next.show{display:inline-block;}
+
+  /* --- match game --- */
+  .match-status{font-size:.85rem; color:var(--ink-soft); margin-bottom:14px; text-align:center;}
+  .match-cols{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  .match-col h3{
+    font-family:'Noto Serif JP',serif; font-size:.82rem; color:var(--gold);
+    letter-spacing:.15em; text-align:center; margin:0 0 10px;
+  }
+  .half-btn{
+    display:block; width:100%;
+    font-family:'Shippori Mincho',serif; font-size:1.15rem;
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px; margin-bottom:8px; cursor:pointer; letter-spacing:.05em;
+  }
+  .half-btn:hover:not(:disabled){border-color:var(--gold);}
+  .half-btn.selected{border-color:var(--shu); background:#FBEFEC; color:var(--shu);}
+  .half-btn.locked{background:#E4EEE6; border-color:var(--ok); color:var(--ok); cursor:default;}
+  .half-btn.shake{border-color:var(--ng); background:#F3E1DF;}
+  .new-set-btn{
+    display:block; margin:20px auto 0;
+    font-family:'Noto Serif JP',serif;
+    background:var(--ink); color:var(--paper); border:none;
+    padding:10px 26px; border-radius:var(--radius); cursor:pointer;
+    font-size:.85rem; letter-spacing:.1em;
+  }
+
+  footer{
+    max-width:840px; margin:50px auto 0; padding:16px 18px 0;
+    border-top:1px solid var(--line); font-size:.68rem; color:var(--ink-soft); line-height:1.8;
+  }
+
+  @media(max-width:520px){
+    .choices{grid-template-columns:1fr;}
+    .quiz-word{font-size:1.9rem;}
+    header .kan{font-size:1.6rem;}
+  }
+
+  @media print{
+    body{background:#fff; color:#000;}
+    nav, .toolbar, .type-filter, .count-line, .stamp, .legend{display:none !important;}
+    header .seal{display:none;}
+    section.view{display:none !important;}
+    #view-list{display:block !important;}
+    .card-grid{display:grid !important; grid-template-columns:repeat(3,1fr) !important; gap:8px;}
+    .pair-card{break-inside:avoid; page-break-inside:avoid; border:1px solid #999; background:#fff; margin-bottom:12px; padding:10px 12px;}
+    .pair-card .meanings{display:block !important;}
+    .pair-card .m-item{color:#000;}
+    footer{break-inside:avoid; page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="seal">対類</div>
+    <div class="kan">対義語・類義語道場</div>
+    <div class="sub">TAIGIGO / RUIGIGO DOJO ・ 全103組</div>
+  </header>
+  <div class="legend">
+    <span class="anto"><span class="dot"></span>対義語（⇔）</span>
+    <span class="syn"><span class="dot"></span>類義語（＝）</span>
+  </div>
+
+  <nav>
+    <button data-view="list" class="active">一覧・検索</button>
+    <button data-view="quiz1">クイズ</button>
+    <button data-view="match">組み合わせゲーム</button>
+  </nav>
+
+  <!-- LIST / SEARCH -->
+  <section class="view active" id="view-list">
+    <div class="toolbar">
+      <input id="searchBox" type="text" placeholder="語句・読み・意味で検索…">
+      <button id="toggleAllBtn" type="button">すべて開く</button>
+    </div>
+    <div class="type-filter" id="typeFilter"></div>
+    <div class="count-line" id="countLine"></div>
+    <div class="card-grid" id="cardGrid"></div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="view" id="view-quiz1">
+    <div class="quiz-box">
+      <div class="stamp" id="stamp1"></div>
+      <div class="quiz-score" id="score1"></div>
+      <div class="quiz-prompt-label" id="quizLabel1"></div>
+      <div class="quiz-word" id="quizWord1"></div>
+      <div class="choices" id="choices1"></div>
+      <button class="quiz-next" id="next1">次の問題 →</button>
+    </div>
+  </section>
+
+  <!-- MATCH GAME -->
+  <section class="view" id="view-match">
+    <div class="match-status" id="matchStatus"></div>
+    <div class="match-cols">
+      <div class="match-col">
+        <h3>左の語句</h3>
+        <div id="leftCol"></div>
+      </div>
+      <div class="match-col">
+        <h3>右の語句</h3>
+        <div id="rightCol"></div>
+      </div>
+    </div>
+    <button class="new-set-btn" id="newSetBtn">新しい問題セット</button>
+  </section>
+
+  <footer>
+    掲載の語句・分類（対義語／類義語）はユーザー指定のリストに基づき、読み仮名・意味は AI（Claude, Anthropic）が作成しました。内容には誤りが含まれる可能性があります。学習・受験対策としてご利用の際は、必ず市販の国語辞典等で正確性をご確認ください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<script>
+const DATA = [{"type": "antonym", "word1": "自生", "reading1": "じせい", "meaning1": "栽培されず自然に生え育つこと。", "word2": "栽培", "reading2": "さいばい", "meaning2": "植物を人の手で育てて増やすこと。"}, {"type": "antonym", "word1": "暴露", "reading1": "ばくろ", "meaning1": "隠していた事実を明るみに出すこと。", "word2": "秘匿", "reading2": "ひとく", "meaning2": "秘密にして人に知られないよう隠しておくこと。"}, {"type": "antonym", "word1": "賢明", "reading1": "けんめい", "meaning1": "判断力があり道理をわきまえていること。", "word2": "暗愚", "reading2": "あんぐ", "meaning2": "物事の判断力に欠け愚かなこと。"}, {"type": "antonym", "word1": "横柄", "reading1": "おうへい", "meaning1": "偉そうにふるまい人を見下す態度。", "word2": "謙虚", "reading2": "けんきょ", "meaning2": "控えめで素直な態度。"}, {"type": "antonym", "word1": "反逆", "reading1": "はんぎゃく", "meaning1": "主君や体制にそむき逆らうこと。", "word2": "恭順", "reading2": "きょうじゅん", "meaning2": "つつしんで命令に従うこと。"}, {"type": "antonym", "word1": "隆起", "reading1": "りゅうき", "meaning1": "土地などが盛り上がること。", "word2": "陥没", "reading2": "かんぼつ", "meaning2": "地面などが落ち込みへこむこと。"}, {"type": "antonym", "word1": "答申", "reading1": "とうしん", "meaning1": "上位機関の問いに意見をまとめて答えること。", "word2": "諮問", "reading2": "しもん", "meaning2": "有識者などに意見を求めること。"}, {"type": "antonym", "word1": "炎暑", "reading1": "えんしょ", "meaning1": "燃えるように激しい暑さ。", "word2": "酷寒", "reading2": "こっかん", "meaning2": "厳しく激しい寒さ。"}, {"type": "antonym", "word1": "粗略", "reading1": "そりゃく", "meaning1": "いい加減で雑な扱いをすること。", "word2": "丁寧", "reading2": "ていねい", "meaning2": "心を込めて注意深く行うこと。"}, {"type": "antonym", "word1": "偉大", "reading1": "いだい", "meaning1": "優れて立派で並外れていること。", "word2": "凡庸", "reading2": "ぼんよう", "meaning2": "これといった特色のない平凡なこと。"}, {"type": "antonym", "word1": "軽侮", "reading1": "けいぶ", "meaning1": "相手を軽く見て侮ること。", "word2": "崇拝", "reading2": "すうはい", "meaning2": "心から敬い尊ぶこと。"}, {"type": "antonym", "word1": "禁欲", "reading1": "きんよく", "meaning1": "欲望をおさえ我慢すること。", "word2": "享楽", "reading2": "きょうらく", "meaning2": "快楽を思う存分楽しむこと。"}, {"type": "antonym", "word1": "栄転", "reading1": "えいてん", "meaning1": "より上位の役職に転任すること。", "word2": "左遷", "reading2": "させん", "meaning2": "低い地位や役職に落とされること。"}, {"type": "antonym", "word1": "飽食", "reading1": "ほうしょく", "meaning1": "十分すぎるほど食べて満ち足りること。", "word2": "飢餓", "reading2": "きが", "meaning2": "食べ物が不足し飢えること。"}, {"type": "antonym", "word1": "任命", "reading1": "にんめい", "meaning1": "職務や地位に就くよう命じること。", "word2": "罷免", "reading2": "ひめん", "meaning2": "職や地位をやめさせること。"}, {"type": "antonym", "word1": "祝賀", "reading1": "しゅくが", "meaning1": "めでたい出来事を喜び祝うこと。", "word2": "哀悼", "reading2": "あいとう", "meaning2": "人の死を悲しみいたむこと。"}, {"type": "antonym", "word1": "虚弱", "reading1": "きょじゃく", "meaning1": "体が弱く病気がちなこと。", "word2": "頑健", "reading2": "がんけん", "meaning2": "体ががっしりと丈夫なこと。"}, {"type": "antonym", "word1": "愛護", "reading1": "あいご", "meaning1": "大切にかわいがり守ること。", "word2": "虐待", "reading2": "ぎゃくたい", "meaning2": "むごく扱い苦しめること。"}, {"type": "antonym", "word1": "褒賞", "reading1": "ほうしょう", "meaning1": "功績をほめてたたえ与える賞。", "word2": "懲罰", "reading2": "ちょうばつ", "meaning2": "不正や過ちを罰すること。"}, {"type": "antonym", "word1": "固辞", "reading1": "こじ", "meaning1": "強く辞退すること。", "word2": "快諾", "reading2": "かいだく", "meaning2": "気持ちよく承知すること。"}, {"type": "antonym", "word1": "分割", "reading1": "ぶんかつ", "meaning1": "いくつかに分けること。", "word2": "一括", "reading2": "いっかつ", "meaning2": "ひとまとめにすること。"}, {"type": "antonym", "word1": "汚濁", "reading1": "おだく", "meaning1": "汚れにごること。", "word2": "清澄", "reading2": "せいちょう", "meaning2": "澄みきってきれいなこと。"}, {"type": "antonym", "word1": "名誉", "reading1": "めいよ", "meaning1": "すぐれていると認められる誇り。", "word2": "恥辱", "reading2": "ちじょく", "meaning2": "恥ずかしめを受けること。"}, {"type": "antonym", "word1": "巧妙", "reading1": "こうみょう", "meaning1": "非常に巧みで優れている様子。", "word2": "拙劣", "reading2": "せつれつ", "meaning2": "下手で劣っている様子。"}, {"type": "antonym", "word1": "激賞", "reading1": "げきしょう", "meaning1": "非常に強くほめること。", "word2": "酷評", "reading2": "こくひょう", "meaning2": "厳しく手厳しく批評すること。"}, {"type": "antonym", "word1": "威圧", "reading1": "いあつ", "meaning1": "威力で相手を押さえつけること。", "word2": "懐柔", "reading2": "かいじゅう", "meaning2": "うまく扱って従わせること。"}, {"type": "antonym", "word1": "特殊", "reading1": "とくしゅ", "meaning1": "普通と違い特別であること。", "word2": "普遍", "reading2": "ふへん", "meaning2": "どこにでも当てはまり例外がないこと。"}, {"type": "antonym", "word1": "凡才", "reading1": "ぼんさい", "meaning1": "平凡でこれといった才能のない人。", "word2": "逸材", "reading2": "いつざい", "meaning2": "非常に優れた才能を持つ人。"}, {"type": "antonym", "word1": "高遠", "reading1": "こうえん", "meaning1": "志や考えが高く優れていること。", "word2": "卑近", "reading2": "ひきん", "meaning2": "身近でありふれていること。"}, {"type": "antonym", "word1": "国産", "reading1": "こくさん", "meaning1": "自国で作られたもの。", "word2": "舶来", "reading2": "はくらい", "meaning2": "外国から輸入されたもの。"}, {"type": "antonym", "word1": "率先", "reading1": "そっせん", "meaning1": "人より先に進んで物事を行うこと。", "word2": "追随", "reading2": "ついずい", "meaning2": "他人の後についていくこと。"}, {"type": "antonym", "word1": "富裕", "reading1": "ふゆう", "meaning1": "財産が豊かで生活が豊かなこと。", "word2": "貧窮", "reading2": "ひんきゅう", "meaning2": "貧しくて生活に苦しむこと。"}, {"type": "antonym", "word1": "純白", "reading1": "じゅんぱく", "meaning1": "混じり気のない真っ白。", "word2": "漆黒", "reading2": "しっこく", "meaning2": "漆のように黒く光沢のある黒色。"}, {"type": "antonym", "word1": "多弁", "reading1": "たべん", "meaning1": "よくしゃべること。", "word2": "寡黙", "reading2": "かもく", "meaning2": "口数が少なく無口なこと。"}, {"type": "antonym", "word1": "暫時", "reading1": "ざんじ", "meaning1": "しばらくの間、少しの時間。", "word2": "恒久", "reading2": "こうきゅう", "meaning2": "いつまでも変わらず続くこと。"}, {"type": "antonym", "word1": "発病", "reading1": "はつびょう", "meaning1": "病気にかかること。", "word2": "治癒", "reading2": "ちゆ", "meaning2": "病気やけがが治ること。"}, {"type": "antonym", "word1": "個別", "reading1": "こべつ", "meaning1": "一つ一つ別々に扱うこと。", "word2": "一斉", "reading2": "いっせい", "meaning2": "同時にそろって行うこと。"}, {"type": "antonym", "word1": "新奇", "reading1": "しんき", "meaning1": "目新しく珍しいこと。", "word2": "陳腐", "reading2": "ちんぷ", "meaning2": "古臭くありふれていること。"}, {"type": "antonym", "word1": "厳格", "reading1": "げんかく", "meaning1": "規律に厳しく妥協しないこと。", "word2": "寛容", "reading2": "かんよう", "meaning2": "心が広く人の過ちを許すこと。"}, {"type": "antonym", "word1": "進出", "reading1": "しんしゅつ", "meaning1": "新しい分野や場所に出て活動を広げること。", "word2": "撤退", "reading2": "てったい", "meaning2": "陣地や事業などから退くこと。"}, {"type": "antonym", "word1": "決裂", "reading1": "けつれつ", "meaning1": "話し合いなどが物別れに終わること。", "word2": "妥結", "reading2": "だけつ", "meaning2": "双方が譲り合い意見がまとまること。"}, {"type": "antonym", "word1": "獲得", "reading1": "かくとく", "meaning1": "努力して手に入れること。", "word2": "喪失", "reading2": "そうしつ", "meaning2": "大切なものを失うこと。"}, {"type": "antonym", "word1": "末端", "reading1": "まったん", "meaning1": "組織や物の端の部分。", "word2": "中枢", "reading2": "ちゅうすう", "meaning2": "物事の中心となる重要な部分。"}, {"type": "antonym", "word1": "侵害", "reading1": "しんがい", "meaning1": "他人の権利を侵し損なうこと。", "word2": "擁護", "reading2": "ようご", "meaning2": "かばい守ること。"}, {"type": "antonym", "word1": "欠乏", "reading1": "けつぼう", "meaning1": "必要なものが不足すること。", "word2": "充足", "reading2": "じゅうそく", "meaning2": "十分に満ち足りること。"}, {"type": "antonym", "word1": "混乱", "reading1": "こんらん", "meaning1": "物事が入り乱れて秩序を失うこと。", "word2": "秩序", "reading2": "ちつじょ", "meaning2": "物事の正しい順序やきまり。"}, {"type": "antonym", "word1": "更生", "reading1": "こうせい", "meaning1": "悪い状態から立ち直り生まれ変わること。", "word2": "堕落", "reading2": "だらく", "meaning2": "品行が乱れ悪い方向に落ちていくこと。"}, {"type": "antonym", "word1": "総合", "reading1": "そうごう", "meaning1": "個々のものを一つにまとめること。", "word2": "分析", "reading2": "ぶんせき", "meaning2": "物事を細かく分けて調べること。"}, {"type": "antonym", "word1": "老巧", "reading1": "ろうこう", "meaning1": "経験を積み物事に巧みなこと。", "word2": "稚拙", "reading2": "ちせつ", "meaning2": "幼稚で未熟な様子。"}, {"type": "antonym", "word1": "賛辞", "reading1": "さんじ", "meaning1": "ほめたたえる言葉。", "word2": "酷評", "reading2": "こくひょう", "meaning2": "厳しく手厳しく批評すること。"}, {"type": "antonym", "word1": "下落", "reading1": "げらく", "meaning1": "値段や地位などが下がること。", "word2": "騰貴", "reading2": "とうき", "meaning2": "物価や価値が上がること。"}, {"type": "antonym", "word1": "慶賀", "reading1": "けいが", "meaning1": "めでたいことを喜び祝うこと。", "word2": "哀悼", "reading2": "あいとう", "meaning2": "人の死を悲しみいたむこと。"}, {"type": "antonym", "word1": "粗雑", "reading1": "そざつ", "meaning1": "大ざっぱでいい加減な様子。", "word2": "緻密", "reading2": "ちみつ", "meaning2": "細部まで注意が行き届いている様子。"}, {"type": "synonym", "word1": "無口", "reading1": "むくち", "meaning1": "あまり話をしないこと。", "word2": "寡黙", "reading2": "かもく", "meaning2": "口数が少なく黙りがちなこと。"}, {"type": "synonym", "word1": "折衝", "reading1": "せっしょう", "meaning1": "利害の対立する相手と話し合うこと。", "word2": "交渉", "reading2": "こうしょう", "meaning2": "相手と話し合って取り決めること。"}, {"type": "synonym", "word1": "心配", "reading1": "しんぱい", "meaning1": "良くない事態を気にかけ思い悩むこと。", "word2": "懸念", "reading2": "けねん", "meaning2": "気にかかって不安に思うこと。"}, {"type": "synonym", "word1": "面倒", "reading1": "めんどう", "meaning1": "手間がかかり煩わしいこと。", "word2": "厄介", "reading2": "やっかい", "meaning2": "手数がかかりわずらわしいこと。"}, {"type": "synonym", "word1": "祝福", "reading1": "しゅくふく", "meaning1": "幸福を祈り喜び祝うこと。", "word2": "慶賀", "reading2": "けいが", "meaning2": "めでたいことを喜び祝うこと。"}, {"type": "synonym", "word1": "来歴", "reading1": "らいれき", "meaning1": "物事がたどってきた歴史や経緯。", "word2": "由緒", "reading2": "ゆいしょ", "meaning2": "物事の起こりやいわれ。"}, {"type": "synonym", "word1": "混乱", "reading1": "こんらん", "meaning1": "物事が入り乱れて秩序を失うこと。", "word2": "紛糾", "reading2": "ふんきゅう", "meaning2": "意見や事態がもつれ乱れること。"}, {"type": "synonym", "word1": "降格", "reading1": "こうかく", "meaning1": "地位や階級が下がること。", "word2": "左遷", "reading2": "させん", "meaning2": "低い地位や役職に落とされること。"}, {"type": "synonym", "word1": "阻害", "reading1": "そがい", "meaning1": "物事の進行をさまたげること。", "word2": "邪魔", "reading2": "じゃま", "meaning2": "物事の妨げになること。"}, {"type": "synonym", "word1": "卓抜", "reading1": "たくばつ", "meaning1": "他より飛び抜けて優れていること。", "word2": "傑出", "reading2": "けっしゅつ", "meaning2": "多くの中で際立って優れていること。"}, {"type": "synonym", "word1": "荘重", "reading1": "そうちょう", "meaning1": "おごそかで重々しいこと。", "word2": "厳粛", "reading2": "げんしゅく", "meaning2": "心を引き締めるほどおごそかなこと。"}, {"type": "synonym", "word1": "貧苦", "reading1": "ひんく", "meaning1": "貧しさのために苦しむこと。", "word2": "困窮", "reading2": "こんきゅう", "meaning2": "生活が非常に苦しく困ること。"}, {"type": "synonym", "word1": "平穏", "reading1": "へいおん", "meaning1": "穏やかで変わったことがないこと。", "word2": "安寧", "reading2": "あんねい", "meaning2": "穏やかで平和なこと。"}, {"type": "synonym", "word1": "我慢", "reading1": "がまん", "meaning1": "つらさを耐え忍ぶこと。", "word2": "忍耐", "reading2": "にんたい", "meaning2": "苦しみやつらさをじっと耐え忍ぶこと。"}, {"type": "synonym", "word1": "貧困", "reading1": "ひんこん", "meaning1": "貧しく生活に困っていること。", "word2": "窮乏", "reading2": "きゅうぼう", "meaning2": "お金や物が不足し苦しむこと。"}, {"type": "synonym", "word1": "残念", "reading1": "ざんねん", "meaning1": "心残りで悔しく思うこと。", "word2": "遺憾", "reading2": "いかん", "meaning2": "期待通りにいかず心残りに思うこと。"}, {"type": "synonym", "word1": "死角", "reading1": "しかく", "meaning1": "見えず気づきにくい部分。", "word2": "盲点", "reading2": "もうてん", "meaning2": "見落とされがちな見えにくい部分。"}, {"type": "synonym", "word1": "昼寝", "reading1": "ひるね", "meaning1": "昼間に少しの間眠ること。", "word2": "午睡", "reading2": "ごすい", "meaning2": "昼間にとる短い睡眠。"}, {"type": "synonym", "word1": "是認", "reading1": "ぜにん", "meaning1": "よいと認め許すこと。", "word2": "肯定", "reading2": "こうてい", "meaning2": "そのとおりだと認めること。"}, {"type": "synonym", "word1": "順次", "reading1": "じゅんじ", "meaning1": "順番に従って次々と行うこと。", "word2": "逐次", "reading2": "ちくじ", "meaning2": "順を追って次々に行うこと。"}, {"type": "synonym", "word1": "猛者", "reading1": "もさ", "meaning1": "強くて勇ましい人。", "word2": "豪傑", "reading2": "ごうけつ", "meaning2": "力や気力に優れた勇ましい人物。"}, {"type": "synonym", "word1": "永眠", "reading1": "えいみん", "meaning1": "死ぬことを敬っていう言葉。", "word2": "逝去", "reading2": "せいきょ", "meaning2": "人が亡くなることを敬っていう言葉。"}, {"type": "synonym", "word1": "根絶", "reading1": "こんぜつ", "meaning1": "根本から完全に取り除くこと。", "word2": "撲滅", "reading2": "ぼくめつ", "meaning2": "すっかり滅ぼしてなくすこと。"}, {"type": "synonym", "word1": "豊富", "reading1": "ほうふ", "meaning1": "種類や量が非常に多いこと。", "word2": "潤沢", "reading2": "じゅんたく", "meaning2": "ゆとりがあり十分にあること。"}, {"type": "synonym", "word1": "歴然", "reading1": "れきぜん", "meaning1": "はっきりとして疑いようがない様子。", "word2": "顕著", "reading2": "けんちょ", "meaning2": "際立って明らかな様子。"}, {"type": "synonym", "word1": "湯船", "reading1": "ゆぶね", "meaning1": "湯を入れて体をつける桶や槽。", "word2": "浴槽", "reading2": "よくそう", "meaning2": "入浴のために湯を入れる槽。"}, {"type": "synonym", "word1": "譲歩", "reading1": "じょうほ", "meaning1": "自分の意見や主張を控え相手に譲ること。", "word2": "妥協", "reading2": "だきょう", "meaning2": "対立する意見を歩み寄ってまとめること。"}, {"type": "synonym", "word1": "公表", "reading1": "こうひょう", "meaning1": "広く世間に発表すること。", "word2": "披露", "reading2": "ひろう", "meaning2": "広く人々に知らせること。"}, {"type": "synonym", "word1": "調和", "reading1": "ちょうわ", "meaning1": "全体がほどよく釣り合っていること。", "word2": "均衡", "reading2": "きんこう", "meaning2": "物事の釣り合いが取れていること。"}, {"type": "synonym", "word1": "抜粋", "reading1": "ばっすい", "meaning1": "文章の一部を抜き出すこと。", "word2": "抄録", "reading2": "しょうろく", "meaning2": "文章の要点を抜き出して記すこと。"}, {"type": "synonym", "word1": "屋敷", "reading1": "やしき", "meaning1": "広い敷地を持つ立派な住まい。", "word2": "邸宅", "reading2": "ていたく", "meaning2": "大きく立派な住まい。"}, {"type": "synonym", "word1": "処罰", "reading1": "しょばつ", "meaning1": "罪や過ちに対して罰を与えること。", "word2": "懲戒", "reading2": "ちょうかい", "meaning2": "不正な行為を戒め罰すること。"}, {"type": "synonym", "word1": "互角", "reading1": "ごかく", "meaning1": "実力に優劣がなく同等であること。", "word2": "伯仲", "reading2": "はくちゅう", "meaning2": "力量に差がなく優劣をつけがたいこと。"}, {"type": "synonym", "word1": "反逆", "reading1": "はんぎゃく", "meaning1": "主君や体制にそむき逆らうこと。", "word2": "謀反", "reading2": "むほん", "meaning2": "主君にそむいて兵を挙げること。"}, {"type": "synonym", "word1": "熟知", "reading1": "じゅくち", "meaning1": "物事を詳しくよく知っていること。", "word2": "通暁", "reading2": "つうぎょう", "meaning2": "物事に精通し詳しく知っていること。"}, {"type": "synonym", "word1": "推移", "reading1": "すいい", "meaning1": "時間とともに状態が移り変わること。", "word2": "変遷", "reading2": "へんせん", "meaning2": "時が経つにつれて移り変わること。"}, {"type": "synonym", "word1": "対価", "reading1": "たいか", "meaning1": "労力や物に対して支払われる代金。", "word2": "報酬", "reading2": "ほうしゅう", "meaning2": "働きに対して支払われるお金や物。"}, {"type": "synonym", "word1": "解雇", "reading1": "かいこ", "meaning1": "雇い主が雇用契約を打ち切ること。", "word2": "罷免", "reading2": "ひめん", "meaning2": "職や地位をやめさせること。"}, {"type": "synonym", "word1": "困苦", "reading1": "こんく", "meaning1": "苦しく困った状態にあること。", "word2": "辛酸", "reading2": "しんさん", "meaning2": "つらく苦しい経験。"}, {"type": "synonym", "word1": "気分", "reading1": "きぶん", "meaning1": "その時々の心持ちや気持ち。", "word2": "機嫌", "reading2": "きげん", "meaning2": "表情や態度に表れる心の状態。"}, {"type": "synonym", "word1": "監禁", "reading1": "かんきん", "meaning1": "人を一定の場所に閉じ込めておくこと。", "word2": "幽閉", "reading2": "ゆうへい", "meaning2": "人をある場所に閉じ込め自由を奪うこと。"}, {"type": "synonym", "word1": "永遠", "reading1": "えいえん", "meaning1": "いつまでも限りなく続くこと。", "word2": "悠久", "reading2": "ゆうきゅう", "meaning2": "果てしなく長く続くこと。"}, {"type": "synonym", "word1": "奮戦", "reading1": "ふんせん", "meaning1": "力を奮い起こして懸命に戦うこと。", "word2": "敢闘", "reading2": "かんとう", "meaning2": "困難にひるまず力の限り戦うこと。"}, {"type": "synonym", "word1": "省略", "reading1": "しょうりゃく", "meaning1": "一部を省いて簡単にすること。", "word2": "割愛", "reading2": "かつあい", "meaning2": "惜しみながらも一部を省くこと。"}, {"type": "synonym", "word1": "激怒", "reading1": "げきど", "meaning1": "激しく怒ること。", "word2": "憤慨", "reading2": "ふんがい", "meaning2": "ひどく腹を立てること。"}, {"type": "synonym", "word1": "堪忍", "reading1": "かんにん", "meaning1": "怒りをおさえて許すこと。", "word2": "勘弁", "reading2": "かんべん", "meaning2": "過ちや失礼を許すこと。"}, {"type": "synonym", "word1": "脅迫", "reading1": "きょうはく", "meaning1": "相手を脅しておどすこと。", "word2": "威嚇", "reading2": "いかく", "meaning2": "威力を示しておどすこと。"}, {"type": "synonym", "word1": "不意", "reading1": "ふい", "meaning1": "思いがけず突然であること。", "word2": "唐突", "reading2": "とうとつ", "meaning2": "前触れなく急なこと。"}, {"type": "synonym", "word1": "他界", "reading1": "たかい", "meaning1": "この世を去ること、死ぬこと。", "word2": "逝去", "reading2": "せいきょ", "meaning2": "人が亡くなることを敬っていう言葉。"}, {"type": "synonym", "word1": "手柄", "reading1": "てがら", "meaning1": "人からほめられるようなすぐれた働き。", "word2": "殊勲", "reading2": "しゅくん", "meaning2": "特に優れたてがら。"}];
+
+/* ---------- utils ---------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function sample(arr, n){ return shuffle(arr).slice(0,n); }
+function symbolOf(type){ return type==='antonym' ? '⇔' : '＝'; }
+function labelOf(type){ return type==='antonym' ? '対義語' : '類義語'; }
+
+/* ---------- nav ---------- */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.view').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+/* ---------- LIST / SEARCH / FILTER ---------- */
+let activeType = null;
+const typeFilterEl = document.getElementById('typeFilter');
+const allTypeBtn = document.createElement('button');
+allTypeBtn.textContent = 'すべて';
+allTypeBtn.className = 'active';
+allTypeBtn.addEventListener('click', ()=>{ activeType=null; syncTypeButtons(allTypeBtn); renderList(); });
+typeFilterEl.appendChild(allTypeBtn);
+[['antonym','対義語（⇔）'],['synonym','類義語（＝）']].forEach(([val,label])=>{
+  const b = document.createElement('button');
+  b.textContent = label;
+  b.addEventListener('click', ()=>{ activeType=val; syncTypeButtons(b); renderList(); });
+  typeFilterEl.appendChild(b);
+});
+function syncTypeButtons(active){
+  typeFilterEl.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  active.classList.add('active');
+}
+
+const searchBox = document.getElementById('searchBox');
+searchBox.addEventListener('input', renderList);
+
+let allOpen = false;
+const toggleAllBtn = document.getElementById('toggleAllBtn');
+toggleAllBtn.addEventListener('click', ()=>{
+  allOpen = !allOpen;
+  toggleAllBtn.textContent = allOpen ? 'すべて閉じる' : 'すべて開く';
+  document.querySelectorAll('.pair-card').forEach(c=>c.classList.toggle('open', allOpen));
+});
+
+function renderList(){
+  const q = searchBox.value.trim();
+  let list = DATA;
+  if(activeType) list = list.filter(d=>d.type===activeType);
+  if(q) list = list.filter(d=>
+    d.word1.includes(q) || d.word2.includes(q) ||
+    d.reading1.includes(q) || d.reading2.includes(q) ||
+    d.meaning1.includes(q) || d.meaning2.includes(q));
+
+  document.getElementById('countLine').textContent = list.length + ' 組 / 全' + DATA.length + '組';
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = '';
+  list.forEach(d=>{
+    const card = document.createElement('div');
+    card.className = 'pair-card ' + d.type + (allOpen ? ' open' : '');
+    card.innerHTML = `
+      <div class="chip">${labelOf(d.type)}</div>
+      <div class="pair-line">${d.word1}<span class="sym">${symbolOf(d.type)}</span>${d.word2}</div>
+      <div class="reading-line">${d.reading1} ${symbolOf(d.type)} ${d.reading2}</div>
+      <div class="meanings">
+        <div class="m-item"><b>${d.word1}</b>${d.meaning1}</div>
+        <div class="m-item"><b>${d.word2}</b>${d.meaning2}</div>
+      </div>`;
+    card.addEventListener('click', ()=>card.classList.toggle('open'));
+    grid.appendChild(card);
+  });
+}
+renderList();
+
+/* ---------- QUIZ ---------- */
+// flat pool of {word, type, pairId} for distractor sampling
+const WORD_POOL = [];
+DATA.forEach((d,i)=>{
+  WORD_POOL.push({word:d.word1, type:d.type, pairId:i});
+  WORD_POOL.push({word:d.word2, type:d.type, pairId:i});
+});
+
+let score1 = {correct:0, total:0};
+let currentQ1 = null;
+function newQuiz1(){
+  document.getElementById('stamp1').className = 'stamp';
+  document.getElementById('next1').classList.remove('show');
+  const idx = Math.floor(Math.random()*DATA.length);
+  const d = DATA[idx];
+  const showFirst = Math.random() < 0.5;
+  const promptWord = showFirst ? d.word1 : d.word2;
+  const answerWord = showFirst ? d.word2 : d.word1;
+  currentQ1 = {answerWord};
+
+  document.getElementById('quizLabel1').textContent =
+    `「${promptWord}」の${labelOf(d.type)}は？`;
+  document.getElementById('quizWord1').textContent = promptWord;
+  document.getElementById('score1').textContent = `正解 ${score1.correct} / ${score1.total} 問`;
+
+  const distractorPool = WORD_POOL.filter(w => w.type===d.type && w.pairId!==idx && w.word!==answerWord);
+  const distractors = sample(distractorPool, 3).map(w=>w.word);
+  const options = shuffle([answerWord, ...distractors]);
+
+  const box = document.getElementById('choices1');
+  box.innerHTML='';
+  options.forEach(opt=>{
+    const b = document.createElement('button');
+    b.textContent = opt;
+    b.addEventListener('click', ()=>answerQ1(b, opt===answerWord));
+    box.appendChild(b);
+  });
+}
+function answerQ1(btn, isCorrect){
+  document.querySelectorAll('#choices1 button').forEach(b=>b.disabled=true);
+  const stamp = document.getElementById('stamp1');
+  score1.total++;
+  if(isCorrect){
+    btn.classList.add('correct');
+    stamp.textContent='正解'; stamp.className='stamp show ok';
+    score1.correct++;
+  }else{
+    btn.classList.add('wrong');
+    stamp.textContent='不正解'; stamp.className='stamp show ng';
+    document.querySelectorAll('#choices1 button').forEach(b=>{ if(b.textContent===currentQ1.answerWord) b.classList.add('correct'); });
+  }
+  document.getElementById('score1').textContent = `正解 ${score1.correct} / ${score1.total} 問`;
+  document.getElementById('next1').classList.add('show');
+}
+document.getElementById('next1').addEventListener('click', newQuiz1);
+
+/* ---------- MATCH GAME ---------- */
+const MATCH_SET_SIZE = 6;
+let matchPairs = [];
+let matchedCount = 0;
+let selLeft = null, selRight = null;
+
+function newMatchSet(){
+  matchPairs = sample(DATA, MATCH_SET_SIZE);
+  matchedCount = 0;
+  selLeft = null; selRight = null;
+
+  const lefts = shuffle(matchPairs.map((d,i)=>({id:i, word:d.word1})));
+  const rights = shuffle(matchPairs.map((d,i)=>({id:i, word:d.word2})));
+
+  const leftCol = document.getElementById('leftCol');
+  const rightCol = document.getElementById('rightCol');
+  leftCol.innerHTML=''; rightCol.innerHTML='';
+
+  lefts.forEach(l=>{
+    const b = document.createElement('button');
+    b.className='half-btn';
+    b.textContent = l.word;
+    b.dataset.id = l.id;
+    b.addEventListener('click', ()=>selectHalf(b,'left'));
+    leftCol.appendChild(b);
+  });
+  rights.forEach(r=>{
+    const b = document.createElement('button');
+    b.className='half-btn';
+    b.textContent = r.word;
+    b.dataset.id = r.id;
+    b.addEventListener('click', ()=>selectHalf(b,'right'));
+    rightCol.appendChild(b);
+  });
+  updateMatchStatus();
+}
+function updateMatchStatus(){
+  document.getElementById('matchStatus').textContent = `${matchedCount} / ${matchPairs.length} 組 完成`;
+}
+function selectHalf(btn, side){
+  if(btn.classList.contains('locked')) return;
+  if(side==='left'){
+    if(selLeft) selLeft.classList.remove('selected');
+    selLeft = btn; btn.classList.add('selected');
+  }else{
+    if(selRight) selRight.classList.remove('selected');
+    selRight = btn; btn.classList.add('selected');
+  }
+  if(selLeft && selRight){
+    if(selLeft.dataset.id === selRight.dataset.id){
+      selLeft.classList.remove('selected'); selRight.classList.remove('selected');
+      selLeft.classList.add('locked'); selRight.classList.add('locked');
+      selLeft.disabled = true; selRight.disabled = true;
+      matchedCount++;
+      selLeft=null; selRight=null;
+      updateMatchStatus();
+      if(matchedCount === matchPairs.length){
+        document.getElementById('matchStatus').textContent = `🎉 全${matchPairs.length}組 完成！「新しい問題セット」で次へ`;
+      }
+    }else{
+      const l=selLeft, r=selRight;
+      l.classList.add('shake'); r.classList.add('shake');
+      setTimeout(()=>{
+        l.classList.remove('selected','shake');
+        r.classList.remove('selected','shake');
+      }, 420);
+      selLeft=null; selRight=null;
+    }
+  }
+}
+document.getElementById('newSetBtn').addEventListener('click', newMatchSet);
+
+/* ---------- init ---------- */
+newQuiz1();
+newMatchSet();
+</script>
+</body>
+</html>
