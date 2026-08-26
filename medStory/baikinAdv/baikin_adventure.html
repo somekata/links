@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
-<title>バイキン探検記（仮）| TGS出展版</title>
+<title>バイキンズ討滅戦記：Busters Schule | TGS出展版</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
@@ -123,7 +123,24 @@
   .ocard{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; max-width:320px; width:100%; text-align:center; }
   .ocard h3{ font-family:"Zen Antique",serif; font-size:16px; margin:0 0 8px; color:var(--accent); }
   .ocard h3.ok{ color:var(--catch); }
+  .ocard.party{ border:2px solid var(--rare); box-shadow:0 0 0 5px rgba(209,161,42,.14), 0 8px 22px rgba(0,0,0,.14); animation:partyPop .35s cubic-bezier(.26,1.6,.4,1); }
+  @keyframes partyPop{ 0%{ transform:scale(.7); opacity:0; } 70%{ transform:scale(1.06); opacity:1; } 100%{ transform:scale(1); } }
+  .party-emoji{ font-size:40px; animation:partyBounce 1s ease-in-out infinite; }
+  @keyframes partyBounce{ 0%,100%{ transform:translateY(0) rotate(-4deg); } 50%{ transform:translateY(-8px) rotate(4deg); } }
+  .victory-reward{ font-family:"JetBrains Mono",monospace; font-size:16px; font-weight:700; color:var(--rare); margin:6px 0; }
+  .victory-new{ font-size:11.5px; color:var(--catch); background:rgba(76,154,89,.12); border:1px solid var(--catch);
+    border-radius:999px; padding:4px 10px; margin-bottom:10px; display:inline-block; }
+  .levelup-text{ font-family:"Zen Antique",serif; font-size:22px; font-weight:700; color:var(--accent); margin:6px 0 10px; }
+  .wave-tally{ font-size:12.5px; color:var(--ink); line-height:1.9; margin:6px 0; }
+  .wave-tally .titem{ display:block; }
+  @keyframes revealFade{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
+  .reveal-1{ opacity:0; animation:revealFade .4s ease forwards; animation-delay:.05s; }
+  .reveal-2{ opacity:0; animation:revealFade .4s ease forwards; animation-delay:.55s; }
+  .reveal-3{ opacity:0; animation:revealFade .4s ease forwards; animation-delay:1.05s; }
+  .reveal-4{ opacity:0; animation:revealFade .4s ease forwards; animation-delay:1.55s; }
   .ocard h3.bad{ color:var(--danger); }
+  .shop-hint{ font-size:11.5px; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent);
+    border-radius:8px; padding:6px 9px; margin:-4px 0 10px !important; }
   .ocard p{ font-size:12.5px; line-height:1.7; color:var(--ink); margin:0 0 12px; }
   .howto{ text-align:left; font-size:12.5px; line-height:1.85; color:var(--ink-soft); background:var(--washi-deep);
     border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:12px; }
@@ -238,7 +255,7 @@
 
 <div id="app">
   <header>
-    <div class="title">バイキン探検記<small>（仮タイトル）FunFection / TGS出展版</small></div>
+    <div class="title">バイキンズ討滅戦記：Busters Schule<small>FunFection / TGS出展版</small></div>
     <div class="hud"><span id="headerLevel">Lv 1</span><span id="headerScore">SCORE 0</span><span id="headerMoney">💰 0</span></div>
   </header>
 
@@ -334,6 +351,7 @@
             <div class="enemy-name" id="encName"></div>
             <div class="enemy-latin" id="encLatin"></div>
             <p>たたかうか、にげるか選ぼう</p>
+            <p class="shop-hint" id="encShopHint" style="display:none;">💊 戦う前にショップで装備(抗菌薬)を確認しよう</p>
             <div class="row" style="flex-direction:column;">
               <button class="btn primary" id="btnEncFight">⚔️ たたかう</button>
               <button class="btn flee" id="btnEncFlee">🏃 にげる</button>
@@ -399,6 +417,43 @@
             <h3>🧠 クイズタイム！</h3>
             <p id="quizQ"></p>
             <div class="row" style="flex-direction:column;" id="quizChoices"></div>
+          </div>
+        </div>
+
+        <!-- 波クリアモーダル -->
+        <div class="overlay" id="ovWaveVictory">
+          <div class="ocard party">
+            <div class="party-emoji reveal-1">🎉</div>
+            <h3 class="ok reveal-1">せいあつ成功！</h3>
+            <div class="wave-tally reveal-2" id="waveTally"></div>
+            <div class="victory-reward reveal-3" id="waveVictoryScore"></div>
+            <div class="victory-reward reveal-4" id="waveVictoryMoney"></div>
+            <button class="btn primary" id="btnWaveVictoryOk">つづける</button>
+          </div>
+        </div>
+
+        <!-- 勝利モーダル -->
+        <div class="overlay" id="ovVictory">
+          <div class="ocard party">
+            <div class="party-emoji">🎉</div>
+            <h3 class="ok">勝利！</h3>
+            <img class="enemy-img" id="victoryImg" src="" alt="" style="width:64px;height:64px;">
+            <div class="enemy-name" id="victoryName"></div>
+            <div class="enemy-latin" id="victoryLatin"></div>
+            <div class="victory-reward" id="victoryReward"></div>
+            <div class="victory-new" id="victoryNew" style="display:none;">🆕 はじめて発見！ずかんに登録した</div>
+            <button class="btn primary" id="btnVictoryOk">つづける</button>
+          </div>
+        </div>
+
+        <!-- レベルアップモーダル -->
+        <div class="overlay" id="ovLevelUp">
+          <div class="ocard party">
+            <div class="party-emoji">🎊</div>
+            <h3 class="ok">レベルアップ！</h3>
+            <div class="levelup-text" id="levelUpText">Lv 1 → Lv 2</div>
+            <p>新しい菌や検査が出現しやすくなった</p>
+            <button class="btn primary" id="btnLevelUpOk">つづける</button>
           </div>
         </div>
 
@@ -2868,7 +2923,7 @@ var SPECIES = [
 function speciesById(id){ for(var i=0;i<SPECIES.length;i++){ if(SPECIES[i].id===id) return SPECIES[i]; } return null; }
 function speciesForStage(stage){ return SPECIES.filter(function(sp){ return (sp.minStage||1) <= stage; }); }
 
-var STAGE_THRESHOLDS = [0, 100, 220, 360, 520, 700, 900, 1150, 1450];
+var STAGE_THRESHOLDS = [0, 250, 550, 930, 1400, 1980, 2680, 3530, 4530];
 function currentStage(){
   var s = state.score;
   for(var i=STAGE_THRESHOLDS.length-1; i>=0; i--){ if(s >= STAGE_THRESHOLDS[i]) return i+1; }
@@ -2904,10 +2959,10 @@ var DISCOVER_TABLE_BASE = [
 ];
 
 var WAVE_FODDER = [
-  { emoji:"🦠", hp:1, points:8,  weight:50 },
-  { emoji:"🧫", hp:1, points:14, weight:30 },
-  { emoji:"🧬", hp:2, points:22, weight:15 },
-  { emoji:"👾", hp:2, points:34, weight:5 }
+  { name:"常在菌", emoji:"🦠", color:"#7fae6f", hp:1, points:8,  weight:50 },
+  { name:"培養菌", emoji:"🦠", color:"#4a8fc9", hp:1, points:14, weight:30 },
+  { name:"レア耐性菌", emoji:"🦠", color:"#d1a12a", hp:2, points:22, weight:15 },
+  { name:"スーパー耐性菌", emoji:"👾", color:"#c94a3d", hp:2, points:34, weight:5 }
 ];
 function waveTargetCount(stage){ return 5 + Math.floor((stage-1)*1.1); }
 
@@ -2966,7 +3021,7 @@ var state = {
   inv:{ spellSmall:1, spellMid:0, spellFull:0, vaccinePCV:1, vaccineHib:1, test:1 },
   hp:BASE_MAX_HP, maxHp:BASE_MAX_HP, lives:START_LIVES,
   protect:{ pneumo:false, hib:false },
-  bossPity:0, bossCooldown:0,
+  bossPity:0, bossCooldown:0, lastLevel:1,
   heading:0, targetDir:null, aligned:false, alignedSince:0,
   phase:"notstarted", // notstarted | searching | resolving | encounter | battle | over
   simulateMode:false
@@ -3257,6 +3312,7 @@ function resolveBossEncounter(pool, stage){
   $('encImg').src = sp.img; $('encImg').alt = sp.name;
   $('encName').textContent = '【ボス】' + sp.name;
   $('encLatin').textContent = sp.latin;
+  $('encShopHint').style.display = 'block';
   $('ovEncounter').classList.add('show');
 }
 function resolveWaveEncounter(stage){
@@ -3264,8 +3320,9 @@ function resolveWaveEncounter(stage){
   state._pendingType = 'wave';
   state._pendingStage = stage;
   $('encImg').style.display = 'none';
-  $('encName').textContent = 'バイキンの群れ 🦠🧫🧬';
+  $('encName').textContent = 'バイキンの群れ 🦠🦠👾';
   $('encLatin').textContent = '';
+  $('encShopHint').style.display = 'none';
   $('ovEncounter').classList.add('show');
 }
 function shuffleArr(arr){
@@ -3361,7 +3418,7 @@ function startWave(stage){
   resizeWaveCanvas();
   var W = waveWrap.clientWidth, H = waveWrap.clientHeight;
   wave = {
-    stage:stage, need:waveTargetCount(stage), defeated:0, gained:0,
+    stage:stage, need:waveTargetCount(stage), defeated:0, gained:0, tally:{},
     enemies:[], bullets:[], enemyBullets:[],
     player:{ x:W/2, y:H-30, r:16 },
     spawnTimer:0, fireTimer:0, atkTimer:1200, lastTs:0, W:W, H:H, over:false
@@ -3378,7 +3435,7 @@ function renderWavePlayerHp(){
 }
 function waveSpawnEnemy(){
   var f = pickFodder();
-  wave.enemies.push({ x:20+Math.random()*Math.max(10,wave.W-40), y:-20, r:18, hp:f.hp, maxHp:f.hp, emoji:f.emoji, points:f.points, speed:0.045+wave.stage*0.008 });
+  wave.enemies.push({ x:20+Math.random()*Math.max(10,wave.W-40), y:-20, r:18, hp:f.hp, maxHp:f.hp, emoji:f.emoji, color:f.color, name:f.name, points:f.points, speed:0.045+wave.stage*0.008 });
 }
 function waveEnemyFire(e){
   wave.enemyBullets.push({ x:e.x, y:e.y+e.r, r:5, speed:0.13, dmg:4+Math.floor(Math.random()*3)+(wave.stage-1) });
@@ -3431,6 +3488,7 @@ function waveUpdate(dt){
         if(e.hp<=0){
           wave.gained += e.points;
           wave.defeated += 1;
+          wave.tally[e.name] = (wave.tally[e.name]||0) + 1;
           wave.enemies.splice(j,1);
           updateWaveHud();
           if(wave.defeated >= wave.need && !wave.over){ wave.over = true; setTimeout(waveClear, 300); }
@@ -3454,6 +3512,8 @@ function waveDraw(){
   wave.enemyBullets.forEach(function(b){ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); });
 
   wave.enemies.forEach(function(e){
+    ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+    ctx.fillStyle = e.color || '#7fae6f'; ctx.globalAlpha = 0.22; ctx.fill(); ctx.globalAlpha = 1;
     ctx.font = Math.round(e.r*1.5)+'px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(e.emoji, e.x, e.y+e.r*0.5);
   });
@@ -3469,13 +3529,25 @@ function waveTick(ts){
 }
 function waveClear(){
   $('ovWave').classList.remove('show');
-  state.score += wave.gained; state.money += wave.gained;
+  var gained = wave.gained;
+  var tally = wave.tally;
+  state.score += gained; state.money += gained;
   refreshHud();
-  message.textContent = '波をせいあつした！（+' + wave.gained + '）';
-  wave = null;
+  message.textContent = '波をせいあつした！（+' + gained + '）';
   state.phase = 'resolving';
-  if(tabActive) startSearching();
+
+  var tallyEl = $('waveTally');
+  var lines = Object.keys(tally).map(function(name){ return '<span class="titem">'+name+' × '+tally[name]+'</span>'; });
+  tallyEl.innerHTML = lines.join('') || '<span class="titem">たくさんたおした！</span>';
+  $('waveVictoryScore').textContent = '+' + gained + ' スコアゲット！';
+  $('waveVictoryMoney').textContent = '+' + gained + ' 💰お金ゲット！';
+  $('ovWaveVictory').classList.add('show');
+  wave = null;
 }
+$('btnWaveVictoryOk').addEventListener('click', function(){
+  $('ovWaveVictory').classList.remove('show');
+  checkLevelUp(function(){ if(tabActive) startSearching(); });
+});
 function waveLoseOut(){
   $('ovWave').classList.remove('show');
   wave = null;
@@ -3763,15 +3835,40 @@ function winBattle(){
   stopAllHolds();
   var sp = battle.sp, stage = battle.stage;
   var gained = sp.points;
-  if(persist.defeated.indexOf(sp.id) === -1){ persist.defeated.push(sp.id); }
+  var isNew = persist.defeated.indexOf(sp.id) === -1;
+  if(isNew){ persist.defeated.push(sp.id); }
   state.score += gained; state.money += gained;
   refreshHud();
   $('ovBattle').classList.remove('show');
-  message.textContent = sp.name + ' をたおした！（+' + gained + '）';
   battle = null;
   state.phase = 'resolving';
-  if(tabActive) startSearching();
+
+  $('victoryImg').src = sp.img; $('victoryImg').alt = sp.name;
+  $('victoryName').textContent = sp.name;
+  $('victoryLatin').textContent = sp.latin;
+  $('victoryReward').textContent = '+' + gained + ' スコア・お金';
+  $('victoryNew').style.display = isNew ? 'inline-block' : 'none';
+  $('ovVictory').classList.add('show');
 }
+function checkLevelUp(afterFn){
+  var newLevel = currentStage();
+  if(newLevel > state.lastLevel){
+    var oldLevel = state.lastLevel;
+    state.lastLevel = newLevel;
+    $('levelUpText').textContent = 'Lv ' + oldLevel + ' → Lv ' + newLevel;
+    $('ovLevelUp').classList.add('show');
+    $('btnLevelUpOk').onclick = function(){
+      $('ovLevelUp').classList.remove('show');
+      afterFn();
+    };
+  } else {
+    afterFn();
+  }
+}
+$('btnVictoryOk').addEventListener('click', function(){
+  $('ovVictory').classList.remove('show');
+  checkLevelUp(function(){ if(tabActive) startSearching(); });
+});
 function loseBattle(){
   stopAllHolds();
   $('ovBattle').classList.remove('show');
@@ -3801,12 +3898,14 @@ function goToGame(){
   state.stock = { PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 };
   state.inv = { spellSmall:1, spellMid:0, spellFull:0, vaccinePCV:1, vaccineHib:1, test:1 };
   state.protect = { pneumo:false, hib:false };
-  state.bossPity = 0; state.bossCooldown = 0;
+  state.bossPity = 0; state.bossCooldown = 0; state.lastLevel = 1;
   state.maxHp = BASE_MAX_HP; state.hp = BASE_MAX_HP; state.lives = START_LIVES;
   refreshHud(); renderLives(); renderPlayerHp(); renderQuickItems();
   $('ovBattle').classList.remove('show'); $('ovOver').classList.remove('show');
   $('ovItem').classList.remove('show'); $('ovEncounter').classList.remove('show'); $('ovLifeLost').classList.remove('show');
   $('ovWave').classList.remove('show'); $('ovQuiz').classList.remove('show');
+  $('ovVictory').classList.remove('show'); $('ovLevelUp').classList.remove('show');
+  $('ovWaveVictory').classList.remove('show');
   if(battle){ stopAllHolds(); battle = null; }
   if(wave){ wave.over = true; wave = null; }
   startSearching();
