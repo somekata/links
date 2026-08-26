@@ -71,6 +71,8 @@
   .quick-item-btn:disabled{ opacity:.35; cursor:not-allowed; border-color:var(--line); color:var(--ink-soft); }
   .quick-item-btn.protected{ background:var(--catch); border-color:var(--catch); color:#fff; }
 
+  .level-badge{ font-family:"JetBrains Mono",monospace; font-size:10.5px; color:#fff; background:var(--accent);
+    border-radius:999px; padding:3px 12px; }
   .target-label{ font-size:12px; color:var(--ink-soft); }
   .target-label b{ color:var(--ink); font-size:14px; font-family:"Zen Antique",serif; }
 
@@ -237,7 +239,7 @@
 <div id="app">
   <header>
     <div class="title">バイキン探検記<small>（仮タイトル）FunFection / TGS出展版</small></div>
-    <div class="hud"><span id="headerScore">SCORE 0</span><span id="headerMoney">💰 0</span></div>
+    <div class="hud"><span id="headerLevel">Lv 1</span><span id="headerScore">SCORE 0</span><span id="headerMoney">💰 0</span></div>
   </header>
 
   <main>
@@ -285,6 +287,7 @@
             <button class="quick-item-btn" id="btnQuickPCV">💉 PCV<span class="stock" id="quickPcvStock"></span></button>
             <button class="quick-item-btn" id="btnQuickHib">💉 Hib<span class="stock" id="quickHibStock"></span></button>
           </div>
+          <div class="level-badge" id="exploreLevelBadge">Lv 1（スコア 0 で次のレベルへ）</div>
           <div class="target-label" id="targetLabel">方角: <b>--</b></div>
           <div class="scope-wrap">
             <div class="pointer-fixed"></div>
@@ -2878,8 +2881,8 @@ var START_LIVES = 3;
 var BASE_MAX_HP = 45;
 var MAXHP_UP_AMOUNT = 5;
 var ENEMY_HIT_DMG_MIN = 16, ENEMY_HIT_DMG_MAX = 23; // プレイヤーが攻撃成功時に与えるダメージ
-var FOE_ATK_MIN = 4, FOE_ATK_MAX = 8;                // 敵の反撃ダメージ（+ステージ補正）
-var ENEMY_ATK_INTERVAL_BASE = 2600;                  // 敵の自動反撃の間隔(ms)
+var FOE_ATK_MIN = 3, FOE_ATK_MAX = 6;                // 敵の反撃ダメージ（+ステージ補正）
+var ENEMY_ATK_INTERVAL_BASE = 3000;                  // 敵の自動反撃の間隔(ms)
 var SPELL_HEAL_SMALL = 12;
 var SPELL_HEAL_MID = 28;
 var FLEE_SUCCESS_RATE = 0.7;
@@ -2963,6 +2966,7 @@ var state = {
   inv:{ spellSmall:1, spellMid:0, spellFull:0, vaccinePCV:1, vaccineHib:1, test:1 },
   hp:BASE_MAX_HP, maxHp:BASE_MAX_HP, lives:START_LIVES,
   protect:{ pneumo:false, hib:false },
+  bossPity:0, bossCooldown:0,
   heading:0, targetDir:null, aligned:false, alignedSince:0,
   phase:"notstarted", // notstarted | searching | resolving | encounter | battle | over
   simulateMode:false
@@ -2975,10 +2979,24 @@ var scope=$('scope'), arrowWrap=$('arrowWrap'), diffReadout=$('diffReadout'), ta
     flashEl=$('flash');
 
 function refreshHud(){
+  $('headerLevel').textContent = 'Lv ' + currentStage();
   $('headerScore').textContent = 'SCORE ' + state.score;
   $('headerMoney').textContent = '💰 ' + state.money;
   $('hScore').textContent = 'SCORE ' + state.score;
   $('hMoney').textContent = '💰 ' + state.money;
+  updateLevelBadge();
+}
+function updateLevelBadge(){
+  var stage = currentStage();
+  var el = $('exploreLevelBadge');
+  if(!el) return;
+  if(stage >= MAX_STAGE){
+    el.textContent = 'Lv ' + stage + '（最高レベル）';
+  } else {
+    var next = STAGE_THRESHOLDS[stage];
+    var remain = Math.max(0, next - state.score);
+    el.textContent = 'Lv ' + stage + '（あと' + remain + 'スコアでLv' + (stage+1) + '）';
+  }
 }
 function renderLives(){
   var s=''; for(var i=0;i<MAX_LIVES;i++){ s += (i<state.lives ? '❤️' : '🖤'); if(i>=state.lives && i>=4) break; }
@@ -3182,14 +3200,22 @@ function onDiscover(){
   state.phase = 'resolving';
   var stage = currentStage();
   var bossPool = SPECIES.filter(function(sp){ return sp.isBoss && (sp.minStage||1) <= stage; });
+  var canBoss = bossPool.length > 0 && state.bossCooldown <= 0;
+  var bossWeight = canBoss ? Math.min(50, 8 + state.bossPity * 5) : 0;
   var table = DISCOVER_TABLE_BASE.map(function(t){
-    if(t.kind === 'boss') return { kind:'boss', weight: bossPool.length ? t.weight : 0 };
-    if(t.kind === 'wave') return { kind:'wave', weight: bossPool.length ? t.weight : t.weight + 8 };
+    if(t.kind === 'boss') return { kind:'boss', weight: bossWeight };
+    if(t.kind === 'wave') return { kind:'wave', weight: canBoss ? t.weight : t.weight + 8 };
     return t;
   });
   var total=0,i; for(i=0;i<table.length;i++) total+=table[i].weight;
   var r=Math.random()*total, picked=table[table.length-1];
   for(i=0;i<table.length;i++){ r-=table[i].weight; if(r<=0){ picked=table[i]; break; } }
+  if(picked.kind === 'boss'){
+    state.bossPity = 0; state.bossCooldown = 3; // 直後の連続出現を抑える
+  } else {
+    if(bossPool.length > 0){ state.bossPity += 1; } // 出ないほど次の出現率が上がる
+    if(state.bossCooldown > 0){ state.bossCooldown -= 1; }
+  }
   if(picked.kind === 'item'){ resolveItemFound(); }
   else if(picked.kind === 'wave'){ resolveWaveEncounter(stage); }
   else if(picked.kind === 'boss'){ resolveBossEncounter(bossPool, stage); }
@@ -3491,7 +3517,7 @@ function startBattle(sp, stage){
   battle = {
     sp:sp, stage:stage, maxHp:hitsNeeded*20, hp:hitsNeeded*20, revealedAll:(stage===1), known:{},
     resolvedSus: resolveSusceptibility(sp),
-    shielded:false, atkTimer:enemyAtkInterval(stage), lastTs:0, over:false
+    shielded:false, atkTimer:enemyAtkInterval(stage)+1500, lastTs:0, over:false
   };
   $('battleImg').src = sp.img; $('battleImg').alt = sp.name;
   $('battleName').textContent = sp.name;
@@ -3504,7 +3530,7 @@ function startBattle(sp, stage){
   battle.lastTs = performance.now();
   requestAnimationFrame(battleTick);
 }
-function enemyAtkInterval(stage){ return Math.max(1400, ENEMY_ATK_INTERVAL_BASE - (stage-1)*250); }
+function enemyAtkInterval(stage){ return Math.max(1800, ENEMY_ATK_INTERVAL_BASE - (stage-1)*150); }
 function renderBattleHp(){
   var pct = Math.max(0, Math.round(battle.hp/battle.maxHp*100));
   $('battleEnemyHpFill').style.width = pct+'%';
@@ -3692,7 +3718,7 @@ function attemptFlee(){
     state.phase = 'resolving';
     if(tabActive) startSearching();
   } else {
-    var dmg = FOE_ATK_MIN + Math.floor(Math.random()*(FOE_ATK_MAX-FOE_ATK_MIN+1)) + (battle.stage-1)*2;
+    var dmg = FOE_ATK_MIN + Math.floor(Math.random()*(FOE_ATK_MAX-FOE_ATK_MIN+1)) + Math.floor((battle.stage-1)*0.8);
     if(isProtectedAgainst(battle.sp)){
       popDmg(enemyCard, 'ワクチンで防御！', 'heal');
     } else {
@@ -3720,7 +3746,7 @@ function battleTick(ts){
 }
 function enemyPeriodicAttack(){
   if(!battle || battle.over) return;
-  var dmg = FOE_ATK_MIN + Math.floor(Math.random()*(FOE_ATK_MAX-FOE_ATK_MIN+1)) + (battle.stage-1)*2;
+  var dmg = FOE_ATK_MIN + Math.floor(Math.random()*(FOE_ATK_MAX-FOE_ATK_MIN+1)) + Math.floor((battle.stage-1)*0.8);
   var enemyCard = $('battleArena');
   if(isProtectedAgainst(battle.sp)){
     popDmg(enemyCard, 'ワクチンで防御！', 'heal');
@@ -3775,6 +3801,7 @@ function goToGame(){
   state.stock = { PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 };
   state.inv = { spellSmall:1, spellMid:0, spellFull:0, vaccinePCV:1, vaccineHib:1, test:1 };
   state.protect = { pneumo:false, hib:false };
+  state.bossPity = 0; state.bossCooldown = 0;
   state.maxHp = BASE_MAX_HP; state.hp = BASE_MAX_HP; state.lives = START_LIVES;
   refreshHud(); renderLives(); renderPlayerHp(); renderQuickItems();
   $('ovBattle').classList.remove('show'); $('ovOver').classList.remove('show');
