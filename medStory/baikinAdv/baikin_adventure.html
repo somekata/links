@@ -420,6 +420,17 @@
           </div>
         </div>
 
+        <!-- クイズ結果モーダル -->
+        <div class="overlay" id="ovQuizResult">
+          <div class="ocard party">
+            <div class="party-emoji" id="quizResultEmoji">🎉</div>
+            <h3 id="quizResultTitle">せいかい！</h3>
+            <p id="quizResultAnswer"></p>
+            <div class="victory-reward" id="quizResultReward"></div>
+            <button class="btn primary" id="btnQuizResultOk">つづける</button>
+          </div>
+        </div>
+
         <!-- 波クリアモーダル -->
         <div class="overlay" id="ovWaveVictory">
           <div class="ocard party">
@@ -2967,12 +2978,20 @@ var WAVE_FODDER = [
 function waveTargetCount(stage){ return 5 + Math.floor((stage-1)*1.1); }
 
 var QUIZ_POOL = [
-  { q:"「抗菌薬」が効くのはどんな病気？", choices:["細菌による感染症","ウイルスによるかぜ","花粉症","虫歯"], correct:0 },
-  { q:"手洗いが病気の予防に役立つのはなぜ？", choices:["病原体を洗い流せるから","手が温かくなるから","見た目がきれいになるから","力がつくから"], correct:0 },
-  { q:"医師の指示より早く抗菌薬をやめてしまうと、起こりやすいことは？", choices:["薬が効きにくい菌が残りやすい","体が軽くなる","味覚が良くなる","免疫が強くなる"], correct:0 },
-  { q:"「MRSA」の R は何の略？", choices:["Resistant（耐性）","Rapid","Red","Round"], correct:0 },
-  { q:"ワクチンの主な役割は？", choices:["病気にかかる前に免疫をつけておくこと","病気を治す薬","熱を下げること","傷を治すこと"], correct:0 },
-  { q:"「AMR」は何の略？", choices:["薬剤耐性（Antimicrobial Resistance）","急性心筋梗塞","磁気共鳴画像","応急処置"], correct:0 }
+  { minStage:1, q:"「抗菌薬」が効くのはどんな病気？", choices:["細菌による感染症","ウイルスによるかぜ","花粉症","虫歯"], correct:0 },
+  { minStage:1, q:"手洗いが病気の予防に役立つのはなぜ？", choices:["病原体を洗い流せるから","手が温かくなるから","見た目がきれいになるから","力がつくから"], correct:0 },
+  { minStage:1, q:"医師の指示より早く抗菌薬をやめてしまうと、起こりやすいことは？", choices:["薬が効きにくい菌が残りやすい","体が軽くなる","味覚が良くなる","免疫が強くなる"], correct:0 },
+  { minStage:1, q:"「MRSA」の R は何の略？", choices:["Resistant（耐性）","Rapid","Red","Round"], correct:0 },
+  { minStage:1, q:"ワクチンの主な役割は？", choices:["病気にかかる前に免疫をつけておくこと","病気を治す薬","熱を下げること","傷を治すこと"], correct:0 },
+  { minStage:1, q:"「AMR」は何の略？", choices:["薬剤耐性（Antimicrobial Resistance）","急性心筋梗塞","磁気共鳴画像","応急処置"], correct:0 },
+  { minStage:1, q:"インフルエンザの原因は？", choices:["ウイルス","細菌","真菌","毒素"], correct:0 },
+  { minStage:1, q:"遺伝子検査は？", choices:["IGRA","ELISA","PCR","免疫拡散法"], correct:2 },
+  { minStage:2, q:"mecAを持つ耐性菌は？", choices:["MSSA","MRSA","MDRP","CRE/CPE"], correct:1 },
+  { minStage:2, q:"MRSAに対する治療薬は？", choices:["バンコマイシン","ペニシリンG","セファゾリン","メロペネム"], correct:0 },
+  { minStage:3, q:"ftsIが変異した耐性菌は？", choices:["BLNAS","BLPAR","BLNAR","PSSP"], correct:2 },
+  { minStage:4, q:"空気感染する感染症は？", choices:["インフルエンザ","百日咳","結核","破傷風"], correct:2 },
+  { minStage:5, q:"アルコールが効かない病原体は？", choices:["ノロウイルス","インフルエンザウイルス","インフルエンザ菌","MRSA"], correct:0 },
+  { minStage:6, q:"結核の感染診断法は？", choices:["IGRA","TPHA","RT-PCR","PCR"], correct:0 }
 ];
 
 var FIND_ITEM_RATE = 0.55; // 発見のうちアイテムである確率（残りは菌との遭遇）
@@ -3334,7 +3353,10 @@ function shuffleArr(arr){
   return a;
 }
 function resolveQuiz(){
-  var q = QUIZ_POOL[Math.floor(Math.random()*QUIZ_POOL.length)];
+  var stage = currentStage();
+  var pool = QUIZ_POOL.filter(function(qq){ return (qq.minStage||1) <= stage; });
+  if(pool.length === 0) pool = QUIZ_POOL;
+  var q = pool[Math.floor(Math.random()*pool.length)];
   var order = shuffleArr([0,1,2,3]);
   $('quizQ').textContent = q.q;
   var wrap = $('quizChoices'); wrap.innerHTML = '';
@@ -3342,35 +3364,62 @@ function resolveQuiz(){
     var btn = document.createElement('button');
     btn.className = 'btn primary';
     btn.textContent = q.choices[idx];
-    btn.addEventListener('click', function(){ answerQuiz(idx === q.correct); });
+    btn.addEventListener('click', function(){ answerQuiz(idx === q.correct, q, idx); });
     wrap.appendChild(btn);
   });
   $('ovQuiz').classList.add('show');
 }
+var QUIZ_REWARDS = [
+  { kind:"heal", weight:30 },
+  { kind:"maxhp", weight:15 },
+  { kind:"money", weight:25 },
+  { kind:"test", weight:20 },
+  { kind:"atb", weight:10 }
+];
 function pickQuizBonus(){
-  var r = Math.random();
-  if(r < 0.34){
-    var heal = 15; state.hp = Math.min(state.maxHp, state.hp+heal); renderPlayerHp();
-    return 'HPが'+heal+'回復した！';
+  var total=0,i; for(i=0;i<QUIZ_REWARDS.length;i++) total+=QUIZ_REWARDS[i].weight;
+  var r=Math.random()*total, picked=QUIZ_REWARDS[0];
+  for(i=0;i<QUIZ_REWARDS.length;i++){ r-=QUIZ_REWARDS[i].weight; if(r<=0){ picked=QUIZ_REWARDS[i]; break; } }
+
+  if(picked.kind === 'heal'){
+    var heal = 18; var before = state.hp;
+    state.hp = Math.min(state.maxHp, state.hp+heal); renderPlayerHp();
+    return '❤️ HPが'+(state.hp-before)+'回復した！';
   }
-  if(r < 0.67){
+  if(picked.kind === 'maxhp'){
+    state.maxHp += 3; state.hp = Math.min(state.maxHp, state.hp+3); renderPlayerHp();
+    return '💪 最大HPが3上がった！（'+state.maxHp+'）';
+  }
+  if(picked.kind === 'money'){
+    var amt = 30; state.money += amt; refreshHud();
+    return '💰 お小遣いを'+amt+'円もらった！';
+  }
+  if(picked.kind === 'test'){
     state.inv.test += 1; renderInventory();
-    return '検査キットを1個もらった！';
+    return '🔍 検査キットを1個もらった！';
   }
   var code = ATB_LIST[Math.floor(Math.random()*ATB_LIST.length)];
   state.stock[code] = (state.stock[code]||0) + 2;
-  return code + 'を2個もらった！';
+  return '💊 ' + atbLabel(code) + 'を2個もらった！';
 }
-function answerQuiz(correct){
+function answerQuiz(correct, q, chosenIdx){
   $('ovQuiz').classList.remove('show');
+  var emoji = $('quizResultEmoji'), title = $('quizResultTitle'), answerEl = $('quizResultAnswer'), rewardEl = $('quizResultReward');
   if(correct){
-    var label = pickQuizBonus();
-    message.textContent = 'せいかい！ ' + label;
+    emoji.textContent = '🎉'; title.textContent = 'せいかい！'; title.className = 'ok';
+    answerEl.textContent = '';
+    rewardEl.textContent = pickQuizBonus();
   } else {
-    message.textContent = 'ざんねん…また挑戦しよう';
+    emoji.textContent = '📚'; title.textContent = 'ざんねん…'; title.className = 'bad';
+    answerEl.textContent = '正解は「' + q.choices[q.correct] + '」でした';
+    rewardEl.textContent = '';
   }
-  if(tabActive) startSearching();
+  $('ovQuizResult').classList.add('show');
 }
+$('btnQuizResultOk').addEventListener('click', function(){
+  $('ovQuizResult').classList.remove('show');
+  if(tabActive) startSearching();
+});
 $('btnEncFlee').addEventListener('click', function(){
   $('ovEncounter').classList.remove('show');
   message.textContent = '菌からにげた。探索を続けよう';
@@ -3906,6 +3955,7 @@ function goToGame(){
   $('ovWave').classList.remove('show'); $('ovQuiz').classList.remove('show');
   $('ovVictory').classList.remove('show'); $('ovLevelUp').classList.remove('show');
   $('ovWaveVictory').classList.remove('show');
+  $('ovQuizResult').classList.remove('show');
   if(battle){ stopAllHolds(); battle = null; }
   if(wave){ wave.over = true; wave = null; }
   startSearching();
