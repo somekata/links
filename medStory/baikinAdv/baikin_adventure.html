@@ -64,7 +64,7 @@
   .hpbar .fill{ height:100%; background:var(--catch); transition:width .25s ease; }
   .hpbar.enemy .fill{ background:var(--danger); }
 
-  .quick-item-row{ display:flex; gap:6px; width:100%; max-width:300px; }
+  .quick-item-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; width:100%; max-width:300px; }
   .quick-item-btn{ flex:1; font-family:"Noto Sans JP",sans-serif; font-size:10.5px; font-weight:700;
     background:#fff; border:1.5px solid var(--accent); color:var(--accent); border-radius:9px; padding:7px 3px; cursor:pointer; }
   .quick-item-btn .stock{ display:block; font-size:9px; font-weight:500; opacity:.75; }
@@ -279,7 +279,9 @@
             <div class="hpbar"><div class="fill" id="hpFill" style="width:100%;"></div></div>
           </div>
           <div class="quick-item-row">
-            <button class="quick-item-btn" id="btnQuickSpell">📖 回復の呪文<span class="stock" id="quickSpellStock"></span></button>
+            <button class="quick-item-btn" id="btnQuickSpellSmall">📖 小復<span class="stock" id="quickSpellSmallStock"></span></button>
+            <button class="quick-item-btn" id="btnQuickSpellMid">📗 中復<span class="stock" id="quickSpellMidStock"></span></button>
+            <button class="quick-item-btn" id="btnQuickSpellFull">📘 完復<span class="stock" id="quickSpellFullStock"></span></button>
             <button class="quick-item-btn" id="btnQuickPCV">💉 PCV<span class="stock" id="quickPcvStock"></span></button>
             <button class="quick-item-btn" id="btnQuickHib">💉 Hib<span class="stock" id="quickHibStock"></span></button>
           </div>
@@ -358,7 +360,9 @@
             <div class="action-grid" id="actionGrid"></div>
             <div class="util-row">
               <button class="util-btn" id="btnUseTest">🔍 検査<span class="stock" id="testStockLabel"></span></button>
-              <button class="util-btn" id="btnUseSpell">📖 回復の呪文<span class="stock" id="spellStockLabel"></span></button>
+              <button class="util-btn" id="btnUseSpellSmall">📖 小復<span class="stock" id="spellSmallStockLabel"></span></button>
+              <button class="util-btn" id="btnUseSpellMid">📗 中復<span class="stock" id="spellMidStockLabel"></span></button>
+              <button class="util-btn" id="btnUseSpellFull">📘 完復<span class="stock" id="spellFullStockLabel"></span></button>
               <button class="util-btn" id="btnUsePCV">💉 PCV<span class="stock" id="pcvStockLabel"></span></button>
               <button class="util-btn" id="btnUseHib">💉 Hib<span class="stock" id="hibStockLabel"></span></button>
               <button class="util-btn flee2" id="btnBattleFlee">🏃 にげる</button>
@@ -2876,7 +2880,8 @@ var MAXHP_UP_AMOUNT = 5;
 var ENEMY_HIT_DMG_MIN = 16, ENEMY_HIT_DMG_MAX = 23; // プレイヤーが攻撃成功時に与えるダメージ
 var FOE_ATK_MIN = 4, FOE_ATK_MAX = 8;                // 敵の反撃ダメージ（+ステージ補正）
 var ENEMY_ATK_INTERVAL_BASE = 2600;                  // 敵の自動反撃の間隔(ms)
-var SPELL_HEAL = 12;
+var SPELL_HEAL_SMALL = 12;
+var SPELL_HEAL_MID = 28;
 var FLEE_SUCCESS_RATE = 0.7;
 
 /* PCV(肺炎球菌)・Hib(インフルエンザ菌)ワクチンの対象菌 */
@@ -2916,7 +2921,9 @@ var FIND_ITEM_RATE = 0.55; // 発見のうちアイテムである確率（残�
 
 var ITEM_TABLE = [
   { kind:"money",  weight:34, icon:"💰", label:"お金" },
-  { kind:"spell",  weight:18, icon:"📖", label:"回復の呪文" },
+  { kind:"spellSmall", weight:14, icon:"📖", label:"小復の呪文" },
+  { kind:"spellMid",   weight:7,  icon:"📗", label:"中復の呪文" },
+  { kind:"spellFull",  weight:2,  icon:"📘", label:"完復の呪文" },
   { kind:"maxhp",  weight:10, icon:"💪", label:"maxHP上昇の実" },
   { kind:"life",   weight:8,  icon:"❤️", label:"ライフ回復の羽根" },
   { kind:"vaccinePCV",weight:8, icon:"💉", label:"PCVワクチン" },
@@ -2953,7 +2960,7 @@ var persist = { bestScore: 0, defeated: [] };
 var state = {
   score:0, money:0,
   stock:{ PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 },
-  inv:{ spell:1, vaccinePCV:1, vaccineHib:1, test:1 },
+  inv:{ spellSmall:1, spellMid:0, spellFull:0, vaccinePCV:1, vaccineHib:1, test:1 },
   hp:BASE_MAX_HP, maxHp:BASE_MAX_HP, lives:START_LIVES,
   protect:{ pneumo:false, hib:false },
   heading:0, targetDir:null, aligned:false, alignedSince:0,
@@ -2984,8 +2991,12 @@ function renderPlayerHp(){
   $('hpText').textContent = state.hp + ' / ' + state.maxHp;
 }
 function renderQuickItems(){
-  $('quickSpellStock').textContent = '('+state.inv.spell+')';
-  $('btnQuickSpell').disabled = state.inv.spell <= 0 || state.hp >= state.maxHp;
+  $('quickSpellSmallStock').textContent = '('+state.inv.spellSmall+')';
+  $('btnQuickSpellSmall').disabled = state.inv.spellSmall <= 0 || state.hp >= state.maxHp;
+  $('quickSpellMidStock').textContent = '('+state.inv.spellMid+')';
+  $('btnQuickSpellMid').disabled = state.inv.spellMid <= 0 || state.hp >= state.maxHp;
+  $('quickSpellFullStock').textContent = '('+state.inv.spellFull+')';
+  $('btnQuickSpellFull').disabled = state.inv.spellFull <= 0 || state.hp >= state.maxHp;
   $('quickPcvStock').textContent = state.protect.pneumo ? '接種済み' : '('+state.inv.vaccinePCV+')';
   $('btnQuickPCV').disabled = state.inv.vaccinePCV <= 0 || state.protect.pneumo;
   $('btnQuickPCV').classList.toggle('protected', state.protect.pneumo);
@@ -2993,14 +3004,19 @@ function renderQuickItems(){
   $('btnQuickHib').disabled = state.inv.vaccineHib <= 0 || state.protect.hib;
   $('btnQuickHib').classList.toggle('protected', state.protect.hib);
 }
-$('btnQuickSpell').addEventListener('click', function(){
-  if(state.inv.spell <= 0 || state.hp >= state.maxHp) return;
-  state.inv.spell -= 1;
-  state.hp = Math.min(state.maxHp, state.hp + SPELL_HEAL);
+function useSpellOutOfBattle(tier, amount, label){
+  if(state.inv[tier] <= 0 || state.hp >= state.maxHp) return;
+  state.inv[tier] -= 1;
+  var before = state.hp;
+  state.hp = (amount === 'full') ? state.maxHp : Math.min(state.maxHp, state.hp + amount);
+  var healed = state.hp - before;
   renderPlayerHp(); renderQuickItems();
-  popDmg($('exploreHud').querySelector('.hpbar-wrap'), '+'+SPELL_HEAL, 'heal');
-  message.textContent = '回復の呪文を使った！ HPが'+SPELL_HEAL+'回復した（'+state.hp+'/'+state.maxHp+'）';
-});
+  popDmg($('exploreHud').querySelector('.hpbar-wrap'), '+'+healed, 'heal');
+  message.textContent = label + 'を使った！ HPが'+healed+'回復した（'+state.hp+'/'+state.maxHp+'）';
+}
+$('btnQuickSpellSmall').addEventListener('click', function(){ useSpellOutOfBattle('spellSmall', SPELL_HEAL_SMALL, '小復の呪文'); });
+$('btnQuickSpellMid').addEventListener('click', function(){ useSpellOutOfBattle('spellMid', SPELL_HEAL_MID, '中復の呪文'); });
+$('btnQuickSpellFull').addEventListener('click', function(){ useSpellOutOfBattle('spellFull', 'full', '完復の呪文'); });
 $('btnQuickPCV').addEventListener('click', function(){
   if(state.inv.vaccinePCV <= 0 || state.protect.pneumo) return;
   state.inv.vaccinePCV -= 1;
@@ -3134,7 +3150,9 @@ function renderPharmacyList(){
 function renderInventory(){
   var wrap = $('invGrid');
   wrap.innerHTML =
-    '<div class="inv-cell"><div class="ic">📖</div><div class="nm">回復の呪文</div><div class="ct">'+state.inv.spell+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">📖</div><div class="nm">小復の呪文</div><div class="ct">'+state.inv.spellSmall+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">📗</div><div class="nm">中復の呪文</div><div class="ct">'+state.inv.spellMid+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">📘</div><div class="nm">完復の呪文</div><div class="ct">'+state.inv.spellFull+'</div></div>' +
     '<div class="inv-cell"><div class="ic">💉</div><div class="nm">PCVワクチン</div><div class="ct">'+(state.protect.pneumo?'接種済み':state.inv.vaccinePCV)+'</div></div>' +
     '<div class="inv-cell"><div class="ic">💉</div><div class="nm">Hibワクチン</div><div class="ct">'+(state.protect.hib?'接種済み':state.inv.vaccineHib)+'</div></div>' +
     '<div class="inv-cell"><div class="ic">🔍</div><div class="nm">検査キット</div><div class="ct">'+state.inv.test+'</div></div>' +
@@ -3181,7 +3199,9 @@ function resolveItemFound(){
   var item = pickItem();
   var body = '';
   if(item.kind === 'money'){ var amt = 15+Math.floor(Math.random()*26); state.money += amt; refreshHud(); body = amt+'円のお金を見つけた！'; }
-  else if(item.kind === 'spell'){ state.inv.spell += 1; body = '回復の呪文を手に入れた！（所持:'+state.inv.spell+'）'; }
+  else if(item.kind === 'spellSmall'){ state.inv.spellSmall += 1; body = '小復の呪文を手に入れた！（所持:'+state.inv.spellSmall+'）'; }
+  else if(item.kind === 'spellMid'){ state.inv.spellMid += 1; body = '中復の呪文を手に入れた！（所持:'+state.inv.spellMid+'）'; }
+  else if(item.kind === 'spellFull'){ state.inv.spellFull += 1; body = '完復の呪文を手に入れた！（所持:'+state.inv.spellFull+'）'; }
   else if(item.kind === 'maxhp'){ state.maxHp += MAXHP_UP_AMOUNT; state.hp = Math.min(state.maxHp, state.hp+MAXHP_UP_AMOUNT); renderPlayerHp(); body = 'maxHP上昇の実を食べた！ 最大HPが'+MAXHP_UP_AMOUNT+'上がった（'+state.maxHp+'）'; }
   else if(item.kind === 'life'){ state.lives = Math.min(MAX_LIVES, state.lives+1); renderLives(); body = 'ライフ回復の羽根を見つけた！ ライフ+1（'+state.lives+'）'; }
   else if(item.kind === 'vaccinePCV'){ state.inv.vaccinePCV += 1; body = 'PCVワクチンを手に入れた！（所持:'+state.inv.vaccinePCV+'）'; }
@@ -3533,11 +3553,15 @@ function updateActionButtons(){
 }
 function renderUtilRow(){
   $('testStockLabel').textContent = '('+state.inv.test+')';
-  $('spellStockLabel').textContent = '('+state.inv.spell+')';
+  $('spellSmallStockLabel').textContent = '('+state.inv.spellSmall+')';
+  $('spellMidStockLabel').textContent = '('+state.inv.spellMid+')';
+  $('spellFullStockLabel').textContent = '('+state.inv.spellFull+')';
   $('pcvStockLabel').textContent = state.protect.pneumo ? '接種済み' : '('+state.inv.vaccinePCV+')';
   $('hibStockLabel').textContent = state.protect.hib ? '接種済み' : '('+state.inv.vaccineHib+')';
   $('btnUseTest').disabled = state.inv.test <= 0;
-  $('btnUseSpell').disabled = state.inv.spell <= 0;
+  $('btnUseSpellSmall').disabled = state.inv.spellSmall <= 0;
+  $('btnUseSpellMid').disabled = state.inv.spellMid <= 0;
+  $('btnUseSpellFull').disabled = state.inv.spellFull <= 0;
   $('btnUsePCV').disabled = state.inv.vaccinePCV <= 0 || state.protect.pneumo;
   $('btnUseHib').disabled = state.inv.vaccineHib <= 0 || state.protect.hib;
 }
@@ -3625,15 +3649,19 @@ $('btnUseTest').addEventListener('click', function(){
   popDmg(enemyCard, '検査完了！', 'heal');
   // 検査は無料行動：敵の反撃タイマーはそのまま進む
 });
-$('btnUseSpell').addEventListener('click', function(){
-  if(!battle || state.phase!=='battle' || state.inv.spell<=0) return;
-  state.inv.spell -= 1;
-  state.hp = Math.min(state.maxHp, state.hp + SPELL_HEAL);
+function useSpellInBattle(tier, amount, label){
+  if(!battle || state.phase!=='battle' || state.inv[tier]<=0) return;
+  state.inv[tier] -= 1;
+  var before = state.hp;
+  state.hp = (amount === 'full') ? state.maxHp : Math.min(state.maxHp, state.hp + amount);
+  var healed = state.hp - before;
   battle.atkTimer = Math.max(battle.atkTimer, 700); // 回復直後に反撃が重ならないよう猶予
   renderBattleHp(); renderUtilRow();
-  var enemyCard = $('battleArena');
-  popDmg(enemyCard, '+'+SPELL_HEAL, 'heal');
-});
+  popDmg($('battleArena'), '+'+healed, 'heal');
+}
+$('btnUseSpellSmall').addEventListener('click', function(){ useSpellInBattle('spellSmall', SPELL_HEAL_SMALL, '小復の呪文'); });
+$('btnUseSpellMid').addEventListener('click', function(){ useSpellInBattle('spellMid', SPELL_HEAL_MID, '中復の呪文'); });
+$('btnUseSpellFull').addEventListener('click', function(){ useSpellInBattle('spellFull', 'full', '完復の呪文'); });
 $('btnUsePCV').addEventListener('click', function(){
   if(!battle || state.phase!=='battle' || state.inv.vaccinePCV<=0 || state.protect.pneumo) return;
   state.inv.vaccinePCV -= 1;
@@ -3745,7 +3773,7 @@ $('btnLifeLostOk').addEventListener('click', function(){
 function goToGame(){
   state.score=0; state.money=0;
   state.stock = { PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 };
-  state.inv = { spell:1, vaccinePCV:1, vaccineHib:1, test:1 };
+  state.inv = { spellSmall:1, spellMid:0, spellFull:0, vaccinePCV:1, vaccineHib:1, test:1 };
   state.protect = { pneumo:false, hib:false };
   state.maxHp = BASE_MAX_HP; state.hp = BASE_MAX_HP; state.lives = START_LIVES;
   refreshHud(); renderLives(); renderPlayerHp(); renderQuickItems();
