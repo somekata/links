@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第2章 DNAはなぜ二重らせんなのか？ ― ライブ講義ノート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf9f4;
+    --ink:#1c1f1a;
+    --board:#1c3b30;
+    --board-deep:#12241d;
+    --chalk:#eee3b8;
+    --at:#b8555c;
+    --gc:#3d7a72;
+    --aside-bg:#eee7d6;
+    --aside-border:#c9bd97;
+    --rule:#d8d2c0;
+    --muted:#6b6a5f;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans JP', sans-serif;
+    line-height:1.9;
+    font-size:17px;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 24px 80px;}
+
+  /* ---------- HERO / 黒板 ---------- */
+  .hero{
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.03), transparent 60%),
+      linear-gradient(180deg, var(--board) 0%, var(--board-deep) 100%);
+    color:var(--chalk);
+    padding:64px 24px 56px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:6px solid var(--board-deep);
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+  }
+  .hero-inner{max-width:760px; margin:0 auto; position:relative;}
+  .kicker{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:13px;
+    letter-spacing:0.18em;
+    color:#c8bd8f;
+    margin:0 0 14px;
+  }
+  .hero h1{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:900;
+    font-size:clamp(30px, 5vw, 44px);
+    line-height:1.35;
+    margin:0 0 18px;
+    color:#fbf6e3;
+  }
+  .hero p.lead{
+    font-size:15.5px;
+    color:#cdd8c9;
+    max-width:520px;
+    margin:0;
+  }
+  .helix{
+    position:absolute; right:-10px; top:10px; width:150px; height:220px; opacity:0.9;
+  }
+
+  /* ---------- NAV RAIL (章の位置づけ) ---------- */
+  .railbox{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    margin:26px 0 0;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:#a9b8a4;
+  }
+  .railbox .chip{
+    border:1px solid rgba(255,255,255,0.25);
+    padding:3px 10px; border-radius:999px;
+  }
+  .railbox .chip.now{ background:var(--chalk); color:var(--board-deep); border-color:var(--chalk); font-weight:600;}
+  a.chip{ text-decoration:none; transition:background 0.15s, color 0.15s; }
+  a.chip:hover{ background:rgba(255,255,255,0.12); }
+  .toplink{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:13px; color:#c8bd8f; text-decoration:none;
+    margin-bottom:22px;
+  }
+  .toplink:hover{ color:#eee3b8; }
+
+  /* ---------- LECTURE BODY ---------- */
+  .stage{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:12.5px;
+    letter-spacing:0.14em;
+    color:var(--muted);
+    margin:56px 0 6px;
+  }
+  h2{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:24px;
+    margin:2px 0 22px;
+    padding-bottom:12px;
+    border-bottom:2px solid var(--ink);
+  }
+  h2 .num{ color:var(--gc); margin-right:8px; }
+
+  p{ margin:0 0 18px; }
+
+  .qa{
+    margin:22px 0;
+    padding:0 0 0 18px;
+    border-left:3px solid var(--rule);
+  }
+  .q, .a{
+    display:flex; gap:10px; margin:0 0 10px;
+  }
+  .q .tag, .a .tag{
+    flex:0 0 auto;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    padding:2px 9px;
+    border-radius:5px;
+    height:fit-content;
+  }
+  .q .tag{ background:#e7e2d2; color:#4a4636; }
+  .a .tag{ background:var(--board); color:var(--chalk); }
+  .q p, .a p{ margin:0; }
+
+  .seq{
+    font-family:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Courier New', monospace;
+    background:var(--board-deep);
+    color:#f2ead0;
+    padding:20px 22px;
+    border-radius:8px;
+    font-size:15px;
+    line-height:2.1;
+    letter-spacing:0.04em;
+    overflow-x:auto;
+    margin:20px 0;
+    white-space:pre;
+  }
+
+  .pairing{
+    background:var(--board-deep);
+    color:#f2ead0;
+    padding:20px 22px 24px;
+    border-radius:8px;
+    margin:20px 0;
+    overflow-x:auto;
+    font-family:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Courier New', monospace;
+  }
+  .pairing .prow{
+    display:grid;
+    grid-template-columns:2.4em repeat(7, 1.4em) 2.4em;
+    justify-items:center;
+    align-items:center;
+  }
+  .pairing .prow.bases{ font-size:17px; font-weight:600; }
+  .pairing .prow.bonds{ font-size:15px; color:#7d8b78; }
+  .pairing .end{ color:#7d8b78; font-size:12px; justify-self:start; }
+  .pairing .end.right{ justify-self:end; }
+  .pairing .base.at{ color:#e8a2a6; }
+  .pairing .base.gc{ color:#8fd9c8; }
+  .seq .at{ color:#e8a2a6; }
+  .seq .gc{ color:#8fd9c8; }
+  .seq .arrow{ color:#7d8b78; }
+  .seq .lab{ color:#7d8b78; font-size:12px; }
+
+  /* ---------- コラム (aside) ---------- */
+  .column{
+    background:var(--aside-bg);
+    border:1px solid var(--aside-border);
+    border-left:5px solid var(--gc);
+    border-radius:4px;
+    padding:20px 22px 18px;
+    margin:34px 0;
+    position:relative;
+  }
+  .column .clabel{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:12.5px;
+    letter-spacing:0.1em;
+    color:var(--gc);
+    margin:0 0 8px;
+    text-transform:uppercase;
+  }
+  .column h3{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:16.5px;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+  .column p{ font-size:15.5px; margin:0 0 10px; color:#3a3a30; }
+  .column p:last-child{ margin-bottom:0; }
+  i{ font-style:italic; }
+
+  .divider{
+    text-align:center; color:var(--muted); letter-spacing:0.5em;
+    margin:48px 0; font-size:12px;
+  }
+
+  .steps{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+    margin:20px 0 28px;
+  }
+  @media (max-width:640px){ .steps{ grid-template-columns:1fr; } }
+  .step{
+    background:#fff; border:1px solid var(--rule); border-radius:8px;
+    padding:16px 16px 14px;
+  }
+  .step .temp{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:600; font-size:20px; color:var(--at);
+  }
+  .step .name{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700; font-size:14.5px; margin:4px 0 8px;
+  }
+  .step p{ font-size:14px; margin:0; color:#4a4a3f; }
+
+  .voice{
+    display:flex; gap:12px; margin:26px 0; align-items:flex-start;
+  }
+  .voice .avatar{
+    flex:0 0 auto; width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:12px; font-weight:700; color:#fff;
+    background:var(--gc);
+  }
+  .voice.teacher-call .avatar{ background:var(--board); }
+  .voice .bubble{
+    background:#fff; border:1px solid var(--rule); border-radius:4px 12px 12px 12px;
+    padding:13px 17px; flex:1;
+  }
+  .voice .role{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:11.5px; font-weight:700; letter-spacing:0.03em;
+    color:var(--muted); margin:0 0 6px;
+  }
+  .voice p{ margin:0; font-size:15px; }
+  .voice + .voice{ margin-top:-14px; }
+
+  .next{
+    margin-top:60px;
+    padding:22px 24px;
+    background:var(--board);
+    color:var(--chalk);
+    border-radius:8px;
+  }
+  .next .clabel{ color:#b9cdb2; font-family:'Zen Kaku Gothic New', sans-serif; font-size:12.5px; letter-spacing:0.14em; margin-bottom:8px;}
+  .next p{ margin:0; color:#e8e4d0; font-size:15px; }
+
+  .chapter-band{
+    background:linear-gradient(180deg, var(--board) 0%, var(--board-deep) 100%);
+    color:var(--chalk);
+    margin:72px -24px 40px;
+    padding:40px 24px;
+    border-radius:10px;
+  }
+  .chapter-band .kicker{ margin-bottom:10px; }
+  .chapter-band h2{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:900;
+    font-size:clamp(24px, 4vw, 32px);
+    color:#fbf6e3;
+    border-bottom:none;
+    margin:0;
+    padding:0;
+  }
+
+  .compare{
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    margin:22px 0 28px;
+  }
+  @media (max-width:640px){ .compare{ grid-template-columns:1fr; } }
+  .compare .card{
+    background:#fff; border:1px solid var(--rule); border-radius:8px;
+    padding:18px 18px 16px;
+  }
+  .compare .card.bad{ border-color:#dcc3c3; }
+  .compare .card.good{ border-color:#bcd6cd; }
+  .compare .card .label{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700; font-size:13.5px; margin:0 0 10px;
+  }
+  .compare .card.bad .label{ color:var(--at); }
+  .compare .card.good .label{ color:var(--gc); }
+  .compare .card p{ margin:0; font-size:14.5px; color:#4a4a3f; }
+  .compare .shape{
+    height:60px; margin-bottom:12px;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  footer{
+    max-width:760px; margin:70px auto 0; padding:22px 24px;
+    border-top:1px solid var(--rule);
+    font-size:12px; color:var(--muted); line-height:1.85;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <svg class="helix" viewBox="0 0 100 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 5 C 60 30, 60 50, 20 75 C -20 100, -20 120, 20 145" stroke="#e8a2a6" stroke-width="2.5" opacity="0.85"/>
+      <path d="M80 5 C 40 30, 40 50, 80 75 C 120 100, 120 120, 80 145" stroke="#8fd9c8" stroke-width="2.5" opacity="0.85"/>
+      <g stroke="#c8bd8f" stroke-width="1.4" opacity="0.6">
+        <line x1="24" y1="14" x2="76" y2="14"/>
+        <line x1="30" y1="30" x2="70" y2="30"/>
+        <line x1="34" y1="48" x2="66" y2="48"/>
+        <line x1="30" y1="65" x2="70" y2="65"/>
+        <line x1="20" y1="80" x2="80" y2="80"/>
+        <line x1="12" y1="95" x2="88" y2="95"/>
+        <line x1="14" y1="112" x2="86" y2="112"/>
+        <line x1="20" y1="128" x2="80" y2="128"/>
+        <line x1="20" y1="142" x2="80" y2="142"/>
+      </g>
+    </svg>
+    <a class="toplink" href="index.html">← 目次に戻る</a>
+    <p class="kicker">医学部・看護学生、感染管理認定看護師課程 向け　―　分子生物学 ライブ講義ノート 第2章</p>
+    <h1>DNAはなぜ<br>二重らせんなのか？</h1>
+    <p class="lead">第1章「遺伝子とPCR」の続きです。「なぜ二重か」「なぜらせんか」を分けて考えます。</p>
+    <div class="railbox">
+      <a class="chip" href="chapter1.html">第1章 遺伝子とPCR</a>
+      <span class="chip now">第2章 二重らせんのふしぎ</span>
+      <span class="chip">第3章 準備中</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <p>
+    今日はこの問いから始めましょう。「DNAはなぜ二重らせんなのか？」——実はこれ、ひとつの問いのようで、中身は<strong>二つの問い</strong>が重なっています。「なぜ<strong>二重</strong>なのか」、そして「なぜ<strong>らせん</strong>なのか」。この二つを分けて考えると、話がぐっと整理できます。
+  </p>
+
+  <p class="stage">SCENE 1</p>
+  <h2><span class="num">1.</span>なぜ「二重」なのか</h2>
+
+  <div class="qa">
+    <div class="q"><span class="tag">Q</span><p>もしDNAが一本鎖しかなかったら、何に困ると思いますか？</p></div>
+    <div class="a"><span class="tag">A</span><p>大きく二つ困ります。ひとつは<strong>安定性</strong>。塩基がむき出しのまま漂っていると、化学的にも壊れやすい。もう一つは<strong>複製</strong>です。自分をコピーしようにも、お手本にする「型」がありません。二本鎖であれば、一方の配列がもう一方の配列を完全に決めてしまう——つまり相方の鎖自体が、複製のための鋳型になってくれるのです。</p></div>
+  </div>
+
+  <p>
+    第1章で見た「AはTとしか対にならない、GはCとしか対にならない」という相補性のルールを思い出してください。二本鎖であることは、単に安定なだけでなく、「片方が壊れても、もう片方から情報を復元できる」という、いわば保険にもなっています。二重であることは、安定性と複製の両方に効いてくるわけです。
+  </p>
+
+  <p class="stage">SCENE 2</p>
+  <h2><span class="num">2.</span>なぜ「らせん」なのか</h2>
+
+  <p>
+    では、二本の鎖が向き合っているだけで十分なら、なぜねじれて「らせん」になっている必要があるのでしょうか。まっすぐな、はしご状の二重鎖ではだめなのでしょうか。
+  </p>
+
+  <div class="compare">
+    <div class="card bad">
+      <p class="label">もし、まっすぐな「はしご」だったら</p>
+      <p>平面のはしごは、面に対して垂直な一方向にしか折り曲げられません。横方向にはほとんど曲がらず、狭い空間に詰め込むのも苦手です。</p>
+    </div>
+    <div class="card good">
+      <p class="label">実際は「らせん」になっている</p>
+      <p>らせん構造は軸のまわりにねじれているぶん、どの方向にも柔軟に折れ曲がることができます。だからこそ、長いDNAを狭い核の中にコンパクトに折りたたんで収納できるのです。</p>
+    </div>
+  </div>
+
+  <p>
+    つまり、らせんである理由は<strong>柔軟性</strong>のためです。ヒトのDNAは1つの細胞あたり引き伸ばすと約2メートルにもなりますが、それが数マイクロメートルの核の中に収まっているのは、らせん構造ゆえの柔軟な折りたたみやすさがあってこそです。
+  </p>
+
+  <div class="voice">
+    <div class="avatar">医</div>
+    <div class="bubble">
+      <p class="role">医学部生より</p>
+      <p>先生、核の中にきれいに収納されているイメージがありますが、あれは「らせん」というより、もっと複雑に折りたたまれていませんか？ヒストンに巻きついているとか。</p>
+    </div>
+  </div>
+  <div class="voice teacher-call">
+    <div class="avatar">師</div>
+    <div class="bubble">
+      <p class="role">講師</p>
+      <p>鋭いですね、その通りです。ヒストンへの巻きつきやクロマチンとしての高次構造は、また別の章でじっくり扱います。ただ、その大前提として「そもそも柔軟に曲がれる分子でなければ、そこまでコンパクトに折りたためない」という話が今日のポイントです。まっすぐなはしごのままでは、ヒストンに巻きつくことすらできません。</p>
+    </div>
+  </div>
+
+  <p class="stage">SCENE 3</p>
+  <h2><span class="num">3.</span>らせんであることの「代償」</h2>
+
+  <p>
+    ここまで、らせんであることの利点を話してきました。ですが、いいことばかりではありません。らせんであるがゆえに、<strong>複製のときに不便</strong>が生じます。
+  </p>
+
+  <div class="qa">
+    <div class="q"><span class="tag">Q</span><p>複製するには、まず二本鎖をほどいて一本鎖にする必要がありましたね。らせん構造だと、これのどこが大変だと思いますか？</p></div>
+    <div class="a"><span class="tag">A</span><p>ねじれているぶん、DNA全体を端から端まで、らせんのままするすると解いていくことはできません。糸電話のこよりをイメージしてください。長い紐をらせん状に撚っておくと、途中を固定したまま全部を一気にほどくのは難しいですよね。どこかで切って、ねじれを逃がしてやる必要があるのです。</p></div>
+  </div>
+
+  <p>
+    実際の細胞の中では、ヘリカーゼという酵素が局所的に二本鎖をほどいていきますが、その先ではまだほどけていない部分にねじれのひずみがどんどん溜まっていきます。このひずみを逃がすために、DNAを一時的に切断して回転させ、またつなぎ直す酵素——<strong>DNAトポイソメラーゼ</strong>——が働きます。「らせんだからこそ柔軟に折りたためる」一方で、「らせんだからこそ、複製のたびにどこかを切らねばならない」という、コインの裏表のような関係になっているわけです。この切って戻す仕組みの詳細は、複製の章で改めて扱います。
+  </p>
+
+  <div class="column">
+    <p class="clabel">コラム</p>
+    <h3>らせんを解く酵素を、薬で狙う</h3>
+    <p>このDNAトポイソメラーゼは、細菌にも存在します。細菌のトポイソメラーゼ(DNAジャイレースなど)だけを選択的に阻害し、切ったDNAをつなぎ直せなくして菌を殺す——これがニューキノロン系抗菌薬のはたらきです。感染管理の現場でおなじみの薬が、まさに今日の「らせんの代償」の部分を狙い撃ちしていることになります。作用機序の詳細は、抗菌薬の章で改めて扱います。</p>
+  </div>
+
+  <div class="divider">· · ·</div>
+
+  <div class="next">
+    <p class="clabel">次回予告</p>
+    <p>次章では、なぜDNAの複製に「向き」が関係してくるのか、そしてDNAポリメラーゼがどちらの方向にしか合成できないのか——PCRのプライマー設計にも関わる話に進みます。(準備中)</p>
+  </div>
+
+</div>
+
+<footer>
+  本テキストは AI(Claude, Anthropic)を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+</body>
+</html>

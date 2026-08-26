@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第1章 遺伝子とは？ ― ライブ講義ノート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf9f4;
+    --ink:#1c1f1a;
+    --board:#1c3b30;
+    --board-deep:#12241d;
+    --chalk:#eee3b8;
+    --at:#b8555c;
+    --gc:#3d7a72;
+    --aside-bg:#eee7d6;
+    --aside-border:#c9bd97;
+    --rule:#d8d2c0;
+    --muted:#6b6a5f;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans JP', sans-serif;
+    line-height:1.9;
+    font-size:17px;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 24px 80px;}
+
+  /* ---------- HERO / 黒板 ---------- */
+  .hero{
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.03), transparent 60%),
+      linear-gradient(180deg, var(--board) 0%, var(--board-deep) 100%);
+    color:var(--chalk);
+    padding:64px 24px 56px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:6px solid var(--board-deep);
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+  }
+  .hero-inner{max-width:760px; margin:0 auto; position:relative;}
+  .kicker{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:13px;
+    letter-spacing:0.18em;
+    color:#c8bd8f;
+    margin:0 0 14px;
+  }
+  .hero h1{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:900;
+    font-size:clamp(30px, 5vw, 44px);
+    line-height:1.35;
+    margin:0 0 18px;
+    color:#fbf6e3;
+  }
+  .hero p.lead{
+    font-size:15.5px;
+    color:#cdd8c9;
+    max-width:520px;
+    margin:0;
+  }
+  .helix{
+    position:absolute; right:-10px; top:10px; width:150px; height:220px; opacity:0.9;
+  }
+
+  /* ---------- NAV RAIL (章の位置づけ) ---------- */
+  .railbox{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    margin:26px 0 0;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:#a9b8a4;
+  }
+  .railbox .chip{
+    border:1px solid rgba(255,255,255,0.25);
+    padding:3px 10px; border-radius:999px;
+  }
+  .railbox .chip.now{ background:var(--chalk); color:var(--board-deep); border-color:var(--chalk); font-weight:600;}
+  a.chip{ text-decoration:none; transition:background 0.15s, color 0.15s; }
+  a.chip:hover{ background:rgba(255,255,255,0.12); }
+  .toplink{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:13px; color:#c8bd8f; text-decoration:none;
+    margin-bottom:22px;
+  }
+  .toplink:hover{ color:#eee3b8; }
+
+  /* ---------- LECTURE BODY ---------- */
+  .stage{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:12.5px;
+    letter-spacing:0.14em;
+    color:var(--muted);
+    margin:56px 0 6px;
+  }
+  h2{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:24px;
+    margin:2px 0 22px;
+    padding-bottom:12px;
+    border-bottom:2px solid var(--ink);
+  }
+  h2 .num{ color:var(--gc); margin-right:8px; }
+
+  p{ margin:0 0 18px; }
+
+  .qa{
+    margin:22px 0;
+    padding:0 0 0 18px;
+    border-left:3px solid var(--rule);
+  }
+  .q, .a{
+    display:flex; gap:10px; margin:0 0 10px;
+  }
+  .q .tag, .a .tag{
+    flex:0 0 auto;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    padding:2px 9px;
+    border-radius:5px;
+    height:fit-content;
+  }
+  .q .tag{ background:#e7e2d2; color:#4a4636; }
+  .a .tag{ background:var(--board); color:var(--chalk); }
+  .q p, .a p{ margin:0; }
+
+  .seq{
+    font-family:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Courier New', monospace;
+    background:var(--board-deep);
+    color:#f2ead0;
+    padding:20px 22px;
+    border-radius:8px;
+    font-size:15px;
+    line-height:2.1;
+    letter-spacing:0.04em;
+    overflow-x:auto;
+    margin:20px 0;
+    white-space:pre;
+  }
+
+  .pairing{
+    background:var(--board-deep);
+    color:#f2ead0;
+    padding:18px 22px 20px;
+    border-radius:8px;
+    margin:20px 0;
+    overflow-x:auto;
+    font-family:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Courier New', monospace;
+  }
+  .pairing table{ border-collapse:collapse; margin:0 auto; }
+  .pairing td{
+    text-align:center; vertical-align:middle;
+    padding:2px 7px; min-width:1.1em;
+  }
+  .pairing tr.bases td{ font-size:17px; font-weight:600; }
+  .pairing tr.bonds td{ font-size:15px; color:#7d8b78; line-height:1; }
+  .pairing td.end{ color:#7d8b78; font-size:12px; }
+  .pairing td.at{ color:#e8a2a6; }
+  .pairing td.gc{ color:#8fd9c8; }
+  .seq .at{ color:#e8a2a6; }
+  .seq .gc{ color:#8fd9c8; }
+  .seq .arrow{ color:#7d8b78; }
+  .seq .lab{ color:#7d8b78; font-size:12px; }
+
+  /* ---------- コラム (aside) ---------- */
+  .column{
+    background:var(--aside-bg);
+    border:1px solid var(--aside-border);
+    border-left:5px solid var(--gc);
+    border-radius:4px;
+    padding:20px 22px 18px;
+    margin:34px 0;
+    position:relative;
+  }
+  .column .clabel{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:12.5px;
+    letter-spacing:0.1em;
+    color:var(--gc);
+    margin:0 0 8px;
+    text-transform:uppercase;
+  }
+  .column h3{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:16.5px;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+  .column p{ font-size:15.5px; margin:0 0 10px; color:#3a3a30; }
+  .column p:last-child{ margin-bottom:0; }
+  i{ font-style:italic; }
+
+  .divider{
+    text-align:center; color:var(--muted); letter-spacing:0.5em;
+    margin:48px 0; font-size:12px;
+  }
+
+  .steps{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+    margin:20px 0 28px;
+  }
+  @media (max-width:640px){ .steps{ grid-template-columns:1fr; } }
+  .step{
+    background:#fff; border:1px solid var(--rule); border-radius:8px;
+    padding:16px 16px 14px;
+  }
+  .step .temp{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:600; font-size:20px; color:var(--at);
+  }
+  .step .name{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700; font-size:14.5px; margin:4px 0 8px;
+  }
+  .step p{ font-size:14px; margin:0; color:#4a4a3f; }
+
+  .voice{
+    display:flex; gap:12px; margin:26px 0; align-items:flex-start;
+  }
+  .voice .avatar{
+    flex:0 0 auto; width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:12px; font-weight:700; color:#fff;
+    background:var(--gc);
+  }
+  .voice.teacher-call .avatar{ background:var(--board); }
+  .voice .bubble{
+    background:#fff; border:1px solid var(--rule); border-radius:4px 12px 12px 12px;
+    padding:13px 17px; flex:1;
+  }
+  .voice .role{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:11.5px; font-weight:700; letter-spacing:0.03em;
+    color:var(--muted); margin:0 0 6px;
+  }
+  .voice p{ margin:0; font-size:15px; }
+  .voice + .voice{ margin-top:-14px; }
+
+  .next{
+    margin-top:60px;
+    padding:22px 24px;
+    background:var(--board);
+    color:var(--chalk);
+    border-radius:8px;
+  }
+  .next .clabel{ color:#b9cdb2; font-family:'Zen Kaku Gothic New', sans-serif; font-size:12.5px; letter-spacing:0.14em; margin-bottom:8px;}
+  .next p{ margin:0; color:#e8e4d0; font-size:15px; }
+
+  .chapter-band{
+    background:linear-gradient(180deg, var(--board) 0%, var(--board-deep) 100%);
+    color:var(--chalk);
+    margin:72px -24px 40px;
+    padding:40px 24px;
+    border-radius:10px;
+  }
+  .chapter-band .kicker{ margin-bottom:10px; }
+  .chapter-band h2{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:900;
+    font-size:clamp(24px, 4vw, 32px);
+    color:#fbf6e3;
+    border-bottom:none;
+    margin:0;
+    padding:0;
+  }
+
+  .compare{
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    margin:22px 0 28px;
+  }
+  @media (max-width:640px){ .compare{ grid-template-columns:1fr; } }
+  .compare .card{
+    background:#fff; border:1px solid var(--rule); border-radius:8px;
+    padding:18px 18px 16px;
+  }
+  .compare .card.bad{ border-color:#dcc3c3; }
+  .compare .card.good{ border-color:#bcd6cd; }
+  .compare .card .label{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700; font-size:13.5px; margin:0 0 10px;
+  }
+  .compare .card.bad .label{ color:var(--at); }
+  .compare .card.good .label{ color:var(--gc); }
+  .compare .card p{ margin:0; font-size:14.5px; color:#4a4a3f; }
+  .compare .shape{
+    height:60px; margin-bottom:12px;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  footer{
+    max-width:760px; margin:70px auto 0; padding:22px 24px;
+    border-top:1px solid var(--rule);
+    font-size:12px; color:var(--muted); line-height:1.85;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <svg class="helix" viewBox="0 0 100 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 5 C 60 30, 60 50, 20 75 C -20 100, -20 120, 20 145" stroke="#e8a2a6" stroke-width="2.5" opacity="0.85"/>
+      <path d="M80 5 C 40 30, 40 50, 80 75 C 120 100, 120 120, 80 145" stroke="#8fd9c8" stroke-width="2.5" opacity="0.85"/>
+      <g stroke="#c8bd8f" stroke-width="1.4" opacity="0.6">
+        <line x1="24" y1="14" x2="76" y2="14"/>
+        <line x1="30" y1="30" x2="70" y2="30"/>
+        <line x1="34" y1="48" x2="66" y2="48"/>
+        <line x1="30" y1="65" x2="70" y2="65"/>
+        <line x1="20" y1="80" x2="80" y2="80"/>
+        <line x1="12" y1="95" x2="88" y2="95"/>
+        <line x1="14" y1="112" x2="86" y2="112"/>
+        <line x1="20" y1="128" x2="80" y2="128"/>
+        <line x1="20" y1="142" x2="80" y2="142"/>
+      </g>
+    </svg>
+    <a class="toplink" href="index.html">← 目次に戻る</a>
+    <p class="kicker">医学部・看護学生、感染管理認定看護師課程 向け　―　分子生物学 ライブ講義ノート 第1章</p>
+    <h1>遺伝子とは？<br>― PCRから逆算して考える</h1>
+    <p class="lead">医学部生・看護学生、そして感染管理認定看護師課程の受講生を想定した、100人教室での講義の実況ノートです。時々こちらから指名したり、学生から質問が飛んできたりもします。</p>
+    <div class="railbox">
+      <span class="chip now">第1章 遺伝子とPCR</span>
+      <a class="chip" href="chapter2.html">第2章 二重らせんのふしぎ</a>
+      <span class="chip">第3章 準備中</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <p class="stage">SCENE 1</p>
+  <h2><span class="num">1.</span>遺伝子の本体は、ひとまずDNA</h2>
+
+  <p>
+    「遺伝子とは何か」——これには歴史的な変遷があります。メンデルの時代、遺伝子の正体はまだ誰にも分かっていませんでした。DNAなのかタンパク質なのか、長く議論が続いた時代もあります。ですが、この講義ではひとまず<strong>「遺伝子の本体はDNAである」</strong>という立場で話を始めます。歴史的な経緯や、より厳密な定義については、然るべき章でまとめて扱います。まずは全体像をつかむことを優先しましょう。
+  </p>
+
+  <div class="qa">
+    <div class="q"><span class="tag">Q</span><p>皆さん、PCRって聞いたことありますよね？</p></div>
+    <div class="a"><span class="tag">A</span><p>核酸増幅法の一つです。</p></div>
+    <div class="q"><span class="tag">Q</span><p>では、核酸とは何でしょう？</p></div>
+    <div class="a"><span class="tag">A</span><p>DNAです。——正確にはRNAも核酸の仲間ですが、これも厳密な話はあとにして、今日のところは「核酸＝DNA」として進めます。この講義では、わかりやすさを優先してあえて平易に説明する場面が何度も出てきます。厳密性を欠く部分は、のちの章で必ず回収します。</p></div>
+  </div>
+
+  <div class="column">
+    <p class="clabel">コラム</p>
+    <h3>「本体はDNA」と分かるまでの100年</h3>
+    <p>19世紀にメンデルが遺伝の法則を見出したとき、その物質的な正体は謎のままでした。20世紀に入り、肺炎球菌を使った実験などを経て、ようやく遺伝情報を運ぶ物質がDNAであることが示されていきます。そして1953年、ワトソンとクリックがDNAの二重らせん構造を提唱し、「なぜ複製できるのか」という問いに構造の面から答えが与えられました。この物語は、のちの章でじっくり扱う予定です。</p>
+  </div>
+
+  <p class="stage">SCENE 2</p>
+  <h2><span class="num">2.</span>塩基配列を読んでみる</h2>
+
+  <p>
+    DNAは対になっています。ATGCという4種類の<strong>ヌクレオチド</strong>——もう少し正確に言うと、糖やリン酸からなる骨格ではなく、そこから飛び出している部分を<strong>塩基</strong>と呼びます。塩基は対になるので、<strong>塩基対</strong>と言います。ルールはシンプルです。AとT、GとCが対になります。
+  </p>
+
+  <p>
+    たとえば、次のような配列があったとします。
+  </p>
+
+  <div class="seq">
+<span class="lab">5'-</span>ACATGCC<span class="lab">-3'</span>
+
+これと対になるのは
+
+<span class="lab">3'-</span>TGTACGG<span class="lab">-5'</span>
+  </div>
+
+  <p>
+    DNAには方向があるので、慣習として常に5'側から書きます。ですから正確に書くなら、
+  </p>
+
+  <div class="seq">
+5'-ACATGCC-3'
+5'-GGCATGT-3'
+  </div>
+
+  <p>
+    となりますが、これだと塩基対の対応関係がひと目で分かりにくいですね。講義や資料では、次のように向かい合わせて書く方がずっと分かりやすいので、こちらの書き方もよく使われます。
+  </p>
+
+  <div class="pairing">
+    <table>
+      <tr class="bases">
+        <td class="end">5'</td><td>A</td><td class="at">C</td><td>A</td><td>T</td><td>G</td><td class="gc">C</td><td>C</td><td class="end">3'</td>
+      </tr>
+      <tr class="bonds">
+        <td></td><td>|</td><td>|</td><td>|</td><td>|</td><td>|</td><td>|</td><td>|</td><td></td>
+      </tr>
+      <tr class="bases">
+        <td class="end">3'</td><td>T</td><td class="at">G</td><td>T</td><td>A</td><td>C</td><td class="gc">G</td><td>G</td><td class="end">5'</td>
+      </tr>
+    </table>
+  </div>
+  </div>
+
+  <div class="voice">
+    <div class="avatar">看</div>
+    <div class="bubble">
+      <p class="role">感染管理認定看護師課程 受講生より</p>
+      <p>先生、病棟だと「PCR陽性」「PCR陰性」って結果だけがひとり歩きしていて、恥ずかしながら中身をちゃんと考えたことがありませんでした。この対合のルールと、検査で「陽性/陰性」が出ることは、どうつながっているんですか？</p>
+    </div>
+  </div>
+  <div class="voice">
+    <div class="avatar" style="background:var(--board);">師</div>
+    <div class="bubble">
+      <p class="role">講師</p>
+      <p>いい質問ですね。まさに今日の話の核心です。検出したい病原体だけが持つ特徴的な配列に対して、そこにぴったり相補的に結合する短い配列(プライマー)を設計しておきます。対合のルールが厳密だからこそ、狙った配列があるときだけ増幅が起こり、「陽性」という結果になる——ここは次のスライドでもう少し詳しく扱います。</p>
+    </div>
+  </div>
+
+  <div class="column">
+    <p class="clabel">コラム</p>
+    <h3>なぜ A–T、G–C なのか</h3>
+    <p>この組み合わせは、水素結合の数と塩基のかたちで決まっています。AとTは水素結合2本、GとCは3本で結びつき、どちらのペアも「大きさ」がそろうため、二重らせんの直径が一定に保たれます。DNAが安定にらせんを保てるのは、この相補性のおかげです。</p>
+  </div>
+
+  <p class="stage">SCENE 3</p>
+  <h2><span class="num">3.</span>PCRという方法がなぜ成り立つのか</h2>
+
+  <p>
+    さて、話をPCRに戻しましょう。なぜPCRという方法が成立するのか——答えは「DNAがとても単純だから」です。塩基はたった4種類しかありません。しかも、AはTとしか対にならず、GはCとしか対になりません。この単純で規則正しいルールがあるからこそ、鋳型となる一本鎖に、狙った配列だけを正確に対合させ、複製することができるのです。
+  </p>
+
+  <p>
+    PCR(polymerase chain reaction、ポリメラーゼ連鎖反応)は、この相補性を利用して、試験管の中で特定のDNA配列を数百万倍にも増やす方法です。基本は、温度を変えるだけの単純な3つの操作の繰り返しです。
+  </p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="temp">約95℃</div>
+      <div class="name">① 熱変性(Denaturation)</div>
+      <p>加熱してA–T、G–Cの水素結合を切り、二本鎖を一本鎖にほどきます。</p>
+    </div>
+    <div class="step">
+      <div class="temp">約50–65℃</div>
+      <div class="name">② アニーリング(Annealing)</div>
+      <p>温度を下げ、増やしたい配列の両端に短いプライマーを相補的に結合させます。</p>
+    </div>
+    <div class="step">
+      <div class="temp">約72℃</div>
+      <div class="name">③ 伸長(Extension)</div>
+      <p>DNAポリメラーゼがプライマーの続きから、相補的な塩基を一つずつつなげていきます。</p>
+    </div>
+  </div>
+
+  <p>
+    この3ステップを1サイクルとして、20〜30回繰り返します。1サイクルごとにDNAはほぼ倍になっていくので、理論上は2の30乗——10億倍以上にまで増幅できる計算になります。「対になる」という単純なルールが、指数関数的な増幅を可能にしているわけです。
+  </p>
+
+  <div class="voice teacher-call">
+    <div class="avatar">師</div>
+    <div class="bubble">
+      <p class="role">講師 ― 指名</p>
+      <p>はい、そこの感染管理認定看護師課程の方。臨床の現場感覚でうかがいたいんですが、血液培養とPCR検査、結果が出るまでの速さはどちらに分がありますか？</p>
+    </div>
+  </div>
+  <div class="voice">
+    <div class="avatar">看</div>
+    <div class="bubble">
+      <p class="role">指名された受講生</p>
+      <p>血液培養は菌を増やすのに数日かかりますが、PCR検査は早ければ数時間で結果が出ます。感染症を疑ったときに、初期対応を決めるスピードがまったく違う印象です。</p>
+    </div>
+  </div>
+  <div class="voice teacher-call">
+    <div class="avatar">師</div>
+    <div class="bubble">
+      <p class="role">講師</p>
+      <p>そのとおりです。培養は「菌を生きたまま増やす」必要がありますが、PCRは「配列さえ手に入れば」1〜2時間のサイクルで指数関数的に増幅できる。この速さの差が、感染管理の現場でPCRが重宝される大きな理由の一つです。</p>
+    </div>
+  </div>
+
+  <div class="column">
+    <p class="clabel">コラム</p>
+    <h3>PCRを支えた、温泉生まれの酵素</h3>
+    <p>PCRでは95℃という高温を何十回も繰り返します。通常の酵素ならすぐに壊れてしまう温度です。この問題を解決したのが、温泉に生息する好熱菌 <i>Thermus aquaticus</i> から見つかった耐熱性のDNAポリメラーゼ、通称Taqポリメラーゼでした。高温でも変性しないこの酵素のおかげで、PCRは自動化された装置(サーマルサイクラー)で一気に何十サイクルも回せるようになったのです。</p>
+  </div>
+
+  <div class="divider">· · ·</div>
+
+  <div class="next">
+    <p class="clabel">次回予告</p>
+    <p>次章では「DNAはなぜ二重らせんなのか？」を扱います。「なぜ二重か」「なぜらせんか」——実は別々の問いであることに気づくところから始まります。</p>
+    <p style="margin-top:12px;"><a href="chapter2.html" style="color:#eee3b8; font-weight:700;">第2章を読む →</a></p>
+  </div>
+
+</div>
+
+<footer>
+  本テキストは AI(Claude, Anthropic)を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+</body>
+</html>
