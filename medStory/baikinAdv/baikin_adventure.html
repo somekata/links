@@ -65,6 +65,16 @@
   .hpbar.enemy .fill{ background:var(--danger); }
 
   .quick-item-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; width:100%; max-width:300px; }
+  .vaccine-status{ display:flex; flex-direction:column; gap:2px; width:100%; max-width:300px;
+    background:#fff; border:1px solid var(--line); border-radius:9px; padding:6px 8px; }
+  .vstat-row{ display:flex; align-items:center; gap:6px; }
+  .vstat-label{ width:42px; flex:none; font-size:10px; font-weight:700; color:var(--ink-soft); }
+  .vstat-pips{ display:flex; gap:2px; }
+  .vstat-pip{ width:9px; height:9px; border-radius:50%; background:var(--washi-deep); border:1px solid var(--line); flex:none; }
+  .vstat-pip.filled{ background:var(--catch); border-color:var(--catch); }
+  .vstat-decay{ font-size:9px; color:var(--ink-soft); margin-left:auto; white-space:nowrap; }
+  .vstat-decaybar{ flex:1; height:4px; border-radius:999px; background:var(--washi-deep); overflow:hidden; max-width:60px; }
+  .vstat-decaybar .fill{ height:100%; background:var(--rare); }
   .quick-item-btn{ flex:1; font-family:"Noto Sans JP",sans-serif; font-size:10.5px; font-weight:700;
     background:#fff; border:1.5px solid var(--accent); color:var(--accent); border-radius:9px; padding:7px 3px; cursor:pointer; }
   .quick-item-btn .stock{ display:block; font-size:9px; font-weight:500; opacity:.75; }
@@ -139,6 +149,10 @@
   .reveal-3{ opacity:0; animation:revealFade .4s ease forwards; animation-delay:1.05s; }
   .reveal-4{ opacity:0; animation:revealFade .4s ease forwards; animation-delay:1.55s; }
   .ocard h3.bad{ color:var(--danger); }
+  .protect-msg{ font-size:12px; font-weight:700; border-radius:8px; padding:6px 9px; margin:-4px 0 8px !important; }
+  .protect-msg.safe{ color:var(--catch); background:rgba(76,154,89,.12); border:1px solid var(--catch); }
+  .protect-msg.partial{ color:#8a6a10; background:rgba(209,161,42,.14); border:1px solid var(--rare); }
+  .protect-msg.unsafe{ color:var(--danger); background:rgba(201,74,61,.1); border:1px solid var(--danger); }
   .shop-hint{ font-size:11.5px; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent);
     border-radius:8px; padding:6px 9px; margin:-4px 0 10px !important; }
   .ocard p{ font-size:12.5px; line-height:1.7; color:var(--ink); margin:0 0 12px; }
@@ -310,6 +324,7 @@
             <button class="quick-item-btn" id="btnQuickPCV21">💉 PCV21<span class="stock" id="quickPcv21Stock"></span></button>
             <button class="quick-item-btn" id="btnQuickHib">💉 Hib<span class="stock" id="quickHibStock"></span></button>
           </div>
+          <div class="vaccine-status" id="vaccineStatus"></div>
           <div class="level-badge" id="exploreLevelBadge">Lv 1（スコア 0 で次のレベルへ）</div>
           <div class="target-label" id="targetLabel">方角: <b>--</b></div>
           <div class="scope-wrap">
@@ -357,6 +372,7 @@
             <div class="enemy-name" id="encName"></div>
             <div class="enemy-latin" id="encLatin"></div>
             <p>たたかうか、にげるか選ぼう</p>
+            <p class="protect-msg" id="encProtectMsg" style="display:none;"></p>
             <p class="shop-hint" id="encShopHint" style="display:none;">💊 戦う前にショップで装備(抗菌薬)を確認しよう</p>
             <div class="row" style="flex-direction:column;">
               <button class="btn primary" id="btnEncFight">⚔️ たたかう</button>
@@ -535,7 +551,35 @@
     <!-- について -->
     <section class="panel" data-panel="about">
       <div class="card">
-        <h2>このゲームについて</h2>
+        <h2>このゲームの目的</h2>
+        <p>「バイキンズ討滅戦記」は、抗菌薬・薬剤耐性(AMR)・ワクチンについて楽しみながら学べることを目指したシリアスゲームです。「なんとなく効きそうな薬を選ぶ」のではなく、<b>相手の正体・感受性データ・ワクチンの対象範囲を確かめてから立ち向かう</b>という考え方を、遊びながら体感してもらうことを目的にしています。抗菌薬もワクチンも万能ではなく、「合うものを選ばないと効かない」というのがこのゲーム全体を貫くテーマです。</p>
+      </div>
+      <div class="card">
+        <h2>バイキンズについて</h2>
+        <p>登場するボス菌(全21種)は、実在する細菌・その耐性株をモデルにしたキャラクターです。同じ菌でも感受性(効く薬)が異なる複数の株が存在し、耐性が強いほどキャラクターの背景に<b>黄色い光彩</b>が強く表示されます。倒すと「ずかん」に記録されるので、集めながら特徴を学べます。肺炎球菌は出現のたびに<b>血清型</b>が、インフルエンザ菌は<b>Hib型/non-typable型</b>がランダムに決まり、同じキャラでも毎回ワクチンの効き方が変わります。</p>
+      </div>
+      <div class="card">
+        <h2>抗菌薬について</h2>
+        <p>ショップで買える18剤は、いずれも実在する抗菌薬です。菌によって効く薬(感受性データでS表示)は異なり、耐性の強い菌ほど選択肢が絞られます(最終手段としてコリスチンだけが効く菌もいます)。感受性が分からないときは「🔍検査」を使うとその場で確定情報が見られます。在庫は有限なので、闇雲に連打せず必要な薬を見極めるのが攻略のコツです。</p>
+      </div>
+      <div class="card">
+        <h2>ワクチンについて</h2>
+        <p>PCV20・PCV21(肺炎球菌用)、Hib(インフルエンザ菌用)の3種類。<b>1回で25%、4回接種で100%</b>の防御確率になります。また、時間(探索の進行)とともに効果は少しずつ弱まっていくので、定期的な追加接種(ブースター)が必要です。探索中の画面のドット表示で、今の接種状況と効果が弱まるまでの目安を確認できます。ワクチンは対象の血清型・型に合わないと効果がありません。</p>
+      </div>
+      <div class="card">
+        <h2>戦い方のヒント</h2>
+        <div class="howto">
+          ・ボスと出会ったら、まずショップで抗菌薬の在庫を確認しよう<br>
+          ・感受性が不明でも、実際に効く薬なら通常通りダメージが入る（検査は情報を得るための手段）<br>
+          ・ワクチンは戦う前に接種しておくと安心（探索中HUDからいつでも打てる）<br>
+          ・抗菌薬ボタンは長押しで連打できる<br>
+          ・危なくなったら「にげる」を選ぶのも立派な戦略（逃走失敗の可能性はあり）<br>
+          ・回復の呪文（小復・中復・完復）は戦闘中でも探索中でも使える<br>
+          ・シューティング波の雑魚は感受性を気にせず、色の強い敵ほど手強い
+        </div>
+      </div>
+      <div class="card">
+        <h2>制作について</h2>
         <p>制作・監修：染方史郎（金子幸弘／大阪公立大学大学院医学研究科細菌学教室）<br>本作はTGS出展・企画検討用のプロトタイプです。タイトル・内容は変更予定。</p>
       </div>
       <div class="card">
@@ -3009,18 +3053,36 @@ var HIB_TYPES = [
   { type:"non-typable型（NTHi・非莢膜型）", vaccineWorks:false, weight:65 }
 ];
 
+var VACCINE_MAX_DOSE = 4;
+var VACCINE_DECAY_TICKS = 12; // この回数だけ探索すると効果が1段階弱まる
+function vaccineEffectiveness(key){ return state.vaccineLevel[key] / VACCINE_MAX_DOSE; } // 0 / .25 / .5 / .75 / 1.0
 function isProtectedAgainst(sp){
   if(!sp || !battle) return false;
   if(PNEUMO_IDS.indexOf(sp.id) >= 0 && battle.serotype){
-    if(state.protect.pcv20 && battle.serotype.pcv20) return true;
-    if(state.protect.pcv21 && battle.serotype.pcv21) return true;
-    return false;
+    var eff = 0;
+    if(battle.serotype.pcv20){ eff = Math.max(eff, vaccineEffectiveness('pcv20')); }
+    if(battle.serotype.pcv21){ eff = Math.max(eff, vaccineEffectiveness('pcv21')); }
+    return Math.random() < eff;
   }
   if(HIB_IDS.indexOf(sp.id) >= 0 && battle.hibType){
-    if(state.protect.hib && battle.hibType.vaccineWorks) return true;
-    return false;
+    if(!battle.hibType.vaccineWorks) return false;
+    return Math.random() < vaccineEffectiveness('hib');
   }
   return false;
+}
+function tickVaccineDecay(){
+  var changed = false;
+  ["pcv20","pcv21","hib"].forEach(function(key){
+    if(state.vaccineLevel[key] > 0){
+      state.vaccineTicks[key] += 1;
+      if(state.vaccineTicks[key] >= VACCINE_DECAY_TICKS){
+        state.vaccineLevel[key] -= 1;
+        state.vaccineTicks[key] = 0;
+        changed = true;
+      }
+    }
+  });
+  if(changed && tabActive){ renderQuickItems(); }
 }
 var DISCOVER_TABLE_BASE = [
   { kind:"item", weight:50 },
@@ -3100,7 +3162,8 @@ var state = {
   stock:{ PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 },
   inv:{ spellSmall:1, spellMid:0, spellFull:0, vaccinePCV20:1, vaccinePCV21:0, vaccineHib:1, test:1 },
   hp:BASE_MAX_HP, maxHp:BASE_MAX_HP, lives:START_LIVES,
-  protect:{ pcv20:false, pcv21:false, hib:false },
+  vaccineLevel:{ pcv20:0, pcv21:0, hib:0 },
+  vaccineTicks:{ pcv20:0, pcv21:0, hib:0 },
   bossPity:0, bossCooldown:0, lastLevel:1,
   heading:0, targetDir:null, aligned:false, alignedSince:0,
   phase:"notstarted", // notstarted | searching | resolving | encounter | battle | over
@@ -3150,15 +3213,32 @@ function renderQuickItems(){
   $('btnQuickSpellMid').disabled = state.inv.spellMid <= 0 || state.hp >= state.maxHp;
   $('quickSpellFullStock').textContent = '('+state.inv.spellFull+')';
   $('btnQuickSpellFull').disabled = state.inv.spellFull <= 0 || state.hp >= state.maxHp;
-  $('quickPcv20Stock').textContent = state.protect.pcv20 ? '接種済み' : '('+state.inv.vaccinePCV20+')';
-  $('btnQuickPCV20').disabled = state.inv.vaccinePCV20 <= 0 || state.protect.pcv20;
-  $('btnQuickPCV20').classList.toggle('protected', state.protect.pcv20);
-  $('quickPcv21Stock').textContent = state.protect.pcv21 ? '接種済み' : '('+state.inv.vaccinePCV21+')';
-  $('btnQuickPCV21').disabled = state.inv.vaccinePCV21 <= 0 || state.protect.pcv21;
-  $('btnQuickPCV21').classList.toggle('protected', state.protect.pcv21);
-  $('quickHibStock').textContent = state.protect.hib ? '接種済み' : '('+state.inv.vaccineHib+')';
-  $('btnQuickHib').disabled = state.inv.vaccineHib <= 0 || state.protect.hib;
-  $('btnQuickHib').classList.toggle('protected', state.protect.hib);
+  $('quickPcv20Stock').textContent = '('+state.inv.vaccinePCV20+')';
+  $('btnQuickPCV20').disabled = state.inv.vaccinePCV20 <= 0;
+  $('quickPcv21Stock').textContent = '('+state.inv.vaccinePCV21+')';
+  $('btnQuickPCV21').disabled = state.inv.vaccinePCV21 <= 0;
+  $('quickHibStock').textContent = '('+state.inv.vaccineHib+')';
+  $('btnQuickHib').disabled = state.inv.vaccineHib <= 0;
+  renderVaccineStatus();
+}
+function renderVaccineStatus(){
+  var el = $('vaccineStatus');
+  if(!el) return;
+  var rows = [ {key:'pcv20', label:'PCV20'}, {key:'pcv21', label:'PCV21'}, {key:'hib', label:'Hib'} ];
+  el.innerHTML = rows.map(function(r){
+    var lvl = state.vaccineLevel[r.key];
+    var pips = '';
+    for(var i=0;i<VACCINE_MAX_DOSE;i++){ pips += '<span class="vstat-pip'+(i<lvl?' filled':'')+'"></span>'; }
+    var decayHtml;
+    if(lvl <= 0){
+      decayHtml = '<span class="vstat-decay">未接種</span>';
+    } else {
+      var remain = Math.max(0, VACCINE_DECAY_TICKS - state.vaccineTicks[r.key]);
+      var pct = Math.round((remain/VACCINE_DECAY_TICKS)*100);
+      decayHtml = '<div class="vstat-decaybar"><div class="fill" style="width:'+pct+'%;"></div></div><span class="vstat-decay">'+remain+'</span>';
+    }
+    return '<div class="vstat-row"><span class="vstat-label">'+r.label+'</span><span class="vstat-pips">'+pips+'</span>'+decayHtml+'</div>';
+  }).join('');
 }
 function useSpellOutOfBattle(tier, amount, label){
   if(state.inv[tier] <= 0 || state.hp >= state.maxHp) return;
@@ -3173,27 +3253,19 @@ function useSpellOutOfBattle(tier, amount, label){
 $('btnQuickSpellSmall').addEventListener('click', function(){ useSpellOutOfBattle('spellSmall', SPELL_HEAL_SMALL, '小復の呪文'); });
 $('btnQuickSpellMid').addEventListener('click', function(){ useSpellOutOfBattle('spellMid', SPELL_HEAL_MID, '中復の呪文'); });
 $('btnQuickSpellFull').addEventListener('click', function(){ useSpellOutOfBattle('spellFull', 'full', '完復の呪文'); });
-$('btnQuickPCV20').addEventListener('click', function(){
-  if(state.inv.vaccinePCV20 <= 0 || state.protect.pcv20) return;
-  state.inv.vaccinePCV20 -= 1;
-  state.protect.pcv20 = true;
+function giveVaccineDose(invKey, levelKey, label){
+  if(state.inv[invKey] <= 0) return;
+  state.inv[invKey] -= 1;
+  state.vaccineTicks[levelKey] = 0; // 追加接種で減衰タイマーをリセット
+  var isBooster = state.vaccineLevel[levelKey] >= VACCINE_MAX_DOSE;
+  if(!isBooster){ state.vaccineLevel[levelKey] = Math.min(VACCINE_MAX_DOSE, state.vaccineLevel[levelKey] + 1); }
   renderQuickItems();
-  message.textContent = 'PCV20ワクチンを接種した！ カバーする血清型の肺炎球菌には攻撃が効かなくなる';
-});
-$('btnQuickPCV21').addEventListener('click', function(){
-  if(state.inv.vaccinePCV21 <= 0 || state.protect.pcv21) return;
-  state.inv.vaccinePCV21 -= 1;
-  state.protect.pcv21 = true;
-  renderQuickItems();
-  message.textContent = 'PCV21ワクチンを接種した！ カバーする血清型の肺炎球菌には攻撃が効かなくなる';
-});
-$('btnQuickHib').addEventListener('click', function(){
-  if(state.inv.vaccineHib <= 0 || state.protect.hib) return;
-  state.inv.vaccineHib -= 1;
-  state.protect.hib = true;
-  renderQuickItems();
-  message.textContent = 'Hibワクチンを接種した！ インフルエンザ菌の攻撃を受けなくなる';
-});
+  var pct = Math.round(vaccineEffectiveness(levelKey) * 100);
+  message.textContent = label + 'を接種した！（' + state.vaccineLevel[levelKey] + '/' + VACCINE_MAX_DOSE + '回・防御確率' + pct + '%）';
+}
+$('btnQuickPCV20').addEventListener('click', function(){ giveVaccineDose('vaccinePCV20','pcv20','PCV20ワクチン'); });
+$('btnQuickPCV21').addEventListener('click', function(){ giveVaccineDose('vaccinePCV21','pcv21','PCV21ワクチン'); });
+$('btnQuickHib').addEventListener('click', function(){ giveVaccineDose('vaccineHib','hib','Hibワクチン'); });
 function flashHit(){
   flashEl.classList.remove('fade'); flashEl.classList.add('show');
   setTimeout(function(){ flashEl.classList.remove('show'); flashEl.classList.add('fade'); }, 90);
@@ -3317,9 +3389,9 @@ function renderInventory(){
     '<div class="inv-cell"><div class="ic">📖</div><div class="nm">小復の呪文</div><div class="ct">'+state.inv.spellSmall+'</div></div>' +
     '<div class="inv-cell"><div class="ic">📗</div><div class="nm">中復の呪文</div><div class="ct">'+state.inv.spellMid+'</div></div>' +
     '<div class="inv-cell"><div class="ic">📘</div><div class="nm">完復の呪文</div><div class="ct">'+state.inv.spellFull+'</div></div>' +
-    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">PCV20ワクチン</div><div class="ct">'+(state.protect.pcv20?'接種済み':state.inv.vaccinePCV20)+'</div></div>' +
-    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">PCV21ワクチン</div><div class="ct">'+(state.protect.pcv21?'接種済み':state.inv.vaccinePCV21)+'</div></div>' +
-    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">Hibワクチン</div><div class="ct">'+(state.protect.hib?'接種済み':state.inv.vaccineHib)+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">PCV20ワクチン</div><div class="ct">在庫'+state.inv.vaccinePCV20+'／接種'+state.vaccineLevel.pcv20+'/'+VACCINE_MAX_DOSE+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">PCV21ワクチン</div><div class="ct">在庫'+state.inv.vaccinePCV21+'／接種'+state.vaccineLevel.pcv21+'/'+VACCINE_MAX_DOSE+'</div></div>' +
+    '<div class="inv-cell"><div class="ic">💉</div><div class="nm">Hibワクチン</div><div class="ct">在庫'+state.inv.vaccineHib+'／接種'+state.vaccineLevel.hib+'/'+VACCINE_MAX_DOSE+'</div></div>' +
     '<div class="inv-cell"><div class="ic">🔍</div><div class="nm">検査キット</div><div class="ct">'+state.inv.test+'</div></div>' +
     '<div class="inv-cell"><div class="ic">💪</div><div class="nm">最大HP</div><div class="ct">'+state.maxHp+'</div></div>';
 }
@@ -3345,6 +3417,7 @@ function startSearching(){
 
 function onDiscover(){
   state.phase = 'resolving';
+  tickVaccineDecay();
   var stage = currentStage();
   var bossPool = SPECIES.filter(function(sp){ return sp.isBoss && (sp.minStage||1) <= stage; });
   var canBoss = bossPool.length > 0 && state.bossCooldown <= 0;
@@ -3407,12 +3480,34 @@ function resolveBossEncounter(pool, stage){
   state._pendingSp = sp; state._pendingStage = stage;
   state._pendingSerotype = null; state._pendingHibType = null;
   var extra = '';
+  var protectEl = $('encProtectMsg');
+  protectEl.style.display = 'none'; protectEl.className = 'protect-msg';
   if(PNEUMO_IDS.indexOf(sp.id) >= 0){
     state._pendingSerotype = weightedFrom(PNEUMO_SEROTYPES);
-    extra = '血清型: ' + state._pendingSerotype.type;
+    var st = state._pendingSerotype;
+    extra = '血清型: ' + st.type;
+    var parts = [];
+    if(st.pcv20 && state.vaccineLevel.pcv20 > 0){ parts.push('PCV20 ' + Math.round(vaccineEffectiveness('pcv20')*100) + '%'); }
+    if(st.pcv21 && state.vaccineLevel.pcv21 > 0){ parts.push('PCV21 ' + Math.round(vaccineEffectiveness('pcv21')*100) + '%'); }
+    if(parts.length > 0){
+      var bestEff = Math.max(st.pcv20?vaccineEffectiveness('pcv20'):0, st.pcv21?vaccineEffectiveness('pcv21'):0);
+      protectEl.textContent = '🛡️ ' + parts.join('・') + 'の確率で守られます';
+      protectEl.classList.add(bestEff >= 1 ? 'safe' : 'partial'); protectEl.style.display = 'block';
+    } else if(state.vaccineLevel.pcv20 > 0 || state.vaccineLevel.pcv21 > 0){
+      protectEl.textContent = '⚠️ 接種済みのワクチンでは守られません（血清型が対象外）';
+      protectEl.classList.add('unsafe'); protectEl.style.display = 'block';
+    }
   } else if(HIB_IDS.indexOf(sp.id) >= 0){
     state._pendingHibType = weightedFrom(HIB_TYPES);
     extra = state._pendingHibType.type;
+    if(state._pendingHibType.vaccineWorks && state.vaccineLevel.hib > 0){
+      var hibEff = Math.round(vaccineEffectiveness('hib')*100);
+      protectEl.textContent = '🛡️ Hib ' + hibEff + '%の確率で守られます';
+      protectEl.classList.add(hibEff >= 100 ? 'safe' : 'partial'); protectEl.style.display = 'block';
+    } else if(state.vaccineLevel.hib > 0){
+      protectEl.textContent = '⚠️ Hibワクチンでは守られません（非莢膜型のため）';
+      protectEl.classList.add('unsafe'); protectEl.style.display = 'block';
+    }
   }
   $('encImg').style.display = '';
   $('encImg').src = sp.img; $('encImg').alt = sp.name;
@@ -3430,6 +3525,7 @@ function resolveWaveEncounter(stage){
   $('encName').textContent = 'バイキンの群れ 🦠🦠👾';
   $('encLatin').textContent = '';
   $('encShopHint').style.display = 'none';
+  $('encProtectMsg').style.display = 'none';
   $('ovEncounter').classList.add('show');
 }
 function shuffleArr(arr){
@@ -3794,16 +3890,16 @@ function renderUtilRow(){
   $('spellSmallStockLabel').textContent = '('+state.inv.spellSmall+')';
   $('spellMidStockLabel').textContent = '('+state.inv.spellMid+')';
   $('spellFullStockLabel').textContent = '('+state.inv.spellFull+')';
-  $('pcv20StockLabel').textContent = state.protect.pcv20 ? '接種済み' : '('+state.inv.vaccinePCV20+')';
-  $('pcv21StockLabel').textContent = state.protect.pcv21 ? '接種済み' : '('+state.inv.vaccinePCV21+')';
-  $('hibStockLabel').textContent = state.protect.hib ? '接種済み' : '('+state.inv.vaccineHib+')';
+  $('pcv20StockLabel').textContent = '(' + state.inv.vaccinePCV20 + '・' + state.vaccineLevel.pcv20 + '/' + VACCINE_MAX_DOSE + ')';
+  $('pcv21StockLabel').textContent = '(' + state.inv.vaccinePCV21 + '・' + state.vaccineLevel.pcv21 + '/' + VACCINE_MAX_DOSE + ')';
+  $('hibStockLabel').textContent = '(' + state.inv.vaccineHib + '・' + state.vaccineLevel.hib + '/' + VACCINE_MAX_DOSE + ')';
   $('btnUseTest').disabled = state.inv.test <= 0;
   $('btnUseSpellSmall').disabled = state.inv.spellSmall <= 0;
   $('btnUseSpellMid').disabled = state.inv.spellMid <= 0;
   $('btnUseSpellFull').disabled = state.inv.spellFull <= 0;
-  $('btnUsePCV20').disabled = state.inv.vaccinePCV20 <= 0 || state.protect.pcv20;
-  $('btnUsePCV21').disabled = state.inv.vaccinePCV21 <= 0 || state.protect.pcv21;
-  $('btnUseHib').disabled = state.inv.vaccineHib <= 0 || state.protect.hib;
+  $('btnUsePCV20').disabled = state.inv.vaccinePCV20 <= 0;
+  $('btnUsePCV21').disabled = state.inv.vaccinePCV21 <= 0;
+  $('btnUseHib').disabled = state.inv.vaccineHib <= 0;
 }
 
 /* ===== 長押しで連打・弾を飛ばす ===== */
@@ -3902,28 +3998,17 @@ function useSpellInBattle(tier, amount, label){
 $('btnUseSpellSmall').addEventListener('click', function(){ useSpellInBattle('spellSmall', SPELL_HEAL_SMALL, '小復の呪文'); });
 $('btnUseSpellMid').addEventListener('click', function(){ useSpellInBattle('spellMid', SPELL_HEAL_MID, '中復の呪文'); });
 $('btnUseSpellFull').addEventListener('click', function(){ useSpellInBattle('spellFull', 'full', '完復の呪文'); });
-$('btnUsePCV20').addEventListener('click', function(){
-  if(!battle || state.phase!=='battle' || state.inv.vaccinePCV20<=0 || state.protect.pcv20) return;
-  state.inv.vaccinePCV20 -= 1;
-  state.protect.pcv20 = true;
+function giveVaccineDoseInBattle(invKey, levelKey, label){
+  if(!battle || state.phase!=='battle' || state.inv[invKey]<=0) return;
+  state.inv[invKey] -= 1;
+  state.vaccineTicks[levelKey] = 0;
+  if(state.vaccineLevel[levelKey] < VACCINE_MAX_DOSE){ state.vaccineLevel[levelKey] += 1; }
   renderUtilRow();
-  popDmg($('battleArena'), 'PCV20接種！', 'heal');
-});
-$('btnUsePCV21').addEventListener('click', function(){
-  if(!battle || state.phase!=='battle' || state.inv.vaccinePCV21<=0 || state.protect.pcv21) return;
-  state.inv.vaccinePCV21 -= 1;
-  state.protect.pcv21 = true;
-  renderUtilRow();
-  popDmg($('battleArena'), 'PCV21接種！', 'heal');
-});
-$('btnUseHib').addEventListener('click', function(){
-  if(!battle || state.phase!=='battle' || state.inv.vaccineHib<=0 || state.protect.hib) return;
-  state.inv.vaccineHib -= 1;
-  state.protect.hib = true;
-  renderUtilRow();
-  var enemyCard = $('battleArena');
-  popDmg(enemyCard, 'Hib接種！', 'heal');
-});
+  popDmg($('battleArena'), label+'接種！('+state.vaccineLevel[levelKey]+'/'+VACCINE_MAX_DOSE+')', 'heal');
+}
+$('btnUsePCV20').addEventListener('click', function(){ giveVaccineDoseInBattle('vaccinePCV20','pcv20','PCV20'); });
+$('btnUsePCV21').addEventListener('click', function(){ giveVaccineDoseInBattle('vaccinePCV21','pcv21','PCV21'); });
+$('btnUseHib').addEventListener('click', function(){ giveVaccineDoseInBattle('vaccineHib','hib','Hib'); });
 $('btnBattleFlee').addEventListener('click', function(){ attemptFlee(); });
 
 function attemptFlee(){
@@ -4046,7 +4131,8 @@ function goToGame(){
   state.score=0; state.money=0;
   state.stock = { PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 };
   state.inv = { spellSmall:1, spellMid:0, spellFull:0, vaccinePCV20:1, vaccinePCV21:0, vaccineHib:1, test:1 };
-  state.protect = { pcv20:false, pcv21:false, hib:false };
+  state.vaccineLevel = { pcv20:0, pcv21:0, hib:0 };
+  state.vaccineTicks = { pcv20:0, pcv21:0, hib:0 };
   state.bossPity = 0; state.bossCooldown = 0; state.lastLevel = 1;
   state.maxHp = BASE_MAX_HP; state.hp = BASE_MAX_HP; state.lives = START_LIVES;
   refreshHud(); renderLives(); renderPlayerHp(); renderQuickItems();
