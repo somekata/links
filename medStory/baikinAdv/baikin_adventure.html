@@ -57,7 +57,7 @@
     border-bottom:1px solid var(--line); flex:none; flex-wrap:wrap; }
   #gameHud .lives{ letter-spacing:1px; }
 
-  #stage{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:10px; overflow:hidden; }
+  #stage{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; padding:10px; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
   .hpbar-wrap{ width:100%; max-width:280px; }
   .hpbar-label{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-soft); margin-bottom:2px; }
   .hpbar{ height:10px; border-radius:999px; background:var(--washi-deep); overflow:hidden; border:1px solid var(--line); }
@@ -86,26 +86,34 @@
   .target-label{ font-size:12px; color:var(--ink-soft); }
   .target-label b{ color:var(--ink); font-size:14px; font-family:"Zen Antique",serif; }
 
-  .scope-wrap{ position:relative; width:min(52vw,200px); height:min(52vw,200px); flex:none; }
+  .scope-wrap{ position:relative; width:min(38vw,145px); height:min(38vw,145px); flex:none; }
   .scope{ width:100%; height:100%; border-radius:50%;
     background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.5), transparent 45%), var(--agar);
-    border:6px solid var(--agar-line); box-shadow:inset 0 0 20px rgba(0,0,0,.12);
+    border:5px solid var(--agar-line); box-shadow:inset 0 0 20px rgba(0,0,0,.12);
     position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;
     transition:box-shadow .25s ease, transform .12s ease; }
   .scope.aligned{ box-shadow:inset 0 0 20px rgba(0,0,0,.08), 0 0 0 5px rgba(76,154,89,.4); }
   .scope.shake{ animation:shakeAnim .35s ease; }
   @keyframes shakeAnim{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);} 40%{transform:translateX(6px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);} }
   .scope-ring{ position:absolute; inset:14%; border-radius:50%; border:2px dashed rgba(43,38,32,.18); }
-  .arrow-wrap{ width:52px; height:52px; display:flex; align-items:center; justify-content:center; transition:transform .12s linear; }
-  .arrow{ width:0; height:0; border-left:14px solid transparent; border-right:14px solid transparent;
-    border-bottom:38px solid var(--hunt); filter:drop-shadow(0 2px 3px rgba(0,0,0,.2)); transition:border-bottom-color .15s ease; }
+  .scope-label{ position:absolute; top:20%; left:50%; transform:translateX(-50%); z-index:2;
+    font-family:"Zen Antique",serif; font-size:12px; font-weight:700; color:var(--ink);
+    background:rgba(255,255,255,.75); border-radius:999px; padding:2px 9px; white-space:nowrap; }
+  .arrow-wrap{ width:38px; height:38px; display:flex; align-items:center; justify-content:center; transition:transform .12s linear; }
+  .arrow{ width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent;
+    border-bottom:28px solid var(--hunt); filter:drop-shadow(0 2px 3px rgba(0,0,0,.2)); transition:border-bottom-color .15s ease; }
   .scope.aligned .arrow{ border-bottom-color:var(--catch); }
   .pointer-fixed{ position:absolute; top:-2px; left:50%; transform:translateX(-50%);
     width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:9px solid var(--ink); opacity:.7; }
-  .diff-readout{ position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
-    font-size:9.5px; padding:2px 7px; border-radius:999px; background:rgba(255,255,255,.7); color:var(--ink-soft); font-family:"JetBrains Mono",monospace; }
-  .find-icon{ position:absolute; font-size:30px; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  .diff-readout{ position:absolute; bottom:5px; left:50%; transform:translateX(-50%);
+    font-size:9px; padding:1px 6px; border-radius:999px; background:rgba(255,255,255,.7); color:var(--ink-soft); font-family:"JetBrains Mono",monospace; }
+  .find-icon{ position:absolute; font-size:26px; opacity:0; pointer-events:none; transition:opacity .2s ease; }
   .find-icon.show{ opacity:1; }
+  .float-toast{ position:absolute; left:50%; top:10px; transform:translateX(-50%) translateY(-8px);
+    background:rgba(43,38,32,.9); color:#fff; font-size:12px; font-weight:700; padding:8px 16px;
+    border-radius:999px; opacity:0; transition:opacity .25s ease, transform .25s ease; z-index:9;
+    white-space:nowrap; pointer-events:none; max-width:88%; overflow:hidden; text-overflow:ellipsis; }
+  .float-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
   .dmgnum{ position:absolute; left:50%; top:36%; transform:translate(-50%,-50%);
     font-family:"Zen Antique",serif; font-weight:700; font-size:22px; pointer-events:none;
@@ -119,8 +127,8 @@
   .flash.fade{ opacity:0; transition:opacity .35s ease; }
 
   .message{ min-height:16px; font-size:12px; color:var(--ink-soft); text-align:center; }
-  #simWrap{ display:none; flex-direction:column; align-items:center; gap:4px; }
-  #simWrap input[type=range]{ width:74vw; max-width:260px; }
+  #simWrap{ display:none; flex-direction:column; align-items:center; gap:4px; width:100%; max-width:300px; }
+  #simWrap input[type=range]{ width:100%; max-width:260px; box-sizing:border-box; }
 
   /* オーバーレイ共通 */
   .overlay{ position:absolute; inset:0; background:rgba(245,241,232,.97); z-index:10;
@@ -229,6 +237,14 @@
   .zukan-cell.locked{ cursor:default; }
   .zd-meta{ font-size:11px; color:var(--ink-soft); background:var(--washi-deep); border:1px solid var(--line);
     border-radius:8px; padding:6px 9px; margin-bottom:8px; line-height:1.7; text-align:left; }
+  .zukan-detail{ max-height:88vh; overflow-y:auto; }
+  .zd-flavor{ font-size:12px; color:var(--ink); font-style:italic; margin:0 0 8px; line-height:1.6; }
+  .zd-profile{ font-size:11px; color:var(--ink); text-align:left; line-height:1.75; margin-bottom:8px; }
+  .zd-profile .zd-row{ display:flex; gap:6px; padding:3px 0; border-bottom:1px dashed var(--line); }
+  .zd-profile .zd-row:last-child{ border-bottom:none; }
+  .zd-profile .zd-key{ flex:none; width:78px; color:var(--ink-soft); font-weight:700; }
+  .zd-profile .zd-val{ flex:1; }
+  .zd-bsl{ color:var(--rare); letter-spacing:1px; }
   .zd-meta b{ color:var(--ink); }
   .zukan-cell.locked{ background:repeating-linear-gradient(45deg, var(--washi-deep), var(--washi-deep) 6px, var(--washi) 6px, var(--washi) 12px); color:var(--ink-soft); }
   .zukan-cell img{ width:56px; height:56px; object-fit:contain; }
@@ -330,12 +346,11 @@
             <button class="quick-item-btn" id="btnQuickHib">💉 Hib<span class="stock" id="quickHibStock"></span></button>
           </div>
           <div class="vaccine-status" id="vaccineStatus"></div>
-          <div class="level-badge" id="exploreLevelBadge">Lv 1（スコア 0 で次のレベルへ）</div>
-          <div class="target-label" id="targetLabel">方角: <b>--</b></div>
           <div class="scope-wrap">
             <div class="pointer-fixed"></div>
             <div class="scope" id="scope">
               <div class="scope-ring"></div>
+              <div class="scope-label" id="targetLabel">--</div>
               <div class="arrow-wrap" id="arrowWrap"><div class="arrow"></div></div>
               <div class="diff-readout" id="diffReadout">--°</div>
               <div class="find-icon" id="findIcon">？</div>
@@ -530,8 +545,10 @@
           <img class="enemy-img" id="zdImg" src="" alt="" style="width:80px;height:80px;">
           <div class="enemy-name" id="zdName"></div>
           <div class="enemy-latin" id="zdLatin"></div>
+          <p class="zd-flavor" id="zdFlavor"></p>
           <div class="zd-meta" id="zdMeta"></div>
-          <div class="sus-box" id="zdSus" style="max-height:140px;"></div>
+          <div class="zd-profile" id="zdProfile"></div>
+          <div class="sus-box" id="zdSus" style="max-height:120px;"></div>
           <button class="btn primary" id="btnZukanDetailClose">とじる</button>
         </div>
       </div>
@@ -2937,66 +2954,213 @@ var ATB_PRICES = {PCG:8, ABPC:10, SBT_ABPC:18, PIPC:14, TAZ_PIPC:26, CEZ:12, CTR
 var SPECIES = [
   { id:"pssp", name:"ハイエンキューキン王", latin:"Streptococcus pneumoniae", img:"https://somekata.github.io/baikinscharacters/img/chara1.png",
     minStage:1, hp:3, points:85, weight:28, isBoss:true, glow:0,
+    flavor:"言わずと知れた肺炎界のドン。", wamei:"肺炎球菌", type:"グラム陽性球菌",
+    phylum:"Bacillota", clazz:"Bacilli", order:"Lactobacillales", family:"Streptococcaceae",
+    bacteriology:"グラム陽性双球菌（diplococcus）。ニューモコックスとも呼ばれる。カタラーゼ陰性（連鎖状球菌の一般的性状）。α溶血性（不完全溶血）。莢膜を持ち、病原因子として機能する。莢膜血清型は90種以上が知られている。",
+    clinical:"肺炎の原因菌として最多。尿中抗原検査が診断に有用。",
+    law:"侵襲性肺炎球菌感染症（5類全数・7日以内）、ペニシリン耐性肺炎球菌感染症（5類基幹定点・月単位）", bsl:2,
+    other:"ワクチンとして結合型ワクチンのPCV、莢膜多糖ワクチンのPPSV23がある。",
+    lpsn:"Streptococcus pneumoniae",
     susceptibility: { PCG:"S", ABPC:"S", SBT_ABPC:"S", PIPC:"S", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"R", CFPM:"S", MEPM:"S", VCM:"S", CPFX:"R", LVFX:"S", COL:"R", LZD:"S", DAP:"S", CAM:"R", AZM:"R" } },
   { id:"prsp", name:"耐性ハイエンキューキン王", latin:"Streptococcus pneumoniae (PRSP)", img:"https://somekata.github.io/baikinscharacters/img/chara1.png",
     minStage:2, hp:3, points:100, weight:26, isBoss:true, glow:2,
+    flavor:"薬が効きにくくなった、肺炎界のドンの耐性バージョン。", wamei:"肺炎球菌", type:"グラム陽性球菌",
+    phylum:"Bacillota", clazz:"Bacilli", order:"Lactobacillales", family:"Streptococcaceae",
+    bacteriology:"グラム陽性双球菌（diplococcus）。ニューモコックスとも呼ばれる。カタラーゼ陰性（連鎖状球菌の一般的性状）。α溶血性（不完全溶血）。莢膜を持ち、病原因子として機能する。莢膜血清型は90種以上が知られている。",
+    clinical:"肺炎の原因菌として最多。尿中抗原検査が診断に有用。",
+    law:"侵襲性肺炎球菌感染症（5類全数・7日以内）、ペニシリン耐性肺炎球菌感染症（5類基幹定点・月単位）", bsl:2,
+    other:"ワクチンとして結合型ワクチンのPCV、莢膜多糖ワクチンのPPSV23がある。",
+    lpsn:"Streptococcus pneumoniae",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"I", CAZ:"R", CFPM:"I", MEPM:"S", VCM:"S", CPFX:"R", LVFX:"S", COL:"R", LZD:"S", DAP:"S", CAM:"R", AZM:"R" } },
   { id:"mssa", name:"ブドーキューキン族（黄金種） (MSSA)", latin:"Staphylococcus aureus", img:"https://somekata.github.io/baikinscharacters/img/chara15.png",
     minStage:2, hp:3, points:100, weight:26, isBoss:true, glow:0,
+    flavor:"皮膚にもひそむ身近な黄金の球菌。", wamei:"黄色ブドウ球菌", type:"グラム陽性球菌",
+    phylum:"Bacillota", clazz:"Bacilli", order:"Bacillales", family:"Staphylococcaceae",
+    bacteriology:"グラム陽性のブドウ状球菌。カタラーゼ陽性・コアグラーゼ陽性（黄色ブドウ球菌の鑑別性状）。β溶血性。ヒトの皮膚・鼻腔に常在することも多い。",
+    clinical:"皮膚軟部組織感染症、菌血症、感染性心内膜炎、骨髄炎など多彩な病態を起こす。毒素による食中毒の原因にもなる。",
+    law:"感染症法上の届出対象外（院内感染対策としてはJANIS等で別途サーベイランスされる）", bsl:2,
+    other:"MRSAはmecA遺伝子（PBP2a）により多くのβラクタム系薬に耐性を示す。まれにバンコマイシン低感受性・耐性株（VISA/VRSA）も報告されている。",
+    lpsn:"Staphylococcus aureus",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"S", PIPC:"R", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"R", CFPM:"S", MEPM:"S", VCM:"S", CPFX:"S", LVFX:"S", COL:"R", LZD:"S", DAP:"S", CAM:["R","S"], AZM:["R","S"] } },
   { id:"mrsa", name:"ブドーキューキン族（黄金種） (MRSA)", latin:"Staphylococcus aureus (MRSA)", img:"https://somekata.github.io/baikinscharacters/img/chara15.png",
     minStage:3, hp:4, points:115, weight:24, isBoss:true, glow:2,
+    flavor:"抗菌薬が効きにくい黄金の球菌。院内感染の代表格として恐れられる。", wamei:"黄色ブドウ球菌", type:"グラム陽性球菌",
+    phylum:"Bacillota", clazz:"Bacilli", order:"Bacillales", family:"Staphylococcaceae",
+    bacteriology:"グラム陽性のブドウ状球菌。カタラーゼ陽性・コアグラーゼ陽性（黄色ブドウ球菌の鑑別性状）。β溶血性。ヒトの皮膚・鼻腔に常在することも多い。",
+    clinical:"皮膚軟部組織感染症、菌血症、感染性心内膜炎、骨髄炎など多彩な病態を起こす。毒素による食中毒の原因にもなる。",
+    law:"感染症法上の届出対象外（院内感染対策としてはJANIS等で別途サーベイランスされる）", bsl:2,
+    other:"MRSAはmecA遺伝子（PBP2a）により多くのβラクタム系薬に耐性を示す。まれにバンコマイシン低感受性・耐性株（VISA/VRSA）も報告されている。",
+    lpsn:"Staphylococcus aureus",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"S", CPFX:"R", LVFX:"R", COL:"R", LZD:"S", DAP:"S", CAM:"R", AZM:"R" } },
   { id:"blnas", name:"インフルエンザキンVX世女王", latin:"Haemophilus influenzae (BLNAS)", img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
     minStage:1, hp:3, points:85, weight:28, isBoss:true, glow:0,
+    flavor:"薬剤耐性酵素を持たない、素直なインフルエンザ菌。", wamei:"インフルエンザ菌", type:"グラム陰性小桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Pasteurellales", family:"Pasteurellaceae",
+    bacteriology:"グラム陰性の多形性小桿菌。発育にX因子（ヘミン）・V因子（NAD）を要求する。莢膜を持つ莢膜型（a〜f型、うちb型=Hibが臨床上重要）と、莢膜を持たない非莢膜型（NTHi）が存在する。",
+    clinical:"小児の髄膜炎・肺炎・中耳炎の主要原因菌のひとつ（特にb型）。成人ではNTHiによる気道感染症が多い。",
+    law:"侵襲性インフルエンザ菌感染症（5類全数・7日以内）", bsl:2,
+    other:"Hibワクチンはb型の莢膜多糖に対するものであり、非莢膜型（NTHi）には効果がない。",
+    lpsn:"Haemophilus influenzae",
     susceptibility: { PCG:"R", ABPC:"S", SBT_ABPC:"S", PIPC:"S", TAZ_PIPC:"S", CEZ:"R", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } },
   { id:"blnar", name:"インフルエンザキンVX世女王 (BLNAR型)", latin:"Haemophilus influenzae (BLNAR)", img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
     minStage:2, hp:3, points:100, weight:26, isBoss:true, glow:1,
+    flavor:"酵素は作らないのに、ペニシリン系が効きにくいちょっと厄介なタイプ。", wamei:"インフルエンザ菌", type:"グラム陰性小桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Pasteurellales", family:"Pasteurellaceae",
+    bacteriology:"グラム陰性の多形性小桿菌。発育にX因子（ヘミン）・V因子（NAD）を要求する。莢膜を持つ莢膜型（a〜f型、うちb型=Hibが臨床上重要）と、莢膜を持たない非莢膜型（NTHi）が存在する。",
+    clinical:"小児の髄膜炎・肺炎・中耳炎の主要原因菌のひとつ（特にb型）。成人ではNTHiによる気道感染症が多い。",
+    law:"侵襲性インフルエンザ菌感染症（5類全数・7日以内）", bsl:2,
+    other:"Hibワクチンはb型の莢膜多糖に対するものであり、非莢膜型（NTHi）には効果がない。",
+    lpsn:"Haemophilus influenzae",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:["I","R"], PIPC:["I","R"], TAZ_PIPC:["S","I"], CEZ:"R", CTRX:"S", CAZ:["S","I"], CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } },
   { id:"blpar", name:"インフルエンザキンVX世女王 (BLPAR型)", latin:"Haemophilus influenzae (BLPAR)", img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
     minStage:3, hp:4, points:115, weight:24, isBoss:true, glow:1,
+    flavor:"βラクタマーゼを作って薬を分解するタイプ。", wamei:"インフルエンザ菌", type:"グラム陰性小桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Pasteurellales", family:"Pasteurellaceae",
+    bacteriology:"グラム陰性の多形性小桿菌。発育にX因子（ヘミン）・V因子（NAD）を要求する。莢膜を持つ莢膜型（a〜f型、うちb型=Hibが臨床上重要）と、莢膜を持たない非莢膜型（NTHi）が存在する。",
+    clinical:"小児の髄膜炎・肺炎・中耳炎の主要原因菌のひとつ（特にb型）。成人ではNTHiによる気道感染症が多い。",
+    law:"侵襲性インフルエンザ菌感染症（5類全数・7日以内）", bsl:2,
+    other:"Hibワクチンはb型の莢膜多糖に対するものであり、非莢膜型（NTHi）には効果がない。",
+    lpsn:"Haemophilus influenzae",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"S", PIPC:"R", TAZ_PIPC:"S", CEZ:"R", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } },
   { id:"blpacr", name:"インフルエンザキンVX世女王 (BLPACR型)", latin:"Haemophilus influenzae (BLPACR)", img:"https://somekata.github.io/baikinscharacters/img/chara2.png",
     minStage:3, hp:4, points:115, weight:24, isBoss:true, glow:2,
+    flavor:"酵素も作るし標的も変異している、二重の耐性を持つ手強い女王。", wamei:"インフルエンザ菌", type:"グラム陰性小桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Pasteurellales", family:"Pasteurellaceae",
+    bacteriology:"グラム陰性の多形性小桿菌。発育にX因子（ヘミン）・V因子（NAD）を要求する。莢膜を持つ莢膜型（a〜f型、うちb型=Hibが臨床上重要）と、莢膜を持たない非莢膜型（NTHi）が存在する。",
+    clinical:"小児の髄膜炎・肺炎・中耳炎の主要原因菌のひとつ（特にb型）。成人ではNTHiによる気道感染症が多い。",
+    law:"侵襲性インフルエンザ菌感染症（5類全数・7日以内）", bsl:2,
+    other:"Hibワクチンはb型の莢膜多糖に対するものであり、非莢膜型（NTHi）には効果がない。",
+    lpsn:"Haemophilus influenzae",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:["I","R"], CEZ:"R", CTRX:"S", CAZ:["S","I"], CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } },
   { id:"ecoli_abpcs", name:"ダイチョーキン(ABPC-S型)", latin:"Escherichia coli", img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
     minStage:3, hp:4, points:115, weight:24, isBoss:true, glow:0,
+    flavor:"腸に棲む、まだ素直な大腸菌。", wamei:"大腸菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Enterobacterales", family:"Enterobacteriaceae",
+    bacteriology:"グラム陰性の通性嫌気性桿菌。腸内細菌目の代表的菌種で、多くはヒトの腸管内常在菌だが、病原性を獲得した株も存在する。",
+    clinical:"尿路感染症の最多起因菌。菌血症、腹腔内感染症の原因にもなる。",
+    law:"感染症法上の届出対象外（腸管出血性大腸菌感染症など一部の病原型を除く）", bsl:2,
+    other:"ESBL産生株はβラクタマーゼによりペニシリン系・セファロスポリン系を広く分解する。CRE（カルバペネム耐性腸内細菌目）はさらに広範囲の薬剤に耐性を持つ。",
+    lpsn:"Escherichia coli",
     susceptibility: { PCG:"R", ABPC:"S", SBT_ABPC:"S", PIPC:"S", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"ecoli_abpcr", name:"ダイチョーキン(ABPC-R/CEZ-S型)", latin:"Escherichia coli", img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
     minStage:4, hp:4, points:130, weight:22, isBoss:true, glow:0,
+    flavor:"少しずつ武装し始めた大腸菌。", wamei:"大腸菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Enterobacterales", family:"Enterobacteriaceae",
+    bacteriology:"グラム陰性の通性嫌気性桿菌。腸内細菌目の代表的菌種で、多くはヒトの腸管内常在菌だが、病原性を獲得した株も存在する。",
+    clinical:"尿路感染症の最多起因菌。菌血症、腹腔内感染症の原因にもなる。",
+    law:"感染症法上の届出対象外（腸管出血性大腸菌感染症など一部の病原型を除く）", bsl:2,
+    other:"ESBL産生株はβラクタマーゼによりペニシリン系・セファロスポリン系を広く分解する。CRE（カルバペネム耐性腸内細菌目）はさらに広範囲の薬剤に耐性を持つ。",
+    lpsn:"Escherichia coli",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"S", PIPC:"R", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"ecoli_esbl", name:"ダイチョーキン ESBL産生型", latin:"Escherichia coli (ESBL)", img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
     minStage:5, hp:5, points:145, weight:20, isBoss:true, glow:1,
+    flavor:"分解酵素で多くの薬を無力化する大腸菌。", wamei:"大腸菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Enterobacterales", family:"Enterobacteriaceae",
+    bacteriology:"グラム陰性の通性嫌気性桿菌。腸内細菌目の代表的菌種で、多くはヒトの腸管内常在菌だが、病原性を獲得した株も存在する。",
+    clinical:"尿路感染症の最多起因菌。菌血症、腹腔内感染症の原因にもなる。",
+    law:"感染症法上の届出対象外（腸管出血性大腸菌感染症など一部の病原型を除く）", bsl:2,
+    other:"ESBL産生株はβラクタマーゼによりペニシリン系・セファロスポリン系を広く分解する。CRE（カルバペネム耐性腸内細菌目）はさらに広範囲の薬剤に耐性を持つ。",
+    lpsn:"Escherichia coli",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"S", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:["S","I"], MEPM:"S", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"ecoli_cre", name:"ダイチョーキン CRE型", latin:"Escherichia coli (CRE/CPE)", img:"https://somekata.github.io/baikinscharacters/img/chara5.png",
     minStage:8, hp:6, points:190, weight:14, isBoss:true, glow:2,
+    flavor:"最後の砦の薬しか効かない、大腸菌の中でも最強クラス。", wamei:"大腸菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Enterobacterales", family:"Enterobacteriaceae",
+    bacteriology:"グラム陰性の通性嫌気性桿菌。腸内細菌目の代表的菌種で、多くはヒトの腸管内常在菌だが、病原性を獲得した株も存在する。",
+    clinical:"尿路感染症の最多起因菌。菌血症、腹腔内感染症の原因にもなる。",
+    law:"感染症法上の届出対象外（腸管出血性大腸菌感染症など一部の病原型を除く）", bsl:2,
+    other:"ESBL産生株はβラクタマーゼによりペニシリン系・セファロスポリン系を広く分解する。CRE（カルバペネム耐性腸内細菌目）はさらに広範囲の薬剤に耐性を持つ。",
+    lpsn:"Escherichia coli",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"kpn_s", name:"クレブシエ裸族", latin:"Klebsiella pneumoniae", img:"https://somekata.github.io/baikinscharacters/img/chara8.png",
     minStage:4, hp:4, points:130, weight:22, isBoss:true, glow:0,
+    flavor:"粘り気のある厚い莢膜が特徴の裸族（？）菌。", wamei:"肺炎桿菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Enterobacterales", family:"Enterobacteriaceae",
+    bacteriology:"グラム陰性の桿菌で、厚い莢膜を持つ。粘稠なコロニーを形成し、糸を引く現象（string test陽性）が見られることがある。",
+    clinical:"院内肺炎、尿路感染症、菌血症の原因となる。糖尿病患者などでの肝膿瘍でも知られる。",
+    law:"感染症法上の届出対象外", bsl:2,
+    other:"ESBL産生株・CRE株は大腸菌と同様の耐性機序（βラクタマーゼ産生）を持つことが多い。",
+    lpsn:"Klebsiella pneumoniae",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"S", PIPC:"R", TAZ_PIPC:"S", CEZ:"S", CTRX:"S", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"kpn_esbl", name:"クレブシエ裸族 ESBL産生型", latin:"Klebsiella pneumoniae (ESBL)", img:"https://somekata.github.io/baikinscharacters/img/chara8.png",
     minStage:5, hp:5, points:145, weight:20, isBoss:true, glow:1,
+    flavor:"酵素で武装し始めたクレブシエラ。", wamei:"肺炎桿菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Enterobacterales", family:"Enterobacteriaceae",
+    bacteriology:"グラム陰性の桿菌で、厚い莢膜を持つ。粘稠なコロニーを形成し、糸を引く現象（string test陽性）が見られることがある。",
+    clinical:"院内肺炎、尿路感染症、菌血症の原因となる。糖尿病患者などでの肝膿瘍でも知られる。",
+    law:"感染症法上の届出対象外", bsl:2,
+    other:"ESBL産生株・CRE株は大腸菌と同様の耐性機序（βラクタマーゼ産生）を持つことが多い。",
+    lpsn:"Klebsiella pneumoniae",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"S", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:["S","I"], MEPM:"S", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"kpn_cre", name:"クレブシエ裸族 CRE変異型", latin:"Klebsiella pneumoniae (CRE/CPE)", img:"https://somekata.github.io/baikinscharacters/img/chara8.png",
     minStage:8, hp:6, points:190, weight:14, isBoss:true, glow:2,
+    flavor:"最終手段の薬しか通じない、最強クラスのクレブシエラ。", wamei:"肺炎桿菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Enterobacterales", family:"Enterobacteriaceae",
+    bacteriology:"グラム陰性の桿菌で、厚い莢膜を持つ。粘稠なコロニーを形成し、糸を引く現象（string test陽性）が見られることがある。",
+    clinical:"院内肺炎、尿路感染症、菌血症の原因となる。糖尿病患者などでの肝膿瘍でも知られる。",
+    law:"感染症法上の届出対象外", bsl:2,
+    other:"ESBL産生株・CRE株は大腸菌と同様の耐性機序（βラクタマーゼ産生）を持つことが多い。",
+    lpsn:"Klebsiella pneumoniae",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"pa_s", name:"リョクノーキン", latin:"Pseudomonas aeruginosa", img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
     minStage:5, hp:5, points:145, weight:20, isBoss:true, glow:0,
+    flavor:"緑色の色素を作る、水回りにひそむ日和見菌。", wamei:"緑膿菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Pseudomonadales", family:"Pseudomonadaceae",
+    bacteriology:"グラム陰性の偏性好気性桿菌。緑色色素（ピオシアニン）を産生することがあり、特徴的な臭気を持つ。湿った環境を好む。",
+    clinical:"日和見感染症の代表的菌種。人工呼吸器関連肺炎、熱傷創感染、外耳道炎などを起こす。院内感染で特に問題となりやすい。",
+    law:"感染症法上の届出対象外", bsl:2,
+    other:"本来的に多くの抗菌薬に自然耐性を持ち、さらにカルバペネム耐性（CRPA）を獲得すると治療選択肢が著しく限られる。",
+    lpsn:"Pseudomonas aeruginosa",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"S", TAZ_PIPC:"S", CEZ:"R", CTRX:"R", CAZ:"S", CFPM:"S", MEPM:"S", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"crpa_noncarb", name:"リョクノーキン CRPA変異型(非カルバペネマーゼ産生)", latin:"Pseudomonas aeruginosa (CRPA)", img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
     minStage:7, hp:6, points:175, weight:16, isBoss:true, glow:1,
+    flavor:"カルバペネムに耐性を持ち始めた緑膿菌。", wamei:"緑膿菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Pseudomonadales", family:"Pseudomonadaceae",
+    bacteriology:"グラム陰性の偏性好気性桿菌。緑色色素（ピオシアニン）を産生することがあり、特徴的な臭気を持つ。湿った環境を好む。",
+    clinical:"日和見感染症の代表的菌種。人工呼吸器関連肺炎、熱傷創感染、外耳道炎などを起こす。院内感染で特に問題となりやすい。",
+    law:"感染症法上の届出対象外", bsl:2,
+    other:"本来的に多くの抗菌薬に自然耐性を持ち、さらにカルバペネム耐性（CRPA）を獲得すると治療選択肢が著しく限られる。",
+    lpsn:"Pseudomonas aeruginosa",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"S", TAZ_PIPC:"S", CEZ:"R", CTRX:"R", CAZ:"S", CFPM:"S", MEPM:"R", VCM:"R", CPFX:"S", LVFX:"S", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"crpa_carb", name:"リョクノーキン CRPA変異型(カルバペネマーゼ産生)", latin:"Pseudomonas aeruginosa (CRPA)", img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
     minStage:8, hp:6, points:190, weight:14, isBoss:true, glow:3,
+    flavor:"分解酵素でカルバペネムも効かなくなった緑膿菌。", wamei:"緑膿菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Pseudomonadales", family:"Pseudomonadaceae",
+    bacteriology:"グラム陰性の偏性好気性桿菌。緑色色素（ピオシアニン）を産生することがあり、特徴的な臭気を持つ。湿った環境を好む。",
+    clinical:"日和見感染症の代表的菌種。人工呼吸器関連肺炎、熱傷創感染、外耳道炎などを起こす。院内感染で特に問題となりやすい。",
+    law:"感染症法上の届出対象外", bsl:2,
+    other:"本来的に多くの抗菌薬に自然耐性を持ち、さらにカルバペネム耐性（CRPA）を獲得すると治療選択肢が著しく限られる。",
+    lpsn:"Pseudomonas aeruginosa",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:["S","I","R"], LVFX:["S","I","R"], COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"dtr_pa", name:"最強リョクノーキン(DTR-PA)", latin:"Pseudomonas aeruginosa (DTR-PA)", img:"https://somekata.github.io/baikinscharacters/img/chara10.png",
     minStage:9, hp:7, points:205, weight:12, isBoss:true, glow:4,
+    flavor:"治療が極めて困難な、緑膿菌界の最終形態。", wamei:"緑膿菌", type:"グラム陰性桿菌",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Pseudomonadales", family:"Pseudomonadaceae",
+    bacteriology:"グラム陰性の偏性好気性桿菌。緑色色素（ピオシアニン）を産生することがあり、特徴的な臭気を持つ。湿った環境を好む。",
+    clinical:"日和見感染症の代表的菌種。人工呼吸器関連肺炎、熱傷創感染、外耳道炎などを起こす。院内感染で特に問題となりやすい。",
+    law:"感染症法上の届出対象外", bsl:2,
+    other:"本来的に多くの抗菌薬に自然耐性を持ち、さらにカルバペネム耐性（CRPA）を獲得すると治療選択肢が著しく限られる。",
+    lpsn:"Pseudomonas aeruginosa",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"R", LVFX:"R", COL:"S", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"mycoplasma", name:"マイコプラズマ姫", latin:"Mycoplasma pneumoniae", img:"https://somekata.github.io/baikinscharacters/img/chara3.png",
     minStage:6, hp:5, points:160, weight:18, isBoss:true, glow:0,
+    flavor:"細胞壁を持たないため、多くの抗菌薬が通じない変わり者。", wamei:"肺炎マイコプラズマ", type:"細胞壁を持たない（染色不能）",
+    phylum:"Mycoplasmatota", clazz:"Mollicutes", order:"Mycoplasmatales", family:"Mycoplasmataceae",
+    bacteriology:"細胞壁を持たない、自己増殖可能な微生物のなかでも最小クラス。細胞壁がないためグラム染色では染まらない。",
+    clinical:"「歩く肺炎」とも呼ばれる非定型肺炎の代表的原因菌。若年層での流行が多い。",
+    law:"マイコプラズマ肺炎（5類定点・週単位）", bsl:2,
+    other:"細胞壁を標的とするβラクタム系薬は構造上まったく効かない。マクロライド系が第一選択だが、近年は耐性株の増加も報告されている。",
+    lpsn:"Mycoplasma pneumoniae",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"R", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"R", AZM:"R" } },
   { id:"legionella", name:"レジオネラ爺や", latin:"Legionella pneumophila", img:"https://somekata.github.io/baikinscharacters/img/chara4.png",
     minStage:6, hp:5, points:160, weight:18, isBoss:true, glow:0,
+    flavor:"水回りにひそみ、細胞の中に隠れて生きる忍者のような菌。", wamei:"レジオネラ菌", type:"グラム陰性桿菌（染色されにくい）",
+    phylum:"Pseudomonadota", clazz:"Gammaproteobacteria", order:"Legionellales", family:"Legionellaceae",
+    bacteriology:"グラム陰性桿菌だが、通常のグラム染色ではきれいに染まりにくい。給湯設備や冷却塔などの水系環境やアメーバ内に生息する細胞内寄生菌。",
+    clinical:"レジオネラ肺炎（在郷軍人病）の原因菌。尿中抗原検査が診断に有用。",
+    law:"レジオネラ症（4類全数）", bsl:2,
+    other:"細胞内寄生性のため、細胞内に移行しやすいマクロライド系・キノロン系が治療の中心となる。",
+    lpsn:"Legionella pneumophila",
     susceptibility: { PCG:"R", ABPC:"R", SBT_ABPC:"R", PIPC:"R", TAZ_PIPC:"R", CEZ:"R", CTRX:"R", CAZ:"R", CFPM:"R", MEPM:"R", VCM:"R", CPFX:"S", LVFX:"S", COL:"R", LZD:"R", DAP:"R", CAM:"S", AZM:"S" } }
 ];
 function speciesById(id){ for(var i=0;i<SPECIES.length;i++){ if(SPECIES[i].id===id) return SPECIES[i]; } return null; }
@@ -3278,7 +3442,7 @@ function giveVaccineDose(invKey, levelKey, label){
   if(!isBooster){ state.vaccineLevel[levelKey] = Math.min(VACCINE_MAX_DOSE, state.vaccineLevel[levelKey] + 1); }
   renderQuickItems();
   var pct = Math.round(vaccineEffectiveness(levelKey) * 100);
-  message.textContent = label + 'を接種した！（' + state.vaccineLevel[levelKey] + '/' + VACCINE_MAX_DOSE + '回・防御確率' + pct + '%）';
+  showFloatToast(label + '接種！(' + state.vaccineLevel[levelKey] + '/' + VACCINE_MAX_DOSE + '・防御' + pct + '%)');
 }
 $('btnQuickPCV20').addEventListener('click', function(){ giveVaccineDose('vaccinePCV20','pcv20','PCV20ワクチン'); });
 $('btnQuickPCV21').addEventListener('click', function(){ giveVaccineDose('vaccinePCV21','pcv21','PCV21ワクチン'); });
@@ -3297,6 +3461,19 @@ function popDmg(container, text, cls){
   container.style.position = 'relative';
   container.appendChild(el);
   setTimeout(function(){ el.remove(); }, 700);
+}
+function showFloatToast(text, duration){
+  duration = duration || 2200;
+  var stageEl = $('stage');
+  var t = document.createElement('div');
+  t.className = 'float-toast';
+  t.textContent = text;
+  stageEl.appendChild(t);
+  requestAnimationFrame(function(){ t.classList.add('show'); });
+  setTimeout(function(){
+    t.classList.remove('show');
+    setTimeout(function(){ t.remove(); }, 300);
+  }, duration);
 }
 
 /* ===================== セーブ ===================== */
@@ -3383,15 +3560,30 @@ function formatDate(ts){
   var d = new Date(ts);
   return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
+function starRating(n, max){
+  max = max || 4; n = Math.max(0, Math.min(max, n));
+  return '<span class="zd-bsl">' + '★'.repeat(n) + '☆'.repeat(max-n) + '</span>';
+}
 function showZukanDetail(sp){
   var info = persist.defeatedInfo[sp.id] || { count:1, firstLevel:'?', firstAt:null };
   $('zdImg').src = sp.img; $('zdImg').alt = sp.name;
   applyGlow($('zdImg'), sp.glow||0);
   $('zdName').textContent = sp.name;
   $('zdLatin').textContent = sp.latin;
+  $('zdFlavor').textContent = sp.flavor || '';
   $('zdMeta').innerHTML =
     '初めてゲット：<b>' + formatDate(info.firstAt) + '</b>（Lv ' + info.firstLevel + '）<br>' +
     '討伐回数：<b>' + info.count + '回</b>';
+  var rows = [
+    ['和名', sp.wamei], ['Type', sp.type], ['Phylum', sp.phylum], ['Class', sp.clazz],
+    ['Order', sp.order], ['Family', sp.family],
+    ['細菌学的特徴', sp.bacteriology], ['臨床的特徴', sp.clinical],
+    ['感染症法', sp.law], ['BSL', starRating(sp.bsl)],
+    ['その他', sp.other], ['LPSN', sp.lpsn]
+  ];
+  $('zdProfile').innerHTML = rows.filter(function(r){ return r[1]; }).map(function(r){
+    return '<div class="zd-row"><span class="zd-key">' + r[0] + '</span><span class="zd-val">' + r[1] + '</span></div>';
+  }).join('');
   $('zdSus').innerHTML = ATB_LIST.map(function(code){
     var v = sp.susceptibility[code];
     var display = Array.isArray(v) ? v.join('/') : v;
@@ -3446,7 +3638,7 @@ function currentTolerance(){ return Math.max(11, 26 - Math.floor(state.score/60)
 function pickTarget(){
   var d = DIRS[Math.floor(Math.random()*DIRS.length)];
   state.targetDir = d;
-  targetLabel.innerHTML = '方角: <b>' + d.name + ' (' + d.en + ')</b>';
+  targetLabel.textContent = d.name;
 }
 function startSearching(){
   state.phase = 'searching';
