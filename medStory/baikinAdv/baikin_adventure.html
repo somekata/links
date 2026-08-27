@@ -224,7 +224,12 @@
 
   /* ずかん */
   .zukan-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
-  .zukan-cell{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; }
+  .zukan-cell{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; cursor:pointer; }
+  .zukan-cell:active{ transform:scale(.97); }
+  .zukan-cell.locked{ cursor:default; }
+  .zd-meta{ font-size:11px; color:var(--ink-soft); background:var(--washi-deep); border:1px solid var(--line);
+    border-radius:8px; padding:6px 9px; margin-bottom:8px; line-height:1.7; text-align:left; }
+  .zd-meta b{ color:var(--ink); }
   .zukan-cell.locked{ background:repeating-linear-gradient(45deg, var(--washi-deep), var(--washi-deep) 6px, var(--washi) 6px, var(--washi) 12px); color:var(--ink-soft); }
   .zukan-cell img{ width:56px; height:56px; object-fit:contain; }
   .zukan-cell .zname{ font-size:12px; font-weight:700; margin-top:4px; }
@@ -518,6 +523,18 @@
         <p>たおした菌がここに記録されます。</p>
       </div>
       <div class="zukan-grid" id="zukanGrid"></div>
+
+      <!-- ずかん詳細モーダル -->
+      <div class="overlay" id="ovZukanDetail">
+        <div class="ocard zukan-detail">
+          <img class="enemy-img" id="zdImg" src="" alt="" style="width:80px;height:80px;">
+          <div class="enemy-name" id="zdName"></div>
+          <div class="enemy-latin" id="zdLatin"></div>
+          <div class="zd-meta" id="zdMeta"></div>
+          <div class="sus-box" id="zdSus" style="max-height:140px;"></div>
+          <button class="btn primary" id="btnZukanDetailClose">とじる</button>
+        </div>
+      </div>
 
       <div class="card" style="margin-top:14px;">
         <h2>セーブ（ベストスコア・ずかん）</h2>
@@ -3156,7 +3173,7 @@ buttons.forEach(function(b){ b.addEventListener('click', function(){ activateTab
 document.querySelectorAll('[data-goto]').forEach(function(b){ b.addEventListener('click', function(){ activateTab(b.dataset.goto); }); });
 
 /* ===================== 状態 ===================== */
-var persist = { bestScore: 0, defeated: [] };
+var persist = { bestScore: 0, defeated: [], defeatedInfo: {} };
 var state = {
   score:0, money:0,
   stock:{ PCG:3, ABPC:3, SBT_ABPC:3, PIPC:3, TAZ_PIPC:3, CEZ:3, CTRX:3, CAZ:3, CFPM:3, MEPM:3, VCM:3, CPFX:3, LVFX:3, COL:3, LZD:3, DAP:3, CAM:3, AZM:3 },
@@ -3300,10 +3317,11 @@ function decodeSave(code){
   if(!obj || obj.v!==1){ throw new Error('未対応のセーブバージョンです。'); }
   return obj;
 }
-function currentSaveObj(){ return { v:1, bestScore:persist.bestScore, defeated:persist.defeated, ts:Date.now() }; }
+function currentSaveObj(){ return { v:1, bestScore:persist.bestScore, defeated:persist.defeated, defeatedInfo:persist.defeatedInfo, ts:Date.now() }; }
 function applySaveObj(obj){
   persist.bestScore = obj.bestScore || 0;
   persist.defeated = Array.isArray(obj.defeated) ? obj.defeated : [];
+  persist.defeatedInfo = (obj.defeatedInfo && typeof obj.defeatedInfo === 'object') ? obj.defeatedInfo : {};
   renderZukan();
 }
 $('btnMakeCode').addEventListener('click', function(){
@@ -3353,12 +3371,38 @@ function renderZukan(){
     if(got){
       var glowClass = sp.glow ? ' glow-'+Math.min(4,sp.glow) : '';
       cell.innerHTML = '<img class="'+glowClass.trim()+'" src="'+sp.img+'" alt="'+sp.name+'"><div class="zname">'+sp.name+'</div><div class="zlatin">'+sp.latin+'</div>';
+      cell.addEventListener('click', function(){ showZukanDetail(sp); });
     } else {
       cell.innerHTML = '<div style="font-size:30px;">?</div><div class="zname">未発見</div>';
     }
     grid.appendChild(cell);
   });
 }
+function formatDate(ts){
+  if(!ts) return '不明';
+  var d = new Date(ts);
+  return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function showZukanDetail(sp){
+  var info = persist.defeatedInfo[sp.id] || { count:1, firstLevel:'?', firstAt:null };
+  $('zdImg').src = sp.img; $('zdImg').alt = sp.name;
+  applyGlow($('zdImg'), sp.glow||0);
+  $('zdName').textContent = sp.name;
+  $('zdLatin').textContent = sp.latin;
+  $('zdMeta').innerHTML =
+    '初めてゲット：<b>' + formatDate(info.firstAt) + '</b>（Lv ' + info.firstLevel + '）<br>' +
+    '討伐回数：<b>' + info.count + '回</b>';
+  $('zdSus').innerHTML = ATB_LIST.map(function(code){
+    var v = sp.susceptibility[code];
+    var display = Array.isArray(v) ? v.join('/') : v;
+    var cls = Array.isArray(v) ? (v.indexOf('S')>=0 ? 's' : (v.indexOf('I')>=0 ? 'i' : 'r')) : chipClass(v);
+    return '<span class="chip '+cls+'">' + atbLabel(code) + ' ' + display + '</span>';
+  }).join('');
+  $('ovZukanDetail').classList.add('show');
+}
+$('btnZukanDetailClose').addEventListener('click', function(){
+  $('ovZukanDetail').classList.remove('show');
+});
 
 /* ===================== ショップ／もちもの ===================== */
 function renderPharmacyList(){
@@ -4069,7 +4113,14 @@ function winBattle(){
   var sp = battle.sp, stage = battle.stage;
   var gained = sp.points;
   var isNew = persist.defeated.indexOf(sp.id) === -1;
-  if(isNew){ persist.defeated.push(sp.id); }
+  if(isNew){
+    persist.defeated.push(sp.id);
+    persist.defeatedInfo[sp.id] = { count:1, firstLevel:stage, firstAt:Date.now() };
+  } else {
+    var info = persist.defeatedInfo[sp.id] || { count:0, firstLevel:stage, firstAt:Date.now() };
+    info.count = (info.count||0) + 1;
+    persist.defeatedInfo[sp.id] = info;
+  }
   state.score += gained; state.money += gained;
   refreshHud();
   $('ovBattle').classList.remove('show');
