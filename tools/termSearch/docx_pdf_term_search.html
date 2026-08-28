@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOCX / PDF 用語検索（複数語・索引モード）</title>
+<title>DOCX / PDF 用語検索（複数語・索引・候補抽出）</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f4f6f8;color:#20252b;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}
@@ -40,17 +40,24 @@ button:disabled{background:#aaa;cursor:not-allowed}
 .small{font-size:12px;color:#7a838c}
 
 /* --- tabs --- */
-.tabs{display:flex;gap:6px;margin-bottom:0}
-.tabBtn{background:#e4e9ed;color:#4a535b;border-radius:10px 10px 0 0;padding:11px 22px;font-weight:700;cursor:pointer;border:0;box-shadow:none}
+.tabs{display:flex;gap:6px;margin-bottom:0;flex-wrap:wrap}
+.tabBtn{background:#e4e9ed;color:#4a535b;border-radius:10px 10px 0 0;padding:11px 20px;font-weight:700;cursor:pointer;border:0;box-shadow:none}
 .tabBtn.active{background:#1769aa;color:#fff}
 .tabPanel{display:none}
 .tabPanel.active{display:block}
 
-/* --- term rows --- */
-.termRow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-.termRow input[type=text]{flex:1}
-.termSwatch{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
+/* --- term rows / autocomplete --- */
+.termRow{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.termSwatch{width:14px;height:14px;border-radius:4px;flex:0 0 auto;margin-top:12px}
+.inputWrap{flex:1;position:relative}
 .addTermBtn{margin-top:2px}
+.acDropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #ccd3da;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.14);max-height:260px;overflow-y:auto;z-index:30;display:none}
+.acItem{padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:14px;border-bottom:1px solid #f0f2f4}
+.acItem:last-child{border-bottom:none}
+.acItem:hover{background:#eef3f7}
+.acTermText{font-weight:700}
+.acJa{color:#7a838c;font-size:12px}
+.acCat{font-size:11px;color:#1769aa;background:#e6f0f8;border-radius:10px;padding:2px 9px;white-space:nowrap}
 
 /* --- index (compact) --- */
 .indexBox{background:#fbfbfc;border:1px solid #e2e6ea;border-radius:10px;padding:14px 16px}
@@ -66,6 +73,18 @@ button:disabled{background:#aaa;cursor:not-allowed}
 .termGroupHeader h3{margin:0;font-size:17px}
 .termGroupHeader .count{color:#68717b;font-size:13px;font-weight:600}
 
+/* --- candidates tab --- */
+.candRow{display:flex;align-items:center;gap:12px;border:1px solid #e2e6ea;border-radius:10px;padding:10px 14px;margin-bottom:8px}
+.candTerm{font-weight:750;min-width:180px}
+.candTerm.italic{font-style:italic}
+.candMeta{flex:1;color:#68717b;font-size:13px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ruleBadge{font-size:11px;background:#eef3f7;color:#45525c;border-radius:10px;padding:2px 8px}
+.scoreBadge{font-size:11px;background:#fff3cd;color:#8a6100;border-radius:10px;padding:2px 8px;font-weight:700}
+.addCandBtn{background:#1769aa;color:#fff;border-radius:8px;padding:7px 13px;font-size:13px;flex:0 0 auto}
+.addCandBtn.added{background:#8aa9bd;cursor:default}
+.sectionTitle{font-size:16px;font-weight:800;margin-bottom:12px}
+.sectionSub{font-size:13px;color:#68717b;margin:-6px 0 14px}
+
 /* --- help tab --- */
 .helpStep{display:flex;gap:14px;margin-bottom:18px}
 .helpStep .num{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#1769aa;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
@@ -76,11 +95,12 @@ button:disabled{background:#aaa;cursor:not-allowed}
 </head>
 <body>
 <div class="wrap">
-<h1>📚 DOCX / PDF 用語検索（複数語・索引モード）</h1>
-<p class="lead">Word（.docx）とPDF（.pdf）を読み込み、複数の用語をまとめて検索し、ページ・行・前後の文脈を確認できます。</p>
+<h1>📚 DOCX / PDF 用語検索（複数語・索引・候補抽出）</h1>
+<p class="lead">Word（.docx）とPDF（.pdf）を読み込み、複数の用語をまとめて検索し、ページ・行・前後の文脈を確認できます。キーワード辞書によるオートコンプリートと、文書からのキーワード候補自動抽出にも対応しています。</p>
 
 <div class="tabs">
   <button class="tabBtn active" data-tab="main" type="button">メイン</button>
+  <button class="tabBtn" data-tab="candidates" type="button">候補</button>
   <button class="tabBtn" data-tab="list" type="button">リスト</button>
   <button class="tabBtn" data-tab="help" type="button">使い方</button>
 </div>
@@ -97,7 +117,7 @@ button:disabled{background:#aaa;cursor:not-allowed}
       <div id="fileName" class="file-name"></div>
     </div>
 
-    <label>検索する用語（複数可）　<span class="hint">リターンで用語を追加できます</span></label>
+    <label>検索する用語（複数可）　<span class="hint">リターンで用語を追加できます／入力すると辞書から候補が出ます</span></label>
     <div id="termsContainer"></div>
     <button id="addTermBtn" class="ghost addTermBtn" type="button">＋ 用語を追加</button>
 
@@ -114,6 +134,29 @@ button:disabled{background:#aaa;cursor:not-allowed}
     <div id="results"></div>
   </div>
 
+</div>
+
+<!-- ===== 候補タブ ===== -->
+<div id="tab-candidates" class="tabPanel">
+  <div class="card" style="border-top-left-radius:0">
+    <div class="actions">
+      <button id="extractBtn" disabled>📖 候補を抽出</button>
+      <span class="small">ファイルを読み込んだ後にクリックしてください（メインタブでの検索は不要です）</span>
+    </div>
+    <div id="candidateStatus" class="status"></div>
+  </div>
+
+  <div class="card" id="dictHitsCard" style="display:none">
+    <div class="sectionTitle">📖 辞書に登録済みで、この文書に出現する語</div>
+    <div class="sectionSub">キーワード辞書（略語・菌名・薬剤名など）と照合し、文書中に実際に出現した語だけを表示します。</div>
+    <div id="dictHitsList"></div>
+  </div>
+
+  <div class="card" id="newCandidatesCard" style="display:none">
+    <div class="sectionTitle">🆕 未登録の候補（自動抽出・スコア順）</div>
+    <div class="sectionSub">全大文字略語・学名パターン・薬剤語尾・出現頻度などのルールでスコアリングした、辞書未登録の候補です。誤検出が含まれることがあるため、内容を確認のうえ追加してください。</div>
+    <div id="newCandidatesList"></div>
+  </div>
 </div>
 
 <!-- ===== リストタブ ===== -->
@@ -140,28 +183,28 @@ button:disabled{background:#aaa;cursor:not-allowed}
       <div class="num">2</div>
       <div class="body">
         <h4>検索する用語を入力する</h4>
-        <p>「検索する用語」欄に1つ目の用語を入力します。入力後に <code>Enter</code> キーを押すと、自動的に次の入力欄が追加されます。「＋ 用語を追加」ボタンでも欄を増やせます。不要な欄は「×」で削除できます（最後の1欄は空欄になるだけで残ります）。</p>
+        <p>「検索する用語」欄に用語を入力すると、内蔵のキーワード辞書（略語・菌名・薬剤名など）から候補が一覧表示されます。クリックすると入力されます。入力後に <code>Enter</code> キーを押すと、自動的に次の入力欄が追加されます。「＋ 用語を追加」ボタンでも欄を増やせます。不要な欄は「×」で削除できます（最後の1欄は空欄になるだけで残ります）。</p>
       </div>
     </div>
     <div class="helpStep">
       <div class="num">3</div>
+      <div class="body">
+        <h4>「候補」タブでキーワード候補を探す（任意）</h4>
+        <p>ファイルを読み込んだ後、「候補」タブの「📖 候補を抽出」を押すと、①辞書に登録済みで文書中に実際に出現する語、②全大文字略語・学名パターン・薬剤語尾・出現頻度などから自動判定した未登録の候補、の2種類が表示されます。それぞれ「＋ 追加」で検索語欄に追加できます。</p>
+      </div>
+    </div>
+    <div class="helpStep">
+      <div class="num">4</div>
       <div class="body">
         <h4>一括検索する</h4>
         <p>最後の入力欄が空のまま <code>Enter</code> を押すか、「🔍 一括検索」ボタンをクリックすると、入力したすべての用語をまとめて検索します。ファイルの解析は1回だけ行われ、複数用語でも高速に検索できます。</p>
       </div>
     </div>
     <div class="helpStep">
-      <div class="num">4</div>
-      <div class="body">
-        <h4>結果を確認する</h4>
-        <p>「メイン」タブには用語ごとにグループ化された詳細な検索結果（該当ページ・行・前後の文脈）が表示されます。「リスト」タブには、各用語の出現箇所を <code>用語：P{ページ},L{行}; P{ページ},L{行}…</code> の形式で簡潔にまとめた一覧が表示されます。同じ行に複数回出現する場合はその回数分表示されます。</p>
-      </div>
-    </div>
-    <div class="helpStep">
       <div class="num">5</div>
       <div class="body">
-        <h4>結果を書き出す</h4>
-        <p>「CSV出力（全用語）」ですべての用語・該当箇所を1つのCSVファイルとして保存できます。「索引をコピー」で、リストタブと同じ簡潔な一覧をテキストとしてクリップボードにコピーできます（メールや議事録への貼り付けに便利です）。</p>
+        <h4>結果を確認・書き出す</h4>
+        <p>「メイン」タブには用語ごとにグループ化された詳細な検索結果、「リスト」タブには <code>用語：P{ページ},L{行}; …</code> 形式の簡潔な一覧が表示されます。「CSV出力（全用語）」で全結果を1つのCSVに、「索引をコピー」でリストと同じ内容をテキストとしてクリップボードにコピーできます。</p>
       </div>
     </div>
 
@@ -170,6 +213,9 @@ button:disabled{background:#aaa;cursor:not-allowed}
       PDF：PDF内部のページを基準に表示します。行番号はPDF内の文字座標から算出した推定行です。<br>
       DOCX：DOCXにはWord上の固定されたページ情報が基本的に保存されていないため、
       文字量から算出した推定ページ・行です。Wordの実表示と完全一致するとは限りません。<br>
+      <br>
+      <b>キーワード辞書・候補抽出について</b><br>
+      辞書はこのファイル内に埋め込まれており、略語・菌名（学名）・薬剤名・検査手技・感染対策の5カテゴリで構成されています。「未登録の候補」はあくまでルールベースの推定であり、誤検出（文脈上キーワードでない語など）が含まれる場合があります。最終的な採否は必ず確認してください。<br>
       <br>
       <b>プライバシー</b><br>
       文書の解析はブラウザ内で行います。文書本文をこのツールのサーバーへアップロードする処理はありません。
@@ -187,11 +233,136 @@ import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
 
+/* =========================================================
+   キーワード辞書（このファイル内に埋め込み。外部fetch不要）
+   ========================================================= */
+const KEYWORD_DICT = {
+  "version": "0.1",
+  "categories": {
+    "abbreviations": [
+      { "term": "CRE",  "ja": "カルバペネム耐性腸内細菌科細菌", "aliases": ["carbapenem-resistant Enterobacteriaceae"] },
+      { "term": "CPE",  "ja": "カルバペネマーゼ産生腸内細菌科細菌", "aliases": ["carbapenemase-producing Enterobacteriaceae"] },
+      { "term": "MDRP", "ja": "多剤耐性緑膿菌", "aliases": ["multiple drug-resistant Pseudomonas aeruginosa"] },
+      { "term": "MDRA", "ja": "多剤耐性アシネトバクター属菌", "aliases": ["multiple drug-resistant Acinetobacter baumannii"] },
+      { "term": "ESBL", "ja": "基質特異性拡張型β-ラクタマーゼ", "aliases": ["extended-spectrum β-lactamase"] },
+      { "term": "MBL",  "ja": "メタロ-β-ラクタマーゼ", "aliases": ["metallo-β-lactamase"] },
+      { "term": "AmpC", "ja": "AmpC型セファロスポリナーゼ", "aliases": [] },
+      { "term": "MRSA", "ja": "メチシリン耐性黄色ブドウ球菌", "aliases": [] },
+      { "term": "VRE",  "ja": "バンコマイシン耐性腸球菌", "aliases": ["vancomycin-resistant Enterococci"] },
+      { "term": "PPE",  "ja": "個人防護具", "aliases": ["personal protective equipment"] },
+      { "term": "PK-PD","ja": "薬物動態・薬力学", "aliases": ["pharmacokinetics/pharmacodynamics"] },
+      { "term": "TDM",  "ja": "治療薬物モニタリング", "aliases": ["therapeutic drug monitoring", "血中モニタリング"] },
+      { "term": "AMR",  "ja": "薬剤耐性", "aliases": ["antimicrobial resistance"] },
+      { "term": "ICT",  "ja": "感染制御チーム", "aliases": ["infection control team"] },
+      { "term": "JANIS","ja": "院内感染対策サーベイランス", "aliases": [] },
+      { "term": "QRDR", "ja": "キノロン耐性決定領域", "aliases": ["quinolone resistance-determining region"] },
+      { "term": "mcr-1","ja": "プラスミド性コリスチン耐性遺伝子", "aliases": [] },
+      { "term": "NDM",  "ja": "NDM型カルバペネマーゼ", "aliases": [] },
+      { "term": "KPC",  "ja": "KPC型カルバペネマーゼ", "aliases": [] },
+      { "term": "OXA",  "ja": "OXA型β-ラクタマーゼ", "aliases": [] },
+      { "term": "VIM",  "ja": "VIM型メタロ-β-ラクタマーゼ", "aliases": [] },
+      { "term": "IMP",  "ja": "IMP型メタロ-β-ラクタマーゼ", "aliases": [] },
+      { "term": "ERCP", "ja": "内視鏡的逆行性胆管膵管造影", "aliases": [] },
+      { "term": "DTR",  "ja": "difficult-to-treat resistance", "aliases": [] }
+    ],
+    "bacteria": [
+      { "term": "Pseudomonas aeruginosa",       "italic": true, "aliases": ["P. aeruginosa", "緑膿菌"] },
+      { "term": "Acinetobacter baumannii",       "italic": true, "aliases": ["A. baumannii", "アシネトバクター・バウマニ"] },
+      { "term": "Acinetobacter spp.",            "italic": "genus-only", "aliases": [] },
+      { "term": "Escherichia coli",              "italic": true, "aliases": ["E. coli", "大腸菌"] },
+      { "term": "Klebsiella pneumoniae",         "italic": true, "aliases": ["K. pneumoniae", "肺炎桿菌"] },
+      { "term": "Klebsiella spp.",               "italic": "genus-only", "aliases": [] },
+      { "term": "Enterobacter cloacae",          "italic": true, "aliases": ["E. cloacae"] },
+      { "term": "Serratia marcescens",           "italic": true, "aliases": ["S. marcescens"] },
+      { "term": "Proteus mirabilis",             "italic": true, "aliases": ["P. mirabilis"] },
+      { "term": "Stenotrophomonas maltophilia",  "italic": true, "aliases": ["S. maltophilia"] },
+      { "term": "Staphylococcus aureus",         "italic": true, "aliases": ["S. aureus", "黄色ブドウ球菌"] },
+      { "term": "Enterococcus faecium",          "italic": true, "aliases": ["E. faecium"] },
+      { "term": "Enterococcus faecalis",         "italic": true, "aliases": ["E. faecalis"] },
+      { "term": "Candida albicans",              "italic": true, "aliases": ["C. albicans"] },
+      { "term": "Candida auris",                 "italic": true, "aliases": ["C. auris"] },
+      { "term": "Salmonella Typhi",              "italic": "genus-only", "aliases": [] }
+    ],
+    "drugs": [
+      { "term": "カルバペネム系薬", "aliases": ["carbapenems"] },
+      { "term": "セファロスポリン系薬", "aliases": ["cephalosporins"] },
+      { "term": "フルオロキノロン系薬", "aliases": ["fluoroquinolones"] },
+      { "term": "アミノグリコシド系薬", "aliases": ["aminoglycosides"] },
+      { "term": "ポリペプチド系薬", "aliases": ["polypeptides"] },
+      { "term": "ペニシリン系薬", "aliases": ["penicillins"] },
+      { "term": "モノバクタム系薬", "aliases": ["monobactams"] },
+      { "term": "グリコペプチド系薬", "aliases": ["glycopeptides"] },
+      { "term": "メロペネム", "aliases": ["meropenem"] },
+      { "term": "イミペネム", "aliases": ["imipenem"] },
+      { "term": "コリスチン", "aliases": ["colistin"] },
+      { "term": "アミカシン", "aliases": ["amikacin"] },
+      { "term": "シプロフロキサシン", "aliases": ["ciprofloxacin"] },
+      { "term": "バンコマイシン", "aliases": ["vancomycin"] },
+      { "term": "ピペラシリン", "aliases": ["piperacillin"] },
+      { "term": "セフェピム", "aliases": ["cefepime"] }
+    ],
+    "procedures_tests": [
+      { "term": "積極的監視培養", "aliases": ["active surveillance culture", "積極的保菌調査"] },
+      { "term": "血液培養", "aliases": ["blood culture"] },
+      { "term": "薬剤感受性検査", "aliases": ["antimicrobial susceptibility testing", "AST"] },
+      { "term": "MIC測定", "aliases": ["minimum inhibitory concentration"] },
+      { "term": "PFGE", "aliases": ["パルスフィールドゲル電気泳動"] },
+      { "term": "全ゲノム解析", "aliases": ["whole genome sequencing", "WGS"] }
+    ],
+    "infection_control": [
+      { "term": "標準予防策", "aliases": ["standard precautions"] },
+      { "term": "接触予防策", "aliases": ["contact precautions"] },
+      { "term": "コホーティング", "aliases": ["cohorting"] },
+      { "term": "アウトブレイク", "aliases": ["outbreak", "集簇事例"] },
+      { "term": "terminal cleaning", "aliases": ["退室後清掃"] },
+      { "term": "手指衛生", "aliases": ["hand hygiene"] },
+      { "term": "de-escalation", "aliases": ["原因菌別治療", "抗菌薬の狭域化"] }
+    ]
+  }
+};
+
+const CATEGORY_LABELS = {
+  abbreviations: "略語",
+  bacteria: "菌名",
+  drugs: "薬剤名",
+  procedures_tests: "検査・手技",
+  infection_control: "感染対策"
+};
+
+function flattenDict(dict){
+  const out=[];
+  Object.entries(dict.categories).forEach(([catKey,arr])=>{
+    arr.forEach(item=>{
+      out.push({
+        term:item.term,
+        category:catKey,
+        aliases:item.aliases||[],
+        italic:item.italic||false,
+        ja:item.ja||""
+      });
+    });
+  });
+  return out;
+}
+const FLAT_DICT = flattenDict(KEYWORD_DICT);
+
+function renderTermMarkup(item){
+  if(item.italic===true) return `<i>${escapeHtml(item.term)}</i>`;
+  if(item.italic==="genus-only"){
+    const parts=item.term.split(" ");
+    const genus=parts[0];
+    const rest=parts.slice(1).join(" ");
+    return `<i>${escapeHtml(genus)}</i>${rest?(" "+escapeHtml(rest)):""}`;
+  }
+  return escapeHtml(item.term);
+}
+
 /* ---------------- tabs ---------------- */
 
 const tabBtns=[...document.querySelectorAll(".tabBtn")];
 const tabPanels={
   main:document.getElementById("tab-main"),
+  candidates:document.getElementById("tab-candidates"),
   list:document.getElementById("tab-list"),
   help:document.getElementById("tab-help"),
 };
@@ -220,6 +391,13 @@ const summary=document.getElementById("summary");
 const indexBox=document.getElementById("indexBox");
 const results=document.getElementById("results");
 
+const extractBtn=document.getElementById("extractBtn");
+const candidateStatus=document.getElementById("candidateStatus");
+const dictHitsCard=document.getElementById("dictHitsCard");
+const dictHitsList=document.getElementById("dictHitsList");
+const newCandidatesCard=document.getElementById("newCandidatesCard");
+const newCandidatesList=document.getElementById("newCandidatesList");
+
 const PALETTE=["#fff19a","#ffd08a","#a8e6ff","#c3f2b0","#e3c6ff","#ffb8c6","#bdeee2","#ffe1a8"];
 
 let currentFile=null;
@@ -227,11 +405,64 @@ let docIndex=null;        // {type, lines:[{page,line,paragraph,text}], pageCoun
 let lastAllResults=[];    // flat list for CSV: {no,term,page,line,source,paragraph,context}
 let lastPerTerm=[];       // [{term,color,hits:[{page,line}]}]
 
-/* ---------------- term rows ---------------- */
+/* ---------------- helpers ---------------- */
 
 function escapeHtml(s){
   return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+
+/* ---------------- autocomplete ---------------- */
+
+function matchDictionary(query){
+  if(!query) return [];
+  const q=query.toLowerCase();
+  const scored=FLAT_DICT.map(item=>{
+    const hay=[item.term,...item.aliases,item.ja].filter(Boolean).map(s=>s.toLowerCase());
+    let rank=-1;
+    hay.forEach(h=>{
+      if(h===q) rank=Math.max(rank,3);
+      else if(h.startsWith(q)) rank=Math.max(rank,2);
+      else if(h.includes(q)) rank=Math.max(rank,1);
+    });
+    return {item,rank};
+  }).filter(x=>x.rank>=0)
+    .sort((a,b)=>b.rank-a.rank || a.item.term.localeCompare(b.item.term))
+    .slice(0,8)
+    .map(x=>x.item);
+  return scored;
+}
+
+function attachAutocomplete(input,dropdown){
+  function update(){
+    const q=input.value.trim();
+    if(!q){ dropdown.style.display="none"; dropdown.innerHTML=""; return; }
+    const matches=matchDictionary(q);
+    if(!matches.length){ dropdown.style.display="none"; dropdown.innerHTML=""; return; }
+    dropdown.innerHTML=matches.map(item=>`
+      <div class="acItem" data-term="${escapeHtml(item.term)}">
+        <span>
+          <span class="acTermText">${renderTermMarkup(item)}</span>
+          ${item.ja?`<span class="acJa"> ${escapeHtml(item.ja)}</span>`:""}
+        </span>
+        <span class="acCat">${CATEGORY_LABELS[item.category]||item.category}</span>
+      </div>`).join("");
+    dropdown.style.display="block";
+    [...dropdown.querySelectorAll(".acItem")].forEach(el=>{
+      el.addEventListener("mousedown",ev=>{
+        ev.preventDefault(); // input の blur より先に発火させる
+        input.value=el.dataset.term;
+        dropdown.style.display="none";
+        updateSearchAvailability();
+        input.focus();
+      });
+    });
+  }
+  input.addEventListener("input",update);
+  input.addEventListener("focus",update);
+  input.addEventListener("blur",()=>{ setTimeout(()=>{ dropdown.style.display="none"; },120); });
+}
+
+/* ---------------- term rows ---------------- */
 
 function addTermRow(focus,initialValue){
   const row=document.createElement("div");
@@ -243,12 +474,21 @@ function addTermRow(focus,initialValue){
   swatch.style.background=PALETTE[idx%PALETTE.length];
   row.appendChild(swatch);
 
+  const wrap=document.createElement("div");
+  wrap.className="inputWrap";
+
   const input=document.createElement("input");
   input.type="text";
   input.className="termInput";
   input.placeholder="例：MRSA / Candida auris / ESBL";
   input.value=initialValue||"";
-  row.appendChild(input);
+  wrap.appendChild(input);
+
+  const dropdown=document.createElement("div");
+  dropdown.className="acDropdown";
+  wrap.appendChild(dropdown);
+
+  row.appendChild(wrap);
 
   const removeBtn=document.createElement("button");
   removeBtn.type="button";
@@ -270,13 +510,16 @@ function addTermRow(focus,initialValue){
   input.addEventListener("keydown",e=>{
     if(e.key!=="Enter")return;
     e.preventDefault();
+    const dropdown=row.querySelector(".acDropdown");
+    if(dropdown.style.display==="block"){
+      dropdown.style.display="none"; // Enterで確定、候補は閉じるだけ
+    }
     const rows=[...termsContainer.querySelectorAll(".termRow")];
     const isLast=rows[rows.length-1]===row;
     if(isLast){
       if(input.value.trim()){
         addTermRow(true,"");
       }else if(hasAnyTerm()){
-        // 最後の欄が空でEnter → まとめて検索
         if(!searchBtn.disabled) search();
       }
     }else{
@@ -286,6 +529,7 @@ function addTermRow(focus,initialValue){
     }
   });
   input.addEventListener("input",updateSearchAvailability);
+  attachAutocomplete(input,dropdown);
 
   termsContainer.appendChild(row);
   if(focus) input.focus();
@@ -309,6 +553,17 @@ function hasAnyTerm(){ return getTerms().length>0; }
 
 function updateSearchAvailability(){
   searchBtn.disabled = !(currentFile && hasAnyTerm());
+}
+
+function addOrFillTerm(value){
+  const rows=[...termsContainer.querySelectorAll(".termRow")];
+  const lastInput=rows[rows.length-1].querySelector(".termInput");
+  if(!lastInput.value.trim()){
+    lastInput.value=value;
+  }else{
+    addTermRow(false,value);
+  }
+  updateSearchAvailability();
 }
 
 addTermBtn.addEventListener("click",()=>addTermRow(true,""));
@@ -340,27 +595,30 @@ function setFile(file){
   csvBtn.disabled=true;
   copyIndexBtn.disabled=true;
   resultCard.style.display="none";
+  dictHitsCard.style.display="none";
+  newCandidatesCard.style.display="none";
+  candidateStatus.textContent="";
+  extractBtn.disabled=false;
   status.textContent=(ext==="pdf"?"PDF":"DOCX")+"ファイルを読み込み可能です。";
   updateSearchAvailability();
 }
 
 /* ---------------- indexing (parse once, search many terms) ---------------- */
 
-async function ensureIndexed(){
+async function ensureIndexed(onProgress){
   if(docIndex) return;
   const ext=currentFile.name.toLowerCase().split(".").pop();
-  if(ext==="pdf") await indexPDF();
-  else await indexDOCX();
+  if(ext==="pdf") await indexPDF(onProgress);
+  else await indexDOCX(onProgress);
 }
 
-async function indexPDF(){
-  status.textContent="PDFを解析しています……";
+async function indexPDF(onProgress){
   const data=await currentFile.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data}).promise;
   const lines=[];
 
   for(let p=1;p<=pdf.numPages;p++){
-    status.textContent=`PDFを解析中…… ${p} / ${pdf.numPages} ページ`;
+    if(onProgress) onProgress(`PDFを解析中…… ${p} / ${pdf.numPages} ページ`);
     const page=await pdf.getPage(p);
     const tc=await page.getTextContent();
     const items=tc.items.filter(x=>x.str && x.str.trim());
@@ -385,8 +643,8 @@ async function indexPDF(){
   docIndex={type:"PDF",lines,pageCount:pdf.numPages};
 }
 
-async function indexDOCX(){
-  status.textContent="DOCXを解析しています……";
+async function indexDOCX(onProgress){
+  if(onProgress) onProgress("DOCXを解析しています……");
   const arrayBuffer=await currentFile.arrayBuffer();
   const mammothResult=await mammoth.convertToHtml({arrayBuffer},{includeDefaultStyleMap:true});
   const temp=document.createElement("div");
@@ -433,7 +691,7 @@ async function search(){
   lastAllResults=[];lastPerTerm=[];
 
   try{
-    await ensureIndexed();
+    await ensureIndexed(msg=>{ status.textContent=msg; });
 
     let totalHits=0;
     terms.forEach((term,ti)=>{
@@ -494,6 +752,7 @@ function renderIndex(){
     swatch.className="termSwatch";
     swatch.style.background=color;
     swatch.style.display="inline-block";
+    swatch.style.marginTop="0";
     row.appendChild(swatch);
 
     const termEl=document.createElement("span");
@@ -521,7 +780,7 @@ function renderDetailedResults(){
     const header=document.createElement("div");
     header.className="termGroupHeader";
     header.innerHTML=`
-      <span class="termSwatch" style="background:${color};display:inline-block"></span>
+      <span class="termSwatch" style="background:${color};display:inline-block;margin-top:0"></span>
       <h3>${escapeHtml(term)}</h3>
       <span class="count">${hits.length}件</span>`;
     results.appendChild(header);
@@ -591,6 +850,205 @@ async function copyIndexText(){
     console.error(err);
     status.innerHTML='<span class="error">コピーに失敗しました。手動で選択してコピーしてください。</span>';
   }
+}
+
+/* =========================================================
+   候補タブ：辞書一致 ＋ ルールベースのキーワード候補自動抽出
+   ========================================================= */
+
+const SCORING_RULES = [
+  { id:"allcaps_abbr",  score:3, reason:"全大文字略語" },
+  { id:"binomial_name", score:3, reason:"学名（属+種）パターン" },
+  { id:"drug_suffix_ja",score:2, reason:"薬剤語尾パターン" },
+  { id:"in_dictionary", score:5, reason:"辞書登録済み" },
+];
+const STOPWORDS = new Set([
+  "this","that","these","those","which","where","while","also","from","with",
+  "have","been","were","will","when","into","their","such","about","after",
+  "before","under","over","than","then","there","here","other","some","more"
+]);
+
+extractBtn.addEventListener("click",runExtraction);
+
+async function runExtraction(){
+  if(!currentFile)return;
+  extractBtn.disabled=true;
+  dictHitsCard.style.display="none";
+  newCandidatesCard.style.display="none";
+  try{
+    await ensureIndexed(msg=>{ candidateStatus.textContent=msg; });
+    candidateStatus.textContent="候補を抽出しています……";
+
+    const dictHits=findDictHitsInDoc();
+    const newCandidates=findNewCandidates(dictHits);
+
+    renderDictHits(dictHits);
+    renderNewCandidates(newCandidates);
+
+    candidateStatus.textContent=`抽出完了：辞書一致 ${dictHits.length}件 / 未登録候補 ${newCandidates.length}件`;
+  }catch(err){
+    console.error(err);
+    candidateStatus.innerHTML='<span class="error">候補抽出中にエラーが発生しました。</span>';
+  }finally{
+    extractBtn.disabled=false;
+  }
+}
+
+function findDictHitsInDoc(){
+  const fullTextLower=docIndex.lines.map(l=>l.text).join("\n").toLowerCase();
+  const hits=[];
+  FLAT_DICT.forEach(item=>{
+    const variants=[item.term,...item.aliases].filter(Boolean);
+    let count=0;
+    variants.forEach(v=>{
+      const esc=v.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+      const re=new RegExp(esc,"g");
+      const m=fullTextLower.match(re);
+      if(m) count+=m.length;
+    });
+    if(count>0) hits.push({...item,count});
+  });
+  hits.sort((a,b)=>b.count-a.count || a.term.localeCompare(b.term));
+  return hits;
+}
+
+function findNewCandidates(dictHits){
+  const dictTermSetLower=new Set(
+    FLAT_DICT.flatMap(item=>[item.term,...item.aliases]).map(s=>s.toLowerCase())
+  );
+  const existingTermsLower=new Set(getTerms().map(t=>t.toLowerCase()));
+
+  const allCapsRe = /\b[A-Z]{2,6}(-\d+)?\b/g;
+  const binomialRe = /\b[A-Z][a-z]{2,}\s+[a-z]{3,}\b/g;
+  const drugSuffixRe = /[一-龥ぁ-んァ-ヶー]{2,12}(マイシン|ペネム|シリン|プラチン|系薬)/g;
+
+  const candidates=new Map(); // key: term(normalized) -> {term,count,rules:Set,italicGuess}
+
+  function addHit(term,ruleId,italicGuess){
+    const key=term.toLowerCase();
+    if(!candidates.has(key)){
+      candidates.set(key,{term,count:0,rules:new Set(),italicGuess:!!italicGuess});
+    }
+    const c=candidates.get(key);
+    c.count++;
+    c.rules.add(ruleId);
+  }
+
+  docIndex.lines.forEach(entry=>{
+    const text=entry.text;
+
+    let m;
+    allCapsRe.lastIndex=0;
+    while((m=allCapsRe.exec(text))!==null){
+      const term=m[0];
+      if(term.length<2)continue;
+      addHit(term,"allcaps_abbr",false);
+    }
+
+    binomialRe.lastIndex=0;
+    while((m=binomialRe.exec(text))!==null){
+      const [w1,w2]=m[0].split(/\s+/);
+      if(STOPWORDS.has(w1.toLowerCase())||STOPWORDS.has(w2.toLowerCase()))continue;
+      addHit(m[0],"binomial_name",true);
+    }
+
+    drugSuffixRe.lastIndex=0;
+    while((m=drugSuffixRe.exec(text))!==null){
+      addHit(m[0],"drug_suffix_ja",false);
+    }
+  });
+
+  const results=[];
+  candidates.forEach(c=>{
+    const key=c.term.toLowerCase();
+    if(dictTermSetLower.has(key))return;       // 既に辞書にある語は「辞書一致」側に出るので除外
+    if(existingTermsLower.has(key))return;     // 既に検索語として入力済みの語は除外
+
+    let score=0;
+    c.rules.forEach(rid=>{
+      const rule=SCORING_RULES.find(r=>r.id===rid);
+      if(rule)score+=rule.score;
+    });
+    score+=Math.min(c.count,5); // 頻度ボーナス（上限5）
+
+    results.push({
+      term:c.term,
+      count:c.count,
+      score,
+      rules:[...c.rules],
+      italicGuess:c.italicGuess
+    });
+  });
+
+  results.sort((a,b)=>b.score-a.score || b.count-a.count || a.term.localeCompare(b.term));
+  return results.slice(0,40);
+}
+
+const RULE_LABELS={
+  allcaps_abbr:"全大文字略語",
+  binomial_name:"学名パターン",
+  drug_suffix_ja:"薬剤語尾",
+};
+
+function renderDictHits(hits){
+  dictHitsList.innerHTML="";
+  if(!hits.length){
+    dictHitsList.innerHTML='<div class="empty">辞書に登録された語で、この文書中に見つかったものはありませんでした。</div>';
+    dictHitsCard.style.display="block";
+    return;
+  }
+  hits.forEach(item=>{
+    const row=document.createElement("div");
+    row.className="candRow";
+    row.innerHTML=`
+      <span class="candTerm ${item.italic?"italic":""}">${renderTermMarkup(item)}</span>
+      <span class="candMeta">
+        <span class="ruleBadge">${CATEGORY_LABELS[item.category]||item.category}</span>
+        <span class="ruleBadge">出現 ${item.count}回</span>
+        ${item.ja?`<span class="small">${escapeHtml(item.ja)}</span>`:""}
+      </span>
+      <button type="button" class="addCandBtn">＋ 追加</button>`;
+    const btn=row.querySelector(".addCandBtn");
+    btn.addEventListener("click",()=>{
+      addOrFillTerm(item.term);
+      btn.textContent="追加済み✓";
+      btn.classList.add("added");
+      btn.disabled=true;
+    });
+    dictHitsList.appendChild(row);
+  });
+  dictHitsCard.style.display="block";
+}
+
+function renderNewCandidates(list){
+  newCandidatesList.innerHTML="";
+  if(!list.length){
+    newCandidatesList.innerHTML='<div class="empty">辞書未登録の候補は見つかりませんでした。</div>';
+    newCandidatesCard.style.display="block";
+    return;
+  }
+  list.forEach(c=>{
+    const row=document.createElement("div");
+    row.className="candRow";
+    const ruleBadges=c.rules.map(r=>`<span class="ruleBadge">${RULE_LABELS[r]||r}</span>`).join("");
+    row.innerHTML=`
+      <span class="candTerm ${c.italicGuess?"italic":""}">${escapeHtml(c.term)}</span>
+      <span class="candMeta">
+        <span class="scoreBadge">スコア ${c.score}</span>
+        <span class="ruleBadge">出現 ${c.count}回</span>
+        ${ruleBadges}
+      </span>
+      <button type="button" class="addCandBtn">＋ 追加</button>`;
+    const btn=row.querySelector(".addCandBtn");
+    btn.addEventListener("click",()=>{
+      addOrFillTerm(c.term);
+      btn.textContent="追加済み✓";
+      btn.classList.add("added");
+      btn.disabled=true;
+    });
+    newCandidatesList.appendChild(row);
+  });
+  newCandidatesCard.style.display="block";
 }
 
 /* 初期表示 */
