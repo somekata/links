@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漢検２級 読み書き道場</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E6;
+    --paper-2:#EFE7D6;
+    --ink:#2B2620;
+    --ink-soft:#5B5346;
+    --line:#D9CFB8;
+    --shu:#A6332B;
+    --shu-deep:#7E2620;
+    --gold:#B08D3F;
+    --ai:#2B5F73;
+    --ok:#3E6B4B;
+    --ng:#A6332B;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:radial-gradient(circle at 1px 1px, rgba(43,38,32,0.05) 1px, transparent 0);
+    background-size:22px 22px;
+    color:var(--ink);
+    font-family:'Noto Sans JP', sans-serif;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:28px 18px 80px;}
+
+  header{
+    text-align:center; padding:18px 0 22px;
+    border-bottom:3px double var(--ink); margin-bottom:22px; position:relative;
+  }
+  header .kan{
+    font-family:'Shippori Mincho', serif; font-weight:700;
+    font-size:2rem; letter-spacing:.08em;
+  }
+  header .sub{font-size:.78rem; color:var(--ink-soft); letter-spacing:.15em; margin-top:6px;}
+  header .seal{
+    position:absolute; top:8px; right:6px; width:46px;height:46px;
+    border:2.5px solid var(--shu); border-radius:3px; color:var(--shu);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Shippori Mincho',serif; font-weight:700; font-size:1rem;
+    transform:rotate(-4deg); opacity:.85;
+  }
+
+  nav{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:26px;}
+  nav button{
+    font-family:'Noto Serif JP', serif; font-size:.88rem; background:transparent;
+    border:1px solid var(--line); color:var(--ink-soft); padding:9px 16px;
+    border-radius:var(--radius); cursor:pointer; transition:.15s;
+  }
+  nav button:hover{border-color:var(--gold); color:var(--ink);}
+  nav button.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+  section.view{display:none;}
+  section.view.active{display:block;}
+
+  /* --- list --- */
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; align-items:center;}
+  #searchBox{
+    flex:1 1 220px; padding:10px 12px; font-size:.95rem;
+    border:1px solid var(--line); background:#fff; border-radius:var(--radius); font-family:inherit;
+  }
+  #searchBox:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  #toggleHideBtn{
+    font-family:'Noto Serif JP', serif; font-size:.82rem; background:var(--ink); color:var(--paper);
+    border:1px solid var(--ink); padding:9px 16px; border-radius:var(--radius); cursor:pointer; white-space:nowrap;
+  }
+  #toggleHideBtn:hover{background:var(--shu-deep); border-color:var(--shu-deep);}
+  .count-line{font-size:.8rem; color:var(--ink-soft); margin-bottom:10px;}
+
+  .kanji-grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;}
+  @media(max-width:760px){ .kanji-grid{grid-template-columns:repeat(4,1fr);} }
+  @media(max-width:560px){ .kanji-grid{grid-template-columns:repeat(3,1fr);} }
+  @media(max-width:380px){ .kanji-grid{grid-template-columns:repeat(2,1fr);} }
+
+  .kanji-card{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px 6px 8px; text-align:center; cursor:pointer;
+  }
+  .kanji-card .kj{font-family:'Shippori Mincho',serif; font-weight:700; font-size:1.85rem; line-height:1.2;}
+  .kanji-card .rd{font-size:.78rem; color:var(--shu-deep); margin-top:4px; line-height:1.5; min-height:1.4em; letter-spacing:.02em;}
+  .kanji-card .rd .blank{color:var(--line);}
+  .kanji-card .rd .dash{color:var(--line);}
+  .kanji-card .ex{margin-top:6px; padding-top:5px; border-top:1px dashed var(--line);}
+  .kanji-card .ex-line{
+    font-size:.66rem; color:var(--ink-soft); line-height:1.5; text-align:left;
+    display:flex; align-items:flex-start; gap:4px; margin-bottom:3px;
+  }
+  .kanji-card .ex-line:last-child{margin-bottom:0;}
+  .kanji-card .ex-tag{
+    flex:none; font-size:.6rem; font-family:'Noto Serif JP',serif; font-weight:700;
+    border-radius:3px; padding:0 4px; line-height:1.5; margin-top:1px;
+  }
+  .kanji-card .ex-tag.on{background:#F3E1DF; color:var(--shu-deep);}
+  .kanji-card .ex-tag.kun{background:#DFEBF0; color:var(--ai);}
+  .kanji-card .ex u{color:var(--shu); font-weight:700; text-decoration-color:var(--gold);}
+
+  /* --- setup screens --- */
+  .setup-box{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:34px 24px; text-align:center;
+  }
+  .setup-box p{color:var(--ink-soft); font-size:.85rem; margin-bottom:20px;}
+  .setup-box label{font-family:'Noto Serif JP',serif; font-size:.9rem; margin-right:10px;}
+  .setup-box input[type=number]{
+    width:80px; padding:8px 10px; font-size:1rem; text-align:center;
+    border:1px solid var(--line); border-radius:var(--radius); font-family:inherit;
+  }
+  .start-btn{
+    display:inline-block; margin-top:22px;
+    font-family:'Noto Serif JP',serif; background:var(--ink); color:var(--paper); border:none;
+    padding:11px 30px; border-radius:var(--radius); cursor:pointer; font-size:.9rem; letter-spacing:.1em;
+  }
+  .start-btn:hover{background:var(--shu-deep);}
+
+  /* --- quiz common --- */
+  .quiz-box{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px 22px; text-align:center; position:relative; min-height:280px;
+  }
+  .quiz-progress{font-size:.78rem; color:var(--ink-soft); margin-bottom:16px; letter-spacing:.05em;}
+  .quiz-sentence{
+    font-family:'Noto Serif JP',serif; font-size:1.4rem; line-height:2.1;
+    margin-bottom:26px; letter-spacing:.03em;
+  }
+  .quiz-sentence u{color:var(--shu); text-decoration-color:var(--gold); text-underline-offset:4px;}
+  .stamp{
+    position:absolute; top:16px; right:20px;
+    font-family:'Shippori Mincho',serif; font-weight:700; font-size:1.5rem;
+    border:3px solid; border-radius:6px; padding:2px 10px;
+    transform:rotate(-8deg); opacity:0; transition:opacity .15s;
+  }
+  .stamp.show{opacity:.9;}
+  .stamp.ok{color:var(--ok); border-color:var(--ok);}
+  .stamp.ng{color:var(--ng); border-color:var(--ng);}
+
+  /* --- tile answer (yomi quiz) --- */
+  .answer-strip{
+    min-height:52px; border:2px solid var(--line); border-radius:var(--radius);
+    background:var(--paper-2); display:flex; align-items:center; justify-content:center;
+    gap:4px; margin-bottom:18px; padding:6px; flex-wrap:wrap;
+  }
+  .answer-strip .slot{
+    font-family:'Noto Serif JP',serif; font-size:1.3rem; font-weight:700;
+    min-width:34px; height:38px; display:flex; align-items:center; justify-content:center;
+    border-bottom:2px solid var(--gold); color:var(--ink); cursor:pointer;
+  }
+  .answer-strip .placeholder{color:var(--ink-soft); font-size:.85rem;}
+  .tile-pool{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:20px;}
+  .tile-pool button{
+    font-family:'Noto Serif JP',serif; font-size:1.2rem; font-weight:700;
+    width:46px; height:46px; border:1px solid var(--line); background:#fff;
+    border-radius:50%; cursor:pointer;
+  }
+  .tile-pool button:hover:not(:disabled){border-color:var(--gold); background:var(--paper-2);}
+  .tile-pool button:disabled{opacity:.25; cursor:default;}
+  .quiz-actions{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  .quiz-actions button{
+    font-family:'Noto Serif JP',serif; font-size:.85rem; padding:10px 20px;
+    border-radius:var(--radius); cursor:pointer; letter-spacing:.05em;
+  }
+  .btn-clear{background:#fff; border:1px solid var(--line); color:var(--ink-soft);}
+  .btn-submit{background:var(--ink); color:var(--paper); border:1px solid var(--ink);}
+  .btn-submit:disabled{opacity:.4; cursor:default;}
+  .btn-next{background:var(--shu); color:#fff; border:1px solid var(--shu); display:none;}
+  .btn-next.show{display:inline-block;}
+  .answer-reveal{font-size:.85rem; color:var(--ink-soft); margin-top:12px; min-height:1.4em;}
+  .answer-reveal b{color:var(--shu); font-family:'Noto Serif JP',serif; font-size:1.05rem;}
+
+  /* --- result screen --- */
+  .result-box{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:40px 24px; text-align:center;}
+  .result-box .big{font-family:'Shippori Mincho',serif; font-weight:700; font-size:2.4rem; margin-bottom:10px;}
+  .result-box p{color:var(--ink-soft); font-size:.9rem;}
+
+  /* --- kaki (writing) quiz --- */
+  .canvas-wrap{position:relative; width:280px; height:280px; margin:0 auto 18px; border:2px solid var(--line); background:#fff; border-radius:var(--radius);}
+  .canvas-wrap canvas{position:absolute; top:0; left:0; touch-action:none;}
+  #guideCanvas{opacity:.18;}
+  .kaki-actions{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:14px;}
+  .kaki-actions button{
+    font-family:'Noto Serif JP',serif; font-size:.82rem; padding:9px 16px;
+    border-radius:var(--radius); cursor:pointer; letter-spacing:.03em;
+    background:#fff; border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .kaki-actions button.primary{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .kaki-actions button.on{border-color:var(--gold); color:var(--gold);}
+  .kaki-result{font-size:.85rem; color:var(--ink-soft); min-height:2.6em; margin-top:6px;}
+  .kaki-result b{font-family:'Shippori Mincho',serif; font-size:1.3rem; color:var(--ink);}
+  .kaki-note{font-size:.68rem; color:var(--ink-soft); margin-top:14px; line-height:1.7;}
+
+  footer{
+    max-width:900px; margin:50px auto 0; padding:16px 18px 0;
+    border-top:1px solid var(--line); font-size:.68rem; color:var(--ink-soft); line-height:1.8;
+  }
+
+  @media(max-width:520px){
+    header .kan{font-size:1.5rem;}
+    .quiz-sentence{font-size:1.2rem;}
+  }
+
+  @media print{
+    body{background:#fff; color:#000;}
+    nav, .toolbar, .count-line, .stamp{display:none !important;}
+    header .seal{display:none;}
+    section.view{display:none !important;}
+    #view-list{display:block !important;}
+    .kanji-grid{display:grid !important; grid-template-columns:repeat(5,1fr) !important; gap:6px;}
+    .kanji-card{break-inside:avoid; page-break-inside:avoid; border:1px solid #999; background:#fff;}
+    .kanji-card .rd, .kanji-card .ex-line{color:#000;}
+    footer{break-inside:avoid; page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<span style="position:absolute; opacity:0; pointer-events:none; font-family:'Klee One', sans-serif;">漢</span>
+<div class="wrap">
+
+  <header>
+    <div class="seal">検２</div>
+    <div class="kan">漢検２級　読み書き道場</div>
+    <div class="sub">対象漢字196字（読み方の異なる問題を含め全270問）</div>
+  </header>
+
+  <nav>
+    <button data-view="list" class="active">一覧・全表示</button>
+    <button data-view="yomi">読み取りクイズ</button>
+    <button data-view="kaki">書き取り（手書き）</button>
+  </nav>
+
+  <!-- LIST -->
+  <section class="view active" id="view-list">
+    <div class="toolbar">
+      <input id="searchBox" type="text" placeholder="漢字・読み・用例で検索…">
+      <button id="toggleHideBtn" type="button">読みを隠す</button>
+    </div>
+    <div class="count-line" id="countLine"></div>
+    <div class="kanji-grid" id="kanjiGrid"></div>
+  </section>
+
+  <!-- YOMI QUIZ -->
+  <section class="view" id="view-yomi">
+    <div id="yomiSetup" class="setup-box">
+      <div class="quiz-prompt-label" style="color:var(--gold); font-size:.85rem; margin-bottom:8px;">読み取りクイズ</div>
+      <p>例文中の下線部の漢字の読み方を、ひらがなのタイルを選んで組み立てます。<br>出題数を決めてください（1〜270問）。</p>
+      <label>出題数：</label>
+      <input type="number" id="yomiCount" min="1" max="270" value="10">
+      <br>
+      <button class="start-btn" id="yomiStartBtn">開始</button>
+    </div>
+
+    <div id="yomiQuiz" class="quiz-box" style="display:none;">
+      <div class="stamp" id="stampY"></div>
+      <div class="quiz-progress" id="progressY"></div>
+      <div class="quiz-sentence" id="sentenceY"></div>
+      <div class="answer-strip" id="answerStripY"></div>
+      <div class="tile-pool" id="tilePoolY"></div>
+      <div class="quiz-actions">
+        <button class="btn-clear" id="clearY">クリア</button>
+        <button class="btn-submit" id="submitY" disabled>決定</button>
+        <button class="btn-next" id="nextY">次の問題 →</button>
+      </div>
+      <div class="answer-reveal" id="revealY"></div>
+    </div>
+
+    <div id="yomiResult" class="result-box" style="display:none;">
+      <div class="big" id="yomiResultText"></div>
+      <p id="yomiResultSub"></p>
+      <button class="start-btn" id="yomiRestartBtn">もう一度</button>
+    </div>
+  </section>
+
+  <!-- KAKI (handwriting) -->
+  <section class="view" id="view-kaki">
+    <div id="kakiSetup" class="setup-box">
+      <div class="quiz-prompt-label" style="color:var(--gold); font-size:.85rem; margin-bottom:8px;">書き取り（手書き）クイズ</div>
+      <p>例文中の読み方から、対応する漢字を手書きします。<br>出題数を決めてください（1〜270問）。</p>
+      <label>出題数：</label>
+      <input type="number" id="kakiCount" min="1" max="270" value="10">
+      <br>
+      <button class="start-btn" id="kakiStartBtn">開始</button>
+    </div>
+
+    <div id="kakiQuiz" class="quiz-box" style="display:none;">
+      <div class="stamp" id="stampK"></div>
+      <div class="quiz-progress" id="progressK"></div>
+      <div class="quiz-sentence" id="sentenceK"></div>
+
+      <div class="canvas-wrap">
+        <canvas id="guideCanvas" width="280" height="280"></canvas>
+        <canvas id="drawCanvas" width="280" height="280"></canvas>
+      </div>
+
+      <div class="kaki-actions">
+        <button id="toggleGuideBtn">お手本：非表示</button>
+        <button id="clearCanvasBtn">消去</button>
+        <button id="judgeBtn" class="primary">判定</button>
+        <button class="btn-next" id="nextK" style="display:none;">次の問題 →</button>
+      </div>
+      <div class="kaki-result" id="kakiResultText">結果（最も似ている漢字）：－</div>
+      <div class="kaki-note">※これは筆跡と印刷書体の画像類似度を比較する簡易判定です（正式な手書き認識ではありません）。位置・大きさのズレは無視し、196字中もっとも近い上位3字に正解の字が入っていれば「正解」とする、ゆるめの基準にしています。字形の近さの目安としてご利用ください。</div>
+    </div>
+
+    <div id="kakiResult" class="result-box" style="display:none;">
+      <div class="big" id="kakiResultTextFinal"></div>
+      <p id="kakiResultSub"></p>
+      <button class="start-btn" id="kakiRestartBtn">もう一度</button>
+    </div>
+  </section>
+
+  <footer>
+    掲載の漢字・読み・出典は元サイト（nll.red「漢字検定/２級/対象漢字一覧表」https://nll.red/z_kannji_jyoukyuu/ichiranHYOU2.html）の構成を参考に、AI（Claude, Anthropic）が読み・用例を作成・整理しました。内容には誤りが含まれる可能性があります。検定対策としてご利用の際は、必ず公式の漢字辞典・過去問題集等で正確性をご確認ください。手書き判定は画像類似度による簡易的な近似であり、正式な採点・認識ではありません。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<script>
+const DATA = [{"kanji": "挨", "reading1": "あい", "reading2": null, "example": "朝は挨拶をする。", "example_reading": "あい", "compound_span": "挨拶", "compound_reading": "あいさつ", "reading_type": "on"}, {"kanji": "曖", "reading1": "あい", "reading2": null, "example": "彼の返事は曖昧だ。", "example_reading": "あい", "compound_span": "曖昧", "compound_reading": "あいまい", "reading_type": "on"}, {"kanji": "宛", "reading1": "あ（てる）", "reading2": null, "example": "手紙を宛てる。", "example_reading": "あ", "compound_span": "宛", "compound_reading": "あ", "reading_type": "kun"}, {"kanji": "嵐", "reading1": "あらし", "reading2": "らん", "example": "嵐が近づく。", "example_reading": "あらし", "compound_span": "嵐", "compound_reading": "あらし", "reading_type": "kun"}, {"kanji": "畏", "reading1": "い", "reading2": "おそ（れる）", "example": "神を畏れる。", "example_reading": "おそ", "compound_span": "畏", "compound_reading": "おそ", "reading_type": "kun"}, {"kanji": "萎", "reading1": "い", "reading2": "な（える）", "example": "花が萎える。", "example_reading": "な", "compound_span": "萎", "compound_reading": "な", "reading_type": "kun"}, {"kanji": "椅", "reading1": "い", "reading2": null, "example": "椅子に座る。", "example_reading": "い", "compound_span": "椅子", "compound_reading": "いす", "reading_type": "on"}, {"kanji": "彙", "reading1": "い", "reading2": null, "example": "語彙を増やす。", "example_reading": "い", "compound_span": "語彙", "compound_reading": "ごい", "reading_type": "on"}, {"kanji": "茨", "reading1": "いばら", "reading2": null, "example": "茨の道を歩む。", "example_reading": "いばら", "compound_span": "茨", "compound_reading": "いばら", "reading_type": "kun"}, {"kanji": "咽", "reading1": "いん", "reading2": null, "example": "咽喉が痛い。", "example_reading": "いん", "compound_span": "咽喉", "compound_reading": "いんこう", "reading_type": "on"}, {"kanji": "淫", "reading1": "いん", "reading2": "みだ（ら）", "example": "淫らな行いを慎む。", "example_reading": "みだ", "compound_span": "淫", "compound_reading": "みだ", "reading_type": "kun"}, {"kanji": "唄", "reading1": "うた", "reading2": null, "example": "唄を口ずさむ。", "example_reading": "うた", "compound_span": "唄", "compound_reading": "うた", "reading_type": "kun"}, {"kanji": "鬱", "reading1": "うつ", "reading2": null, "example": "気分が憂鬱だ。", "example_reading": "うつ", "compound_span": "憂鬱", "compound_reading": "ゆううつ", "reading_type": "on"}, {"kanji": "怨", "reading1": "えん", "reading2": "おん", "example": "怨恨を抱く。", "example_reading": "えん", "compound_span": "怨恨", "compound_reading": "えんこん", "reading_type": "on"}, {"kanji": "媛", "reading1": "えん", "reading2": null, "example": "彼女は才媛だ。", "example_reading": "えん", "compound_span": "才媛", "compound_reading": "さいえん", "reading_type": "on"}, {"kanji": "艶", "reading1": "えん", "reading2": "つや", "example": "髪に艶が出る。", "example_reading": "つや", "compound_span": "艶", "compound_reading": "つや", "reading_type": "kun"}, {"kanji": "旺", "reading1": "おう", "reading2": null, "example": "旺盛な食欲。", "example_reading": "おう", "compound_span": "旺盛", "compound_reading": "おうせい", "reading_type": "on"}, {"kanji": "岡", "reading1": "おか", "reading2": null, "example": "岡の上に立つ。", "example_reading": "おか", "compound_span": "岡", "compound_reading": "おか", "reading_type": "kun"}, {"kanji": "臆", "reading1": "おく", "reading2": null, "example": "臆病な性格。", "example_reading": "おく", "compound_span": "臆病", "compound_reading": "おくびょう", "reading_type": "on"}, {"kanji": "俺", "reading1": "おれ", "reading2": null, "example": "俺が行く。", "example_reading": "おれ", "compound_span": "俺", "compound_reading": "おれ", "reading_type": "kun"}, {"kanji": "苛", "reading1": "か", "reading2": null, "example": "苛烈な競争が続く。", "example_reading": "か", "compound_span": "苛烈", "compound_reading": "かれつ", "reading_type": "on"}, {"kanji": "牙", "reading1": "が", "reading2": "きば", "example": "牙をむく。", "example_reading": "きば", "compound_span": "牙", "compound_reading": "きば", "reading_type": "kun"}, {"kanji": "瓦", "reading1": "が", "reading2": "かわら", "example": "瓦の屋根。", "example_reading": "かわら", "compound_span": "瓦", "compound_reading": "かわら", "reading_type": "kun"}, {"kanji": "楷", "reading1": "かい", "reading2": null, "example": "楷書で書く。", "example_reading": "かい", "compound_span": "楷書", "compound_reading": "かいしょ", "reading_type": "on"}, {"kanji": "潰", "reading1": "かい", "reading2": "つぶ（す）", "example": "缶を潰す。", "example_reading": "つぶ", "compound_span": "潰", "compound_reading": "つぶ", "reading_type": "kun"}, {"kanji": "諧", "reading1": "かい", "reading2": null, "example": "諧謔に富む話。", "example_reading": "かい", "compound_span": "諧謔", "compound_reading": "かいぎゃく", "reading_type": "on"}, {"kanji": "崖", "reading1": "がい", "reading2": "がけ", "example": "崖から落ちる。", "example_reading": "がけ", "compound_span": "崖", "compound_reading": "がけ", "reading_type": "kun"}, {"kanji": "蓋", "reading1": "がい", "reading2": "ふた", "example": "鍋の蓋を開ける。", "example_reading": "ふた", "compound_span": "蓋", "compound_reading": "ふた", "reading_type": "kun"}, {"kanji": "骸", "reading1": "がい", "reading2": null, "example": "虫の死骸を見る。", "example_reading": "がい", "compound_span": "死骸", "compound_reading": "しがい", "reading_type": "on"}, {"kanji": "柿", "reading1": "かき", "reading2": null, "example": "柿を食べる。", "example_reading": "かき", "compound_span": "柿", "compound_reading": "かき", "reading_type": "kun"}, {"kanji": "顎", "reading1": "がく", "reading2": "あご", "example": "顎を触る。", "example_reading": "あご", "compound_span": "顎", "compound_reading": "あご", "reading_type": "kun"}, {"kanji": "葛", "reading1": "かつ", "reading2": "くず", "example": "葛のつるが伸びる。", "example_reading": "くず", "compound_span": "葛", "compound_reading": "くず", "reading_type": "kun"}, {"kanji": "釜", "reading1": "かま", "reading2": null, "example": "釜でご飯を炊く。", "example_reading": "かま", "compound_span": "釜", "compound_reading": "かま", "reading_type": "kun"}, {"kanji": "鎌", "reading1": "かま", "reading2": null, "example": "鎌で草を刈る。", "example_reading": "かま", "compound_span": "鎌", "compound_reading": "かま", "reading_type": "kun"}, {"kanji": "韓", "reading1": "かん", "reading2": null, "example": "韓国を訪れる。", "example_reading": "かん", "compound_span": "韓国", "compound_reading": "かんこく", "reading_type": "on"}, {"kanji": "玩", "reading1": "がん", "reading2": null, "example": "玩具で遊ぶ。", "example_reading": "がん", "compound_span": "玩具", "compound_reading": "がんぐ", "reading_type": "on"}, {"kanji": "伎", "reading1": "き", "reading2": null, "example": "歌舞伎を観る。", "example_reading": "き", "compound_span": "歌舞伎", "compound_reading": "かぶき", "reading_type": "on"}, {"kanji": "亀", "reading1": "き", "reading2": "かめ", "example": "亀がのろのろ歩く。", "example_reading": "かめ", "compound_span": "亀", "compound_reading": "かめ", "reading_type": "kun"}, {"kanji": "毀", "reading1": "き", "reading2": null, "example": "名誉を毀損する。", "example_reading": "き", "compound_span": "毀損", "compound_reading": "きそん", "reading_type": "on"}, {"kanji": "畿", "reading1": "き", "reading2": null, "example": "近畿地方に住む。", "example_reading": "き", "compound_span": "近畿", "compound_reading": "きんき", "reading_type": "on"}, {"kanji": "臼", "reading1": "きゅう", "reading2": "うす", "example": "臼で餅をつく。", "example_reading": "うす", "compound_span": "臼", "compound_reading": "うす", "reading_type": "kun"}, {"kanji": "嗅", "reading1": "きゅう", "reading2": "か（ぐ）", "example": "犬が匂いを嗅ぐ。", "example_reading": "か", "compound_span": "嗅", "compound_reading": "か", "reading_type": "kun"}, {"kanji": "巾", "reading1": "きん", "reading2": null, "example": "布巾で拭く。", "example_reading": "きん", "compound_span": "布巾", "compound_reading": "ふきん", "reading_type": "on"}, {"kanji": "僅", "reading1": "きん", "reading2": "わず（か）", "example": "残りは僅かだ。", "example_reading": "わず", "compound_span": "僅", "compound_reading": "わず", "reading_type": "kun"}, {"kanji": "錦", "reading1": "きん", "reading2": "にしき", "example": "錦の旗を掲げる。", "example_reading": "にしき", "compound_span": "錦", "compound_reading": "にしき", "reading_type": "kun"}, {"kanji": "惧", "reading1": "ぐ", "reading2": null, "example": "絶滅を危惧する。", "example_reading": "ぐ", "compound_span": "危惧", "compound_reading": "きぐ", "reading_type": "on"}, {"kanji": "串", "reading1": "くし", "reading2": null, "example": "串に刺して焼く。", "example_reading": "くし", "compound_span": "串", "compound_reading": "くし", "reading_type": "kun"}, {"kanji": "窟", "reading1": "くつ", "reading2": null, "example": "洞窟を探検する。", "example_reading": "くつ", "compound_span": "洞窟", "compound_reading": "どうくつ", "reading_type": "on"}, {"kanji": "熊", "reading1": "くま", "reading2": null, "example": "熊が出没する。", "example_reading": "くま", "compound_span": "熊", "compound_reading": "くま", "reading_type": "kun"}, {"kanji": "詣", "reading1": "けい", "reading2": "もう（でる）", "example": "神社に詣でる。", "example_reading": "もう", "compound_span": "詣", "compound_reading": "もう", "reading_type": "kun"}, {"kanji": "憬", "reading1": "けい", "reading2": null, "example": "都会に憧憬を抱く。", "example_reading": "けい", "compound_span": "憧憬", "compound_reading": "しょうけい", "reading_type": "on"}, {"kanji": "稽", "reading1": "けい", "reading2": null, "example": "剣道の稽古をする。", "example_reading": "けい", "compound_span": "稽古", "compound_reading": "けいこ", "reading_type": "on"}, {"kanji": "隙", "reading1": "げき", "reading2": "すき", "example": "隙を見せる。", "example_reading": "すき", "compound_span": "隙", "compound_reading": "すき", "reading_type": "kun"}, {"kanji": "桁", "reading1": "けた", "reading2": null, "example": "桁を間違える。", "example_reading": "けた", "compound_span": "桁", "compound_reading": "けた", "reading_type": "kun"}, {"kanji": "拳", "reading1": "けん", "reading2": "こぶし", "example": "拳を握りしめる。", "example_reading": "こぶし", "compound_span": "拳", "compound_reading": "こぶし", "reading_type": "kun"}, {"kanji": "鍵", "reading1": "けん", "reading2": "かぎ", "example": "鍵をなくす。", "example_reading": "かぎ", "compound_span": "鍵", "compound_reading": "かぎ", "reading_type": "kun"}, {"kanji": "舷", "reading1": "げん", "reading2": null, "example": "右舷から日が昇る。", "example_reading": "げん", "compound_span": "右舷", "compound_reading": "うげん", "reading_type": "on"}, {"kanji": "股", "reading1": "こ", "reading2": "また", "example": "股を広げる。", "example_reading": "また", "compound_span": "股", "compound_reading": "また", "reading_type": "kun"}, {"kanji": "虎", "reading1": "こ", "reading2": "とら", "example": "虎が吠える。", "example_reading": "とら", "compound_span": "虎", "compound_reading": "とら", "reading_type": "kun"}, {"kanji": "錮", "reading1": "こ", "reading2": null, "example": "禁錮刑を受ける。", "example_reading": "こ", "compound_span": "禁錮", "compound_reading": "きんこ", "reading_type": "on"}, {"kanji": "勾", "reading1": "こう", "reading2": null, "example": "急な勾配を上る。", "example_reading": "こう", "compound_span": "勾配", "compound_reading": "こうばい", "reading_type": "on"}, {"kanji": "梗", "reading1": "こう", "reading2": null, "example": "血管が梗塞を起こす。", "example_reading": "こう", "compound_span": "梗塞", "compound_reading": "こうそく", "reading_type": "on"}, {"kanji": "喉", "reading1": "こう", "reading2": "のど", "example": "喉が渇く。", "example_reading": "のど", "compound_span": "喉", "compound_reading": "のど", "reading_type": "kun"}, {"kanji": "乞", "reading1": "こ（う）", "reading2": null, "example": "許しを乞う。", "example_reading": "こ", "compound_span": "乞", "compound_reading": "こ", "reading_type": "kun"}, {"kanji": "傲", "reading1": "ごう", "reading2": null, "example": "傲慢な態度をとる。", "example_reading": "ごう", "compound_span": "傲", "compound_reading": "ごう", "reading_type": "kun"}, {"kanji": "駒", "reading1": "こま", "reading2": null, "example": "将棋の駒を並べる。", "example_reading": "こま", "compound_span": "駒", "compound_reading": "こま", "reading_type": "kun"}, {"kanji": "頃", "reading1": "ころ", "reading2": null, "example": "その頃を思い出す。", "example_reading": "ころ", "compound_span": "頃", "compound_reading": "ころ", "reading_type": "kun"}, {"kanji": "痕", "reading1": "こん", "reading2": "あと", "example": "傷の痕が残る。", "example_reading": "あと", "compound_span": "痕", "compound_reading": "あと", "reading_type": "kun"}, {"kanji": "沙", "reading1": "さ", "reading2": null, "example": "何の沙汰もない。", "example_reading": "さ", "compound_span": "沙汰", "compound_reading": "さた", "reading_type": "on"}, {"kanji": "挫", "reading1": "ざ", "reading2": null, "example": "計画が挫折する。", "example_reading": "ざ", "compound_span": "挫折", "compound_reading": "ざせつ", "reading_type": "on"}, {"kanji": "采", "reading1": "さい", "reading2": null, "example": "監督が采配を振る。", "example_reading": "さい", "compound_span": "采配", "compound_reading": "さいはい", "reading_type": "on"}, {"kanji": "塞", "reading1": "さい", "reading2": "そく", "example": "塞翁が馬。", "example_reading": "さい", "compound_span": "塞", "compound_reading": "さい", "reading_type": "kun"}, {"kanji": "埼", "reading1": "さい", "reading2": null, "example": "埼玉県に住む。", "example_reading": "さい", "compound_span": "埼玉", "compound_reading": "さいたま", "reading_type": "on"}, {"kanji": "柵", "reading1": "さく", "reading2": null, "example": "柵で囲む。", "example_reading": "さく", "compound_span": "柵", "compound_reading": "さく", "reading_type": "on"}, {"kanji": "刹", "reading1": "さつ", "reading2": "せつ", "example": "刹那的な考え方をする。", "example_reading": "せつ", "compound_span": "刹那", "compound_reading": "せつな", "reading_type": "on"}, {"kanji": "拶", "reading1": "さつ", "reading2": null, "example": "丁寧に挨拶する。", "example_reading": "さつ", "compound_span": "挨拶", "compound_reading": "あいさつ", "reading_type": "on"}, {"kanji": "斬", "reading1": "ざん", "reading2": "き（る）", "example": "刀で斬る。", "example_reading": "き", "compound_span": "斬", "compound_reading": "き", "reading_type": "kun"}, {"kanji": "恣", "reading1": "し", "reading2": null, "example": "恣意的な判断。", "example_reading": "し", "compound_span": "恣意", "compound_reading": "しい", "reading_type": "on"}, {"kanji": "摯", "reading1": "し", "reading2": null, "example": "真摯に向き合う。", "example_reading": "し", "compound_span": "真摯", "compound_reading": "しんし", "reading_type": "on"}, {"kanji": "餌", "reading1": "じ", "reading2": "えさ", "example": "犬に餌をやる。", "example_reading": "えさ", "compound_span": "餌", "compound_reading": "えさ", "reading_type": "kun"}, {"kanji": "鹿", "reading1": "ろく", "reading2": "しか", "example": "鹿が鳴く。", "example_reading": "しか", "compound_span": "鹿", "compound_reading": "しか", "reading_type": "kun"}, {"kanji": "叱", "reading1": "しつ", "reading2": "しか（る）", "example": "先生に叱られる。", "example_reading": "しか", "compound_span": "叱", "compound_reading": "しか", "reading_type": "kun"}, {"kanji": "嫉", "reading1": "しつ", "reading2": null, "example": "嫉妬の感情を抱く。", "example_reading": "しつ", "compound_span": "嫉妬", "compound_reading": "しっと", "reading_type": "on"}, {"kanji": "腫", "reading1": "しゅ", "reading2": "は（れる）", "example": "足が腫れる。", "example_reading": "は", "compound_span": "腫", "compound_reading": "は", "reading_type": "kun"}, {"kanji": "呪", "reading1": "じゅ", "reading2": "のろ（う）", "example": "相手を呪う。", "example_reading": "のろ", "compound_span": "呪", "compound_reading": "のろ", "reading_type": "kun"}, {"kanji": "袖", "reading1": "しゅう", "reading2": "そで", "example": "袖を通す。", "example_reading": "そで", "compound_span": "袖", "compound_reading": "そで", "reading_type": "kun"}, {"kanji": "羞", "reading1": "しゅう", "reading2": null, "example": "羞恥心を感じる。", "example_reading": "しゅう", "compound_span": "羞恥", "compound_reading": "しゅうち", "reading_type": "on"}, {"kanji": "蹴", "reading1": "しゅう", "reading2": "け（る）", "example": "ボールを蹴る。", "example_reading": "け", "compound_span": "蹴", "compound_reading": "け", "reading_type": "kun"}, {"kanji": "憧", "reading1": "しょう", "reading2": "あこが（れる）", "example": "俳優に憧れる。", "example_reading": "あこが", "compound_span": "憧", "compound_reading": "あこが", "reading_type": "kun"}, {"kanji": "拭", "reading1": "しょく", "reading2": "ぬぐ（う）", "example": "汗を拭う。", "example_reading": "ぬぐ", "compound_span": "拭", "compound_reading": "ぬぐ", "reading_type": "kun"}, {"kanji": "尻", "reading1": "しり", "reading2": null, "example": "尻もちをつく。", "example_reading": "しり", "compound_span": "尻", "compound_reading": "しり", "reading_type": "kun"}, {"kanji": "芯", "reading1": "しん", "reading2": null, "example": "鉛筆の芯が折れる。", "example_reading": "しん", "compound_span": "芯", "compound_reading": "しん", "reading_type": "on"}, {"kanji": "腎", "reading1": "じん", "reading2": null, "example": "腎臓の検査を受ける。", "example_reading": "じん", "compound_span": "腎臓", "compound_reading": "じんぞう", "reading_type": "on"}, {"kanji": "須", "reading1": "す", "reading2": null, "example": "参加は必須だ。", "example_reading": "す", "compound_span": "必須", "compound_reading": "ひっす", "reading_type": "on"}, {"kanji": "裾", "reading1": "すそ", "reading2": null, "example": "裾を踏んでしまう。", "example_reading": "すそ", "compound_span": "裾", "compound_reading": "すそ", "reading_type": "kun"}, {"kanji": "凄", "reading1": "せい", "reading2": null, "example": "凄惨な現場を見る。", "example_reading": "せい", "compound_span": "凄惨", "compound_reading": "せいさん", "reading_type": "on"}, {"kanji": "醒", "reading1": "せい", "reading2": null, "example": "意識が覚醒する。", "example_reading": "せい", "compound_span": "覚醒", "compound_reading": "かくせい", "reading_type": "on"}, {"kanji": "脊", "reading1": "せき", "reading2": null, "example": "脊椎を痛める。", "example_reading": "せき", "compound_span": "脊椎", "compound_reading": "せきつい", "reading_type": "on"}, {"kanji": "戚", "reading1": "せき", "reading2": null, "example": "親戚が集まる。", "example_reading": "せき", "compound_span": "親戚", "compound_reading": "しんせき", "reading_type": "on"}, {"kanji": "羨", "reading1": "せん", "reading2": "うらや（む）", "example": "友人の成功を羨む。", "example_reading": "うらや", "compound_span": "羨", "compound_reading": "うらや", "reading_type": "kun"}, {"kanji": "煎", "reading1": "せん", "reading2": "い（る）", "example": "豆を煎る。", "example_reading": "い", "compound_span": "煎", "compound_reading": "い", "reading_type": "kun"}, {"kanji": "腺", "reading1": "せん", "reading2": null, "example": "汗腺から汗が出る。", "example_reading": "せん", "compound_span": "汗腺", "compound_reading": "かんせん", "reading_type": "on"}, {"kanji": "詮", "reading1": "せん", "reading2": null, "example": "他人のことを詮索する。", "example_reading": "せん", "compound_span": "詮索", "compound_reading": "せんさく", "reading_type": "on"}, {"kanji": "箋", "reading1": "せん", "reading2": null, "example": "便箋に手紙を書く。", "example_reading": "せん", "compound_span": "便箋", "compound_reading": "びんせん", "reading_type": "on"}, {"kanji": "膳", "reading1": "ぜん", "reading2": null, "example": "お膳を用意する。", "example_reading": "ぜん", "compound_span": "膳", "compound_reading": "ぜん", "reading_type": "on"}, {"kanji": "狙", "reading1": "そ", "reading2": "ねら（う）", "example": "獲物を狙う。", "example_reading": "ねら", "compound_span": "狙", "compound_reading": "ねら", "reading_type": "kun"}, {"kanji": "遡", "reading1": "そ", "reading2": "さかのぼ（る）", "example": "川を遡る。", "example_reading": "さかのぼ", "compound_span": "遡", "compound_reading": "さかのぼ", "reading_type": "kun"}, {"kanji": "曾", "reading1": "そう", "reading2": "ぞ", "example": "曾祖父の話を聞く。", "example_reading": "そう", "compound_span": "曾祖父", "compound_reading": "そうそふ", "reading_type": "on"}, {"kanji": "爽", "reading1": "そう", "reading2": "さわ（やか）", "example": "爽やかな朝を迎える。", "example_reading": "さわ", "compound_span": "爽", "compound_reading": "さわ", "reading_type": "kun"}, {"kanji": "痩", "reading1": "そう", "reading2": "や（せる）", "example": "無理な運動で痩せる。", "example_reading": "や", "compound_span": "痩", "compound_reading": "や", "reading_type": "kun"}, {"kanji": "踪", "reading1": "そう", "reading2": null, "example": "彼は失踪した。", "example_reading": "そう", "compound_span": "失踪", "compound_reading": "しっそう", "reading_type": "on"}, {"kanji": "捉", "reading1": "そく", "reading2": "とら（える）", "example": "要点を捉える。", "example_reading": "とら", "compound_span": "捉", "compound_reading": "とら", "reading_type": "kun"}, {"kanji": "遜", "reading1": "そん", "reading2": null, "example": "謙遜して答える。", "example_reading": "そん", "compound_span": "謙遜", "compound_reading": "けんそん", "reading_type": "on"}, {"kanji": "汰", "reading1": "た", "reading2": null, "example": "自然に淘汰される。", "example_reading": "た", "compound_span": "淘汰", "compound_reading": "とうた", "reading_type": "on"}, {"kanji": "唾", "reading1": "だ", "reading2": "つば", "example": "唾を飲み込む。", "example_reading": "つば", "compound_span": "唾", "compound_reading": "つば", "reading_type": "kun"}, {"kanji": "堆", "reading1": "たい", "reading2": null, "example": "土砂が堆積する。", "example_reading": "たい", "compound_span": "堆積", "compound_reading": "たいせき", "reading_type": "on"}, {"kanji": "戴", "reading1": "たい", "reading2": null, "example": "王が戴冠する。", "example_reading": "たい", "compound_span": "戴冠", "compound_reading": "たいかん", "reading_type": "on"}, {"kanji": "誰", "reading1": "だれ", "reading2": null, "example": "誰が来るのか。", "example_reading": "だれ", "compound_span": "誰", "compound_reading": "だれ", "reading_type": "kun"}, {"kanji": "旦", "reading1": "たん", "reading2": "だん", "example": "元旦を祝う。", "example_reading": "だん", "compound_span": "元旦", "compound_reading": "がんたん", "reading_type": "on"}, {"kanji": "綻", "reading1": "たん", "reading2": "ほころ（びる）", "example": "服が綻びる。", "example_reading": "ほころ", "compound_span": "綻", "compound_reading": "ほころ", "reading_type": "kun"}, {"kanji": "緻", "reading1": "ち", "reading2": null, "example": "緻密な計画を立てる。", "example_reading": "ち", "compound_span": "緻密", "compound_reading": "ちみつ", "reading_type": "on"}, {"kanji": "酎", "reading1": "ちゅう", "reading2": null, "example": "焼酎を飲む。", "example_reading": "ちゅう", "compound_span": "焼酎", "compound_reading": "しょうちゅう", "reading_type": "on"}, {"kanji": "貼", "reading1": "ちょう", "reading2": "は（る）", "example": "切手を貼る。", "example_reading": "は", "compound_span": "貼", "compound_reading": "は", "reading_type": "kun"}, {"kanji": "嘲", "reading1": "ちょう", "reading2": "あざけ（る）", "example": "失敗を嘲る。", "example_reading": "あざけ", "compound_span": "嘲", "compound_reading": "あざけ", "reading_type": "kun"}, {"kanji": "捗", "reading1": "ちょく", "reading2": null, "example": "作業の進捗を確認する。", "example_reading": "ちょく", "compound_span": "進捗", "compound_reading": "しんちょく", "reading_type": "on"}, {"kanji": "椎", "reading1": "つい", "reading2": null, "example": "頸椎を痛める。", "example_reading": "つい", "compound_span": "頸椎", "compound_reading": "けいつい", "reading_type": "on"}, {"kanji": "爪", "reading1": "つめ", "reading2": "つま", "example": "爪を切る。", "example_reading": "つめ", "compound_span": "爪", "compound_reading": "つめ", "reading_type": "kun"}, {"kanji": "鶴", "reading1": "つる", "reading2": null, "example": "鶴が空を飛ぶ。", "example_reading": "つる", "compound_span": "鶴", "compound_reading": "つる", "reading_type": "kun"}, {"kanji": "諦", "reading1": "てい", "reading2": "あきら（める）", "example": "夢を諦める。", "example_reading": "あきら", "compound_span": "諦", "compound_reading": "あきら", "reading_type": "kun"}, {"kanji": "溺", "reading1": "でき", "reading2": "おぼ（れる）", "example": "川で溺れる。", "example_reading": "おぼ", "compound_span": "溺", "compound_reading": "おぼ", "reading_type": "kun"}, {"kanji": "塡", "reading1": "てん", "reading2": null, "example": "赤字を補塡する。", "example_reading": "てん", "compound_span": "補塡", "compound_reading": "ほてん", "reading_type": "on"}, {"kanji": "妬", "reading1": "と", "reading2": "ねた（む）", "example": "他人を妬む。", "example_reading": "ねた", "compound_span": "妬", "compound_reading": "ねた", "reading_type": "kun"}, {"kanji": "賭", "reading1": "と", "reading2": "か（ける）", "example": "大金を賭ける。", "example_reading": "か", "compound_span": "賭", "compound_reading": "か", "reading_type": "kun"}, {"kanji": "藤", "reading1": "とう", "reading2": "ふじ", "example": "藤の花が咲く。", "example_reading": "ふじ", "compound_span": "藤", "compound_reading": "ふじ", "reading_type": "kun"}, {"kanji": "瞳", "reading1": "どう", "reading2": "ひとみ", "example": "瞳を輝かせる。", "example_reading": "ひとみ", "compound_span": "瞳", "compound_reading": "ひとみ", "reading_type": "kun"}, {"kanji": "栃", "reading1": "とち", "reading2": null, "example": "栃木県を旅する。", "example_reading": "とち", "compound_span": "栃", "compound_reading": "とち", "reading_type": "kun"}, {"kanji": "頓", "reading1": "とん", "reading2": null, "example": "計画が頓挫する。", "example_reading": "とん", "compound_span": "頓挫", "compound_reading": "とんざ", "reading_type": "on"}, {"kanji": "貪", "reading1": "どん", "reading2": "むさぼ（る）", "example": "食べ物を貪る。", "example_reading": "むさぼ", "compound_span": "貪", "compound_reading": "むさぼ", "reading_type": "kun"}, {"kanji": "丼", "reading1": "どんぶり", "reading2": "どん", "example": "丼を注文する。", "example_reading": "どんぶり", "compound_span": "丼", "compound_reading": "どんぶり", "reading_type": "kun"}, {"kanji": "那", "reading1": "な", "reading2": null, "example": "刹那的な考え方。", "example_reading": "な", "compound_span": "刹那", "compound_reading": "せつな", "reading_type": "on"}, {"kanji": "奈", "reading1": "な", "reading2": null, "example": "奈落の底に落ちる。", "example_reading": "な", "compound_span": "奈落", "compound_reading": "ならく", "reading_type": "on"}, {"kanji": "梨", "reading1": "なし", "reading2": "り", "example": "梨を食べる。", "example_reading": "なし", "compound_span": "梨", "compound_reading": "なし", "reading_type": "kun"}, {"kanji": "謎", "reading1": "なぞ", "reading2": null, "example": "謎を解く。", "example_reading": "なぞ", "compound_span": "謎", "compound_reading": "なぞ", "reading_type": "kun"}, {"kanji": "鍋", "reading1": "なべ", "reading2": null, "example": "鍋を囲んで食べる。", "example_reading": "なべ", "compound_span": "鍋", "compound_reading": "なべ", "reading_type": "kun"}, {"kanji": "匂", "reading1": "にお（う）", "reading2": null, "example": "花が匂う。", "example_reading": "にお", "compound_span": "匂", "compound_reading": "にお", "reading_type": "kun"}, {"kanji": "虹", "reading1": "にじ", "reading2": null, "example": "空に虹がかかる。", "example_reading": "にじ", "compound_span": "虹", "compound_reading": "にじ", "reading_type": "kun"}, {"kanji": "捻", "reading1": "ねん", "reading2": null, "example": "足首を捻挫する。", "example_reading": "ねん", "compound_span": "捻挫", "compound_reading": "ねんざ", "reading_type": "on"}, {"kanji": "罵", "reading1": "ば", "reading2": "ののし（る）", "example": "大声で罵る。", "example_reading": "ののし", "compound_span": "罵", "compound_reading": "ののし", "reading_type": "kun"}, {"kanji": "剥", "reading1": "はく", "reading2": "は（がす）", "example": "シールを剥がす。", "example_reading": "は", "compound_span": "剥", "compound_reading": "は", "reading_type": "kun"}, {"kanji": "箸", "reading1": "はし", "reading2": null, "example": "箸でご飯を食べる。", "example_reading": "はし", "compound_span": "箸", "compound_reading": "はし", "reading_type": "kun"}, {"kanji": "氾", "reading1": "はん", "reading2": null, "example": "川が氾濫する。", "example_reading": "はん", "compound_span": "氾濫", "compound_reading": "はんらん", "reading_type": "on"}, {"kanji": "汎", "reading1": "はん", "reading2": null, "example": "汎用性が高い製品。", "example_reading": "はん", "compound_span": "汎用", "compound_reading": "はんよう", "reading_type": "on"}, {"kanji": "阪", "reading1": "はん", "reading2": null, "example": "阪神地区を旅行する。", "example_reading": "はん", "compound_span": "阪神", "compound_reading": "はんしん", "reading_type": "on"}, {"kanji": "斑", "reading1": "はん", "reading2": null, "example": "皮膚に斑点が出る。", "example_reading": "はん", "compound_span": "斑点", "compound_reading": "はんてん", "reading_type": "on"}, {"kanji": "眉", "reading1": "び", "reading2": "まゆ", "example": "眉をひそめる。", "example_reading": "まゆ", "compound_span": "眉", "compound_reading": "まゆ", "reading_type": "kun"}, {"kanji": "膝", "reading1": "ひざ", "reading2": null, "example": "膝をつく。", "example_reading": "ひざ", "compound_span": "膝", "compound_reading": "ひざ", "reading_type": "kun"}, {"kanji": "肘", "reading1": "ひじ", "reading2": null, "example": "肘をつく。", "example_reading": "ひじ", "compound_span": "肘", "compound_reading": "ひじ", "reading_type": "kun"}, {"kanji": "阜", "reading1": "ふ", "reading2": null, "example": "岐阜県を訪れる。", "example_reading": "ふ", "compound_span": "岐阜", "compound_reading": "ぎふ", "reading_type": "on"}, {"kanji": "訃", "reading1": "ふ", "reading2": null, "example": "訃報が届く。", "example_reading": "ふ", "compound_span": "訃報", "compound_reading": "ふほう", "reading_type": "on"}, {"kanji": "蔽", "reading1": "へい", "reading2": null, "example": "事実を隠蔽する。", "example_reading": "へい", "compound_span": "隠蔽", "compound_reading": "いんぺい", "reading_type": "on"}, {"kanji": "餅", "reading1": "へい", "reading2": "もち", "example": "正月に餅を食べる。", "example_reading": "もち", "compound_span": "餅", "compound_reading": "もち", "reading_type": "kun"}, {"kanji": "璧", "reading1": "へき", "reading2": null, "example": "完璧な仕上がりだ。", "example_reading": "へき", "compound_span": "完璧", "compound_reading": "かんぺき", "reading_type": "on"}, {"kanji": "蔑", "reading1": "べつ", "reading2": null, "example": "人を軽蔑する。", "example_reading": "べつ", "compound_span": "軽蔑", "compound_reading": "けいべつ", "reading_type": "on"}, {"kanji": "哺", "reading1": "ほ", "reading2": null, "example": "哺乳類を観察する。", "example_reading": "ほ", "compound_span": "哺乳", "compound_reading": "ほにゅう", "reading_type": "on"}, {"kanji": "蜂", "reading1": "ほう", "reading2": "はち", "example": "蜂に刺される。", "example_reading": "はち", "compound_span": "蜂", "compound_reading": "はち", "reading_type": "kun"}, {"kanji": "貌", "reading1": "ぼう", "reading2": null, "example": "容貌が変わる。", "example_reading": "ぼう", "compound_span": "容貌", "compound_reading": "ようぼう", "reading_type": "on"}, {"kanji": "頬", "reading1": "ほお", "reading2": null, "example": "頬を赤らめる。", "example_reading": "ほお", "compound_span": "頬", "compound_reading": "ほお", "reading_type": "kun"}, {"kanji": "睦", "reading1": "ぼく", "reading2": null, "example": "親睦を深める。", "example_reading": "ぼく", "compound_span": "親睦", "compound_reading": "しんぼく", "reading_type": "on"}, {"kanji": "勃", "reading1": "ぼつ", "reading2": null, "example": "戦争が勃発する。", "example_reading": "ぼつ", "compound_span": "勃発", "compound_reading": "ぼっぱつ", "reading_type": "on"}, {"kanji": "昧", "reading1": "まい", "reading2": null, "example": "曖昧な返事をする。", "example_reading": "まい", "compound_span": "曖昧", "compound_reading": "あいまい", "reading_type": "on"}, {"kanji": "枕", "reading1": "まくら", "reading2": null, "example": "枕を高くして眠る。", "example_reading": "まくら", "compound_span": "枕", "compound_reading": "まくら", "reading_type": "kun"}, {"kanji": "蜜", "reading1": "みつ", "reading2": null, "example": "蜜を集める。", "example_reading": "みつ", "compound_span": "蜜", "compound_reading": "みつ", "reading_type": "on"}, {"kanji": "冥", "reading1": "めい", "reading2": "みょう", "example": "冥利に尽きる。", "example_reading": "みょう", "compound_span": "冥利", "compound_reading": "みょうり", "reading_type": "on"}, {"kanji": "麺", "reading1": "めん", "reading2": null, "example": "麺をゆでる。", "example_reading": "めん", "compound_span": "麺", "compound_reading": "めん", "reading_type": "on"}, {"kanji": "冶", "reading1": "や", "reading2": null, "example": "人格を陶冶する。", "example_reading": "や", "compound_span": "陶冶", "compound_reading": "とうや", "reading_type": "on"}, {"kanji": "弥", "reading1": "や", "reading2": null, "example": "弥生時代を学ぶ。", "example_reading": "や", "compound_span": "弥生", "compound_reading": "やよい", "reading_type": "on"}, {"kanji": "闇", "reading1": "やみ", "reading2": null, "example": "闇に包まれる。", "example_reading": "やみ", "compound_span": "闇", "compound_reading": "やみ", "reading_type": "kun"}, {"kanji": "喩", "reading1": "ゆ", "reading2": null, "example": "比喩を用いて説明する。", "example_reading": "ゆ", "compound_span": "比喩", "compound_reading": "ひゆ", "reading_type": "on"}, {"kanji": "湧", "reading1": "ゆう", "reading2": "わ（く）", "example": "温泉が湧く。", "example_reading": "わ", "compound_span": "湧", "compound_reading": "わ", "reading_type": "kun"}, {"kanji": "妖", "reading1": "よう", "reading2": "あや（しい）", "example": "妖しい光を放つ。", "example_reading": "あや", "compound_span": "妖", "compound_reading": "あや", "reading_type": "kun"}, {"kanji": "瘍", "reading1": "よう", "reading2": null, "example": "胃に潰瘍ができる。", "example_reading": "よう", "compound_span": "潰瘍", "compound_reading": "かいよう", "reading_type": "on"}, {"kanji": "沃", "reading1": "よく", "reading2": null, "example": "肥沃な大地が広がる。", "example_reading": "よく", "compound_span": "肥沃", "compound_reading": "ひよく", "reading_type": "on"}, {"kanji": "拉", "reading1": "ら", "reading2": null, "example": "拉致事件が起きる。", "example_reading": "ら", "compound_span": "拉致", "compound_reading": "らち", "reading_type": "on"}, {"kanji": "辣", "reading1": "らつ", "reading2": null, "example": "辛辣な意見を言う。", "example_reading": "らつ", "compound_span": "辛辣", "compound_reading": "しんらつ", "reading_type": "on"}, {"kanji": "藍", "reading1": "らん", "reading2": "あい", "example": "藍色の着物を着る。", "example_reading": "あい", "compound_span": "藍", "compound_reading": "あい", "reading_type": "kun"}, {"kanji": "璃", "reading1": "り", "reading2": null, "example": "瑠璃色の空を見る。", "example_reading": "り", "compound_span": "瑠璃", "compound_reading": "るり", "reading_type": "on"}, {"kanji": "慄", "reading1": "りつ", "reading2": null, "example": "恐怖で戦慄する。", "example_reading": "りつ", "compound_span": "戦慄", "compound_reading": "せんりつ", "reading_type": "on"}, {"kanji": "侶", "reading1": "りょ", "reading2": null, "example": "生涯の伴侶を得る。", "example_reading": "りょ", "compound_span": "伴侶", "compound_reading": "はんりょ", "reading_type": "on"}, {"kanji": "瞭", "reading1": "りょう", "reading2": null, "example": "明瞭に説明する。", "example_reading": "りょう", "compound_span": "明瞭", "compound_reading": "めいりょう", "reading_type": "on"}, {"kanji": "瑠", "reading1": "る", "reading2": null, "example": "瑠璃色のガラス。", "example_reading": "る", "compound_span": "瑠璃", "compound_reading": "るり", "reading_type": "on"}, {"kanji": "呂", "reading1": "ろ", "reading2": null, "example": "風呂に入る。", "example_reading": "ろ", "compound_span": "風呂", "compound_reading": "ふろ", "reading_type": "on"}, {"kanji": "賂", "reading1": "ろ", "reading2": null, "example": "賄賂を受け取る。", "example_reading": "ろ", "compound_span": "賄賂", "compound_reading": "わいろ", "reading_type": "on"}, {"kanji": "弄", "reading1": "ろう", "reading2": "もてあそ（ぶ）", "example": "運命に弄ばれる。", "example_reading": "もてあそ", "compound_span": "弄", "compound_reading": "もてあそ", "reading_type": "kun"}, {"kanji": "籠", "reading1": "ろう", "reading2": "こ（もる）", "example": "部屋に籠もる。", "example_reading": "こ", "compound_span": "籠", "compound_reading": "こ", "reading_type": "kun"}, {"kanji": "麓", "reading1": "ろく", "reading2": "ふもと", "example": "山の麓に住む。", "example_reading": "ふもと", "compound_span": "麓", "compound_reading": "ふもと", "reading_type": "kun"}, {"kanji": "脇", "reading1": "わき", "reading2": "きょう", "example": "脇に荷物を抱える。", "example_reading": "わき", "compound_span": "脇", "compound_reading": "わき", "reading_type": "kun"}, {"kanji": "嵐", "reading1": "あらし", "reading2": "らん", "example": "青嵐の候、いかがお過ごしですか。", "example_reading": "らん", "compound_span": "青嵐", "compound_reading": "せいらん", "reading_type": "on"}, {"kanji": "畏", "reading1": "い", "reading2": "おそ（れる）", "example": "自然の力に畏怖の念を抱く。", "example_reading": "い", "compound_span": "畏怖", "compound_reading": "いふ", "reading_type": "on"}, {"kanji": "萎", "reading1": "い", "reading2": "な（える）", "example": "叱られて萎縮する。", "example_reading": "い", "compound_span": "萎縮", "compound_reading": "いしゅく", "reading_type": "on"}, {"kanji": "淫", "reading1": "いん", "reading2": "みだ（ら）", "example": "淫雨が数日続く。", "example_reading": "いん", "compound_span": "淫雨", "compound_reading": "いんう", "reading_type": "on"}, {"kanji": "怨", "reading1": "えん", "reading2": "おん", "example": "古い屋敷に怨霊が出るという噂がある。", "example_reading": "おん", "compound_span": "怨霊", "compound_reading": "おんりょう", "reading_type": "on"}, {"kanji": "艶", "reading1": "えん", "reading2": "つや", "example": "妖艶な雰囲気を漂わせる。", "example_reading": "えん", "compound_span": "妖艶", "compound_reading": "ようえん", "reading_type": "on"}, {"kanji": "牙", "reading1": "が", "reading2": "きば", "example": "敵の牙城に迫る。", "example_reading": "が", "compound_span": "牙城", "compound_reading": "がじょう", "reading_type": "on"}, {"kanji": "瓦", "reading1": "が", "reading2": "かわら", "example": "組織が瓦解する。", "example_reading": "が", "compound_span": "瓦解", "compound_reading": "がかい", "reading_type": "on"}, {"kanji": "潰", "reading1": "かい", "reading2": "つぶ（す）", "example": "胃に潰瘍ができる。", "example_reading": "かい", "compound_span": "潰瘍", "compound_reading": "かいよう", "reading_type": "on"}, {"kanji": "崖", "reading1": "がい", "reading2": "がけ", "example": "断崖に立つ。", "example_reading": "がい", "compound_span": "断崖", "compound_reading": "だんがい", "reading_type": "on"}, {"kanji": "蓋", "reading1": "がい", "reading2": "ふた", "example": "天蓋付きのベッドで眠る。", "example_reading": "がい", "compound_span": "天蓋", "compound_reading": "てんがい", "reading_type": "on"}, {"kanji": "顎", "reading1": "がく", "reading2": "あご", "example": "顎骨を検査する。", "example_reading": "がく", "compound_span": "顎骨", "compound_reading": "がくこつ", "reading_type": "on"}, {"kanji": "葛", "reading1": "かつ", "reading2": "くず", "example": "心の中で葛藤する。", "example_reading": "かつ", "compound_span": "葛藤", "compound_reading": "かっとう", "reading_type": "on"}, {"kanji": "亀", "reading1": "き", "reading2": "かめ", "example": "壁に亀裂が入る。", "example_reading": "き", "compound_span": "亀裂", "compound_reading": "きれつ", "reading_type": "on"}, {"kanji": "臼", "reading1": "きゅう", "reading2": "うす", "example": "臼歯で食べ物をすりつぶす。", "example_reading": "きゅう", "compound_span": "臼歯", "compound_reading": "きゅうし", "reading_type": "on"}, {"kanji": "嗅", "reading1": "きゅう", "reading2": "か（ぐ）", "example": "犬は嗅覚が鋭い。", "example_reading": "きゅう", "compound_span": "嗅覚", "compound_reading": "きゅうかく", "reading_type": "on"}, {"kanji": "僅", "reading1": "きん", "reading2": "わず（か）", "example": "得票差は僅少だった。", "example_reading": "きん", "compound_span": "僅少", "compound_reading": "きんしょう", "reading_type": "on"}, {"kanji": "錦", "reading1": "きん", "reading2": "にしき", "example": "錦秋の候となりました。", "example_reading": "きん", "compound_span": "錦秋", "compound_reading": "きんしゅう", "reading_type": "on"}, {"kanji": "詣", "reading1": "けい", "reading2": "もう（でる）", "example": "美術に造詣が深い。", "example_reading": "けい", "compound_span": "造詣", "compound_reading": "ぞうけい", "reading_type": "on"}, {"kanji": "隙", "reading1": "げき", "reading2": "すき", "example": "両者の間隙が埋まらない。", "example_reading": "げき", "compound_span": "間隙", "compound_reading": "かんげき", "reading_type": "on"}, {"kanji": "拳", "reading1": "けん", "reading2": "こぶし", "example": "拳法を習う。", "example_reading": "けん", "compound_span": "拳法", "compound_reading": "けんぽう", "reading_type": "on"}, {"kanji": "鍵", "reading1": "けん", "reading2": "かぎ", "example": "ピアノの鍵盤を弾く。", "example_reading": "けん", "compound_span": "鍵盤", "compound_reading": "けんばん", "reading_type": "on"}, {"kanji": "股", "reading1": "こ", "reading2": "また", "example": "力士が四股を踏む。", "example_reading": "こ", "compound_span": "四股", "compound_reading": "しこ", "reading_type": "on"}, {"kanji": "虎", "reading1": "こ", "reading2": "とら", "example": "猛虎が獲物を狙う。", "example_reading": "こ", "compound_span": "猛虎", "compound_reading": "もうこ", "reading_type": "on"}, {"kanji": "喉", "reading1": "こう", "reading2": "のど", "example": "喉頭の検査を受ける。", "example_reading": "こう", "compound_span": "喉頭", "compound_reading": "こうとう", "reading_type": "on"}, {"kanji": "痕", "reading1": "こん", "reading2": "あと", "example": "犯人の痕跡を探す。", "example_reading": "こん", "compound_span": "痕跡", "compound_reading": "こんせき", "reading_type": "on"}, {"kanji": "塞", "reading1": "さい", "reading2": "そく", "example": "閉塞感を覚える。", "example_reading": "そく", "compound_span": "閉塞", "compound_reading": "へいそく", "reading_type": "on"}, {"kanji": "刹", "reading1": "さつ", "reading2": "せつ", "example": "山中の古刹を訪ねる。", "example_reading": "さつ", "compound_span": "古刹", "compound_reading": "こさつ", "reading_type": "on"}, {"kanji": "斬", "reading1": "ざん", "reading2": "き（る）", "example": "斬新なアイデアを出す。", "example_reading": "ざん", "compound_span": "斬新", "compound_reading": "ざんしん", "reading_type": "on"}, {"kanji": "餌", "reading1": "じ", "reading2": "えさ", "example": "食餌療法を行う。", "example_reading": "じ", "compound_span": "食餌", "compound_reading": "しょくじ", "reading_type": "on"}, {"kanji": "鹿", "reading1": "ろく", "reading2": "しか", "example": "北国では馴鹿が飼育される。", "example_reading": "ろく", "compound_span": "馴鹿", "compound_reading": "じゅんろく", "reading_type": "on"}, {"kanji": "叱", "reading1": "しつ", "reading2": "しか（る）", "example": "上司から叱責を受ける。", "example_reading": "しつ", "compound_span": "叱責", "compound_reading": "しっせき", "reading_type": "on"}, {"kanji": "腫", "reading1": "しゅ", "reading2": "は（れる）", "example": "検査で腫瘍が見つかる。", "example_reading": "しゅ", "compound_span": "腫瘍", "compound_reading": "しゅよう", "reading_type": "on"}, {"kanji": "呪", "reading1": "じゅ", "reading2": "のろ（う）", "example": "魔法使いが呪文を唱える。", "example_reading": "じゅ", "compound_span": "呪文", "compound_reading": "じゅもん", "reading_type": "on"}, {"kanji": "袖", "reading1": "しゅう", "reading2": "そで", "example": "党の領袖として活躍する。", "example_reading": "しゅう", "compound_span": "領袖", "compound_reading": "りょうしゅう", "reading_type": "on"}, {"kanji": "蹴", "reading1": "しゅう", "reading2": "け（る）", "example": "反論を一蹴する。", "example_reading": "しゅう", "compound_span": "一蹴", "compound_reading": "いっしゅう", "reading_type": "on"}, {"kanji": "憧", "reading1": "しょう", "reading2": "あこが（れる）", "example": "都会に憧憬を抱く。", "example_reading": "しょう", "compound_span": "憧憬", "compound_reading": "しょうけい", "reading_type": "on"}, {"kanji": "拭", "reading1": "しょく", "reading2": "ぬぐ（う）", "example": "不安を払拭する。", "example_reading": "しょく", "compound_span": "払拭", "compound_reading": "ふっしょく", "reading_type": "on"}, {"kanji": "羨", "reading1": "せん", "reading2": "うらや（む）", "example": "彼の才能に羨望のまなざしを向ける。", "example_reading": "せん", "compound_span": "羨望", "compound_reading": "せんぼう", "reading_type": "on"}, {"kanji": "煎", "reading1": "せん", "reading2": "い（る）", "example": "煎茶を飲む。", "example_reading": "せん", "compound_span": "煎茶", "compound_reading": "せんちゃ", "reading_type": "on"}, {"kanji": "狙", "reading1": "そ", "reading2": "ねら（う）", "example": "狙撃の訓練を受ける。", "example_reading": "そ", "compound_span": "狙撃", "compound_reading": "そげき", "reading_type": "on"}, {"kanji": "遡", "reading1": "そ", "reading2": "さかのぼ（る）", "example": "法律の遡及適用が議論される。", "example_reading": "そ", "compound_span": "遡及", "compound_reading": "そきゅう", "reading_type": "on"}, {"kanji": "曾", "reading1": "そう", "reading2": "ぞ", "example": "未曾有の災害が発生する。", "example_reading": "ぞ", "compound_span": "未曾有", "compound_reading": "みぞう", "reading_type": "on"}, {"kanji": "爽", "reading1": "そう", "reading2": "さわ（やか）", "example": "爽快な気分になる。", "example_reading": "そう", "compound_span": "爽快", "compound_reading": "そうかい", "reading_type": "on"}, {"kanji": "痩", "reading1": "そう", "reading2": "や（せる）", "example": "痩身効果をうたう商品。", "example_reading": "そう", "compound_span": "痩身", "compound_reading": "そうしん", "reading_type": "on"}, {"kanji": "捉", "reading1": "そく", "reading2": "とら（える）", "example": "電波を捕捉する。", "example_reading": "そく", "compound_span": "捕捉", "compound_reading": "ほそく", "reading_type": "on"}, {"kanji": "唾", "reading1": "だ", "reading2": "つば", "example": "唾液の分泌が増える。", "example_reading": "だ", "compound_span": "唾液", "compound_reading": "だえき", "reading_type": "on"}, {"kanji": "旦", "reading1": "たん", "reading2": "だん", "example": "一旦立ち止まって考える。", "example_reading": "たん", "compound_span": "一旦", "compound_reading": "いったん", "reading_type": "on"}, {"kanji": "綻", "reading1": "たん", "reading2": "ほころ（びる）", "example": "経営が破綻する。", "example_reading": "たん", "compound_span": "破綻", "compound_reading": "はたん", "reading_type": "on"}, {"kanji": "貼", "reading1": "ちょう", "reading2": "は（る）", "example": "書類に印紙を貼付する。", "example_reading": "ちょう", "compound_span": "貼付", "compound_reading": "ちょうふ", "reading_type": "on"}, {"kanji": "嘲", "reading1": "ちょう", "reading2": "あざけ（る）", "example": "周囲から嘲笑される。", "example_reading": "ちょう", "compound_span": "嘲笑", "compound_reading": "ちょうしょう", "reading_type": "on"}, {"kanji": "爪", "reading1": "つめ", "reading2": "つま", "example": "爪先立ちで歩く。", "example_reading": "つま", "compound_span": "爪先", "compound_reading": "つまさき", "reading_type": "on"}, {"kanji": "諦", "reading1": "てい", "reading2": "あきら（める）", "example": "諦観の境地に至る。", "example_reading": "てい", "compound_span": "諦観", "compound_reading": "ていかん", "reading_type": "on"}, {"kanji": "溺", "reading1": "でき", "reading2": "おぼ（れる）", "example": "孫を溺愛する。", "example_reading": "でき", "compound_span": "溺愛", "compound_reading": "できあい", "reading_type": "on"}, {"kanji": "妬", "reading1": "と", "reading2": "ねた（む）", "example": "嫉妬の感情を抱く。", "example_reading": "と", "compound_span": "嫉妬", "compound_reading": "しっと", "reading_type": "on"}, {"kanji": "賭", "reading1": "と", "reading2": "か（ける）", "example": "賭博は法律で禁じられている。", "example_reading": "と", "compound_span": "賭博", "compound_reading": "とばく", "reading_type": "on"}, {"kanji": "藤", "reading1": "とう", "reading2": "ふじ", "example": "心の中で葛藤する。", "example_reading": "とう", "compound_span": "葛藤", "compound_reading": "かっとう", "reading_type": "on"}, {"kanji": "瞳", "reading1": "どう", "reading2": "ひとみ", "example": "瞳孔の反応を調べる。", "example_reading": "どう", "compound_span": "瞳孔", "compound_reading": "どうこう", "reading_type": "on"}, {"kanji": "貪", "reading1": "どん", "reading2": "むさぼ（る）", "example": "貪欲に知識を吸収する。", "example_reading": "どん", "compound_span": "貪欲", "compound_reading": "どんよく", "reading_type": "on"}, {"kanji": "丼", "reading1": "どんぶり", "reading2": "どん", "example": "牛丼を注文する。", "example_reading": "どん", "compound_span": "牛丼", "compound_reading": "ぎゅうどん", "reading_type": "on"}, {"kanji": "梨", "reading1": "なし", "reading2": "り", "example": "梨園の御曹司として生まれる。", "example_reading": "り", "compound_span": "梨園", "compound_reading": "りえん", "reading_type": "on"}, {"kanji": "罵", "reading1": "ば", "reading2": "ののし（る）", "example": "罵倒の言葉を浴びせる。", "example_reading": "ば", "compound_span": "罵倒", "compound_reading": "ばとう", "reading_type": "on"}, {"kanji": "剥", "reading1": "はく", "reading2": "は（がす）", "example": "熊の剥製が展示される。", "example_reading": "はく", "compound_span": "剥製", "compound_reading": "はくせい", "reading_type": "on"}, {"kanji": "眉", "reading1": "び", "reading2": "まゆ", "example": "彼はこの分野の白眉と言われる。", "example_reading": "び", "compound_span": "白眉", "compound_reading": "はくび", "reading_type": "on"}, {"kanji": "餅", "reading1": "へい", "reading2": "もち", "example": "その計画は画餅に帰した。", "example_reading": "へい", "compound_span": "画餅", "compound_reading": "がべい", "reading_type": "on"}, {"kanji": "蜂", "reading1": "ほう", "reading2": "はち", "example": "民衆が蜂起する。", "example_reading": "ほう", "compound_span": "蜂起", "compound_reading": "ほうき", "reading_type": "on"}, {"kanji": "冥", "reading1": "めい", "reading2": "みょう", "example": "故人の冥福を祈る。", "example_reading": "めい", "compound_span": "冥福", "compound_reading": "めいふく", "reading_type": "on"}, {"kanji": "湧", "reading1": "ゆう", "reading2": "わ（く）", "example": "温泉が湧出する。", "example_reading": "ゆう", "compound_span": "湧出", "compound_reading": "ゆうしゅつ", "reading_type": "on"}, {"kanji": "妖", "reading1": "よう", "reading2": "あや（しい）", "example": "妖怪が出るという言い伝え。", "example_reading": "よう", "compound_span": "妖怪", "compound_reading": "ようかい", "reading_type": "on"}, {"kanji": "藍", "reading1": "らん", "reading2": "あい", "example": "古い伽藍を訪れる。", "example_reading": "らん", "compound_span": "伽藍", "compound_reading": "がらん", "reading_type": "on"}, {"kanji": "弄", "reading1": "ろう", "reading2": "もてあそ（ぶ）", "example": "人を愚弄するような発言。", "example_reading": "ろう", "compound_span": "愚弄", "compound_reading": "ぐろう", "reading_type": "on"}, {"kanji": "籠", "reading1": "ろう", "reading2": "こ（もる）", "example": "城に籠城する。", "example_reading": "ろう", "compound_span": "籠城", "compound_reading": "ろうじょう", "reading_type": "on"}, {"kanji": "麓", "reading1": "ろく", "reading2": "ふもと", "example": "山麓にキャンプ場がある。", "example_reading": "ろく", "compound_span": "山麓", "compound_reading": "さんろく", "reading_type": "on"}, {"kanji": "脇", "reading1": "わき", "reading2": "きょう", "example": "仏像の脇士が両側に控える。", "example_reading": "きょう", "compound_span": "脇士", "compound_reading": "きょうじ", "reading_type": "on"}];
+
+/* ---------- utils ---------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function sample(arr, n){ return shuffle(arr).slice(0, Math.min(n, arr.length)); }
+
+/* ---------- nav ---------- */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.view').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+/* ================= LIST ================= */
+let hideReadings = false;
+const searchBox = document.getElementById('searchBox');
+searchBox.addEventListener('input', renderList);
+const toggleHideBtn = document.getElementById('toggleHideBtn');
+toggleHideBtn.addEventListener('click', ()=>{
+  hideReadings = !hideReadings;
+  toggleHideBtn.textContent = hideReadings ? '読みを表示' : '読みを隠す';
+  renderList();
+});
+function toKatakana(str){
+  return str.replace(/[\u3041-\u3096]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+}
+function displayReading(entry){
+  // 音読み(on) は カタカナ、訓読み(kun) は ひらがな の慣例に合わせる
+  return entry.reading_type === 'on' ? toKatakana(entry.example_reading) : entry.example_reading;
+}
+function highlightSentenceKanji(d){
+  return d.example.replace(d.compound_span, `<u>${d.compound_span}</u>`);
+}
+
+// group all entries by kanji once, preserving first-seen order
+const KANJI_GROUPS = (function(){
+  const map = new Map();
+  DATA.forEach(d=>{
+    if(!map.has(d.kanji)) map.set(d.kanji, []);
+    map.get(d.kanji).push(d);
+  });
+  return Array.from(map.entries()); // [ [kanji, [entries...]], ... ]
+})();
+
+function renderList(){
+  const q = searchBox.value.trim();
+  let groups = KANJI_GROUPS;
+  if(q){
+    groups = groups.filter(([kanji, entries]) =>
+      kanji.includes(q) ||
+      entries.some(d =>
+        (d.reading1 && d.reading1.includes(q)) ||
+        (d.reading2 && d.reading2.includes(q)) ||
+        (d.compound_reading && d.compound_reading.includes(q)) ||
+        (d.example && d.example.includes(q))));
+  }
+
+  document.getElementById('countLine').textContent = groups.length + ' 字 / 全' + KANJI_GROUPS.length + '字';
+  const grid = document.getElementById('kanjiGrid');
+  grid.innerHTML = '';
+  groups.forEach(([kanji, entries])=>{
+    const card = document.createElement('div');
+    card.className = 'kanji-card';
+
+    const readingSummary = entries.map(displayReading).join('／');
+    const readingHtml = hideReadings ? `<span class="blank">？</span>` : readingSummary;
+
+    const examplesHtml = entries.map(e => `
+      <div class="ex-line">
+        <span class="ex-tag ${e.reading_type}">${e.reading_type==='on' ? '音' : '訓'}</span>
+        <span>${highlightSentenceKanji(e)}</span>
+      </div>`).join('');
+
+    card.innerHTML = `<div class="kj">${kanji}</div><div class="rd">${readingHtml}</div><div class="ex">${examplesHtml}</div>`;
+    card.addEventListener('click', ()=>{
+      if(hideReadings){
+        const rd = card.querySelector('.rd');
+        if(rd.dataset.open === '1'){
+          rd.innerHTML = `<span class="blank">？</span>`;
+          rd.dataset.open = '0';
+        }else{
+          rd.innerHTML = readingSummary;
+          rd.dataset.open = '1';
+        }
+      }
+    });
+    grid.appendChild(card);
+  });
+}
+renderList();
+
+/* ================= YOMI QUIZ (tile-based) ================= */
+const HIRAGANA_POOL = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽゃゅょっー'.split('');
+const DAKUTEN_GROUPS = [
+  ['か','が'],['き','ぎ'],['く','ぐ'],['け','げ'],['こ','ご'],
+  ['さ','ざ'],['し','じ'],['す','ず'],['せ','ぜ'],['そ','ぞ'],
+  ['た','だ'],['ち','ぢ'],['つ','づ'],['て','で'],['と','ど'],
+  ['は','ば','ぱ'],['ひ','び','ぴ'],['ふ','ぶ','ぷ'],['へ','べ','ぺ'],['ほ','ぼ','ぽ'],
+  ['う','ゔ']
+];
+const DAKUTEN_GROUP_OF = {};
+DAKUTEN_GROUPS.forEach((group, gi)=>{ group.forEach(ch => DAKUTEN_GROUP_OF[ch] = gi); });
+
+let ySession = null; // {questions:[...], idx, score}
+
+document.getElementById('yomiStartBtn').addEventListener('click', ()=>{
+  let n = parseInt(document.getElementById('yomiCount').value, 10);
+  if(isNaN(n) || n < 1) n = 1;
+  if(n > DATA.length) n = DATA.length;
+  ySession = { questions: sample(DATA, n), idx: 0, score: 0 };
+  document.getElementById('yomiSetup').style.display = 'none';
+  document.getElementById('yomiResult').style.display = 'none';
+  document.getElementById('yomiQuiz').style.display = 'block';
+  loadYomiQuestion();
+});
+
+let yCurrentAnswer = [];   // array of chars currently placed
+let yCurrentTiles = [];    // {char, used}
+let yAnswered = false;
+
+function loadYomiQuestion(){
+  document.getElementById('stampY').className = 'stamp';
+  document.getElementById('revealY').textContent = '';
+  document.getElementById('nextY').classList.remove('show');
+  document.getElementById('submitY').disabled = false;
+  document.getElementById('submitY').style.display = 'inline-block';
+  document.getElementById('clearY').style.display = 'inline-block';
+  yAnswered = false;
+
+  const d = ySession.questions[ySession.idx];
+  document.getElementById('progressY').textContent = `第 ${ySession.idx+1} 問 / ${ySession.questions.length} 問　（正解 ${ySession.score}）`;
+  document.getElementById('sentenceY').innerHTML = d.example.replace(d.compound_span, `<u>${d.compound_span}</u>`);
+
+  const correctChars = d.compound_reading.split('');
+  const nDecoy = Math.max(4, Math.min(8, correctChars.length + 3));
+  const decoyChars = [];
+  const correctGroups = new Set(correctChars.map(c => DAKUTEN_GROUP_OF[c]).filter(g => g !== undefined));
+  const safePool = HIRAGANA_POOL.filter(c => {
+    const g = DAKUTEN_GROUP_OF[c];
+    return g === undefined || !correctGroups.has(g);
+  });
+  while(decoyChars.length < nDecoy){
+    const c = safePool[Math.floor(Math.random()*safePool.length)];
+    decoyChars.push(c);
+  }
+  const tiles = shuffle([...correctChars, ...decoyChars]);
+  yCurrentAnswer = [];
+  yCurrentTiles = tiles.map((c,i)=>({id:i, char:c, used:false}));
+
+  renderYomiTiles(d);
+  renderYomiAnswerStrip(d);
+}
+
+function renderYomiTiles(d){
+  const pool = document.getElementById('tilePoolY');
+  pool.innerHTML = '';
+  yCurrentTiles.forEach(t=>{
+    const b = document.createElement('button');
+    b.textContent = t.char;
+    b.disabled = t.used;
+    b.addEventListener('click', ()=>{
+      if(yAnswered) return;
+      t.used = true;
+      yCurrentAnswer.push(t);
+      renderYomiTiles(d);
+      renderYomiAnswerStrip(d);
+      document.getElementById('submitY').disabled = yCurrentAnswer.length === 0;
+    });
+    pool.appendChild(b);
+  });
+}
+function renderYomiAnswerStrip(d){
+  const strip = document.getElementById('answerStripY');
+  strip.innerHTML = '';
+  if(yCurrentAnswer.length === 0){
+    strip.innerHTML = `<span class="placeholder">タイルをタップして読みを作ろう</span>`;
+    return;
+  }
+  yCurrentAnswer.forEach((t, pos)=>{
+    const s = document.createElement('div');
+    s.className = 'slot';
+    s.textContent = t.char;
+    s.addEventListener('click', ()=>{
+      if(yAnswered) return;
+      t.used = false;
+      yCurrentAnswer.splice(pos,1);
+      renderYomiTiles(d);
+      renderYomiAnswerStrip(d);
+      document.getElementById('submitY').disabled = yCurrentAnswer.length === 0;
+    });
+    strip.appendChild(s);
+  });
+}
+document.getElementById('clearY').addEventListener('click', ()=>{
+  if(yAnswered) return;
+  yCurrentTiles.forEach(t=>t.used=false);
+  yCurrentAnswer = [];
+  const d = ySession.questions[ySession.idx];
+  renderYomiTiles(d);
+  renderYomiAnswerStrip(d);
+  document.getElementById('submitY').disabled = true;
+});
+document.getElementById('submitY').addEventListener('click', ()=>{
+  if(yAnswered || yCurrentAnswer.length===0) return;
+  yAnswered = true;
+  const d = ySession.questions[ySession.idx];
+  const userStr = yCurrentAnswer.map(t=>t.char).join('');
+  const stamp = document.getElementById('stampY');
+  const isCorrect = userStr === d.compound_reading;
+  if(isCorrect){
+    ySession.score++;
+    stamp.textContent='正解'; stamp.className='stamp show ok';
+  }else{
+    stamp.textContent='不正解'; stamp.className='stamp show ng';
+    document.getElementById('revealY').innerHTML = `あなたの回答： <b>${userStr}</b>　／　正しい読み： <b>${d.compound_reading}</b>`;
+  }
+  document.getElementById('progressY').textContent = `第 ${ySession.idx+1} 問 / ${ySession.questions.length} 問　（正解 ${ySession.score}）`;
+  document.getElementById('submitY').style.display = 'none';
+  document.getElementById('clearY').style.display = 'none';
+  document.getElementById('nextY').classList.add('show');
+});
+document.getElementById('nextY').addEventListener('click', ()=>{
+  ySession.idx++;
+  if(ySession.idx >= ySession.questions.length){
+    document.getElementById('yomiQuiz').style.display = 'none';
+    document.getElementById('yomiResult').style.display = 'block';
+    document.getElementById('yomiResultText').textContent = `${ySession.score} / ${ySession.questions.length} 問正解`;
+    const rate = Math.round(ySession.score / ySession.questions.length * 100);
+    document.getElementById('yomiResultSub').textContent = `正答率 ${rate}%`;
+  }else{
+    loadYomiQuestion();
+  }
+});
+document.getElementById('yomiRestartBtn').addEventListener('click', ()=>{
+  document.getElementById('yomiResult').style.display = 'none';
+  document.getElementById('yomiSetup').style.display = 'block';
+});
+
+/* ================= KAKI QUIZ (handwriting similarity) ================= */
+const GRID = 18;
+const CANVAS_SIZE = 280;
+const DILATE_RADIUS = 1; // grow ink by N cells so small offsets still overlap
+
+// build glyph templates once
+let templateCache = null;
+const GLYPH_FONT = `"UDデジタル教科書体 N-R", "UD Digital Kyokasho N-R", "UDデジタル教科書体", "Klee One", "Noto Sans JP", sans-serif`;
+
+// Draws a single character centered on the *actual visible ink*, not just font metrics.
+// Different fonts report wildly different ascent/descent, so textBaseline:'middle' alone
+// tends to leave lopsided margins (or clip the bottom). This measures the real pixel
+// bounding box after a first draw, then re-draws shifted so it's truly centered.
+function drawCenteredGlyph(ctx, char, size, color){
+  color = color || '#000';
+  ctx.clearRect(0,0,size,size);
+  ctx.fillStyle = color;
+  ctx.font = `${Math.floor(size*0.86)}px ${GLYPH_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(char, size/2, size/2);
+
+  const data = ctx.getImageData(0,0,size,size).data;
+  let minX=size, minY=size, maxX=-1, maxY=-1;
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      const a = data[(y*size+x)*4+3];
+      if(a > 40){
+        if(x<minX) minX=x; if(x>maxX) maxX=x;
+        if(y<minY) minY=y; if(y>maxY) maxY=y;
+      }
+    }
+  }
+  if(maxX < 0) return; // nothing drawn (font glyph missing) — leave blank
+
+  const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
+  const shiftX = size/2 - cx, shiftY = size/2 - cy;
+  ctx.clearRect(0,0,size,size);
+  ctx.fillText(char, size/2 + shiftX, size/2 + shiftY);
+}
+
+function buildTemplateCache(){
+  if(templateCache) return templateCache;
+  const off = document.createElement('canvas');
+  off.width = CANVAS_SIZE; off.height = CANVAS_SIZE;
+  const octx = off.getContext('2d');
+  templateCache = DATA.map(d=>{
+    drawCenteredGlyph(octx, d.kanji, CANVAS_SIZE);
+    const grid = dilateGrid(canvasToGrid(off));
+    return {kanji: d.kanji, grid};
+  });
+  return templateCache;
+}
+function dilateGrid(grid){
+  if(DILATE_RADIUS <= 0) return grid;
+  const out = new Uint8Array(grid.length);
+  for(let y=0;y<GRID;y++){
+    for(let x=0;x<GRID;x++){
+      let on = false;
+      for(let dy=-DILATE_RADIUS; dy<=DILATE_RADIUS && !on; dy++){
+        for(let dx=-DILATE_RADIUS; dx<=DILATE_RADIUS && !on; dx++){
+          const nx=x+dx, ny=y+dy;
+          if(nx>=0 && nx<GRID && ny>=0 && ny<GRID && grid[ny*GRID+nx]) on = true;
+        }
+      }
+      out[y*GRID+x] = on ? 1 : 0;
+    }
+  }
+  return out;
+}
+function canvasToGrid(canvas){
+  // Normalize by the ink's own bounding box (crop + center + scale) so that
+  // position and size on the canvas don't affect the comparison — only shape does.
+  const w = canvas.width, h = canvas.height;
+  const fullCtx = canvas.getContext('2d');
+  const full = fullCtx.getImageData(0,0,w,h).data;
+
+  const isInk = (x,y)=>{
+    const i = (y*w+x)*4;
+    const a = full[i+3];
+    const r = full[i], g = full[i+1], b = full[i+2];
+    return a > 40 && (r+g+b)/3 < 200;
+  };
+
+  let minX=w, minY=h, maxX=-1, maxY=-1;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      if(isInk(x,y)){
+        if(x<minX) minX=x; if(x>maxX) maxX=x;
+        if(y<minY) minY=y; if(y>maxY) maxY=y;
+      }
+    }
+  }
+  if(maxX < 0){
+    return new Uint8Array(GRID*GRID); // no ink at all
+  }
+
+  // add padding around the bounding box (like standard OCR preprocessing)
+  const bw = maxX-minX+1, bh = maxY-minY+1;
+  const pad = Math.round(Math.max(bw,bh) * 0.15);
+  minX = Math.max(0, minX-pad); minY = Math.max(0, minY-pad);
+  maxX = Math.min(w-1, maxX+pad); maxY = Math.min(h-1, maxY+pad);
+  const cw = maxX-minX+1, ch = maxY-minY+1;
+
+  // draw the cropped ink centered into a square, then downsample to GRID x GRID
+  const squareSize = Math.max(cw, ch);
+  const sq = document.createElement('canvas');
+  sq.width = squareSize; sq.height = squareSize;
+  const sqCtx = sq.getContext('2d');
+  const dx = Math.floor((squareSize-cw)/2), dy = Math.floor((squareSize-ch)/2);
+  sqCtx.drawImage(canvas, minX, minY, cw, ch, dx, dy, cw, ch);
+
+  const tmp = document.createElement('canvas');
+  tmp.width = GRID; tmp.height = GRID;
+  const tctx = tmp.getContext('2d');
+  tctx.drawImage(sq, 0, 0, GRID, GRID);
+  const data = tctx.getImageData(0,0,GRID,GRID).data;
+  const grid = new Uint8Array(GRID*GRID);
+  for(let i=0;i<GRID*GRID;i++){
+    const a = data[i*4+3];
+    const r = data[i*4], g = data[i*4+1], b = data[i*4+2];
+    grid[i] = (a > 40 && (r+g+b)/3 < 200) ? 1 : 0;
+  }
+  return grid;
+}
+function gridSimilarity(g1, g2){
+  // Dice coefficient: more forgiving than IoU for sparse ink patterns
+  let inter=0, a=0, b=0;
+  for(let i=0;i<g1.length;i++){
+    if(g1[i]) a++;
+    if(g2[i]) b++;
+    if(g1[i] && g2[i]) inter++;
+  }
+  if(a+b===0) return 0;
+  return (2*inter)/(a+b);
+}
+
+let kSession = null;
+let guideVisible = true;
+let drawCtx, guideCtx;
+let isDrawing = false, lastX=0, lastY=0;
+
+function initCanvases(){
+  const drawCanvas = document.getElementById('drawCanvas');
+  const guideCanvas = document.getElementById('guideCanvas');
+  drawCtx = drawCanvas.getContext('2d');
+  guideCtx = guideCanvas.getContext('2d');
+  drawCtx.lineWidth = 18;
+  drawCtx.lineCap = 'round';
+  drawCtx.lineJoin = 'round';
+  drawCtx.strokeStyle = '#2B2620';
+
+  function pos(e){
+    const rect = drawCanvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return [cx * (CANVAS_SIZE/rect.width), cy * (CANVAS_SIZE/rect.height)];
+  }
+  function start(e){
+    e.preventDefault();
+    isDrawing = true;
+    [lastX, lastY] = pos(e);
+  }
+  function move(e){
+    if(!isDrawing) return;
+    e.preventDefault();
+    const [x,y] = pos(e);
+    drawCtx.beginPath();
+    drawCtx.moveTo(lastX, lastY);
+    drawCtx.lineTo(x, y);
+    drawCtx.stroke();
+    [lastX, lastY] = [x,y];
+  }
+  function end(){ isDrawing = false; }
+
+  drawCanvas.addEventListener('mousedown', start);
+  drawCanvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  drawCanvas.addEventListener('touchstart', start, {passive:false});
+  drawCanvas.addEventListener('touchmove', move, {passive:false});
+  drawCanvas.addEventListener('touchend', end);
+}
+
+function drawGuide(kanji){
+  guideCtx.clearRect(0,0,CANVAS_SIZE,CANVAS_SIZE);
+  if(!guideVisible) return;
+  drawCenteredGlyph(guideCtx, kanji, CANVAS_SIZE, '#2B2620');
+}
+function clearDrawCanvas(){
+  drawCtx.clearRect(0,0,CANVAS_SIZE,CANVAS_SIZE);
+}
+
+document.getElementById('kakiStartBtn').addEventListener('click', ()=>{
+  let n = parseInt(document.getElementById('kakiCount').value, 10);
+  if(isNaN(n) || n < 1) n = 1;
+  if(n > DATA.length) n = DATA.length;
+  if(!drawCtx) initCanvases();
+  const proceed = ()=>{
+    buildTemplateCache();
+    kSession = { questions: sample(DATA, n), idx: 0, score: 0 };
+    document.getElementById('kakiSetup').style.display = 'none';
+    document.getElementById('kakiResult').style.display = 'none';
+    document.getElementById('kakiQuiz').style.display = 'block';
+    loadKakiQuestion();
+  };
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(proceed);
+  }else{
+    proceed();
+  }
+});
+
+function loadKakiQuestion(){
+  document.getElementById('stampK').className = 'stamp';
+  document.getElementById('kakiResultText').textContent = '結果（最も似ている漢字）：－';
+  document.getElementById('nextK').style.display = 'none';
+  document.getElementById('judgeBtn').style.display = 'inline-block';
+  document.getElementById('clearCanvasBtn').style.display = 'inline-block';
+  clearDrawCanvas();
+
+  const d = kSession.questions[kSession.idx];
+  document.getElementById('progressK').textContent = `第 ${kSession.idx+1} 問 / ${kSession.questions.length} 問　（正解 ${kSession.score}）`;
+  document.getElementById('sentenceK').innerHTML = d.example.replace(d.kanji, `<u>${d.example_reading}</u>`);
+  drawGuide(d.kanji);
+}
+
+document.getElementById('toggleGuideBtn').addEventListener('click', (e)=>{
+  guideVisible = !guideVisible;
+  e.target.textContent = guideVisible ? 'お手本：非表示' : 'お手本：表示';
+  e.target.classList.toggle('on', guideVisible);
+  const d = kSession.questions[kSession.idx];
+  drawGuide(d.kanji);
+});
+document.getElementById('clearCanvasBtn').addEventListener('click', ()=>{
+  clearDrawCanvas();
+});
+
+document.getElementById('judgeBtn').addEventListener('click', ()=>{
+  const d = kSession.questions[kSession.idx];
+  const userGrid = dilateGrid(canvasToGrid(document.getElementById('drawCanvas')));
+  const inkCount = userGrid.reduce((a,b)=>a+b,0);
+  if(inkCount < 3){
+    document.getElementById('kakiResultText').textContent = 'まず文字を書いてください。';
+    return;
+  }
+  const templates = buildTemplateCache();
+  const scored = templates.map(t => ({kanji:t.kanji, score: gridSimilarity(userGrid, t.grid)}));
+  scored.sort((a,b) => b.score - a.score);
+  const best = scored[0];
+  const targetRank = scored.findIndex(s => s.kanji === d.kanji);
+  const targetScore = scored[targetRank].score;
+  // lenient grading: correct if the target kanji is among the closest few matches,
+  // not only when it happens to be the single closest one
+  const isCorrect = targetRank < 3;
+  const pct = Math.round(best.score*100);
+  document.getElementById('kakiResultText').innerHTML =
+    `結果（最も似ている漢字）：<b>${best.kanji}</b>　（類似度 ${pct}%）`;
+
+  const stamp = document.getElementById('stampK');
+  if(isCorrect){
+    kSession.score++;
+    stamp.textContent='正解'; stamp.className='stamp show ok';
+  }else{
+    stamp.textContent='不正解'; stamp.className='stamp show ng';
+  }
+  document.getElementById('progressK').textContent = `第 ${kSession.idx+1} 問 / ${kSession.questions.length} 問　（正解 ${kSession.score}）`;
+  document.getElementById('judgeBtn').style.display = 'none';
+  document.getElementById('clearCanvasBtn').style.display = 'none';
+  document.getElementById('nextK').style.display = 'inline-block';
+});
+
+document.getElementById('nextK').addEventListener('click', ()=>{
+  kSession.idx++;
+  if(kSession.idx >= kSession.questions.length){
+    document.getElementById('kakiQuiz').style.display = 'none';
+    document.getElementById('kakiResult').style.display = 'block';
+    document.getElementById('kakiResultTextFinal').textContent = `${kSession.score} / ${kSession.questions.length} 問正解`;
+    const rate = Math.round(kSession.score / kSession.questions.length * 100);
+    document.getElementById('kakiResultSub').textContent = `正答率 ${rate}%`;
+  }else{
+    loadKakiQuestion();
+  }
+});
+document.getElementById('kakiRestartBtn').addEventListener('click', ()=>{
+  document.getElementById('kakiResult').style.display = 'none';
+  document.getElementById('kakiSetup').style.display = 'block';
+});
+</script>
+</body>
+</html>
