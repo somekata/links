@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOCX / PDF 用語検索</title>
+<title>DOCX / PDF 用語検索（複数語・索引モード）</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f4f6f8;color:#20252b;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}
@@ -16,9 +16,13 @@ h1{margin:0 0 6px;font-size:28px}.lead{color:#68717b;margin:0 0 22px}
 input[type=file]{display:none}
 label{display:block;font-weight:700;margin:18px 0 8px}
 input[type=text]{width:100%;padding:12px;border:1px solid #ccd3da;border-radius:8px;font-size:16px}
-.actions{display:flex;gap:9px;flex-wrap:wrap}
-button{border:0;border-radius:9px;padding:11px 17px;font-size:15px;font-weight:700;cursor:pointer;background:#1769aa;color:#fff;margin-top:14px}
-button.secondary{background:#65717c}button:disabled{background:#aaa;cursor:not-allowed}
+input[type=text]:focus{outline:2px solid #1769aa;outline-offset:1px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+button{border:0;border-radius:9px;padding:11px 17px;font-size:15px;font-weight:700;cursor:pointer;background:#1769aa;color:#fff}
+button.secondary{background:#65717c}
+button.ghost{background:#eef3f7;color:#1769aa}
+button.danger-ghost{background:transparent;color:#b00020;padding:6px 10px;font-size:14px}
+button:disabled{background:#aaa;cursor:not-allowed}
 .status{margin-top:14px;min-height:24px;color:#59636d}
 .error{color:#b00020;font-weight:700}
 .summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
@@ -28,17 +32,36 @@ button.secondary{background:#65717c}button:disabled{background:#aaa;cursor:not-a
 .meta{font-weight:750;margin-bottom:7px}
 .badge{font-size:12px;border-radius:20px;padding:3px 8px;background:#e8edf1;margin-left:5px}
 .context{line-height:1.75}
-.hit{background:#fff19a;font-weight:750;padding:1px 2px}
+.hit{font-weight:750;padding:1px 2px;border-radius:3px}
 .empty{color:#727b84;padding:18px 0}
 .note{font-size:13px;color:#68717b;line-height:1.65}
 .file-name{font-weight:700;margin-top:8px}
 .small{font-size:12px;color:#7a838c}
+
+/* --- term rows --- */
+.termRow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.termRow input[type=text]{flex:1}
+.termSwatch{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
+.addTermBtn{margin-top:2px}
+
+/* --- index (compact) --- */
+.indexBox{background:#fbfbfc;border:1px solid #e2e6ea;border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.indexRow{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px dashed #e6e9ec;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.7}
+.indexRow:last-child{border-bottom:none}
+.indexTerm{font-weight:800;flex:0 0 auto;min-width:120px;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}
+.indexList{color:#2b323a;word-break:break-word}
+.indexNone{color:#9aa2a9}
+
+/* --- term group header in detailed results --- */
+.termGroupHeader{display:flex;align-items:center;gap:8px;margin:22px 0 8px;padding-bottom:6px;border-bottom:2px solid #dce1e5}
+.termGroupHeader h3{margin:0;font-size:17px}
+.termGroupHeader .count{color:#68717b;font-size:13px;font-weight:600}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>📚 DOCX / PDF 用語検索</h1>
-<p class="lead">Word（.docx）とPDF（.pdf）を読み込み、用語のページ・行・前後の文脈を検索します。</p>
+<h1>📚 DOCX / PDF 用語検索（複数語・索引モード）</h1>
+<p class="lead">Word（.docx）とPDF（.pdf）を読み込み、複数の用語をまとめて検索し、ページ・行・前後の文脈を確認できます。</p>
 
 <div class="card">
   <div id="drop" class="drop">
@@ -49,18 +72,23 @@ button.secondary{background:#65717c}button:disabled{background:#aaa;cursor:not-a
     <div id="fileName" class="file-name"></div>
   </div>
 
-  <label for="term">検索する用語</label>
-  <input id="term" type="text" placeholder="例：MRSA / Candida auris / ESBL">
+  <label>検索する用語（複数可）</label>
+  <div id="termsContainer"></div>
+  <button id="addTermBtn" class="ghost addTermBtn" type="button">＋ 用語を追加</button>
 
-  <div class="actions">
-    <button id="searchBtn" disabled>🔍 検索</button>
-    <button id="csvBtn" class="secondary" disabled>CSV出力</button>
+  <div class="actions" style="margin-top:16px">
+    <button id="searchBtn" disabled>🔍 一括検索</button>
+    <button id="csvBtn" class="secondary" disabled>CSV出力（全用語）</button>
+    <button id="copyIndexBtn" class="secondary" disabled>索引をコピー</button>
   </div>
   <div id="status" class="status">ファイルを選択してください。</div>
 </div>
 
 <div id="resultCard" class="card" style="display:none">
   <div id="summary" class="summary"></div>
+
+  <div id="indexBox" class="indexBox"></div>
+
   <div id="results"></div>
 </div>
 
@@ -70,6 +98,10 @@ button.secondary{background:#65717c}button:disabled{background:#aaa;cursor:not-a
     PDF：PDF内部のページを基準に表示します。行番号はPDF内の文字座標から算出した推定行です。<br>
     DOCX：DOCXにはWord上の固定されたページ情報が基本的に保存されていないため、
     文字量から算出した推定ページ・行です。Wordの実表示と完全一致するとは限りません。<br>
+    <br>
+    <b>索引表示について</b><br>
+    「用語：ページ・行一覧」は、各用語がヒットした箇所を <code>P{ページ}、L{行}</code> の形式で出現順に並べたものです。
+    同じ行に複数回出現する場合はその回数分表示されます。<br>
     <br>
     <b>プライバシー</b><br>
     文書の解析はブラウザ内で行います。文書本文をこのツールのサーバーへアップロードする処理はありません。
@@ -88,16 +120,112 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 const fileInput=document.getElementById("file");
 const drop=document.getElementById("drop");
 const fileName=document.getElementById("fileName");
-const termInput=document.getElementById("term");
+const termsContainer=document.getElementById("termsContainer");
+const addTermBtn=document.getElementById("addTermBtn");
 const searchBtn=document.getElementById("searchBtn");
 const csvBtn=document.getElementById("csvBtn");
+const copyIndexBtn=document.getElementById("copyIndexBtn");
 const status=document.getElementById("status");
 const resultCard=document.getElementById("resultCard");
 const summary=document.getElementById("summary");
+const indexBox=document.getElementById("indexBox");
 const results=document.getElementById("results");
 
+const PALETTE=["#fff19a","#ffd08a","#a8e6ff","#c3f2b0","#e3c6ff","#ffb8c6","#bdeee2","#ffe1a8"];
+
 let currentFile=null;
-let lastResults=[];
+let docIndex=null;        // {type, lines:[{page,line,paragraph,text}], pageCount}
+let lastAllResults=[];    // flat list for CSV: {no,term,page,line,source,paragraph,context}
+let lastPerTerm=[];       // [{term,color,hits:[{page,line}]}]
+
+/* ---------------- term rows ---------------- */
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function addTermRow(focus,initialValue){
+  const row=document.createElement("div");
+  row.className="termRow";
+
+  const swatch=document.createElement("div");
+  swatch.className="termSwatch";
+  const idx=termsContainer.children.length;
+  swatch.style.background=PALETTE[idx%PALETTE.length];
+  row.appendChild(swatch);
+
+  const input=document.createElement("input");
+  input.type="text";
+  input.className="termInput";
+  input.placeholder="例：MRSA / Candida auris / ESBL";
+  input.value=initialValue||"";
+  row.appendChild(input);
+
+  const removeBtn=document.createElement("button");
+  removeBtn.type="button";
+  removeBtn.className="danger-ghost";
+  removeBtn.textContent="×";
+  removeBtn.title="この用語欄を削除";
+  removeBtn.addEventListener("click",()=>{
+    if(termsContainer.children.length<=1){
+      input.value="";
+      input.focus();
+      return;
+    }
+    row.remove();
+    restripeSwatches();
+    updateSearchAvailability();
+  });
+  row.appendChild(removeBtn);
+
+  input.addEventListener("keydown",e=>{
+    if(e.key!=="Enter")return;
+    e.preventDefault();
+    const rows=[...termsContainer.querySelectorAll(".termRow")];
+    const isLast=rows[rows.length-1]===row;
+    if(isLast){
+      if(input.value.trim()){
+        addTermRow(true,"");
+      }else if(hasAnyTerm()){
+        // 最後の欄が空でEnter → まとめて検索
+        if(!searchBtn.disabled) search();
+      }
+    }else{
+      const nextInput=rows[rows.indexOf(row)+1].querySelector("input");
+      nextInput.focus();
+      nextInput.select();
+    }
+  });
+  input.addEventListener("input",updateSearchAvailability);
+
+  termsContainer.appendChild(row);
+  if(focus) input.focus();
+  updateSearchAvailability();
+}
+
+function restripeSwatches(){
+  [...termsContainer.querySelectorAll(".termRow")].forEach((row,idx)=>{
+    row.querySelector(".termSwatch").style.background=PALETTE[idx%PALETTE.length];
+  });
+}
+
+function getTerms(){
+  return [...termsContainer.querySelectorAll(".termInput")]
+    .map(i=>i.value.trim())
+    .filter(Boolean)
+    .filter((t,i,arr)=>arr.indexOf(t)===i); // 重複除去
+}
+
+function hasAnyTerm(){ return getTerms().length>0; }
+
+function updateSearchAvailability(){
+  searchBtn.disabled = !(currentFile && hasAnyTerm());
+}
+
+addTermBtn.addEventListener("click",()=>addTermRow(true,""));
+addTermRow(true,""); // 初期1行
+
+/* ---------------- file handling ---------------- */
 
 drop.addEventListener("click",()=>fileInput.click());
 fileInput.addEventListener("change",()=>setFile(fileInput.files[0]));
@@ -118,102 +246,57 @@ function setFile(file){
     return;
   }
   currentFile=file;
+  docIndex=null; // ファイルが変わったら再解析
   fileName.textContent="選択中： "+file.name;
-  searchBtn.disabled=false;
   csvBtn.disabled=true;
+  copyIndexBtn.disabled=true;
   resultCard.style.display="none";
   status.textContent=(ext==="pdf"?"PDF":"DOCX")+"ファイルを読み込み可能です。";
+  updateSearchAvailability();
 }
 
-searchBtn.addEventListener("click",search);
-termInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!searchBtn.disabled)search()});
-csvBtn.addEventListener("click",downloadCSV);
+/* ---------------- indexing (parse once, search many terms) ---------------- */
 
-async function search(){
-  const term=termInput.value.trim();
-  if(!currentFile)return;
-  if(!term){
-    status.innerHTML='<span class="error">検索語を入力してください。</span>';
-    return;
-  }
-  searchBtn.disabled=true;csvBtn.disabled=true;
-  resultCard.style.display="none";results.innerHTML="";lastResults=[];
-  try{
-    const ext=currentFile.name.toLowerCase().split(".").pop();
-    if(ext==="pdf") await searchPDF(term);
-    else await searchDOCX(term);
-  }catch(err){
-    console.error(err);
-    status.innerHTML='<span class="error">解析中にエラーが発生しました。ファイルが破損していないか確認してください。</span>';
-  }finally{searchBtn.disabled=false}
+async function ensureIndexed(){
+  if(docIndex) return;
+  const ext=currentFile.name.toLowerCase().split(".").pop();
+  if(ext==="pdf") await indexPDF();
+  else await indexDOCX();
 }
 
-function escapeHtml(s){
-  return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-
-function highlight(text,term){
-  const safe=escapeHtml(text);
-  const esc=term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-  return safe.replace(new RegExp(esc,"gi",),m=>'<span class="hit">'+m+"</span>");
-}
-
-function addResult(page,line,context,source,paragraph=""){
-  lastResults.push({no:lastResults.length+1,page,line,context,source,paragraph});
-  const div=document.createElement("div");
-  div.className="result";
-  div.innerHTML=`
-    <div class="meta">#${lastResults.length}　P.${page} / L.${line}
-      <span class="badge">${source}</span>
-      ${paragraph?`<span class="small">（段落 ${paragraph}）</span>`:""}
-    </div>
-    <div class="context">…${highlight(context,termInput.value.trim())}…</div>`;
-  results.appendChild(div);
-}
-
-async function searchPDF(term){
+async function indexPDF(){
   status.textContent="PDFを解析しています……";
   const data=await currentFile.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data}).promise;
-  let totalHits=0;
+  const lines=[];
 
   for(let p=1;p<=pdf.numPages;p++){
     status.textContent=`PDFを解析中…… ${p} / ${pdf.numPages} ページ`;
     const page=await pdf.getPage(p);
     const tc=await page.getTextContent();
-
-    // PDFの文字をY座標でグループ化して行を作る
     const items=tc.items.filter(x=>x.str && x.str.trim());
-    const lines=[];
+    const rows=[];
     const tolerance=3.0;
 
     items.forEach(item=>{
       const y=item.transform[5];
-      let line=lines.find(l=>Math.abs(l.y-y)<=tolerance);
-      if(!line){line={y,items:[]};lines.push(line)}
-      line.items.push(item);
+      let row=rows.find(l=>Math.abs(l.y-y)<=tolerance);
+      if(!row){row={y,items:[]};rows.push(row)}
+      row.items.push(item);
     });
 
-    lines.sort((a,b)=>b.y-a.y);
-    lines.forEach(l=>l.items.sort((a,b)=>a.transform[4]-b.transform[4]));
-    const lineTexts=lines.map(l=>l.items.map(x=>x.str).join(" ").replace(/\s+/g," ").trim());
+    rows.sort((a,b)=>b.y-a.y);
+    rows.forEach(l=>l.items.sort((a,b)=>a.transform[4]-b.transform[4]));
 
-    lineTexts.forEach((text,idx)=>{
-      if(new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i").test(text)){
-        const start=Math.max(0,text.toLowerCase().indexOf(term.toLowerCase())-100);
-        const end=Math.min(text.length,start+term.length+200);
-        addResult(p,idx+1,text.slice(start,end),"PDF");
-        totalHits++;
-      }
+    rows.forEach((row,idx)=>{
+      const text=row.items.map(x=>x.str).join(" ").replace(/\s+/g," ").trim();
+      if(text) lines.push({page:p,line:idx+1,paragraph:"",text});
     });
   }
-
-  showSummary(totalHits,pdf.numPages,"PDF");
-  status.textContent=`検索完了：${totalHits}件`;
-  csvBtn.disabled=totalHits===0;
+  docIndex={type:"PDF",lines,pageCount:pdf.numPages};
 }
 
-async function searchDOCX(term){
+async function indexDOCX(){
   status.textContent="DOCXを解析しています……";
   const arrayBuffer=await currentFile.arrayBuffer();
   const mammothResult=await mammoth.convertToHtml({arrayBuffer},{includeDefaultStyleMap:true});
@@ -226,48 +309,173 @@ async function searchDOCX(term){
   const charsPerLine=75;
   const linesPerPage=45;
   const charsPerPage=charsPerLine*linesPerPage;
-  let charPos=0,totalHits=0;
+  const lines=[];
+  let charPos=0;
 
   paragraphs.forEach((text,i)=>{
-    const re=new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi");
-    let m;
-    while((m=re.exec(text))!==null){
-      const absolute=charPos+m.index;
-      const page=Math.floor(absolute/charsPerPage)+1;
-      const line=Math.floor(absolute/charsPerLine)+1;
-      const start=Math.max(0,m.index-100);
-      const end=Math.min(text.length,m.index+term.length+200);
-      addResult(page,line,text.slice(start,end),"DOCX",i+1);
-      totalHits++;
-      if(m[0].length===0)re.lastIndex++;
-    }
+    const page=Math.floor(charPos/charsPerPage)+1;
+    const line=Math.floor(charPos/charsPerLine)+1;
+    lines.push({page,line,paragraph:i+1,text});
     charPos+=text.length+1;
   });
 
-  const pages=Math.max(1,Math.ceil(charPos/charsPerPage));
-  showSummary(totalHits,pages,"DOCX");
-  status.textContent=`検索完了：${totalHits}件`;
-  csvBtn.disabled=totalHits===0;
+  const pageCount=Math.max(1,Math.ceil(charPos/charsPerPage));
+  docIndex={type:"DOCX",lines,pageCount};
 }
 
-function showSummary(hits,pages,type){
+/* ---------------- search ---------------- */
+
+function highlight(text,term,color){
+  const safe=escapeHtml(text);
+  const esc=term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  return safe.replace(new RegExp(esc,"gi"),m=>`<span class="hit" style="background:${color}">${m}</span>`);
+}
+
+searchBtn.addEventListener("click",search);
+csvBtn.addEventListener("click",downloadCSV);
+copyIndexBtn.addEventListener("click",copyIndexText);
+
+async function search(){
+  const terms=getTerms();
+  if(!currentFile||!terms.length)return;
+
+  searchBtn.disabled=true;csvBtn.disabled=true;copyIndexBtn.disabled=true;
+  resultCard.style.display="none";results.innerHTML="";indexBox.innerHTML="";
+  lastAllResults=[];lastPerTerm=[];
+
+  try{
+    await ensureIndexed();
+
+    let totalHits=0;
+    terms.forEach((term,ti)=>{
+      const color=PALETTE[ti%PALETTE.length];
+      const re=new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi");
+      const hits=[];
+
+      docIndex.lines.forEach(entry=>{
+        re.lastIndex=0;
+        let m;
+        while((m=re.exec(entry.text))!==null){
+          const start=Math.max(0,m.index-100);
+          const end=Math.min(entry.text.length,m.index+term.length+200);
+          const context=entry.text.slice(start,end);
+          hits.push({page:entry.page,line:entry.line,paragraph:entry.paragraph,context});
+          lastAllResults.push({
+            no:lastAllResults.length+1,term,page:entry.page,line:entry.line,
+            source:docIndex.type,paragraph:entry.paragraph,context
+          });
+          totalHits++;
+          if(m[0].length===0)re.lastIndex++;
+        }
+      });
+
+      lastPerTerm.push({term,color,hits});
+    });
+
+    renderIndex();
+    renderDetailedResults(terms.length);
+    showSummary(totalHits,docIndex.pageCount,docIndex.type,terms.length);
+    status.textContent=`検索完了：${terms.length}語 / 計${totalHits}件`;
+    csvBtn.disabled=totalHits===0;
+    copyIndexBtn.disabled=totalHits===0;
+  }catch(err){
+    console.error(err);
+    status.innerHTML='<span class="error">解析中にエラーが発生しました。ファイルが破損していないか確認してください。</span>';
+  }finally{
+    updateSearchAvailability();
+  }
+}
+
+function renderIndex(){
+  indexBox.innerHTML="";
+  const title=document.createElement("div");
+  title.style.fontWeight="800";
+  title.style.marginBottom="8px";
+  title.textContent="📎 用語：ページ・行一覧";
+  indexBox.appendChild(title);
+
+  lastPerTerm.forEach(({term,color,hits})=>{
+    const row=document.createElement("div");
+    row.className="indexRow";
+
+    const swatch=document.createElement("span");
+    swatch.className="termSwatch";
+    swatch.style.background=color;
+    swatch.style.display="inline-block";
+    row.appendChild(swatch);
+
+    const termEl=document.createElement("span");
+    termEl.className="indexTerm";
+    termEl.textContent=term+"：";
+    row.appendChild(termEl);
+
+    const listEl=document.createElement("span");
+    if(hits.length){
+      listEl.className="indexList";
+      listEl.textContent=hits.map(h=>`P${h.page},L${h.line}`).join("; ");
+    }else{
+      listEl.className="indexNone";
+      listEl.textContent="（該当なし）";
+    }
+    row.appendChild(listEl);
+
+    indexBox.appendChild(row);
+  });
+}
+
+function renderDetailedResults(termCount){
+  results.innerHTML="";
+  lastPerTerm.forEach(({term,color,hits})=>{
+    const header=document.createElement("div");
+    header.className="termGroupHeader";
+    header.innerHTML=`
+      <span class="termSwatch" style="background:${color};display:inline-block"></span>
+      <h3>${escapeHtml(term)}</h3>
+      <span class="count">${hits.length}件</span>`;
+    results.appendChild(header);
+
+    if(!hits.length){
+      const empty=document.createElement("div");
+      empty.className="empty";
+      empty.textContent=`「${escapeHtml(term)}」は見つかりませんでした。`;
+      results.appendChild(empty);
+      return;
+    }
+
+    hits.forEach((h,i)=>{
+      const div=document.createElement("div");
+      div.className="result";
+      div.innerHTML=`
+        <div class="meta">#${i+1}　P.${h.page} / L.${h.line}
+          <span class="badge">${docIndex.type}</span>
+          ${h.paragraph?`<span class="small">（段落 ${h.paragraph}）</span>`:""}
+        </div>
+        <div class="context">…${highlight(h.context,term,color)}…</div>`;
+      results.appendChild(div);
+    });
+  });
+}
+
+function showSummary(hits,pages,type,termCount){
   summary.innerHTML=`
-    <div class="stat"><b>${hits}</b>該当箇所</div>
+    <div class="stat"><b>${termCount}</b>検索語</div>
+    <div class="stat"><b>${hits}</b>該当箇所（合計）</div>
     <div class="stat"><b>${pages}</b>${type==="PDF"?"ページ":"推定ページ"}</div>
     <div class="stat"><b>${type}</b>ファイル</div>`;
-  if(!hits)results.innerHTML=`<div class="empty">「${escapeHtml(termInput.value.trim())}」は見つかりませんでした。</div>`;
   resultCard.style.display="block";
 }
+
+/* ---------------- export ---------------- */
 
 function csvEscape(v){
   return '"'+String(v).replace(/"/g,'""')+'"';
 }
 
 function downloadCSV(){
-  if(!lastResults.length)return;
+  if(!lastAllResults.length)return;
   const rows=[
-    ["No","ページ","行","ファイル種別","段落","前後の文章"],
-    ...lastResults.map(r=>[r.no,r.page,r.line,r.source,r.paragraph,r.context])
+    ["No","検索語","ページ","行","ファイル種別","段落","前後の文章"],
+    ...lastAllResults.map(r=>[r.no,r.term,r.page,r.line,r.source,r.paragraph,r.context])
   ];
   const csv="\uFEFF"+rows.map(r=>r.map(csvEscape).join(",")).join("\r\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
@@ -275,6 +483,22 @@ function downloadCSV(){
   const a=document.createElement("a");
   a.href=url;a.download="document_search_results.csv";a.click();
   URL.revokeObjectURL(url);
+}
+
+async function copyIndexText(){
+  if(!lastPerTerm.length)return;
+  const lines=lastPerTerm.map(({term,hits})=>{
+    const list=hits.length?hits.map(h=>`P${h.page},L${h.line}`).join("; "):"（該当なし）";
+    return `${term}：${list}`;
+  });
+  const text=lines.join("\n");
+  try{
+    await navigator.clipboard.writeText(text);
+    status.textContent="索引をクリップボードにコピーしました。";
+  }catch(err){
+    console.error(err);
+    status.innerHTML='<span class="error">コピーに失敗しました。手動で選択してコピーしてください。</span>';
+  }
 }
 </script>
 </body>
