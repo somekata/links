@@ -15,6 +15,7 @@ h1{margin:0 0 6px;font-size:28px}.lead{color:#68717b;margin:0 0 22px}
 .drop strong{display:block;font-size:18px;margin-bottom:6px}
 input[type=file]{display:none}
 label{display:block;font-weight:700;margin:18px 0 8px}
+label .hint{font-weight:500;color:#7a838c;font-size:13px}
 input[type=text]{width:100%;padding:12px;border:1px solid #ccd3da;border-radius:8px;font-size:16px}
 input[type=text]:focus{outline:2px solid #1769aa;outline-offset:1px}
 .actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
@@ -38,6 +39,13 @@ button:disabled{background:#aaa;cursor:not-allowed}
 .file-name{font-weight:700;margin-top:8px}
 .small{font-size:12px;color:#7a838c}
 
+/* --- tabs --- */
+.tabs{display:flex;gap:6px;margin-bottom:0}
+.tabBtn{background:#e4e9ed;color:#4a535b;border-radius:10px 10px 0 0;padding:11px 22px;font-weight:700;cursor:pointer;border:0;box-shadow:none}
+.tabBtn.active{background:#1769aa;color:#fff}
+.tabPanel{display:none}
+.tabPanel.active{display:block}
+
 /* --- term rows --- */
 .termRow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .termRow input[type=text]{flex:1}
@@ -45,7 +53,8 @@ button:disabled{background:#aaa;cursor:not-allowed}
 .addTermBtn{margin-top:2px}
 
 /* --- index (compact) --- */
-.indexBox{background:#fbfbfc;border:1px solid #e2e6ea;border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.indexBox{background:#fbfbfc;border:1px solid #e2e6ea;border-radius:10px;padding:14px 16px}
+.indexTitle{font-weight:800;margin-bottom:10px;font-size:16px}
 .indexRow{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px dashed #e6e9ec;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.7}
 .indexRow:last-child{border-bottom:none}
 .indexTerm{font-weight:800;flex:0 0 auto;min-width:120px;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}
@@ -56,6 +65,13 @@ button:disabled{background:#aaa;cursor:not-allowed}
 .termGroupHeader{display:flex;align-items:center;gap:8px;margin:22px 0 8px;padding-bottom:6px;border-bottom:2px solid #dce1e5}
 .termGroupHeader h3{margin:0;font-size:17px}
 .termGroupHeader .count{color:#68717b;font-size:13px;font-weight:600}
+
+/* --- help tab --- */
+.helpStep{display:flex;gap:14px;margin-bottom:18px}
+.helpStep .num{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#1769aa;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.helpStep .body h4{margin:2px 0 6px;font-size:16px}
+.helpStep .body p{margin:0;color:#45505a;line-height:1.75}
+.helpStep .body code{background:#eef3f7;padding:1px 6px;border-radius:5px;font-size:13px}
 </style>
 </head>
 <body>
@@ -63,50 +79,104 @@ button:disabled{background:#aaa;cursor:not-allowed}
 <h1>📚 DOCX / PDF 用語検索（複数語・索引モード）</h1>
 <p class="lead">Word（.docx）とPDF（.pdf）を読み込み、複数の用語をまとめて検索し、ページ・行・前後の文脈を確認できます。</p>
 
-<div class="card">
-  <div id="drop" class="drop">
-    <strong>📄 ファイルを選択</strong>
-    DOCX または PDF をここへドラッグ＆ドロップ<br>
-    <span class="small">またはクリックしてファイルを選択</span>
-    <input id="file" type="file" accept=".docx,.pdf">
-    <div id="fileName" class="file-name"></div>
-  </div>
-
-  <label>検索する用語（複数可）</label>
-  <div id="termsContainer"></div>
-  <button id="addTermBtn" class="ghost addTermBtn" type="button">＋ 用語を追加</button>
-
-  <div class="actions" style="margin-top:16px">
-    <button id="searchBtn" disabled>🔍 一括検索</button>
-    <button id="csvBtn" class="secondary" disabled>CSV出力（全用語）</button>
-    <button id="copyIndexBtn" class="secondary" disabled>索引をコピー</button>
-  </div>
-  <div id="status" class="status">ファイルを選択してください。</div>
+<div class="tabs">
+  <button class="tabBtn active" data-tab="main" type="button">メイン</button>
+  <button class="tabBtn" data-tab="list" type="button">リスト</button>
+  <button class="tabBtn" data-tab="help" type="button">使い方</button>
 </div>
 
-<div id="resultCard" class="card" style="display:none">
-  <div id="summary" class="summary"></div>
+<!-- ===== メインタブ ===== -->
+<div id="tab-main" class="tabPanel active">
 
-  <div id="indexBox" class="indexBox"></div>
+  <div class="card" style="border-top-left-radius:0">
+    <div id="drop" class="drop">
+      <strong>📄 ファイルを選択</strong>
+      DOCX または PDF をここへドラッグ＆ドロップ<br>
+      <span class="small">またはクリックしてファイルを選択</span>
+      <input id="file" type="file" accept=".docx,.pdf">
+      <div id="fileName" class="file-name"></div>
+    </div>
 
-  <div id="results"></div>
+    <label>検索する用語（複数可）　<span class="hint">リターンで用語を追加できます</span></label>
+    <div id="termsContainer"></div>
+    <button id="addTermBtn" class="ghost addTermBtn" type="button">＋ 用語を追加</button>
+
+    <div class="actions" style="margin-top:16px">
+      <button id="searchBtn" disabled>🔍 一括検索</button>
+      <button id="csvBtn" class="secondary" disabled>CSV出力（全用語）</button>
+      <button id="copyIndexBtn" class="secondary" disabled>索引をコピー</button>
+    </div>
+    <div id="status" class="status">ファイルを選択してください。</div>
+  </div>
+
+  <div id="resultCard" class="card" style="display:none">
+    <div id="summary" class="summary"></div>
+    <div id="results"></div>
+  </div>
+
 </div>
 
-<div class="card">
-  <div class="note">
-    <b>ページ・行番号について</b><br>
-    PDF：PDF内部のページを基準に表示します。行番号はPDF内の文字座標から算出した推定行です。<br>
-    DOCX：DOCXにはWord上の固定されたページ情報が基本的に保存されていないため、
-    文字量から算出した推定ページ・行です。Wordの実表示と完全一致するとは限りません。<br>
-    <br>
-    <b>索引表示について</b><br>
-    「用語：ページ・行一覧」は、各用語がヒットした箇所を <code>P{ページ}、L{行}</code> の形式で出現順に並べたものです。
-    同じ行に複数回出現する場合はその回数分表示されます。<br>
-    <br>
-    <b>プライバシー</b><br>
-    文書の解析はブラウザ内で行います。文書本文をこのツールのサーバーへアップロードする処理はありません。
+<!-- ===== リストタブ ===== -->
+<div id="tab-list" class="tabPanel">
+  <div class="card" style="border-top-left-radius:0">
+    <div id="indexBox" class="indexBox">
+      <div class="indexTitle">📎 用語：ページ・行一覧</div>
+      <div class="empty" id="indexEmpty">まだ検索していません。「メイン」タブで用語を入力し検索してください。</div>
+    </div>
   </div>
 </div>
+
+<!-- ===== 使い方タブ ===== -->
+<div id="tab-help" class="tabPanel">
+  <div class="card" style="border-top-left-radius:0">
+    <div class="helpStep">
+      <div class="num">1</div>
+      <div class="body">
+        <h4>ファイルを読み込む</h4>
+        <p>「メイン」タブの枠内にDOCXまたはPDFファイルをドラッグ＆ドロップするか、クリックしてファイルを選択します。</p>
+      </div>
+    </div>
+    <div class="helpStep">
+      <div class="num">2</div>
+      <div class="body">
+        <h4>検索する用語を入力する</h4>
+        <p>「検索する用語」欄に1つ目の用語を入力します。入力後に <code>Enter</code> キーを押すと、自動的に次の入力欄が追加されます。「＋ 用語を追加」ボタンでも欄を増やせます。不要な欄は「×」で削除できます（最後の1欄は空欄になるだけで残ります）。</p>
+      </div>
+    </div>
+    <div class="helpStep">
+      <div class="num">3</div>
+      <div class="body">
+        <h4>一括検索する</h4>
+        <p>最後の入力欄が空のまま <code>Enter</code> を押すか、「🔍 一括検索」ボタンをクリックすると、入力したすべての用語をまとめて検索します。ファイルの解析は1回だけ行われ、複数用語でも高速に検索できます。</p>
+      </div>
+    </div>
+    <div class="helpStep">
+      <div class="num">4</div>
+      <div class="body">
+        <h4>結果を確認する</h4>
+        <p>「メイン」タブには用語ごとにグループ化された詳細な検索結果（該当ページ・行・前後の文脈）が表示されます。「リスト」タブには、各用語の出現箇所を <code>用語：P{ページ},L{行}; P{ページ},L{行}…</code> の形式で簡潔にまとめた一覧が表示されます。同じ行に複数回出現する場合はその回数分表示されます。</p>
+      </div>
+    </div>
+    <div class="helpStep">
+      <div class="num">5</div>
+      <div class="body">
+        <h4>結果を書き出す</h4>
+        <p>「CSV出力（全用語）」ですべての用語・該当箇所を1つのCSVファイルとして保存できます。「索引をコピー」で、リストタブと同じ簡潔な一覧をテキストとしてクリップボードにコピーできます（メールや議事録への貼り付けに便利です）。</p>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:20px;padding-top:16px;border-top:1px solid #e6e9ec">
+      <b>ページ・行番号について</b><br>
+      PDF：PDF内部のページを基準に表示します。行番号はPDF内の文字座標から算出した推定行です。<br>
+      DOCX：DOCXにはWord上の固定されたページ情報が基本的に保存されていないため、
+      文字量から算出した推定ページ・行です。Wordの実表示と完全一致するとは限りません。<br>
+      <br>
+      <b>プライバシー</b><br>
+      文書の解析はブラウザ内で行います。文書本文をこのツールのサーバーへアップロードする処理はありません。
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script src="https://unpkg.com/mammoth@1.9.0/mammoth.browser.min.js"></script>
@@ -116,6 +186,25 @@ button:disabled{background:#aaa;cursor:not-allowed}
 import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs";
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+
+/* ---------------- tabs ---------------- */
+
+const tabBtns=[...document.querySelectorAll(".tabBtn")];
+const tabPanels={
+  main:document.getElementById("tab-main"),
+  list:document.getElementById("tab-list"),
+  help:document.getElementById("tab-help"),
+};
+tabBtns.forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    tabBtns.forEach(b=>b.classList.remove("active"));
+    Object.values(tabPanels).forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    tabPanels[btn.dataset.tab].classList.add("active");
+  });
+});
+
+/* ---------------- state / elements ---------------- */
 
 const fileInput=document.getElementById("file");
 const drop=document.getElementById("drop");
@@ -340,7 +429,7 @@ async function search(){
   if(!currentFile||!terms.length)return;
 
   searchBtn.disabled=true;csvBtn.disabled=true;copyIndexBtn.disabled=true;
-  resultCard.style.display="none";results.innerHTML="";indexBox.innerHTML="";
+  resultCard.style.display="none";results.innerHTML="";
   lastAllResults=[];lastPerTerm=[];
 
   try{
@@ -373,7 +462,7 @@ async function search(){
     });
 
     renderIndex();
-    renderDetailedResults(terms.length);
+    renderDetailedResults();
     showSummary(totalHits,docIndex.pageCount,docIndex.type,terms.length);
     status.textContent=`検索完了：${terms.length}語 / 計${totalHits}件`;
     csvBtn.disabled=totalHits===0;
@@ -387,12 +476,15 @@ async function search(){
 }
 
 function renderIndex(){
-  indexBox.innerHTML="";
-  const title=document.createElement("div");
-  title.style.fontWeight="800";
-  title.style.marginBottom="8px";
-  title.textContent="📎 用語：ページ・行一覧";
-  indexBox.appendChild(title);
+  indexBox.innerHTML=`<div class="indexTitle">📎 用語：ページ・行一覧</div>`;
+
+  if(!lastPerTerm.length){
+    const empty=document.createElement("div");
+    empty.className="empty";
+    empty.textContent="まだ検索していません。「メイン」タブで用語を入力し検索してください。";
+    indexBox.appendChild(empty);
+    return;
+  }
 
   lastPerTerm.forEach(({term,color,hits})=>{
     const row=document.createElement("div");
@@ -423,7 +515,7 @@ function renderIndex(){
   });
 }
 
-function renderDetailedResults(termCount){
+function renderDetailedResults(){
   results.innerHTML="";
   lastPerTerm.forEach(({term,color,hits})=>{
     const header=document.createElement("div");
@@ -500,6 +592,9 @@ async function copyIndexText(){
     status.innerHTML='<span class="error">コピーに失敗しました。手動で選択してコピーしてください。</span>';
   }
 }
+
+/* 初期表示 */
+renderIndex();
 </script>
 </body>
 </html>
