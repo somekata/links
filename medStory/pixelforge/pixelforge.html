@@ -451,6 +451,11 @@
 
     <div class="panel">
       <div class="section-title">3. 書き出し</div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>キャラクター名（変数名・ファイル名に使用）</label>
+        <input type="text" id="charNameInput" class="custom-num" style="width:100%;" placeholder="例：leon" maxlength="40">
+        <p class="edit-note" style="margin-top:6px;">元画像のファイル名は自動的にコードのコメントに残ります。</p>
+      </div>
       <div class="output-bar">
         <button class="out-btn" id="btnPngLarge" disabled>PNG保存（拡大表示サイズ）</button>
         <button class="out-btn" id="btnPngLogical" disabled>ドット絵保存（原寸ロジカル解像度）</button>
@@ -541,7 +546,8 @@
     <textarea id="codeOutput" readonly spellcheck="false"></textarea>
     <div class="modal-actions">
       <button class="out-btn" id="btnCopyCode">コピー</button>
-      <button class="out-btn primary" id="btnCloseModal">閉じる</button>
+      <button class="out-btn primary" id="btnSaveJs">.jsファイルとして保存</button>
+      <button class="out-btn" id="btnCloseModal">閉じる</button>
     </div>
   </div>
 </div>
@@ -560,6 +566,7 @@
   // ---------------------------------------------------------------------
   const state = {
     origImg:null,
+    originalFileName:null,
     srcImageData:null,      // {sw, sh, data}
     pixelData:null,         // {width, height, pixels:Uint8ClampedArray}
     settings:{
@@ -603,6 +610,15 @@
     const m = hex.replace('#','');
     const bigint = parseInt(m.length===3 ? m.split('').map(c=>c+c).join('') : m, 16);
     return [ (bigint>>16)&255, (bigint>>8)&255, bigint&255 ];
+  }
+  function sanitizeIdentifier(name){
+    let s = (name || '').trim();
+    // Replace anything that isn't a letter/number/underscore (handles Japanese, spaces, symbols)
+    s = s.replace(/[^\p{L}\p{N}_]/gu, '_');
+    s = s.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+    if(!s) s = 'sprite';
+    if(/^[0-9]/.test(s)) s = '_' + s;
+    return s;
   }
 
   // ---------------------------------------------------------------------
@@ -661,6 +677,13 @@
         state.eyePixels = [];
         state.history = [];
         state.historyIndex = -1;
+        state.originalFileName = file.name;
+
+        const charNameInput = document.getElementById('charNameInput');
+        if(!charNameInput.value.trim()){
+          const base = file.name.replace(/\.[^/.]+$/, '');
+          charNameInput.value = sanitizeIdentifier(base);
+        }
 
         document.getElementById('editToolbar').classList.remove('disabled');
         ['btnPngLarge','btnPngLogical','btnPngSprite','btnGenCode'].forEach(id=>{
@@ -1393,23 +1416,28 @@
     if(!state.pixelData) return;
     const transparent = state.settings.background === 'transparent';
     const c = buildExportCanvas(state.settings.pixelSize, transparent);
-    downloadCanvas(c, 'pixelart_large.png');
+    downloadCanvas(c, `${currentCharName()}_large.png`);
   });
   document.getElementById('btnPngLogical').addEventListener('click', ()=>{
     if(!state.pixelData) return;
     const transparent = state.settings.background === 'transparent';
     const c = buildExportCanvas(1, transparent);
-    downloadCanvas(c, 'pixelart_original_size.png');
+    downloadCanvas(c, `${currentCharName()}_original_size.png`);
   });
   document.getElementById('btnPngSprite').addEventListener('click', ()=>{
     if(!state.pixelData) return;
     const c = buildExportCanvas(1, true);
-    downloadCanvas(c, 'sprite.png');
+    downloadCanvas(c, `${currentCharName()}_sprite.png`);
   });
 
   // ---------------------------------------------------------------------
   // Code generation
   // ---------------------------------------------------------------------
+  function currentCharName(){
+    const raw = document.getElementById('charNameInput').value;
+    return sanitizeIdentifier(raw || (state.originalFileName ? state.originalFileName.replace(/\.[^/.]+$/,'') : 'sprite'));
+  }
+
   document.getElementById('btnGenCode').addEventListener('click', ()=>{
     if(!state.pixelData) return;
     const { width:dw, height:dh, pixels } = state.pixelData;
@@ -1429,30 +1457,45 @@
       for(let x=0;x<dw;x++) row.push(indices[y*dw+x]);
       rows.push('  [' + row.join(',') + ']');
     }
+
+    const name = currentCharName();
+    const srcFile = state.originalFileName || '(不明 / 元ファイル名なし)';
+    const genDate = new Date().toISOString().slice(0,10);
+    const s = state.settings;
+
     const code =
-`// PixelForge 生成コード — ${dw}x${dh} px, パレット${palette.length}色
-const PIXEL_PALETTE = ${JSON.stringify(palette)};
-const PIXEL_DATA = [
+`// ============================================================
+// PixelForge 生成コード
+// キャラクター名   : ${name}
+// 元画像ファイル名 : ${srcFile}
+// 生成日           : ${genDate}
+// 解像度           : ${dw}x${dh} px / パレット ${palette.length} 色
+// 変換方式         : ${s.mode} (解像度=${s.resolution}, 色数=${s.colorCount}, 輪郭=${s.outline ? Math.round(s.outlineStrength*100)+'%' : 'OFF'}, ディザ=${s.dither ? 'ON':'OFF'})
+// ============================================================
+
+const PIXEL_PALETTE_${name} = ${JSON.stringify(palette)};
+
+const PIXEL_DATA_${name} = [
 ${rows.join(',\n')}
 ];
 
-// キャンバス上にスプライトを描画する
-function drawPixelSprite(ctx, x, y, pixelSize) {
+// キャンバス上に「${name}」のスプライトを描画する
+function drawPixelSprite_${name}(ctx, x, y, pixelSize) {
   pixelSize = pixelSize || 4;
   ctx.imageSmoothingEnabled = false;
-  for (let row = 0; row < PIXEL_DATA.length; row++) {
-    const cols = PIXEL_DATA[row];
+  for (let row = 0; row < PIXEL_DATA_${name}.length; row++) {
+    const cols = PIXEL_DATA_${name}[row];
     for (let col = 0; col < cols.length; col++) {
       const idx = cols[col];
       if (idx === -1) continue; // 透明ピクセル
-      ctx.fillStyle = PIXEL_PALETTE[idx];
+      ctx.fillStyle = PIXEL_PALETTE_${name}[idx];
       ctx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
     }
   }
 }
 
 // 使用例:
-// drawPixelSprite(ctx, 100, 100, 4);
+// drawPixelSprite_${name}(ctx, 100, 100, 4);
 `;
     document.getElementById('codeOutput').value = code;
     document.getElementById('codeModal').classList.remove('hidden');
@@ -1469,6 +1512,17 @@ function drawPixelSprite(ctx, x, y, pixelSize) {
     } catch(e){
       document.execCommand('copy');
     }
+  });
+  document.getElementById('btnSaveJs').addEventListener('click', ()=>{
+    const code = document.getElementById('codeOutput').value;
+    if(!code) return;
+    const name = currentCharName();
+    const blob = new Blob([code], {type:'text/javascript'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${name}.js`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
   });
 
 })();
