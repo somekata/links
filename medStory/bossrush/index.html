@@ -654,6 +654,7 @@ let enemyBullets = []; // 小弾（3発でライフ-1）
 let bigBullets = [];   // 大玉（1発でライフ-1）
 let particles = [];
 let floaters = [];
+let items = [];
 let lastTime = 0;
 
 // boss state
@@ -661,6 +662,9 @@ let boss = null, bossHP = 0, bossHPMax = 0, bossX=0, bossY=60, bossW=160, bossH=
 let bossFireT = 0, chargeT = 0, charging = false, warnBlink = 0;
 let bossFlawless = true;
 let overlayTimer = null;
+let lastFormKey = null;
+let formAlertT = 0, formAlertLines = ['',''], formAlertColor = '#ff9a3d';
+let heartSpawnT = 0;
 
 function currentForm(){
   let f = boss.forms[0];
@@ -674,7 +678,7 @@ function currentForm(){
 function resetGame(){
   stageIdx = 0; score = 0; lives = 3; invuln = 0; selectedDrug = 0;
   player.x = W/2-14; player.y = H-90;
-  particles = []; floaters = [];
+  particles = []; floaters = []; items = [];
   playerBullets = []; enemyBullets = []; bigBullets = [];
   resetRestrictedDrugs();
   refreshAbxUI();
@@ -693,9 +697,20 @@ function startBoss(){
   bossX = (W-bossW)/2; bossY = 50; bossVX = 50+stageIdx*10; bobT=0; flashT=0;
   bossFireT = 0; chargeT = 3.5+Math.random()*1.5; charging=false; warnBlink=0;
   bossFlawless = true;
-  enemyBullets = []; bigBullets = [];
+  lastFormKey = boss.forms[0].key; formAlertT = 0;
+  heartSpawnT = 9+Math.random()*4;
+  enemyBullets = []; bigBullets = []; items = [];
   updateBossHUD();
   showBossIntro();
+}
+function triggerFormAlert(newForm){
+  formAlertLines = [`${boss.name}が変異した！`, `${newForm.key} に進化した`];
+  formAlertColor = newForm.level>=2 ? '#ff3d5a' : '#ff9a3d';
+  formAlertT = 2.6;
+  flashT = 0.2;
+  bossFireT = Math.max(bossFireT, 0.9);
+  chargeT = Math.max(chargeT, 0.9);
+  spawnParticles(bossX+bossW/2, bossY+bossH/2, formAlertColor, 30);
 }
 function showBossIntro(){
   const st = STAGES[stageIdx];
@@ -812,11 +827,14 @@ requestAnimationFrame(loop);
 
 function update(dt){
   updateRestrictedDrugs(dt);
+  if(formAlertT>0) formAlertT -= dt;
   if(state==='boss'){
     updatePlayer(dt);
     updateParticlesAndFloaters(dt);
+    updateItems(dt);
     updateBoss(dt);
     updateEnemyBullets(dt);
+    updateHeartSpawn(dt);
   } else {
     updateParticlesAndFloaters(dt);
   }
@@ -941,6 +959,33 @@ function damagePlayer(){
   }
 }
 
+/* ---- ライフ回復アイテム（ハート）---- */
+function updateHeartSpawn(dt){
+  heartSpawnT -= dt;
+  if(heartSpawnT<=0){
+    heartSpawnT = 11+Math.random()*6;
+    if(lives<maxLives){
+      items.push({ x: 30+Math.random()*(W-60), y:-24, w:22, h:22, vy: 80+Math.random()*20 });
+    }
+  }
+}
+function updateItems(dt){
+  for(let i=items.length-1;i>=0;i--){
+    const it = items[i];
+    it.y += it.vy*dt;
+    if(it.y>H+30){ items.splice(i,1); continue; }
+    const dx=(player.x+player.w/2)-(it.x+it.w/2), dy=(player.y+player.h/2)-(it.y+it.h/2);
+    if(Math.hypot(dx,dy) < 26){
+      items.splice(i,1);
+      if(lives<maxLives){
+        lives++; updateLivesHUD();
+        addFloater(it.x+it.w/2, it.y-6, 'LIFE +1', '#5bff9e');
+        spawnParticles(it.x+it.w/2, it.y+it.h/2, '#5bff9e', 14);
+      }
+    }
+  }
+}
+
 /* ---- プレイヤー弾の当たり判定 ---- */
 function handlePlayerHits(){
   for(let i=playerBullets.length-1;i>=0;i--){
@@ -964,6 +1009,11 @@ function handlePlayerHits(){
           spawnParticles(p.x,p.y,'#ffe15a',6);
           updateBossHUD();
           if(bossHP<=0){ onBossDefeated(); return; }
+          const newForm = currentForm();
+          if(newForm.key !== lastFormKey){
+            lastFormKey = newForm.key;
+            triggerFormAlert(newForm);
+          }
         } else {
           bossFlawless = false;
         }
@@ -1092,10 +1142,12 @@ function draw(){
 
   if(state==='boss'){
     drawBoss();
+    drawItems();
     drawBullets();
     drawParticlesFloaters();
     drawPlayer();
     if(charging) drawWarning();
+    if(formAlertT>0) drawFormAlert();
   } else {
     drawParticlesFloaters();
   }
@@ -1145,6 +1197,20 @@ function drawBullets(){
   ctx.restore();
 }
 
+function drawItems(){
+  ctx.save();
+  items.forEach(it=>{
+    ctx.fillStyle='#ff5d7a'; ctx.shadowColor='#ff5d7a'; ctx.shadowBlur=8;
+    const cx=it.x+it.w/2, cy=it.y+it.h/2, s=it.w/2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy+s*0.7);
+    ctx.bezierCurveTo(cx-s*1.4,cy-s*0.6, cx-s*0.4,cy-s*1.4, cx,cy-s*0.4);
+    ctx.bezierCurveTo(cx+s*0.4,cy-s*1.4, cx+s*1.4,cy-s*0.6, cx,cy+s*0.7);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
 function drawParticlesFloaters(){
   particles.forEach(p=>{ ctx.globalAlpha=Math.max(0,p.life/0.6); ctx.fillStyle=p.color; ctx.fillRect(p.x-2,p.y-2,4,4); });
   ctx.globalAlpha=1;
@@ -1165,6 +1231,39 @@ function drawWarning(){
   ctx.font='16px "Press Start 2P", monospace';
   ctx.textAlign='center';
   ctx.fillText('WARNING', W/2, 30);
+  ctx.restore();
+}
+
+function drawFormAlert(){
+  const total = 2.6, fadeOut = 0.6;
+  let alpha = 1;
+  if(formAlertT < fadeOut) alpha = formAlertT/fadeOut;
+  else if(formAlertT > total-0.3) alpha = (total-formAlertT)/0.3;
+  alpha = Math.max(0, Math.min(1, alpha));
+
+  const cy = H*0.36;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // 背景バー
+  ctx.fillStyle = 'rgba(2,5,7,0.82)';
+  ctx.fillRect(0, cy-30, W, 62);
+  ctx.strokeStyle = formAlertColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0,cy-30); ctx.lineTo(W,cy-30); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,cy+32); ctx.lineTo(W,cy+32); ctx.stroke();
+
+  // パルス発光
+  const pulse = 0.6+0.4*Math.sin(bobT*10);
+  ctx.shadowColor = formAlertColor;
+  ctx.shadowBlur = 14*pulse;
+  ctx.fillStyle = formAlertColor;
+  ctx.textAlign = 'center';
+  ctx.font = '11px "Press Start 2P", monospace';
+  ctx.fillText(formAlertLines[0], W/2, cy-4);
+  ctx.font = '13px "Press Start 2P", monospace';
+  ctx.fillText(formAlertLines[1], W/2, cy+20);
+
   ctx.restore();
 }
 
