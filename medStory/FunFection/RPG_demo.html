@@ -1288,7 +1288,7 @@ function startStage(s){
   document.getElementById('stageScreen').classList.remove('hidden');
   document.getElementById('logPanel').classList.remove('hidden');
   document.getElementById('hintText').textContent =
-    `${s.smallDrugs.join('か')}で攻撃（連打不可・約0.65秒に1回）。倒すたびに残りの増殖スピードが上がる。個体数${SAFE_LEVEL}以下を保てれば巨大化前に封じ込め成功だが、倒しすぎると逆に手に負えなくなる。倒した数が多いほど、巨大化した場合のHPは下がる。`;
+    `${s.smallDrugs.join('か')}で攻撃（広域抗菌薬ほどクールタイムが長い・連打不可）。倒すたびに残りの増殖スピードが上がる。個体数${SAFE_LEVEL}以下を保てれば巨大化前に封じ込め成功だが、倒しすぎると逆に手に負えなくなる。倒した数が多いほど、巨大化した場合のHPは下がる。`;
   clearLog();
   log(`${s.name}に入った…${s.icon} 小さな個体が増え始めた！`, 'info');
   renderStats();
@@ -1424,7 +1424,11 @@ function transformIntoGiant(){
 }
 
 /* ==================== 攻撃ロジック ==================== */
-const ACTION_COOLDOWN_MS = 650;
+const NARROW_COOLDOWN_MS = 500;
+const BROAD_COOLDOWN_MS = 1050;
+function cooldownFor(key){
+  return DRUGS[key].broad ? BROAD_COOLDOWN_MS : NARROW_COOLDOWN_MS;
+}
 
 function killSmall(index){
   if(!stage || stage.giant) return;
@@ -1433,7 +1437,7 @@ function killSmall(index){
   if(!item) return;
   const key = stage.currentWeapon;
   const s = stage.def;
-  stage.actionCooldown = ACTION_COOLDOWN_MS;
+  stage.actionCooldown = cooldownFor(key);
   if(s.smallDrugs.includes(key)){
     stage.population.splice(index,1);
     stage.totalKills++;
@@ -1458,7 +1462,7 @@ function attackGiant(){
   if(result==='O'){ hit = true; }
   else if(result==='D'){ hit = Math.random() < 0.5; }
   if(drug.broad) run.amr = Math.min(100, run.amr + 8);
-  stage.actionCooldown = ACTION_COOLDOWN_MS;
+  stage.actionCooldown = cooldownFor(key);
 
   if(hit){
     const dmg = 45;
