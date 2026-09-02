@@ -149,7 +149,7 @@
   <div class="statrow" id="popRow">
     <span class="label">個体数</span>
     <div class="bar"><div class="bar-fill pop" id="popBar" style="width:0%"></div></div>
-    <span class="num" id="popNum">0/14</span>
+    <span class="num" id="popNum" style="width:auto;">0/14</span>
   </div>
   <div class="statrow hidden" id="giantRow">
     <span class="label">巨大化HP</span>
@@ -1206,6 +1206,8 @@ function getSprite(charaKey){
 /* ==================== ゲーム状態 ==================== */
 const CW = 360, CH = 280;
 const THRESHOLD = 14;
+const SAFE_LEVEL = 3;
+const CONTAINMENT_GOAL = 14000; // ms
 let canvas, ctx;
 let run;     // {hp,amr,cleared:Set,zukan:Set,currentNodeIndex}
 let stage;   // 現在プレイ中のステージ状態
@@ -1273,17 +1275,20 @@ function startStage(s){
   stage = {
     def:s,
     population:[],
-    spawnTimer:0, spawnInterval:1500,
+    spawnTimer:0, spawnInterval:1300,
     biteTimer:0,
     giant:null,
     hand:[], currentWeapon:null, handTimer:0, handInterval:7000,
+    totalKills:0,
+    containmentTime:0,
+    actionCooldown:0,
   };
   refreshHand();
   document.getElementById('mapScreen').classList.add('hidden');
   document.getElementById('stageScreen').classList.remove('hidden');
   document.getElementById('logPanel').classList.remove('hidden');
   document.getElementById('hintText').textContent =
-    `${s.smallDrugs.join('か')}を選んでタップ（このステージにはそれ以外効かない）`;
+    `${s.smallDrugs.join('か')}で攻撃（連打不可・約0.65秒に1回）。倒すたびに残りの増殖スピードが上がる。個体数${SAFE_LEVEL}以下を保てれば巨大化前に封じ込め成功だが、倒しすぎると逆に手に負えなくなる。倒した数が多いほど、巨大化した場合のHPは下がる。`;
   clearLog();
   log(`${s.name}に入った…${s.icon} 小さな個体が増え始めた！`, 'info');
   renderStats();
@@ -1340,7 +1345,12 @@ function renderStats(){
     giantRow.style.display = 'none';
     const n = stage.population.length;
     document.getElementById('popBar').style.width = Math.min(100, n/THRESHOLD*100)+'%';
-    document.getElementById('popNum').textContent = `${n}/${THRESHOLD}`;
+    if(n <= SAFE_LEVEL && stage.containmentTime > 0){
+      const remain = Math.max(0, Math.ceil((CONTAINMENT_GOAL - stage.containmentTime)/1000));
+      document.getElementById('popNum').textContent = `${n}/${THRESHOLD}（封じ込めまで${remain}秒）`;
+    } else {
+      document.getElementById('popNum').textContent = `${n}/${THRESHOLD}`;
+    }
   }
 }
 
@@ -1396,26 +1406,41 @@ function transformIntoGiant(){
   const candidates = pool.length ? pool : s.phenotypes;
   const def = candidates[Math.floor(Math.random()*candidates.length)];
   if(forceR) run.amr = 40;
+  // 巨大化前にどれだけ間引いたかでHPが変わる（放置するほど手強く育つ）
+  const baseHp = 150;
+  const reduction = stage.totalKills * 5;
+  const maxHp = Math.max(60, baseHp - reduction);
   stage.giant = {
-    def, hp:150, maxHp:150,
+    def, hp:maxHp, maxHp,
     fireTimer:0, fireInterval:3500,
     flashUntil:0,
   };
-  log(`<span class="warn">個体数が閾値に達した！${s.breathEmoji} 巨大化した…！</span>`);
+  if(reduction > 0){
+    log(`<span class="warn">個体数が閾値に達した！${s.breathEmoji} 巨大化した…！（事前に${stage.totalKills}体間引いていたのでHPは${maxHp}に抑えられている）</span>`);
+  } else {
+    log(`<span class="warn">個体数が閾値に達した！${s.breathEmoji} 巨大化した…！（間引きゼロのため最大HP${maxHp}）</span>`);
+  }
   renderStats();
 }
 
 /* ==================== 攻撃ロジック ==================== */
+const ACTION_COOLDOWN_MS = 650;
+
 function killSmall(index){
   if(!stage || stage.giant) return;
+  if(stage.actionCooldown > 0) return;
   const item = stage.population[index];
   if(!item) return;
   const key = stage.currentWeapon;
   const s = stage.def;
+  stage.actionCooldown = ACTION_COOLDOWN_MS;
   if(s.smallDrugs.includes(key)){
     stage.population.splice(index,1);
+    stage.totalKills++;
     run.amr = Math.min(100, run.amr + 2);
-    log(`<span class="hit">${DRUGS[key].name} 命中！ 小さな個体を1体倒した</span>`);
+    // 倒すたびに生き残った個体の増殖が加速する（間引くほど次の出現が早まる）
+    stage.spawnInterval = Math.max(420, stage.spawnInterval - 90);
+    log(`<span class="hit">${DRUGS[key].name} 命中！ 小さな個体を1体倒した（通算${stage.totalKills}体／次の出現間隔${stage.spawnInterval}ms）</span>`);
   } else {
     log(`<span class="miss">${DRUGS[key].name} は効かない…${s.smallDrugs.join('か')}を選ぼう</span>`);
   }
@@ -1424,6 +1449,7 @@ function killSmall(index){
 
 function attackGiant(){
   if(!stage || !stage.giant) return;
+  if(stage.actionCooldown > 0) return;
   const g = stage.giant;
   const key = stage.currentWeapon;
   const drug = DRUGS[key];
@@ -1432,6 +1458,7 @@ function attackGiant(){
   if(result==='O'){ hit = true; }
   else if(result==='D'){ hit = Math.random() < 0.5; }
   if(drug.broad) run.amr = Math.min(100, run.amr + 8);
+  stage.actionCooldown = ACTION_COOLDOWN_MS;
 
   if(hit){
     const dmg = 45;
@@ -1448,11 +1475,23 @@ function onGiantDefeated(){
   const s = stage.def;
   const g = stage.giant;
   run.zukan.add(s.id + '::' + g.def.id);
+  const note = g.def.note;
+  const name = g.def.name, pheno = g.def.phenotype||'非定型';
+  completeStage(s, `${name}（${pheno}）を撃破した。${note}`, `最後の${name}（${pheno}）を撃破し、6種すべてを制圧した。${note}`);
+}
+
+function onContainmentSuccess(){
+  const s = stage.def;
+  log(`<span class="hit">個体数を${SAFE_LEVEL}以下に${Math.round(CONTAINMENT_GOAL/1000)}秒間抑え続け、巨大化させずに封じ込め成功！</span>`);
+  completeStage(s,
+    `巨大化させる前に封じ込めに成功した。感受性・耐性のどちらだったかは分からずじまいだが、被害は最小限に抑えられた。`,
+    `最後のステージも、巨大化させる前に封じ込めに成功した。`);
+}
+
+function completeStage(s, victoryNote, clearNote){
   run.cleared.add(s.id);
   run.currentNodeIndex = Math.min(STAGES.length, run.currentNodeIndex + 1);
   run.hp = Math.min(run.maxHp, run.hp + 15);
-  const note = g.def.note;
-  const name = g.def.name, pheno = g.def.phenotype||'非定型';
   const stageName = s.name;
   if(rafId) cancelAnimationFrame(rafId);
   stage = null;
@@ -1466,8 +1505,7 @@ function onGiantDefeated(){
     document.getElementById('clearArea').innerHTML = `
       <div class="panel clearScreen">
         <h2>全ステージ制圧！</h2>
-        <p>最後の${name}（${pheno}）を撃破し、6種すべてを制圧した。</p>
-        <p style="font-size:.75rem;color:#6b6150;">${note}</p>
+        <p>${clearNote}</p>
       </div>`;
     document.getElementById('mapScreen').classList.remove('hidden');
     renderTrail();
@@ -1476,7 +1514,7 @@ function onGiantDefeated(){
     document.getElementById('victoryArea').innerHTML = `
       <div class="panel">
         <div style="font-weight:700;color:#4a8f4a;margin-bottom:4px;">${stageName} 制圧！</div>
-        <div style="font-size:.78rem;">${name}（${pheno}）を撃破した。${note}</div>
+        <div style="font-size:.78rem;">${victoryNote}</div>
         <div style="font-size:.72rem;color:#6b6150;margin-top:4px;">HPが少し回復した（+15）。</div>
         <button class="primary" onclick="showMap()">次のステージへ</button>
       </div>`;
@@ -1509,6 +1547,7 @@ function loop(ts){
 function update(dt){
   stage.handTimer += dt;
   if(stage.handTimer >= stage.handInterval) refreshHand();
+  if(stage.actionCooldown > 0) stage.actionCooldown = Math.max(0, stage.actionCooldown - dt);
 
   if(!stage.giant){
     stage.spawnTimer += dt;
@@ -1536,7 +1575,19 @@ function update(dt){
     }
     if(stage.population.length >= THRESHOLD){
       transformIntoGiant();
+      return;
     }
+    // 封じ込め判定：個体数を一定以下に保ち続けられれば巨大化前にクリア
+    if(stage.population.length <= SAFE_LEVEL){
+      stage.containmentTime += dt;
+      if(stage.containmentTime >= CONTAINMENT_GOAL){
+        onContainmentSuccess();
+        return;
+      }
+    } else {
+      stage.containmentTime = 0;
+    }
+    renderStats();
   } else {
     const g = stage.giant;
     g.fireTimer += dt;
@@ -1602,6 +1653,15 @@ function draw(){
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`${g.def.name}（${g.def.phenotype||'非定型'}）`, cx, cy - targetH/2 - 10);
+  }
+
+  if(stage.actionCooldown > 0){
+    ctx.fillStyle = 'rgba(43,38,32,0.12)';
+    ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle = 'rgba(43,38,32,0.55)';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⏳ クールタイム中…', CW/2, 18);
   }
 }
 
