@@ -38,6 +38,18 @@ canvas{display:block;touch-action:none;}
 #scoreBox .rankLine{font-size:20px;font-weight:700;color:#B8860B;text-align:center;margin-bottom:6px;}
 #luckyLine{color:#B8860B;font-weight:700;}
 #clearPanel{display:none;}
+#storyPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,17,12,0.88);z-index:25;padding:24px;}
+#storyPanel .card{max-width:340px;text-align:center;}
+#storyPanel p{font-family:'Zen Antique',serif;font-size:17px;line-height:2.1;color:#F3DDA8;margin:0 0 26px;white-space:pre-line;}
+#storyPanel button{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;background:#F3DDA8;color:#2a2214;border:none;border-radius:22px;padding:9px 24px;}
+#creditsPanel{position:fixed;inset:0;display:none;overflow:hidden;background:#1B2340;z-index:26;}
+#creditsInner{position:absolute;left:0;right:0;top:100%;text-align:center;color:#F3DDA8;font-family:'Zen Antique',serif;padding:0 30px;animation:creditsScroll 16s linear forwards;}
+#creditsInner h2{font-size:22px;margin:0 0 30px;color:#fff;font-weight:400;}
+#creditsInner .recap{font-family:'Noto Sans JP',sans-serif;font-size:13px;color:#D9CBA8;line-height:2.2;margin:0 0 34px;}
+#creditsInner p{font-family:'Noto Sans JP',sans-serif;font-size:14px;line-height:2.1;margin:0 0 18px;color:#F3DDA8;}
+#creditsInner .small{font-size:11px;color:#9AA0BE;margin-top:40px;}
+@keyframes creditsScroll{ from{transform:translateY(0);} to{transform:translateY(-220%);} }
+#creditsSkip{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:27;background:rgba(255,255,255,0.15);color:#F3DDA8;border:1px solid rgba(243,221,168,0.5);border-radius:18px;padding:7px 16px;font-family:'Noto Sans JP',sans-serif;font-size:12px;display:none;}
 footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;color:#8a8272;text-align:center;padding:4px 10px calc(env(safe-area-inset-bottom,0px) + 4px);background:rgba(245,241,232,0.85);z-index:5;}
 </style>
 </head>
@@ -58,7 +70,7 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
 </div>
 
 <div class="tabPanel active" data-panel="play">
-<p>ある日、有機物が集まって、<br>生命が誕生した。</p>
+<p>四十億年前、原始の海の底で——<br>すべては、ここから始まる。</p>
 <p style="font-size:12px;color:#8a8272;">タイムや被弾数でスコアが変わります。運が良ければ、道中でラッキースターに出会えるかも。</p>
 <div style="text-align:center;"><button class="primary" id="startBtn">はじめる</button></div>
 </div>
@@ -102,6 +114,14 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
 <button class="secondary" id="titleBtn">タイトルへ戻る</button>
 </div>
 </div></div>
+<div id="storyPanel"><div class="card">
+<p id="storyText"></p>
+<button id="storyNextBtn">つづく</button>
+</div></div>
+
+<div id="creditsPanel"><div id="creditsInner"></div></div>
+<button id="creditsSkip">スキップ</button>
+
 <footer>本コンテンツは AI（Claude, Anthropic）を用いて作成されたゲームβ版試作です。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</footer>
 
 <script>
@@ -121,6 +141,12 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
  const actionBtn=document.getElementById('actionBtn');
  const banner=document.getElementById('missionBanner');
  const bannerText=document.getElementById('bannerText');
+ const storyPanel=document.getElementById('storyPanel');
+ const storyText=document.getElementById('storyText');
+ const storyNextBtn=document.getElementById('storyNextBtn');
+ const creditsPanel=document.getElementById('creditsPanel');
+ const creditsInner=document.getElementById('creditsInner');
+ const creditsSkip=document.getElementById('creditsSkip');
 
  // tab switching on the title screen
  document.querySelectorAll('#tabBar button').forEach(btn=>{
@@ -151,7 +177,7 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
  let mission, introActive, player, tail, pointer, actionHeld;
  let hitFlash, invuln, speech, particles;
  let pendingTransition, transitioning, transformT, colorFrom, colorTo;
- let gameFinished;
+ let gameFinished, storyActive;
  let startTime, totalHits, luckyCollected, lucky;
 
  // shared "growth" field used by prologue and mission1
@@ -180,9 +206,12 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
    hitFlash=0; invuln=0; speech=null; particles=[];
    pendingTransition=null; transitioning=false; transformT=0;
    popularity=0; popEl.style.display='none'; popEl.textContent='人気 0';
-   totalHits=0; luckyCollected=0; lucky=null;
+   totalHits=0; luckyCollected=0; lucky=null; storyActive=false;
    actionBtn.classList.remove('visible');
    clearPanel.style.display='none';
+   storyPanel.style.display='none';
+   creditsPanel.style.display='none';
+   creditsSkip.style.display='none';
    introPanel.style.display='flex';
    document.querySelectorAll('#tabBar button').forEach(b=>b.classList.remove('active'));
    document.querySelector('#tabBar button[data-tab="play"]').classList.add('active');
@@ -202,8 +231,27 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
  actionBtn.addEventListener('pointerup',releaseAction);
  actionBtn.addEventListener('pointercancel',releaseAction);
  actionBtn.addEventListener('pointerleave',releaseAction);
- startBtn.addEventListener('click',()=>{ introActive=false; introPanel.style.display='none'; startTime=Date.now(); enterAct0(); });
- retryBtn.addEventListener('click',()=>{ reset(); introActive=false; introPanel.style.display='none'; startTime=Date.now(); enterAct0(); });
+ const OPENING_STORY=[
+   '四十億年前。',
+   '原始の海の底で、無数の有機物が漂っていた。',
+   'ある日、それらが偶然出会い、結びついた。',
+   '膜に包まれ、代謝を始め——',
+   '生命が、誕生した。',
+   '小さな一個の細胞は、まだ何者でもない。\nだが、この物語はいつか、天下を目指す。'
+ ];
+ const YELLOW_STORY=[
+   'カタラーゼを得た団子は、やがて色づき始めた。',
+   '白から、黄金へ。',
+   'まるで、黄金の陣羽織をまとうように——',
+   '黄色ブドウ球菌、爆誕。',
+   'まだ道は始まったばかりだ。'
+ ];
+ function startNewGame(){
+   introActive=false; introPanel.style.display='none';
+   playStory(OPENING_STORY, 'はじめる', ()=>{ startTime=Date.now(); enterAct0(); });
+ }
+ startBtn.addEventListener('click', startNewGame);
+ retryBtn.addEventListener('click', ()=>{ reset(); startNewGame(); });
  titleBtn.addEventListener('click',()=>{ reset(); });
 
  function showLine(text,x,y){ speech={text,x,y,life:110}; }
@@ -211,6 +259,27 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
    bannerText.textContent=text; banner.classList.add('show');
    setTimeout(()=>{ banner.classList.remove('show'); }, 1600);
  }
+
+ // generic tap-through story sequence, used for the opening and mid-game story beats
+ let storyQueue=[], storyOnDone=null, storyDoneLabel='つづく';
+ function playStory(lines, doneLabel, onDone){
+   storyActive=true;
+   storyQueue=lines.slice(); storyOnDone=onDone; storyDoneLabel=doneLabel;
+   storyPanel.style.display='flex';
+   advanceStory();
+ }
+ function advanceStory(){
+   if(storyQueue.length===0){
+     storyPanel.style.display='none'; storyActive=false;
+     const fn=storyOnDone; storyOnDone=null;
+     if(fn) fn();
+     return;
+   }
+   storyText.textContent=storyQueue.shift();
+   storyNextBtn.textContent = storyQueue.length===0 ? storyDoneLabel : 'つづく';
+ }
+ storyNextBtn.addEventListener('click', advanceStory);
+
  function burst(x,y,color,n){
    n=n||8;
    for(let i=0;i<n;i++) particles.push({x,y,a:Math.random()*Math.PI*2,sp:1+Math.random()*2,life:30+Math.random()*20,color});
@@ -343,7 +412,9 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
      hazardLine:'H2O2だ、危ない！', divideLine:'仲間が増えた！',
      onComplete:function(){
        showBanner('ミッション成功　カタラーゼを手に入れた');
-       queueTransition(enterMission2, {from:COL_PALE, to:COL_GOLD});
+       queueTransition(function(){
+         playStory(YELLOW_STORY, 'つづける', enterMission2);
+       }, {from:COL_PALE, to:COL_GOLD});
      }
    });
    maybeSpawnLucky();
@@ -694,32 +765,74 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
    if(gameFinished) return;
    gameFinished=true;
    actionBtn.classList.remove('visible');
-   setTimeout(()=>{ showScoreAndClear(); },700);
+   setTimeout(()=>{ playEnding(); },700);
  }
 
- function showScoreAndClear(){
+ function computeFinalResult(){
    const elapsed=(Date.now()-startTime)/1000;
    const timePenalty=Math.round(elapsed*15);
    const hitPenalty=totalHits*250;
    const popularityBonus=popularity*80;
    const luckyBonus=luckyCollected*400;
    const endlessBonus=m6Score||0;
-   let score=Math.max(0,Math.round(10000-timePenalty-hitPenalty+popularityBonus+luckyBonus+endlessBonus));
+   const score=Math.max(0,Math.round(10000-timePenalty-hitPenalty+popularityBonus+luckyBonus+endlessBonus));
    let rank='C';
    if(score>=9500) rank='S'; else if(score>=7500) rank='A'; else if(score>=5000) rank='B';
-   rankLine.textContent='ランク '+rank+'　　'+score+'点';
+   return {elapsed,timePenalty,hitPenalty,popularityBonus,luckyBonus,endlessBonus,score,rank};
+ }
+
+ function buildEndingNarrative(rank){
+   const base={
+     S:['天下、統一。','USA300は、もはや並ぶ者なき最強の株となった。','小さなGPCから始まった物語は、ここに完成する。'],
+     A:['覇者、ここに立つ。','数々の抗菌薬を越え、USA300は確かな力を手にした。','天下人への道は、もう目前だ。'],
+     B:['道半ばの覇者。','USA300としての力は手にしたが、まだ本当の意味での天下は遠い。','次の挑戦が、さらなる高みへの鍵になる。'],
+     C:['雌伏の時。','苦難の連続だったが、USA300への進化だけは成し遂げた。','秀吉もまた、幾度も苦境を乗り越えて天下を掴んだ。次こそ。']
+   };
+   const lines=base[rank].slice();
+   if(totalHits===0) lines.push('一度も傷を負わなかった、完璧な進軍だった。');
+   if(popularity>=5) lines.push('多くのレンサ球菌に慕われた、その人望もまた力となった。');
+   if(luckyCollected>=3) lines.push('強運もまた、天下人の資質のひとつなのかもしれない。');
+   return lines;
+ }
+
+ function playEnding(){
+   const result=computeFinalResult();
+   window._lastResult=result;
+   const narrative=buildEndingNarrative(result.rank);
+   creditsInner.innerHTML=
+     '<h2>バイキンズの逆襲</h2>'+
+     '<div class="recap">誕生 ── カタラーゼ ── コアグラーゼ ── PC1 ── mecA ── PVL ── USA300</div>'+
+     narrative.map(t=>'<p>'+t+'</p>').join('')+
+     '<div class="small">本コンテンツはAI（Claude, Anthropic）を用いて作成されました</div>';
+   creditsInner.style.animation='none';
+   void creditsInner.offsetWidth;
+   creditsInner.style.animation='';
+   creditsPanel.style.display='block';
+   creditsSkip.style.display='block';
+   const onEnd=()=>{ creditsInner.removeEventListener('animationend',onEnd); finishEnding(); };
+   creditsInner.addEventListener('animationend',onEnd);
+   creditsSkip.onclick=()=>{ creditsInner.removeEventListener('animationend',onEnd); finishEnding(); };
+ }
+ function finishEnding(){
+   creditsPanel.style.display='none';
+   creditsSkip.style.display='none';
+   showScoreAndClear(window._lastResult);
+ }
+
+ function showScoreAndClear(result){
+   rankLine.textContent='ランク '+result.rank+'　　'+result.score+'点';
    statsLines.innerHTML=
-     'タイム：'+elapsed.toFixed(1)+'秒<br>'+
+     'タイム：'+result.elapsed.toFixed(1)+'秒<br>'+
      '被弾：'+totalHits+'回<br>'+
      '人気：'+popularity+'<br>'+
      'ラッキースター：'+luckyCollected+'個'+(luckyCollected>0?'　<span id="luckyLine">（幸運ボーナス！）</span>':'')+'<br>'+
-     'スコアアタック：+'+endlessBonus+'（最終団子サイズ '+(tail.length+1)+'体）';
+     'スコアアタック：+'+result.endlessBonus+'（最終団子サイズ '+(tail.length+1)+'体）';
    clearPanel.style.display='flex';
  }
 
  /* ---------------- shared update/draw ---------------- */
  function update(){
-   if(introActive || clearPanel.style.display==='flex') return;
+   if(introActive || storyActive || gameFinished || clearPanel.style.display==='flex') return;
 
    if(transitioning){
      transformT=Math.min(1,transformT+0.05);
@@ -809,7 +922,7 @@ footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;col
  function draw(){
    ctx.clearRect(0,0,W,H);
    ctx.fillStyle='#f5f1e8'; ctx.fillRect(0,0,W,H);
-   if(introActive) return;
+   if(introActive || storyActive) return;
 
    if(mission===0 || mission===1){
      drawGrowth();
