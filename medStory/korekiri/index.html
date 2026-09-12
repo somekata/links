@@ -1,1 +1,1377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>これっきり細菌楽</title>
+<style>
+/* =========================================================================
+   0. リセット & ルート変数
+   ========================================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin:0; padding:0; height:100%; }
 
+:root{
+  /* --- 培地/検体カードをモチーフにした配色 --- */
+  --paper:      #F5F1E6;
+  --paper-raise:#FBF8F1;
+  --ink:        #232219;
+  --ink-soft:   #5B584C;
+  --ink-faint:  #8C8874;
+  --line:       #CBC0A4;
+  --line-soft:  #E1D9C4;
+  --gram-pos:   #6A3E82;   /* クリスタルバイオレット(Gram陽性) */
+  --gram-pos-bg:#EEE5F3;
+  --gram-neg:   #B23A48;   /* サフラニン(Gram陰性) */
+  --gram-neg-bg:#F7E4E4;
+  --agar:       #5E7A46;   /* 培地グリーン: 機能色/結論ボックス */
+  --agar-bg:    #E7EEDD;
+  --warn:       #A85B22;
+  --warn-bg:    #F5E4D2;
+  --shadow:     0 2px 10px rgba(35,34,25,0.14);
+  --radius-s:   3px;
+  --radius-m:   6px;
+  --font-serif: "Yu Mincho","YuMincho","Hiragino Mincho ProN","游明朝",serif;
+  --font-sans:  "Yu Gothic","YuGothic","Hiragino Kaku Gothic ProN","游ゴシック体","Noto Sans JP",sans-serif;
+  --font-mono:  "Courier New", ui-monospace, monospace;
+}
+[data-theme="dark"]{
+  --paper:      #16181A;
+  --paper-raise:#1D2023;
+  --ink:        #E9E4D6;
+  --ink-soft:   #B4AE9B;
+  --ink-faint:  #837E6C;
+  --line:       #3C4038;
+  --line-soft:  #2A2D27;
+  --gram-pos:   #B98FD4;
+  --gram-pos-bg:#2E2436;
+  --gram-neg:   #E08A93;
+  --gram-neg-bg:#3A2224;
+  --agar:       #9CC17B;
+  --agar-bg:    #29331F;
+  --warn:       #E0A165;
+  --warn-bg:    #3A2C1B;
+  --shadow:     0 2px 14px rgba(0,0,0,0.5);
+}
+
+body{
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--line-soft);
+  font-size: 16px;
+  line-height: 1.8;
+}
+#app.fs-small  { font-size: 14px; }
+#app.fs-medium { font-size: 16px; }
+#app.fs-large  { font-size: 19px; }
+
+a { color: inherit; }
+button{
+  font-family: inherit; font-size: 0.9em; cursor: pointer;
+  background: var(--paper-raise); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius-s);
+  padding: 6px 10px; transition: background .15s, border-color .15s;
+}
+button:hover{ border-color: var(--ink-faint); }
+button:focus-visible, [tabindex]:focus-visible, a:focus-visible{
+  outline: 2px solid var(--agar); outline-offset: 2px;
+}
+button.primary{ background: var(--agar); color:#fff; border-color: var(--agar); }
+button.ghost{ background: transparent; border-color: transparent; }
+input[type="text"], input[type="search"], textarea, select{
+  font-family: inherit; font-size: 0.95em; color: var(--ink);
+  background: var(--paper-raise); border: 1px solid var(--line);
+  border-radius: var(--radius-s); padding: 6px 8px;
+}
+h1,h2,h3,h4{ font-family: var(--font-serif); margin: 0 0 .5em; }
+
+/* =========================================================================
+   1. 全体レイアウト
+   ========================================================================= */
+#app{
+  height: 100vh; display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-rows: 58px 1fr;
+  grid-template-areas: "topbar topbar" "sidebar main";
+  background: var(--line-soft);
+}
+#topbar{
+  grid-area: topbar; display:flex; align-items:center; gap:14px;
+  padding: 0 16px; background: var(--paper); border-bottom: 1px solid var(--line);
+  z-index: 30;
+}
+#topbar .brand{ font-family: var(--font-serif); font-size:1.15em; font-weight:bold; white-space:nowrap;}
+#topbar .pagecount{
+  font-family: var(--font-mono); font-size:.85em; color: var(--ink-soft);
+  border:1px solid var(--line); border-radius: var(--radius-s); padding:3px 8px; white-space:nowrap;
+}
+#topbar .search-wrap{ flex:1; max-width:360px; position:relative; }
+#topbar .search-wrap input{ width:100%; }
+#topbar .spacer{ flex:1; }
+#topbar .topbtns{ display:flex; gap:6px; align-items:center; }
+#menuToggle{ display:none; }
+
+#sidebar{
+  grid-area: sidebar; background: var(--paper); border-right:1px solid var(--line);
+  overflow-y:auto; display:flex; flex-direction:column;
+}
+#sidebar nav.tabs{ display:flex; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+#sidebar nav.tabs button{
+  flex:1; border:none; border-radius:0; background:transparent; padding:10px 4px; font-size:.8em;
+  border-bottom: 2px solid transparent;
+}
+#sidebar nav.tabs button.active{ border-bottom-color: var(--agar); color: var(--agar); font-weight:bold; }
+#sidebar .tabpanel{ display:none; padding: 12px; }
+#sidebar .tabpanel.active{ display:block; }
+
+#main{
+  grid-area: main; overflow-y:auto; display:flex; flex-direction:column; align-items:center;
+  padding: 26px 16px 60px;
+}
+
+/* =========================================================================
+   2. サイドバー: 目次 / 一覧 / 検索 / お気に入り / 復習
+   ========================================================================= */
+.toc-chapter{ margin-bottom: 6px; }
+.toc-chapter > summary{
+  cursor:pointer; font-weight:bold; padding:6px 4px; list-style:none; display:flex; justify-content:space-between;
+}
+.toc-chapter > summary::-webkit-details-marker{ display:none; }
+.toc-chapter > summary::after{ content:"▾"; color:var(--ink-faint); }
+.toc-chapter[open] > summary::after{ content:"▴"; }
+.toc-page-item, .list-item, .fav-item{
+  display:block; width:100%; text-align:left; padding:8px 8px; margin:3px 0;
+  background: var(--paper-raise); border:1px solid var(--line-soft); border-radius: var(--radius-s);
+}
+.toc-page-item:hover, .list-item:hover, .fav-item:hover{ border-color: var(--ink-faint); }
+.toc-page-item .num, .list-item .num{
+  font-family: var(--font-mono); font-size:.75em; color: var(--ink-faint); margin-right:6px;
+}
+.toc-page-item.unread::before{ content:"○ "; color: var(--gram-neg); }
+.toc-page-item.read::before{ content:"● "; color: var(--agar); }
+.list-item .concl, .fav-item .concl{ font-size:.82em; color: var(--ink-soft); margin-top:3px; }
+.list-filter{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+.list-filter select, .list-filter input{ width:100%; }
+.empty-note{ color: var(--ink-faint); font-size:.85em; padding: 10px 4px; }
+
+.search-result{ border-bottom:1px dashed var(--line-soft); padding:8px 2px; cursor:pointer; }
+.search-result:hover{ background: var(--paper-raise); }
+.search-result .title{ font-weight:bold; }
+.search-result .hitloc{ font-size:.78em; color: var(--agar); }
+mark.hit{ background: var(--gram-pos-bg); color: var(--gram-pos); padding:0 2px; border-radius:2px; }
+
+/* =========================================================================
+   3. A4ページ本体
+   ========================================================================= */
+.page-shell{ width:100%; max-width: 800px; display:flex; flex-direction:column; gap: 14px; }
+.a4-page{
+  background: var(--paper-raise); border:1px solid var(--line);
+  border-radius: var(--radius-m); box-shadow: var(--shadow);
+  padding: 40px 46px 30px; min-height: 1050px; position:relative;
+}
+.page-meta-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 4px; }
+.page-chapter{ font-size:.8em; color: var(--ink-faint); letter-spacing:.03em; }
+.page-idlabel{ font-family: var(--font-mono); font-size:.75em; color: var(--ink-faint); }
+.page-title{ font-size:1.6em; border-bottom: 2px solid var(--ink); padding-bottom:8px; margin-bottom:16px; }
+.page-actions{ position:absolute; top:34px; right:40px; display:flex; gap:4px; }
+.page-actions button{ padding:4px 8px; font-size:1em; }
+.page-actions button.on{ background: var(--gram-pos-bg); border-color: var(--gram-pos); color: var(--gram-pos); }
+
+.conclusion-box{
+  background: var(--agar-bg); border-left: 4px solid var(--agar);
+  border-radius: var(--radius-s); padding: 10px 14px; margin: 0 0 22px;
+}
+.conclusion-box .label{ font-size:.75em; color: var(--agar); font-weight:bold; margin-bottom:2px; }
+.conclusion-box .text{ font-weight: bold; }
+
+.page-body{ font-size:1em; }
+.page-body p{ margin: 0 0 1em; }
+.page-body i{ font-style: italic; }
+
+.term{ color: var(--agar); border-bottom: 1px dotted var(--agar); cursor:pointer; }
+.bac{ color: var(--gram-pos); border-bottom: 1px dotted var(--gram-pos); cursor:pointer; font-style: italic; }
+.bac.noitalic{ font-style:normal; }
+.drug{ color: var(--gram-neg); border-bottom: 1px dotted var(--gram-neg); cursor:pointer; }
+
+.compare-box, .warn-box, .aside-box{
+  border:1px solid var(--line); border-radius: var(--radius-s); padding:12px 14px; margin: 16px 0;
+}
+.compare-box{ background: var(--paper); }
+.compare-box h4{ font-size:.95em; }
+.warn-box{ background: var(--warn-bg); border-color: var(--warn); }
+.warn-box h4{ color: var(--warn); font-size:.95em; }
+.aside-box{ background: var(--paper); border-left:3px solid var(--ink-faint); font-size:.92em; }
+
+table.summary-table{ width:100%; border-collapse: collapse; margin: 16px 0; font-size:.92em; }
+table.summary-table th, table.summary-table td{
+  border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top;
+}
+table.summary-table th{ background: var(--paper); }
+
+.fig-box{ margin: 18px 0; text-align:center; }
+.fig-box svg{ max-width:100%; background: var(--paper); border:1px solid var(--line-soft); border-radius: var(--radius-s); cursor: zoom-in; }
+.fig-caption{ font-size:.82em; color: var(--ink-soft); margin-top:6px; }
+
+.widget-box{
+  border:1px solid var(--line); border-radius: var(--radius-m); padding:16px; margin: 18px 0; background: var(--paper);
+}
+.widget-box h4{ font-size:.95em; margin-bottom:10px; }
+.widget-steps{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.widget-steps button{ font-size:.85em; }
+.widget-steps button.done{ background: var(--agar-bg); border-color: var(--agar); }
+.widget-steps button.current{ background: var(--agar); color:#fff; }
+.widget-stage{ display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+.widget-info{ flex:1; min-width:220px; font-size:.9em; background: var(--paper-raise); border:1px solid var(--line-soft); border-radius: var(--radius-s); padding:10px 12px; min-height:70px; }
+.gram-dish{ width:120px; height:120px; border-radius:50%; border:3px solid var(--line); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: background .3s; }
+.mech-svg-wrap{ display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+.mech-svg-wrap svg{ background: var(--paper-raise); border:1px solid var(--line-soft); border-radius: var(--radius-s); }
+.mech-target{ cursor:pointer; }
+.mech-target:hover{ opacity:.75; }
+
+.memo-box{ margin-top: 18px; }
+.memo-box textarea{ width:100%; min-height:70px; resize:vertical; }
+.memo-saved{ font-size:.75em; color: var(--agar); margin-left:8px; }
+
+.quiz-block{ border:1px solid var(--line); border-radius: var(--radius-m); padding:16px; margin:18px 0; background: var(--paper); }
+.quiz-block .q-vignette{ font-size:.92em; color: var(--ink-soft); margin-bottom:10px; }
+.quiz-block .q-prompt{ font-weight:bold; margin-bottom:10px; }
+.quiz-choices{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+.quiz-choice{ text-align:left; padding:8px 10px; }
+.quiz-choice.correct{ background: var(--agar-bg); border-color: var(--agar); }
+.quiz-choice.incorrect{ background: var(--gram-neg-bg); border-color: var(--gram-neg); }
+.quiz-choice.disabled{ pointer-events:none; opacity:.85; }
+.quiz-feedback{ font-size:.9em; margin-top:8px; }
+.quiz-feedback .verdict{ font-weight:bold; }
+.quiz-feedback .verdict.ok{ color: var(--agar); }
+.quiz-feedback .verdict.ng{ color: var(--gram-neg); }
+.quiz-explanations{ margin-top:6px; font-size:.88em; color: var(--ink-soft); }
+.quiz-perspectives{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); font-size:.88em; }
+.quiz-perspectives ul{ margin:6px 0 0; padding-left: 1.2em; }
+.quiz-actions{ margin-top:10px; display:flex; gap:8px; }
+
+.related-block{ display:flex; gap:18px; flex-wrap:wrap; margin-top:26px; padding-top:14px; border-top:1px solid var(--line-soft); font-size:.88em; }
+.related-col strong{ display:block; font-size:.8em; color: var(--ink-faint); margin-bottom:4px; }
+.related-col a{ display:block; color: var(--agar); cursor:pointer; margin-bottom:2px; }
+
+.page-footer-note{
+  margin-top: 28px; padding-top: 10px; border-top: 1px solid var(--line-soft);
+  font-size: .68em; color: var(--ink-faint); line-height:1.6;
+}
+
+.nav-controls{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.nav-controls .pageno-jump{ display:flex; align-items:center; gap:6px; font-size:.85em; color: var(--ink-soft); }
+.nav-controls .pageno-jump select{ font-family: var(--font-mono); }
+
+/* =========================================================================
+   4. モーダル(用語/菌カード/薬剤カード/図拡大)
+   ========================================================================= */
+#modalRoot{ position:fixed; inset:0; z-index:100; display:none; }
+#modalRoot.open{ display:flex; align-items:flex-start; justify-content:center; padding: 6vh 16px; background: rgba(20,18,10,0.45); overflow-y:auto; }
+.modal-card{
+  background: var(--paper-raise); border-radius: var(--radius-m); box-shadow: var(--shadow);
+  max-width: 520px; width:100%; padding: 24px 26px; position:relative; border:1px solid var(--line);
+}
+.modal-card .close-btn{ position:absolute; top:10px; right:10px; }
+.modal-kicker{ font-size:.72em; color: var(--ink-faint); text-transform:none; margin-bottom:2px; }
+.modal-title{ font-size:1.3em; margin-bottom:10px; }
+.modal-title.bac{ font-style: italic; color: var(--gram-pos); }
+.modal-title.drug{ color: var(--gram-neg); font-style: normal; }
+.modal-section{ margin-bottom:14px; }
+.modal-section h5{ font-size:.78em; color: var(--ink-faint); margin:0 0 5px; }
+.modal-section ul{ margin:0; padding-left:1.2em; }
+.chip-row{ display:flex; flex-wrap:wrap; gap:6px; }
+.chip{ background: var(--paper); border:1px solid var(--line); border-radius: 14px; padding:2px 10px; font-size:.82em; }
+.modal-links a{ display:inline-block; margin-right:12px; color: var(--agar); cursor:pointer; }
+.figure-modal-img{ text-align:center; }
+.figure-modal-img svg{ max-width:100%; }
+
+/* =========================================================================
+   5. モバイル対応
+   ========================================================================= */
+@media (max-width: 860px){
+  #app{ grid-template-columns: 1fr; grid-template-areas: "topbar" "main"; }
+  #menuToggle{ display:inline-block; }
+  #sidebar{
+    position:fixed; top:58px; left:0; bottom:0; width: 82vw; max-width:320px;
+    transform: translateX(-100%); transition: transform .2s ease; z-index:40;
+  }
+  #sidebar.open{ transform: translateX(0); box-shadow: var(--shadow); }
+  #topbar .brand{ font-size:1em; }
+  #topbar .pagecount{ display:none; }
+  .a4-page{ padding: 26px 20px 22px; min-height:auto; }
+  .page-title{ font-size:1.3em; }
+  .page-actions{ position:static; margin-bottom:12px; justify-content:flex-end; }
+}
+
+/* =========================================================================
+   6. 印刷
+   ========================================================================= */
+@media print{
+  body *{ visibility:hidden; }
+  #printArea, #printArea *{ visibility:visible; }
+  #printArea{ position:absolute; top:0; left:0; width:100%; }
+  .a4-page{ box-shadow:none; border:none; width:210mm; min-height:297mm; page-break-after: always; margin:0 auto; }
+  .page-actions, .memo-box, .quiz-actions button, .nav-controls{ display:none !important; }
+}
+#printArea{ display:none; }
+</style>
+</head>
+<body>
+
+<div id="app" class="fs-medium">
+
+  <!-- ============================ TOPBAR ============================ -->
+  <header id="topbar">
+    <button id="menuToggle" class="ghost" title="メニュー">☰</button>
+    <div class="brand">これっきり細菌楽</div>
+    <div class="pagecount" id="pageCountLabel">1 / 1</div>
+    <div class="search-wrap">
+      <input type="search" id="topSearchInput" placeholder="検索（菌名・疾患名・抗菌薬名・用語など）">
+    </div>
+    <div class="spacer"></div>
+    <div class="topbtns">
+      <button id="fontSizeBtn" title="文字サイズ">Aa</button>
+      <button id="darkModeBtn" title="ダークモード">🌙</button>
+      <button id="printBtn" title="このページを印刷">🖨</button>
+    </div>
+  </header>
+
+  <!-- ============================ SIDEBAR ============================ -->
+  <aside id="sidebar">
+    <nav class="tabs">
+      <button data-tab="toc" class="active">目次</button>
+      <button data-tab="list">一覧</button>
+      <button data-tab="search">検索</button>
+      <button data-tab="fav">ふせん</button>
+    </nav>
+
+    <div class="tabpanel active" data-panel="toc" id="tocPanel"></div>
+    <div class="tabpanel" data-panel="list" id="listPanel"></div>
+    <div class="tabpanel" data-panel="search" id="searchPanel">
+      <input type="search" id="sideSearchInput" placeholder="検索語を入力" style="width:100%; margin-bottom:10px;">
+      <div id="searchResults"><p class="empty-note">検索語を入力してください。</p></div>
+    </div>
+    <div class="tabpanel" data-panel="fav" id="favPanel"></div>
+  </aside>
+
+  <!-- ============================ MAIN ============================ -->
+  <main id="main">
+    <div class="page-shell">
+      <div class="a4-page" id="a4page"></div>
+      <div class="nav-controls">
+        <button id="prevBtn">← 前のページ</button>
+        <div class="pageno-jump">
+          <span>ページ移動</span>
+          <select id="pageJumpSelect"></select>
+        </div>
+        <button id="nextBtn">次のページ →</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============================ MODAL ============================ -->
+<div id="modalRoot"></div>
+
+<!-- 印刷専用（全ページ印刷モード時にJSで内容を書き込む） -->
+<div id="printArea"></div>
+
+<script>
+/* =========================================================================
+   1. データ層： PAGES / TERMS / BACTERIA / DRUGS
+   -------------------------------------------------------------------------
+   ★拡張のポイント★
+   ・新しいページを増やす → PAGES 配列に要素を push するだけ。
+   ・新しい用語 → TERMS に id をキーとして追加。本文中は
+       <span class="term" data-term="ID">表示テキスト</span>
+     と書けば自動でポップアップ対応になる。
+   ・新しい菌 → BACTERIA に追加。本文中は
+       <span class="bac" data-bac="ID"><i>Genus species</i></span>
+     血清型など斜体にしない部分がある場合は、斜体にしたい部分だけ <i> で囲む。
+   ・新しい抗菌薬 → DRUGS に追加。本文中は
+       <span class="drug" data-drug="ID">薬剤名</span>
+   ========================================================================= */
+
+const TERMS = {
+  gram_stain: { term:"Gram染色", type:"検査法", desc:"細胞壁の構造の違いを利用して細菌を大きく2群（Gram陽性・Gram陰性）に分ける染色法。クリスタルバイオレット→ヨウ素→脱色→サフラニンの順に処理する。", pages:[6,10] },
+  peptidoglycan: { term:"ペプチドグリカン", type:"構造", desc:"細菌の細胞壁を構成する網目状の高分子。Gram陽性菌では厚い層として細胞表面を覆い、クリスタルバイオレット‐ヨウ素複合体を保持しやすいため紫色に染まる。", pages:[6,10] },
+  cell_wall: { term:"細胞壁", type:"構造", desc:"細菌の形を保ち、浸透圧から菌体を守る構造。Gram陽性・陰性で厚さと構成が大きく異なり、これがGram染色や多くの抗菌薬（β-ラクタム系など）の標的の基盤になる。", pages:[6,10,35] },
+  catalase: { term:"catalase試験", type:"検査法", desc:"過酸化水素水を滴下し、酸素の泡が発生するかを見る検査。Staphylococcus属は陽性、Streptococcus属は陰性であり、Gram陽性球菌の初期鑑別に用いる。", pages:[42] },
+  coagulase: { term:"coagulase試験", type:"検査法", desc:"ウサギ血漿を凝固させる酵素（コアグラーゼ）の有無を見る検査。Staphylococcus aureusは陽性、その他のブドウ球菌（CNS）は基本的に陰性で、両者の鑑別に用いられる。", pages:[42] },
+  mrsa_mecA: { term:"mecA遺伝子 / PBP2a", type:"耐性機構", desc:"mecA遺伝子がコードする変異型ペニシリン結合蛋白PBP2aは、β-ラクタム系抗菌薬への親和性が低く、細胞壁合成を止められない。これがMRSA（メチシリン耐性黄色ブドウ球菌）の主な耐性機構であり、ほぼ全てのβ-ラクタム系が無効となる。", pages:[43] },
+  mic: { term:"MIC（最小発育阻止濃度）", type:"検査用語", desc:"薬剤が細菌の目に見える発育を阻止できる最小濃度。感受性検査の基本指標であり、耐性機構が働くとMICは上昇（＝効きにくくなる）する。", pages:[43] },
+  antibiotic_terms: { term:"抗菌薬と抗生物質", type:"用語", desc:"「抗菌薬」は細菌の増殖を抑える薬剤全般（合成薬を含む）を指す広い用語。「抗生物質」は本来、微生物が産生する天然由来の物質（半合成品を含む）を指す語で、フルオロキノロン系やST合剤のような完全合成薬は「抗生物質」に含めない。臨床で治療を語る際は原則として「抗菌薬」を用いる。", pages:[35] },
+};
+
+const BACTERIA = {
+  s_aureus: {
+    name:"Staphylococcus aureus", nameHTML:"<i>Staphylococcus aureus</i>",
+    features:["catalase陽性・coagulase陽性のGram陽性ブドウ球菌","黄色色素と多彩な病原因子（毒素・酵素）を産生する","皮膚軟部組織感染から菌血症・心内膜炎まで幅広く起こす"],
+    keywords:["Gram陽性球菌","ブドウ房状配列","coagulase陽性","MRSA","毒素"],
+    desc:"ヒトの鼻腔・皮膚に常在する一方、化膿性炎症から重症全身感染まで起こしうる代表的な病原性ブドウ球菌。",
+    pages:[42,43], diseases:["皮膚軟部組織感染症","菌血症・感染性心内膜炎","食中毒（エンテロトキシン）"], drugPages:[42,43], image:null,
+  },
+  cns: {
+    name:"Coagulase-negative staphylococci (CNS)", nameHTML:"<i>Staphylococcus epidermidis</i> など（CNS）",
+    features:["coagulase陰性のブドウ球菌の総称","皮膚常在菌でバイオフィルム形成能が高い","カテーテル・人工物関連感染の代表的原因菌"],
+    keywords:["coagulase陰性","バイオフィルム","カテーテル関連感染","常在菌"],
+    desc:"皮膚の代表的常在菌群。病原性はS. aureusより弱いが、人工物（カテーテル・人工弁など）表面にバイオフィルムを作り感染を起こす。",
+    pages:[42], diseases:["カテーテル関連血流感染症","人工弁感染性心内膜炎"], drugPages:[42], image:null,
+  },
+  e_coli: {
+    name:"Escherichia coli", nameHTML:"<i>Escherichia coli</i>",
+    features:["ヒト腸管内の代表的常在菌（Enterobacterales）","Gram陰性桿菌・通性嫌気性・oxidase陰性","尿路感染症の最多起因菌であり病原型により腸管感染も起こす"],
+    keywords:["Gram陰性桿菌","Enterobacterales","尿路感染症","病原型（ETEC・EHECなど）"],
+    desc:"ヒト腸管内フローラの主要構成菌であると同時に、尿路感染症をはじめとする日和見感染や、特定の病原因子を獲得した株による腸管感染症の起因菌でもある。",
+    pages:[54], diseases:["尿路感染症","菌血症","腸管感染症（病原型による）"], drugPages:[54], image:null,
+  },
+  salmonella: {
+    name:"Salmonella", nameHTML:"<i>Salmonella</i> Typhi",
+    features:["Gram陰性桿菌（Enterobacterales）","菌種は少数だが血清型は非常に多様","血清型Typhiはヒトのみに感染し腸チフスを起こす"],
+    keywords:["血清型","腸チフス","Gram陰性桿菌"],
+    desc:"属名Salmonellaのみが学名として斜体表記の対象であり、Typhiなどの血清型（serovar）は学名の一部ではないため斜体にしない。この表記ルールはp54でも解説する。",
+    pages:[54], diseases:["腸チフス","非チフス性サルモネラ腸炎"], drugPages:[], image:null,
+  },
+};
+
+const DRUGS = {
+  cefazolin: {
+    name:"セファゾリン (CEZ)",
+    mechanism:"第一世代セファロスポリン系。ペニシリン結合蛋白（PBP）に結合し、細胞壁（ペプチドグリカン）の合成を阻害する。",
+    spectrum:"メチシリン感受性黄色ブドウ球菌（MSSA）やレンサ球菌など、Gram陽性球菌に強い活性を持つ。",
+    usage:"MSSAによる皮膚軟部組織感染症・菌血症の第一選択薬の一つ。周術期の予防的投与にも用いられる。",
+    cautions:"MRSAには無効（PBP2aに結合できない）。",
+    resistance:["mecA/PBP2a（MRSA）"],
+    pages:[42,43], cases:[43],
+  },
+  vancomycin: {
+    name:"バンコマイシン (VCM)",
+    mechanism:"グリコペプチド系。細胞壁前駆体（D-Ala-D-Ala末端）に結合し、ペプチドグリカン合成を阻害する。PBPそのものを標的としないため、PBP2a変異の影響を受けにくい。",
+    spectrum:"MRSAを含むGram陽性菌に有効。Gram陰性菌には分子が大きく外膜を通過できず無効。",
+    usage:"MRSAによる重症感染症（菌血症・心内膜炎・骨髄炎など）の中心的治療薬。",
+    cautions:"腎毒性・レッドマン症候群に注意し、TDM（治療薬物モニタリング）で用量調整を行う。",
+    resistance:["VISA/VRSA（頻度は低い）"],
+    pages:[43], cases:[43],
+  },
+  st: {
+    name:"ST合剤（スルファメトキサゾール/トリメトプリム）",
+    mechanism:"葉酸合成経路の異なる2段階（ジヒドロプテロイン酸合成酵素・ジヒドロ葉酸還元酵素）を同時に阻害する合成抗菌薬。天然物由来ではないため「抗生物質」ではなく「抗菌薬」と呼ぶ。",
+    spectrum:"MRSAを含む多くのGram陽性・陰性菌に活性を持つが、地域や施設の感受性率を必ず確認する。",
+    usage:"軽症〜中等症の皮膚軟部組織感染（MRSA疑い含む）で経口治療薬として選択されることがある。",
+    cautions:"重症菌血症・心内膜炎など高い組織移行と確実な効果が求められる病態では第一選択にならない。",
+    resistance:["葉酸代謝経路の変異による耐性"],
+    pages:[43], cases:[43],
+  },
+};
+
+/* =========================================================================
+   2. ページデータ（サンプル：Phase 1 では全100ページを埋めず、
+      各章・各コンテンツ要素の代表例のみ収録する）
+   ========================================================================= */
+const PAGES = [
+  {
+    id:1, chapter:"Part 0 導入", title:"これっきり細菌楽",
+    conclusion:"この本は、細菌を『暗記する』のではなく『考える』ための教材である。",
+    importance:"required",
+    body:`
+      <p style="text-align:center; margin-top:40px;">
+        <span style="font-family:var(--font-serif); font-size:1.6em;">これっきり細菌楽</span><br>
+        <span style="font-size:.9em; color:var(--ink-soft);">— 観察から治療まで、考える細菌学 —</span>
+      </p>
+      <p>本書は、Gram染色という一本の物差しから出発し、細菌の観察・分類・鑑別・感染部位・起因菌の推理・検査・治療という思考の流れを、100ページにわたって少しずつ組み立てていく教材である。</p>
+      <div class="aside-box">左のサイドバーから目次・ページ一覧・検索・ふせん（お気に入り／復習／メモ）にアクセスできる。まずは次のページで使い方を確認してほしい。</div>
+    `,
+    figures:[], table:null, quiz:null, widgets:[],
+    keywords:["使い方","総論","各論","臨床"], bacteriaRefs:[], drugRefs:[], termRefs:[],
+    relatedPages:{before:[], after:[2], review:[]},
+  },
+  {
+    id:2, chapter:"Part 0 導入", title:"この本の使い方",
+    conclusion:"本文中の色つきの語（用語・菌名・抗菌薬名）はクリックすると詳しい説明が開く。",
+    importance:"required",
+    body:`
+      <p>この教材のページは、いずれも次の要素で構成されている。</p>
+      <table class="summary-table">
+        <tr><th>要素</th><th>内容</th></tr>
+        <tr><td>このページの結論</td><td>そのページで最低限持ち帰ってほしい一文</td></tr>
+        <tr><td>本文</td><td>観察・分類・鑑別・治療の考え方を説明する文章</td></tr>
+        <tr><td><span class="term" data-term="gram_stain">用語（緑）</span></td><td>クリックすると用語の説明ポップアップが開く</td></tr>
+        <tr><td><span class="bac" data-bac="s_aureus">菌名（紫・斜体）</span></td><td>クリックすると「菌カード」が開く</td></tr>
+        <tr><td><span class="drug" data-drug="vancomycin">抗菌薬名（赤）</span></td><td>クリックすると「抗菌薬カード」が開く</td></tr>
+      </table>
+      <div class="compare-box">
+        <h4>ページ操作</h4>
+        <p>画面下の「← 前のページ」「次のページ →」のほか、キーボードの左右キー、スマートフォンでは左右スワイプでもページを移動できる。左サイドバーの「一覧」からは、章・キーワードで絞り込んでページへ直接ジャンプできる。</p>
+      </div>
+      <div class="warn-box">
+        <h4>ふせん機能</h4>
+        <p>各ページ右上の ☆（お気に入り）・🔖（あとで復習）はクリックのたびに保存される。学習履歴はすべてこの端末のブラウザ内（localStorage）に保存され、外部には送信されない。</p>
+      </div>
+    `,
+    figures:[], table:null, quiz:null, widgets:[],
+    keywords:["使い方","用語","ふせん"], bacteriaRefs:["s_aureus"], drugRefs:["vancomycin"], termRefs:["gram_stain"],
+    relatedPages:{before:[1], after:[6], review:[]},
+  },
+  {
+    id:6, chapter:"Part 1 細菌学総論", title:"細菌とは何か",
+    conclusion:"細菌は細胞壁を持つ原核生物であり、この細胞壁の構造の違いがGram染色による分類の基盤になる。",
+    importance:"required",
+    body:`
+      <p>細菌（bacteria）は、核膜を持たない原核生物である。ヒトなどの真核細胞と比較すると、細胞の大きさ・内部構造の複雑さは大きく異なるが、最も臨床的に重要な違いは<span class="term" data-term="cell_wall">細胞壁</span>の存在である。</p>
+      <table class="summary-table">
+        <tr><th></th><th>原核生物（細菌）</th><th>真核生物（ヒト細胞など）</th></tr>
+        <tr><td>核膜</td><td>なし</td><td>あり</td></tr>
+        <tr><td>細胞壁</td><td>あり（<span class="term" data-term="peptidoglycan">ペプチドグリカン</span>）</td><td>動物細胞にはなし</td></tr>
+        <tr><td>大きさの目安</td><td>数µm</td><td>10〜30µm</td></tr>
+      </table>
+      <p>細胞壁を持つこと自体は多くの細菌に共通するが、その厚さと構成は菌によって大きく異なる。この違いを可視化する最も基本的な検査が<span class="term" data-term="gram_stain">Gram染色</span>であり、次のページで詳しく扱う。</p>
+    `,
+    figures:[], table:null, quiz:null, widgets:[],
+    keywords:["総論","原核生物","細胞壁"], bacteriaRefs:[], drugRefs:[], termRefs:["cell_wall","peptidoglycan","gram_stain"],
+    relatedPages:{before:[2], after:[10], review:[]},
+  },
+  {
+    id:10, chapter:"Part 1 細菌学総論", title:"Gram陽性菌とGram陰性菌",
+    conclusion:"Gram染色は、細胞壁のペプチドグリカン層の厚さの違いを利用して細菌を大きく2群に分ける基本的な検査である。",
+    importance:"required",
+    body:`
+      <p>Gram染色の手順を実際に操作しながら確認してみよう。手順を正しい順番で進めると、Gram陽性菌とGram陰性菌で最終的な色調がどう違うかが分かる。</p>
+      <div class="widget-box" id="widget-gramSim-mount">
+        <h4>インタラクティブ：Gram染色をやってみる</h4>
+        <div id="gramSimRoot"></div>
+      </div>
+      <p>結果として、<span class="bac" data-bac="s_aureus">Staphylococcus aureus</span>のような<span class="term" data-term="peptidoglycan">ペプチドグリカン</span>層の厚いGram陽性菌はクリスタルバイオレット‐ヨウ素複合体を保持して紫色に、<span class="bac" data-bac="e_coli">Escherichia coli</span>のようなペプチドグリカン層が薄く外膜を持つGram陰性菌は脱色されてサフラニンにより赤〜桃色に染まる。</p>
+    `,
+    figures:[], table:null, quiz:null, widgets:["gramSim"],
+    keywords:["Gram染色","Gram陽性","Gram陰性"], bacteriaRefs:["s_aureus","e_coli"], drugRefs:[], termRefs:["gram_stain","peptidoglycan"],
+    relatedPages:{before:[6], after:[12], review:[42]},
+  },
+  {
+    id:12, chapter:"Part 1 細菌学総論", title:"細菌の増殖",
+    conclusion:"細菌の増殖曲線はlag・log・stationary・deathの4相からなり、各相で薬剤感受性や検査結果の解釈が変わりうる。",
+    importance:"important",
+    body:`
+      <p>細菌を新しい培地に接種すると、その菌数は時間とともに一定のパターンで変化する。下の増殖曲線の各相をクリックして、それぞれの特徴を確認してほしい。</p>
+      <div class="widget-box">
+        <h4>インタラクティブ：増殖曲線の4相</h4>
+        <div id="growthCurveRoot"></div>
+      </div>
+      <p>多くの抗菌薬は活発に細胞壁やDNA合成を行っているlog期（対数増殖期）の菌に対して最も効果を発揮する。この考え方は、次の抗菌薬総論のページにつながる。</p>
+    `,
+    figures:[], table:null, quiz:null, widgets:["growthCurve"],
+    keywords:["増殖曲線","lag期","log期","stationary期","death期"], bacteriaRefs:[], drugRefs:[], termRefs:[],
+    relatedPages:{before:[10], after:[35], review:[]},
+  },
+  {
+    id:35, chapter:"Part 1 細菌学総論", title:"抗菌薬総論① どこを攻撃する？",
+    conclusion:"抗菌薬は細胞壁・細胞膜・リボソーム・DNA/RNA・葉酸代謝のいずれかを選択的に攻撃することで、ヒト細胞に大きな害を与えずに細菌のみを傷害する。",
+    importance:"required",
+    body:`
+      <p><span class="term" data-term="antibiotic_terms">抗菌薬</span>は、細菌に特有の構造・経路を狙うことで選択毒性を実現している。下の模式図の各部位をクリックして、それぞれを標的とする代表的な抗菌薬系統を確認してみよう。</p>
+      <div class="widget-box">
+        <h4>インタラクティブ：抗菌薬はどこを狙うか</h4>
+        <div id="mechDiagramRoot"></div>
+      </div>
+      <div class="aside-box">抗菌薬名を丸暗記するより先に、「この薬はどの標的を攻撃するから、この菌・この病態に効く（効かない）」という考え方を身につけることが本書のねらいである。</div>
+    `,
+    figures:[], table:null, quiz:null, widgets:["mechDiagram"],
+    keywords:["抗菌薬総論","作用機序","選択毒性"], bacteriaRefs:[], drugRefs:["vancomycin","cefazolin","st"], termRefs:["antibiotic_terms","cell_wall"],
+    relatedPages:{before:[12], after:[42], review:[43]},
+  },
+  {
+    id:42, chapter:"Part 2 細菌学各論", title:"Staphylococcus aureus",
+    conclusion:"S. aureusはcatalase陽性・coagulase陽性のGram陽性球菌で、皮膚軟部組織感染から重症全身感染まで幅広く起こす。",
+    importance:"required",
+    body:`
+      <p><b>どんな菌？</b> <span class="bac" data-bac="s_aureus">Staphylococcus aureus</span>は、ブドウの房状に配列するGram陽性球菌であり、<span class="term" data-term="catalase">catalase試験</span>陽性・<span class="term" data-term="coagulase">coagulase試験</span>陽性という組み合わせで他のブドウ球菌（<span class="bac" data-bac="cns">CNS</span>）と鑑別される。</p>
+      <p><b>どこにいる？</b> 鼻腔や皮膚に常在する一方で、皮膚のバリアが破綻すると容易に感染を起こす。</p>
+      <p><b>何を起こす？</b> 皮膚軟部組織感染症（癤・蜂窩織炎・膿瘍）を代表として、菌血症、感染性心内膜炎、骨髄炎、食中毒（エンテロトキシンによる毒素型）まで多彩な病態を起こす。</p>
+      <div class="compare-box">
+        <h4>S. aureus と CNS の鑑別</h4>
+        <table class="summary-table">
+          <tr><th></th><th><i>S. aureus</i></th><th>CNS</th></tr>
+          <tr><td><span class="term" data-term="coagulase">coagulase</span></td><td>陽性</td><td>陰性</td></tr>
+          <tr><td>病原性</td><td>高い</td><td>弱毒（人工物関連が中心）</td></tr>
+        </table>
+      </div>
+      <p><b>どうやって見つける？</b> Gram染色でブドウ房状のGram陽性球菌を確認し、catalase・coagulase試験で属・菌種を絞り込む。</p>
+      <p><b>どう治療する？</b> メチシリン感受性株（MSSA）には<span class="drug" data-drug="cefazolin">セファゾリン</span>などのβ-ラクタム系が第一選択。メチシリン耐性株（MRSA）については次のページで扱う。</p>
+      <div class="conclusion-box" style="background:var(--paper); border-left-color:var(--ink-faint);">
+        <div class="label">ここだけ覚える</div>
+        <div class="text" style="font-weight:normal;">coagulase陽性＝S. aureus、陰性＝CNS。この一点がブドウ球菌の入口になる。</div>
+      </div>
+    `,
+    figures:[], table:null, quiz:null, widgets:[],
+    keywords:["ブドウ球菌","MSSA","皮膚軟部組織感染症"], bacteriaRefs:["s_aureus","cns"], drugRefs:["cefazolin"], termRefs:["catalase","coagulase"],
+    relatedPages:{before:[35], after:[43], review:[10]},
+  },
+  {
+    id:43, chapter:"Part 2 細菌学各論", title:"S. aureusとMRSA",
+    conclusion:"MRSAはmecA遺伝子由来のPBP2aによりβ-ラクタム系がほぼ全て無効となるため、バンコマイシンなど別系統の抗菌薬を選択する。",
+    importance:"required",
+    body:`
+      <p>メチシリン耐性黄色ブドウ球菌（MRSA）は、<span class="term" data-term="mrsa_mecA">mecA遺伝子 / PBP2a</span>により、ペニシリン系・セファロスポリン系を含むほぼ全てのβ-ラクタム系抗菌薬の標的（PBP）への結合が阻害され、<span class="term" data-term="mic">MIC</span>が大きく上昇する。</p>
+      <p>したがって、MRSAが想定される・確定した場合には<span class="drug" data-drug="cefazolin">セファゾリン</span>のようなβ-ラクタム系ではなく、<span class="drug" data-drug="vancomycin">バンコマイシン</span>など細胞壁合成阻害の機序が異なる抗菌薬や、<span class="drug" data-drug="st">ST合剤</span>など別系統の抗菌薬を検討する。</p>
+      <div class="quiz-block" id="quiz-43a"></div>
+    `,
+    figures:[], table:null,
+    quiz:null, widgets:[],
+    keywords:["MRSA","mecA","PBP2a","耐性機構"], bacteriaRefs:["s_aureus"], drugRefs:["cefazolin","vancomycin","st"], termRefs:["mrsa_mecA","mic"],
+    relatedPages:{before:[42], after:[54], review:[35]},
+    quizzes:[
+      { id:"43a",
+        vignette:"20歳、健康な学生。前腕に発赤を伴う皮下膿瘍があり、切開排膿後の膿からMRSAが検出された。バイタルサインは安定しており、全身状態は良好。",
+        prompt:"外来での追加の抗菌薬治療として、最も妥当なのはどれか。",
+        choices:[
+          { text:"セファゾリンを経静脈投与する", correct:false, explanation:"セファゾリンはβ-ラクタム系であり、MRSAのPBP2aには結合できないため無効である。" },
+          { text:"ST合剤を経口投与する（切開排膿と併用）", correct:true, explanation:"全身状態が安定した限局性の皮膚軟部組織感染であれば、切開排膿を基本としつつ経口のST合剤などで対応することが妥当な選択肢となる。" },
+          { text:"バンコマイシンを経静脈投与し入院管理とする", correct:false, explanation:"バンコマイシンはMRSAに有効だが、全身状態が良好な限局性感染に対しては過剰治療であり、まず切開排膿と経口薬で対応できないかを考える。" },
+        ],
+        hint:"感染の『部位』と『重症度』を先に評価しよう。",
+        perspectives:[
+          "感染部位：全身性の重症感染か、限局した皮膚軟部組織感染か。",
+          "宿主背景：基礎疾患のない健康な若年者か。",
+          "想定起因菌とその耐性状況：MRSAと判明している。",
+          "介入：すでに切開排膿という感染源コントロールが行われているか。",
+        ],
+      },
+    ],
+  },
+  {
+    id:54, chapter:"Part 2 細菌学各論", title:"Escherichia coli",
+    conclusion:"E. coliはヒト腸管の代表的常在菌であると同時に、尿路感染症の最多起因菌でもある。",
+    importance:"required",
+    body:`
+      <p><span class="bac" data-bac="e_coli">Escherichia coli</span>はEnterobacterales（腸内細菌目）に属するGram陰性桿菌で、通性嫌気性・oxidase陰性という特徴を持つ。ヒト腸管の常在菌叢の主要な構成菌であり、通常は無害だが、尿路など本来無菌であるべき部位に到達すると感染症を起こす。</p>
+      <div class="aside-box">
+        <b>学名表記の注意：血清型は斜体にしない</b><br>
+        属名・種名（例：<i>Salmonella</i> の <i>Salmonella</i>）は学名なので斜体にするが、<span class="bac noitalic" data-bac="salmonella"><i>Salmonella</i> Typhi</span> のように血清型（serovar）が付く場合、Typhiの部分は学名の一部ではないため斜体にしない。
+      </div>
+      <p>E. coliのうち、特定の病原因子（線毛・毒素など）を獲得した株は病原型として腸管感染症も引き起こすが、これは通常の常在株とは区別して考える必要がある。</p>
+    `,
+    figures:[], table:null, quiz:null, widgets:[],
+    keywords:["Enterobacterales","尿路感染症","常在菌","血清型"], bacteriaRefs:["e_coli","salmonella"], drugRefs:[], termRefs:[],
+    relatedPages:{before:[43], after:[], review:[10]},
+  },
+];
+
+/* クイズをページ本体に紐付け（p43のように quizzes 配列を持つページから引く） */
+const QUIZZES = {};
+PAGES.forEach(p=>{ if(p.quizzes){ p.quizzes.forEach(q=> QUIZZES[q.id]=q); } });
+
+/* =========================================================================
+   3. 状態管理（localStorage）
+   ========================================================================= */
+const STORAGE_KEY = "korekiri_saikingaku_state_v1";
+const DEFAULT_STATE = {
+  version:1, lastPage: PAGES[0].id, read:[], favorites:[], review:[], memos:{},
+  fontSize:"medium", darkMode:false, quizHistory:{}, scrollPositions:{},
+};
+let STATE = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return structuredClone(DEFAULT_STATE);
+    const parsed = JSON.parse(raw);
+    return Object.assign(structuredClone(DEFAULT_STATE), parsed);
+  }catch(e){ console.warn("学習履歴の読み込みに失敗しました。初期状態を使用します。", e); return structuredClone(DEFAULT_STATE); }
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }
+  catch(e){ console.warn("学習履歴の保存に失敗しました。", e); }
+}
+
+/* =========================================================================
+   4. ユーティリティ
+   ========================================================================= */
+function pageById(id){ return PAGES.find(p=>p.id===id); }
+function pageIndex(id){ return PAGES.findIndex(p=>p.id===id); }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+function stripHtml(html){
+  const d = document.createElement("div"); d.innerHTML = html; return d.textContent || "";
+}
+function chaptersInOrder(){
+  const seen = []; PAGES.forEach(p=>{ if(!seen.includes(p.chapter)) seen.push(p.chapter); }); return seen;
+}
+
+/* =========================================================================
+   5. トップバー
+   ========================================================================= */
+function renderTopbar(){
+  document.getElementById("pageCountLabel").textContent =
+    `${pageIndex(currentPageId)+1} / ${PAGES.length}`;
+}
+
+/* =========================================================================
+   6. サイドバー：目次
+   ========================================================================= */
+function renderTOC(){
+  const root = document.getElementById("tocPanel");
+  let html = "";
+  chaptersInOrder().forEach(ch=>{
+    const pages = PAGES.filter(p=>p.chapter===ch);
+    const readCount = pages.filter(p=>STATE.read.includes(p.id)).length;
+    html += `<details class="toc-chapter" open><summary>${escapeHtml(ch)} <span style="font-weight:normal;color:var(--ink-faint);font-size:.8em;">${readCount}/${pages.length}</span></summary>`;
+    pages.forEach(p=>{
+      const readCls = STATE.read.includes(p.id) ? "read" : "unread";
+      html += `<button class="toc-page-item ${readCls}" data-goto="${p.id}"><span class="num">p${p.id}</span>${escapeHtml(p.title)}</button>`;
+    });
+    html += `</details>`;
+  });
+  root.innerHTML = html;
+}
+
+/* =========================================================================
+   7. サイドバー：ページ一覧（フィルタ付き）
+   ========================================================================= */
+function renderListPanel(){
+  const root = document.getElementById("listPanel");
+  const chapters = chaptersInOrder();
+  root.innerHTML = `
+    <div class="list-filter">
+      <select id="filterChapter"><option value="">章：すべて</option>${chapters.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}</select>
+      <input type="text" id="filterKeyword" placeholder="キーワード・菌名で絞り込み">
+      <label style="font-size:.82em;"><input type="checkbox" id="filterUnreadOnly"> 未読のみ</label>
+    </div>
+    <div id="listResults"></div>
+  `;
+  const apply = ()=>{
+    const ch = document.getElementById("filterChapter").value;
+    const kw = document.getElementById("filterKeyword").value.trim().toLowerCase();
+    const unreadOnly = document.getElementById("filterUnreadOnly").checked;
+    let list = PAGES.filter(p=>{
+      if(ch && p.chapter!==ch) return false;
+      if(unreadOnly && STATE.read.includes(p.id)) return false;
+      if(kw){
+        const hay = [p.title, p.conclusion, ...(p.keywords||[]), ...(p.bacteriaRefs||[]).map(id=>BACTERIA[id]?.name||"")].join(" ").toLowerCase();
+        if(!hay.includes(kw)) return false;
+      }
+      return true;
+    });
+    const box = document.getElementById("listResults");
+    box.innerHTML = list.length ? list.map(p=>`
+      <button class="list-item" data-goto="${p.id}">
+        <span class="num">p${p.id}</span>${STATE.favorites.includes(p.id)?"★ ":""}${escapeHtml(p.title)}
+        <div class="concl">${escapeHtml(p.conclusion)}</div>
+      </button>`).join("") : `<p class="empty-note">該当するページがありません。</p>`;
+  };
+  document.getElementById("filterChapter").addEventListener("change", apply);
+  document.getElementById("filterKeyword").addEventListener("input", apply);
+  document.getElementById("filterUnreadOnly").addEventListener("change", apply);
+  apply();
+}
+
+/* =========================================================================
+   8. サイドバー：ふせん（お気に入り／復習）
+   ========================================================================= */
+function renderFavPanel(){
+  const root = document.getElementById("favPanel");
+  const favs = PAGES.filter(p=>STATE.favorites.includes(p.id));
+  const revs = PAGES.filter(p=>STATE.review.includes(p.id));
+  const block = (title, list, emptyMsg)=>`
+    <h4 style="font-size:.85em; color:var(--ink-faint); margin:14px 0 6px;">${title}</h4>
+    ${list.length ? list.map(p=>`
+      <button class="fav-item" data-goto="${p.id}"><span class="num">p${p.id}</span>${escapeHtml(p.title)}
+      <div class="concl">${escapeHtml(p.conclusion)}</div></button>`).join("") : `<p class="empty-note">${emptyMsg}</p>`}
+  `;
+  root.innerHTML = block("★ お気に入り", favs, "お気に入りに登録したページはまだありません。")
+                 + block("🔖 あとで復習", revs, "復習リストに登録したページはまだありません。");
+}
+
+/* =========================================================================
+   9. 検索
+   ========================================================================= */
+function buildSearchIndex(){
+  return PAGES.map(p=>{
+    const bodyText = stripHtml(p.body);
+    return { page:p, bodyText, titleText:p.title, conclText:p.conclusion };
+  });
+}
+const SEARCH_INDEX = buildSearchIndex();
+
+function runSearch(query){
+  const q = query.trim().toLowerCase();
+  if(!q) return [];
+  const results = [];
+  SEARCH_INDEX.forEach(entry=>{
+    const hits = [];
+    if(entry.titleText.toLowerCase().includes(q)) hits.push("タイトル");
+    if(entry.conclText.toLowerCase().includes(q)) hits.push("結論");
+    if(entry.bodyText.toLowerCase().includes(q)) hits.push("本文");
+    (entry.page.bacteriaRefs||[]).forEach(id=>{ if(BACTERIA[id].name.toLowerCase().includes(q) && !hits.includes("菌名")) hits.push("菌名"); });
+    (entry.page.drugRefs||[]).forEach(id=>{ if(DRUGS[id].name.toLowerCase().includes(q) && !hits.includes("抗菌薬")) hits.push("抗菌薬"); });
+    (entry.page.termRefs||[]).forEach(id=>{ if(TERMS[id].term.toLowerCase().includes(q) && !hits.includes("用語DB")) hits.push("用語DB"); });
+    if(hits.length) results.push({ page:entry.page, hits });
+  });
+  // 用語/菌/薬DB自体からも、まだ本文に現れていない一致を拾う
+  Object.entries(TERMS).forEach(([id,t])=>{
+    if(t.term.toLowerCase().includes(q)){
+      t.pages.forEach(pid=>{
+        const p = pageById(pid); if(!p) return;
+        let r = results.find(r=>r.page.id===pid);
+        if(!r){ r={page:p, hits:[]}; results.push(r); }
+        if(!r.hits.includes("用語DB")) r.hits.push("用語DB");
+      });
+    }
+  });
+  return results;
+}
+
+function renderSearchResults(container, query){
+  const results = runSearch(query);
+  if(!query.trim()){ container.innerHTML = `<p class="empty-note">検索語を入力してください。</p>`; return; }
+  if(!results.length){ container.innerHTML = `<p class="empty-note">「${escapeHtml(query)}」に一致するページは見つかりませんでした。</p>`; return; }
+  container.innerHTML = results.map(r=>`
+    <div class="search-result" data-goto="${r.page.id}" data-searchq="${escapeHtml(query)}">
+      <div class="title">p${r.page.id}｜${escapeHtml(r.page.title)}</div>
+      <div class="hitloc">ヒット：${r.hits.join(" / ")}</div>
+    </div>
+  `).join("");
+}
+
+/* =========================================================================
+   10. ページ本体レンダリング
+   ========================================================================= */
+let currentPageId = STATE.lastPage && pageById(STATE.lastPage) ? STATE.lastPage : PAGES[0].id;
+
+function relatedLinksHTML(relatedPages){
+  const col = (label, ids)=>{
+    if(!ids || !ids.length) return "";
+    return `<div class="related-col"><strong>${label}</strong>${ids.map(id=>{
+      const p = pageById(id); if(!p) return "";
+      return `<a data-goto="${id}">p${id}｜${escapeHtml(p.title)}</a>`;
+    }).join("")}</div>`;
+  };
+  const html = col("このページを読む前に", relatedPages.before) + col("このページの次に", relatedPages.after) + col("一緒に復習", relatedPages.review);
+  return html ? `<div class="related-block">${html}</div>` : "";
+}
+
+function renderPage(pageId, opts){
+  opts = opts || {};
+  const p = pageById(pageId);
+  if(!p) return;
+  currentPageId = pageId;
+  STATE.lastPage = pageId;
+  if(!STATE.read.includes(pageId)) STATE.read.push(pageId);
+  saveState();
+
+  const isFav = STATE.favorites.includes(pageId);
+  const isRev = STATE.review.includes(pageId);
+  const memo = STATE.memos[pageId] || "";
+
+  const quizzesHTML = ""; // クイズは body 内の <div class="quiz-block" id="quiz-XX"> にマウントする
+
+  document.getElementById("a4page").innerHTML = `
+    <div class="page-actions">
+      <button class="fav-btn ${isFav?"on":""}" title="お気に入り">${isFav?"★":"☆"}</button>
+      <button class="rev-btn ${isRev?"on":""}" title="あとで復習">🔖</button>
+    </div>
+    <div class="page-meta-row">
+      <div class="page-chapter">${escapeHtml(p.chapter)}</div>
+      <div class="page-idlabel">p${p.id}</div>
+    </div>
+    <h2 class="page-title">${escapeHtml(p.title)}</h2>
+    <div class="conclusion-box">
+      <div class="label">このページの結論</div>
+      <div class="text">${escapeHtml(p.conclusion)}</div>
+    </div>
+    <div class="page-body">${p.body}</div>
+    <div class="memo-box">
+      <label style="font-size:.8em; color:var(--ink-faint);">📝 メモ<span class="memo-saved" id="memoSavedLabel" style="display:none;">保存しました</span></label>
+      <textarea id="memoInput" placeholder="このページについて自由にメモを残せます。">${escapeHtml(memo)}</textarea>
+    </div>
+    ${relatedLinksHTML(p.relatedPages||{})}
+    <div class="page-footer-note">
+      本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+      二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+    </div>
+  `;
+
+  attachInlineHandlers();
+  mountWidgets(p);
+  mountQuizzes(p);
+  renderTopbar();
+  renderTOC();
+  renderListPanel();
+  renderFavPanel();
+  populateJumpSelect();
+
+  document.getElementById("main").scrollTop = 0;
+
+  if(opts.highlightQuery){
+    setTimeout(()=>highlightAndScroll(opts.highlightQuery), 30);
+  }
+
+  document.querySelector(".fav-btn").addEventListener("click", ()=>{
+    toggleInArray("favorites", pageId); renderPage(pageId);
+  });
+  document.querySelector(".rev-btn").addEventListener("click", ()=>{
+    toggleInArray("review", pageId); renderPage(pageId);
+  });
+  const memoInput = document.getElementById("memoInput");
+  let memoTimer = null;
+  memoInput.addEventListener("input", ()=>{
+    STATE.memos[pageId] = memoInput.value; saveState();
+    const lbl = document.getElementById("memoSavedLabel");
+    lbl.style.display = "inline"; clearTimeout(memoTimer);
+    memoTimer = setTimeout(()=>{ lbl.style.display = "none"; }, 1200);
+  });
+}
+
+function toggleInArray(key, id){
+  const arr = STATE[key];
+  const i = arr.indexOf(id);
+  if(i>=0) arr.splice(i,1); else arr.push(id);
+  saveState();
+}
+
+/* 用語・菌・抗菌薬クリックのイベント委譲、および本文内リンク(data-goto)の処理 */
+function attachInlineHandlers(){
+  const body = document.getElementById("a4page");
+  body.querySelectorAll(".term").forEach(el=> el.addEventListener("click", ()=> openTermModal(el.dataset.term)));
+  body.querySelectorAll(".bac").forEach(el=> el.addEventListener("click", ()=> openBacteriaModal(el.dataset.bac)));
+  body.querySelectorAll(".drug").forEach(el=> el.addEventListener("click", ()=> openDrugModal(el.dataset.drug)));
+  body.querySelectorAll("[data-goto]").forEach(el=> el.addEventListener("click", ()=> goToPage(Number(el.dataset.goto))));
+}
+
+function populateJumpSelect(){
+  const sel = document.getElementById("pageJumpSelect");
+  sel.innerHTML = PAGES.map(p=>`<option value="${p.id}" ${p.id===currentPageId?"selected":""}>p${p.id}｜${escapeHtml(p.title)}</option>`).join("");
+}
+
+/* =========================================================================
+   11. ページ移動
+   ========================================================================= */
+function goToPage(id, opts){
+  if(!pageById(id)) return;
+  renderPage(id, opts);
+  closeSidebarOnMobile();
+}
+function goToRelative(delta){
+  const idx = pageIndex(currentPageId);
+  const newIdx = idx + delta;
+  if(newIdx>=0 && newIdx<PAGES.length) goToPage(PAGES[newIdx].id);
+}
+function highlightAndScroll(query){
+  const q = query.trim(); if(!q) return;
+  const body = document.querySelector(".page-body");
+  if(!body) return;
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null);
+  let node; const targets = [];
+  while(node = walker.nextNode()){
+    if(node.nodeValue.toLowerCase().includes(q.toLowerCase())) targets.push(node);
+  }
+  targets.forEach(node=>{
+    const idx = node.nodeValue.toLowerCase().indexOf(q.toLowerCase());
+    if(idx<0) return;
+    const before = node.nodeValue.slice(0, idx);
+    const match = node.nodeValue.slice(idx, idx+q.length);
+    const after = node.nodeValue.slice(idx+q.length);
+    const mark = document.createElement("mark"); mark.className="hit"; mark.textContent = match;
+    const frag = document.createDocumentFragment();
+    frag.appendChild(document.createTextNode(before)); frag.appendChild(mark); frag.appendChild(document.createTextNode(after));
+    node.parentNode.replaceChild(frag, node);
+  });
+  const firstMark = document.querySelector("mark.hit");
+  if(firstMark) firstMark.scrollIntoView({ behavior:"smooth", block:"center" });
+}
+
+/* =========================================================================
+   12. モーダル：用語 / 菌カード / 抗菌薬カード / 図拡大
+   ========================================================================= */
+function openModal(html){
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-card">${html}</div>`;
+  root.classList.add("open");
+  root.querySelector(".close-btn")?.addEventListener("click", closeModal);
+  root.addEventListener("click", (e)=>{ if(e.target===root) closeModal(); }, { once:true });
+  root.querySelectorAll("[data-goto]").forEach(el=> el.addEventListener("click", ()=>{ closeModal(); goToPage(Number(el.dataset.goto)); }));
+  root.querySelectorAll("[data-openbac]").forEach(el=> el.addEventListener("click", ()=> openBacteriaModal(el.dataset.openbac)));
+  root.querySelectorAll("[data-opendrug]").forEach(el=> el.addEventListener("click", ()=> openDrugModal(el.dataset.opendrug)));
+}
+function closeModal(){ const root=document.getElementById("modalRoot"); root.classList.remove("open"); root.innerHTML=""; }
+
+function openTermModal(id){
+  const t = TERMS[id]; if(!t) return;
+  openModal(`
+    <button class="close-btn ghost">✕</button>
+    <div class="modal-kicker">${escapeHtml(t.type)}</div>
+    <div class="modal-title">${escapeHtml(t.term)}</div>
+    <div class="modal-section"><p>${escapeHtml(t.desc)}</p></div>
+    <div class="modal-section">
+      <h5>登場ページ</h5>
+      <div class="modal-links">${t.pages.map(pid=>{ const p=pageById(pid); return p?`<a data-goto="${pid}">p${pid}｜${escapeHtml(p.title)}</a>`:""; }).join("")}</div>
+    </div>
+  `);
+}
+
+function openBacteriaModal(id){
+  const b = BACTERIA[id]; if(!b) return;
+  openModal(`
+    <button class="close-btn ghost">✕</button>
+    <div class="modal-kicker">菌カード</div>
+    <div class="modal-title bac">${b.nameHTML}</div>
+    <div class="modal-section"><h5>この菌の特徴</h5><ul>${b.features.map(f=>`<li>${escapeHtml(f)}</li>`).join("")}</ul></div>
+    <div class="modal-section"><h5>キーワード</h5><div class="chip-row">${b.keywords.map(k=>`<span class="chip">${escapeHtml(k)}</span>`).join("")}</div></div>
+    <div class="modal-section"><p>${escapeHtml(b.desc)}</p></div>
+    <div class="modal-section"><h5>関連感染症</h5><div class="chip-row">${(b.diseases||[]).map(d=>`<span class="chip">${escapeHtml(d)}</span>`).join("")}</div></div>
+    <div class="modal-section">
+      <h5>関連ページ</h5>
+      <div class="modal-links">${(b.pages||[]).map(pid=>{ const p=pageById(pid); return p?`<a data-goto="${pid}">p${pid}｜${escapeHtml(p.title)}</a>`:""; }).join("")}</div>
+    </div>
+    ${(b.drugPages||[]).length ? `<div class="modal-section"><h5>関連抗菌薬選択ページ</h5><div class="modal-links">${b.drugPages.map(pid=>{ const p=pageById(pid); return p?`<a data-goto="${pid}">p${pid}｜${escapeHtml(p.title)}</a>`:""; }).join("")}</div></div>` : ""}
+  `);
+}
+
+function openDrugModal(id){
+  const d = DRUGS[id]; if(!d) return;
+  openModal(`
+    <button class="close-btn ghost">✕</button>
+    <div class="modal-kicker">抗菌薬カード</div>
+    <div class="modal-title drug">${escapeHtml(d.name)}</div>
+    <div class="modal-section"><h5>作用機序</h5><p>${escapeHtml(d.mechanism)}</p></div>
+    <div class="modal-section"><h5>主なスペクトラム</h5><p>${escapeHtml(d.spectrum)}</p></div>
+    <div class="modal-section"><h5>代表的な使用場面</h5><p>${escapeHtml(d.usage)}</p></div>
+    <div class="modal-section"><h5>重要な注意点</h5><p>${escapeHtml(d.cautions)}</p></div>
+    <div class="modal-section"><h5>関連耐性機構</h5><div class="chip-row">${(d.resistance||[]).map(r=>`<span class="chip">${escapeHtml(r)}</span>`).join("")}</div></div>
+    <div class="modal-section">
+      <h5>関連ページ</h5>
+      <div class="modal-links">${(d.pages||[]).map(pid=>{ const p=pageById(pid); return p?`<a data-goto="${pid}">p${pid}｜${escapeHtml(p.title)}</a>`:""; }).join("")}</div>
+    </div>
+  `);
+}
+
+/* =========================================================================
+   13. ミニ問題（クイズ）エンジン
+   ========================================================================= */
+function mountQuizzes(page){
+  (page.quizzes||[]).forEach(q=>{
+    const mount = document.getElementById(`quiz-${q.id}`);
+    if(mount) renderQuiz(mount, q);
+  });
+}
+
+function renderQuiz(container, quiz){
+  let revealedPerspectives = 0;
+  let answered = false;
+
+  function draw(){
+    container.innerHTML = `
+      ${quiz.vignette ? `<div class="q-vignette">${escapeHtml(quiz.vignette)}</div>` : ""}
+      <div class="q-prompt">${escapeHtml(quiz.prompt)}</div>
+      <div class="quiz-choices">
+        ${quiz.choices.map((c,i)=>`<button class="quiz-choice" data-idx="${i}">${escapeHtml(c.text)}</button>`).join("")}
+      </div>
+      <div class="quiz-feedback" id="qfeedback"></div>
+      <div class="quiz-actions" id="qactions"></div>
+    `;
+    container.querySelectorAll(".quiz-choice").forEach(btn=>{
+      btn.addEventListener("click", ()=> onAnswer(Number(btn.dataset.idx)));
+    });
+  }
+
+  function onAnswer(idx){
+    if(answered) return;
+    answered = true;
+    const chosen = quiz.choices[idx];
+    container.querySelectorAll(".quiz-choice").forEach((btn,i)=>{
+      btn.classList.add("disabled");
+      if(quiz.choices[i].correct) btn.classList.add("correct");
+      else if(i===idx) btn.classList.add("incorrect");
+    });
+    const fb = document.getElementById("qfeedback");
+    fb.innerHTML = `
+      <div class="verdict ${chosen.correct?"ok":"ng"}">${chosen.correct?"正解":"不正解"}</div>
+      <div class="quiz-explanations">
+        ${quiz.choices.map(c=>`<div>${c.correct?"◎":"×"} ${escapeHtml(c.text)}：${escapeHtml(c.explanation)}</div>`).join("")}
+      </div>
+      ${(!chosen.correct && quiz.perspectives) ? `<div class="quiz-perspectives" id="qperspectives"></div>` : ""}
+    `;
+    const actions = document.getElementById("qactions");
+    actions.innerHTML = `<button id="qretry">もう一度挑戦する</button>`;
+    document.getElementById("qretry").addEventListener("click", ()=>{ answered=false; revealedPerspectives=0; draw(); });
+
+    if(!chosen.correct && quiz.perspectives){
+      renderPerspectiveHint();
+    }
+  }
+
+  function renderPerspectiveHint(){
+    const box = document.getElementById("qperspectives");
+    if(!box) return;
+    box.innerHTML = `
+      <div><b>考える視点</b>（不正解の場合は答えを覚えるより、まずこの視点で考え直してみよう）</div>
+      <ul>${quiz.perspectives.slice(0, revealedPerspectives).map(p=>`<li>${escapeHtml(p)}</li>`).join("")}</ul>
+      ${revealedPerspectives < quiz.perspectives.length ? `<button id="qmorehint" class="ghost">＋ 視点を一つ見る</button>` : ""}
+    `;
+    document.getElementById("qmorehint")?.addEventListener("click", ()=>{ revealedPerspectives++; renderPerspectiveHint(); });
+  }
+
+  draw();
+}
+
+/* =========================================================================
+   14. インタラクティブ教材ウィジェット
+   ========================================================================= */
+function mountWidgets(page){
+  (page.widgets||[]).forEach(w=>{
+    if(w==="gramSim") initGramSim(document.getElementById("gramSimRoot"));
+    if(w==="growthCurve") initGrowthCurve(document.getElementById("growthCurveRoot"));
+    if(w==="mechDiagram") initMechDiagram(document.getElementById("mechDiagramRoot"));
+  });
+}
+
+/* --- 14-A. Gram染色シミュレーション --- */
+function initGramSim(root){
+  if(!root) return;
+  const steps = [
+    { key:"fix", label:"① 固定", info:"菌をスライドガラスに塗抹し、加熱またはアルコールで固定する。菌の形態を保持し、洗い流されないようにする準備段階。" },
+    { key:"cv",  label:"② クリスタルバイオレット染色", info:"クリスタルバイオレット（一次染色液）で全ての細菌がいったん紫色に染まる。" },
+    { key:"iodine", label:"③ ヨウ素処理（媒染）", info:"ヨウ素がクリスタルバイオレットと複合体を作り、色素を細胞内に固定する。" },
+    { key:"decolor", label:"④ 脱色（アルコール/アセトン）", info:"ここが分かれ道。ペプチドグリカン層が厚いGram陽性菌は複合体を保持して紫のままだが、層が薄く外膜を持つGram陰性菌は複合体が流出し脱色される。" },
+    { key:"safranin", label:"⑤ 対比染色（サフラニン）", info:"脱色されたGram陰性菌はサフラニンで赤〜桃色に染め直される。すでに紫に染まっているGram陽性菌はサフラニンの影響をほとんど受けない。" },
+  ];
+  let doneCount = 0;
+
+  function draw(){
+    const dishColor = doneCount < 4 ? "#C9B3DE" : (doneCount===4 ? "#C9B3DE" : "linear-gradient(90deg,#8B5A9E 50%, #C2555F 50%)");
+    root.innerHTML = `
+      <div class="widget-steps">
+        ${steps.map((s,i)=>`<button data-step="${i}" class="${i<doneCount?"done":(i===doneCount?"current":"")}">${escapeHtml(s.label)}</button>`).join("")}
+      </div>
+      <div class="widget-stage">
+        <div class="gram-dish" id="gramDish" style="background:${doneCount>4? "":"var(--paper)"}"></div>
+        <div class="widget-info" id="gramInfo">${doneCount<steps.length ? "操作したい工程のボタンを、①から順番に押してください。" : "完了：Gram陽性菌（左）は紫、Gram陰性菌（右）は赤〜桃色に染まる。"}</div>
+      </div>
+    `;
+    const dish = document.getElementById("gramDish");
+    if(doneCount===0) dish.style.background = "var(--paper)";
+    else if(doneCount>=1 && doneCount<=3) dish.style.background = "#8B5A9E";
+    else if(doneCount===4) dish.style.background = "linear-gradient(90deg,#8B5A9E 50%, #C9C0AE 50%)";
+    else dish.style.background = "linear-gradient(90deg,#8B5A9E 50%, #C2555F 50%)";
+
+    root.querySelectorAll("[data-step]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const i = Number(btn.dataset.step);
+        const info = document.getElementById("gramInfo");
+        if(i===doneCount){
+          info.textContent = steps[i].info;
+          doneCount++;
+          draw();
+        }else if(i<doneCount){
+          info.textContent = `この工程（${steps[i].label}）はすでに完了しています。`;
+        }else{
+          info.textContent = `工程は順番に行う必要がある。先に「${steps[doneCount].label}」を行ってほしい。`;
+        }
+      });
+    });
+  }
+  draw();
+}
+
+/* --- 14-B. 増殖曲線 --- */
+function initGrowthCurve(root){
+  if(!root) return;
+  const phases = {
+    lag:{ label:"lag phase（誘導期）", info:"新しい環境への適応期間。菌数はほとんど増えないが、代謝は活発化している。" },
+    log:{ label:"log phase（対数増殖期）", info:"最も活発に分裂する時期。多くの抗菌薬（特に細胞壁合成阻害薬）はこの時期の菌に最も効果的。" },
+    stationary:{ label:"stationary phase（静止期）", info:"栄養枯渇・老廃物蓄積により増殖速度と死滅速度が釣り合う時期。" },
+    death:{ label:"death phase（死滅期）", info:"生存に必要な条件が維持できず、生菌数が減少していく時期。" },
+  };
+  root.innerHTML = `
+    <div class="widget-stage">
+      <svg width="260" height="150" viewBox="0 0 260 150">
+        <polyline points="10,120 60,115 60,120" fill="none" stroke="var(--ink-faint)" stroke-width="1"/>
+        <path class="mech-target" data-phase="lag" d="M10,120 C 30,120 45,118 65,110 L65,140 L10,140 Z" fill="var(--gram-neg-bg)"/>
+        <path class="mech-target" data-phase="log" d="M65,110 C 100,60 120,25 150,20 L150,140 L65,140 Z" fill="var(--agar-bg)"/>
+        <path class="mech-target" data-phase="stationary" d="M150,20 C 175,18 190,18 200,20 L200,140 L150,140 Z" fill="var(--gram-pos-bg)"/>
+        <path class="mech-target" data-phase="death" d="M200,20 C 220,25 240,50 250,90 L250,140 L200,140 Z" fill="var(--paper)"/>
+        <path d="M10,120 C 30,120 45,118 65,110 C 100,60 120,25 150,20 C 175,18 190,18 200,20 C 220,25 240,50 250,90" fill="none" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="10" y1="140" x2="255" y2="140" stroke="var(--ink-faint)" stroke-width="1"/>
+      </svg>
+      <div class="widget-info" id="growthInfo">曲線上の各区間（色分けされた部分）をクリックしてください。</div>
+    </div>
+  `;
+  root.querySelectorAll(".mech-target").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const key = el.dataset.phase;
+      document.getElementById("growthInfo").innerHTML = `<b>${escapeHtml(phases[key].label)}</b><br>${escapeHtml(phases[key].info)}`;
+    });
+  });
+}
+
+/* --- 14-C. 抗菌薬作用機序の模式図 --- */
+function initMechDiagram(root){
+  if(!root) return;
+  const targets = {
+    wall:{ label:"細胞壁", info:"β-ラクタム系（ペニシリン・セファロスポリン系など）やグリコペプチド系（バンコマイシン）が、ペプチドグリカン合成を阻害する。" },
+    membrane:{ label:"細胞膜", info:"ポリミキシン系などが細胞膜を直接障害し、内容物の漏出を招く。" },
+    ribosome:{ label:"リボソーム", info:"アミノグリコシド系・マクロライド系・テトラサイクリン系などが、細菌のリボソーム（30Sまたは50S）に結合し蛋白合成を阻害する。" },
+    dna:{ label:"DNA/RNA", info:"フルオロキノロン系はDNAジャイレース・トポイソメラーゼIVを、リファンピシンはRNAポリメラーゼを阻害する。" },
+    folate:{ label:"葉酸代謝", info:"ST合剤（スルファメトキサゾール/トリメトプリム）は葉酸合成経路を阻害する。ヒトは葉酸を食事から摂取するため、この経路を持たず選択毒性が成立する。" },
+  };
+  root.innerHTML = `
+    <div class="mech-svg-wrap">
+      <svg width="220" height="200" viewBox="0 0 220 200">
+        <rect class="mech-target" data-t="wall" x="10" y="10" width="200" height="180" rx="18" fill="none" stroke="var(--gram-pos)" stroke-width="6"/>
+        <rect class="mech-target" data-t="membrane" x="24" y="24" width="172" height="152" rx="14" fill="var(--paper)" stroke="var(--gram-neg)" stroke-width="4"/>
+        <circle class="mech-target" data-t="ribosome" cx="70" cy="130" r="18" fill="var(--agar-bg)" stroke="var(--agar)" stroke-width="2"/>
+        <circle class="mech-target" data-t="ribosome" cx="105" cy="150" r="14" fill="var(--agar-bg)" stroke="var(--agar)" stroke-width="2"/>
+        <ellipse class="mech-target" data-t="dna" cx="110" cy="80" rx="45" ry="24" fill="var(--gram-pos-bg)" stroke="var(--gram-pos)" stroke-width="2"/>
+        <rect class="mech-target" data-t="folate" x="150" y="120" width="34" height="20" rx="4" fill="var(--warn-bg)" stroke="var(--warn)" stroke-width="2"/>
+      </svg>
+      <div class="widget-info" id="mechInfo">模式図の各構造（外側の枠＝細胞壁、内側の枠＝細胞膜、丸＝リボソーム、楕円＝DNA、小さな四角＝葉酸代謝経路）をクリックしてください。</div>
+    </div>
+  `;
+  root.querySelectorAll(".mech-target").forEach(el=>{
+    el.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const key = el.dataset.t;
+      document.getElementById("mechInfo").innerHTML = `<b>${escapeHtml(targets[key].label)}</b><br>${escapeHtml(targets[key].info)}`;
+    });
+  });
+}
+
+/* =========================================================================
+   15. 図拡大モーダル（Phase1では簡易対応）
+   ========================================================================= */
+function openFigureModal(svgHTML, title, understand){
+  openModal(`
+    <button class="close-btn ghost">✕</button>
+    <div class="modal-title">${escapeHtml(title)}</div>
+    <div class="figure-modal-img">${svgHTML}</div>
+    <div class="modal-section"><h5>この図で理解してほしいこと</h5><p>${escapeHtml(understand)}</p></div>
+  `);
+}
+
+/* =========================================================================
+   16. 文字サイズ / ダークモード / 印刷
+   ========================================================================= */
+const FONT_SIZES = ["small","medium","large"];
+function applyFontSize(){
+  const app = document.getElementById("app");
+  FONT_SIZES.forEach(s=> app.classList.remove(`fs-${s}`));
+  app.classList.add(`fs-${STATE.fontSize}`);
+}
+function cycleFontSize(){
+  const i = FONT_SIZES.indexOf(STATE.fontSize);
+  STATE.fontSize = FONT_SIZES[(i+1)%FONT_SIZES.length];
+  saveState(); applyFontSize();
+}
+function applyDarkMode(){
+  document.documentElement.setAttribute("data-theme", STATE.darkMode ? "dark" : "light");
+  document.getElementById("darkModeBtn").textContent = STATE.darkMode ? "☀" : "🌙";
+}
+function toggleDarkMode(){ STATE.darkMode = !STATE.darkMode; saveState(); applyDarkMode(); }
+
+function printCurrentPage(){
+  const p = pageById(currentPageId);
+  document.getElementById("printArea").innerHTML = document.getElementById("a4page").outerHTML;
+  window.print();
+}
+
+/* =========================================================================
+   17. モバイル：サイドバー開閉・スワイプ
+   ========================================================================= */
+function closeSidebarOnMobile(){
+  if(window.innerWidth<=860) document.getElementById("sidebar").classList.remove("open");
+}
+function setupSwipe(){
+  let startX=null, startY=null;
+  const main = document.getElementById("main");
+  main.addEventListener("touchstart", (e)=>{ startX=e.touches[0].clientX; startY=e.touches[0].clientY; }, {passive:true});
+  main.addEventListener("touchend", (e)=>{
+    if(startX===null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5){
+      if(dx<0) goToRelative(1); else goToRelative(-1);
+    }
+    startX=null; startY=null;
+  }, {passive:true});
+}
+
+/* =========================================================================
+   18. 初期化
+   ========================================================================= */
+function initTabs(){
+  document.querySelectorAll("#sidebar nav.tabs button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll("#sidebar nav.tabs button").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll("#sidebar .tabpanel").forEach(p=>p.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelector(`.tabpanel[data-panel="${btn.dataset.tab}"]`).classList.add("active");
+    });
+  });
+}
+
+function initGlobalControls(){
+  document.getElementById("prevBtn").addEventListener("click", ()=>goToRelative(-1));
+  document.getElementById("nextBtn").addEventListener("click", ()=>goToRelative(1));
+  document.getElementById("pageJumpSelect").addEventListener("change", (e)=> goToPage(Number(e.target.value)));
+  document.getElementById("fontSizeBtn").addEventListener("click", cycleFontSize);
+  document.getElementById("darkModeBtn").addEventListener("click", toggleDarkMode);
+  document.getElementById("printBtn").addEventListener("click", printCurrentPage);
+  document.getElementById("menuToggle").addEventListener("click", ()=> document.getElementById("sidebar").classList.toggle("open"));
+
+  document.addEventListener("keydown", (e)=>{
+    if(document.activeElement && ["TEXTAREA","INPUT","SELECT"].includes(document.activeElement.tagName)) return;
+    if(document.getElementById("modalRoot").classList.contains("open")){
+      if(e.key==="Escape") closeModal();
+      return;
+    }
+    if(e.key==="ArrowLeft") goToRelative(-1);
+    if(e.key==="ArrowRight") goToRelative(1);
+  });
+
+  const doTopSearch = (q)=>{
+    document.querySelectorAll('#sidebar nav.tabs button').forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll('#sidebar .tabpanel').forEach(p=>p.classList.remove("active"));
+    document.querySelector('[data-tab="search"]').classList.add("active");
+    document.querySelector('[data-panel="search"]').classList.add("active");
+    document.getElementById("sideSearchInput").value = q;
+    renderSearchResults(document.getElementById("searchResults"), q);
+    if(window.innerWidth<=860) document.getElementById("sidebar").classList.add("open");
+    attachSearchResultHandlers();
+  };
+  document.getElementById("topSearchInput").addEventListener("input", (e)=> doTopSearch(e.target.value));
+  document.getElementById("sideSearchInput").addEventListener("input", (e)=>{
+    renderSearchResults(document.getElementById("searchResults"), e.target.value);
+    attachSearchResultHandlers();
+  });
+}
+
+function attachSearchResultHandlers(){
+  document.querySelectorAll(".search-result").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const id = Number(el.dataset.goto);
+      const q = el.dataset.searchq || "";
+      goToPage(id, { highlightQuery:q });
+    });
+  });
+}
+
+/* サイドバー内の目次・一覧・ふせんのボタンは動的に再生成されるため、
+   イベント委譲でクリックを拾う（renderPage 内で都度再描画されるため） */
+document.getElementById("sidebar").addEventListener("click", (e)=>{
+  const btn = e.target.closest("[data-goto]");
+  if(btn && btn.closest("#tocPanel, #listPanel, #favPanel")){
+    goToPage(Number(btn.dataset.goto));
+  }
+});
+
+function initApp(){
+  applyFontSize();
+  applyDarkMode();
+  initTabs();
+  initGlobalControls();
+  setupSwipe();
+  renderPage(currentPageId);
+}
+initApp();
+</script>
+</body>
+</html>
