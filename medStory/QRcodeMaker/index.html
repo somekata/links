@@ -1,1 +1,777 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QRコード生成ツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg: #f5f1e8;
+    --panel: #fffdf8;
+    --ink: #2e2a24;
+    --ink-soft: #6b6355;
+    --line: #ddd5c4;
+    --accent: #8a5a3c;
+    --accent-soft: #d9c4a8;
+    --danger: #a3432f;
+  }
+  *{ box-sizing: border-box; }
+  html, body{
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    display: flex;
+    flex-direction: column;
+  }
+  header{
+    padding: 28px 20px 18px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #f8f4ea, var(--bg));
+  }
+  h1{
+    font-family: "Zen Antique", "Noto Serif JP", serif;
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+    letter-spacing: 0.04em;
+  }
+  header p{
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+  }
+  main{
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 40px;
+  }
+  .card{
+    width: 100%;
+    max-width: 480px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(46,42,36,0.06);
+  }
+  label{
+    display: block;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
+  textarea{
+    width: 100%;
+    min-height: 84px;
+    padding: 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    resize: vertical;
+    background: #fff;
+    color: var(--ink);
+  }
+  input[type="text"]{
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    min-height: 44px;
+  }
+  textarea:focus, select:focus, input[type="color"]:focus, input[type="text"]:focus{
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+  }
+  .row{
+    display: flex;
+    gap: 14px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .field{
+    flex: 1;
+    min-width: 120px;
+  }
+  select{
+    width: 100%;
+    padding: 10px;
+    font-size: 0.95rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    min-height: 44px;
+  }
+  .color-field{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  input[type="color"]{
+    width: 44px;
+    height: 44px;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+  }
+  .section-divider{
+    margin: 20px 0 4px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+  }
+  .toggle-group{
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .toggle-btn{
+    flex: 1;
+    min-height: 44px;
+    border: none;
+    background: #fff;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-right: 1px solid var(--line);
+  }
+  .toggle-btn:last-child{ border-right: none; }
+  .toggle-btn.active{
+    background: var(--accent);
+    color: #fff;
+  }
+  .sub-panel{
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #faf7f0;
+  }
+  .hint{
+    margin: 8px 0 0;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  input[type="file"]{
+    width: 100%;
+    font-size: 0.85rem;
+    padding: 8px 0;
+  }
+  .file-name{
+    font-size: 0.78rem;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+  .preview-wrap{
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  #qrcode{
+    padding: 16px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: inline-flex;
+    min-height: 232px;
+    min-width: 232px;
+    max-width: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+  #qrcode canvas, #qrcode img{
+    display: block;
+    max-width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+  }
+  .empty-note{
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  .actions{
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  button{
+    flex: 1;
+    min-height: 44px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  button.secondary{
+    background: #fff;
+    color: var(--accent);
+  }
+  button:disabled{
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  button:not(:disabled):active{
+    opacity: 0.8;
+  }
+  .error-msg{
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--danger);
+    display: none;
+  }
+  footer{
+    border-top: 1px solid var(--line);
+    padding: 16px 20px;
+    text-align: center;
+    background: var(--bg);
+  }
+  footer p{
+    margin: 0;
+    font-size: 0.7rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  @media (max-width: 400px){
+    .row{ flex-direction: column; }
+  }
+</style>
+</head>
+<body>
 
+<header>
+  <h1>QRコード生成ツール</h1>
+  <p>テキストやURLを入力するとQRコードを作成します</p>
+</header>
+
+<main>
+  <div class="card">
+    <label for="qr-text">テキスト / URL</label>
+    <textarea id="qr-text" placeholder="例: https://somekata.github.io/bactPlatform/hub.html"></textarea>
+
+    <div class="row">
+      <div class="field">
+        <label for="qr-size">サイズ</label>
+        <select id="qr-size">
+          <option value="180">小 (180px)</option>
+          <option value="256" selected>中 (256px)</option>
+          <option value="384">大 (384px)</option>
+          <option value="512">特大 (512px)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="qr-level">誤り訂正レベル</label>
+        <select id="qr-level">
+          <option value="L">L (7%・情報量重視)</option>
+          <option value="M" selected>M (15%・標準)</option>
+          <option value="Q">Q (25%)</option>
+          <option value="H">H (30%・破損耐性重視)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field color-field">
+        <div style="flex:1">
+          <label for="qr-fg">前景色</label>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="color" id="qr-fg" value="#2e2a24">
+          </div>
+        </div>
+      </div>
+      <div class="field color-field">
+        <div style="flex:1">
+          <label for="qr-bg">背景色</label>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="color" id="qr-bg" value="#ffffff">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider">
+      <label>飾りつけ</label>
+      <div class="toggle-group" data-group="deco">
+        <button type="button" class="toggle-btn active" data-value="off">なし</button>
+        <button type="button" class="toggle-btn" data-value="on">あり</button>
+      </div>
+    </div>
+
+    <div class="sub-panel" id="deco-panel" style="display:none;">
+
+      <label>中央に画像</label>
+      <div class="toggle-group" data-group="image">
+        <button type="button" class="toggle-btn active" data-value="off">入れない</button>
+        <button type="button" class="toggle-btn" data-value="on">入れる</button>
+      </div>
+      <div id="image-panel" style="display:none; margin-top:12px;">
+        <label for="qr-image-input">画像ファイル</label>
+        <input type="file" id="qr-image-input" accept="image/*">
+        <p class="file-name" id="image-file-name"></p>
+        <p class="hint">選択した画像は自動的に縮小し、QRコード中央に配置します。中央に画像を置くと読み取れる情報量が減るため、誤り訂正レベルは自動的にH(30%)に切り替わります。</p>
+      </div>
+
+      <div style="margin-top:16px;">
+        <label>周辺に文字</label>
+        <div class="toggle-group" data-group="text">
+          <button type="button" class="toggle-btn active" data-value="off">入れない</button>
+          <button type="button" class="toggle-btn" data-value="on">入れる</button>
+        </div>
+      </div>
+      <div id="text-panel" style="display:none; margin-top:12px;">
+        <label for="qr-caption">表示する文字</label>
+        <input type="text" id="qr-caption" placeholder="例: 細菌楽" maxlength="24">
+
+        <div class="row">
+          <div class="field">
+            <label for="text-position">文字の位置</label>
+            <select id="text-position">
+              <option value="bottom" selected>下</option>
+              <option value="around">周囲</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="text-font">フォント</label>
+            <select id="text-font">
+              <option value="mincho" selected>明朝体</option>
+              <option value="gothic">ゴシック体</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="error-msg" id="error-msg">QRコードに変換できる上限文字数を超えています。テキストを短くしてください。</p>
+
+    <div class="preview-wrap">
+      <div id="qrcode">
+        <span class="empty-note" id="empty-note">テキストを入力すると<br>ここにQRコードが表示されます</span>
+      </div>
+      <div class="actions">
+        <button type="button" id="download-btn" disabled>PNGをダウンロード</button>
+        <button type="button" id="clear-btn" class="secondary">クリア</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>
+    本ツールは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </p>
+</footer>
+
+<script>
+(function(){
+  var textEl = document.getElementById('qr-text');
+  var sizeEl = document.getElementById('qr-size');
+  var levelEl = document.getElementById('qr-level');
+  var fgEl = document.getElementById('qr-fg');
+  var bgEl = document.getElementById('qr-bg');
+  var qrDiv = document.getElementById('qrcode');
+  var emptyNote = document.getElementById('empty-note');
+  var downloadBtn = document.getElementById('download-btn');
+  var clearBtn = document.getElementById('clear-btn');
+  var errorMsg = document.getElementById('error-msg');
+
+  var decoPanel = document.getElementById('deco-panel');
+  var imagePanel = document.getElementById('image-panel');
+  var textPanel = document.getElementById('text-panel');
+  var imageInput = document.getElementById('qr-image-input');
+  var imageFileName = document.getElementById('image-file-name');
+  var captionEl = document.getElementById('qr-caption');
+  var textPositionEl = document.getElementById('text-position');
+  var textFontEl = document.getElementById('text-font');
+
+  var state = {
+    deco: 'off',
+    image: 'off',
+    text: 'off'
+  };
+
+  var uploadedImageCanvas = null;
+  var debounceTimer = null;
+
+  // ---- toggle button wiring ----
+  document.querySelectorAll('.toggle-group').forEach(function(group){
+    var key = group.getAttribute('data-group');
+    group.querySelectorAll('.toggle-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        group.querySelectorAll('.toggle-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        state[key] = btn.getAttribute('data-value');
+        syncPanels();
+        render();
+      });
+    });
+  });
+
+  function syncPanels(){
+    decoPanel.style.display = (state.deco === 'on') ? 'block' : 'none';
+    imagePanel.style.display = (state.image === 'on') ? 'block' : 'none';
+    textPanel.style.display = (state.text === 'on') ? 'block' : 'none';
+    levelEl.disabled = (state.image === 'on');
+  }
+
+  function correctLevel(v){
+    switch(v){
+      case 'L': return QRCode.CorrectLevel.L;
+      case 'Q': return QRCode.CorrectLevel.Q;
+      case 'H': return QRCode.CorrectLevel.H;
+      default: return QRCode.CorrectLevel.M;
+    }
+  }
+
+  // ---- image upload: downscale + simplify ----
+  imageInput.addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file){
+      uploadedImageCanvas = null;
+      imageFileName.textContent = '';
+      render();
+      return;
+    }
+    imageFileName.textContent = file.name;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var img = new Image();
+      img.onload = function(){
+        uploadedImageCanvas = processImage(img);
+        render();
+      };
+      img.onerror = function(){
+        uploadedImageCanvas = null;
+        imageFileName.textContent = '(画像を読み込めませんでした)';
+        render();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // downscale to a small square canvas so it reads as a simple mark, not a photo
+  function processImage(img){
+    var target = 48; // low-res working size
+    var c = document.createElement('canvas');
+    c.width = target;
+    c.height = target;
+    var ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+
+    // cover-crop to square
+    var s = Math.min(img.width, img.height);
+    var sx = (img.width - s) / 2;
+    var sy = (img.height - s) / 2;
+    ctx.drawImage(img, sx, sy, s, s, 0, 0, target, target);
+    return c;
+  }
+
+  // ---- text repeated along the four straight sides of a square frame ----
+  function buildRepeatedText(ctx, caption, targetLength, font){
+    ctx.font = font;
+    var unit = caption + '　'; // trailing full-width space as a separator
+    var unitWidth = ctx.measureText(unit).width || 1;
+    var repeats = Math.ceil((targetLength + unitWidth) / unitWidth);
+    var s = '';
+    for (var i = 0; i < repeats; i++) s += unit;
+    return s;
+  }
+
+  // draws `text` starting at the local origin along +x, clipped to the given
+  // rect (in canvas coordinates) so a repeated string tiles cleanly along one side
+  function drawClippedSideText(ctx, text, clipRect, originX, originY, rotation, font, color){
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(clipRect.x, clipRect.y, clipRect.w, clipRect.h);
+    ctx.clip();
+    ctx.translate(originX, originY);
+    ctx.rotate(rotation);
+    ctx.font = font;
+    ctx.fillStyle = color;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  }
+
+  function drawTextBorder(ctx, caption, width, height, band, font, color){
+    if (!caption) return;
+
+    var innerW = width - band * 2;
+    var innerH = height - band * 2;
+    if (innerW <= 0 || innerH <= 0) return;
+
+    var topText = buildRepeatedText(ctx, caption, innerW, font);
+    var sideText = buildRepeatedText(ctx, caption, innerH, font);
+
+    // top: left to right, the straight middle segment only (corners left blank)
+    drawClippedSideText(ctx, topText, {x: band, y: 0, w: innerW, h: band},
+      band, band / 2, 0, font, color);
+
+    // right: top to bottom
+    drawClippedSideText(ctx, sideText, {x: width - band, y: band, w: band, h: innerH},
+      width - band / 2, band, Math.PI / 2, font, color);
+
+    // bottom: right to left, glyphs upright when viewed normally
+    drawClippedSideText(ctx, topText, {x: band, y: height - band, w: innerW, h: band},
+      width - band, height - band / 2, Math.PI, font, color);
+
+    // left: bottom to top
+    drawClippedSideText(ctx, sideText, {x: 0, y: band, w: band, h: innerH},
+      band / 2, height - band, -Math.PI / 2, font, color);
+  }
+
+  function drawDecorativeFrame(ctx, x, y, w, h, color){
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 1.5;
+    var outerInset = 0;
+    var innerInset = 7;
+    roundRectPath(ctx, x + outerInset, y + outerInset, w - outerInset * 2, h - outerInset * 2, 10);
+    ctx.stroke();
+    roundRectPath(ctx, x + innerInset, y + innerInset, w - innerInset * 2, h - innerInset * 2, 6);
+    ctx.stroke();
+
+    // corner ticks between the two lines
+    var tick = 14;
+    var corners = [
+      [x + outerInset, y + outerInset, 1, 1],
+      [x + w - outerInset, y + outerInset, -1, 1],
+      [x + outerInset, y + h - outerInset, 1, -1],
+      [x + w - outerInset, y + h - outerInset, -1, -1]
+    ];
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = 2;
+    corners.forEach(function(c){
+      var cx = c[0], cy = c[1], dx = c[2], dy = c[3];
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + dx * tick, cy);
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx, cy + dy * tick);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function fontFamilyFor(key){
+    return key === 'gothic' ? '"Noto Sans JP", sans-serif' : '"Zen Antique", serif';
+  }
+
+  // ---- main render ----
+  function render(){
+    var text = textEl.value.trim();
+    errorMsg.style.display = 'none';
+
+    if (!text){
+      qrDiv.innerHTML = '';
+      qrDiv.appendChild(emptyNote);
+      downloadBtn.disabled = true;
+      return;
+    }
+
+    var qrSize = parseInt(sizeEl.value, 10);
+    var level = (state.image === 'on') ? 'H' : levelEl.value;
+
+    var offscreen = document.createElement('div');
+    offscreen.style.position = 'absolute';
+    offscreen.style.left = '-9999px';
+    document.body.appendChild(offscreen);
+
+    var qrCanvas;
+    try {
+      new QRCode(offscreen, {
+        text: text,
+        width: qrSize,
+        height: qrSize,
+        colorDark: fgEl.value,
+        colorLight: bgEl.value,
+        correctLevel: correctLevel(level)
+      });
+      qrCanvas = offscreen.querySelector('canvas');
+      if (!qrCanvas) throw new Error('canvas not created');
+    } catch (e){
+      document.body.removeChild(offscreen);
+      qrDiv.innerHTML = '';
+      qrDiv.appendChild(emptyNote);
+      errorMsg.style.display = 'block';
+      downloadBtn.disabled = true;
+      return;
+    }
+
+    // center image overlay, drawn directly onto the QR canvas
+    if (state.image === 'on' && uploadedImageCanvas){
+      var qctx = qrCanvas.getContext('2d');
+      var overlay = Math.round(qrSize * 0.22);
+      var ox = Math.round((qrSize - overlay) / 2);
+      var oy = ox;
+      var pad = Math.round(overlay * 0.14);
+      qctx.fillStyle = '#ffffff';
+      qctx.fillRect(ox - pad, oy - pad, overlay + pad * 2, overlay + pad * 2);
+      qctx.drawImage(uploadedImageCanvas, ox, oy, overlay, overlay);
+    }
+
+    var decoOn = state.deco === 'on';
+    var textOn = decoOn && state.text === 'on' && captionEl.value.trim().length > 0;
+    var textPosition = textPositionEl.value;
+    var fontKey = textFontEl.value;
+
+    function finish(){
+      document.body.removeChild(offscreen);
+      qrDiv.innerHTML = '';
+      qrDiv.appendChild(finalCanvasEl);
+      downloadBtn.disabled = false;
+    }
+
+    var finalCanvasEl;
+
+    if (!decoOn){
+      finalCanvasEl = qrCanvas;
+      finish();
+      return;
+    }
+
+    var margin = 26;
+    var caption = captionEl.value.trim();
+    var fontSize = Math.max(14, Math.round(qrSize * 0.075));
+    var fontFamily = fontFamilyFor(fontKey);
+    var fontString = fontSize + 'px ' + fontFamily;
+
+    var frameOutset = 16; // gap between the QR box and its decorative frame
+
+    var buildCanvas = function(){
+      var width, height, qx, qy, band;
+
+      if (textOn && textPosition === 'around'){
+        band = fontSize + 24;
+        var half = margin + band;
+        width = qrSize + half * 2;
+        height = width;
+        qx = half; qy = half;
+      } else if (textOn && textPosition === 'bottom'){
+        var bottomSpace = fontSize + 22;
+        width = qrSize + margin * 2;
+        height = qrSize + margin * 2 + bottomSpace;
+        qx = margin; qy = margin;
+      } else {
+        width = qrSize + margin * 2;
+        height = qrSize + margin * 2;
+        qx = margin; qy = margin;
+      }
+
+      var canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = bgEl.value || '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+
+      if (textOn && textPosition === 'around'){
+        drawTextBorder(ctx, caption, width, height, band, fontString, fgEl.value);
+      }
+
+      drawDecorativeFrame(ctx, qx - frameOutset, qy - frameOutset, qrSize + frameOutset * 2, qrSize + frameOutset * 2, fgEl.value);
+      ctx.drawImage(qrCanvas, qx, qy, qrSize, qrSize);
+
+      if (textOn && textPosition === 'bottom'){
+        ctx.font = fontString;
+        ctx.fillStyle = fgEl.value;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(caption, width / 2, qy + qrSize + (height - (qy + qrSize)) / 2);
+      }
+
+      finalCanvasEl = canvas;
+      finish();
+    };
+
+    if (textOn && document.fonts && document.fonts.load){
+      Promise.all([
+        document.fonts.load(fontString, caption || 'あ'),
+        document.fonts.load(fontSize + 'px "Zen Antique"', 'あ'),
+        document.fonts.load(fontSize + 'px "Noto Sans JP"', 'あ')
+      ]).then(buildCanvas).catch(buildCanvas);
+    } else {
+      buildCanvas();
+    }
+  }
+
+  function debouncedRender(){
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(render, 200);
+  }
+
+  textEl.addEventListener('input', debouncedRender);
+  sizeEl.addEventListener('change', render);
+  levelEl.addEventListener('change', render);
+  fgEl.addEventListener('input', debouncedRender);
+  bgEl.addEventListener('input', debouncedRender);
+  captionEl.addEventListener('input', debouncedRender);
+  textPositionEl.addEventListener('change', render);
+  textFontEl.addEventListener('change', render);
+
+  clearBtn.addEventListener('click', function(){
+    textEl.value = '';
+    render();
+    textEl.focus();
+  });
+
+  downloadBtn.addEventListener('click', function(){
+    var canvas = qrDiv.querySelector('canvas');
+    if (!canvas) return;
+    var dataUrl = canvas.toDataURL('image/png');
+    var a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'qrcode.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  syncPanels();
+})();
+</script>
+
+</body>
+</html>
