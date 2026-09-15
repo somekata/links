@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>バイキンズの逆襲：GNR編 β版</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Antique&family=Noto+Sans+JP:wght@400;700&display=swap');
+:root{--wa-bg:#f5f1e8;--wa-panel:#fdfaf3;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+html,body{margin:0;padding:0;height:100dvh;overflow:hidden;background:var(--wa-bg);font-family:'Noto Sans JP',sans-serif;}
+#hud{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;display:flex;justify-content:space-between;align-items:flex-start;z-index:10;pointer-events:none;}
+#hud h1{font-family:'Zen Antique',serif;font-size:14px;margin:0;color:#3c3428;font-weight:400;}
+#hud h1 span{display:block;font-size:11px;color:#8a8272;font-family:'Noto Sans JP',sans-serif;margin-top:2px;max-width:220px;}
+#hudRight{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+#counter{font-weight:700;background:var(--wa-panel);border:1px solid #d8cfb8;border-radius:20px;padding:5px 14px;font-size:13px;color:#3c3428;}
+.itemGetFlash{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.7);z-index:19;pointer-events:none;opacity:0;font-family:'Zen Antique',serif;font-size:24px;color:#0f6e56;background:rgba(253,250,243,.96);border:2px solid #5DCAA5;border-radius:18px;padding:12px 22px;box-shadow:0 5px 22px rgba(0,0,0,.18);text-align:center;}
+.itemGetFlash.show{animation:itemGetKf .8s ease-out;}
+@keyframes itemGetKf{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-60%) scale(1)}}
+#hpWrap{width:120px;height:14px;background:#fff;border:1px solid #d8cfb8;border-radius:8px;overflow:hidden;}
+#hpFill{height:100%;width:100%;background:#639922;transition:width .2s,background .2s;}
+canvas{display:block;touch-action:none;}
+#actionBtn{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 34px);transform:translateX(-50%);width:88px;height:88px;border-radius:50%;background:#fdfaf3;border:2px solid #712b13;color:#712b13;font-family:'Noto Sans JP',sans-serif;font-weight:700;font-size:12px;z-index:15;display:none;align-items:center;justify-content:center;touch-action:none;box-shadow:0 3px 10px rgba(0,0,0,0.15);text-align:center;line-height:1.3;}
+#actionBtn.visible{display:flex;}
+#actionBtn.active{background:#F0997B;transform:translateX(-50%) scale(0.92);}
+#missionBanner{position:fixed;left:0;right:0;top:44%;text-align:center;z-index:18;pointer-events:none;opacity:0;transition:opacity .4s;}
+#missionBanner.show{opacity:1;}
+#missionBanner .line1{font-family:'Zen Antique',serif;font-size:14px;color:#3c3428;background:rgba(253,250,243,0.92);display:inline-block;padding:8px 16px;border-radius:10px;max-width:300px;}
+#introPanel,#choicePanel,#clearPanel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(60,52,40,0.55);z-index:20;padding:20px;}
+#introPanel .card,#choicePanel .card,#clearCard{background:var(--wa-panel);border-radius:16px;padding:26px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.2);}
+#introPanel h2,#choicePanel h2,#clearCard h2{font-family:'Zen Antique',serif;font-size:19px;margin:0 0 14px;color:#3c3428;font-weight:400;}
+#introPanel p,#choicePanel p,#clearCard p{font-size:14px;line-height:1.9;color:#5a5142;margin:0 0 18px;text-align:left;}
+button.primary{font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;background:#0f6e56;color:#fff;border:none;border-radius:24px;padding:11px 20px;margin:6px 0;width:100%;}
+button.alt{font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;background:#993c1d;color:#fff;border:none;border-radius:24px;padding:11px 20px;margin:6px 0;width:100%;}
+#choicePanel{display:none;}
+#clearPanel{display:none;}
+#statusBtn{position:fixed;left:16px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:12;background:rgba(253,250,243,0.92);border:1px solid #d8cfb8;border-radius:16px;padding:6px 12px;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;color:#3c3428;}
+#statusPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(60,52,40,0.55);z-index:24;padding:20px;}
+#statusPanel .card{background:var(--wa-panel);border-radius:16px;padding:22px;max-width:340px;width:100%;max-height:76vh;overflow-y:auto;text-align:left;box-shadow:0 4px 24px rgba(0,0,0,0.2);}
+#statusPanel h2{font-family:'Zen Antique',serif;font-size:18px;margin:0 0 4px;color:#3c3428;font-weight:400;}
+#statusPanel .stateName{font-size:13px;color:#993c1d;font-weight:700;margin-bottom:14px;}
+#statusPanel .itemRow{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#3c3428;padding:7px 0;border-bottom:1px solid #eee5d3;}
+#statusPanel .itemRow .eff{color:#8a8272;font-size:11px;text-align:right;}
+#statusPanel button{margin-top:16px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;background:#0f6e56;color:#fff;border:none;border-radius:20px;padding:9px 20px;width:100%;}
+#evoOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:30;pointer-events:none;overflow:hidden;}
+#evoGlow{position:absolute;width:60vmin;height:60vmin;border-radius:50%;background:radial-gradient(circle,rgba(250,199,117,0.9) 0%,rgba(250,199,117,0) 70%);opacity:0;}
+#evoGlow.play{animation:evoGlowKf 1.6s ease-out;}
+@keyframes evoGlowKf{0%{opacity:0;transform:scale(0.3);}35%{opacity:0.95;transform:scale(1.3);}100%{opacity:0;transform:scale(2.1);}}
+#evoTextWrap{position:relative;text-align:center;opacity:0;}
+#evoTextWrap.play{animation:evoTextKf 1.7s ease-out;}
+@keyframes evoTextKf{0%{opacity:0;transform:scale(0.5);}25%{opacity:1;transform:scale(1.08);}75%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1);}}
+#evoTitle{font-family:'Zen Antique',serif;font-size:24px;color:#3c3428;background:rgba(253,250,243,0.95);padding:14px 26px;border-radius:14px;display:block;box-shadow:0 4px 20px rgba(0,0,0,0.2);}
+#evoSubtitle{display:block;margin-top:8px;font-size:13px;color:#712b13;font-weight:700;}
+footer{position:fixed;bottom:0;left:0;right:0;font-size:10px;line-height:1.5;color:#8a8272;text-align:center;padding:4px 10px calc(env(safe-area-inset-bottom,0px) + 4px);background:rgba(245,241,232,0.85);z-index:5;}
+</style>
+</head>
+<body>
+<div id="hud"><h1 id="hudTitle">生命誕生<span></span></h1>
+<div id="hudRight"><div id="counter"></div><div id="hpWrap"><div id="hpFill"></div></div></div></div>
+<canvas id="game"></canvas>
+<button id="actionBtn">攻撃</button>
+<div id="missionBanner"><div class="line1" id="bannerText"></div></div>
+<div id="itemGetFlash" class="itemGetFlash"></div>
+
+<div id="introPanel"><div class="card">
+<h2>バイキンズの逆襲：GNR編</h2>
+<p>四十億年前、原始の海の底で——<br>ここから、グラム陰性桿菌（GNR）への道が始まる。<br>栄養が尽きればHPが減って消滅してしまう。落ちているもの・降ってくるものを拾い集めながら進め。</p>
+<button class="primary" id="startBtn">はじめる</button>
+</div></div>
+
+<div id="choicePanel"><div class="card">
+<h2 id="choiceTitle">どちらに向かう？</h2>
+<p id="choiceDesc"></p>
+<button class="primary" id="choiceABtn"></button>
+<button class="alt" id="choiceBBtn"></button>
+</div></div>
+
+<div id="clearPanel"><div id="clearCard">
+<h2 id="clearTitle">完成</h2>
+<p id="clearBody"></p>
+<button class="primary" id="retryBtn">もう一度あそぶ</button>
+</div></div>
+
+<button id="statusBtn">状態を見る</button>
+<div id="statusPanel"><div class="card">
+<h2 id="statusStateName">GPC</h2>
+<div class="stateName" id="statusStateSub">原始生命</div>
+<div id="statusItemList"></div>
+<button id="statusCloseBtn">閉じる</button>
+</div></div>
+
+<div id="evoOverlay"><div id="evoGlow"></div><div id="evoTextWrap"><span id="evoTitle"></span><span id="evoSubtitle"></span></div></div>
+
+<footer>本コンテンツは AI（Claude, Anthropic）を用いて作成されたゲームβ版試作です。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</footer>
+
+<script>
+(function(){
+ const canvas=document.getElementById('game');
+ const ctx=canvas.getContext('2d');
+ const counterEl=document.getElementById('counter');
+ const hpFill=document.getElementById('hpFill');
+ const hudTitle=document.getElementById('hudTitle');
+ const introPanel=document.getElementById('introPanel');
+ const startBtn=document.getElementById('startBtn');
+ const choicePanel=document.getElementById('choicePanel');
+ const choiceTitle=document.getElementById('choiceTitle');
+ const choiceDesc=document.getElementById('choiceDesc');
+ const choiceABtn=document.getElementById('choiceABtn');
+ const choiceBBtn=document.getElementById('choiceBBtn');
+ const clearPanel=document.getElementById('clearPanel');
+ const clearTitle=document.getElementById('clearTitle');
+ const clearBody=document.getElementById('clearBody');
+ const retryBtn=document.getElementById('retryBtn');
+ const banner=document.getElementById('missionBanner');
+ const bannerText=document.getElementById('bannerText');
+ const itemGetFlash=document.getElementById('itemGetFlash');
+ const statusBtn=document.getElementById('statusBtn');
+ const actionBtn=document.getElementById('actionBtn');
+ const statusPanel=document.getElementById('statusPanel');
+ const statusStateName=document.getElementById('statusStateName');
+ const statusStateSub=document.getElementById('statusStateSub');
+ const statusItemList=document.getElementById('statusItemList');
+ const statusCloseBtn=document.getElementById('statusCloseBtn');
+ const evoOverlay=document.getElementById('evoOverlay');
+ const evoGlow=document.getElementById('evoGlow');
+ const evoTextWrap=document.getElementById('evoTextWrap');
+ const evoTitle=document.getElementById('evoTitle');
+ const evoSubtitle=document.getElementById('evoSubtitle');
+
+ let W,H,DPR;
+ function resize(){
+   DPR=Math.min(window.devicePixelRatio||1,2);
+   W=window.innerWidth; H=window.innerHeight;
+   canvas.width=W*DPR; canvas.height=H*DPR;
+   canvas.style.width=W+'px'; canvas.style.height=H+'px';
+   ctx.setTransform(DPR,0,0,DPR,0,0);
+ }
+ window.addEventListener('resize',resize);
+ resize();
+
+ const PALETTE=[
+   {c:'#97C459',t:'#173404'}, {c:'#93C5E8',t:'#0C447C'}, {c:'#F0997B',t:'#712B13'},
+   {c:'#F09595',t:'#A32D2D'}, {c:'#B7A6D9',t:'#3A2B5C'}, {c:'#F2C14E',t:'#5C4405'},
+   {c:'#9FE1CB',t:'#085041'}, {c:'#ED93B1',t:'#72243E'}
+ ];
+ const HP_DECAY=0.045, HP_NUTRIENT=14, HP_HAZARD=20;
+
+ let introActive, gameFinished, evolving, player, pointer, actionHeld, score, hitFlash, invuln, speech, particles;
+ let stage, pendingTransition, transitioning;
+
+ function reset(){
+   introActive=true; gameFinished=false; evolving=false; score=0;
+   player={x:W/2,y:H/2,r:30,color:'#e6e2d8',angle:0,hp:100,
+     hasPili:false,piliAngles:null,hasFlagella:false,flagellaType:null,speedMax:4.0,
+     stateName:'原始生命', items:[], immunities:[]};
+   pointer=null; actionHeld=false; hitFlash=0; invuln=0; speech=null; particles=[];
+   pendingTransition=null; transitioning=false;
+   choicePanel.style.display='none';
+   clearPanel.style.display='none';
+   statusPanel.style.display='none';
+   actionBtn.classList.remove('visible');
+   introPanel.style.display='flex';
+   hudTitle.innerHTML='生命誕生<span></span>';
+   counterEl.textContent='';
+   updateHpBar();
+ }
+ function updateHpBar(){
+   const pct=Math.max(0,Math.min(100,player.hp));
+   hpFill.style.width=pct+'%';
+   hpFill.style.background = pct>50?'#639922':(pct>20?'#EF9F27':'#A32D2D');
+ }
+
+ function toLocal(clientX,clientY){ const rect=canvas.getBoundingClientRect(); return {x:clientX-rect.left, y:clientY-rect.top}; }
+ canvas.addEventListener('pointerdown',e=>{pointer=toLocal(e.clientX,e.clientY);});
+ canvas.addEventListener('pointermove',e=>{if(pointer) pointer=toLocal(e.clientX,e.clientY);});
+ window.addEventListener('pointerup',()=>{pointer=null;});
+ window.addEventListener('pointercancel',()=>{pointer=null;});
+ actionBtn.addEventListener('pointerdown',e=>{e.preventDefault();actionHeld=true;actionBtn.classList.add('active');});
+ function releaseAction(){actionHeld=false;actionBtn.classList.remove('active');}
+ actionBtn.addEventListener('pointerup',releaseAction);
+ actionBtn.addEventListener('pointercancel',releaseAction);
+ actionBtn.addEventListener('pointerleave',releaseAction);
+
+ function showLine(text,x,y){ speech={text,x,y,life:110}; }
+ function showBanner(text){
+   bannerText.textContent=text; banner.classList.add('show');
+   setTimeout(()=>{ banner.classList.remove('show'); }, 1700);
+ }
+ function burst(x,y,color,n){
+   n=n||8;
+   for(let i=0;i<n;i++) particles.push({x,y,a:Math.random()*Math.PI*2,sp:1+Math.random()*2,life:30+Math.random()*20,color});
+ }
+ function queueTransition(fn){ pendingTransition=fn; transitioning=true; setTimeout(()=>{ transitioning=false; pendingTransition=null; fn(); },10); }
+
+ /* ---------------- status panel ---------------- */
+ function openStatus(){
+   statusStateName.textContent=player.stateName;
+   statusStateSub.textContent='HP '+Math.round(Math.max(0,player.hp))+' / 100';
+   if(player.items.length===0){
+     statusItemList.innerHTML='<div class="itemRow"><span>まだ何も持っていない</span></div>';
+   } else {
+     statusItemList.innerHTML=player.items.map(it=>
+       '<div class="itemRow"><span>'+it.name+'</span><span class="eff">'+it.effect+'</span></div>'
+     ).join('');
+   }
+   statusPanel.style.display='flex';
+ }
+ statusBtn.addEventListener('click', openStatus);
+ statusCloseBtn.addEventListener('click', ()=>{ statusPanel.style.display='none'; });
+
+ /* ---------------- evolution celebration ---------------- */
+ function playEvolution(title, subtitle, onDone){
+   evolving=true; // pauses gameplay logic but keeps the canvas rendering behind the overlay
+   evoTitle.textContent=title;
+   evoSubtitle.textContent=subtitle||'';
+   evoOverlay.style.display='flex';
+   evoGlow.classList.remove('play'); evoTextWrap.classList.remove('play');
+   void evoGlow.offsetWidth;
+   evoGlow.classList.add('play'); evoTextWrap.classList.add('play');
+   burst(player.x,player.y,'#FAC775',20);
+   setTimeout(()=>{
+     evoOverlay.style.display='none';
+     evolving=false;
+     if(onDone) onDone();
+   }, 1700);
+ }
+
+ /* ---------------- item stage: pick up scattered/falling items, avoid hazard, manage HP ---------------- */
+ function spawnNutrient(){ return {x:30+Math.random()*(W-60), y:150+Math.random()*(H-320), r:6, wobble:Math.random()*Math.PI*2}; }
+ function spawnHazard(){ return {x:40+Math.random()*(W-80), y:160+Math.random()*(H-320), r:24, wobble:Math.random()*Math.PI*2, cooldown:0}; }
+ function itemVisual(name){
+   const n=(name||'').toLowerCase();
+   if(n.includes('カタラーゼ')) return {icon:'🫧',short:'CAT',sub:'H₂O₂分解'};
+   if(n.includes('線毛')) return {icon:'🧲',short:'PILI',sub:'接着'};
+   if(n.includes('鞭毛')) return {icon:'🌀',short:'FLAG',sub:'運動'};
+   if(n.includes('排出ポンプ')) return {icon:'🚪',short:'EFFLUX',sub:'排出'};
+   if(n.includes('bla')) return {icon:'🛡️',short:'bla',sub:'βラクタム耐性'};
+   if(n.includes('ctx-m')) return {icon:'💥',short:'CTX-M',sub:'セフェム分解'};
+   if(n.includes('ndm')) return {icon:'☠',short:'NDM-1',sub:'カルバペネム耐性'};
+   if(n.includes('o157')) return {icon:'🧪',short:'O157',sub:'血清型'};
+   if(n.includes('iii型')) return {icon:'💉',short:'T3SS',sub:'注入装置'};
+   if(n.includes('ベロ毒素')) return {icon:'☠️',short:'VT',sub:'毒素'};
+   if(n.includes('ムコイド')) return {icon:'🫧',short:'MUC',sub:'保護'};
+   if(n.includes('バイオフィルム')) return {icon:'🧱',short:'BIOFILM',sub:'保護膜'};
+   if(n.includes('oprd')) return {icon:'🚧',short:'OprD',sub:'孔の変化'};
+   if(n.includes('mexab')) return {icon:'↗️',short:'MexAB/OprM',sub:'排出'};
+   if(n.includes('ampc')) return {icon:'🧪',short:'AmpC',sub:'分解'};
+   if(n.includes('imp-6')) return {icon:'💎',short:'IMP-6',sub:'分解'};
+   return {icon:'✨',short:name||'ITEM',sub:'能力獲得'};
+ }
+ function spawnGroundItem(color,name){ const v=itemVisual(name); return {x:30+Math.random()*(W-60), y:150+Math.random()*(H-320), r:18, wobble:Math.random()*Math.PI*2, color, name, icon:v.icon, short:v.short, sub:v.sub, flash:0}; }
+ function spawnFallingItem(color,name){ const v=itemVisual(name); return {x:20+Math.random()*(W-40), y:-30, r:18, vy:1.6+Math.random()*1.2, color, name, icon:v.icon, short:v.short, sub:v.sub, flash:0}; }
+ function showItemGet(it){
+   const v=itemVisual(it.name); itemGetFlash.innerHTML="GET！ "+v.icon+" "+(it.name||v.short)+"<small style='display:block;font-family:Noto Sans JP,sans-serif;font-size:11px;color:#5a5142;margin-top:2px'>"+v.sub+"</small>";
+   itemGetFlash.classList.remove('show'); void itemGetFlash.offsetWidth; itemGetFlash.classList.add('show');
+   showBanner('✨ '+(it.name||v.short)+' を獲得！');
+ }
+
+ function applyEffect(effect){
+   if(effect==='pili'){
+     player.hasPili=true;
+     player.piliAngles=[]; for(let i=0;i<8;i++) player.piliAngles.push(Math.random()*Math.PI*2);
+   } else if(effect==='flagella-peri'){
+     player.hasFlagella=true; player.flagellaType='peritrichous'; player.speedMax=5.2;
+   } else if(effect==='flagella-mono'){
+     player.hasFlagella=true; player.flagellaType='monotrichous'; player.speedMax=5.2;
+   }
+ }
+
+ function spawnEchoHazard(name){ const h=spawnHazard(); h.echoName=name; return h; }
+
+ function runItemStage(cfg, onDone){
+   player.x=W/2; player.y=H/2;
+   const falling = cfg.spawnMode==='falling';
+   stage={
+     mode:'item',
+     items:[], fallTimer:30, falling,
+     hazards:[], echoHazards:[], nutrients:[],
+     collected:0, target:cfg.itemCount||4,
+     hazardColor:cfg.hazardColor, hazardTextColor:cfg.hazardTextColor, hazardLine:cfg.hazardLine,
+     itemColor:cfg.itemColor||'#F3DDA8', label:cfg.label, itemGot:cfg.itemGot,
+     onComplete:function(){
+       showBanner(cfg.completionBanner);
+       applyEffect(cfg.effect);
+       player.items.push({name:cfg.itemGot, effect:cfg.itemEffect||'（獲得）'});
+       if(cfg.hazardName) player.immunities.push(cfg.hazardName);
+       queueTransition(onDone);
+     }
+   };
+   for(let i=0;i<(cfg.hazardCount||3);i++) stage.hazards.push(spawnHazard());
+   // a past threat reappears, now trivial thanks to what you've already earned — makes old items feel useful
+   if(player.immunities.length>0){
+     const pastName=player.immunities[Math.floor(Math.random()*player.immunities.length)];
+     stage.echoHazards.push(spawnEchoHazard(pastName));
+   }
+   for(let i=0;i<5;i++) stage.nutrients.push(spawnNutrient());
+   if(!falling){ for(let i=0;i<stage.target+2;i++) stage.items.push(spawnGroundItem(stage.itemColor,stage.itemGot)); }
+   hudTitle.innerHTML=cfg.label+'<span>'+cfg.hint+'</span>';
+   counterEl.textContent=cfg.label+' 0 / '+stage.target;
+   showLine(cfg.hint,player.x,player.y-60);
+ }
+
+ function updateItemStage(){
+   player.hp=Math.max(0,player.hp-HP_DECAY);
+   updateHpBar();
+   if(player.hp<=0 && !gameFinished){ onStarved(); return; }
+
+   for(let i=stage.nutrients.length-1;i>=0;i--){
+     const n=stage.nutrients[i]; n.wobble+=0.06;
+     const d=Math.hypot(player.x-n.x, player.y-n.y);
+     if(d<player.r+n.r){
+       stage.nutrients.splice(i,1); stage.nutrients.push(spawnNutrient());
+       player.hp=Math.min(100,player.hp+HP_NUTRIENT); updateHpBar();
+       burst(n.x,n.y,'#F3DDA8',5);
+     }
+   }
+
+   if(stage.falling){
+     stage.fallTimer--;
+     if(stage.fallTimer<=0 && stage.collected<stage.target){
+       stage.items.push(spawnFallingItem(stage.itemColor,stage.itemGot));
+       stage.fallTimer=55+Math.random()*30;
+     }
+     for(let i=stage.items.length-1;i>=0;i--){
+       const it=stage.items[i]; it.y+=it.vy;
+       if(it.y>H+30){ stage.items.splice(i,1); continue; }
+       const d=Math.hypot(player.x-it.x, player.y-it.y);
+       if(d<player.r+it.r+6){
+         stage.items.splice(i,1); stage.collected++;
+         counterEl.textContent=stage.label+' '+stage.collected+' / '+stage.target;
+         burst(it.x,it.y,it.color,12);
+         showItemGet(it);
+         showLine('能力アイテム GET！',it.x,it.y-32);
+       }
+     }
+   } else {
+     for(let i=stage.items.length-1;i>=0;i--){
+       const it=stage.items[i]; it.wobble+=0.05;
+       const d=Math.hypot(player.x-it.x, player.y-it.y);
+       if(d<player.r+it.r+6){
+         stage.items.splice(i,1); stage.collected++;
+         counterEl.textContent=stage.label+' '+stage.collected+' / '+stage.target;
+         burst(it.x,it.y,it.color,12);
+         showItemGet(it);
+         showLine('能力アイテム GET！',it.x,it.y-32);
+       }
+     }
+   }
+
+   for(const z of stage.hazards){
+     z.wobble+=0.04; if(z.cooldown>0) z.cooldown--;
+     const d=Math.hypot(player.x-z.x, player.y-z.y);
+     if(d<player.r+z.r && z.cooldown<=0 && invuln<=0){
+       z.cooldown=60; invuln=40; hitFlash=14;
+       player.hp=Math.max(0,player.hp-HP_HAZARD); updateHpBar();
+       showLine(stage.hazardLine,player.x,player.y-40);
+       const push=player.hasPili?10:20;
+       const ang=Math.atan2(player.y-z.y,player.x-z.x);
+       player.x+=Math.cos(ang)*push; player.y+=Math.sin(ang)*push;
+     }
+   }
+   for(const z of stage.echoHazards){
+     z.wobble+=0.04; if(z.cooldown>0) z.cooldown--;
+     const d=Math.hypot(player.x-z.x, player.y-z.y);
+     if(d<player.r+z.r && z.cooldown<=0){
+       z.cooldown=90;
+       burst(z.x,z.y,'#9FE1CB',6);
+       showLine(z.echoName+'はもう平気だ！',player.x,player.y-40);
+     }
+   }
+
+   if(stage.collected>=stage.target && !transitioning){
+     stage.onComplete();
+   }
+ }
+ function drawItemStage(){
+   for(const z of stage.hazards){
+     const bob=Math.sin(z.wobble)*2;
+     ctx.beginPath(); ctx.arc(z.x,z.y+bob,z.r,0,Math.PI*2);
+     ctx.fillStyle=stage.hazardColor; ctx.globalAlpha=0.85; ctx.fill(); ctx.globalAlpha=1;
+     ctx.strokeStyle=stage.hazardTextColor; ctx.lineWidth=1.5; ctx.stroke();
+   }
+   for(const z of stage.echoHazards){
+     const bob=Math.sin(z.wobble)*2;
+     ctx.beginPath(); ctx.arc(z.x,z.y+bob,z.r*0.8,0,Math.PI*2);
+     ctx.fillStyle='#9FE1CB'; ctx.globalAlpha=0.6; ctx.fill(); ctx.globalAlpha=1;
+     ctx.strokeStyle='#085041'; ctx.lineWidth=1; ctx.stroke();
+   }
+   ctx.fillStyle='#F3DDA8';
+   for(const n of stage.nutrients){ const bob=Math.sin(n.wobble)*2; ctx.beginPath(); ctx.arc(n.x,n.y+bob,n.r,0,Math.PI*2); ctx.fill(); }
+   for(const it of stage.items){
+     const bob=stage.falling?0:Math.sin(it.wobble)*3;
+     const pulse=1+0.08*Math.sin((it.wobble||0)*2);
+     const rr=it.r*pulse;
+     ctx.save(); ctx.translate(it.x,it.y+bob);
+     ctx.globalAlpha=0.18; ctx.fillStyle=it.color; ctx.beginPath(); ctx.arc(0,0,rr+10,0,Math.PI*2); ctx.fill();
+     ctx.globalAlpha=1; ctx.fillStyle='#fdfaf3'; ctx.beginPath(); ctx.arc(0,0,rr+4,0,Math.PI*2); ctx.fill();
+     ctx.fillStyle=it.color; ctx.beginPath(); ctx.arc(0,0,rr,0,Math.PI*2); ctx.fill();
+     ctx.strokeStyle='#3c3428'; ctx.lineWidth=1.5; ctx.stroke();
+     ctx.font='17px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#3c3428'; ctx.fillText(it.icon||'✨',0,-1);
+     ctx.font='700 8px "Noto Sans JP",sans-serif'; ctx.fillStyle='#3c3428'; ctx.fillText(it.short||'GET',0,rr+10);
+     ctx.restore();
+     // 上向きの「拾える」ガイド
+     ctx.globalAlpha=.65; ctx.font='700 9px "Noto Sans JP",sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#0f6e56'; ctx.fillText('GET',it.x,it.y+bob-rr-13); ctx.globalAlpha=1;
+   }
+ }
+ function onStarved(){
+   gameFinished=true;
+   showLine('栄養が尽きた…',player.x,player.y-40);
+   setTimeout(()=>{
+     if(stage && stage.mode==='ehec'){
+       clearTitle.textContent='EHEC、力尽きる';
+       clearBody.textContent='宿主の防御に力尽きたが、道中でスコア '+score+' 点を叩き出した。O157・III型分泌装置・ベロ毒素をすべて身につけ、腸管出血性大腸菌として牙を剥いた記録である。';
+     } else {
+       clearTitle.textContent='消滅…';
+       clearBody.textContent='栄養が尽きてHPがなくなり、力尽きてしまった。栄養を拾いながら進もう。';
+     }
+     actionBtn.classList.remove('visible');
+     clearPanel.style.display='flex';
+   },500);
+ }
+
+ /* ---------------- EHEC endless: two ways to keep scoring after completion ---------------- */
+ function spawnEpithelial(){ return {x:30+Math.random()*(W-60), y:150+Math.random()*(H-320), r:14, kind:'epi', wobble:Math.random()*Math.PI*2}; }
+ function spawnEndothelial(){ return {x:30+Math.random()*(W-60), y:150+Math.random()*(H-320), r:12, kind:'endo', wobble:Math.random()*Math.PI*2}; }
+ const TIR_LINES=['Tirを注入した！','インチミンが結合した！','ペデスタルが完成、定着した！'];
+
+ function runEhecEndless(){
+   stage={
+     mode:'ehec', targets:[], shots:[], immuneCells:[], spawnTimer:20, immuneSpawnTimer:90, tirCycle:0,
+   };
+   for(let i=0;i<3;i++) stage.targets.push(Math.random()<0.5?spawnEpithelial():spawnEndothelial());
+   for(let i=0;i<5;i++){ if(!stage.nutrients) stage.nutrients=[]; }
+   stage.nutrients=[]; for(let i=0;i<5;i++) stage.nutrients.push(spawnNutrient());
+   hudTitle.innerHTML='EHEC、猛威をふるう<span>付着してペデスタルを作るか、ベロ毒素で内皮細胞を攻撃してスコアを稼げ。</span>';
+   counterEl.textContent='スコア +0';
+   actionBtn.textContent='攻撃';
+   actionBtn.classList.add('visible');
+   showLine('攻撃ボタンで近くの細胞を狙おう',player.x,player.y-60);
+ }
+ function spawnImmuneCell(){ return {x:40+Math.random()*(W-80), y:180+Math.random()*(H-380), r:16, ang:Math.random()*Math.PI*2, wanderT:0, wob:Math.random()*10}; }
+ function updateEhecEndless(){
+   player.hp=Math.max(0,player.hp-HP_DECAY);
+   updateHpBar();
+   if(player.hp<=0 && !gameFinished){ onStarved(); return; }
+   counterEl.textContent='スコア +'+score;
+
+   for(let i=stage.nutrients.length-1;i>=0;i--){
+     const n=stage.nutrients[i]; n.wobble+=0.06;
+     const d=Math.hypot(player.x-n.x, player.y-n.y);
+     if(d<player.r+n.r){
+       stage.nutrients.splice(i,1); stage.nutrients.push(spawnNutrient());
+       player.hp=Math.min(100,player.hp+HP_NUTRIENT); updateHpBar();
+       burst(n.x,n.y,'#F3DDA8',5);
+     }
+   }
+
+   stage.spawnTimer--;
+   if(stage.spawnTimer<=0 && stage.targets.length<5){
+     stage.targets.push(Math.random()<0.5?spawnEpithelial():spawnEndothelial());
+     stage.spawnTimer=70+Math.random()*40;
+   }
+   stage.immuneSpawnTimer--;
+   if(stage.immuneSpawnTimer<=0 && stage.immuneCells.length<2){
+     stage.immuneCells.push(spawnImmuneCell());
+     stage.immuneSpawnTimer=200+Math.random()*100;
+   }
+   for(const t of stage.targets) t.wobble+=0.04;
+
+   if(actionHeld && stage.targets.length){
+     if(!player.shotCooldown || player.shotCooldown<=0){
+       let nearest=stage.targets[0], bd=Infinity;
+       for(const t of stage.targets){ const d=Math.hypot(player.x-t.x,player.y-t.y); if(d<bd){bd=d; nearest=t;} }
+       const ang=Math.atan2(nearest.y-player.y, nearest.x-player.x);
+       stage.shots.push({x:player.x,y:player.y,vx:Math.cos(ang)*6.5,vy:Math.sin(ang)*6.5,r:5,kind:nearest.kind});
+       player.shotCooldown=16;
+     }
+   }
+   if(player.shotCooldown>0) player.shotCooldown--;
+
+   for(let i=stage.shots.length-1;i>=0;i--){
+     const s=stage.shots[i]; s.x+=s.vx; s.y+=s.vy;
+     if(s.x<0||s.x>W||s.y<0||s.y>H){ stage.shots.splice(i,1); continue; }
+     for(let j=stage.targets.length-1;j>=0;j--){
+       const t=stage.targets[j];
+       const d=Math.hypot(s.x-t.x, s.y-t.y);
+       if(d<t.r+s.r){
+         stage.shots.splice(i,1);
+         stage.targets.splice(j,1);
+         if(t.kind==='epi'){
+           score+=200;
+           burst(t.x,t.y,'#F0997B',9);
+           showLine(TIR_LINES[stage.tirCycle%TIR_LINES.length],t.x,t.y-30);
+           stage.tirCycle++;
+         } else {
+           score+=150;
+           burst(t.x,t.y,'#E24B4A',9);
+           showLine('ベロ毒素で内皮細胞を攻撃した！',t.x,t.y-30);
+         }
+         break;
+       }
+     }
+   }
+
+   for(const en of stage.immuneCells){
+     en.wanderT--;
+     const dp=Math.hypot(player.x-en.x, player.y-en.y);
+     if(dp<150){ en.ang=Math.atan2(player.y-en.y,player.x-en.x); en.x+=Math.cos(en.ang)*1.1; en.y+=Math.sin(en.ang)*1.1; }
+     else { if(en.wanderT<=0){ en.ang=Math.random()*Math.PI*2; en.wanderT=70+Math.random()*40; } en.x+=Math.cos(en.ang)*0.6; en.y+=Math.sin(en.ang)*0.6; }
+     en.x=Math.max(20,Math.min(W-20,en.x)); en.y=Math.max(100,Math.min(H-100,en.y)); en.wob+=0.15;
+     const d=Math.hypot(player.x-en.x, player.y-en.y);
+     if(d<player.r+en.r && invuln<=0){
+       invuln=40; hitFlash=14;
+       player.hp=Math.max(0,player.hp-HP_HAZARD); updateHpBar();
+       showLine('好中球に攻撃された！',player.x,player.y-40);
+       const push=player.hasPili?10:20;
+       const ang=Math.atan2(player.y-en.y,player.x-en.x);
+       player.x+=Math.cos(ang)*push; player.y+=Math.sin(ang)*push;
+     }
+   }
+ }
+ function drawEhecEndless(){
+   for(const n of stage.nutrients){ const bob=Math.sin(n.wobble)*2; ctx.fillStyle='#F3DDA8'; ctx.beginPath(); ctx.arc(n.x,n.y+bob,n.r,0,Math.PI*2); ctx.fill(); }
+   for(const t of stage.targets){
+     const bob=Math.sin(t.wobble)*2;
+     ctx.beginPath(); ctx.arc(t.x,t.y+bob,t.r,0,Math.PI*2);
+     ctx.fillStyle = t.kind==='epi' ? '#F0997B' : '#F09595';
+     ctx.fill();
+     ctx.strokeStyle = t.kind==='epi' ? '#712B13' : '#A32D2D'; ctx.lineWidth=1.2; ctx.stroke();
+   }
+   for(const en of stage.immuneCells) drawEnemy(en);
+   ctx.fillStyle='#993c1d';
+   for(const s of stage.shots){ ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }
+ }
+
+ /* ---------------- 耐性大腸菌 endless: survive the bloodstream, time = score ---------------- */
+ function runBloodstreamEndless(){
+   player.x=W/2; player.y=H/2;
+   stage={ mode:'blood', immuneCells:[], spawnTimer:60, startTime:Date.now(), pressure:0 };
+   for(let i=0;i<3;i++) stage.immuneCells.push(spawnImmuneCell());
+   actionBtn.classList.remove('visible');
+   hudTitle.innerHTML='血流を生き延びろ<span>画面の上側にとどまって血流に逆らえ。生き残った時間がスコアになる。</span>';
+   counterEl.textContent='生存 0.0秒';
+   showLine('指で押さえて上側にとどまり、血流に逆らい続けよう',player.x,player.y-60);
+ }
+ function updateBloodstreamEndless(){
+   const elapsed=(Date.now()-stage.startTime)/1000;
+   score=Math.floor(elapsed*10);
+
+   const safeLine=H*0.55;
+   stage.pressure=Math.max(0,Math.min(100, stage.pressure + (player.y<safeLine ? -0.5 : 0.35)));
+   counterEl.textContent='生存 '+elapsed.toFixed(1)+'秒　危険度 '+Math.round(stage.pressure)+'%';
+
+   stage.spawnTimer--;
+   if(stage.spawnTimer<=0 && stage.immuneCells.length<4){
+     stage.immuneCells.push(spawnImmuneCell());
+     stage.spawnTimer=90+Math.random()*60;
+   }
+   for(const en of stage.immuneCells){
+     en.wanderT--;
+     const dp=Math.hypot(player.x-en.x, player.y-en.y);
+     if(dp<160){ en.ang=Math.atan2(player.y-en.y,player.x-en.x); en.x+=Math.cos(en.ang)*1.2; en.y+=Math.sin(en.ang)*1.2; }
+     else { if(en.wanderT<=0){ en.ang=Math.random()*Math.PI*2; en.wanderT=70+Math.random()*40; } en.x+=Math.cos(en.ang)*0.6; en.y+=Math.sin(en.ang)*0.6; }
+     en.x=Math.max(20,Math.min(W-20,en.x)); en.y=Math.max(20,Math.min(H-20,en.y)); en.wob+=0.15;
+     const d=Math.hypot(player.x-en.x, player.y-en.y);
+     if(d<player.r+en.r && invuln<=0){
+       invuln=40; hitFlash=14;
+       showLine('免疫細胞に捕まった、押し流される！',player.x,player.y-40);
+       stage.pressure=Math.min(100,stage.pressure+15);
+     }
+   }
+   if(stage.pressure>=100 && !gameFinished){ onSweptAway(elapsed); }
+ }
+ function drawBloodstreamEndless(){
+   ctx.strokeStyle='rgba(180,60,60,0.15)'; ctx.lineWidth=2;
+   for(let i=0;i<5;i++){ const x=40+i*((W-80)/4); ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+   const safeLine=H*0.55;
+   ctx.strokeStyle='rgba(94,202,165,0.5)'; ctx.setLineDash([6,6]); ctx.lineWidth=1.5;
+   ctx.beginPath(); ctx.moveTo(0,safeLine); ctx.lineTo(W,safeLine); ctx.stroke();
+   ctx.setLineDash([]);
+   for(const en of stage.immuneCells) drawEnemy(en);
+ }
+ function onSweptAway(elapsed){
+   gameFinished=true;
+   setTimeout(()=>{
+     clearTitle.textContent='血流に押し流された…';
+     clearBody.textContent='生存時間 '+elapsed.toFixed(1)+'秒、スコア '+score+' 点。排出ポンプ・bla・CTX-M・NDM-1を武器に、免疫の急流にどこまで抗えるかを競う記録である。';
+     actionBtn.classList.remove('visible');
+     clearPanel.style.display='flex';
+   },500);
+ }
+
+ /* ---------------- 耐性緑膿菌 endless: temporary biofilm bases ---------------- */
+ function spawnBiofilm(x,y,first){ return {x,y,r:first?62:52,age:0,lifetime:first?900:780,first:!!first}; }
+ function runLungEndless(){
+   player.x=W/2; player.y=H/2;
+   stage={ mode:'lung', biofilms:[], building:null, immuneCells:[], shots:[], spawnTimer:70, tickTimer:0, pressure:0, frame:0, nextBuildAt:0 };
+   for(let i=0;i<2;i++) stage.immuneCells.push(spawnImmuneCell());
+   actionBtn.textContent='固める／攻撃';
+   actionBtn.classList.add('visible');
+   hudTitle.innerHTML='肺で暴れろ<span>バイオフィルムは一時的な拠点。大きく広がった後、徐々に縮んで消える。</span>';
+   counterEl.textContent='スコア +0　バイオフィルム：準備OK';
+   showLine('バイオフィルムは強い。でも永続ではない！',player.x,player.y-60);
+ }
+ function inAnyBiofilm(){
+   for(const b of stage.biofilms){ if(Math.hypot(player.x-b.x,player.y-b.y)<b.r) return b; }
+   return null;
+ }
+ function biofilmStatus(){
+   if(stage.building) return '形成中';
+   if(stage.biofilms.length){ const b=stage.biofilms[0]; return '残り '+Math.max(0,((b.lifetime-b.age)/60)).toFixed(1)+'秒'; }
+   const wait=Math.max(0,stage.nextBuildAt-stage.frame);
+   return wait>0?'再形成まで '+(wait/60).toFixed(1)+'秒':'準備OK';
+ }
+ function updateLungEndless(){
+   stage.frame++;
+   const anchor=inAnyBiofilm();
+
+   // バイオフィルムは「無敵の永久基地」にならない。時間とともに縮小・消失する。
+   for(let i=stage.biofilms.length-1;i>=0;i--){
+     const b=stage.biofilms[i]; b.age++;
+     if(b.age>=b.lifetime){
+       burst(b.x,b.y,'#9FE1CB',14); showLine('バイオフィルムが崩れた！',b.x,b.y-35); stage.biofilms.splice(i,1);
+     }
+   }
+
+   const currentAnchor=inAnyBiofilm();
+   stage.pressure=Math.max(0,Math.min(100, stage.pressure + (currentAnchor ? -0.7 : 0.3)));
+   counterEl.textContent='スコア +'+score+'　排出リスク '+Math.round(stage.pressure)+'%　バイオフィルム：'+biofilmStatus();
+
+   if(currentAnchor){
+     stage.tickTimer++;
+     if(stage.tickTimer>=20){ stage.tickTimer=0; score+=5; }
+   }
+
+   if(actionHeld){
+     if(currentAnchor){
+       if(!player.shotCooldown || player.shotCooldown<=0){
+         if(stage.immuneCells.length){
+           let nearest=stage.immuneCells[0], bd=Infinity;
+           for(const en of stage.immuneCells){ const d=Math.hypot(player.x-en.x,player.y-en.y); if(d<bd){bd=d; nearest=en;} }
+           const ang=Math.atan2(nearest.y-player.y, nearest.x-player.x);
+           stage.shots.push({x:player.x,y:player.y,vx:Math.cos(ang)*6,vy:Math.sin(ang)*6,r:5});
+         }
+         player.shotCooldown=16;
+       }
+     } else if(!stage.building && stage.frame>=stage.nextBuildAt && stage.biofilms.length===0){
+       stage.building={x:player.x,y:player.y,charge:0};
+       showLine('ここにバイオフィルムを築く！',player.x,player.y-45);
+     }
+   } else if(stage.building){
+     stage.building=null; // let go too early, progress lost
+   }
+   if(player.shotCooldown>0) player.shotCooldown--;
+
+   if(stage.building){
+     stage.building.charge++;
+     showLine('バイオフィルムを形成中… '+Math.round(stage.building.charge/55*100)+'%',stage.building.x,stage.building.y-30);
+     if(stage.building.charge>=55){
+       stage.biofilms.push(spawnBiofilm(stage.building.x,stage.building.y,stage.biofilms.length===0));
+       stage.nextBuildAt=stage.frame+300; // 一度作ったら約5秒は再形成不可
+       burst(stage.building.x,stage.building.y,'#5DCAA5',16);
+       showLine('大きなバイオフィルム完成！ しばらく再形成できない',stage.building.x,stage.building.y-40);
+       stage.building=null;
+     }
+   }
+
+   stage.spawnTimer--;
+   if(stage.spawnTimer<=0 && stage.immuneCells.length<4){
+     stage.immuneCells.push(spawnImmuneCell());
+     stage.spawnTimer=110+Math.random()*60;
+   }
+   for(const en of stage.immuneCells){
+     en.wanderT--;
+     const dp=Math.hypot(player.x-en.x, player.y-en.y);
+     if(dp<150 && !currentAnchor){ en.ang=Math.atan2(player.y-en.y,player.x-en.x); en.x+=Math.cos(en.ang)*1.1; en.y+=Math.sin(en.ang)*1.1; }
+     else { if(en.wanderT<=0){ en.ang=Math.random()*Math.PI*2; en.wanderT=70+Math.random()*40; } en.x+=Math.cos(en.ang)*0.6; en.y+=Math.sin(en.ang)*0.6; }
+     en.x=Math.max(20,Math.min(W-20,en.x)); en.y=Math.max(20,Math.min(H-20,en.y)); en.wob+=0.15;
+   }
+   for(let i=stage.shots.length-1;i>=0;i--){
+     const s=stage.shots[i]; s.x+=s.vx; s.y+=s.vy;
+     if(s.x<0||s.x>W||s.y<0||s.y>H){ stage.shots.splice(i,1); continue; }
+     for(let j=stage.immuneCells.length-1;j>=0;j--){
+       const en=stage.immuneCells[j];
+       const d=Math.hypot(s.x-en.x, s.y-en.y);
+       if(d<en.r+s.r){
+         stage.shots.splice(i,1); stage.immuneCells.splice(j,1);
+         score+=150; burst(en.x,en.y,'#D85A30',8); showLine('拠点から攻撃、命中！',en.x,en.y-30); break;
+       }
+     }
+   }
+   if(stage.pressure>=100 && !gameFinished){ onExpelled(); }
+ }
+ function drawLungEndless(){
+   for(const b of stage.biofilms){
+     const remain=1-b.age/b.lifetime;
+     const r=20+(b.r-20)*Math.max(0,remain);
+     const alpha=0.10+0.30*Math.max(0,remain);
+     ctx.save();
+     ctx.beginPath(); ctx.arc(b.x,b.y,r,0,Math.PI*2);
+     ctx.fillStyle='#5DCAA5'; ctx.globalAlpha=alpha; ctx.fill();
+     ctx.globalAlpha=Math.min(.85,alpha+0.25); ctx.strokeStyle='#085041'; ctx.lineWidth=1.5; ctx.stroke();
+     // 内側の菌体・粘液感。時間とともに薄くなる。
+     ctx.globalAlpha=Math.min(.5,alpha+0.05);
+     for(let k=0;k<8;k++){ const a=k*Math.PI*2/8; const rr=r*(.35+.1*Math.sin(k)); ctx.beginPath(); ctx.arc(b.x+Math.cos(a)*rr,b.y+Math.sin(a)*rr,3+2*remain,0,Math.PI*2); ctx.fill(); }
+     ctx.restore();
+   }
+   if(stage.building){
+     const pct=Math.min(1,stage.building.charge/55);
+     ctx.beginPath(); ctx.arc(stage.building.x,stage.building.y,62*pct,0,Math.PI*2);
+     ctx.fillStyle='#9FE1CB'; ctx.globalAlpha=0.5; ctx.fill(); ctx.globalAlpha=1;
+     ctx.strokeStyle='#085041'; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+   }
+   for(const en of stage.immuneCells) drawEnemy(en);
+   ctx.fillStyle='#993c1d';
+   for(const s of stage.shots){ ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }
+ }
+ function onExpelled(){
+   gameFinished=true;
+   setTimeout(()=>{
+     clearTitle.textContent='呼吸器系から排出された…';
+     clearBody.textContent='スコア '+score+' 点。バイオフィルムを拠点に肺の中で暴れ続けた記録である。線毛・鞭毛・ムコイド・バイオフィルムに加え、OprD欠損・MexAB/OprM・AmpC過剰産生・IMP-6という武装を活かしきった。';
+     actionBtn.classList.remove('visible');
+     clearPanel.style.display='flex';
+   },500);
+ }
+
+ /* ---------------- sequence runner ---------------- */
+ function runSequence(configs, onAllDone){
+   let idx=0;
+   function next(){
+     if(idx>=configs.length){ onAllDone(); return; }
+     const cfg=configs[idx++];
+     runItemStage(cfg, next);
+   }
+   next();
+ }
+ function showChoice(title, desc, labelA, labelB, onA, onB){
+   choiceTitle.textContent=title;
+   choiceDesc.textContent=desc;
+   choiceABtn.textContent=labelA;
+   choiceBBtn.textContent=labelB;
+   choicePanel.style.display='flex';
+   choiceABtn.onclick=()=>{ choicePanel.style.display='none'; onA(); };
+   choiceBBtn.onclick=()=>{ choicePanel.style.display='none'; onB(); };
+ }
+ function showEnding(title, body){
+   gameFinished=true;
+   burst(player.x,player.y,'#FAC775',16);
+   setTimeout(()=>{
+     clearTitle.textContent=title;
+     clearBody.textContent=body;
+     clearPanel.style.display='flex';
+   },600);
+ }
+
+ /* ---------------- data: the branching tree ---------------- */
+ function mk(label,hint,hazardLine,hazardName,itemEffect,paletteIdx,itemGot,completionBanner,opts){
+   opts=opts||{};
+   const p=PALETTE[paletteIdx%PALETTE.length];
+   return {type:'resist',label,hint,hazardLine,hazardName,itemEffect,hazardColor:p.c,hazardTextColor:p.t,itemGot,completionBanner,
+     itemCount:opts.itemCount||4, itemColor:opts.itemColor||p.c, spawnMode:opts.spawnMode||'ground',
+     hazardCount:3, effect:opts.effect||null};
+ }
+ function mkRescue(label,hint,hazardNames,allyCount,itemGot,itemEffect,completionBanner,opts){
+   opts=opts||{};
+   return {type:'rescue', label, hint, hazardNames, allyCount:allyCount||4, itemGot, itemEffect, completionBanner, effect:opts.effect||null};
+ }
+ function runPhaseSequence(phases, onAllDone){
+   let idx=0;
+   function next(){
+     if(idx>=phases.length){ onAllDone(); return; }
+     const cfg=phases[idx++];
+     if(cfg.type==='rescue') runRescuePhase(cfg, next);
+     else runItemStage(cfg, next);
+   }
+   next();
+ }
+ function spawnSafeZone(label){ return {x:40+Math.random()*(W-80), y:160+Math.random()*(H-320), r:26, wobble:Math.random()*Math.PI*2, label}; }
+ function spawnAlly(){ return {x:30+Math.random()*(W-60), y:150+Math.random()*(H-320), r:13, wobble:Math.random()*Math.PI*2}; }
+ function runRescuePhase(cfg, onDone){
+   player.x=W/2; player.y=H/2;
+   stage={
+     mode:'rescue',
+     safeZones: cfg.hazardNames.map(n=>spawnSafeZone(n)),
+     allies:[], nutrients:[],
+     rescued:0, target: cfg.allyCount||4,
+     onComplete:function(){
+       showBanner(cfg.completionBanner);
+       applyEffect(cfg.effect);
+       player.items.push({name:cfg.itemGot, effect:cfg.itemEffect||'（獲得）'});
+       cfg.hazardNames.forEach(n=>{ if(player.immunities.indexOf(n)===-1) player.immunities.push(n); });
+       queueTransition(onDone);
+     }
+   };
+   for(let i=0;i<stage.target+1;i++) stage.allies.push(spawnAlly());
+   for(let i=0;i<5;i++) stage.nutrients.push(spawnNutrient());
+   hudTitle.innerHTML=cfg.label+'<span>'+cfg.hint+'</span>';
+   counterEl.textContent='救出 0 / '+stage.target;
+   showLine(cfg.hint,player.x,player.y-60);
+ }
+ function updateRescuePhase(){
+   player.hp=Math.max(0,player.hp-HP_DECAY);
+   updateHpBar();
+   if(player.hp<=0 && !gameFinished){ onStarved(); return; }
+
+   for(let i=stage.nutrients.length-1;i>=0;i--){
+     const n=stage.nutrients[i]; n.wobble+=0.06;
+     const d=Math.hypot(player.x-n.x, player.y-n.y);
+     if(d<player.r+n.r){
+       stage.nutrients.splice(i,1); stage.nutrients.push(spawnNutrient());
+       player.hp=Math.min(100,player.hp+HP_NUTRIENT); updateHpBar();
+       burst(n.x,n.y,'#F3DDA8',5);
+     }
+   }
+   for(const z of stage.safeZones) z.wobble+=0.03;
+
+   for(let i=stage.allies.length-1;i>=0;i--){
+     const a=stage.allies[i]; a.wobble+=0.05;
+     const d=Math.hypot(player.x-a.x, player.y-a.y);
+     if(d<player.r+a.r){
+       stage.allies.splice(i,1); stage.rescued++;
+       counterEl.textContent='救出 '+stage.rescued+' / '+stage.target;
+       burst(a.x,a.y,'#7F77DD',7);
+       showLine('仲間を救出した！',a.x,a.y-25);
+     }
+   }
+   if(stage.rescued>=stage.target && !transitioning){ stage.onComplete(); }
+ }
+ function drawRescuePhase(){
+   for(const z of stage.safeZones){
+     const bob=Math.sin(z.wobble)*2;
+     ctx.beginPath(); ctx.arc(z.x,z.y+bob,z.r,0,Math.PI*2);
+     ctx.fillStyle='#9FE1CB'; ctx.globalAlpha=0.5; ctx.fill(); ctx.globalAlpha=1;
+     ctx.strokeStyle='#085041'; ctx.lineWidth=1; ctx.stroke();
+     ctx.fillStyle='#085041'; ctx.font='9px "Noto Sans JP",sans-serif'; ctx.textAlign='center';
+     ctx.fillText(z.label,z.x,z.y+bob+3); ctx.textAlign='left';
+   }
+   ctx.fillStyle='#F3DDA8';
+   for(const n of stage.nutrients){ const bob=Math.sin(n.wobble)*2; ctx.beginPath(); ctx.arc(n.x,n.y+bob,n.r,0,Math.PI*2); ctx.fill(); }
+   for(const a of stage.allies){
+     const bob=Math.sin(a.wobble)*2;
+     ctx.beginPath(); ctx.arc(a.x,a.y+bob,a.r,0,Math.PI*2);
+     ctx.fillStyle='#7F77DD'; ctx.fill();
+     ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.stroke();
+   }
+ }
+
+ const COMMON_INTRO=[
+   mk('浸透圧に耐えろ','浸透圧を避けながら、落ちている有機物を拾い集めよう。','浸透圧だ、危ない！','浸透圧','浸透圧への耐性',5,'細胞壁','細胞壁を手に入れた'),
+   mkRescue('仲間を救出せよ','浸透圧に強くなった。近くで力尽きかけている仲間を救おう。',['浸透圧'],4,'外膜','外膜への足がかり','外膜を手に入れた'),
+ ];
+
+ const ECOLI_BASE=[
+   mk('カタラーゼ','H2O2を避けながらカタラーゼの材料を拾い集めろ。','H2O2だ、危ない！','H2O2','H2O2への耐性',0,'カタラーゼ','カタラーゼを手に入れた'),
+   mkRescue('仲間を救出せよ','H2O2を分解できるようになった。H2O2に晒された仲間を救おう。',['H2O2'],4,'線毛','接着力UP・押し流されにくい','線毛を手に入れた（表面にくっつきやすくなった）',{effect:'pili'}),
+   mkRescue('仲間を救出せよ','接着できるようになった。尿の流れに流されかけている仲間を救おう。',['尿の流れ'],4,'鞭毛（周毛）','移動速度UP','鞭毛（周毛）を手に入れた（動きが良くなった）',{effect:'flagella-peri'}),
+ ];
+ const RESISTANT_ECOLI=[
+   mk('排出ポンプ','抗菌薬の蓄積を避けながら排出ポンプの部品を拾い集めろ。','抗菌薬が蓄積する、危ない！','抗菌薬蓄積','抗菌薬の蓄積への耐性',3,'排出ポンプ','排出ポンプを手に入れた'),
+   mkRescue('仲間を救出せよ','排出できるようになった。抗菌薬に囲まれた仲間を救おう。',['抗菌薬蓄積'],4,'bla','ペニシリンへの耐性','blaを手に入れた'),
+   mkRescue('仲間を救出せよ','ペニシリンを分解できるようになった。ペニシリンに晒された仲間を救おう。',['ペニシリン'],4,'CTX-M','広域セフェムへの耐性','CTX-Mを手に入れた'),
+   mkRescue('仲間を救出せよ','CTX-Mでセファゾリン・セフタジジム・セファロスポリンを分解できるようになった。それらに晒された仲間をまとめて救おう。',['セファゾリン','セフタジジム','セファロスポリン'],5,'NDM-1','カルバペネムへの耐性','NDM-1を手に入れた'),
+ ];
+ const EHEC_CHAIN=[
+   mk('O157','胃酸を避けながらO157型の材料を拾い集めろ。','胃酸だ、危ない！','胃酸','胃酸への耐性（血清型確立）',3,'O157','O157を手に入れた'),
+   mkRescue('仲間を救出せよ','血清型を確立した。胃酸に晒された仲間を救おう。',['胃酸'],4,'III型分泌装置','エフェクター注入能','III型分泌装置を手に入れた'),
+   mkRescue('仲間を救出せよ','注入装置を得た。腸管粘液に阻まれている仲間を救おう。',['腸管粘液'],4,'ベロ毒素','全身毒性の獲得','ベロ毒素を手に入れた'),
+ ];
+ const PSEUDOMONAS_BASE=[
+   mk('線毛','乾燥を避けながら線毛の材料を拾い集めろ。','乾燥だ、危ない！','乾燥','接着力UP・押し流されにくい',0,'線毛','線毛を手に入れた（表面にくっつきやすくなった）',{effect:'pili'}),
+   mkRescue('仲間を救出せよ','接着できるようになった。乾燥に晒された仲間を救おう。',['乾燥'],4,'鞭毛（単毛）','移動速度UP','鞭毛（単毛）を手に入れた（動きが良くなった）',{effect:'flagella-mono'}),
+ ];
+ const PSEUDOMONAS_RESISTANCE=[
+   mk('ムコイド','貪食を避けながらムコイドの材料を拾い集めろ。','貪食されそう！','貪食','貪食への耐性',2,'ムコイド','ムコイドを手に入れた'),
+   mkRescue('仲間を救出せよ','莢膜を得た。貪食されかけている仲間を救おう。',['貪食'],4,'バイオフィルム','抗菌薬の浸透への耐性','バイオフィルムを手に入れた'),
+   mkRescue('仲間を救出せよ','保護膜を得た。様々な抗菌薬の浸透に晒された仲間を救おう。',['抗菌薬浸透'],4,'OprD欠損','イミペネムへの耐性','OprD欠損を手に入れた'),
+   mkRescue('仲間を救出せよ','孔を失った。イミペネムに晒された仲間を救おう。',['イミペネム'],4,'MexAB/OprM','広範な抗菌薬排出能','MexAB/OprMを手に入れた'),
+   mkRescue('仲間を救出せよ','排出できるようになった。様々な抗菌薬に晒された仲間を救おう。',['抗菌薬全般'],4,'AmpC過剰産生','セファロスポリンへの耐性','AmpC過剰産生を手に入れた'),
+   mkRescue('仲間を救出せよ','AmpCでセファロスポリン系全般を分解できるようになった。それらに晒された仲間をまとめて救おう。',['セフタジジム','セファロスポリン全般'],5,'IMP-6','カルバペネムへの耐性（強化）','IMP-6を手に入れた'),
+ ];
+
+ function startGame(){
+   introActive=false; introPanel.style.display='none';
+   player.stateName='GPC';
+   runPhaseSequence(COMMON_INTRO, ()=>{
+     player.color='#D4453F';
+     player.stateName='GNR（グラム陰性桿菌）';
+     playEvolution('GNRに進化した', '外膜を獲得し、グラム陰性桿菌になった', ()=>{
+       showChoice('どちらに向かう？','外膜を得たグラム陰性桿菌は、次にどこへ進むか選べる。',
+         '腸へ進む（大腸菌の道）','環境中で戦う（緑膿菌の道）',
+         ()=>runPhaseSequence(ECOLI_BASE, ()=>{
+           player.stateName='大腸菌';
+           playEvolution('大腸菌、始動', 'カタラーゼ・線毛・鞭毛を身につけた', ()=>{
+             showChoice('どちらの道を選ぶ？','大腸菌は、耐性を極めるか、毒素で牙を剥くか。',
+               '耐性大腸菌の道','EHECの道',
+               ()=>runPhaseSequence(RESISTANT_ECOLI, ()=>{
+                 player.stateName='耐性大腸菌';
+                 playEvolution('耐性大腸菌、完成', '多剤耐性菌としての地位を確立した', ()=>runBloodstreamEndless());
+               }),
+               ()=>runPhaseSequence(EHEC_CHAIN, ()=>{
+                 player.stateName='EHEC';
+                 playEvolution('EHEC、完成', '腸管出血性大腸菌として完成した', ()=>runEhecEndless());
+               })
+             );
+           });
+         }),
+         ()=>runPhaseSequence(PSEUDOMONAS_BASE, ()=>{
+           player.stateName='緑膿菌';
+           playEvolution('緑膿菌、始動', '線毛・鞭毛（単毛）を身につけた', ()=>{
+             runPhaseSequence(PSEUDOMONAS_RESISTANCE, ()=>{
+               playEvolution('緑膿菌、完成', '多剤耐性緑膿菌としての武装を整えた', ()=>runLungEndless());
+             });
+           });
+         })
+       );
+     });
+   });
+ }
+ startBtn.addEventListener('click', startGame);
+ retryBtn.addEventListener('click', ()=>{ reset(); });
+
+ /* ---------------- shared update/draw ---------------- */
+ function update(){
+   if(introActive || gameFinished || evolving || choicePanel.style.display==='flex' || clearPanel.style.display==='flex' || statusPanel.style.display==='flex') return;
+   if(transitioning) return;
+
+   if(pointer){
+     const dx=pointer.x-player.x, dy=pointer.y-player.y;
+     const dist=Math.hypot(dx,dy);
+     const speed=Math.min(dist,player.speedMax);
+     if(dist>2){ player.x+=dx/dist*speed; player.y+=dy/dist*speed; player.angle=Math.atan2(dy,dx); }
+   }
+   player.x=Math.max(player.r,Math.min(W-player.r,player.x));
+   player.y=Math.max(80,Math.min(H-80,player.y));
+
+   if(hitFlash>0) hitFlash--;
+   if(invuln>0) invuln--;
+
+   if(stage && stage.mode==='item') updateItemStage();
+   else if(stage && stage.mode==='rescue') updateRescuePhase();
+   else if(stage && stage.mode==='ehec') updateEhecEndless();
+   else if(stage && stage.mode==='blood') updateBloodstreamEndless();
+   else if(stage && stage.mode==='lung') updateLungEndless();
+
+   if(speech){ speech.life--; if(speech.life<=0) speech=null; }
+   for(let i=particles.length-1;i>=0;i--){
+     const p=particles[i]; p.x+=Math.cos(p.a)*p.sp; p.y+=Math.sin(p.a)*p.sp; p.life--;
+     if(p.life<=0) particles.splice(i,1);
+   }
+ }
+
+ function drawBacillus(x,y,angle,r,color){
+   const len=r*2.3, thick=r*1.25;
+   ctx.save();
+   ctx.translate(x,y); ctx.rotate(angle);
+
+   if(player.hasFlagella){
+     const t=Date.now()/200;
+     ctx.strokeStyle='rgba(60,52,40,0.55)'; ctx.lineWidth=1.2; ctx.lineCap='round';
+     if(player.flagellaType==='monotrichous'){
+       const wig=Math.sin(t)*6;
+       ctx.beginPath(); ctx.moveTo(-len/2,0);
+       ctx.quadraticCurveTo(-len/2-r*1.4,wig,-len/2-r*2.6,-wig*0.6);
+       ctx.stroke();
+     } else if(player.flagellaType==='peritrichous'){
+       for(let i=0;i<7;i++){
+         const a=(i/7)*Math.PI*2;
+         const bx=Math.cos(a)*(thick/2), by=Math.sin(a)*(thick/2);
+         const wig=Math.sin(t+i)*4;
+         ctx.beginPath(); ctx.moveTo(bx,by);
+         ctx.quadraticCurveTo(bx+Math.cos(a)*r*1.1+wig*0.3, by+Math.sin(a)*r*1.1+wig, bx+Math.cos(a)*r*1.8, by+Math.sin(a)*r*1.8);
+         ctx.stroke();
+       }
+     }
+   }
+   if(player.hasPili && player.piliAngles){
+     ctx.strokeStyle='rgba(60,52,40,0.5)'; ctx.lineWidth=1; ctx.lineCap='round';
+     for(const a of player.piliAngles){
+       const bx=Math.cos(a)*(thick/2)*0.9, by=Math.sin(a)*(thick/2)*0.9;
+       ctx.beginPath(); ctx.moveTo(bx,by);
+       ctx.lineTo(bx+Math.cos(a)*r*0.5, by+Math.sin(a)*r*0.5);
+       ctx.stroke();
+     }
+   }
+
+   ctx.beginPath(); ctx.roundRect(-len/2,-thick/2,len,thick,thick/2);
+   ctx.fillStyle=color; ctx.fill();
+   ctx.lineWidth=1.5; ctx.strokeStyle='rgba(0,0,0,0.18)'; ctx.stroke();
+   ctx.fillStyle='rgba(0,0,0,0.55)';
+   ctx.beginPath(); ctx.arc(len*0.12,-thick*0.16,thick*0.13,0,Math.PI*2); ctx.fill();
+   ctx.beginPath(); ctx.arc(len*0.30,-thick*0.16,thick*0.13,0,Math.PI*2); ctx.fill();
+   ctx.restore();
+ }
+ function drawEnemy(en){
+   ctx.fillStyle='#EAF3DE'; ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=1.2;
+   ctx.beginPath();
+   const bumps=6;
+   for(let i=0;i<=bumps;i++){
+     const a=(i/bumps)*Math.PI*2;
+     const rr=en.r+Math.sin(a*3+en.wob)*3;
+     const px=en.x+Math.cos(a)*rr, py=en.y+Math.sin(a)*rr;
+     if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+   }
+   ctx.closePath(); ctx.fill(); ctx.stroke();
+ }
+ function roundRectPath(x,y,w,h,r){
+   ctx.beginPath();
+   ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+   ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+ }
+ function draw(){
+   ctx.clearRect(0,0,W,H);
+   ctx.fillStyle='#f5f1e8'; ctx.fillRect(0,0,W,H);
+   if(introActive) return;
+
+   if(stage && stage.mode==='item') drawItemStage();
+   else if(stage && stage.mode==='rescue') drawRescuePhase();
+   else if(stage && stage.mode==='ehec') drawEhecEndless();
+   else if(stage && stage.mode==='blood') drawBloodstreamEndless();
+   else if(stage && stage.mode==='lung') drawLungEndless();
+
+   let pcolor = hitFlash>0 ? '#FAC775' : player.color;
+   drawBacillus(player.x,player.y,player.angle,player.r,pcolor);
+
+   for(const p of particles){
+     ctx.globalAlpha=Math.max(0,p.life/40); ctx.fillStyle=p.color;
+     ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill();
+     ctx.globalAlpha=1;
+   }
+   if(speech){
+     ctx.globalAlpha=Math.min(1,speech.life/20);
+     const padding=10, maxW=Math.min(240,W-40);
+     ctx.font='13px "Noto Sans JP",sans-serif';
+     const bw=Math.min(maxW,ctx.measureText(speech.text).width+padding*2);
+     const bx=Math.max(10,Math.min(W-bw-10,speech.x-bw/2));
+     const by=Math.max(80,speech.y-50);
+     ctx.fillStyle='#fdfaf3'; ctx.strokeStyle='#d8cfb8'; ctx.lineWidth=1;
+     roundRectPath(bx,by,bw,32,10); ctx.fill(); ctx.stroke();
+     ctx.fillStyle='#3c3428';
+     ctx.fillText(speech.text,bx+padding,by+20,bw-padding*2);
+     ctx.globalAlpha=1;
+   }
+ }
+
+ function loop(){ update(); draw(); requestAnimationFrame(loop); }
+ reset();
+ loop();
+})();
+</script>
+</body>
+</html>
