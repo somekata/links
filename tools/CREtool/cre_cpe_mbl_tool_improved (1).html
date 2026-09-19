@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7a2b45">
+<title>CRE → CPE / MBL 疑い度サポート（デモ版）</title>
+<style>
+:root{
+  --ink:#20282b;
+  --muted:#5f6d70;
+  --bg:#f1efe9;
+  --paper:#ffffff;
+  --line:#dcd8ce;
+  --accent:#8a2f4d;
+  --accent-dark:#6c2039;
+  --accent-soft:#f7e9ee;
+  --steel:#3c5a63;
+  --steel-soft:#eaf0f1;
+  --low:#1f7a4d;
+  --low-bg:#e3f3e8;
+  --mid:#a35a06;
+  --mid-bg:#fbedd6;
+  --high:#b3253a;
+  --high-bg:#fbe3e6;
+  --warn:#93590a;
+  --warn-bg:#faedd2;
+  --warn-line:#e4c07a;
+  --err:#b3253a;
+  --shadow:0 10px 26px rgba(32,40,43,.08);
+  --radius-l:18px;
+  --radius-m:12px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Noto Sans JP","Hiragino Sans","Segoe UI",system-ui,sans-serif;
+  line-height:1.7;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.mono{font-family:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace}
+
+.container{max-width:760px;margin:0 auto;padding:0 16px 48px}
+
+.demo-banner{
+  background:var(--warn-bg);
+  border-bottom:1px solid var(--warn-line);
+  color:var(--warn);
+  padding:10px 16px;
+  font-size:.86rem;
+  font-weight:700;
+  text-align:center;
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+.demo-banner span{font-weight:400;color:#7a5710}
+
+header{
+  padding:34px 4px 22px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:22px;
+}
+.eyebrow{
+  font-size:.82rem;
+  color:var(--accent-dark);
+  font-weight:700;
+  margin:0 0 10px;
+}
+h1{
+  font-size:clamp(1.5rem,4.4vw,2.05rem);
+  line-height:1.35;
+  margin:0 0 12px;
+  font-weight:800;
+  letter-spacing:.01em;
+}
+h1 .arrow{color:var(--accent);font-weight:400;padding:0 .15em}
+.subtitle{margin:0 0 16px;color:var(--muted);font-size:.95rem;max-width:60ch}
+.notice{
+  border-left:3px solid var(--accent);
+  background:var(--accent-soft);
+  color:#5a1f34;
+  border-radius:0 var(--radius-m) var(--radius-m) 0;
+  padding:13px 16px;
+  font-size:.87rem;
+}
+.entry-h3{font-size:.95rem;font-weight:800;margin:18px 0 8px}
+.entry-p{font-size:.9rem;color:var(--muted);margin:0 0 4px}
+.entry-ol{margin:0;padding-left:1.3rem;font-size:.9rem;color:var(--ink)}
+.entry-ol li{margin:6px 0}
+.entry-ol b{color:var(--accent-dark)}
+
+.consent-box{
+  margin-top:22px;
+  border:1.5px solid var(--warn-line);
+  background:var(--warn-bg);
+  border-radius:var(--radius-m);
+  padding:16px;
+}
+.consent-box strong{display:block;color:var(--warn);font-size:.92rem;margin-bottom:6px}
+.consent-box p{margin:0 0 12px;font-size:.9rem;color:#5a4110;font-weight:700}
+.consent-check{
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;min-height:44px;
+  font-size:.92rem;font-weight:700;color:var(--ink);
+}
+.consent-check input{width:20px;height:20px;flex:0 0 auto;cursor:pointer;accent-color:var(--accent)}
+
+button:disabled{background:#cfc9bb;color:#8b8577;cursor:not-allowed}
+button:disabled:hover{background:#cfc9bb}
+
+.flow-legend{
+  display:flex;flex-wrap:wrap;gap:6px 14px;
+  margin-top:18px;font-size:.8rem;color:var(--muted);
+}
+.flow-legend b{color:var(--ink)}
+
+.flow{position:relative;padding-left:38px}
+.flow::before{
+  content:"";
+  position:absolute;
+  left:14px;top:6px;bottom:6px;
+  width:2px;
+  background:var(--line);
+}
+.step{position:relative;margin-bottom:20px}
+.step-num{
+  position:absolute;
+  left:-38px;top:0;
+  width:29px;height:29px;
+  border-radius:50%;
+  background:var(--paper);
+  border:2px solid var(--accent);
+  color:var(--accent-dark);
+  font-weight:800;
+  font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;
+}
+.step.done .step-num{background:var(--accent);color:#fff}
+.step.locked .step-num{border-color:var(--line);color:var(--muted)}
+
+.card{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--radius-l);
+  box-shadow:var(--shadow);
+  padding:22px;
+}
+.card h2{font-size:1.05rem;margin:0 0 5px;font-weight:800}
+.card .step-tag{
+  display:inline-block;font-size:.72rem;font-weight:800;color:var(--accent-dark);
+  background:var(--accent-soft);border-radius:99px;padding:2px 9px;margin-bottom:8px;
+}
+.desc{color:var(--muted);font-size:.86rem;margin:0 0 16px}
+
+.locked-card{
+  background:#f7f5f0;border:1px dashed var(--line);border-radius:var(--radius-l);
+  padding:22px;color:var(--muted);font-size:.88rem;
+}
+.locked-card h2{color:var(--muted);font-size:1.02rem;margin:0 0 6px;font-weight:800}
+
+.field{
+  border:1.5px solid var(--line);
+  border-radius:var(--radius-m);
+  padding:12px 14px;
+  margin:11px 0;
+  transition:border-color .15s, background .15s;
+}
+.field:focus-within{border-color:var(--accent)}
+.field.invalid{border-color:var(--err);background:#fdf1f2}
+.field label{display:block;font-weight:700;font-size:.9rem;margin-bottom:8px}
+.field .hint{display:block;font-weight:400;color:var(--muted);font-size:.78rem;margin-top:3px}
+.field-msg{display:none;color:var(--err);font-size:.78rem;font-weight:700;margin-top:7px}
+.field.invalid .field-msg{display:block}
+
+select{
+  width:100%;
+  min-height:46px;
+  font:inherit;font-size:.95rem;
+  padding:10px 12px;
+  border:1px solid #c9c3b6;
+  border-radius:10px;
+  background:#fff;
+  color:var(--ink);
+  cursor:pointer;
+}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0 0}
+button{
+  border:0;border-radius:12px;
+  padding:13px 20px;
+  font:800 .96rem inherit;
+  cursor:pointer;
+  min-height:48px;
+}
+.primary{background:var(--accent);color:#fff;flex:1;min-width:180px}
+.primary:hover{background:var(--accent-dark)}
+.secondary{background:#eee9e0;color:var(--ink)}
+.secondary:hover{background:#e4ded2}
+.tertiary{background:var(--steel-soft);color:var(--steel)}
+.tertiary:hover{background:#dfe9ea}
+
+.global-warning{
+  display:none;
+  background:var(--warn-bg);
+  border:1px solid var(--warn-line);
+  color:var(--warn);
+  border-radius:var(--radius-m);
+  padding:12px 14px;
+  font-size:.86rem;
+  font-weight:700;
+  margin-top:14px;
+}
+.global-warning.show{display:block}
+
+.result{display:none;margin-top:20px}
+.result.show{display:block}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.score{
+  border-radius:var(--radius-m);
+  padding:16px;
+  background:#f7f5f0;
+  border:1px solid var(--line);
+}
+.score .label{font-size:.78rem;color:var(--muted);font-weight:700}
+.score .num{font-size:2rem;font-weight:800;line-height:1.15;margin:4px 0}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.76rem;font-weight:800}
+.badge.low{background:var(--low-bg);color:var(--low)}
+.badge.mid{background:var(--mid-bg);color:var(--mid)}
+.badge.high{background:var(--high-bg);color:var(--high)}
+
+.reason{
+  border-left:3px solid var(--steel);
+  background:#eef2f2;
+  padding:13px 15px;
+  border-radius:0 var(--radius-m) var(--radius-m) 0;
+  font-size:.89rem;
+}
+.checks,.hint-list{margin:12px 0 0;padding-left:1.3rem}
+.checks li,.hint-list li{margin:6px 0;font-size:.9rem}
+.hint-caveat{margin-top:12px;font-size:.83rem;color:var(--muted)}
+
+details{border-top:1px solid var(--line);margin-top:16px;padding-top:13px}
+summary{cursor:pointer;font-weight:700;font-size:.92rem}
+.small{font-size:.82rem;color:var(--muted);margin-top:8px}
+
+.action-summary{
+  border-left:3px solid var(--accent);
+  background:var(--accent-soft);
+  color:#5a1f34;
+  border-radius:0 var(--radius-m) var(--radius-m) 0;
+  padding:13px 15px;
+  font-size:.9rem;
+  margin-bottom:16px;
+}
+.action-summary strong{display:block;margin-bottom:4px;font-size:.95rem}
+
+.tabbar{
+  display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;
+  -webkit-overflow-scrolling:touch;scrollbar-width:thin;
+}
+.tabbar::-webkit-scrollbar{height:4px}
+.tab-btn{
+  flex:0 0 auto;background:#f0ece3;color:var(--muted);border:1px solid var(--line);
+  border-radius:99px;padding:9px 14px;font-size:.84rem;font-weight:700;min-height:40px;
+  white-space:nowrap;display:flex;align-items:center;gap:6px;
+}
+.tab-btn[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.rec-chip{background:#fff;color:var(--accent-dark);border-radius:99px;padding:1px 7px;font-size:.68rem;font-weight:800}
+.tab-btn[aria-selected="true"] .rec-chip{background:rgba(255,255,255,.85)}
+.tab-btn:not(.is-recommended) .rec-chip{display:none}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-box{background:#f7f5f0;border:1px solid var(--line);border-radius:var(--radius-m);padding:11px 13px}
+.stat-box .label{font-size:.74rem;color:var(--muted);font-weight:700}
+.stat-box .val{font-size:1.15rem;font-weight:800;margin-top:2px}
+
+.test-note{font-size:.85rem;color:var(--muted);margin:0 0 14px}
+
+.result-input{border:1.5px solid var(--line);border-radius:var(--radius-m);padding:13px 14px;background:#faf9f6}
+.result-input label{display:block;font-weight:700;font-size:.88rem;margin-bottom:8px}
+.result-input .row{display:flex;gap:10px;flex-wrap:wrap}
+.result-input select{flex:1;min-width:140px}
+
+.update-out{
+  display:none;margin-top:14px;border-left:3px solid var(--steel);background:#eef2f2;
+  border-radius:0 var(--radius-m) var(--radius-m) 0;padding:13px 15px;
+}
+.update-out.show{display:block}
+.update-out .num{font-size:1.6rem;font-weight:800;margin:2px 0}
+.update-out .caveat{font-size:.83rem;color:var(--muted);margin-top:6px}
+
+.refs{font-size:.78rem;color:var(--muted);line-height:1.85}
+.refs li{margin-bottom:4px}
+
+.accordion details{
+  border:1px solid var(--line);border-radius:var(--radius-m);
+  padding:12px 14px;margin:8px 0;background:#faf9f6;
+}
+.accordion summary{font-size:.92rem;font-weight:800;color:var(--accent-dark)}
+.accordion p{font-size:.88rem;color:var(--ink);margin:10px 0 0}
+
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0}
+.agent-table{border-collapse:collapse;width:100%;min-width:640px;font-size:.82rem}
+.agent-table th,.agent-table td{
+  border:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top;
+}
+.agent-table thead th{background:var(--accent-soft);color:var(--accent-dark);font-weight:800}
+.agent-table tbody th{background:#f7f5f0;font-weight:700;white-space:nowrap}
+
+footer{
+  font-size:.76rem;color:var(--muted);text-align:center;margin-top:28px;
+  padding-top:18px;border-top:1px solid var(--line);
+}
+footer p{margin:0 0 8px}
+footer .ai-note{font-size:.72rem;opacity:.85}
+
+@media(max-width:620px){
+  .container{padding:0 12px 40px}
+  header{padding:26px 2px 18px}
+  .card,.locked-card{padding:17px}
+  .result-grid{grid-template-columns:1fr}
+  .stat-row{grid-template-columns:1fr 1fr}
+  button{width:100%}
+  .flow{padding-left:32px}
+  .step-num{left:-32px;width:26px;height:26px;font-size:.82rem}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+  デモ版です。 <span>本ツールは開発中の試作品であり、実際の臨床判断には使用しないでください。</span>
+</div>
+
+<div class="container">
+
+<section class="card" id="entryPage">
+  <span class="step-tag">はじめに</span>
+  <h2 style="font-size:1.3rem">CRE → CPE / MBL 疑い度サポート（デモ版）</h2>
+  <p class="desc" style="margin-bottom:18px">開始する前に、このツールの内容と使い方をご確認ください。</p>
+
+  <h3 class="entry-h3">このツールについて</h3>
+  <p class="entry-p">CRE（カルバペネム耐性腸内細菌目細菌）として検出された菌について、感受性パターンからCPE（カルバペネマーゼ産生菌）およびMBL（メタロβラクタマーゼ）産生の「疑い度」を参考値として段階的に確認できる教育用の試作ツールです。臨床微生物検査・感染症診療に関わる方の学習やディスカッションを想定しています。</p>
+
+  <h3 class="entry-h3">構成（4ステップ）</h3>
+  <ol class="entry-ol">
+    <li><b>カルバペネムスクリーニング</b>：メロペネム/イミペネムMIC、またはエルタペネムの結果からCPE疑い度を推定します。</li>
+    <li><b>既存のβ-ラクタムからの推測</b>：アズトレオナムなど従来からの検査項目の感受性パターンから、ESBL/AmpC共産生の有無やおおまかな傾向の手がかりを確認します。</li>
+    <li><b>確認検査</b>：mCIM/eCIM、Carba NP、CDT、分子検査などの確認検査の選び方と、結果を反映した場合の疑い度の変化を確認します。</li>
+    <li><b>直接感受性（新規β-ラクタム薬）</b>：セフタジジム/アビバクタム等、新規配合剤への感受性パターンからMBL疑い度を推定します。</li>
+  </ol>
+
+  <h3 class="entry-h3">使い方</h3>
+  <ol class="entry-ol">
+    <li>ステップ1で該当する項目を選択し、「判定する」を押します（どちらか一方の入力でも判定できます）。</li>
+    <li>判定するとステップ2〜4が解放されます。実施した検査があれば、任意で追加入力してください。</li>
+    <li>各ステップの「反映する」「計算する」ボタンで、参考値の更新を確認できます。</li>
+    <li>「リセット」を押すといつでも最初からやり直せます。</li>
+  </ol>
+
+  <div class="consent-box">
+    <strong>ご利用にあたって</strong>
+    <p>本ツールは開発中の試作品です。実際の臨床判断には使用しないでください。</p>
+    <label class="consent-check">
+      <input type="checkbox" id="consentCheck" onchange="onConsentChange()">
+      <span>理解した上で使用する。</span>
+    </label>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="startBtn" disabled onclick="startTool()">開始</button>
+  </div>
+</section>
+
+<div id="mainApp" style="display:none">
+
+<header>
+  <p class="eyebrow">臨床微生物 サポートツール（デモ）</p>
+  <h1>CRE<span class="arrow">→</span>CPE / MBL 疑い度サポート</h1>
+  <p class="subtitle">カルバペネム耐性の所見から、既存のβ-ラクタムによる推測、確認検査の選び方、新規β-ラクタムへの直接感受性まで、段階的に疑い度の参考値を確認できる試作ツールです。</p>
+  <div class="notice">
+    教育・一次スクリーニング支援のためのデモです。確定診断には mCIM/eCIM、CDT、Carba NP法、または分子検査が必要です。実際の治療・報告判断には用いないでください。
+  </div>
+  <div class="flow-legend">
+    <span><b>1</b> カルバペネム耐性</span>
+    <span><b>2</b> 既存のβ-ラクタム</span>
+    <span><b>3</b> 確認検査</span>
+    <span><b>4</b> 直接感受性（新規薬剤）</span>
+  </div>
+</header>
+
+<div class="flow">
+
+  <div class="step" id="step1">
+    <div class="step-num">1</div>
+    <section class="card">
+      <span class="step-tag">カルバペネム耐性</span>
+      <h2>カルバペネムスクリーニング</h2>
+      <p class="desc">メロペネム/イミペネムMIC、またはエルタペネムのどちらか一方の入力で判定できます（日本ではエルタペネムを通常使用しないため、MIC値を先に入力できるようにしています）。</p>
+
+      <div class="field" id="field-mem">
+        <label for="mem">メロペネム / イミペネム MIC<span class="hint">任意・どちらか一方でよい</span></label>
+        <select id="mem">
+          <option value="" selected>選択してください（未入力可）</option>
+          <option value="lt2">&lt; 2 µg/mL</option>
+          <option value="ge2">≥ 2 µg/mL</option>
+        </select>
+        <div class="field-msg">メロペネム/イミペネムMIC、またはエルタペネムのどちらか一方は選択してください</div>
+      </div>
+
+      <div class="field" id="field-etp">
+        <label for="etp">エルタペネム<span class="hint">任意・日本では通常使用されません</span></label>
+        <select id="etp">
+          <option value="" selected>選択してください（未入力可）</option>
+          <option value="S">感性（S）</option>
+          <option value="R">非感性（I / R）</option>
+        </select>
+        <div class="field-msg">メロペネム/イミペネムMIC、またはエルタペネムのどちらか一方は選択してください</div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" onclick="calc()">判定する</button>
+        <button class="secondary" onclick="resetTool()">リセット</button>
+      </div>
+      <div class="global-warning" id="globalWarning">メロペネム/イミペネムMIC、またはエルタペネムのどちらか一方を選択してください。</div>
+
+      <div class="result" id="cpeResultBox">
+        <div class="score">
+          <div class="label">CPE 疑い度（参考値）</div>
+          <div class="num mono" id="cpeNum">—</div>
+          <span id="cpeBadge" class="badge">—</span>
+        </div>
+        <div class="reason" id="reason" style="margin-top:12px"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="step locked" id="step2">
+    <div class="step-num">2</div>
+    <div class="locked-card" id="step2Locked">
+      <h2>既存のβ-ラクタムからの推測</h2>
+      <p>ステップ1でカルバペネム耐性の判定を行うと、この項目が入力できるようになります。</p>
+    </div>
+    <section class="card result" id="step2Card">
+      <span class="step-tag">既存のβ-ラクタム</span>
+      <h2>既存のβ-ラクタムからの推測</h2>
+      <p class="desc">新規配合剤を使わず、従来から検査している薬剤の感受性パターンから、ESBL/AmpC共産生の有無やおおまかな傾向を推測します。カルバペネマーゼのクラス（KPC/OXA-48/MBL）を確定できる精度はありません。</p>
+
+      <div class="field">
+        <label for="atmOld">アズトレオナム</label>
+        <select id="atmOld">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cazOld">セフタジジム</label>
+        <select id="cazOld">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fepOld">セフェピム</label>
+        <select id="fepOld">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cmzOld">セフメタゾール（セファマイシン系）</label>
+        <select id="cmzOld">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tzpOld">ピペラシリン/タゾバクタム</label>
+        <select id="tzpOld">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+
+      <div class="actions">
+        <button class="tertiary" onclick="showOldDrugHints()" style="flex:1">手がかりを表示する</button>
+      </div>
+      <div class="global-warning" id="oldDrugWarning">少なくとも1項目を選択してください。該当する検査を実施していない場合はこのステップを飛ばしても構いません。</div>
+
+      <div class="result" id="oldDrugOutput">
+        <ul class="hint-list" id="oldDrugHints"></ul>
+        <p class="hint-caveat">これら5剤はカルバペネマーゼのクラス（A/B/D）を鑑別する目的で設計された指標ではなく、粗いスクリーニングやESBL/AmpC共産生の推測の補助情報にとどまります。確定にはmCIM/eCIM、CDT、または分子検査が必要です。</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="step locked" id="step3">
+    <div class="step-num">3</div>
+    <div class="locked-card" id="step3Locked">
+      <h2>確認検査：ESBL・カルバペネマーゼ・MBLの確認</h2>
+      <p>ステップ1でカルバペネム耐性の判定を行うと、この項目が入力できるようになります。</p>
+    </div>
+    <section class="card result" id="step3Card">
+      <span class="step-tag">確認検査</span>
+      <h2>確認検査：ESBL・カルバペネマーゼ・MBLの確認</h2>
+      <p class="desc">パターンに応じた確認検査の目安と、実施した検査の結果を反映した場合の疑い度の変化（参考値）を確認できます。</p>
+
+      <div class="action-summary" id="actionSummary">
+        <strong id="actionHeadline">—</strong>
+        <span id="actionDetail"></span>
+      </div>
+
+      <div class="tabbar" id="tabbar" role="tablist" aria-label="確認検査の種類"></div>
+      <div id="tabpanels"></div>
+
+      <details>
+        <summary>参考文献</summary>
+        <ol class="refs" id="refsList"></ol>
+      </details>
+    </section>
+  </div>
+
+  <div class="step locked" id="step4">
+    <div class="step-num">4</div>
+    <div class="locked-card" id="step4Locked">
+      <h2>直接感受性：新規β-ラクタム薬による評価</h2>
+      <p>ステップ1でカルバペネム耐性の判定を行うと、この項目が入力できるようになります。</p>
+    </div>
+    <section class="card result" id="step4Card">
+      <span class="step-tag">直接感受性（新規薬剤）</span>
+      <h2>直接感受性：新規β-ラクタム薬による評価</h2>
+      <p class="desc">セフタジジム/アビバクタム、メロペネム/バボルバクタム、イミペネム/レレバクタム、アズトレオナム/アビバクタム、セフィデロコルへの感受性パターンから、MBL産生の疑い度を推定します（実施可能な施設向けの参考情報です。すべて実施している必要はありません）。</p>
+
+      <div class="field" id="field-caz">
+        <label for="caz_avi">セフタジジム/アビバクタム</label>
+        <select id="caz_avi">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+      <div class="field" id="field-mvb">
+        <label for="mvb">メロペネム/バボルバクタム</label>
+        <select id="mvb">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+      <div class="field" id="field-irl">
+        <label for="irl">イミペネム/レレバクタム</label>
+        <select id="irl">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+      <div class="field" id="field-atm">
+        <label for="atm_avi">アズトレオナム/アビバクタム</label>
+        <select id="atm_avi">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+      <div class="field" id="field-cfdc">
+        <label for="cfdc">セフィデロコル</label>
+        <select id="cfdc">
+          <option value="" selected>選択してください（未実施可）</option>
+          <option value="S">感性</option>
+          <option value="R">耐性</option>
+        </select>
+      </div>
+
+      <div class="actions">
+        <button class="primary" onclick="computeDirectMbl()">疑い度を計算する</button>
+      </div>
+      <div class="global-warning" id="directWarning">少なくとも1項目を選択してください。実施していない検査がある場合は空欄のままで構いません。</div>
+
+      <div class="result" id="directResult">
+        <div class="score" style="max-width:280px">
+          <div class="label">MBL 産生疑い度（参考値）</div>
+          <div class="num mono" id="directMblNum">—</div>
+          <span id="directMblBadge" class="badge">—</span>
+        </div>
+        <ul class="checks" id="directSignals"></ul>
+        <details>
+          <summary>判定の根拠・注意点</summary>
+          <div id="directDetails" class="small"></div>
+        </details>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<section class="card" id="learnMore">
+  <span class="step-tag">もっと勉強したい方へ</span>
+  <h2>耐性機序・新規β-ラクタム薬の解説</h2>
+  <p class="desc">このツールで扱っている用語や薬剤について、もう少し詳しく知りたい方向けの参考資料です。判定には直接使いません。</p>
+
+  <h3 class="entry-h3">耐性機序の解説</h3>
+  <div class="accordion" id="mechAccordion"></div>
+
+  <h3 class="entry-h3" style="margin-top:26px">新規β-ラクタム系薬の使い分け</h3>
+  <p class="test-note">カルバペネマーゼのクラスによって有効性が大きく異なり、特にMBL（NDM・VIM・IMP）に対してはセフィデロコルを除き実質的に無効という点が最大の使い分けのポイントです。</p>
+  <div class="table-scroll">
+    <table class="agent-table" id="agentTable"></table>
+  </div>
+  <div class="accordion" id="agentAccordion" style="margin-top:14px"></div>
+  <p class="hint-caveat">mCIM/eCIM等でカルバペネマーゼ産生が確認され、分子検査等でクラスが判明した時点で、この対応表に従って選択薬を絞り込む運用が現実的です。MBL産生が疑われる、または確認された場合は、単剤のCAZ/AVIやIPM/RELは避け、セフィデロコル単剤、あるいはアズトレオナム＋CAZ/AVIなどの併用療法を検討する必要があります。</p>
+
+  <details style="margin-top:8px">
+    <summary>参考文献（耐性機序・新規薬剤）</summary>
+    <ol class="refs" id="learnRefsList"></ol>
+  </details>
+</section>
+
+</div>
+
+<footer>
+  <p>本ツールはデモ版であり、確率的な「疑い度」を示す参考プロトタイプです。地域疫学・菌種・検査室でのバリデーション等により数値は変動し得ます。実際の治療・感染対策の判断には使用しないでください。</p>
+  <p class="ai-note">本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>
+</footer>
+
+</div>
+
+<script>
+/* ================= 共通ユーティリティ ================= */
+function level(p){
+  if(p < 10) return ["低い","low"];
+  if(p < 50) return ["中等度","mid"];
+  return ["高い","high"];
+}
+function setScore(numId,badgeId,p){
+  document.getElementById(numId).textContent = "約" + p + "%";
+  const b=document.getElementById(badgeId);
+  const l=level(p);
+  b.textContent=l[0];
+  b.className="badge "+l[1];
+}
+function setScoreRange(numId,badgeId,low,high){
+  const text = (low===high) ? ("約"+low+"%") : ("約"+low+"〜"+high+"%");
+  document.getElementById(numId).textContent = text;
+  const b=document.getElementById(badgeId);
+  const l=level(high);
+  b.textContent=l[0];
+  b.className="badge "+l[1];
+}
+
+/* ================= エントリーページ（同意チェック） ================= */
+function onConsentChange(){
+  document.getElementById('startBtn').disabled = !document.getElementById('consentCheck').checked;
+}
+function startTool(){
+  if(!document.getElementById('consentCheck').checked) return;
+  document.getElementById('entryPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = '';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+let lastCpeProb = null; // 以降のステップで使う「安全側（高い方）」のCPE疑い度
+
+/* ================= ステップ1：カルバペネムスクリーニング ================= */
+function calcCPE(etp, mem){
+  if(etp && mem){
+    if(etp==='S'){
+      return {low:2, high:2, reason:'エルタペネム感性：CPEの可能性は低い（参考値 約2%）。まれな例外はあり得ます。'};
+    }
+    if(mem==='ge2'){
+      return {low:45, high:45, reason:'エルタペネム非感性 ＋ メロペネム/イミペネム MIC ≥2 µg/mL：CPE疑いを強く支持するパターン（アルゴリズム通過後の有病率 約45%）。'};
+    }
+    return {low:15, high:15, reason:'エルタペネム非感性だがカルバペネム MIC <2 µg/mL：CPEを疑うパターン（参考値 約14.9%）。'};
+  }
+  if(etp && !mem){
+    if(etp==='S'){
+      return {low:2, high:2, reason:'エルタペネム感性：CPEの可能性は低い（参考値 約2%）。まれな例外はあり得ます。'};
+    }
+    return {low:15, high:45, reason:'エルタペネム非感性です。メロペネム/イミペネムMICの情報があるとさらに絞り込めます（MIC ≥2 µg/mLなら約45%、<2 µg/mLなら約15%が目安。情報がないため参考値は約15〜45%の幅で示しています）。'};
+  }
+  if(mem==='ge2'){
+    return {low:45, high:45, reason:'メロペネム/イミペネム MIC ≥2 µg/mL：CPE疑いを強く支持する所見です（参考値 約45%）。エルタペネムの結果があるとより確実です。'};
+  }
+  return {low:2, high:15, reason:'メロペネム/イミペネム MIC <2 µg/mLです。エルタペネムの結果があるとさらに絞り込めます（感性なら約2%、非感性なら約15%が目安。情報がないため参考値は約2〜15%の幅で示しています）。'};
+}
+
+function clearInvalid(){
+  document.querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
+  document.getElementById('globalWarning').classList.remove('show');
+}
+function validateStep1(){
+  const etpVal = document.getElementById('etp').value;
+  const memVal = document.getElementById('mem').value;
+  const etpField = document.getElementById('field-etp');
+  const memField = document.getElementById('field-mem');
+  if(!etpVal && !memVal){
+    etpField.classList.add('invalid');
+    memField.classList.add('invalid');
+    return false;
+  }
+  etpField.classList.remove('invalid');
+  memField.classList.remove('invalid');
+  return true;
+}
+
+function unlockStep(id){
+  document.getElementById(id+'Locked').style.display = 'none';
+  document.getElementById(id+'Card').classList.add('show');
+  document.getElementById(id.replace('Card','')).classList.remove('locked');
+}
+
+function calc(){
+  clearInvalid();
+  if(!validateStep1()){
+    document.getElementById('globalWarning').classList.add('show');
+    document.getElementById('globalWarning').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+
+  const etp = document.getElementById('etp').value;
+  const mem = document.getElementById('mem').value;
+  const cpeResult = calcCPE(etp, mem);
+  setScoreRange('cpeNum','cpeBadge', cpeResult.low, cpeResult.high);
+  document.getElementById('reason').textContent = cpeResult.reason;
+  document.getElementById('cpeResultBox').classList.add('show');
+
+  lastCpeProb = cpeResult.high; // 以降は安全側（高い方）を採用
+
+  document.getElementById('step1').classList.add('done');
+
+  // ステップ2〜4のロックを解除し、初期状態にする
+  ['step2','step3','step4'].forEach(unlockStep);
+  resetOldDrugStep();
+  resetDirectStep();
+  renderConfirmSection(lastCpeProb, null);
+
+  document.getElementById('cpeResultBox').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ================= ステップ2：既存のβ-ラクタムからの推測 ================= */
+function resetOldDrugStep(){
+  ['atmOld','cazOld','fepOld','cmzOld','tzpOld'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('oldDrugOutput').classList.remove('show');
+  document.getElementById('oldDrugWarning').classList.remove('show');
+}
+
+function showOldDrugHints(){
+  const atm = document.getElementById('atmOld').value;
+  const caz = document.getElementById('cazOld').value;
+  const fep = document.getElementById('fepOld').value;
+  const cmz = document.getElementById('cmzOld').value;
+  const tzp = document.getElementById('tzpOld').value;
+
+  if(!atm && !caz && !fep && !cmz && !tzp){
+    document.getElementById('oldDrugWarning').classList.add('show');
+    document.getElementById('oldDrugOutput').classList.remove('show');
+    return;
+  }
+  document.getElementById('oldDrugWarning').classList.remove('show');
+
+  const hints = [];
+  if(atm==='S') hints.push('アズトレオナム感性：KPC型の可能性はやや低下し、OXA-48型、またはESBL非共産生のMBL型を念頭に置く手がかりになります。');
+  if(atm==='R') hints.push('アズトレオナム耐性：KPC型、ESBL/AmpC共産生を伴うOXA-48型、ESBL/AmpC共産生を伴うMBL型のいずれも否定できず、この所見だけではクラスの鑑別は困難です。');
+  if(caz==='R' || fep==='R') hints.push('セフタジジム／セフェピムのいずれかが耐性：ESBL共産生を示唆する所見です。カルバペネマーゼのクラス自体の判別には直接つながりません。');
+  if(caz==='S' && fep==='S') hints.push('セフタジジム・セフェピムがいずれも感性：ESBL共産生の可能性は低いことを示唆しますが、これ自体でクラスを除外する根拠にはなりません。');
+  if(cmz==='S') hints.push('セフメタゾール感性：AmpC過剰産生＋外膜孔蛋白変異のような非カルバペネマーゼ機序を積極的に示唆する所見ではありませんが、カルバペネマーゼのクラスを鑑別する直接的根拠にはなりません。');
+  if(cmz==='R') hints.push('セフメタゾール耐性：AmpC産生またはカルバペネマーゼ産生による加水分解を示唆しますが、クラスの鑑別には直接つながりません。');
+  if(tzp) hints.push('ピペラシリン/タゾバクタムの結果：単独ではカルバペネマーゼのクラス鑑別にはほとんど寄与しません（参考情報にとどめてください）。');
+
+  document.getElementById('oldDrugHints').innerHTML =
+    hints.length ? hints.map(h=>'<li>'+h+'</li>').join('') : '<li>選択された項目からは特筆すべき手がかりは得られませんでした。</li>';
+  document.getElementById('oldDrugOutput').classList.add('show');
+
+  // アズトレオナムの所見をステップ3の推奨検査に反映する
+  if(lastCpeProb !== null){
+    renderConfirmSection(lastCpeProb, atm || null);
+  }
+}
+
+/* ================= ステップ3：確認検査 ================= */
+const TESTS = [
+  { id:'mcim', label:'mCIM',
+    sens:'81.3〜100%', spec:'94〜100%',
+    note:'KPC・VIM・NDM・OXA-48型には高い精度を示しますが、GES/IMI/OXA-23/58など稀な酵素では感度がおよそ60%まで下がるとの報告があります。',
+    posText:'ほぼ確定域（約99〜100%）まで疑い度が上昇します。',
+    negText:'非CPEとしてほぼ除外できる水準（約2〜5%）まで低下しますが、稀な酵素を疑う臨床的背景がある場合は偽陰性の可能性を残してください。',
+    posVal:99, negVal:3 },
+  { id:'ecim', label:'eCIM（mCIM併用・MBL判定）',
+    sens:'89.3〜100%', spec:'98.7〜100%',
+    note:'KPC・VIM・NDMでは遺伝子型との一致率が高い一方、IMP型・SPM型のMBLは検出しにくいことが報告されています。',
+    posText:'MBL産生の疑い度がほぼ確定域（約99〜100%）まで上昇します。',
+    negText:'MBL産生の疑い度は約2〜5%まで低下します。IMP型・SPM型が地域的に疑われる場合は分子検査の追加を検討してください。',
+    posVal:99, negVal:3 },
+  { id:'carbanp', label:'Carba NP',
+    sens:'75.9〜95.8%', spec:'93.3〜100%',
+    note:'OXA-48型に対する感度はおよそ59〜77%と低めであることが知られています。',
+    posText:'CPE疑い度は高い水準（約90〜95%）まで上昇します。',
+    negText:'典型的なパターンではCPEをほぼ除外できますが、OXA-48型を疑う場合は感度が低いため陰性でも否定できません（除外不可）。',
+    posVal:92, negVal:10 },
+  { id:'cdt', label:'CDT（市販キット）',
+    sens:'86〜99%', spec:'81〜98%',
+    note:'キットにより得意な検出クラスが異なります（MAST/ROSAグループ→クラスA、LIOなど→クラスB/D）。使用キットの特性を確認してください。',
+    posText:'使用キットが対象とする酵素クラスであれば、疑い度は高い水準（約85〜95%）まで上昇します。',
+    negText:'キットが不得意なクラスの酵素だった場合は偽陰性のおそれがあるため、陰性のみで除外せず他の検査との組み合わせを検討してください。',
+    posVal:88, negVal:15 },
+  { id:'xpert', label:'分子検査（Xpert Carba-Rなど）',
+    sens:'ほぼ100%（対象5遺伝子）', spec:'ほぼ100%（対象5遺伝子）',
+    note:'KPC・NDM・VIM・IMP-1・OXA-48の5種を短時間（約50分）で高精度に検出しますが、対象外の稀な変異型は検出できません。',
+    posText:'対象遺伝子であれば、疑い度はほぼ100%（事実上確定）まで上昇します。',
+    negText:'対象5遺伝子についてはほぼ0〜2%まで低下しますが、対象外の稀な酵素・変異型の可能性は残ります。',
+    posVal:99, negVal:2 },
+  { id:'scim', label:'sCIM / mzCIM（新規CIM変法）',
+    sens:'97.8〜100%', spec:'94〜98.5%',
+    note:'GES・IMI・OXA-23/58など従来法で見落とされやすい稀な酵素に対しても高い感度を維持するとされます。',
+    posText:'稀な酵素も含め、疑い度はほぼ確定域（約98〜100%）まで上昇します。',
+    negText:'疑い度は約2〜5%まで低下し、稀な酵素も含めた除外に有用とされます。',
+    posVal:98, negVal:3 }
+];
+
+const REFS_CONFIRM = [
+  'Gill CM, et al. Evaluation of the EDTA-Modified Carbapenem Inactivation Method for Detecting Metallo-β-Lactamase-Producing Organisms. J Clin Microbiol. 2020;58(6):e02015-19.',
+  'Kumudunie WGM, et al. Comparison of Four Low-Cost Carbapenemase Detection Tests. PLoS One. 2021;16(1):e0245290.',
+  'Tsai YM, et al. Combination of mCIM and eCIM for Phenotypic Detection of CPE. BMC Microbiol. 2020;20(1):315.',
+  'Sattler J, et al. Systematic Comparison of Combination Disc Tests and zCIM. J Clin Microbiol. 2021;59(9):e0314020.',
+  'Schaffarczyk L, et al. Detection of Rare Carbapenemases in Enterobacterales. Microbiol Spectr. 2024;12(2):e0301523.',
+  'Sfeir MM, et al. EDTA-Modified Carbapenem Inactivation Method. J Clin Microbiol. 2019;57(5):e01757-18.',
+  'Pruss A, et al. Comparative analysis of carbapenemase determination methods among K. pneumoniae. PLoS One. 2025;20(2):e0318852.',
+  'Literacka E, et al. Evaluation of the Carba NP test. Eur J Clin Microbiol Infect Dis. 2017;36(11):2281-2287.',
+  'Lawrence J, et al. Innovative approaches in phenotypic beta-lactamase detection. Nat Commun. 2024;15(1):9070.',
+  'DebBarma P, et al. Phenotypic characterisation and prevalence of CRE. Sci Rep. 2025;15(1):31477.',
+  'Robert J, et al. Development of an algorithm for phenotypic screening of CPE. BMC Infect Dis. 2017;17(1):78.',
+  'Li HH, et al. Evaluation of Xpert Carba-R Assay. Biomed Res Int. 2021;2021:6614812.',
+  'Boattini M, et al. Fast-track identification of CTX-M-ESBL and carbapenemase producers. Eur J Clin Microbiol Infect Dis. 2021;40(7):1495-1501.',
+  'Macesic N, et al. Multidrug-Resistant Gram-Negative Bacterial Infections. Lancet. 2025;405(10474):257-272.',
+  'Stewart A, et al. Treatment of Infections by OXA-48-Producing Enterobacteriaceae. Antimicrob Agents Chemother. 2018;62(11):e01195-18.',
+  'Montaño AM, et al. Use of MALDI-TOF VITEK MS for rapid identification of KPC-type carbapenemases. Eur J Clin Microbiol Infect Dis. 2025;44(6):1443-1453.',
+  'Vasoo S, et al. In Vitro Activities of Ceftazidime-Avibactam, Aztreonam-Avibactam. Antimicrob Agents Chemother. 2015;59(12):7842-6.',
+  'Tängdén T, Giske CG. Global dissemination of extensively drug-resistant carbapenemase-producing Enterobacteriaceae. J Intern Med. 2015;277(5):501-12.',
+  'Huang TD, et al. Temocillin and Piperacillin/Tazobactam Resistance as Surrogate Markers for CPE. J Antimicrob Chemother. 2014;69(2):445-50.',
+  'Wi YM, et al. Antimicrobial activity of cephamycins and β-lactam/β-lactamase inhibitors against ESBL producers. Sci Rep. 2025;15(1):9785.',
+  'Matsumura Y, et al. In Vitro Activities of Cefmetazole and Flomoxef for ESBL/AmpC detection. Diagn Microbiol Infect Dis. 2016;84(4):322-7.',
+  'Emeraud C, et al. Direct carbapenemase typing from disc diffusion antibiograms with MALCA. Nat Commun. 2026;17(1):6316.'
+];
+
+let currentRecommended = [];
+
+function buildTabsUI(){
+  const bar = document.getElementById('tabbar');
+  const panels = document.getElementById('tabpanels');
+  bar.innerHTML = '';
+  panels.innerHTML = '';
+
+  TESTS.forEach(t=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tab-btn';
+    btn.setAttribute('role','tab');
+    btn.setAttribute('data-test', t.id);
+    btn.innerHTML = t.label + ' <span class="rec-chip">おすすめ</span>';
+    btn.addEventListener('click', ()=>selectTab(t.id));
+    bar.appendChild(btn);
+
+    const panel = document.createElement('div');
+    panel.className = 'tab-panel';
+    panel.setAttribute('data-test', t.id);
+    panel.innerHTML =
+      '<div class="stat-row">' +
+        '<div class="stat-box"><div class="label">感度</div><div class="val mono">'+t.sens+'</div></div>' +
+        '<div class="stat-box"><div class="label">特異度</div><div class="val mono">'+t.spec+'</div></div>' +
+      '</div>' +
+      '<p class="test-note">'+t.note+'</p>' +
+      '<div class="result-input">' +
+        '<label for="res-'+t.id+'">この検査を実施した場合の結果</label>' +
+        '<div class="row">' +
+          '<select id="res-'+t.id+'" data-test="'+t.id+'">' +
+            '<option value="" selected>結果を選択（未実施のままでも構いません）</option>' +
+            '<option value="pos">陽性</option>' +
+            '<option value="neg">陰性</option>' +
+          '</select>' +
+          '<button type="button" class="tertiary" data-apply="'+t.id+'" style="flex:0 0 auto;min-width:140px">疑い度に反映する</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="update-out" id="out-'+t.id+'">' +
+        '<div class="label" style="font-size:.78rem;color:var(--muted);font-weight:700">反映後の疑い度（参考値）</div>' +
+        '<div class="num mono" id="outnum-'+t.id+'">—</div>' +
+        '<div id="outtext-'+t.id+'"></div>' +
+      '</div>';
+    panels.appendChild(panel);
+  });
+
+  panels.querySelectorAll('[data-apply]').forEach(btn=>{
+    btn.addEventListener('click', ()=>applyTestResult(btn.getAttribute('data-apply')));
+  });
+}
+
+function selectTab(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.setAttribute('aria-selected', b.getAttribute('data-test')===id ? 'true':'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>{
+    p.classList.toggle('active', p.getAttribute('data-test')===id);
+  });
+}
+
+function markRecommended(ids){
+  currentRecommended = ids;
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    const id = b.getAttribute('data-test');
+    b.classList.toggle('is-recommended', ids.indexOf(id) !== -1);
+  });
+}
+
+function applyTestResult(testId){
+  const t = TESTS.find(x=>x.id===testId);
+  const sel = document.getElementById('res-'+testId);
+  const out = document.getElementById('out-'+testId);
+  const val = sel.value;
+  if(!val){
+    out.classList.remove('show');
+    return;
+  }
+  const p = val==='pos' ? t.posVal : t.negVal;
+  const text = val==='pos' ? t.posText : t.negText;
+  document.getElementById('outnum-'+testId).textContent = '約'+p+'%';
+  document.getElementById('outtext-'+testId).innerHTML =
+    '<span class="badge '+level(p)[1]+'">'+level(p)[0]+'</span> <span class="caveat">'+text+'</span>';
+  out.classList.add('show');
+}
+
+function getRecommendation(cpeProb, atmOld){
+  if(cpeProb < 15){
+    return {
+      headline:'追加の確認検査は必須ではありません',
+      detail:'CPE疑い度が低いパターンです。臨床的にCPEを強く疑う状況や地域の流行状況によっては、念のためmCIM等でのスクリーニングを検討してください。',
+      recommended:[]
+    };
+  }
+  if(atmOld === 'S'){
+    return {
+      headline:'OXA-48型、またはESBL非共産生のMBL型が疑われるパターンです',
+      detail:'アズトレオナム感性の所見から、KPC型の可能性はやや低下します。eCIM（EDTA併用）またはCDT-EDTAを優先して検討してください。OXA-48型を疑う場合はCarba NPの感度が低いため、温シリン試験や分子検査の追加も有用です。',
+      recommended:['ecim','cdt']
+    };
+  }
+  if(atmOld === 'R'){
+    return {
+      headline:'KPC型・ESBL/AmpC共産生を伴うOXA-48型・MBL型のいずれも否定できないパターンです',
+      detail:'アズトレオナム耐性のみではクラスの鑑別は困難です。mCIMまたはCarba NP、CDT（ボロン酸／EDTA）を組み合わせて評価し、必要に応じて分子検査を追加してください。',
+      recommended:['mcim','cdt']
+    };
+  }
+  return {
+    headline:'KPC型等の典型パターン、または判定に迷うパターンです',
+    detail:'mCIMまたはCarba NP、CDT（ボロン酸）で多くの場合十分な確度が得られます。OXA-48型を臨床的に疑う場合はCarba NPの感度が低いため、CDT（ボロン酸＋EDTA）や温シリン試験、分子検査の追加を検討してください。稀な酵素（GES、IMI、OXA-23/58等）が疑われる場合や通常検査で判定不能な場合は、sCIM/mzCIMや分子検査（WGS含む）への切り替えを検討してください。',
+    recommended:['mcim','carbanp']
+  };
+}
+
+function renderConfirmSection(cpeProb, atmOld){
+  const rec = getRecommendation(cpeProb, atmOld);
+  document.getElementById('actionHeadline').textContent = rec.headline;
+  document.getElementById('actionDetail').textContent =
+    rec.detail + '（緊急性の高い血流感染等ではNG-test Carba5等のイムノクロマト法や分子検査で30分〜1時間以内に高精度の結果を得られる場合があります。）';
+
+  markRecommended(rec.recommended);
+
+  TESTS.forEach(t=>{
+    document.getElementById('res-'+t.id).value = '';
+    document.getElementById('out-'+t.id).classList.remove('show');
+  });
+
+  const defaultTab = rec.recommended.length ? rec.recommended[0] : 'mcim';
+  selectTab(defaultTab);
+}
+
+function buildRefsList(){
+  document.getElementById('refsList').innerHTML = REFS_CONFIRM.map(r=>'<li>'+r+'</li>').join('');
+}
+
+/* ================= ステップ4：直接感受性（新規β-ラクタム） ================= */
+function resetDirectStep(){
+  ['caz_avi','mvb','irl','atm_avi','cfdc'].forEach(id=>{ document.getElementById(id).value = ''; });
+  document.getElementById('directResult').classList.remove('show');
+  document.getElementById('directWarning').classList.remove('show');
+}
+
+function computeDirectMbl(){
+  const cazAvi = document.getElementById('caz_avi').value;
+  const mvb = document.getElementById('mvb').value;
+  const irl = document.getElementById('irl').value;
+  const atmAvi = document.getElementById('atm_avi').value;
+  const cfdc = document.getElementById('cfdc').value;
+
+  if(!cazAvi && !mvb && !irl && !atmAvi && !cfdc){
+    document.getElementById('directWarning').classList.add('show');
+    document.getElementById('directResult').classList.remove('show');
+    return;
+  }
+  document.getElementById('directWarning').classList.remove('show');
+
+  const signals = [];
+  if(cazAvi==='R') signals.push('セフタジジム/アビバクタム耐性');
+  if(mvb==='R' || irl==='R'){
+    const which = [];
+    if(mvb==='R') which.push('メロペネム/バボルバクタム');
+    if(irl==='R') which.push('イミペネム/レレバクタム');
+    signals.push(which.join('・')+'耐性');
+  }
+  if(atmAvi==='S' || cfdc==='S'){
+    const which = [];
+    if(atmAvi==='S') which.push('アズトレオナム/アビバクタム');
+    if(cfdc==='S') which.push('セフィデロコル');
+    signals.push(which.join('・')+'感性');
+  }
+
+  const n = signals.length;
+  const mblProb = n===3?90:n===2?65:n===1?30:5;
+  setScore('directMblNum','directMblBadge', mblProb);
+  document.getElementById('directSignals').innerHTML =
+    signals.length ? signals.map(x=>'<li>'+x+'</li>').join('') : '<li>一致するMBLシグナルはありません。</li>';
+  document.getElementById('directDetails').innerHTML =
+    'KPC/OXA-48型はセフタジジム/アビバクタム、メロペネム/バボルバクタム、イミペネム/レレバクタムに高感性（約88～99%）とされる一方、MBL産生株では無効となる傾向があります。アズトレオナム/アビバクタムはMBL産生株でも活性を維持する傾向があります。セフィデロコルも理論上は活性を維持しうるとされますが、NDM産生株では実臨床での感受性率が著しく低いとの報告があり、セフィデロコル感性のみでMBL陰性方向に判断することには注意が必要です。<br><br>MBL/non-MBLの確定にはeCIM、CDT、遺伝子検査等が必要です。';
+  document.getElementById('directResult').classList.add('show');
+}
+
+/* ================= リセット ================= */
+function resetTool(){
+  document.getElementById('etp').value = '';
+  document.getElementById('mem').value = '';
+  clearInvalid();
+  document.getElementById('cpeResultBox').classList.remove('show');
+  document.getElementById('step1').classList.remove('done');
+
+  ['step2','step3','step4'].forEach(id=>{
+    document.getElementById(id).classList.add('locked');
+    document.getElementById(id+'Locked').style.display = '';
+    document.getElementById(id+'Card').classList.remove('show');
+  });
+  resetOldDrugStep();
+  resetDirectStep();
+  lastCpeProb = null;
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ================= もっと勉強したい方へ：耐性機序・新規薬剤の解説 ================= */
+const MECHANISMS = [
+  { name:'OprD喪失（外膜ポーリン）',
+    html:'<i>Pseudomonas aeruginosa</i>の外膜に存在するポーリンで、カルバペネム（特にイミペネム）の取り込み経路です。oprD遺伝子の変異・欠失・発現低下が<i>P. aeruginosa</i>のカルバペネム耐性の中心的機序で、臨床分離株の21〜85%に変異がみられるとされます。単独の喪失はメロペネムよりイミペネムへの影響が大きい傾向があります。ArgR、CzcS/CzcR、CopS/CopR、ParS/ParR、MexTなど多層的な調節ネットワークにより発現が制御され、金属イオン曝露などの環境シグナルだけで、遺伝子変異がなくても耐性を示すことがあります。' },
+  { name:'MexAB-OprM（排出ポンプ）',
+    html:'<i>P. aeruginosa</i>が構成的に発現するRNDファミリーの多剤排出ポンプです。β-ラクタム系（セフェピム、セフタジジム、セフタジジム/アビバクタム、ピペラシリン/タゾバクタム、メロペネム、アズトレオナムを含む）、フルオロキノロン、マクロライド、クロラムフェニコールなど広範な薬剤を排出します。リプレッサーMexRの変異（nalB型）により過剰発現し、多剤耐性の主要な機序となります。' },
+  { name:'AmpC β-ラクタマーゼ',
+    html:'多くの腸内細菌目（<i>Enterobacter cloacae</i>、<i>Klebsiella aerogenes</i>、<i>Citrobacter freundii</i>、<i>Serratia marcescens</i>、<i>Providencia</i>属、<i>Morganella morganii</i>等）が染色体性に保有するセファロスポリナーゼです。多くは誘導性で、AmpD機能喪失による恒常的脱抑制が生じると広域セファロスポリンにも耐性化し、治療中に感性から耐性へ転じる臨床的落とし穴になります。プラスミド性AmpC遺伝子（CMY、DHA、FOXなど）は本来AmpCを持たない菌種にも伝播します。ボロン酸誘導体で阻害されるため、検査室ではこれを利用した検出法が使われます。' },
+  { name:'TEM・SHV・CTX-M（ESBL）',
+    html:'オキシイミノセファロスポリン（セフォタキシム、セフタジジム、セフトリアキソン、セフェピム等）とアズトレオナムを加水分解しますが、セファマイシンやカルバペネムには作用せず、クラブラン酸等の古典的阻害薬で阻害されます。2000年以降はCTX-M型が急速に拡大し、現在世界的に最も頻度の高いESBLです（CTX-M-15を保有する<i>E. coli</i> ST131系統の世界的伝播が知られます）。ESBL産生菌感染にはカルバペネムが第一選択とされることが多いです。' },
+  { name:'KPC（Klebsiella pneumoniae carbapenemase）',
+    html:'Ambler class Aのセリン型カルバペネマーゼで、ペニシリン・セファロスポリン・カルバペネムを含む広範なβ-ラクタムを加水分解し、クラブラン酸等の従来の阻害薬にも耐性を示します。bla<sub>KPC</sub>遺伝子はトランスポゾンTn4401（および派生型）上に存在し、多様なプラスミドを介して伝播します。KPC産生株はアズトレオナムも加水分解するため、ほぼ例外なくアズトレオナム耐性を示します。セフタジジム/アビバクタムが主要な治療選択肢です。' },
+  { name:'IMP・VIM（メタロ-β-ラクタマーゼ）',
+    html:'Ambler class Bに属し、活性中心に亜鉛イオンを必要とします。ペニシリン・セファロスポリン・カルバペネムを加水分解しますが、アズトレオナムは本質的に加水分解しません。IMP型は遺伝的多様性が大きく検出が難しいとされ、アジアでの頻度が高い一方、世界各地で確認されています。臨床的に使用可能な特異的阻害薬は存在しません。' },
+  { name:'GES（Guiana extended-spectrum β-lactamase）',
+    html:'Ambler class Aの酵素です。基本型（GES-1）のカルバペネム加水分解活性は極めて低いですが、170番目のアミノ酸置換により生じた変異体（GES-2、GES-5、GES-14等）はカルバペネマーゼ活性を獲得します。頻度としては稀な酵素ですが、標準的なmCIMやCarba NP法で検出感度が低下することがあり、注意が必要です。' },
+  { name:'NDM（New Delhi metallo-β-lactamase）',
+    html:'Ambler class Bのメタロ-β-ラクタマーゼで、2008年にインドで分離された<i>K. pneumoniae</i>株から初めて同定されました。アズトレオナムには本質的に安定です。メタロ-β-ラクタマーゼの中で最も急速かつ広範な地理的拡散を遂げており、インド亜大陸・中東・バルカン半島で高頻度とされます。臨床的に使用可能な特異的阻害薬は存在せず、アズトレオナム/アビバクタムやセフィデロコルが治療選択肢として検討されます。' },
+  { name:'OXA-48型（Ambler class D）',
+    html:'ペニシリン類を効率よく加水分解する一方、カルバペネムへの加水分解活性は比較的低いという特異なプロファイルを持ちます。カルバペネムの中ではエルタペネムが最も良い基質です。拡張スペクトラムセファロスポリンはほとんど加水分解せず、セファロスポリン耐性がみられる場合の多くはESBL共産生を反映しています。低レベルのカルバペネム耐性のため見逃されやすく、標準的なmCIM/Carba NP法では検出率が低いことがある一方（16.7%程度という報告も）、テモシリン高度耐性がスクリーニングマーカーとして有用とされます。特異的阻害薬は存在せず、CDTでの直接検出はできません。免疫クロマト法は高い感度・特異度を示しますが、コストが制約となります。OXA-181、OXA-232、OXA-244など多数のバリアントが存在し、地理的分布や検出のしやすさが異なります（OXA-244は特に検出が困難とされます）。治療にはセフタジジム/アビバクタムやセフィデロコルが有効な選択肢となりますが、ESBL共産生の有無で感受性パターンが変わりえます。' }
+];
+
+const AGENTS = [
+  { name:'セフトロザン/タゾバクタム（CTLZ/TAZ）',
+    esbl:'部分的（株による）', kpc:'無効', ampc:'有効', oxa48:'一部有効', mbl:'無効',
+    html:'新規セファロスポリンのセフトロザンにタゾバクタムを組み合わせた薬剤です。主眼はカルバペネマーゼ産生株ではなく、AmpC過剰産生株やOprD喪失による<i>P. aeruginosa</i>（DTR-緑膿菌）にあります。KPCやMBLを産生する菌には無効です。' },
+  { name:'セフタジジム/アビバクタム（CAZ/AVI）',
+    esbl:'有効', kpc:'有効', ampc:'有効', oxa48:'有効', mbl:'無効',
+    html:'アビバクタムがセフタジジムを保護し、ESBL、KPC、AmpC、OXA-48型を含む一部のオキサシリナーゼに活性を示します。MBL（NDM・VIM・IMP）には無効です。OXA-48型産生株に対する第一選択薬としての位置づけが支持されています。' },
+  { name:'イミペネム/レレバクタム（IPM/REL）',
+    esbl:'有効（imipenem耐性を回復）', kpc:'有効（67%回復）', ampc:'有効', oxa48:'ほぼ無効', mbl:'無効',
+    html:'レレバクタムはclass AとCのβ-ラクタマーゼを阻害しますが、MBLへの活性はなく、OXA-48型に対してもほとんど、あるいは全く活性を示しません。カルバペネム耐性のDTR緑膿菌に対する活性も臨床的意義の一つです。' },
+  { name:'セフィデロコル（CFDC）',
+    esbl:'有効', kpc:'有効', ampc:'有効', oxa48:'有効', mbl:'理論上有効だがNDM等で感受性低下例あり',
+    html:'鉄輸送機構を利用する「シデロフォア・セファロスポリン」で、serine型・metallo型を問わずclass A/B/C/Dのβ-ラクタマーゼすべてに加水分解安定性を持つことが特徴です。理論上はNDM等のMBL産生株にも活性を維持しうるとされますが、実臨床データではNDM産生株への感受性率が著しく低いとの報告があり、過信は禁物です。感受性検査には鉄除去済みの特殊な培地が必要です。' }
+];
+
+const REFS_LEARN = [
+  'Wheatley R, et al. Rapid evolution and host immunity drive carbapenem resistance during acute P. aeruginosa infection. Nat Commun. 2021;12(1):2460.',
+  'Horna G, et al. Interplay between MexAB-OprM and MexEF-OprN in P. aeruginosa. Sci Rep. 2018;8(1):16463.',
+  'Wu W, et al. Antibiotic Influx and Efflux in Pseudomonas Aeruginosa. Microb Biotechnol. 2024;17(5):e14487.',
+  'Tsutsumi K, et al. Structures of the Wild-Type MexAB-OprM Tripartite Pump. Nat Commun. 2019;10(1):1520.',
+  'Tebano G, et al. Antibiotic choices for AmpC-producing Enterobacterales bloodstream infections. Eur J Clin Microbiol Infect Dis. 2026;45(1):125-133.',
+  'Jacoby GA. AmpC Beta-Lactamases. Clin Microbiol Rev. 2009;22(1):161-82.',
+  'Meini S, et al. AmpC β-Lactamase-Producing Enterobacterales: What a Clinician Should Know. Infection. 2019;47(3):363-375.',
+  'Tamma PD, et al. A Primer on AmpC β-Lactamases. Clin Infect Dis. 2019;69(8):1446-1455.',
+  'Mohammed AB, Anwar KA. Phenotypic and genotypic detection of ESBL in K. pneumoniae. PLoS One. 2022;17(9):e0267221.',
+  'Peirano G, Pitout JDD. Extended-Spectrum β-Lactamase-Producing Enterobacteriaceae: Update. Drugs. 2019;79(14):1529-1541.',
+  'Kraftova L, et al. Epidemic spread of KPC-producing Enterobacterales in Czech hospitals. Sci Rep. 2021;11(1):15732.',
+  'Galdadas I, et al. Defining the architecture of KPC-2 Carbapenemase. Sci Rep. 2018;8(1):12916.',
+  'Bonnin RA, et al. Genetic Diversity, Biochemical Properties, Epidemiology and Detection of IMP- and VIM-type Carbapenemases. Clin Microbiol Rev. 2025;38(3):e0012923.',
+  'Delbrück H, et al. Kinetic and Crystallographic Studies of GES-11, GES-12, and GES-14 β-Lactamases. Antimicrob Agents Chemother. 2012;56(11):5618-25.',
+  'Bontron S, et al. In Vitro Prediction of the Evolution of GES-1 Hydrolytic Activity. Antimicrob Agents Chemother. 2015;59(3):1664-70.',
+  'Macesic N, et al. Multidrug-Resistant Gram-Negative Bacterial Infections. Lancet. 2025;405(10474):257-272.',
+  'Mairi A, et al. OXA-48-like carbapenemases producing Enterobacteriaceae in different niches. Eur J Clin Microbiol Infect Dis. 2018;37(4):587-604.',
+  'Smith CA, et al. Structural Insights Into the Mechanism of Carbapenemase Activity of OXA-48. Antimicrob Agents Chemother. 2019;63(10):e01202-19.',
+  'Stewart A, et al. Treatment of Infections by OXA-48-Producing Enterobacteriaceae. Antimicrob Agents Chemother. 2018;62(11):e01195-18.',
+  'Pitout JDD, et al. The Global Ascendency of OXA-48-Type Carbapenemases. Clin Microbiol Rev. 2019;33(1):e00102-19.',
+  'Koroska F, et al. Comparison of Phenotypic Tests and an Immunochromatographic Assay for OXA-48-like Detection. J Clin Microbiol. 2017;55(3):877-883.',
+  'Glupczynski Y, et al. Evaluation of Two New Commercial Immunochromatographic Assays for OXA-48 and KPC. J Antimicrob Chemother. 2016;71(5):1217-22.',
+  'Greissl C, et al. Rapid Detection of OXA-48-like, KPC, NDM, and VIM Carbapenemases by Multiplex Immunochromatographic Test. Eur J Clin Microbiol Infect Dis. 2019;38(2):331-335.',
+  'Tiseo G, et al. How I Manage Patients With NDM and OXA-48-producing Enterobacterales Infections. Curr Opin Infect Dis. 2025;38(6):588-597.',
+  'Sadek M, et al. Impact of Minor Carbapenemases on Susceptibility to Novel BL/BLI Combinations and Cefiderocol. Antimicrob Agents Chemother. 2023;67(5):e0007823.',
+  'Chou A, et al. Antimicrobial Treatment Options for Difficult-to-Treat Resistant Gram-Negative Bacteria. Drugs. 2022;82(4):407-438.',
+  'Faxén L, et al. Antibiotic Susceptibility to New Antibiotics: Low Activity of Cefiderocol Against NDM-producing Isolates. Int J Antimicrob Agents. 2025:107553.',
+  "O'Donnell JN, Lodise TP. New Perspectives on Antimicrobial Agents: Imipenem-Relebactam. Antimicrob Agents Chemother. 2022;66(7):e0025622.",
+  "Ong'uti S, et al. Cefiderocol: A New Cephalosporin Stratagem Against Multidrug-Resistant Gram-Negative Bacteria. Clin Infect Dis. 2022;74(7):1303-1312.",
+  'Iovleva A, et al. Treatment Approaches for Carbapenem-Resistant Acinetobacter baumannii Infections. Drugs. 2025;85(1):21-40.'
+];
+
+function buildLearnMore(){
+  const mechEl = document.getElementById('mechAccordion');
+  mechEl.innerHTML = MECHANISMS.map(m=>
+    '<details><summary>'+m.name+'</summary><p>'+m.html+'</p></details>'
+  ).join('');
+
+  const table = document.getElementById('agentTable');
+  table.innerHTML =
+    '<thead><tr><th>薬剤</th><th>ESBL</th><th>KPC</th><th>AmpC</th><th>OXA-48型</th><th>MBL</th></tr></thead>' +
+    '<tbody>' + AGENTS.map(a=>
+      '<tr><th>'+a.name+'</th><td>'+a.esbl+'</td><td>'+a.kpc+'</td><td>'+a.ampc+'</td><td>'+a.oxa48+'</td><td>'+a.mbl+'</td></tr>'
+    ).join('') + '</tbody>';
+
+  const agentAcc = document.getElementById('agentAccordion');
+  agentAcc.innerHTML = AGENTS.map(a=>
+    '<details><summary>'+a.name+'</summary><p>'+a.html+'</p></details>'
+  ).join('');
+
+  document.getElementById('learnRefsList').innerHTML = REFS_LEARN.map(r=>'<li>'+r+'</li>').join('');
+}
+
+buildTabsUI();
+buildRefsList();
+selectTab('mcim');
+buildLearnMore();
+
+</script>
+</body>
+</html>
