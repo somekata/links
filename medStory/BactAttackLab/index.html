@@ -618,9 +618,9 @@
   function initBgParticles(){
     bgParticles = [];
     const area = Math.max(1, W*H);
-    const base = Math.round(18 + area/9000);
+    const base = Math.round(12 + area/16000);
     if(selectedBgTheme==='space'){
-      for(let i=0;i<base*1.6;i++){
+      for(let i=0;i<base*1.2;i++){
         bgParticles.push({ x:Math.random()*W, y:Math.random()*H, size:Math.random()*1.6+0.4,
           tw:Math.random()*0.05+0.01, a:Math.random(), color: Math.random()>0.3?'#ffffff':(Math.random()>0.5?'#818cf8':'#f472b6') });
       }
@@ -1435,13 +1435,20 @@
     if(!lastTime) lastTime = ts;
     const dt = Math.min(0.05,(ts-lastTime)/1000);
     lastTime = ts;
-    if(running && !paused && !flowActive) globalTime += dt*1000;
+
+    // モーダルが画面全体を覆っている間、またはゲーム未開始/終了時はCanvasが見えないため描画をまるごとスキップして負荷を下げる
+    if(!running || flowActive){
+      requestAnimationFrame(loop);
+      return;
+    }
+
+    if(!paused) globalTime += dt*1000;
     bgTime += dt;
 
     ctx.clearRect(0,0,W,H);
     drawBackground();
 
-    if(running && !paused && !flowActive){
+    if(!paused){
       if(waveIntermission){
         intermissionTimer -= dt;
         if(intermissionTimer<=0){ waveIntermission = false; nextWave(); }
@@ -1478,7 +1485,7 @@
       updateHUD();
     }
 
-    document.getElementById('restPrompt').style.display = (running && !paused && !flowActive && hasActiveKaze()) ? 'flex' : 'none';
+    document.getElementById('restPrompt').style.display = (!paused && hasActiveKaze()) ? 'flex' : 'none';
 
     for(let i=particles.length-1;i>=0;i--){
       const p = particles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=dt;
@@ -1496,18 +1503,28 @@
     requestAnimationFrame(loop);
   }
 
+  let bgGradCache = null, bgGradKey = '';
   function bgGradientFill(theme){
-    const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0, theme.grad[0]); g.addColorStop(0.55, theme.grad[1]); g.addColorStop(1, theme.grad[2]);
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    const key = theme.id + '|' + W + '|' + H;
+    if(key !== bgGradKey){
+      const g = ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0, theme.grad[0]); g.addColorStop(0.55, theme.grad[1]); g.addColorStop(1, theme.grad[2]);
+      bgGradCache = g; bgGradKey = key;
+    }
+    ctx.fillStyle = bgGradCache; ctx.fillRect(0,0,W,H);
   }
+  let bgPlanetGradCache = null, bgPlanetGradKey = '';
   function drawBg_space(theme){
     bgGradientFill(theme);
     ctx.save();
     const px = W*0.78, py = H*0.14, pr = Math.min(W,H)*0.07;
-    const pg = ctx.createLinearGradient(px-pr,py-pr,px+pr,py+pr);
-    pg.addColorStop(0,'#38bdf8'); pg.addColorStop(0.5,'#1e3a8a'); pg.addColorStop(1,'#0f172a');
-    ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px,py,pr,0,Math.PI*2); ctx.fill();
+    const pkey = W+'|'+H;
+    if(pkey !== bgPlanetGradKey){
+      const pg = ctx.createLinearGradient(px-pr,py-pr,px+pr,py+pr);
+      pg.addColorStop(0,'#38bdf8'); pg.addColorStop(0.5,'#1e3a8a'); pg.addColorStop(1,'#0f172a');
+      bgPlanetGradCache = pg; bgPlanetGradKey = pkey;
+    }
+    ctx.fillStyle = bgPlanetGradCache; ctx.beginPath(); ctx.arc(px,py,pr,0,Math.PI*2); ctx.fill();
     ctx.translate(px,py); ctx.rotate(0.35); ctx.scale(1,0.3);
     ctx.beginPath(); ctx.arc(0,0,pr*1.8,0,Math.PI*2);
     ctx.strokeStyle = 'rgba(186,230,253,0.45)'; ctx.lineWidth = pr*0.16; ctx.stroke();
@@ -1524,7 +1541,7 @@
     const pulse = 1 + Math.sin(bgTime*2.2)*0.04;
     ctx.save(); ctx.translate(W/2,H*0.42); ctx.scale(pulse,pulse);
     function branch(len,thick,ang,depth){
-      if(depth>3) return;
+      if(depth>2) return;
       ctx.save(); ctx.rotate(ang);
       ctx.strokeStyle = 'rgba(244,63,94,0.55)'; ctx.lineWidth = thick; ctx.lineCap='round';
       ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(Math.sin(bgTime+depth)*6,-len/2,0,-len); ctx.stroke();
@@ -1547,10 +1564,10 @@
   function drawBg_intestines(theme){
     bgGradientFill(theme);
     const cx=W/2, cy=H/2;
-    for(let r=6;r>=1;r--){
-      const radius = r*Math.min(W,H)*0.09 + Math.sin(bgTime*2.5-r*0.4)*6;
+    for(let r=4;r>=1;r--){
+      const radius = r*Math.min(W,H)*0.13 + Math.sin(bgTime*2.5-r*0.4)*6;
       ctx.beginPath(); ctx.arc(cx,cy,Math.max(6,radius),0,Math.PI*2);
-      ctx.strokeStyle = `hsla(${25+r*4},85%,${20+r*4}%,0.6)`; ctx.lineWidth = Math.min(W,H)*0.035;
+      ctx.strokeStyle = `hsla(${25+r*4},85%,${20+r*4}%,0.6)`; ctx.lineWidth = Math.min(W,H)*0.045;
       ctx.stroke();
     }
     bgParticles.forEach(p=>{
@@ -1563,9 +1580,9 @@
   function drawBg_underwater(theme){
     bgGradientFill(theme);
     ctx.strokeStyle='rgba(186,230,253,0.22)'; ctx.lineWidth=2;
-    for(let i=0;i<3;i++){
+    for(let i=0;i<2;i++){
       ctx.beginPath();
-      for(let x=0;x<=W;x+=20){
+      for(let x=0;x<=W;x+=40){
         const y = H*0.12 + i*H*0.08 + Math.sin(x*0.02+bgTime*1.4+i)*10;
         if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       }
@@ -1578,6 +1595,7 @@
       ctx.beginPath(); ctx.arc(p.x+Math.sin(p.wob)*3,p.y,p.r,0,Math.PI*2); ctx.fill(); ctx.stroke();
     });
   }
+  let bgGlowGradCache = null;
   function drawBg_cave(theme){
     bgGradientFill(theme);
     ctx.fillStyle = '#14b8a6';
@@ -1585,15 +1603,21 @@
     ctx.beginPath(); ctx.moveTo(W*0.82,H); ctx.lineTo(W*0.79,H*0.66); ctx.lineTo(W*0.86,H); ctx.fill();
     ctx.fillStyle = 'rgba(2,6,23,0.85)';
     ctx.beginPath(); ctx.moveTo(0,0);
-    for(let x=0;x<=W;x+=Math.max(10,W/24)){
+    for(let x=0;x<=W;x+=Math.max(16,W/16)){
       const sh = H*0.13 + Math.sin(x*0.05+bgTime*0.3)*H*0.05;
       ctx.lineTo(x,sh);
     }
     ctx.lineTo(W,0); ctx.fill();
-    const gx=W*0.5, gy=H*0.55, gr=Math.min(W,H)*0.05 + Math.sin(bgTime*1.5)*3;
-    const gg = ctx.createRadialGradient(gx,gy,0,gx,gy,gr*2.2);
-    gg.addColorStop(0,'rgba(94,234,212,0.5)'); gg.addColorStop(1,'rgba(94,234,212,0)');
-    ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(gx,gy,gr*2.2,0,Math.PI*2); ctx.fill();
+    if(!bgGlowGradCache){
+      const g = ctx.createRadialGradient(0,0,0,0,0,1);
+      g.addColorStop(0,'rgba(94,234,212,0.5)'); g.addColorStop(1,'rgba(94,234,212,0)');
+      bgGlowGradCache = g;
+    }
+    const gx=W*0.5, gy=H*0.55, gr=(Math.min(W,H)*0.05 + Math.sin(bgTime*1.5)*3) * 2.2;
+    ctx.save();
+    ctx.translate(gx,gy); ctx.scale(gr,gr);
+    ctx.fillStyle = bgGlowGradCache; ctx.beginPath(); ctx.arc(0,0,1,0,Math.PI*2); ctx.fill();
+    ctx.restore();
   }
   function drawBg_demon(theme){
     bgGradientFill(theme);
