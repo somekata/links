@@ -41,8 +41,8 @@
   .hpbar-outer{ flex:1; min-width:70px; height:13px; background:var(--panel-border); border-radius:8px; overflow:hidden; margin:0 4px; }
   .hpbar-inner{ height:100%; background:var(--hp-bar); width:100%; transition:width .25s ease, background .25s ease; }
 
-  .awareGauge{ position:relative; width:100%; height:16px; background:var(--panel-border); border-radius:8px; overflow:hidden; margin:2px 0 4px; }
-  .awareGauge .fill{ height:100%; width:0%; background:var(--access); transition:width .3s ease, background .3s ease; }
+  .awareGauge{ position:relative; width:100%; height:16px; background:var(--panel-border); border-radius:8px; overflow:hidden; margin:2px 0 4px; display:flex; }
+  .awareGauge .seg{ height:100%; width:0%; transition:width .3s ease; }
   .awareGauge .label{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; color:#08130d; text-shadow:0 0 3px rgba(255,255,255,0.5); }
 
   #canvasHolder{
@@ -99,15 +99,21 @@
 
   .overlay{
     position:absolute; inset:0; background:rgba(5,10,25,0.92); display:flex; flex-direction:column;
-    align-items:center; padding:14px 12px; color:#eef2ff; z-index:5; overflow-y:auto;
+    align-items:center; padding:14px 12px; color:var(--text); z-index:5; overflow-y:auto;
   }
   .overlay h2{ margin:4px 0 2px; font-size:1.1rem; }
   .overlay button#startBtn{
     margin-top:10px; background:var(--accent); color:#052a26; border:none; border-radius:10px;
     padding:11px 26px; font-size:0.9rem; font-weight:700; cursor:pointer; flex-shrink:0;
   }
-  .overOverlayInner{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; margin:auto; }
-  .overOverlayInner p{ font-size:0.76rem; color:#c8d3ee; max-width:300px; }
+  .overOverlayInner{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; margin:auto; width:100%; max-width:360px; }
+  .overSummary{ width:100%; text-align:left; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:10px 12px; font-size:0.7rem; line-height:1.6; color:var(--text); }
+  .overSummary h4{ font-size:0.72rem; margin:8px 0 4px; color:var(--text-dim); }
+  .overSummary h4:first-child{ margin-top:0; }
+  .overSummary table{ width:100%; border-collapse:collapse; }
+  .overSummary td{ padding:2px 0; color:var(--text); }
+  .overSummary td.num{ text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+  .overOverlayInner p{ font-size:0.76rem; color:var(--text); max-width:300px; }
 
   .entryTabs{ display:flex; gap:4px; width:100%; max-width:400px; margin:4px 0 10px; }
   .entryTabBtn{
@@ -188,7 +194,12 @@
     <div class="hpbar-outer"><div class="hpbar-inner" id="hpBar"></div></div>
     <div class="stat">Score<b id="scoreNum">0</b></div>
   </div>
-  <div class="awareGauge"><div class="fill" id="awareFill"></div><div class="label" id="awareLabel">Access比率 --%</div></div>
+  <div class="awareGauge">
+    <div class="seg" id="segAccess" style="background:var(--access)"></div>
+    <div class="seg" id="segWatch" style="background:var(--watch)"></div>
+    <div class="seg" id="segReserve" style="background:var(--reserve)"></div>
+    <div class="label" id="awareLabel">AWaRe比率 --</div>
+  </div>
 
   <div id="canvasHolder">
     <canvas id="game"></canvas>
@@ -230,7 +241,9 @@
           <h3>🗓️ ステージ構成</h3>
           <p>Wave1〜7は決まった顔ぶれで登場する練習ステージ（新しい菌・抗菌薬が出るたびに紹介モーダルが挟まります）。Wave8以降はすべての菌種がランダムに登場します。<b>MDRP</b>には見た目が2種類あり、カルバペネマーゼ（指輪で表現）を持たないタイプはCAZがまだ効き、持つタイプはCOLしか効きません。</p>
           <p>Wave50以降は<b>正体不明の丸</b>（青=グラム陽性・赤=グラム陰性）が出現し、有効な抗菌薬を当てると正体が判明します（最初の一撃は経験的治療として減点なし）。Wave70以降はさらに<b>正体不明の黒い丸</b>（何でもありうる）も登場。また、Wave5以降はCEZ・VCM・CAZ・MEPMのいずれかが<b>出荷停止</b>で使えなくなることがあり、Wave毎にランダムに入れ替わります（Wave10まで同時最大1つ、Wave20まで最大2つ、それ以降は最大3つ）。</p>
-          <p><b>Access比率</b>が高いほど攻撃スコアが上がる（90%以上で2倍、80%以上で1.5倍）うえ、Waveクリア時にはWave基本点(Wave1=100p、2=200p、3=400p、4=600p、5以降=1000p)にAccess比率倍率（90%以上×2、80%以上×1.5、70%以上×1.2、50%未満×0.5）をかけたボーナスがもらえます。逆に不要な広域抗菌薬を使うと、一時停止せず3秒だけ表示される警告でデエスカレーションを促されます。</p>
+          <p>画面上部のゲージには、使った抗菌薬の内訳が<b style="color:var(--access)">Access(緑)</b>・<b style="color:var(--watch)">Watch(黄)</b>・<b style="color:var(--reserve)">Reserve(赤)</b>の3色で表示される「<b>AWaRe比率</b>」ゲージがあります。<b>Access比率</b>が高いほど攻撃スコアが上がる（90%以上で2倍、80%以上で1.5倍）うえ、Waveクリア時にはWave基本点(Wave1=100p、2=200p、3=400p、4=600p、5以降=1000p)にAccess比率倍率（70%以上×3.0、60%以上×2.0、50%以上×1.5、40%以上×1.0、40%未満×0.8）をかけたボーナスがもらえます。逆に不要な広域抗菌薬を使うと、一時停止せず3秒だけ表示される警告でデエスカレーションを促されます。</p>
+          <p>各抗菌薬には<b>ASC(抗菌薬スペクトラムスコア)</b>も設定されており（PCG/CEZ=3、VCM=4、LZD=6、CAZ/COL=8、MEPM=12）、実際に使った回数の平均値<b>DASC</b>がゲーム終了時に表示されます。数値が低いほど狭域中心の使い方ができた証です。</p>
+          <p>Wave8以降は、🛒抗菌薬とは別に<b>💊回復ポーション</b>(Wave8〜／HP回復)・<b>💉PCV</b>(Wave12〜／肺炎球菌ワクチン、しばらく肺炎球菌の出現を抑制)・<b>🧰感染対策キット</b>(Wave15〜／しばらく出現をゆっくりに)がまれに降ってきます。抗菌薬を選ばずタップするだけで取れますが、見逃すと消えてしまいます。</p>
           <h3>📕 登場キャラクター図鑑</h3>
           <p>タップすると詳しい解説がモーダルで開きます。</p>
           <div class="charGrid" id="charGridAbout"></div>
@@ -246,6 +259,7 @@
             <li>「かぜ(ウイルス)」は<b>撃たずに見送る</b>か、画面上部に出る<b>🛌安静にするボタン</b>を押すのが正解（加点）。撃つと警告＆減点。</li>
             <li>正体不明の丸（青/赤/黒）は、有効な抗菌薬を当てると正体が判明する。判明後は通常の菌と同じくAWaReを意識して倒す。</li>
             <li>MDRPはカルバペネマーゼ（指輪で表現）を持たない型（CAZも有効）と持つ型（COLのみ有効）の2種類。見た目で見分けよう。</li>
+            <li>Wave8以降、💊回復ポーション／💉PCV／🧰感染対策キットがまれに降ってくる。抗菌薬を選ばずタップで取得できる（取り逃しても減点なし）。</li>
             <li>Waveが進むほど菌のHPが増え一発では倒れなくなる。</li>
             <li>貯めたスコアは🛒ショップで各抗菌薬の威力強化（★〜★★★★★）に使える。★5は一撃必殺になる。</li>
             <li>防御ラインのHPが0になるとゲームオーバー。</li>
@@ -276,6 +290,7 @@
       <div class="overOverlayInner">
         <h2 id="overTitle">GAME OVER</h2>
         <p id="overText"></p>
+        <div id="overSummary" class="overSummary"></div>
         <button id="retryBtn">もう一度</button>
       </div>
     </div>
@@ -340,13 +355,13 @@
   const SHORTAGE_ELIGIBLE = ['CEZ','VCM','CAZ','MEPM'];
 
   const WEAPONS = [
-    { id:'PCG',  abbr:'PCG',  full:'ペニシリンG', tier:'access',  level:0 },
-    { id:'CEZ',  abbr:'CEZ',  full:'セファゾリン', tier:'access',  level:0 },
-    { id:'VCM',  abbr:'VCM',  full:'バンコマイシン', tier:'watch', level:0 },
-    { id:'CAZ',  abbr:'CAZ',  full:'セフタジジム', tier:'watch',  level:0 },
-    { id:'MEPM', abbr:'MEPM', full:'メロペネム', tier:'watch',    level:0 },
-    { id:'COL',  abbr:'COL',  full:'コリスチン', tier:'reserve',  level:0 },
-    { id:'LZD',  abbr:'LZD',  full:'リネゾリド', tier:'reserve',  level:0 },
+    { id:'PCG',  abbr:'PCG',  full:'ペニシリンG', tier:'access',  level:0, asc:3,  spectrum:'狭域' },
+    { id:'CEZ',  abbr:'CEZ',  full:'セファゾリン', tier:'access',  level:0, asc:3,  spectrum:'狭域' },
+    { id:'VCM',  abbr:'VCM',  full:'バンコマイシン', tier:'watch', level:0, asc:4,  spectrum:'狭域' },
+    { id:'CAZ',  abbr:'CAZ',  full:'セフタジジム', tier:'watch',  level:0, asc:8,  spectrum:'中間' },
+    { id:'MEPM', abbr:'MEPM', full:'メロペネム', tier:'watch',    level:0, asc:12, spectrum:'広域' },
+    { id:'COL',  abbr:'COL',  full:'コリスチン', tier:'reserve',  level:0, asc:8,  spectrum:'中間' },
+    { id:'LZD',  abbr:'LZD',  full:'リネゾリド', tier:'reserve',  level:0, asc:6,  spectrum:'中間' },
   ];
   const WMAP = {}; WEAPONS.forEach(w=>WMAP[w.id]=w);
   function weaponDamage(w){ return w.level>=MAX_WEAPON_LEVEL ? Infinity : 1 + w.level; }
@@ -373,7 +388,7 @@
   });
   const KAZE = { label:'かぜ(ウイルス)', size:18, dmg:0, drawFn:'drawKaze',
     desc:'原因はウイルスであり細菌ではない。抗菌薬を使っても症状は改善せず、副作用や耐性菌のリスクだけが残る。正しい対応は、必要のない抗菌薬を使わず安静・経過観察すること。' };
-  const HITPAD = { pneumo:16, mssa:15, mrsa:22, pa:18, vre:16, mdrp_active:20, mdrp_inactive:20, kaze:14, mystery_pos:20, mystery_neg:22, mystery_black:24 };
+  const HITPAD = { pneumo:16, mssa:15, mrsa:22, pa:18, vre:16, mdrp_active:20, mdrp_inactive:20, kaze:14, mystery_pos:20, mystery_neg:22, mystery_black:24, potion:18, pcv:18, kit:18 };
 
   // 'mdrp' はメタID：出現時に mdrp_active / mdrp_inactive のどちらかへランダムに解決される
   function resolveBactId(id){
@@ -388,6 +403,17 @@
     mystery_neg:   { size:26, drawFn:'drawMysteryRed',   label:'???(陰性?)' },
     mystery_black: { size:28, drawFn:'drawMysteryBlack', label:'???' },
   };
+  const ITEM_DEFS = {
+    potion: { label:'回復ポーション', size:22, dmg:0, drawFn:'drawPotion' },
+    pcv:    { label:'PCV',           size:22, dmg:0, drawFn:'drawPCV' },
+    kit:    { label:'感染対策キット', size:22, dmg:0, drawFn:'drawKit' },
+  };
+  const ITEM_FLAVOR = {
+    potion: '💊回復ポーションが時々降ってくる。抗菌薬を選ばなくてもタップするだけで、防御ラインのHPを回復できるぞ！',
+    pcv:    '💉PCV(肺炎球菌ワクチン)が時々降ってくる。タップして接種すると、しばらく肺炎球菌の出現を抑えられるぞ！',
+    kit:    '🧰感染対策キットが時々降ってくる。タップすると、しばらく敵の出現をゆっくりにできるぞ！',
+  };
+  const ITEM_INTRO_WAVE = { potion:8, pcv:12, kit:15 };
 
   function waveHpBonus(wave){ return Math.min(3, Math.floor((wave-1)/3)); }
   function computeWaveQuota(w){ return Math.min(9, 3 + Math.floor(w/3)); }
@@ -413,7 +439,15 @@
   let spawnTimer = 0, spawnedThisWave = 0, waveQuota = computeWaveQuota(1);
   let lastTime = 0, globalTime = 0;
   let waveIntermission = false, intermissionTimer = 0;
-  let totalJudgments = 0, goodJudgments = 0;
+  let totalJudgments = 0, goodJudgments = 0; // goodJudgments = Accessティア使用回数
+  let watchJudgments = 0, reserveJudgments = 0;
+  let totalASC = 0, totalDoses = 0; // DASC(平均スペクトラムスコア)集計用
+  let killCounts = {};    // 菌種id -> 撃退数
+  let drugUseCounts = {}; // 抗菌薬id -> 使用回数
+  let ineffectiveCount = 0; // 無効な攻撃(耐性/正体不明で外れ/かぜへの誤投薬)の回数
+  let pneumoSuppressWaves = 0; // PCV接種による肺炎球菌抑制の残りWave数
+  let infectionControlTimer = 0; // 感染対策キットによる出現ペース低下の残り秒数
+  function currentDASC(){ return totalDoses>0 ? (totalASC/totalDoses) : null; }
   let shortageSet = new Set(); // 現在のWaveで出荷停止中の抗菌薬id
   const NUM_LANES = 5;
   let laneOccupant = new Array(NUM_LANES).fill(null);
@@ -479,7 +513,7 @@
       const isShort = shortageSet.has(w.id);
       const btn = document.createElement('button');
       btn.className = 'weaponBtn tier-' + w.tier + (w.id===selectedWeapon ? ' active' : '') + (isShort?' shortage':'');
-      btn.title = isShort ? `${w.full}（出荷停止中）` : `${w.full}（${w.tier==='access'?'Access':w.tier==='watch'?'Watch':'Reserve'}）`;
+      btn.title = isShort ? `${w.full}（出荷停止中）` : `${w.full}（${w.tier==='access'?'Access':w.tier==='watch'?'Watch':'Reserve'}／ASC:${w.asc} ${w.spectrum}）`;
       btn.innerHTML = `<span class="tierdot" style="background:${TIER_COLOR[w.tier]}"></span>
         <span class="abbr">${w.abbr}</span><span class="stars">${isShort?'出荷停止':starsStr(w.level)}</span>`;
       btn.addEventListener('click', ()=> selectWeapon(w.id));
@@ -538,7 +572,7 @@
       const cost = w.level<MAX_WEAPON_LEVEL ? SHOP_COSTS[w.level] : null;
       const powerText = w.level>=MAX_WEAPON_LEVEL ? '一撃必殺' : `威力 ${weaponDamage(w)}`;
       html += `<div class="shopRow">
-        <div class="info"><b>${w.abbr} <span style="color:var(--gold)">${starsStr(w.level)}</span></b><span>${w.full}（${powerText}）</span></div>
+        <div class="info"><b>${w.abbr} <span style="color:var(--gold)">${starsStr(w.level)}</span></b><span>${w.full}（${powerText}／ASC:${w.asc} ${w.spectrum}）</span></div>
         ${cost!==null ? `<button data-w="${w.id}" ${score<cost?'disabled':''}>強化 ${cost}p</button>` : `<button disabled>MAX</button>`}
       </div>`;
     });
@@ -820,6 +854,7 @@
       <h3>💰 スコアの仕組み</h3>
       <p>細菌を倒すと<b>撃退スコア</b>が入る。<b>Access</b>(狭域)で倒すほど高得点、広域を不必要に使うと減点される。</p>
       <p>Waveをクリアすると<b>Waveクリアボーナス</b>ももらえる。Access比率が高いほどボーナスの倍率もアップするぞ！</p>
+      <p style="font-size:0.68rem;color:var(--text-dim)">上級者向け指標として、使った抗菌薬の平均スペクトラムスコア「<b>DASC</b>」もゲーム終了時に表示されるぞ。数値が低いほど狭域中心の使い方ができた証！終了時には撃退した菌の内訳や抗菌薬の使用回数、無効な攻撃の回数もサマリーで見られるぞ。</p>
       <button id="flowNext">つぎへ</button>`;
     document.getElementById('flowNext').addEventListener('click', done);
   }
@@ -845,10 +880,11 @@
       <h3>🏆 Waveクリアボーナスの倍率</h3>
       <p>Waveをクリアすると、そのWaveの<b>Access比率</b>に応じてクリアボーナスの倍率が変わるぞ！</p>
       <ul>
-        <li>90%以上：<b style="color:var(--access)">×2</b></li>
-        <li>80%以上：<b style="color:var(--access)">×1.5</b></li>
-        <li>70%以上：<b style="color:var(--watch)">×1.2</b></li>
-        <li>50%未満：<b style="color:var(--reserve)">×0.5（半分）</b></li>
+        <li>70%以上：<b style="color:var(--access)">×3.0</b></li>
+        <li>60%以上：<b style="color:var(--access)">×2.0</b></li>
+        <li>50%以上：<b style="color:var(--access)">×1.5</b></li>
+        <li>40%以上：<b style="color:var(--watch)">×1.0</b></li>
+        <li>40%未満：<b style="color:var(--reserve)">×0.8</b></li>
       </ul>
       <button id="flowNext">つぎへ</button>`;
     document.getElementById('flowNext').addEventListener('click', done);
@@ -909,6 +945,20 @@
       document.getElementById('flowNext').addEventListener('click', done);
     };
   }
+  function itemIntroJob(itemId){
+    return function(done){
+      const def = ITEM_DEFS[itemId];
+      flowCard.innerHTML = `
+        <canvas id="flowItemCanvas" width="140" height="140" style="width:90px;height:90px;margin:0 auto 8px;display:block;"></canvas>
+        <h3>${def.label}</h3>
+        <p>${ITEM_FLAVOR[itemId] || ''}</p>
+        <button id="flowNext">つぎへ</button>`;
+      const c = document.getElementById('flowItemCanvas').getContext('2d');
+      c.clearRect(0,0,140,140);
+      DRAW_FNS[def.drawFn](c,70,72,50,0);
+      document.getElementById('flowNext').addEventListener('click', done);
+    };
+  }
   function buildIntroForWave(w){
     const jobs = [];
     if(w===1) jobs.push(tipsJob);
@@ -922,6 +972,9 @@
     if(w===3) jobs.push(hpIntroJob);
     if(w===3) jobs.push(shopIntroJob);
     if(w===4) jobs.push(accessBonusIntroJob);
+    Object.keys(ITEM_INTRO_WAVE).forEach(itemId=>{
+      if(ITEM_INTRO_WAVE[itemId]===w) jobs.push(itemIntroJob(itemId));
+    });
     return jobs;
   }
   function enqueueWaveIntro(w){
@@ -972,8 +1025,11 @@
     weights.push(['kaze', 0.16]);
     if(wave>=70) weights.push(['mystery_black', 0.08]);
     if(wave>=50){ weights.push(['mystery_pos', 0.09]); weights.push(['mystery_neg', 0.09]); }
+    if(wave>=8)  weights.push(['potion', 0.04]);
+    if(wave>=12) weights.push(['pcv', 0.02]);
+    if(wave>=15) weights.push(['kit', 0.02]);
 
-    const bactPool = ['pneumo','mssa','mrsa','pa','vre','mdrp'];
+    const bactPool = ['pneumo','mssa','mrsa','pa','vre','mdrp'].filter(id => !(id==='pneumo' && pneumoSuppressWaves>0));
     const used = weights.reduce((s,w)=>s+w[1],0);
     const remain = Math.max(0.1, 1-used);
     const each = remain/bactPool.length;
@@ -997,6 +1053,12 @@
     if(typeId==='kaze'){
       const e = { typeId, def:KAZE, lane, x: laneX(lane), y:-KAZE.size*2.2,
         speed:(0.32+wave*0.03)*(0.9+Math.random()*0.2), hp:1, maxHp:1, hitFlash:0, judged:false };
+      enemies.push(e); laneOccupant[lane]=e; return true;
+    }
+    if(typeId==='potion' || typeId==='pcv' || typeId==='kit'){
+      const def = ITEM_DEFS[typeId];
+      const e = { typeId, def, lane, x: laneX(lane), y:-def.size*2.2,
+        speed:(0.34+wave*0.03)*(0.9+Math.random()*0.2), hp:1, maxHp:1, hitFlash:0 };
       enemies.push(e); laneOccupant[lane]=e; return true;
     }
     if(typeId==='mystery_pos' || typeId==='mystery_neg' || typeId==='mystery_black'){
@@ -1029,6 +1091,24 @@
   }
 
   function hasActiveKaze(){ return enemies.some(e=>e.typeId==='kaze' && !e.judged); }
+  function collectItem(e){
+    if(e.typeId==='potion'){
+      const before = hp;
+      hp = Math.min(100, hp+15);
+      addFloatText(e.x, e.y-10, `HP回復! +${hp-before}`, '#4ade80');
+      addParticles(e.x, e.y, '#4ade80', 10);
+    } else if(e.typeId==='pcv'){
+      pneumoSuppressWaves = 3;
+      addFloatText(e.x, e.y-10, 'PCV接種!', '#60a5fa');
+      addParticles(e.x, e.y, '#60a5fa', 10);
+      showToast('💉 PCV接種！これから3Waveは肺炎球菌の出現が抑制されるぞ', 3000);
+    } else if(e.typeId==='kit'){
+      infectionControlTimer = 15;
+      addFloatText(e.x, e.y-10, '感染対策発動!', '#f8fafc');
+      addParticles(e.x, e.y, '#f8fafc', 10);
+      showToast('🧰 感染対策キット発動！しばらく出現がゆっくりになるぞ', 3000);
+    }
+  }
   document.getElementById('restBtn').addEventListener('click', ()=>{
     const targets = enemies.filter(e=>e.typeId==='kaze' && !e.judged);
     targets.forEach(e=>{
@@ -1053,12 +1133,21 @@
     addParticles(x, H-24, '#4fd1c5', 4);
     if(!best) return;
 
+    // --- 回復ポーション/PCV/感染対策キット ---
+    if(best.typeId==='potion' || best.typeId==='pcv' || best.typeId==='kit'){
+      collectItem(best);
+      removeEnemy(best);
+      updateHUD();
+      return;
+    }
+
     // --- かぜ(ウイルス) ---
     if(best.typeId==='kaze'){
       if(!best.judged){
         best.judged = true;
         score = Math.max(0, score-50);
         totalJudgments++;
+        ineffectiveCount++;
         addFloatText(best.x, best.y-10, '無効使用!-50', '#ef4444');
         showWarning('風邪に抗菌薬は効きません');
         updateAwareGauge();
@@ -1072,6 +1161,13 @@
     // --- 正体不明(未判明) ---
     if(best.trueDef && !best.revealed){
       const isEffective = best.trueDef.drugs.includes(selectedWeapon);
+      const wDefMystery = WMAP[selectedWeapon];
+      totalDoses++; totalASC += wDefMystery.asc;
+      drugUseCounts[selectedWeapon] = (drugUseCounts[selectedWeapon]||0) + 1;
+      totalJudgments++;
+      if(wDefMystery.tier==='access') goodJudgments++;
+      else if(wDefMystery.tier==='watch') watchJudgments++;
+      else if(wDefMystery.tier==='reserve') reserveJudgments++;
       if(isEffective){
         best.revealed = true;
         best.def = best.trueDef;
@@ -1082,17 +1178,19 @@
         const portion = dmgDealt/best.maxHp;
         const gained = Math.round(best.trueDef.score*portion*1*currentAwareMult());
         score += gained;
-        totalJudgments++; goodJudgments++;
         addFloatText(best.x, best.y-6, `経験的治療で正体判明! +${gained}`, '#22d3ee');
         if(best.hp<=0){
           addFloatText(best.x, best.y-22, '撃破!', '#93c5fd');
           addParticles(best.x, best.y, '#93c5fd', 14);
+          killCounts[best.trueId] = (killCounts[best.trueId]||0) + 1;
           removeEnemy(best);
         }
         updateAwareGauge();
       } else {
+        ineffectiveCount++;
         addFloatText(best.x, best.y-10, '正体不明…この薬は無効', '#ef4444');
         best.speed *= 1.05;
+        updateAwareGauge();
       }
       updateHUD();
       return;
@@ -1101,6 +1199,12 @@
     // --- 通常/判明済みの菌 ---
     const wDef = WMAP[selectedWeapon];
     const isEffective = best.def.drugs.includes(selectedWeapon);
+    totalDoses++; totalASC += wDef.asc;
+    drugUseCounts[selectedWeapon] = (drugUseCounts[selectedWeapon]||0) + 1;
+    totalJudgments++;
+    if(wDef.tier==='access') goodJudgments++;
+    else if(wDef.tier==='watch') watchJudgments++;
+    else if(wDef.tier==='reserve') reserveJudgments++;
     if(isEffective){
       const diff = TIER_RANK[wDef.tier] - best.def.bestTier;
       let mult, msg, color;
@@ -1114,20 +1218,21 @@
       const portion = dmgDealt / best.maxHp;
       const gained = Math.round(best.def.score * portion * mult * currentAwareMult());
       score += gained;
-      totalJudgments++;
-      if(diff===0) goodJudgments++;
       addFloatText(best.x, best.y-6, `${msg} +${gained}`, color);
       if(diff>=1){ showToast('有効ですが広域抗菌薬です。より狭域の抗菌薬へデエスカレーションしてください。', 3000); }
 
       if(best.hp <= 0){
         addFloatText(best.x, best.y-22, '撃破!', '#93c5fd');
         addParticles(best.x, best.y, '#93c5fd', 14);
+        killCounts[best.trueId || best.typeId] = (killCounts[best.trueId || best.typeId]||0) + 1;
         removeEnemy(best);
       }
       updateAwareGauge();
     } else {
+      ineffectiveCount++;
       addFloatText(best.x, best.y-10, '耐性! 無効', '#ef4444');
       best.speed *= 1.05;
+      updateAwareGauge();
     }
     updateHUD();
   }
@@ -1146,20 +1251,63 @@
     hpBar.style.background = pct > 50 ? 'var(--hp-bar)' : (pct>20 ? 'var(--warn)' : 'var(--danger)');
   }
   function updateAwareGauge(){
-    const pct = totalJudgments>0 ? Math.round(goodJudgments/totalJudgments*100) : null;
-    const fill = document.getElementById('awareFill');
+    const total = totalJudgments;
+    const accessPct = total>0 ? Math.round(goodJudgments/total*100) : 0;
+    const watchPct = total>0 ? Math.round(watchJudgments/total*100) : 0;
+    const reservePct = total>0 ? Math.round(reserveJudgments/total*100) : 0;
+    document.getElementById('segAccess').style.width = accessPct + '%';
+    document.getElementById('segWatch').style.width = watchPct + '%';
+    document.getElementById('segReserve').style.width = reservePct + '%';
     const label = document.getElementById('awareLabel');
-    const shown = pct===null ? 0 : pct;
-    fill.style.width = shown + '%';
-    fill.style.background = shown>=80 ? 'var(--access)' : (shown>=50 ? 'var(--watch)' : 'var(--reserve)');
-    label.textContent = `Access比率 ${pct===null?'--':pct}%`;
+    label.textContent = total>0 ? `A${accessPct} Wa${watchPct} Re${reservePct}` : 'AWaRe比率 --';
   }
 
+  function buildEndSummary(){
+    const el = document.getElementById('overSummary');
+    let html = '';
+
+    // どれを何体撃退したか
+    html += '<h4>🏆 撃退した菌</h4><table>';
+    const killIds = Object.keys(killCounts).filter(id=>killCounts[id]>0);
+    if(killIds.length===0){
+      html += '<tr><td colspan="2">撃退なし</td></tr>';
+    } else {
+      killIds.forEach(id=>{
+        const def = BACTERIA[id];
+        const label = def ? (def.dexLabel || def.label) : id;
+        html += `<tr><td>${label}</td><td class="num">${killCounts[id]}体</td></tr>`;
+      });
+    }
+    html += '</table>';
+
+    // どれをどれくらい使用したか
+    html += '<h4>💊 抗菌薬の使用回数</h4><table>';
+    const usedIds = WEAPONS.filter(w=>(drugUseCounts[w.id]||0)>0);
+    if(usedIds.length===0){
+      html += '<tr><td colspan="2">使用なし</td></tr>';
+    } else {
+      usedIds.forEach(w=>{
+        html += `<tr><td>${w.abbr}（${w.full}）</td><td class="num">${drugUseCounts[w.id]}回</td></tr>`;
+      });
+    }
+    html += '</table>';
+
+    // 無効な攻撃回数
+    html += `<h4>⚠️ 無効な攻撃</h4><table><tr><td>耐性菌・かぜへの誤投薬など</td><td class="num">${ineffectiveCount}回</td></tr></table>`;
+
+    el.innerHTML = html;
+  }
   function endGame(){
     running = false;
     document.getElementById('overTitle').textContent = 'GAME OVER';
-    const pct = totalJudgments>0 ? Math.round(goodJudgments/totalJudgments*100) : 0;
-    document.getElementById('overText').textContent = `到達 Wave ${wave} / スコア ${score} / Access比率 ${pct}%`;
+    const total = totalJudgments;
+    const accessPct = total>0 ? Math.round(goodJudgments/total*100) : 0;
+    const watchPct = total>0 ? Math.round(watchJudgments/total*100) : 0;
+    const reservePct = total>0 ? Math.round(reserveJudgments/total*100) : 0;
+    const dasc = currentDASC();
+    const dascText = dasc===null ? '--' : dasc.toFixed(1);
+    document.getElementById('overText').textContent = `到達 Wave ${wave} / スコア ${score} / AWaRe比率 Access${accessPct}% Watch${watchPct}% Reserve${reservePct}% / 平均DASC ${dascText}`;
+    buildEndSummary();
     document.getElementById('overOverlay').style.display = 'flex';
     try{
       const bestScore = parseInt(localStorage.getItem('bactattack_best')||'0',10);
@@ -1198,11 +1346,11 @@
     return 1000;
   }
   function accessBonusMultiplier(pct){
-    if(pct>=90) return 2;
-    if(pct>=80) return 1.5;
-    if(pct>=70) return 1.2;
-    if(pct<50) return 0.5;
-    return 1;
+    if(pct>=70) return 3.0;
+    if(pct>=60) return 2.0;
+    if(pct>=50) return 1.5;
+    if(pct>=40) return 1.0;
+    return 0.8;
   }
   function awardWaveClearBonus(){
     const pct = currentAwarePct();
@@ -1224,6 +1372,7 @@
   function nextWave(){
     awardWaveClearBonus();
     wave += 1; waveQuota = computeWaveQuota(wave); spawnedThisWave = 0; spawnTimer = 0;
+    if(pneumoSuppressWaves>0) pneumoSuppressWaves--;
     buildCuratedQueue(wave);
     enqueueWaveIntro(wave);
     rollShortages();
@@ -1437,8 +1586,44 @@
   function drawMysteryBlue(ctx,x,y,r,t){ drawMysteryCircle(ctx,x,y,r,'#3b82f6','#1e3a8a',t||0); }
   function drawMysteryRed(ctx,x,y,r,t){ drawMysteryCircle(ctx,x,y,r,'#ef4444','#7f1d1d',t||0); }
   function drawMysteryBlack(ctx,x,y,r,t){ drawMysteryCircle(ctx,x,y,r,'#1f2937','#000000',t||0); }
+  function drawPotion(ctx,x,y,size){
+    ctx.save(); ctx.translate(x,y);
+    const s = size/20; ctx.scale(s,s);
+    ctx.fillStyle = '#34d399'; ctx.strokeStyle = '#065f46'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4,-14); ctx.lineTo(4,-14); ctx.lineTo(4,-6); ctx.lineTo(10,9);
+    ctx.quadraticCurveTo(10,16,0,16); ctx.quadraticCurveTo(-10,16,-10,9); ctx.lineTo(-4,-6);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#78350f'; ctx.fillRect(-5,-17,10,4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-2,3,4,10); ctx.fillRect(-5,6,10,4);
+    ctx.restore();
+  }
+  function drawPCV(ctx,x,y,size){
+    ctx.save(); ctx.translate(x,y);
+    const s = size/20; ctx.scale(s,s);
+    ctx.fillStyle = '#60a5fa'; ctx.strokeStyle = '#1e3a8a'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0,-16); ctx.quadraticCurveTo(12,-12,12,-2); ctx.quadraticCurveTo(12,10,0,17);
+    ctx.quadraticCurveTo(-12,10,-12,-2); ctx.quadraticCurveTo(-12,-12,0,-16); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-2,-8,4,12); ctx.fillRect(-6,-4,12,4);
+    ctx.restore();
+  }
+  function drawKit(ctx,x,y,size){
+    ctx.save(); ctx.translate(x,y);
+    const s = size/20; ctx.scale(s,s);
+    ctx.fillStyle = '#f8fafc'; ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(-14,-7,28,20,3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#334155';
+    ctx.beginPath(); ctx.roundRect(-6,-13,12,6,2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-2,-3,4,10); ctx.fillRect(-7,0,14,4);
+    ctx.restore();
+  }
 
-  const DRAW_FNS = { drawPneumo, drawMSSA, drawMRSA, drawPA, drawMdrpRingEyes, drawMdrpDroopyEyes, drawVRE, drawKaze, drawMysteryBlue, drawMysteryRed, drawMysteryBlack };
+  const DRAW_FNS = { drawPneumo, drawMSSA, drawMRSA, drawPA, drawMdrpRingEyes, drawMdrpDroopyEyes, drawVRE, drawKaze, drawMysteryBlue, drawMysteryRed, drawMysteryBlack, drawPotion, drawPCV, drawKit };
 
   // ---------- メインループ ----------
   function loop(ts){
@@ -1459,12 +1644,13 @@
     drawBackground();
 
     if(!paused){
+      if(infectionControlTimer>0) infectionControlTimer = Math.max(0, infectionControlTimer-dt);
       if(waveIntermission){
         intermissionTimer -= dt;
         if(intermissionTimer<=0){ waveIntermission = false; nextWave(); }
       } else {
         spawnTimer -= dt;
-        const spawnInterval = Math.max(0.38, 1.15 - wave*0.06);
+        const spawnInterval = Math.max(0.38, 1.15 - wave*0.06) * (infectionControlTimer>0 ? 1.6 : 1);
         if(spawnTimer<=0 && spawnedThisWave < waveQuota){
           if(spawnEnemy()) spawnedThisWave++;
           spawnTimer = spawnInterval;
@@ -1483,6 +1669,8 @@
               addFloatText(e.x, H-20, '経過観察が正解! +30', '#4fd1c5');
               updateAwareGauge();
             }
+          } else if(e.typeId==='potion' || e.typeId==='pcv' || e.typeId==='kit'){
+            // 取り逃し：ペナルティなし
           } else {
             const dmgAmount = e.trueDef ? e.trueDef.dmg : e.def.dmg;
             hp -= dmgAmount;
@@ -1696,7 +1884,10 @@
     curatedQueue = [];
     buildCuratedQueue(1);
     waveIntermission=false; intermissionTimer=0;
-    totalJudgments=0; goodJudgments=0;
+    totalJudgments=0; goodJudgments=0; watchJudgments=0; reserveJudgments=0;
+    totalASC=0; totalDoses=0;
+    killCounts={}; drugUseCounts={}; ineffectiveCount=0;
+    pneumoSuppressWaves=0; infectionControlTimer=0;
     shortageSet = new Set();
     laneOccupant = new Array(NUM_LANES).fill(null);
     WEAPONS.forEach(w=>w.level=0);
