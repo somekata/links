@@ -247,7 +247,7 @@
             <li>正体不明の丸（青/赤/黒）は、有効な抗菌薬を当てると正体が判明する。判明後は通常の菌と同じくAWaReを意識して倒す。</li>
             <li>MDRPはカルバペネマーゼ（指輪で表現）を持たない型（CAZも有効）と持つ型（COLのみ有効）の2種類。見た目で見分けよう。</li>
             <li>Waveが進むほど菌のHPが増え一発では倒れなくなる。</li>
-            <li>貯めたスコアは🛒ショップで各抗菌薬の威力強化（☆〜☆☆☆）に使える。</li>
+            <li>貯めたスコアは🛒ショップで各抗菌薬の威力強化（★〜★★★★★）に使える。★5は一撃必殺になる。</li>
             <li>防御ラインのHPが0になるとゲームオーバー。</li>
           </ol>
         </div>
@@ -335,7 +335,8 @@
 
   const TIER_RANK = { access:0, watch:1, reserve:2 };
   const TIER_COLOR = { access:'var(--access)', watch:'var(--watch)', reserve:'var(--reserve)' };
-  const SHOP_COSTS = [100,300,1000];
+  const SHOP_COSTS = [100,300,1000,10000,50000];
+  const MAX_WEAPON_LEVEL = SHOP_COSTS.length; // 5
   const SHORTAGE_ELIGIBLE = ['CEZ','VCM','CAZ','MEPM'];
 
   const WEAPONS = [
@@ -348,7 +349,7 @@
     { id:'LZD',  abbr:'LZD',  full:'リネゾリド', tier:'reserve',  level:0 },
   ];
   const WMAP = {}; WEAPONS.forEach(w=>WMAP[w.id]=w);
-  function weaponDamage(w){ return 1 + w.level; }
+  function weaponDamage(w){ return w.level>=MAX_WEAPON_LEVEL ? Infinity : 1 + w.level; }
 
   const BACTERIA = {
     pneumo: { label:'肺炎球菌', dexLabel:'肺炎球菌', latin:'Streptococcus pneumoniae', gram:'positive', drugs:['PCG','CEZ','VCM','LZD'], baseHp:1, dmg:8,  score:100, drawFn:'drawPneumo', size:22,
@@ -467,7 +468,7 @@
 
   // ---------- 抗菌薬ボタン ----------
   const weaponsEl = document.getElementById('weapons');
-  function starsStr(level){ return '★'.repeat(level) + '☆'.repeat(3-level); }
+  function starsStr(level){ return '★'.repeat(level) + '☆'.repeat(MAX_WEAPON_LEVEL-level); }
   const WEAPON_UNLOCK_WAVE = { PCG:1, CEZ:1, VCM:3, CAZ:5, MEPM:5, LZD:6, COL:7 };
   function isWeaponUnlocked(id){ return wave >= (WEAPON_UNLOCK_WAVE[id] || 1); }
   function renderWeaponButtons(){
@@ -522,11 +523,12 @@
         <b style="font-size:0.8rem;">🛒 ショップ</b>
         <button id="shopCloseBtn" style="background:var(--panel-border);border:none;color:var(--text);width:24px;height:24px;border-radius:50%;font-size:0.72rem;cursor:pointer;">✕</button>
       </div>
-      <div style="font-size:0.72rem;margin-bottom:6px;color:var(--text-dim)">保有スコアで各抗菌薬の威力を強化(最大★★★)。1段階につき1ヒットあたりのダメージ+1。</div>`;
+      <div style="font-size:0.72rem;margin-bottom:6px;color:var(--text-dim)">保有スコアで各抗菌薬の威力を強化(最大★★★★★)。★4までは1段階につきダメージ+1、★5は<b style="color:var(--reserve)">一撃必殺</b>！</div>`;
     WEAPONS.forEach(w=>{
-      const cost = w.level<3 ? SHOP_COSTS[w.level] : null;
+      const cost = w.level<MAX_WEAPON_LEVEL ? SHOP_COSTS[w.level] : null;
+      const powerText = w.level>=MAX_WEAPON_LEVEL ? '一撃必殺' : `威力 ${weaponDamage(w)}`;
       html += `<div class="shopRow">
-        <div class="info"><b>${w.abbr} <span style="color:var(--gold)">${starsStr(w.level)}</span></b><span>${w.full}（威力 ${weaponDamage(w)}）</span></div>
+        <div class="info"><b>${w.abbr} <span style="color:var(--gold)">${starsStr(w.level)}</span></b><span>${w.full}（${powerText}）</span></div>
         ${cost!==null ? `<button data-w="${w.id}" ${score<cost?'disabled':''}>強化 ${cost}p</button>` : `<button disabled>MAX</button>`}
       </div>`;
     });
@@ -536,7 +538,7 @@
       btn.addEventListener('click', ()=>{
         const w = WMAP[btn.getAttribute('data-w')];
         const cost = SHOP_COSTS[w.level];
-        if(w.level<3 && score>=cost){
+        if(w.level<MAX_WEAPON_LEVEL && score>=cost){
           score -= cost; w.level++;
           updateHUD(); renderWeaponButtons(); buildShopPanel();
         }
@@ -822,7 +824,8 @@
   function shopIntroJob(done){
     flowCard.innerHTML = `
       <h3>🛒 ショップ</h3>
-      <p>貯めたスコアで、画面下の🛒ショップから各抗菌薬の威力を強化できるぞ！</p>
+      <p>貯めたスコアで、画面下の🛒ショップから各抗菌薬の威力を強化できるぞ！最大★5まで強化可能。</p>
+      <p>★5まで極めると、なんと<b style="color:var(--reserve)">一撃必殺</b>になる！</p>
       <p>ショップで攻撃を強化しよう！</p>
       <button id="flowNext">つぎへ</button>`;
     document.getElementById('flowNext').addEventListener('click', done);
