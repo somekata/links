@@ -471,8 +471,10 @@
   function starsStr(level){ return '★'.repeat(level) + '☆'.repeat(MAX_WEAPON_LEVEL-level); }
   const WEAPON_UNLOCK_WAVE = { PCG:1, CEZ:1, VCM:3, CAZ:5, MEPM:5, LZD:6, COL:7 };
   function isWeaponUnlocked(id){ return wave >= (WEAPON_UNLOCK_WAVE[id] || 1); }
+  let weaponBtnEls = {};
   function renderWeaponButtons(){
     weaponsEl.innerHTML = '';
+    weaponBtnEls = {};
     WEAPONS.filter(w=>isWeaponUnlocked(w.id)).forEach(w=>{
       const isShort = shortageSet.has(w.id);
       const btn = document.createElement('button');
@@ -480,12 +482,20 @@
       btn.title = isShort ? `${w.full}（出荷停止中）` : `${w.full}（${w.tier==='access'?'Access':w.tier==='watch'?'Watch':'Reserve'}）`;
       btn.innerHTML = `<span class="tierdot" style="background:${TIER_COLOR[w.tier]}"></span>
         <span class="abbr">${w.abbr}</span><span class="stars">${isShort?'出荷停止':starsStr(w.level)}</span>`;
-      btn.addEventListener('click', ()=>{
-        if(shortageSet.has(w.id)) return;
-        selectedWeapon = w.id; renderWeaponButtons();
-      });
+      btn.addEventListener('click', ()=> selectWeapon(w.id));
       weaponsEl.appendChild(btn);
+      weaponBtnEls[w.id] = btn;
     });
+  }
+  // 武器の切り替えはボタン一覧を作り直さず、activeクラスの付け替えだけで即座に反映する
+  function selectWeapon(id){
+    if(shortageSet.has(id)) return;
+    if(id === selectedWeapon) return;
+    const prevBtn = weaponBtnEls[selectedWeapon];
+    if(prevBtn) prevBtn.classList.remove('active');
+    selectedWeapon = id;
+    const nextBtn = weaponBtnEls[id];
+    if(nextBtn) nextBtn.classList.add('active');
   }
   renderWeaponButtons();
 
