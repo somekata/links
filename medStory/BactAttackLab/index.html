@@ -65,7 +65,8 @@
   #restBtn{ background:var(--accent); color:#052a26; border:none; border-radius:8px; padding:6px 9px; font-size:0.6rem; font-weight:700; cursor:pointer; white-space:nowrap; }
 
   /* ---- 抗菌薬ボタン：1行に収まる細長デザイン ---- */
-  .weapons{ display:flex; flex-wrap:nowrap; gap:3px; margin-top:10px; }
+  .weapons{ display:flex; flex-wrap:nowrap; gap:3px; margin-top:10px; transition:opacity .2s ease; }
+  .weapons.locked{ opacity:0.35; pointer-events:none; }
   .weaponBtn{
     flex:1 1 0; min-width:0; background:var(--btn-bg); color:var(--btn-text);
     border:2px solid var(--panel-border); border-radius:10px; padding:7px 1px 6px;
@@ -268,7 +269,7 @@
             <li>降りてくる細菌を画面上でタップすると、選んでいる抗菌薬で攻撃。</li>
             <li>その菌に効く薬なら効果あり。効かない薬は「耐性!無効」。</li>
             <li>効く薬が複数ある場合、<b>Access(緑)</b>を選ぶと満点、<b>Watch/Reserve</b>で代用すると減点＆警告。</li>
-            <li>「かぜ(ウイルス)」は<b>撃たずに見送る</b>か、画面上部に出る<b>🛌安静にするボタン</b>を押すのが正解（加点）。撃つと警告＆減点。</li>
+            <li>「かぜ(ウイルス)」は<b>撃たずに見送る</b>か、画面上部に出る<b>🛌安静にするボタン</b>を押すのが正解（加点）。撃つと警告＆減点、さらに<b>2秒間すべての抗菌薬ボタンが使えなくなる</b>。</li>
             <li>正体不明の丸（青/赤/黒）は、有効な抗菌薬を当てると正体が判明する。判明後は通常の菌と同じくAWaReを意識して倒す。</li>
             <li>MDRPはカルバペネマーゼ（指輪で表現）を持たない型（CAZも有効）と持つ型（COLのみ有効）の2種類。見た目で見分けよう。</li>
             <li>Wave8以降、💊回復ポーション／💉PCV／🧰感染対策キットがまれに降ってくる。抗菌薬を選ばずタップで取得できる（取り逃しても減点なし）。</li>
@@ -470,6 +471,7 @@
   let ineffectiveCount = 0; // 無効な攻撃(耐性/正体不明で外れ/かぜへの誤投薬)の回数
   let pneumoSuppressWaves = 0; // PCV接種による肺炎球菌抑制の残りWave数
   let infectionControlTimer = 0; // 感染対策キットによる出現ペース低下の残り秒数
+  let weaponLockTimer = 0; // かぜへの誤投薬による抗菌薬ボタンロックの残り秒数
   function currentDASC(){ return totalDoses>0 ? (totalASC/totalDoses) : null; }
   let shortageSet = new Set(); // 現在のWaveで出荷停止中の抗菌薬id
   const NUM_LANES = 5;
@@ -551,6 +553,7 @@
   }
   // 武器の切り替えはボタン一覧を作り直さず、activeクラスの付け替えだけで即座に反映する
   function selectWeapon(id){
+    if(weaponLockTimer>0) return;
     if(isDrugShortage(id)) return;
     if(id === selectedWeapon) return;
     const prevBtn = weaponBtnEls[selectedWeapon];
@@ -1211,8 +1214,10 @@
         score = Math.max(0, score-50);
         totalJudgments++;
         ineffectiveCount++;
+        weaponLockTimer = 2;
+        weaponsEl.classList.add('locked');
         addFloatText(best.x, best.y-10, '無効使用!-50', '#ef4444');
-        showWarning('風邪に抗菌薬は効きません');
+        showWarning('風邪に抗菌薬は効きません（抗菌薬ボタンが2秒間使えなくなります）');
         updateAwareGauge();
       } else {
         addFloatText(best.x, best.y-10, '判定済み', '#9fb0d0');
@@ -1733,6 +1738,10 @@
 
     if(!paused){
       if(infectionControlTimer>0) infectionControlTimer = Math.max(0, infectionControlTimer-dt);
+      if(weaponLockTimer>0){
+        weaponLockTimer = Math.max(0, weaponLockTimer-dt);
+        if(weaponLockTimer===0) weaponsEl.classList.remove('locked');
+      }
       if(waveIntermission){
         intermissionTimer -= dt;
         if(intermissionTimer<=0){ waveIntermission = false; nextWave(); }
@@ -1976,6 +1985,7 @@
     totalASC=0; totalDoses=0;
     killCounts={}; drugUseCounts={}; ineffectiveCount=0;
     pneumoSuppressWaves=0; infectionControlTimer=0;
+    weaponLockTimer=0; weaponsEl.classList.remove('locked');
     vcmMepmPenaltyActive=false;
     updatePcvGauge();
     shortageSet = new Set();
