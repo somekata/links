@@ -45,6 +45,13 @@
   .awareGauge .seg{ height:100%; width:0%; transition:width .3s ease; }
   .awareGauge .label{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; color:#08130d; text-shadow:0 0 3px rgba(255,255,255,0.5); }
 
+  .pcvGauge{ display:flex; align-items:center; gap:6px; margin:0 2px 6px; animation: pcvBlink 1s ease-in-out infinite; }
+  .pcvGauge .pcvIcon{ font-size:0.62rem; font-weight:700; color:#60a5fa; white-space:nowrap; }
+  .pcvBarOuter{ flex:1; height:8px; background:var(--panel-border); border-radius:4px; overflow:hidden; }
+  .pcvBarInner{ height:100%; width:0%; background:#60a5fa; transition:width .3s ease; }
+  #pcvWavesLeft{ font-size:0.58rem; color:#60a5fa; white-space:nowrap; }
+  @keyframes pcvBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.4; } }
+
   #canvasHolder{
     position:relative; width:100%; aspect-ratio: 3 / 4; max-height:52vh;
     background:linear-gradient(180deg,var(--bg2),var(--bg));
@@ -200,6 +207,11 @@
     <div class="seg" id="segReserve" style="background:var(--reserve)"></div>
     <div class="label" id="awareLabel">AWaRe比率 --</div>
   </div>
+  <div class="pcvGauge" id="pcvGauge" style="display:none;">
+    <span class="pcvIcon">💉PCV</span>
+    <div class="pcvBarOuter"><div class="pcvBarInner" id="pcvBarInner"></div></div>
+    <span id="pcvWavesLeft"></span>
+  </div>
 
   <div id="canvasHolder">
     <canvas id="game"></canvas>
@@ -241,7 +253,7 @@
           <h3>🗓️ ステージ構成</h3>
           <p>Wave1〜7は決まった顔ぶれで登場する練習ステージ（新しい菌・抗菌薬が出るたびに紹介モーダルが挟まります）。Wave8以降はすべての菌種がランダムに登場します。<b>MDRP</b>には見た目が2種類あり、カルバペネマーゼ（指輪で表現）を持たないタイプはCAZがまだ効き、持つタイプはCOLしか効きません。</p>
           <p>Wave50以降は<b>正体不明の丸</b>（青=グラム陽性・赤=グラム陰性）が出現し、有効な抗菌薬を当てると正体が判明します（最初の一撃は経験的治療として減点なし）。Wave70以降はさらに<b>正体不明の黒い丸</b>（何でもありうる）も登場し、正体不明の出現率自体もさらに上がります。<b>Wave80以降は菌の出現がすべて正体不明</b>になります。また、Wave5以降はCEZ・VCM・CAZ・MEPMのいずれかが<b>出荷停止</b>で使えなくなることがあり、Wave毎にランダムに入れ替わります（Wave10まで同時最大1つ、Wave20まで最大2つ、それ以降は最大3つ）。</p>
-          <p>画面上部のゲージには、使った抗菌薬の内訳が<b style="color:var(--access)">Access(緑)</b>・<b style="color:var(--watch)">Watch(黄)</b>・<b style="color:var(--reserve)">Reserve(赤)</b>の3色で表示される「<b>AWaRe比率</b>」ゲージがあります。<b>Access比率</b>が高いほど攻撃スコアが上がる（90%以上で2倍、80%以上で1.5倍）うえ、Waveクリア時にはWave基本点(Wave1=100p、2=200p、3=400p、4=600p、5以降=1000p)にAccess比率倍率（70%以上×3.0、60%以上×2.0、50%以上×1.5、40%以上×1.0、40%未満×0.8）をかけたボーナスがもらえます。逆に不要な広域抗菌薬を使うと、一時停止せず3秒だけ表示される警告でデエスカレーションを促されます。</p>
+          <p>画面上部のゲージには、使った抗菌薬の内訳が<b style="color:var(--access)">Access(緑)</b>・<b style="color:var(--watch)">Watch(黄)</b>・<b style="color:var(--reserve)">Reserve(赤)</b>の3色で表示される「<b>AWaRe比率</b>」ゲージがあります。<b>Access比率</b>が高いほど攻撃スコアが上がる（90%以上で2倍、80%以上で1.5倍）うえ、Waveクリア時にはWave基本点(Wave1=100p、2=200p、3=400p、4=600p、5以降=1000p)にAccess比率倍率（70%以上×3.0、60%以上×2.0、50%以上×1.5、40%以上×1.0、40%未満×0.8）をかけたボーナスがもらえます。逆にAccess比率が悪化すると難易度が上がります（30%未満で敵のHPが2倍、20%未満で敵の落下速度が1.5倍、10%未満で撃退スコアが半分）。不要な広域抗菌薬を使うと、一時停止せず3秒だけ表示される警告でデエスカレーションを促されます。</p>
           <p>各抗菌薬には<b>ASC(抗菌薬スペクトラムスコア)</b>も設定されており（PCG/CEZ=3、VCM=4、LZD=6、CAZ/COL=8、MEPM=12）、実際に使った回数の平均値<b>DASC</b>がゲーム終了時に表示されます。数値が低いほど狭域中心の使い方ができた証です。</p>
           <p>Wave8以降は、🛒抗菌薬とは別に<b>💊回復ポーション</b>(Wave8〜／HP回復)・<b>💉PCV</b>(Wave12〜／肺炎球菌ワクチン、しばらく肺炎球菌の出現を抑制)・<b>🧰感染対策キット</b>(Wave15〜／しばらく出現をゆっくりに)がまれに降ってきます。抗菌薬を選ばずタップするだけで取れますが、見逃すと消えてしまいます。</p>
           <h3>📕 登場キャラクター図鑑</h3>
@@ -437,6 +449,10 @@
   }
   function currentAwarePct(){ return totalJudgments>0 ? (goodJudgments/totalJudgments*100) : 0; }
   function currentAwareMult(){ const p = currentAwarePct(); return p>=90 ? 2 : (p>=80 ? 1.5 : 1); }
+  // Access比率が悪化すると難易度が上がるペナルティ(判定が1回もない開始直後は適用しない)
+  function hpPenaltyMult(){ return (totalJudgments>0 && currentAwarePct()<30) ? 2 : 1; }
+  function speedPenaltyMult(){ return (totalJudgments>0 && currentAwarePct()<20) ? 1.5 : 1; }
+  function scorePenaltyMult(){ return (totalJudgments>0 && currentAwarePct()<10) ? 0.5 : 1; }
 
   // ---------- 状態 ----------
   let selectedWeapon = 'PCG';
@@ -512,12 +528,17 @@
   function starsStr(level){ return '★'.repeat(level) + '☆'.repeat(MAX_WEAPON_LEVEL-level); }
   const WEAPON_UNLOCK_WAVE = { PCG:1, CEZ:1, VCM:3, CAZ:5, MEPM:5, LZD:6, COL:7 };
   function isWeaponUnlocked(id){ return wave >= (WEAPON_UNLOCK_WAVE[id] || 1); }
+  function isDrugShortage(id){
+    if(shortageSet.has(id)) return true;
+    if((id==='VCM' || id==='MEPM') && totalJudgments>0 && currentAwarePct()<30) return true;
+    return false;
+  }
   let weaponBtnEls = {};
   function renderWeaponButtons(){
     weaponsEl.innerHTML = '';
     weaponBtnEls = {};
     WEAPONS.filter(w=>isWeaponUnlocked(w.id)).forEach(w=>{
-      const isShort = shortageSet.has(w.id);
+      const isShort = isDrugShortage(w.id);
       const btn = document.createElement('button');
       btn.className = 'weaponBtn tier-' + w.tier + (w.id===selectedWeapon ? ' active' : '') + (isShort?' shortage':'');
       btn.title = isShort ? `${w.full}（出荷停止中）` : `${w.full}（${w.tier==='access'?'Access':w.tier==='watch'?'Watch':'Reserve'}／ASC:${w.asc} ${w.spectrum}）`;
@@ -530,7 +551,7 @@
   }
   // 武器の切り替えはボタン一覧を作り直さず、activeクラスの付け替えだけで即座に反映する
   function selectWeapon(id){
-    if(shortageSet.has(id)) return;
+    if(isDrugShortage(id)) return;
     if(id === selectedWeapon) return;
     const prevBtn = weaponBtnEls[selectedWeapon];
     if(prevBtn) prevBtn.classList.remove('active');
@@ -895,6 +916,19 @@
       <button id="flowNext">つぎへ</button>`;
     document.getElementById('flowNext').addEventListener('click', done);
   }
+  function penaltyIntroJob(done){
+    flowCard.innerHTML = `
+      <h3>⚠️ Access比率が下がると…</h3>
+      <p>逆にAccess比率が悪化すると、どんどん戦いが厳しくなるぞ！</p>
+      <ul>
+        <li>30%未満：<b style="color:var(--reserve)">敵のHPが2倍</b>、さらに<b style="color:var(--reserve)">VCM・MEPMが出荷停止</b></li>
+        <li>20%未満：<b style="color:var(--reserve)">敵の落下速度が1.5倍</b>、さらに<b style="color:var(--reserve)">💊回復ポーションが出現しなくなる</b></li>
+        <li>10%未満：<b style="color:var(--reserve)">撃退スコアが半分</b></li>
+      </ul>
+      <p>狭域の抗菌薬を優先して、Access比率を保とう！</p>
+      <button id="flowNext">つぎへ</button>`;
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
   function charIntroJob(charId){
     return function(done){
       const d = charDef(charId);
@@ -978,6 +1012,7 @@
     if(w===3) jobs.push(hpIntroJob);
     if(w===3) jobs.push(shopIntroJob);
     if(w===4) jobs.push(accessBonusIntroJob);
+    if(w===4) jobs.push(penaltyIntroJob);
     Object.keys(ITEM_INTRO_WAVE).forEach(itemId=>{
       if(ITEM_INTRO_WAVE[itemId]===w) jobs.push(itemIntroJob(itemId));
     });
@@ -1029,7 +1064,8 @@
     }
     const weights = [];
     weights.push(['kaze', 0.16]);
-    if(wave>=8)  weights.push(['potion', 0.04]);
+    // Access比率20%未満の間は回復ポーションが出現しなくなる
+    if(wave>=8 && !(totalJudgments>0 && currentAwarePct()<20)) weights.push(['potion', 0.04]);
     if(wave>=12) weights.push(['pcv', 0.02]);
     if(wave>=15) weights.push(['kit', 0.02]);
 
@@ -1073,10 +1109,12 @@
     const lane = free[Math.floor(Math.random()*free.length)];
     const typeId = resolveBactId(pickSpawnType());
     const ramp = speedLevel(wave);
+    const spdPen = speedPenaltyMult();
+    const hpPen = hpPenaltyMult();
 
     if(typeId==='kaze'){
       const e = { typeId, def:KAZE, lane, x: laneX(lane), y:-KAZE.size*2.2,
-        speed:(0.461+ramp*0.0168)*(0.9+Math.random()*0.2), hp:1, maxHp:1, hitFlash:0, judged:false };
+        speed:(0.461+ramp*0.0168)*(0.9+Math.random()*0.2)*spdPen, hp:1, maxHp:1, hitFlash:0, judged:false };
       enemies.push(e); laneOccupant[lane]=e; return true;
     }
     if(typeId==='potion' || typeId==='pcv' || typeId==='kit'){
@@ -1089,16 +1127,16 @@
       const pool = typeId==='mystery_pos' ? GRAM_POS : (typeId==='mystery_neg' ? GRAM_NEG : ALL_BACT_IDS);
       const trueId = resolveBactId(pool[Math.floor(Math.random()*pool.length)]);
       const trueDef = BACTERIA[trueId];
-      const totalHp = trueDef.baseHp + waveHpBonus(wave);
+      const totalHp = Math.round((trueDef.baseHp + waveHpBonus(wave)) * hpPen);
       const mdef = MYSTERY_DEFS[typeId];
       const e = { typeId, def: mdef, trueId, trueDef, lane, x: laneX(lane), y:-mdef.size*2.2,
-        speed:(0.403+ramp*0.0144)*(0.85+Math.random()*0.3), hp: totalHp, maxHp: totalHp, hitFlash:0, revealed:false };
+        speed:(0.403+ramp*0.0144)*(0.85+Math.random()*0.3)*spdPen, hp: totalHp, maxHp: totalHp, hitFlash:0, revealed:false };
       enemies.push(e); laneOccupant[lane]=e; return true;
     }
     const def = BACTERIA[typeId];
-    const totalHp = def.baseHp + waveHpBonus(wave);
+    const totalHp = Math.round((def.baseHp + waveHpBonus(wave)) * hpPen);
     const e = { typeId, def, lane, x: laneX(lane), y:-def.size*2.2,
-      speed:(0.432+ramp*0.0168)*(0.85+Math.random()*0.3), hp: totalHp, maxHp: totalHp, hitFlash:0 };
+      speed:(0.432+ramp*0.0168)*(0.85+Math.random()*0.3)*spdPen, hp: totalHp, maxHp: totalHp, hitFlash:0 };
     enemies.push(e); laneOccupant[lane]=e; return true;
   }
   function removeEnemy(e){
@@ -1123,6 +1161,7 @@
       addParticles(e.x, e.y, '#4ade80', 10);
     } else if(e.typeId==='pcv'){
       pneumoSuppressWaves = 3;
+      updatePcvGauge();
       addFloatText(e.x, e.y-10, 'PCV接種!', '#60a5fa');
       addParticles(e.x, e.y, '#60a5fa', 10);
       showToast('💉 PCV接種！これから3Waveは肺炎球菌の出現が抑制されるぞ', 3000);
@@ -1200,7 +1239,7 @@
         best.hp -= dmgDealt;
         best.hitFlash = 0.2;
         const portion = dmgDealt/best.maxHp;
-        const gained = Math.round(best.trueDef.score*portion*1*currentAwareMult());
+        const gained = Math.round(best.trueDef.score*portion*1*currentAwareMult()*scorePenaltyMult());
         score += gained;
         addFloatText(best.x, best.y-6, `経験的治療で正体判明! +${gained}`, '#22d3ee');
         if(best.hp<=0){
@@ -1240,7 +1279,7 @@
       best.hp -= dmgDealt;
       best.hitFlash = 0.2;
       const portion = dmgDealt / best.maxHp;
-      const gained = Math.round(best.def.score * portion * mult * currentAwareMult());
+      const gained = Math.round(best.def.score * portion * mult * currentAwareMult() * scorePenaltyMult());
       score += gained;
       addFloatText(best.x, best.y-6, `${msg} +${gained}`, color);
       if(diff>=1){ showToast('有効ですが広域抗菌薬です。より狭域の抗菌薬へデエスカレーションしてください。', 3000); }
@@ -1274,6 +1313,29 @@
     hpBar.style.width = pct + '%';
     hpBar.style.background = pct > 50 ? 'var(--hp-bar)' : (pct>20 ? 'var(--warn)' : 'var(--danger)');
   }
+  function updatePcvGauge(){
+    const el = document.getElementById('pcvGauge');
+    if(pneumoSuppressWaves>0){
+      el.style.display = 'flex';
+      document.getElementById('pcvBarInner').style.width = (pneumoSuppressWaves/3*100) + '%';
+      document.getElementById('pcvWavesLeft').textContent = `残り${pneumoSuppressWaves}Wave`;
+    } else {
+      el.style.display = 'none';
+    }
+  }
+  let vcmMepmPenaltyActive = false;
+  function updatePenaltyShortage(){
+    const active = totalJudgments>0 && currentAwarePct()<30;
+    if(active === vcmMepmPenaltyActive) return;
+    vcmMepmPenaltyActive = active;
+    if(active){
+      if(selectedWeapon==='VCM' || selectedWeapon==='MEPM') selectedWeapon = 'PCG';
+      showToast('⚠️ Access比率30%未満のため、VCM・MEPMが出荷停止扱いになっています', 3000);
+    } else {
+      showToast('Access比率が回復し、VCM・MEPMの出荷停止(比率低下によるもの)が解除されました', 2500);
+    }
+    renderWeaponButtons();
+  }
   function updateAwareGauge(){
     const total = totalJudgments;
     const accessPct = total>0 ? Math.round(goodJudgments/total*100) : 0;
@@ -1284,6 +1346,7 @@
     document.getElementById('segReserve').style.width = reservePct + '%';
     const label = document.getElementById('awareLabel');
     label.textContent = total>0 ? `A${accessPct} Wa${watchPct} Re${reservePct}` : 'AWaRe比率 --';
+    updatePenaltyShortage();
   }
 
   function buildEndSummary(){
@@ -1397,6 +1460,7 @@
     awardWaveClearBonus();
     wave += 1; waveQuota = computeWaveQuota(wave); spawnedThisWave = 0; spawnTimer = 0;
     if(pneumoSuppressWaves>0) pneumoSuppressWaves--;
+    updatePcvGauge();
     buildCuratedQueue(wave);
     enqueueWaveIntro(wave);
     rollShortages();
@@ -1912,6 +1976,8 @@
     totalASC=0; totalDoses=0;
     killCounts={}; drugUseCounts={}; ineffectiveCount=0;
     pneumoSuppressWaves=0; infectionControlTimer=0;
+    vcmMepmPenaltyActive=false;
+    updatePcvGauge();
     shortageSet = new Set();
     laneOccupant = new Array(NUM_LANES).fill(null);
     WEAPONS.forEach(w=>w.level=1);
