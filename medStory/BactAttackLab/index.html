@@ -240,7 +240,7 @@
           降りてくる細菌に対して、原因菌を見極め、できるだけ狭域で適切な抗菌薬を選択して倒していく。</p>
           <h3>🗓️ ステージ構成</h3>
           <p>Wave1〜7は決まった顔ぶれで登場する練習ステージ（新しい菌・抗菌薬が出るたびに紹介モーダルが挟まります）。Wave8以降はすべての菌種がランダムに登場します。<b>MDRP</b>には見た目が2種類あり、カルバペネマーゼ（指輪で表現）を持たないタイプはCAZがまだ効き、持つタイプはCOLしか効きません。</p>
-          <p>Wave50以降は<b>正体不明の丸</b>（青=グラム陽性・赤=グラム陰性）が出現し、有効な抗菌薬を当てると正体が判明します（最初の一撃は経験的治療として減点なし）。Wave70以降はさらに<b>正体不明の黒い丸</b>（何でもありうる）も登場。また、Wave5以降はCEZ・VCM・CAZ・MEPMのいずれかが<b>出荷停止</b>で使えなくなることがあり、Wave毎にランダムに入れ替わります（Wave10まで同時最大1つ、Wave20まで最大2つ、それ以降は最大3つ）。</p>
+          <p>Wave50以降は<b>正体不明の丸</b>（青=グラム陽性・赤=グラム陰性）が出現し、有効な抗菌薬を当てると正体が判明します（最初の一撃は経験的治療として減点なし）。Wave70以降はさらに<b>正体不明の黒い丸</b>（何でもありうる）も登場し、正体不明の出現率自体もさらに上がります。<b>Wave80以降は菌の出現がすべて正体不明</b>になります。また、Wave5以降はCEZ・VCM・CAZ・MEPMのいずれかが<b>出荷停止</b>で使えなくなることがあり、Wave毎にランダムに入れ替わります（Wave10まで同時最大1つ、Wave20まで最大2つ、それ以降は最大3つ）。</p>
           <p>画面上部のゲージには、使った抗菌薬の内訳が<b style="color:var(--access)">Access(緑)</b>・<b style="color:var(--watch)">Watch(黄)</b>・<b style="color:var(--reserve)">Reserve(赤)</b>の3色で表示される「<b>AWaRe比率</b>」ゲージがあります。<b>Access比率</b>が高いほど攻撃スコアが上がる（90%以上で2倍、80%以上で1.5倍）うえ、Waveクリア時にはWave基本点(Wave1=100p、2=200p、3=400p、4=600p、5以降=1000p)にAccess比率倍率（70%以上×3.0、60%以上×2.0、50%以上×1.5、40%以上×1.0、40%未満×0.8）をかけたボーナスがもらえます。逆に不要な広域抗菌薬を使うと、一時停止せず3秒だけ表示される警告でデエスカレーションを促されます。</p>
           <p>各抗菌薬には<b>ASC(抗菌薬スペクトラムスコア)</b>も設定されており（PCG/CEZ=3、VCM=4、LZD=6、CAZ/COL=8、MEPM=12）、実際に使った回数の平均値<b>DASC</b>がゲーム終了時に表示されます。数値が低いほど狭域中心の使い方ができた証です。</p>
           <p>Wave8以降は、🛒抗菌薬とは別に<b>💊回復ポーション</b>(Wave8〜／HP回復)・<b>💉PCV</b>(Wave12〜／肺炎球菌ワクチン、しばらく肺炎球菌の出現を抑制)・<b>🧰感染対策キット</b>(Wave15〜／しばらく出現をゆっくりに)がまれに降ってきます。抗菌薬を選ばずタップするだけで取れますが、見逃すと消えてしまいます。</p>
@@ -261,7 +261,7 @@
             <li>MDRPはカルバペネマーゼ（指輪で表現）を持たない型（CAZも有効）と持つ型（COLのみ有効）の2種類。見た目で見分けよう。</li>
             <li>Wave8以降、💊回復ポーション／💉PCV／🧰感染対策キットがまれに降ってくる。抗菌薬を選ばずタップで取得できる（取り逃しても減点なし）。</li>
             <li>Waveが進むほど菌のHPが増え一発では倒れなくなる。</li>
-            <li>貯めたスコアは🛒ショップで各抗菌薬の威力強化（★〜★★★★★）に使える。★5は一撃必殺になる。</li>
+            <li>貯めたスコアは🛒ショップで各抗菌薬の威力強化（初期★1〜最大★5）に使える。1段階ごとにダメージ+1。</li>
             <li>防御ラインのHPが0になるとゲームオーバー。</li>
           </ol>
         </div>
@@ -352,21 +352,21 @@
 
   const TIER_RANK = { access:0, watch:1, reserve:2 };
   const TIER_COLOR = { access:'var(--access)', watch:'var(--watch)', reserve:'var(--reserve)' };
-  const SHOP_COSTS = [100,300,1000,10000,50000];
-  const MAX_WEAPON_LEVEL = SHOP_COSTS.length; // 5
+  const SHOP_COSTS = [100,300,1000,10000]; // 星2,3,4,5にするコスト(初期は星1)
+  const MAX_WEAPON_LEVEL = 5;
   const SHORTAGE_ELIGIBLE = ['CEZ','VCM','CAZ','MEPM'];
 
   const WEAPONS = [
-    { id:'PCG',  abbr:'PCG',  full:'ペニシリンG', tier:'access',  level:0, asc:3,  spectrum:'狭域' },
-    { id:'CEZ',  abbr:'CEZ',  full:'セファゾリン', tier:'access',  level:0, asc:3,  spectrum:'狭域' },
-    { id:'VCM',  abbr:'VCM',  full:'バンコマイシン', tier:'watch', level:0, asc:4,  spectrum:'狭域' },
-    { id:'CAZ',  abbr:'CAZ',  full:'セフタジジム', tier:'watch',  level:0, asc:8,  spectrum:'中間' },
-    { id:'MEPM', abbr:'MEPM', full:'メロペネム', tier:'watch',    level:0, asc:12, spectrum:'広域' },
-    { id:'COL',  abbr:'COL',  full:'コリスチン', tier:'reserve',  level:0, asc:8,  spectrum:'中間' },
-    { id:'LZD',  abbr:'LZD',  full:'リネゾリド', tier:'reserve',  level:0, asc:6,  spectrum:'中間' },
+    { id:'PCG',  abbr:'PCG',  full:'ペニシリンG', tier:'access',  level:1, asc:3,  spectrum:'狭域' },
+    { id:'CEZ',  abbr:'CEZ',  full:'セファゾリン', tier:'access',  level:1, asc:3,  spectrum:'狭域' },
+    { id:'VCM',  abbr:'VCM',  full:'バンコマイシン', tier:'watch', level:1, asc:4,  spectrum:'狭域' },
+    { id:'CAZ',  abbr:'CAZ',  full:'セフタジジム', tier:'watch',  level:1, asc:8,  spectrum:'中間' },
+    { id:'MEPM', abbr:'MEPM', full:'メロペネム', tier:'watch',    level:1, asc:12, spectrum:'広域' },
+    { id:'COL',  abbr:'COL',  full:'コリスチン', tier:'reserve',  level:1, asc:8,  spectrum:'中間' },
+    { id:'LZD',  abbr:'LZD',  full:'リネゾリド', tier:'reserve',  level:1, asc:6,  spectrum:'中間' },
   ];
   const WMAP = {}; WEAPONS.forEach(w=>WMAP[w.id]=w);
-  function weaponDamage(w){ return w.level>=MAX_WEAPON_LEVEL ? Infinity : 1 + w.level; }
+  function weaponDamage(w){ return 1 + w.level; }
 
   const BACTERIA = {
     pneumo: { label:'肺炎球菌', dexLabel:'肺炎球菌', latin:'Streptococcus pneumoniae', gram:'positive', drugs:['PCG','CEZ','VCM','LZD'], baseHp:1, dmg:8,  score:100, drawFn:'drawPneumo', size:22,
@@ -574,10 +574,10 @@
         <b style="font-size:0.8rem;">🛒 ショップ</b>
         <button id="shopCloseBtn" style="background:var(--panel-border);border:none;color:var(--text);width:24px;height:24px;border-radius:50%;font-size:0.72rem;cursor:pointer;">✕</button>
       </div>
-      <div style="font-size:0.72rem;margin-bottom:6px;color:var(--text-dim)">保有スコアで各抗菌薬の威力を強化(最大★★★★★)。★4までは1段階につきダメージ+1、★5は<b style="color:var(--reserve)">一撃必殺</b>！</div>`;
+      <div style="font-size:0.72rem;margin-bottom:6px;color:var(--text-dim)">初期は★1、保有スコアで最大★5まで強化できる(1段階につきダメージ+1)。</div>`;
     WEAPONS.forEach(w=>{
-      const cost = w.level<MAX_WEAPON_LEVEL ? SHOP_COSTS[w.level] : null;
-      const powerText = w.level>=MAX_WEAPON_LEVEL ? '一撃必殺' : `威力 ${weaponDamage(w)}`;
+      const cost = w.level<MAX_WEAPON_LEVEL ? SHOP_COSTS[w.level-1] : null;
+      const powerText = `威力 ${weaponDamage(w)}`;
       html += `<div class="shopRow">
         <div class="info"><b>${w.abbr} <span style="color:var(--gold)">${starsStr(w.level)}</span></b><span>${w.full}（${powerText}／ASC:${w.asc} ${w.spectrum}）</span></div>
         ${cost!==null ? `<button data-w="${w.id}" ${score<cost?'disabled':''}>強化 ${cost}p</button>` : `<button disabled>MAX</button>`}
@@ -588,7 +588,7 @@
     shopPanel.querySelectorAll('button[data-w]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const w = WMAP[btn.getAttribute('data-w')];
-        const cost = SHOP_COSTS[w.level];
+        const cost = SHOP_COSTS[w.level-1];
         if(w.level<MAX_WEAPON_LEVEL && score>=cost){
           score -= cost; w.level++;
           updateHUD(); renderWeaponButtons(); buildShopPanel();
@@ -876,8 +876,7 @@
   function shopIntroJob(done){
     flowCard.innerHTML = `
       <h3>🛒 ショップ</h3>
-      <p>貯めたスコアで、画面下の🛒ショップから各抗菌薬の威力を強化できるぞ！最大★5まで強化可能。</p>
-      <p>★5まで極めると、なんと<b style="color:var(--reserve)">一撃必殺</b>になる！</p>
+      <p>抗菌薬は初期状態で★1。貯めたスコアで、画面下の🛒ショップから最大★5まで強化できるぞ！1段階ごとにダメージ+1。</p>
       <p>ショップで攻撃を強化しよう！</p>
       <button id="flowNext">つぎへ</button>`;
     document.getElementById('flowNext').addEventListener('click', done);
@@ -1030,17 +1029,34 @@
     }
     const weights = [];
     weights.push(['kaze', 0.16]);
-    if(wave>=70) weights.push(['mystery_black', 0.08]);
-    if(wave>=50){ weights.push(['mystery_pos', 0.09]); weights.push(['mystery_neg', 0.09]); }
     if(wave>=8)  weights.push(['potion', 0.04]);
     if(wave>=12) weights.push(['pcv', 0.02]);
     if(wave>=15) weights.push(['kit', 0.02]);
 
-    const bactPool = ['pneumo','mssa','mrsa','pa','vre','mdrp'].filter(id => !(id==='pneumo' && pneumoSuppressWaves>0));
+    if(wave>=50 && wave<70){
+      weights.push(['mystery_pos', 0.09]);
+      weights.push(['mystery_neg', 0.09]);
+    } else if(wave>=70 && wave<80){
+      // Wave70以降は正体不明をさらに増やす
+      weights.push(['mystery_black', 0.08]);
+      weights.push(['mystery_pos', 0.18]);
+      weights.push(['mystery_neg', 0.18]);
+    } else if(wave>=80){
+      // Wave80以降は菌の出現がすべて正体不明になる
+      weights.push(['mystery_black', 0.12]);
+    }
+
     const used = weights.reduce((s,w)=>s+w[1],0);
-    const remain = Math.max(0.1, 1-used);
-    const each = remain/bactPool.length;
-    bactPool.forEach(id=> weights.push([id, each]));
+    const remain = Math.max(0.05, 1-used);
+
+    if(wave>=80){
+      weights.push(['mystery_pos', remain*0.5]);
+      weights.push(['mystery_neg', remain*0.5]);
+    } else {
+      const bactPool = ['pneumo','mssa','mrsa','pa','vre','mdrp'].filter(id => !(id==='pneumo' && pneumoSuppressWaves>0));
+      const each = remain/bactPool.length;
+      bactPool.forEach(id=> weights.push([id, each]));
+    }
 
     const total = weights.reduce((s,w)=>s+w[1],0);
     let r = Math.random()*total;
@@ -1060,13 +1076,13 @@
 
     if(typeId==='kaze'){
       const e = { typeId, def:KAZE, lane, x: laneX(lane), y:-KAZE.size*2.2,
-        speed:(0.384+ramp*0.014)*(0.9+Math.random()*0.2), hp:1, maxHp:1, hitFlash:0, judged:false };
+        speed:(0.461+ramp*0.0168)*(0.9+Math.random()*0.2), hp:1, maxHp:1, hitFlash:0, judged:false };
       enemies.push(e); laneOccupant[lane]=e; return true;
     }
     if(typeId==='potion' || typeId==='pcv' || typeId==='kit'){
       const def = ITEM_DEFS[typeId];
       const e = { typeId, def, lane, x: laneX(lane), y:-def.size*2.2,
-        speed:(0.408+ramp*0.014)*(0.9+Math.random()*0.2), hp:1, maxHp:1, hitFlash:0 };
+        speed:(0.49+ramp*0.0168)*(0.9+Math.random()*0.2), hp:1, maxHp:1, hitFlash:0 };
       enemies.push(e); laneOccupant[lane]=e; return true;
     }
     if(typeId==='mystery_pos' || typeId==='mystery_neg' || typeId==='mystery_black'){
@@ -1076,13 +1092,13 @@
       const totalHp = trueDef.baseHp + waveHpBonus(wave);
       const mdef = MYSTERY_DEFS[typeId];
       const e = { typeId, def: mdef, trueId, trueDef, lane, x: laneX(lane), y:-mdef.size*2.2,
-        speed:(0.336+ramp*0.012)*(0.85+Math.random()*0.3), hp: totalHp, maxHp: totalHp, hitFlash:0, revealed:false };
+        speed:(0.403+ramp*0.0144)*(0.85+Math.random()*0.3), hp: totalHp, maxHp: totalHp, hitFlash:0, revealed:false };
       enemies.push(e); laneOccupant[lane]=e; return true;
     }
     const def = BACTERIA[typeId];
     const totalHp = def.baseHp + waveHpBonus(wave);
     const e = { typeId, def, lane, x: laneX(lane), y:-def.size*2.2,
-      speed:(0.36+ramp*0.014)*(0.85+Math.random()*0.3), hp: totalHp, maxHp: totalHp, hitFlash:0 };
+      speed:(0.432+ramp*0.0168)*(0.85+Math.random()*0.3), hp: totalHp, maxHp: totalHp, hitFlash:0 };
     enemies.push(e); laneOccupant[lane]=e; return true;
   }
   function removeEnemy(e){
@@ -1898,7 +1914,7 @@
     pneumoSuppressWaves=0; infectionControlTimer=0;
     shortageSet = new Set();
     laneOccupant = new Array(NUM_LANES).fill(null);
-    WEAPONS.forEach(w=>w.level=0);
+    WEAPONS.forEach(w=>w.level=1);
     selectedWeapon='PCG';
     resetFlowQueue();
     shopPanel.classList.remove('show');
