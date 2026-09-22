@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BactAttack Lung</title>
+<style>
+  :root{
+    --bg:#0b1220; --bg2:#141f36; --panel:#1b2947; --panel-border:#2c3d63;
+    --text:#eef2ff; --text-dim:#9fb0d0; --accent:#4fd1c5; --danger:#ef4444; --warn:#f59e0b;
+    --access:#22c55e; --watch:#f59e0b; --reserve:#ef4444;
+    --btn-bg:#1b2947; --btn-bg-active:#4fd1c5; --btn-text:#eef2ff; --btn-text-active:#052a26; --gold:#facc15;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]){
+      --bg:#eef2fb; --bg2:#ffffff; --panel:#ffffff; --panel-border:#d7deef;
+      --text:#111827; --text-dim:#586279; --btn-bg:#eef1fb; --btn-text:#111827;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#eef2fb; --bg2:#ffffff; --panel:#ffffff; --panel-border:#d7deef;
+    --text:#111827; --text-dim:#586279; --btn-bg:#eef1fb; --btn-text:#111827;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif, system-ui; padding-top: env(safe-area-inset-top, 0px); overflow-x:hidden; }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); }
+  .wrap{ max-width:540px; margin:0 auto; padding:10px 10px 4px; display:flex; flex-direction:column; min-height:100%; }
+  header{ text-align:center; padding:6px 0 4px; }
+  header h1{ font-size:1.06rem; margin:0 0 2px; letter-spacing:0.02em; }
+  header p{ margin:0; font-size:0.64rem; color:var(--text-dim); }
+
+  .hud{ display:flex; justify-content:space-between; align-items:center; gap:6px; padding:6px 4px 2px; font-size:0.72rem; flex-wrap:wrap; }
+  .hud .stat{ display:flex; flex-direction:column; align-items:center; min-width:46px; }
+  .hud .stat b{ font-size:0.9rem; }
+  .spo2-outer{ flex:1; min-width:70px; height:16px; background:var(--panel-border); border-radius:8px; overflow:hidden; margin:0 4px; position:relative; }
+  .spo2-inner{ height:100%; width:100%; transition:width .3s ease, background .3s ease; display:flex; align-items:center; justify-content:center; font-size:0.5rem; font-weight:700; color:#fff; }
+
+  .awareGauge{ position:relative; width:100%; height:14px; background:var(--panel-border); border-radius:8px; overflow:hidden; margin:4px 0 2px; display:flex; }
+  .awareGauge .seg{ height:100%; width:0%; transition:width .3s ease; }
+  .awareGauge .label{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.56rem; font-weight:700; color:#08130d; text-shadow:0 0 3px rgba(255,255,255,0.5); }
+
+  #canvasHolder{
+    position:relative; width:100%; aspect-ratio: 3 / 4; max-height:50vh;
+    background:linear-gradient(180deg,var(--bg2),var(--bg));
+    border:1px solid var(--panel-border); border-radius:14px; overflow:hidden; touch-action:none;
+    margin-top:8px;
+  }
+  canvas{ display:block; width:100%; height:100%; }
+
+  .restPrompt{ position:absolute; left:0; right:0; top:8px; display:none; justify-content:center; z-index:4; }
+  .restBox{ background:rgba(15,23,42,0.94); border:1px solid var(--panel-border); border-radius:10px; padding:6px 8px 6px 10px; display:flex; align-items:center; gap:7px; box-shadow:0 4px 10px rgba(0,0,0,0.35); }
+  .restText{ font-size:0.58rem; color:#dbe4ff; max-width:130px; line-height:1.3; }
+  #restBtn{ background:var(--accent); color:#052a26; border:none; border-radius:8px; padding:6px 9px; font-size:0.6rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+
+  .weapons{ display:flex; flex-wrap:wrap; gap:3px; margin-top:10px; }
+  .weaponBtn{
+    flex:1 1 0; min-width:56px; background:var(--btn-bg); color:var(--btn-text);
+    border:2px solid var(--panel-border); border-radius:10px; padding:6px 1px 5px;
+    text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:1px;
+  }
+  .weaponBtn .abbr{ font-size:0.6rem; font-weight:800; white-space:nowrap; }
+  .weaponBtn .stars{ font-size:0.42rem; color:var(--gold); letter-spacing:0.5px; }
+  .weaponBtn.active{ background:var(--btn-bg-active); color:var(--btn-text-active); border-color:var(--accent); }
+  .weaponBtn.shortage{ opacity:0.4; pointer-events:none; }
+  .weaponBtn.shortage .stars{ color:var(--danger); font-size:0.4rem; }
+  .weaponBtn.locked{ opacity:0.3; pointer-events:none; }
+
+  .legend{ display:flex; gap:8px; justify-content:center; margin-top:8px; font-size:0.56rem; color:var(--text-dim); flex-wrap:wrap; }
+  .legend span{ display:inline-flex; align-items:center; gap:3px; }
+  .legend i.dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  .controls-row{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .miniBtn{ flex:1; min-width:80px; background:var(--panel); border:1px solid var(--panel-border); color:var(--text); border-radius:10px; padding:8px 6px; font-size:0.66rem; cursor:pointer; }
+
+  #refPanel, #shopPanel{ display:none; margin-top:10px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:10px 12px; font-size:0.68rem; line-height:1.6; }
+  #refPanel.show, #shopPanel.show{ display:block; }
+  #refPanel table{ width:100%; border-collapse:collapse; }
+  #refPanel td{ padding:5px 3px; border-bottom:1px solid var(--panel-border); vertical-align:top; }
+  #refPanel .best{ color:var(--access); font-weight:700; }
+  #refPanel .ok{ color:var(--text-dim); }
+
+  .shopRow{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 2px; border-bottom:1px solid var(--panel-border); }
+  .shopRow:last-child{ border-bottom:none; }
+  .shopRow .info{ display:flex; flex-direction:column; }
+  .shopRow .info b{ font-size:0.76rem; }
+  .shopRow .info span{ font-size:0.6rem; color:var(--text-dim); }
+  .shopRow button{ background:var(--accent); color:#052a26; border:none; border-radius:8px; padding:6px 10px; font-size:0.64rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .shopRow button:disabled{ background:var(--panel-border); color:var(--text-dim); cursor:not-allowed; }
+
+  .overlay{
+    position:absolute; inset:0; background:rgba(5,10,25,0.94); display:flex; flex-direction:column;
+    align-items:center; padding:14px 12px; color:#eef2ff; z-index:5; overflow-y:auto; text-align:center;
+  }
+  .overlay h2{ margin:4px 0 2px; font-size:1.06rem; }
+  .overlay button#startBtn, .overlay button#retryBtn{
+    margin-top:10px; background:var(--accent); color:#052a26; border:none; border-radius:10px;
+    padding:11px 26px; font-size:0.9rem; font-weight:700; cursor:pointer; flex-shrink:0;
+  }
+  .overOverlayInner{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; margin:auto; width:100%; max-width:360px; }
+  .overSummary{ width:100%; text-align:left; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:10px 12px; font-size:0.7rem; line-height:1.6; color:var(--text); }
+  .overSummary h4{ font-size:0.72rem; margin:8px 0 4px; color:var(--text-dim); }
+  .overSummary h4:first-child{ margin-top:0; }
+  .overSummary table{ width:100%; border-collapse:collapse; }
+  .overSummary td{ padding:2px 0; color:var(--text); }
+  .overSummary td.num{ text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+  .overText{ font-size:0.72rem; color:#c8d3ee; margin:4px 0 8px; }
+
+  .entryTabs{ display:flex; gap:4px; width:100%; max-width:400px; margin:4px 0 10px; }
+  .entryTabBtn{
+    flex:1; background:var(--panel); color:var(--text); border:1px solid var(--panel-border);
+    border-radius:8px; padding:8px 4px; font-size:0.68rem; font-weight:700; cursor:pointer;
+  }
+  .entryTabBtn.active{ background:var(--accent); color:#052a26; border-color:var(--accent); }
+  .entryContent{ width:100%; max-width:420px; text-align:left; font-size:0.7rem; line-height:1.65; }
+  .entryContent .pane{ display:none; }
+  .entryContent .pane.show{ display:block; }
+  .entryContent h3{ font-size:0.8rem; margin:8px 0 4px; }
+  .entryContent ol, .entryContent ul{ margin:4px 0; padding-left:1.2em; }
+  .entryContent li{ margin-bottom:4px; }
+  .entryContent a{ color:var(--accent); }
+
+  .modalOverlay{
+    display:none; position:fixed; inset:0; background:rgba(2,6,16,0.82); z-index:60;
+    align-items:center; justify-content:center; padding:16px;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  .modalOverlay.show{ display:flex; }
+  .modalCard{
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:16px;
+    padding:16px; max-width:300px; width:100%; text-align:center; color:var(--text);
+    max-height:90vh; overflow-y:auto;
+  }
+  .modalCard canvas{ width:120px; height:120px; margin:0 auto 8px; display:block; }
+  .modalCard h3{ margin:0 0 4px; font-size:0.98rem; }
+  .modalCard p{ font-size:0.76rem; line-height:1.6; text-align:left; margin:6px 0; }
+  .modalCard ul{ list-style:none; padding:0; margin:6px 0; text-align:left; }
+  .modalCard li{ margin-bottom:5px; font-size:0.74rem; }
+  .modalCard button{ margin-top:10px; background:var(--accent); color:#052a26; border:none; border-radius:10px; padding:9px 22px; font-size:0.82rem; font-weight:700; cursor:pointer; }
+
+  .toast{
+    position:fixed; left:50%; top: calc(14px + env(safe-area-inset-top, 0px));
+    transform:translateX(-50%) translateY(-8px); z-index:55; max-width:86%;
+    background:rgba(15,23,42,0.95); color:#fef3c7; border:1px solid #f59e0b;
+    padding:9px 16px; border-radius:10px; font-size:0.7rem; line-height:1.5; text-align:center;
+    box-shadow:0 6px 16px rgba(0,0,0,0.35); pointer-events:none; opacity:0;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  footer{ font-size:0.55rem; color:var(--text-dim); text-align:center; margin-top:8px; padding:8px 0; border-top:0.5px solid var(--panel-border); line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>BactAttack Lung</h1>
+    <p>肺炎患者を守れ！原因菌を見極め、必要十分な抗菌薬を選ぼう</p>
+  </header>
+
+  <div class="hud">
+    <div class="stat"><span style="font-size:0.58rem; color:var(--text-dim);">SpO2</span><b id="spo2Val">100%</b></div>
+    <div class="spo2-outer"><div class="spo2-inner" id="spo2Bar" style="width:100%; background:#22c55e;">100%</div></div>
+    <div class="stat"><span style="font-size:0.58rem; color:var(--text-dim);">Wave</span><b id="waveVal">1</b></div>
+    <div class="stat"><span style="font-size:0.58rem; color:var(--text-dim);">Score</span><b id="scoreVal">0</b></div>
+  </div>
+  <div class="awareGauge">
+    <div class="seg" id="segAccess" style="background:var(--access)"></div>
+    <div class="seg" id="segWatch" style="background:var(--watch)"></div>
+    <div class="seg" id="segReserve" style="background:var(--reserve)"></div>
+    <div class="label" id="awareLabel">AWaRe比率 --</div>
+  </div>
+
+  <div id="canvasHolder">
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="restPrompt" id="restPrompt">
+      <div class="restBox">
+        <div class="restText">かぜ(ウイルス)には抗菌薬より安静と経過観察を。</div>
+        <button id="restBtn">🛌 安静にする</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="startOverlay">
+      <h2>BactAttack Lung</h2>
+      <div class="entryTabs">
+        <button class="entryTabBtn active" data-tab="about">解説</button>
+        <button class="entryTabBtn" data-tab="howto">操作法</button>
+        <button class="entryTabBtn" data-tab="links">リンク</button>
+      </div>
+      <div class="entryContent" id="entryContent">
+        <div class="pane show" id="tab-about">
+          <h3>目的</h3>
+          <p>肺炎の原因菌を見極め、適切な抗菌薬で治療することを体験的に学ぶゲームです。<br>
+          肺炎球菌（PSSP/PRSP）、インフルエンザ菌（BLNAS/BLPAR/BLNAR）、マイコプラズマ（MSMP/MRMP）の7種が画面上方から降ってきます。<br>
+          防御ラインの代わりに患者の<b>SpO2（酸素飽和度）</b>ゲージが表示され、菌を取り逃すと低下します。SpO2が60%未満になるとゲームオーバーです。</p>
+          <h3>耐性菌について</h3>
+          <p>耐性を獲得した菌にはオーラが表示されます。<b style="color:#F59E0B">薄い黄色オーラ</b>は軽度耐性、<b style="color:#DC2626">強い赤オーラ</b>は高度耐性（複数回の攻撃が必要）を意味します。</p>
+          <h3>AWaRe比率</h3>
+          <p>画面上部のゲージには使った抗菌薬の内訳が<b style="color:var(--access)">Access(緑・狭域)</b>・<b style="color:var(--watch)">Watch(黄・中間)</b>・<b style="color:var(--reserve)">Reserve(赤・広域)</b>の3色で表示されます。Accessが多いほど適正使用です。</p>
+          <h3>ステージ構成</h3>
+          <p>使える抗菌薬はWaveが進むごとに増えます。Wave3からは「かぜ(ウイルス)」も出現し、抗菌薬を使わず安静にするのが正解です。Wave12以降は一部の薬が<b>出荷停止</b>になることもあります。</p>
+        </div>
+        <div class="pane" id="tab-howto">
+          <h3>操作法</h3>
+          <ol>
+            <li>画面下の抗菌薬ボタンから1つ選ぶ。まだ解禁されていない薬・出荷停止中の薬は選べない。</li>
+            <li>降りてくる菌を画面上でタップすると、選んでいる抗菌薬で攻撃する。</li>
+            <li>効く薬なら効果あり。効かない薬は「効かない…」と表示され減点。原因菌に対していちばん狭域の薬を選ぶと満点、広域で代用すると減点。</li>
+            <li>耐性の強い菌（強いオーラ）はHPが高く、複数回の攻撃が必要な場合がある。</li>
+            <li>「かぜ(ウイルス)」に抗菌薬を撃つと逆効果。見送るか、上部に出る🛌安静にするボタンから安静にしよう。</li>
+            <li>酸素投与アイテムが時々降ってくる。タップするだけでSpO2が回復する。</li>
+            <li>菌を取り逃す（画面下に到達）とSpO2が低下する。</li>
+            <li>貯めたスコアは🛒ショップで各抗菌薬の威力強化（★1〜★5）に使える。</li>
+            <li>📖リファレンスで菌と有効な抗菌薬の対応表を確認できる。</li>
+          </ol>
+        </div>
+        <div class="pane" id="tab-links">
+          <h3>参考リンク</h3>
+          <ul>
+            <li><a href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener">BactPlatform</a></li>
+            <li><a href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener">バイキンズキャラクターの紹介</a></li>
+            <li><a href="https://www.who.int/publications/i/item/B09489" target="_blank" rel="noopener">WHO AWaRe classification of antibiotics（公式ページ）</a></li>
+          </ul>
+          <p style="color:#c8d3ee">※ 医療上の判断は必ず最新のガイドライン・添付文書・専門家の指導に従ってください。</p>
+        </div>
+      </div>
+      <button id="startBtn">スタート</button>
+    </div>
+
+    <div class="overlay" id="gameOverOverlay" style="display:none;">
+      <div class="overOverlayInner">
+        <h2>GAME OVER</h2>
+        <p class="overText" id="overText"></p>
+        <div class="overSummary" id="gameSummary"></div>
+        <button id="retryBtn">もう一度遊ぶ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="weapons" id="weaponButtons"></div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:#3B82F6"></i>肺炎球菌</span>
+    <span><i class="dot" style="background:#EC4899"></i>インフルエンザ菌</span>
+    <span><i class="dot" style="background:#A78BFA"></i>マイコプラズマ</span>
+    <span><i class="dot" style="background:#F59E0B"></i>軽度耐性</span>
+    <span><i class="dot" style="background:#DC2626"></i>高度耐性</span>
+  </div>
+
+  <div class="controls-row">
+    <button class="miniBtn" id="refBtn">📖 リファレンス</button>
+    <button class="miniBtn" id="shopBtn">🛒 ショップ</button>
+  </div>
+
+  <div id="refPanel"><table id="refTable"></table></div>
+  <div id="shopPanel"></div>
+
+  <footer>
+    本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modalOverlay" id="flowModal">
+  <div class="modalCard" id="flowCard"></div>
+</div>
+
+<div class="modalOverlay" id="virusModal">
+  <div class="modalCard">
+    <h3>🤧 かぜ(ウイルス)</h3>
+    <p>原因はウイルスであり細菌ではありません。抗菌薬を使っても効果はなく、副作用や耐性菌のリスクだけが残ります。<br>正しい対応は、<b>安静にして経過観察</b>することです。</p>
+    <button id="virusModalOk">🛌 安静にする</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+      if (typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+      this.beginPath();
+      this.moveTo(x+r.tl,y); this.lineTo(x+w-r.tr,y); this.arcTo(x+w,y,x+w,y+r.tr,r.tr);
+      this.lineTo(x+w,y+h-r.br); this.arcTo(x+w,y+h,x+w-r.br,y+h,r.br);
+      this.lineTo(x+r.bl,y+h); this.arcTo(x,y+h,x,y+h-r.bl,r.bl);
+      this.lineTo(x,y+r.tl); this.arcTo(x,y,x+r.tl,y,r.tl);
+      this.closePath(); return this;
+    };
+  }
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas(){
+    const holder = document.getElementById('canvasHolder');
+    canvas.width = holder.offsetWidth;
+    canvas.height = holder.offsetHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // ==================== トースト ====================
+  const toastEl = document.getElementById('toast');
+  let toastTimer = null;
+  function showToast(text, ms){
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), ms || 2600);
+  }
+
+  // ==================== 敵・アイテムの描画関数群 ====================
+  function drawResistAura(ctx, time, level){
+    if(level<=0) return;
+    const pulse = level===1 ? 0.05 : 0.09;
+    const auraScale = 1 + Math.sin(time*0.008)*pulse;
+    ctx.save(); ctx.scale(auraScale, auraScale);
+    const points = 14;
+    const outerR = level===1 ? 42 : 48;
+    const innerR = level===1 ? 33 : 30;
+    ctx.beginPath();
+    for(let i=0;i<points;i++){
+      const angle=(i/points)*Math.PI*2;
+      const r = i%2===0 ? outerR : innerR;
+      const px=Math.cos(angle)*r, py=Math.sin(angle)*r - 6;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = level===1 ? "rgba(250,204,21,0.35)" : "rgba(239,68,68,0.5)";
+    ctx.strokeStyle = level===1 ? "#F59E0B" : "#DC2626";
+    ctx.lineWidth = 2.5;
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPneumoKing(ctx, x, y, radius, time, resistLevel){
+    ctx.save(); ctx.translate(x, y);
+    const scale = radius / 28; ctx.scale(scale, scale);
+    drawResistAura(ctx, time, resistLevel);
+    ctx.beginPath();
+    ctx.moveTo(-28, 3);
+    ctx.bezierCurveTo(-30, 33, -20, 40, 0, 40);
+    ctx.bezierCurveTo(20, 40, 30, 33, 28, 3);
+    ctx.closePath();
+    ctx.fillStyle = "#7E22CE"; ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 3.5; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 0, 26, 28, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#3B82F6"; ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(-10, -6, 4.5, 6.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(10, -6, 4.5, 6.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#0F172A";
+    ctx.beginPath(); ctx.arc(-8, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(8, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#1F2937"; ctx.strokeStyle = "#1F2937"; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-5, 7); ctx.quadraticCurveTo(-14, 8, -22, 13); ctx.quadraticCurveTo(-26, 15, -23, 18);
+    ctx.quadraticCurveTo(-20, 16, -15, 13.5); ctx.quadraticCurveTo(-10, 11, -5, 11); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(5, 7); ctx.quadraticCurveTo(14, 8, 22, 13); ctx.quadraticCurveTo(26, 15, 23, 18);
+    ctx.quadraticCurveTo(20, 16, 15, 13.5); ctx.quadraticCurveTo(10, 11, 5, 11); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-22, -20); ctx.lineTo(-18, -40); ctx.lineTo(-9, -30); ctx.lineTo(0, -44);
+    ctx.lineTo(9, -30); ctx.lineTo(18, -40); ctx.lineTo(22, -20); ctx.closePath();
+    ctx.fillStyle = "#FACC15"; ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 3.5; ctx.stroke();
+    ctx.restore();
+  }
+  function drawPSSP(ctx,x,y,r,t){ drawPneumoKing(ctx,x,y,r,t,0); }
+  function drawPRSP(ctx,x,y,r,t){ drawPneumoKing(ctx,x,y,r,t,2); }
+
+  function drawInfluQueen(ctx, x, y, radius, time, resistLevel, dressColor){
+    ctx.save(); ctx.translate(x, y);
+    const scale = radius / 28; ctx.scale(scale, scale);
+    drawResistAura(ctx, time, resistLevel);
+    ctx.beginPath();
+    ctx.moveTo(-11, -4); ctx.bezierCurveTo(-27, 16, -25, 38, 0, 40); ctx.bezierCurveTo(25, 38, 27, 16, 11, -4); ctx.closePath();
+    ctx.fillStyle = dressColor; ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 3.5; ctx.stroke();
+    ctx.strokeStyle = "#FACC15"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-10,-2); ctx.quadraticCurveTo(0,4,10,-2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, -10, 19, 19, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#FDE7CF"; ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.ellipse(-8, -12, 4, 5.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(8, -12, 4, 5.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#0F172A";
+    ctx.beginPath(); ctx.arc(-8, -11, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(8, -11, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(-11,-17); ctx.lineTo(-13.5,-19.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-9,-18); ctx.lineTo(-10.5,-21); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(11,-17); ctx.lineTo(13.5,-19.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(9,-18); ctx.lineTo(10.5,-21); ctx.stroke();
+    ctx.fillStyle = "rgba(236,72,153,0.45)";
+    ctx.beginPath(); ctx.ellipse(-13,-4,3,2.2,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(13,-4,3,2.2,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#DB2777"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0,-3,4,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-14,-25); ctx.lineTo(-14,-33); ctx.lineTo(-7,-27); ctx.lineTo(0,-38);
+    ctx.lineTo(7,-27); ctx.lineTo(14,-33); ctx.lineTo(14,-25); ctx.closePath();
+    ctx.fillStyle = "#FACC15"; ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = "#EC4899";
+    ctx.beginPath(); ctx.arc(0,-35,3,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.restore();
+  }
+  function drawBLNAS(ctx,x,y,r,t){ drawInfluQueen(ctx,x,y,r,t,0,"#EC4899"); }
+  function drawBLPAR(ctx,x,y,r,t){ drawInfluQueen(ctx,x,y,r,t,1,"#DB2777"); }
+  function drawBLNAR(ctx,x,y,r,t){ drawInfluQueen(ctx,x,y,r,t,2,"#9D174D"); }
+
+  function drawMycoMaiko(ctx, x, y, radius, time, resistLevel, kimonoColor){
+    ctx.save(); ctx.translate(x, y);
+    const scale = radius / 28; ctx.scale(scale, scale);
+    drawResistAura(ctx, time, resistLevel);
+    ctx.beginPath();
+    ctx.moveTo(-9,-6); ctx.lineTo(-25,39); ctx.lineTo(25,39); ctx.lineTo(9,-6); ctx.closePath();
+    ctx.fillStyle = kimonoColor; ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = "#FACC15"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-14,16); ctx.lineTo(14,16); ctx.stroke();
+    ctx.strokeStyle = "#DC2626"; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(-9,-6); ctx.lineTo(-3,4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(9,-6); ctx.lineTo(3,4); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0,-14,17,19,0,0,Math.PI*2);
+    ctx.fillStyle = "#FFFBEE"; ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = "#1F2937";
+    ctx.beginPath(); ctx.ellipse(0,-29,19,11,0,Math.PI,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-15,-16,6,11,0.25,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(15,-16,6,11,-0.25,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#EC4899"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(9,-33); ctx.lineTo(18,-40); ctx.stroke();
+    ctx.fillStyle = "#EC4899";
+    ctx.beginPath(); ctx.arc(18,-40,2.6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#FACC15";
+    ctx.beginPath(); ctx.arc(14,-37,1.8,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(-7,-19,4.5,Math.PI*1.15,Math.PI*1.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(7,-19,4.5,Math.PI*1.5,Math.PI*1.85); ctx.stroke();
+    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(-11,-14); ctx.quadraticCurveTo(-7,-11,-3,-14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3,-14); ctx.quadraticCurveTo(7,-11,11,-14); ctx.stroke();
+    ctx.fillStyle = "rgba(236,72,153,0.4)";
+    ctx.beginPath(); ctx.ellipse(-10,-7,3,2.4,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(10,-7,3,2.4,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#DC2626";
+    ctx.beginPath(); ctx.ellipse(0,-3,2.6,1.6,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  function drawMSMP(ctx,x,y,r,t){ drawMycoMaiko(ctx,x,y,r,t,0,"#A78BFA"); }
+  function drawMRMP(ctx,x,y,r,t){ drawMycoMaiko(ctx,x,y,r,t,2,"#6D28D9"); }
+
+  function drawVirus(ctx, x, y, radius){
+    ctx.save(); ctx.translate(x,y);
+    ctx.beginPath(); ctx.arc(0,0,radius,0,Math.PI*2);
+    ctx.fillStyle = '#cbd5e1'; ctx.fill();
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.2;
+    for(let a=0;a<8;a++){
+      const ang = a/8*Math.PI*2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ang)*radius, Math.sin(ang)*radius);
+      ctx.lineTo(Math.cos(ang)*(radius+6), Math.sin(ang)*(radius+6));
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#475569';
+    ctx.beginPath(); ctx.arc(-radius*0.3,-radius*0.15,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(radius*0.3,-radius*0.15,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,radius*0.25,radius*0.28,0,Math.PI); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawOxygen(ctx, x, y, size){
+    ctx.save(); ctx.translate(x,y);
+    const s = size/20; ctx.scale(s,s);
+    ctx.fillStyle = '#38BDF8'; ctx.strokeStyle = '#0C4A6E'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(-9,-13,18,29,5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#64748B'; ctx.strokeStyle = '#0C4A6E'; ctx.lineWidth = 1.5;
+    ctx.fillRect(-3,-19,6,6); ctx.strokeRect(-3,-19,6,6);
+    ctx.beginPath(); ctx.arc(0,-20,3,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(-2,-6,4,13); ctx.fillRect(-6.5,-1,13,4);
+    ctx.restore();
+  }
+
+  const DRAW_FNS = { drawPSSP, drawPRSP, drawBLNAS, drawBLPAR, drawBLNAR, drawMSMP, drawMRMP, drawVirus, drawOxygen };
+
+  // ==================== 抗菌薬データ（ボタン表示順=固定、段階解禁） ====================
+  const TIER_RANK = { access:0, watch:1, reserve:2 };
+  const TIER_COLOR = { access:'var(--access)', watch:'var(--watch)', reserve:'var(--reserve)' };
+  const MAX_WEAPON_LEVEL = 5;
+  const SHOP_COSTS = [100,300,1000,10000];
+  const WEAPONS = [
+    { id:'ABPC',     abbr:'ABPC',     full:'アンピシリン',                 asc:5,  tier:'access',  spectrum:'狭域',        level:1, unlockWave:1  },
+    { id:'AMPC/CVA', abbr:'AMPC/CVA', full:'アモキシシリン/クラブラン酸',   asc:7,  tier:'watch',   spectrum:'中等度',       level:1, unlockWave:4  },
+    { id:'CTRX',     abbr:'CTRX',     full:'セフトリアキソン',             asc:6,  tier:'watch',   spectrum:'中等度〜広域', level:1, unlockWave:3  },
+    { id:'MEPM',     abbr:'MEPM',     full:'メロペネム',                   asc:12, tier:'reserve', spectrum:'超広域',       level:1, unlockWave:10 },
+    { id:'AZM',      abbr:'AZM',      full:'アジスロマイシン',             asc:6,  tier:'watch',   spectrum:'マクロライド', level:1, unlockWave:8  },
+    { id:'CPFX',     abbr:'CPFX',     full:'シプロフロキサシン',           asc:9,  tier:'reserve', spectrum:'ニューキノロン', level:1, unlockWave:9  },
+    { id:'VCM',      abbr:'VCM',      full:'バンコマイシン',               asc:5,  tier:'access',  spectrum:'グラム陽性限定', level:1, unlockWave:11 },
+  ];
+  const WMAP = {}; WEAPONS.forEach(w=>WMAP[w.id]=w);
+  const SHORTAGE_ELIGIBLE = ['CTRX','MEPM','VCM'];
+  const SHORTAGE_START_WAVE = 12;
+  const SHORTAGE_MAX_CONCURRENT = 2;
+  function weaponDamage(w){ return w.level; }
+  const DRUG_EXPLANATIONS = {
+    'ABPC':'最も狭域。βラクタマーゼを産生しない感受性菌によく効く、最初の選択肢。',
+    'CTRX':'中等度〜広域。多くの菌に効くが、必要な場面だけで使いたい。',
+    'AMPC/CVA':'βラクタマーゼ阻害薬配合で、βラクタマーゼ産生菌にも対応できる。',
+    'AZM':'マクロライド系。マイコプラズマなど非定型菌に有効。',
+    'CPFX':'ニューキノロン系。幅広く効くが、できれば温存したい薬。',
+    'MEPM':'最も広域。強力だが乱用すると耐性菌を増やす原因になる。',
+    'VCM':'グラム陽性菌限定。肺炎球菌には有効だが使いどころは選びたい。',
+  };
+
+  // ==================== 敵データ ====================
+  const ENEMY_DEFS = {
+    PSSP:  { label:'PSSP',  drawFn:'drawPSSP',  size:24, resistLevel:0, susceptibleTo:['ABPC','AMPC/CVA','CTRX','MEPM','VCM'] },
+    PRSP:  { label:'PRSP',  drawFn:'drawPRSP',  size:24, resistLevel:2, susceptibleTo:['CTRX','MEPM','VCM'] },
+    BLNAS: { label:'BLNAS', drawFn:'drawBLNAS', size:24, resistLevel:0, susceptibleTo:['ABPC','AMPC/CVA','CTRX','MEPM','AZM','CPFX'] },
+    BLPAR: { label:'BLPAR', drawFn:'drawBLPAR', size:24, resistLevel:1, susceptibleTo:['AMPC/CVA','CTRX','MEPM','AZM','CPFX'] },
+    BLNAR: { label:'BLNAR', drawFn:'drawBLNAR', size:24, resistLevel:2, susceptibleTo:['CTRX','MEPM','AZM','CPFX'] },
+    MSMP:  { label:'MSMP',  drawFn:'drawMSMP',  size:22, resistLevel:0, susceptibleTo:['AZM','CPFX'] },
+    MRMP:  { label:'MRMP',  drawFn:'drawMRMP',  size:22, resistLevel:2, susceptibleTo:['CPFX'] },
+  };
+  function enemyMaxHp(def){ return def.resistLevel>=2 ? 2 : 1; }
+  function enemyBestTier(def){ return Math.min(...def.susceptibleTo.map(id=>TIER_RANK[WMAP[id].tier])); }
+
+  const CHAR_FLAVOR = {
+    PSSP:'肺炎の代表的な原因菌。ペニシリン感受性で、狭域の抗菌薬がよく効く「王様」タイプ。',
+    PRSP:'ペニシリン結合タンパクが変化し、耐性を獲得した肺炎球菌。狭域薬だけでは倒しにくいことも。',
+    BLNAS:'インフルエンザ菌の中でも感受性が高いタイプ。幅広い抗菌薬が効く「女王」。',
+    BLPAR:'βラクタマーゼを産生し、一部のペニシリン系が効かなくなった女王タイプ。',
+    BLNAR:'βラクタマーゼは持たないが、標的タンパクの変化でペニシリン系が効きにくい高耐性株。',
+    MSMP:'マクロライドがよく効く、比較的おとなしいマイコプラズマ「舞妓」。',
+    MRMP:'マクロライド耐性を獲得した手強いマイコプラズマ。限られた薬しか効かない。',
+  };
+  const WAVE_NEW_CHAR = { 1:['PSSP'], 2:['BLNAS'], 3:['PRSP'], 4:['BLPAR'], 5:['BLNAR'], 8:['MSMP'], 9:['MRMP'] };
+
+  function getWaveEnemyTypes(wave){
+    const table = {
+      1: ['PSSP'], 2: ['BLNAS'], 3: ['PSSP','PRSP'],
+      4: ['BLNAS','BLPAR'], 5: ['BLNAS','BLNAR'], 6: ['BLNAS','BLPAR','BLNAR'],
+      7: ['PSSP','PRSP','BLNAS','BLPAR','BLNAR'],
+      8: ['MSMP'], 9: ['MSMP','MRMP'],
+    };
+    if(wave>=10) return ['PSSP','PRSP','BLNAS','BLPAR','BLNAR','MSMP','MRMP'];
+    return table[wave] || ['PSSP'];
+  }
+  const VIRUS_START_WAVE = 2; // Wave3から出現＝Wave2クリア後(3が始まる時点)から有効
+  const OXYGEN_START_WAVE = 1;
+
+  // ==================== ゲーム状態 ====================
+  let gameState = {
+    running:false, paused:false, wave:1, score:0, spO2:100,
+    selectedWeapon:'ABPC', enemies:[], particles:[], floatTexts:[],
+    spawnTimer:0, spawnedThisWave:0,
+  };
+  let shortageSet = new Set();
+  let globalTime = 0;
+  let totalJudgments=0, goodJudgments=0, watchJudgments=0, reserveJudgments=0;
+  let totalASC=0, totalDoses=0, ineffectiveCount=0;
+  let killCounts={}, drugUseCounts={};
+  let weaponLockTimer=0;
+
+  function computeSpeed(wave){
+    const ramp = Math.min(wave-1, 25) * 0.028;
+    return (0.22 + ramp) * (0.9 + Math.random()*0.2);
+  }
+  function waveQuota(wave){ return 2 + Math.floor(wave/4); }
+  function maxConcurrent(wave){ return Math.min(4, 2 + Math.floor(wave/6)); }
+
+  function isWeaponUnlocked(id){ return gameState.wave >= WMAP[id].unlockWave; }
+  function isDrugShortage(id){ return shortageSet.has(id); }
+  function currentAwarePct(){ return totalJudgments>0 ? (goodJudgments/totalJudgments*100) : 0; }
+  function currentDASC(){ return totalDoses>0 ? (totalASC/totalDoses) : null; }
+
+  function rollShortages(){
+    const prevSize = shortageSet.size;
+    shortageSet.clear();
+    if(gameState.wave >= SHORTAGE_START_WAVE){
+      const pool = SHORTAGE_ELIGIBLE.filter(id=>isWeaponUnlocked(id));
+      for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+      const count = Math.floor(Math.random()*(SHORTAGE_MAX_CONCURRENT+1));
+      for(let i=0;i<count && i<pool.length;i++) shortageSet.add(pool[i]);
+    }
+    if(shortageSet.has(gameState.selectedWeapon)){
+      const fallback = WEAPONS.find(w=>isWeaponUnlocked(w.id) && !shortageSet.has(w.id));
+      if(fallback) gameState.selectedWeapon = fallback.id;
+    }
+    if(shortageSet.size>0){
+      showToast('⚠️ 出荷停止中: ' + Array.from(shortageSet).join('、') + '（今Waveの間のみ）');
+    } else if(prevSize>0){
+      showToast('出荷状況が回復しました');
+    }
+  }
+
+  // ==================== スポーン ====================
+  function spawnEnemy(){
+    const wave = gameState.wave;
+    const roll = Math.random();
+    let kind, type;
+    if(wave>=VIRUS_START_WAVE+1 && roll<0.14){ kind='virus'; type='VIRUS'; }
+    else if(wave>=OXYGEN_START_WAVE && roll<0.14+0.07){ kind='oxygen'; type='OXYGEN'; }
+    else { kind='bacteria'; const waveTypes=getWaveEnemyTypes(wave); type = waveTypes[Math.floor(Math.random()*waveTypes.length)]; }
+
+    const x0 = 40 + Math.random() * (canvas.width - 80);
+    if(kind==='bacteria'){
+      const def = ENEMY_DEFS[type];
+      gameState.enemies.push({
+        kind, type, def, x:x0, y:-30, baseX:x0,
+        speed: computeSpeed(wave), oscPhase: Math.random()*Math.PI*2,
+        oscSpeed: 0.025+Math.random()*0.012, oscAmp: 22+Math.random()*14,
+        hp: enemyMaxHp(def), maxHp: enemyMaxHp(def), hitFlash:0, judged:false,
+      });
+    } else if(kind==='virus'){
+      gameState.enemies.push({
+        kind, type, def:{label:'かぜ', drawFn:'drawVirus', size:18},
+        x:x0, y:-30, baseX:x0, speed: computeSpeed(wave)*0.85,
+        oscPhase: Math.random()*Math.PI*2, oscSpeed:0.02+Math.random()*0.01, oscAmp:18+Math.random()*10,
+        hp:1, maxHp:1, hitFlash:0, judged:false,
+      });
+    } else {
+      gameState.enemies.push({
+        kind, type, def:{label:'酸素', drawFn:'drawOxygen', size:18},
+        x:x0, y:-30, baseX:x0, speed: computeSpeed(wave)*0.9,
+        oscPhase: Math.random()*Math.PI*2, oscSpeed:0.02+Math.random()*0.01, oscAmp:16+Math.random()*10,
+        hp:1, maxHp:1, hitFlash:0, judged:false,
+      });
+    }
+  }
+
+  // ==================== HUD ====================
+  function spo2BarPercent(spo2){ return Math.max(0, Math.min(100, (spo2-60)/40*100)); }
+  function updateHUD(){
+    const spo2 = Math.max(0, Math.min(100, gameState.spO2));
+    document.getElementById('spo2Val').textContent = Math.round(spo2) + '%';
+    document.getElementById('waveVal').textContent = gameState.wave;
+    document.getElementById('scoreVal').textContent = gameState.score;
+    const bar = document.getElementById('spo2Bar');
+    bar.style.width = spo2BarPercent(spo2) + '%';
+    bar.textContent = Math.round(spo2) + '%';
+    if(spo2>=95) bar.style.background = '#22c55e';
+    else if(spo2>=90) bar.style.background = '#f59e0b';
+    else if(spo2>=80) bar.style.background = '#ef4444';
+    else bar.style.background = '#1f2937';
+  }
+  function updateAwareGauge(){
+    const total = totalJudgments;
+    const accessPct = total>0 ? Math.round(goodJudgments/total*100) : 0;
+    const watchPct = total>0 ? Math.round(watchJudgments/total*100) : 0;
+    const reservePct = total>0 ? Math.round(reserveJudgments/total*100) : 0;
+    document.getElementById('segAccess').style.width = accessPct + '%';
+    document.getElementById('segWatch').style.width = watchPct + '%';
+    document.getElementById('segReserve').style.width = reservePct + '%';
+    document.getElementById('awareLabel').textContent = total>0 ? `A${accessPct} Wa${watchPct} Re${reservePct}` : 'AWaRe比率 --';
+  }
+
+  function starsStr(level){ return '★'.repeat(level) + '☆'.repeat(MAX_WEAPON_LEVEL-level); }
+  let weaponBtnEls = {};
+  const weaponsEl = document.getElementById('weaponButtons');
+  function renderWeaponButtons(){
+    weaponsEl.innerHTML = '';
+    weaponBtnEls = {};
+    WEAPONS.filter(w=>isWeaponUnlocked(w.id)).forEach(w=>{
+      const isShort = isDrugShortage(w.id);
+      const btn = document.createElement('button');
+      btn.className = 'weaponBtn' + (gameState.selectedWeapon===w.id ? ' active' : '') + (isShort ? ' shortage' : '') + (weaponLockTimer>0 ? ' locked' : '');
+      btn.title = isShort ? `${w.full}（出荷停止中）` : `${w.full}（ASC:${w.asc} ${w.spectrum}）`;
+      btn.innerHTML = `<span class="abbr">${w.abbr}</span><span class="stars">${isShort?'停止中':starsStr(w.level)}</span>`;
+      btn.addEventListener('click', ()=> selectWeapon(w.id));
+      weaponsEl.appendChild(btn);
+      weaponBtnEls[w.id] = btn;
+    });
+  }
+  function selectWeapon(id){
+    if(weaponLockTimer>0) return;
+    if(isDrugShortage(id)) return;
+    if(id===gameState.selectedWeapon) return;
+    gameState.selectedWeapon = id;
+    renderWeaponButtons();
+  }
+
+  // ==================== かぜモーダル・安静処理 ====================
+  const virusModal = document.getElementById('virusModal');
+  function hasActiveVirus(){ return gameState.enemies.some(e=>e.kind==='virus'); }
+  function resolveAllViruses(){
+    const targets = gameState.enemies.filter(e=>e.kind==='virus');
+    targets.forEach(e=>{
+      totalJudgments++; goodJudgments++;
+      gameState.score += 30;
+      addFloatText(e.x, e.y, '安静で経過良好! +30', '#4fd1c5');
+      addParticles(e.x, e.y, '#cbd5e1');
+      const idx = gameState.enemies.indexOf(e);
+      if(idx>=0) gameState.enemies.splice(idx,1);
+    });
+    if(targets.length){ updateAwareGauge(); updateHUD(); }
+  }
+  document.getElementById('restBtn').addEventListener('click', ()=>{
+    virusModal.classList.add('show');
+    gameState.paused = true;
+  });
+  document.getElementById('virusModalOk').addEventListener('click', ()=>{
+    virusModal.classList.remove('show');
+    gameState.paused = false;
+    resolveAllViruses();
+  });
+
+  // ==================== クリック攻撃 ====================
+  canvas.addEventListener('click', (e)=>{
+    if(!gameState.running || gameState.paused || flowActive) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = (e.clientX-rect.left) * (canvas.width/rect.width);
+    const clickY = (e.clientY-rect.top) * (canvas.height/rect.height);
+    for(const enemy of gameState.enemies){
+      const dist = Math.hypot(clickX-enemy.x, clickY-enemy.y);
+      if(dist < enemy.def.size + 10){
+        handleHit(enemy);
+        break;
+      }
+    }
+  });
+
+  function handleHit(enemy){
+    if(enemy.kind==='oxygen'){
+      const before = gameState.spO2;
+      gameState.spO2 = Math.min(100, gameState.spO2+8);
+      addFloatText(enemy.x, enemy.y, `酸素投与! +${Math.round(gameState.spO2-before)}%`, '#38BDF8');
+      addParticles(enemy.x, enemy.y, '#38BDF8');
+      gameState.enemies.splice(gameState.enemies.indexOf(enemy),1);
+      updateHUD();
+      return;
+    }
+    if(enemy.kind==='virus'){
+      if(!enemy.judged){
+        enemy.judged = true;
+        gameState.score = Math.max(0, gameState.score-15);
+        weaponLockTimer = 1.5;
+        renderWeaponButtons();
+        addFloatText(enemy.x, enemy.y, '無効使用!-15', '#ef4444');
+        showToast('かぜに抗菌薬は効きません。🛌安静にするボタンで対応しましょう。');
+      }
+      updateHUD();
+      return;
+    }
+    // 通常の細菌
+    const w = WMAP[gameState.selectedWeapon];
+    if(!w || isDrugShortage(w.id)) return;
+    const isEffective = enemy.def.susceptibleTo.includes(w.id);
+    totalDoses++; totalASC += w.asc;
+    drugUseCounts[w.id] = (drugUseCounts[w.id]||0) + 1;
+    totalJudgments++;
+    if(w.tier==='access') goodJudgments++;
+    else if(w.tier==='watch') watchJudgments++;
+    else reserveJudgments++;
+
+    if(isEffective){
+      const bestTier = enemyBestTier(enemy.def);
+      const diff = TIER_RANK[w.tier] - bestTier;
+      let bonus, msg, color;
+      if(diff<=0){ bonus=30; msg='適正使用!'; color='#22c55e'; }
+      else if(diff===1){ bonus=5; msg='有効(広域)…減点'; color='#f59e0b'; }
+      else { bonus=-20; msg='広域薬の乱用!'; color='#ef4444'; }
+
+      enemy.hp -= weaponDamage(w);
+      enemy.hitFlash = 0.15;
+      addParticles(enemy.x, enemy.y, '#4fd1c5');
+      if(enemy.hp<=0){
+        gameState.score += 50 + bonus;
+        killCounts[enemy.type] = (killCounts[enemy.type]||0) + 1;
+        addFloatText(enemy.x, enemy.y, msg, color);
+        gameState.enemies.splice(gameState.enemies.indexOf(enemy),1);
+      } else {
+        gameState.score += Math.max(0, Math.round(bonus/2));
+        addFloatText(enemy.x, enemy.y, 'ダメージ', color);
+      }
+      updateAwareGauge();
+    } else {
+      ineffectiveCount++;
+      gameState.score -= 10;
+      enemy.hitFlash = 0.15;
+      addFloatText(enemy.x, enemy.y, '効かない…', '#ef4444');
+      updateAwareGauge();
+    }
+    updateHUD();
+  }
+
+  function addFloatText(x,y,text,color){ gameState.floatTexts.push({x,y,text,color,life:1.0}); }
+  function addParticles(x,y,color){
+    for(let i=0;i<6;i++){
+      const ang = (Math.PI*2*i)/6;
+      gameState.particles.push({x,y,vx:Math.cos(ang)*2.5,vy:Math.sin(ang)*2.5,color,life:0.5});
+    }
+  }
+
+  // ==================== ウェーブ前解説モーダル ====================
+  const flowModal = document.getElementById('flowModal');
+  const flowCard = document.getElementById('flowCard');
+  let flowQueue = [], flowActive = false;
+  function queueFlow(jobFn){ flowQueue.push(jobFn); pumpFlowQueue(); }
+  function pumpFlowQueue(){
+    if(flowActive) return;
+    if(flowQueue.length===0){ flowModal.classList.remove('show'); return; }
+    flowActive = true;
+    flowModal.classList.add('show');
+    const job = flowQueue.shift();
+    job(()=>{ flowActive = false; pumpFlowQueue(); });
+  }
+  function resetFlowQueue(){ flowQueue=[]; flowActive=false; flowModal.classList.remove('show'); }
+
+  function tipsJob(done){
+    flowCard.innerHTML = `
+      <h3>⚔️ 戦い方のポイント</h3>
+      <p>画面上部の<b>SpO2ゲージ</b>は患者の呼吸状態を表す。60%を下回るとゲームオーバー。</p>
+      <p><b>AWaRe比率</b>ゲージは使った抗菌薬の内訳。<b style="color:var(--access)">Access(緑)</b>が多いほど適正な治療。</p>
+      <p>原因菌に合った、できるだけ狭域の抗菌薬を選ぼう！</p>
+      <button id="flowNext">つぎへ</button>`;
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function charIntroJob(id){
+    return function(done){
+      const def = ENEMY_DEFS[id];
+      flowCard.innerHTML = `
+        <canvas id="flowCharCanvas" width="240" height="240" style="width:120px;height:120px;margin:0 auto 8px;display:block;"></canvas>
+        <h3>${def.label}</h3>
+        <p>${CHAR_FLAVOR[id] || ''}</p>
+        <button id="flowNext">つぎへ</button>`;
+      const c = document.getElementById('flowCharCanvas').getContext('2d');
+      c.clearRect(0,0,240,240);
+      DRAW_FNS[def.drawFn](c, 120, 128, 44, 0);
+      document.getElementById('flowNext').addEventListener('click', done);
+    };
+  }
+  function drugIntroJob(id){
+    return function(done){
+      const w = WMAP[id];
+      const tierJp = w.tier==='access' ? 'Access(狭域)' : (w.tier==='watch' ? 'Watch(中間)' : 'Reserve(広域)');
+      flowCard.innerHTML = `
+        <h3>💊 新しい抗菌薬: ${w.abbr}</h3>
+        <p><b>${w.full}</b>（${tierJp}／ASC:${w.asc}）</p>
+        <p>${DRUG_EXPLANATIONS[id] || ''}</p>
+        <button id="flowNext">つぎへ</button>`;
+      document.getElementById('flowNext').addEventListener('click', done);
+    };
+  }
+  function shopIntroJob(done){
+    flowCard.innerHTML = `
+      <h3>🛒 ショップの使い方</h3>
+      <p>抗菌薬は初期状態で★1。貯めたスコアで、画面下の🛒ショップから最大★5まで強化できる。</p>
+      <p>耐性の強い菌（HPが高い）は、威力を強化しておくと少ない回数で倒せるようになるぞ！</p>
+      <button id="flowNext">つぎへ</button>`;
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function oxygenIntroJob(done){
+    flowCard.innerHTML = `
+      <canvas id="flowItemCanvas" width="140" height="140" style="width:90px;height:90px;margin:0 auto 8px;display:block;"></canvas>
+      <h3>酸素投与</h3>
+      <p>時々降ってくる酸素投与アイテム。抗菌薬を選ばずタップするだけでSpO2が回復するぞ！見逃しても減点はない。</p>
+      <button id="flowNext">つぎへ</button>`;
+    const c = document.getElementById('flowItemCanvas').getContext('2d');
+    c.clearRect(0,0,140,140);
+    drawOxygen(c,70,74,44);
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function virusIntroJob(done){
+    flowCard.innerHTML = `
+      <canvas id="flowVirusCanvas" width="140" height="140" style="width:90px;height:90px;margin:0 auto 8px;display:block;"></canvas>
+      <h3>🤧 かぜ(ウイルス)が出現！</h3>
+      <p>原因はウイルスであり細菌ではない。抗菌薬を使っても効果はなく、副作用や耐性菌のリスクだけが残る。</p>
+      <p>撃たずに見送るか、上部に出る🛌<b>安静にする</b>ボタンから対応しよう。抗菌薬で攻撃すると減点＆一時的にボタンが使えなくなるので注意！</p>
+      <button id="flowNext">つぎへ</button>`;
+    const c = document.getElementById('flowVirusCanvas').getContext('2d');
+    c.clearRect(0,0,140,140);
+    drawVirus(c,70,74,34);
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function buildIntroForWave(w){
+    const jobs = [];
+    if(w===1) jobs.push(tipsJob);
+    (WAVE_NEW_CHAR[w]||[]).forEach(id=>jobs.push(charIntroJob(id)));
+    WEAPONS.filter(wp=>wp.unlockWave===w).forEach(wp=>jobs.push(drugIntroJob(wp.id)));
+    if(w===2) jobs.push(shopIntroJob);
+    if(w===2) jobs.push(oxygenIntroJob);
+    if(w===3) jobs.push(virusIntroJob);
+    return jobs;
+  }
+  function enqueueWaveIntro(w){
+    buildIntroForWave(w).forEach((jobFn,i,arr)=>{
+      queueFlow((done)=>{
+        jobFn(done);
+        const btn = document.getElementById('flowNext');
+        if(btn && i===arr.length-1) btn.textContent = 'たたかう!';
+      });
+    });
+  }
+
+  // ==================== メインループ ====================
+  let lastTime = 0;
+  function loop(time){
+    if(!lastTime) lastTime = time;
+    const dt = (time-lastTime)/1000;
+    lastTime = time;
+    if(!gameState.running || flowActive){ requestAnimationFrame(loop); return; }
+    globalTime = time;
+    if(!gameState.paused) update(dt);
+    draw();
+    document.getElementById('restPrompt').style.display = (!gameState.paused && hasActiveVirus()) ? 'flex' : 'none';
+    requestAnimationFrame(loop);
+  }
+
+  function update(dt){
+    if(weaponLockTimer>0){
+      weaponLockTimer = Math.max(0, weaponLockTimer-dt);
+      if(weaponLockTimer===0) renderWeaponButtons();
+    }
+    gameState.spawnTimer += dt;
+    const spawnInterval = 1.5;
+    const quota = waveQuota(gameState.wave);
+    const cap = maxConcurrent(gameState.wave);
+
+    while(gameState.spawnTimer >= spawnInterval && gameState.spawnedThisWave < quota && gameState.enemies.length < cap){
+      gameState.spawnTimer -= spawnInterval;
+      spawnEnemy();
+      gameState.spawnedThisWave++;
+    }
+
+    gameState.enemies.forEach(e=>{
+      e.oscPhase += e.oscSpeed;
+      e.x = e.baseX + Math.sin(e.oscPhase) * e.oscAmp;
+      e.y += e.speed;
+      e.hitFlash = Math.max(0, e.hitFlash - dt);
+    });
+
+    gameState.enemies = gameState.enemies.filter(e=>{
+      if(e.y > canvas.height + 20){
+        if(e.kind==='virus'){
+          if(!e.judged){
+            totalJudgments++; goodJudgments++;
+            gameState.score += 30;
+            addFloatText(e.x, canvas.height-20, '経過観察が正解! +30', '#4fd1c5');
+            updateAwareGauge();
+          }
+        } else if(e.kind==='oxygen'){
+          // 取り逃し：ペナルティなし
+        } else {
+          gameState.spO2 -= 12;
+        }
+        return false;
+      }
+      return true;
+    });
+
+    gameState.particles = gameState.particles.filter(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=dt;
+      return p.life>0;
+    });
+    gameState.floatTexts = gameState.floatTexts.filter(f=>{ f.life-=dt; return f.life>0; });
+
+    if(gameState.spawnedThisWave>=quota && gameState.enemies.length===0){
+      gameState.wave++;
+      gameState.spawnedThisWave = 0;
+      gameState.spawnTimer = 0;
+      rollShortages();
+      renderWeaponButtons();
+      enqueueWaveIntro(gameState.wave);
+    }
+
+    if(gameState.spO2 < 60){
+      gameState.running = false;
+      showGameOver();
+    }
+    updateHUD();
+  }
+
+  function draw(){
+    const grad = ctx.createLinearGradient(0,0,0,canvas.height);
+    grad.addColorStop(0,'#141f36'); grad.addColorStop(1,'#0b1220');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    gameState.enemies.forEach(e=>{
+      const fn = DRAW_FNS[e.def.drawFn];
+      ctx.save();
+      if(e.hitFlash>0) ctx.filter = 'brightness(1.8)';
+      fn(ctx, e.x, e.y, e.def.size, globalTime);
+      ctx.restore();
+      const badgeText = e.maxHp>1 ? `${e.def.label} HP${e.hp}` : e.def.label;
+      ctx.font = '700 9px sans-serif';
+      const tw = ctx.measureText(badgeText).width + 8;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillRect(e.x-tw/2, e.y+e.def.size*1.5, tw, 11);
+      ctx.fillStyle = '#0b1220';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(badgeText, e.x, e.y+e.def.size*1.5+6);
+    });
+
+    gameState.particles.forEach(p=>{
+      ctx.globalAlpha = Math.max(0,p.life/0.5);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+
+    ctx.textAlign='center';
+    gameState.floatTexts.forEach(f=>{
+      ctx.globalAlpha = Math.max(0,f.life);
+      ctx.fillStyle = f.color;
+      ctx.font = '700 12px sans-serif';
+      ctx.fillText(f.text, f.x, f.y-(1-f.life)*30);
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  // ==================== ゲームオーバー・振り返り ====================
+  function buildEndSummary(){
+    const el = document.getElementById('gameSummary');
+    let html = '';
+    html += '<h4>🏆 撃退した菌</h4><table>';
+    const killIds = Object.keys(killCounts).filter(id=>killCounts[id]>0);
+    if(killIds.length===0){
+      html += '<tr><td colspan="2">撃退なし</td></tr>';
+    } else {
+      killIds.forEach(id=>{
+        html += `<tr><td>${ENEMY_DEFS[id] ? ENEMY_DEFS[id].label : id}</td><td class="num">${killCounts[id]}体</td></tr>`;
+      });
+    }
+    const totalKills = killIds.reduce((s,id)=>s+killCounts[id],0);
+    html += `<tr><td><b>合計</b></td><td class="num"><b>${totalKills}体</b></td></tr></table>`;
+
+    html += '<h4>💊 抗菌薬の使用回数</h4><table>';
+    const usedIds = WEAPONS.filter(w=>(drugUseCounts[w.id]||0)>0);
+    if(usedIds.length===0){
+      html += '<tr><td colspan="2">使用なし</td></tr>';
+    } else {
+      usedIds.forEach(w=>{
+        html += `<tr><td>${w.abbr}（${w.full}）</td><td class="num">${drugUseCounts[w.id]}回</td></tr>`;
+      });
+    }
+    html += '</table>';
+    html += `<h4>⚠️ 無効な攻撃</h4><table><tr><td>耐性菌・かぜへの誤投薬など</td><td class="num">${ineffectiveCount}回</td></tr></table>`;
+    el.innerHTML = html;
+  }
+  function showGameOver(){
+    buildEndSummary();
+    const accessPct = totalJudgments>0 ? Math.round(goodJudgments/totalJudgments*100) : 0;
+    const watchPct = totalJudgments>0 ? Math.round(watchJudgments/totalJudgments*100) : 0;
+    const reservePct = totalJudgments>0 ? Math.round(reserveJudgments/totalJudgments*100) : 0;
+    const dasc = currentDASC();
+    const dascText = dasc===null ? '--' : dasc.toFixed(1);
+    document.getElementById('overText').textContent =
+      `SpO2が60%未満に低下しました… 到達Wave ${gameState.wave} / スコア ${gameState.score} / AWaRe比率 Access${accessPct}% Watch${watchPct}% Reserve${reservePct}% / 平均DASC ${dascText}`;
+    document.getElementById('gameOverOverlay').style.display = 'flex';
+  }
+
+  // ==================== リファレンスパネル ====================
+  const refBtn = document.getElementById('refBtn');
+  const refPanel = document.getElementById('refPanel');
+  const refTable = document.getElementById('refTable');
+  function buildRefTable(){
+    let rows = '';
+    Object.keys(ENEMY_DEFS).forEach(key=>{
+      const def = ENEMY_DEFS[key];
+      const bestAsc = Math.min(...def.susceptibleTo.map(id=>WMAP[id].asc));
+      const drugCells = def.susceptibleTo.map(id=>{
+        const isBest = WMAP[id].asc===bestAsc;
+        return `<span class="${isBest?'best':'ok'}">${id}${isBest?'◎':''}</span>`;
+      }).join(' / ');
+      rows += `<tr><td><b>${def.label}</b></td><td>${drugCells}</td></tr>`;
+    });
+    rows += `<tr><td><b>かぜ</b><br>(ウイルス性)</td><td><span class="ok">どの抗菌薬も無効。安静にするのが正解</span></td></tr>`;
+    refTable.innerHTML = `<tr><td><b>菌種</b></td><td><b>有効な抗菌薬</b>（◎=最も狭域=推奨）</td></tr>` + rows;
+  }
+  buildRefTable();
+  refBtn.addEventListener('click', ()=>{ refPanel.classList.toggle('show'); closeShop(); });
+
+  // ==================== ショップパネル ====================
+  const shopBtn = document.getElementById('shopBtn');
+  const shopPanel = document.getElementById('shopPanel');
+  function buildShopPanel(){
+    let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <b style="font-size:0.78rem;">🛒 ショップ</b>
+        <button id="shopCloseBtn" style="background:var(--panel-border);border:none;color:var(--text);width:24px;height:24px;border-radius:50%;font-size:0.7rem;cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:0.68rem;margin-bottom:6px;color:var(--text-dim)">初期は★1、保有スコアで最大★5まで強化できる（威力が上がり、HPの高い耐性菌も倒しやすくなる）。</div>`;
+    WEAPONS.forEach(w=>{
+      const unlocked = isWeaponUnlocked(w.id);
+      const cost = w.level<MAX_WEAPON_LEVEL ? SHOP_COSTS[w.level-1] : null;
+      html += `<div class="shopRow">
+        <div class="info"><b>${w.abbr} <span style="color:var(--gold)">${unlocked?starsStr(w.level):'未解禁'}</span></b><span>${w.full}（威力${weaponDamage(w)}／ASC:${w.asc} ${w.spectrum}）</span></div>
+        ${!unlocked ? `<button disabled>Wave${w.unlockWave}で解禁</button>` : cost!==null ? `<button data-w="${w.id}" ${gameState.score<cost?'disabled':''}>強化 ${cost}p</button>` : `<button disabled>MAX</button>`}
+      </div>`;
+    });
+    shopPanel.innerHTML = html;
+    document.getElementById('shopCloseBtn').addEventListener('click', closeShop);
+    shopPanel.querySelectorAll('button[data-w]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const w = WMAP[btn.getAttribute('data-w')];
+        const cost = SHOP_COSTS[w.level-1];
+        if(w.level<MAX_WEAPON_LEVEL && gameState.score>=cost){
+          gameState.score -= cost; w.level++;
+          updateHUD(); renderWeaponButtons(); buildShopPanel();
+        }
+      });
+    });
+  }
+  function openShop(){
+    buildShopPanel();
+    shopPanel.classList.add('show');
+    refPanel.classList.remove('show');
+    if(gameState.running) gameState.paused = true;
+  }
+  function closeShop(){
+    shopPanel.classList.remove('show');
+    if(gameState.running) gameState.paused = false;
+  }
+  shopBtn.addEventListener('click', ()=>{
+    if(shopPanel.classList.contains('show')) closeShop(); else openShop();
+  });
+
+  // ==================== エントリータブ ====================
+  document.querySelectorAll('.entryTabBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.entryTabBtn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.entryContent .pane').forEach(p=>p.classList.remove('show'));
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.dataset.tab).classList.add('show');
+    });
+  });
+
+  // ==================== 開始・リトライ ====================
+  function resetState(){
+    gameState = {
+      running:false, paused:false, wave:1, score:0, spO2:100,
+      selectedWeapon:'ABPC', enemies:[], particles:[], floatTexts:[],
+      spawnTimer:0, spawnedThisWave:0,
+    };
+    shortageSet = new Set();
+    totalJudgments=0; goodJudgments=0; watchJudgments=0; reserveJudgments=0;
+    totalASC=0; totalDoses=0; ineffectiveCount=0;
+    killCounts={}; drugUseCounts={}; weaponLockTimer=0;
+    WEAPONS.forEach(w=>w.level=1);
+    resetFlowQueue();
+    renderWeaponButtons(); updateHUD(); updateAwareGauge();
+    shopPanel.classList.remove('show');
+    refPanel.classList.remove('show');
+  }
+  document.getElementById('startBtn').addEventListener('click', ()=>{
+    document.getElementById('startOverlay').style.display = 'none';
+    resetState();
+    gameState.running = true; lastTime = 0;
+    enqueueWaveIntro(1);
+  });
+  document.getElementById('retryBtn').addEventListener('click', ()=>{
+    document.getElementById('gameOverOverlay').style.display = 'none';
+    resetState();
+    gameState.running = true; lastTime = 0;
+    enqueueWaveIntro(1);
+  });
+
+  buildShopPanel();
+  renderWeaponButtons();
+  updateHUD();
+  updateAwareGauge();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
