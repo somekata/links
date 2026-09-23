@@ -276,6 +276,7 @@
             <li>Waveが進むほど菌のHPが増え一発では倒れなくなる。</li>
             <li>貯めたスコアは🛒ショップで各抗菌薬の威力強化（初期★1〜最大★5）に使える。1段階ごとにダメージ+1。</li>
             <li>防御ラインのHPが0になるとゲームオーバー。</li>
+            <li>🔊音声ボタンで効果音のオン/オフを切り替えられる。</li>
           </ol>
         </div>
 
@@ -323,6 +324,7 @@
     <button class="miniBtn" id="shopBtn">🛒 ショップ</button>
     <button class="miniBtn" id="dexBtn">📕 図鑑</button>
     <button class="miniBtn" id="pauseBtn">⏸ 一時停止</button>
+    <button class="miniBtn" id="muteBtn">🔊 音声</button>
   </div>
 
   <div id="refPanel"><table id="refTable"></table></div>
@@ -455,6 +457,81 @@
   function speedPenaltyMult(){ return (totalJudgments>0 && currentAwarePct()<20) ? 1.5 : 1; }
   function scorePenaltyMult(){ return (totalJudgments>0 && currentAwarePct()<10) ? 0.5 : 1; }
 
+  // ---------- サウンド ----------
+  let audioCtx = null;
+  let muted = false;
+  function ensureAudio(){
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+    } else if(audioCtx.state === 'suspended'){
+      audioCtx.resume();
+    }
+  }
+  function tone(freq, startTime, dur, type, gain){
+    if(!audioCtx || muted) return;
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, startTime);
+    g.gain.setValueAtTime(0, startTime);
+    g.gain.linearRampToValueAtTime(gain != null ? gain : 0.16, startTime + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(startTime); osc.stop(startTime + dur + 0.02);
+  }
+  function sfxTap(){
+    if(!audioCtx || muted) return;
+    tone(1000, audioCtx.currentTime, 0.035, 'square', 0.05);
+  }
+  function sfxOptimal(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(880, t, 0.09, 'triangle', 0.16);
+    tone(1320, t + 0.06, 0.12, 'triangle', 0.14);
+  }
+  function sfxSuboptimal(){
+    if(!audioCtx || muted) return;
+    tone(520, audioCtx.currentTime, 0.14, 'sine', 0.13);
+  }
+  function sfxResistant(){
+    if(!audioCtx || muted) return;
+    tone(160, audioCtx.currentTime, 0.16, 'sawtooth', 0.11);
+  }
+  function sfxKill(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(660, t, 0.08, 'square', 0.11);
+    tone(990, t + 0.06, 0.08, 'square', 0.11);
+    tone(1320, t + 0.12, 0.16, 'square', 0.11);
+  }
+  function sfxVirusPenalty(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(220, t, 0.12, 'sawtooth', 0.15);
+    tone(180, t + 0.14, 0.2, 'sawtooth', 0.15);
+  }
+  function sfxItem(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    [660, 880, 1100, 1320].forEach((f, i) => tone(f, t + i * 0.045, 0.09, 'sine', 0.11));
+  }
+  function sfxWaveClear(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.09, 0.16, 'triangle', 0.14));
+  }
+  function sfxGameOver(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    [440, 392, 330, 220].forEach((f, i) => tone(f, t + i * 0.18, 0.24, 'sine', 0.14));
+  }
+  function sfxLock(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(300, t, 0.1, 'square', 0.1);
+    tone(250, t + 0.1, 0.14, 'square', 0.1);
+  }
+
   // ---------- 状態 ----------
   let selectedWeapon = 'PCG';
   let enemies = [], particles = [], floatTexts = [];
@@ -561,6 +638,7 @@
     selectedWeapon = id;
     const nextBtn = weaponBtnEls[id];
     if(nextBtn) nextBtn.classList.add('active');
+    sfxTap();
   }
   renderWeaponButtons();
 
@@ -645,6 +723,11 @@
     if(!running) return;
     paused = !paused;
     document.getElementById('pauseBtn').textContent = paused ? '▶ 再開' : '⏸ 一時停止';
+  });
+
+  document.getElementById('muteBtn').addEventListener('click', ()=>{
+    muted = !muted;
+    document.getElementById('muteBtn').textContent = muted ? '🔇 ミュート' : '🔊 音声';
   });
 
   // ---------- エントリータブ ----------
@@ -1157,6 +1240,7 @@
 
   function hasActiveKaze(){ return enemies.some(e=>e.typeId==='kaze' && !e.judged); }
   function collectItem(e){
+    sfxItem();
     if(e.typeId==='potion'){
       const before = hp;
       hp = Math.min(100, hp+15);
@@ -1184,7 +1268,7 @@
       addParticles(e.x, e.y, '#cbd5e1', 8);
       removeEnemy(e);
     });
-    if(targets.length){ updateAwareGauge(); updateHUD(); }
+    if(targets.length){ updateAwareGauge(); updateHUD(); sfxOptimal(); }
   });
 
   function tryHit(x,y){
@@ -1219,6 +1303,7 @@
         addFloatText(best.x, best.y-10, '無効使用!-50', '#ef4444');
         showWarning('風邪に抗菌薬は効きません（抗菌薬ボタンが2秒間使えなくなります）');
         updateAwareGauge();
+        sfxVirusPenalty();
       } else {
         addFloatText(best.x, best.y-10, '判定済み', '#9fb0d0');
       }
@@ -1247,11 +1332,13 @@
         const gained = Math.round(best.trueDef.score*portion*1*currentAwareMult()*scorePenaltyMult());
         score += gained;
         addFloatText(best.x, best.y-6, `経験的治療で正体判明! +${gained}`, '#22d3ee');
+        sfxOptimal();
         if(best.hp<=0){
           addFloatText(best.x, best.y-22, '撃破!', '#93c5fd');
           addParticles(best.x, best.y, '#93c5fd', 14);
           killCounts[best.trueId] = (killCounts[best.trueId]||0) + 1;
           removeEnemy(best);
+          sfxKill();
         }
         updateAwareGauge();
       } else {
@@ -1259,6 +1346,7 @@
         addFloatText(best.x, best.y-10, '正体不明…この薬は無効', '#ef4444');
         best.speed *= 1.05;
         updateAwareGauge();
+        sfxResistant();
       }
       updateHUD();
       return;
@@ -1275,10 +1363,10 @@
     else if(wDef.tier==='reserve') reserveJudgments++;
     if(isEffective){
       const diff = TIER_RANK[wDef.tier] - best.def.bestTier;
-      let mult, msg, color;
-      if(diff===0){ mult=1; msg='適正使用!'; color='#4fd1c5'; }
-      else if(diff===1){ mult=0.5; msg='有効(広域)…減点'; color='#f59e0b'; }
-      else { mult=0.2; msg='広域薬の乱用!大幅減点'; color='#ef4444'; }
+      let mult, color;
+      if(diff===0){ mult=1; color='#4fd1c5'; }
+      else if(diff===1){ mult=0.5; color='#f59e0b'; }
+      else { mult=0.2; color='#ef4444'; }
 
       const dmgDealt = Math.min(weaponDamage(wDef), best.hp);
       best.hp -= dmgDealt;
@@ -1286,14 +1374,25 @@
       const portion = dmgDealt / best.maxHp;
       const gained = Math.round(best.def.score * portion * mult * currentAwareMult() * scorePenaltyMult());
       score += gained;
-      addFloatText(best.x, best.y-6, `${msg} +${gained}`, color);
+
+      if(diff===0){
+        // おすすめの治療（最適ティア）の時だけ「適正使用」の表示・効果音
+        addFloatText(best.x, best.y-6, `適正使用! +${gained}`, color);
+        sfxOptimal();
+      }
+      // diff>=1（効果はあるが広域すぎる）は、ヒットごとの表示・効果音は出さない。撃破時のみ知らせる。
       if(diff>=1){ showToast('有効ですが広域抗菌薬です。より狭域の抗菌薬へデエスカレーションしてください。', 3000); }
 
       if(best.hp <= 0){
-        addFloatText(best.x, best.y-22, '撃破!', '#93c5fd');
+        if(diff===0){
+          addFloatText(best.x, best.y-22, '撃破!', '#93c5fd');
+        } else {
+          addFloatText(best.x, best.y-6, `撃破! +${gained}`, '#93c5fd');
+        }
         addParticles(best.x, best.y, '#93c5fd', 14);
         killCounts[best.trueId || best.typeId] = (killCounts[best.trueId || best.typeId]||0) + 1;
         removeEnemy(best);
+        sfxKill();
       }
       updateAwareGauge();
     } else {
@@ -1301,6 +1400,7 @@
       addFloatText(best.x, best.y-10, '耐性! 無効', '#ef4444');
       best.speed *= 1.05;
       updateAwareGauge();
+      sfxResistant();
     }
     updateHUD();
   }
@@ -1336,6 +1436,7 @@
     if(active){
       if(selectedWeapon==='VCM' || selectedWeapon==='MEPM') selectedWeapon = 'PCG';
       showToast('⚠️ Access比率30%未満のため、VCM・MEPMが出荷停止扱いになっています', 3000);
+      sfxLock();
     } else {
       showToast('Access比率が回復し、VCM・MEPMの出荷停止(比率低下によるもの)が解除されました', 2500);
     }
@@ -1391,6 +1492,7 @@
   }
   function endGame(){
     running = false;
+    sfxGameOver();
     document.getElementById('overTitle').textContent = 'GAME OVER';
     const total = totalJudgments;
     const accessPct = total>0 ? Math.round(goodJudgments/total*100) : 0;
@@ -1425,6 +1527,7 @@
     if(shortageSet.has(selectedWeapon)) selectedWeapon = 'PCG';
     if(shortageSet.size>0){
       showWarning(`⚠️ 出荷停止中: ${Array.from(shortageSet).join('、')}（今Waveの間のみ）`);
+      sfxLock();
     } else if(prevSize>0){
       showWarning('出荷状況が回復しました');
     }
@@ -1452,6 +1555,7 @@
     score += bonus;
     showToast(`Waveクリアボーナス! Access比率${Math.round(pct)}% (×${mult}) +${bonus}p`, 3000);
     updateHUD();
+    sfxWaveClear();
   }
   function maybeRotateBgTheme(){
     if(wave % 5 !== 0) return;
@@ -1999,11 +2103,13 @@
     renderWeaponButtons(); updateHUD(); updateAwareGauge();
   }
   document.getElementById('startBtn').addEventListener('click', ()=>{
+    ensureAudio();
     document.getElementById('startOverlay').style.display='none';
     resetState(); running = true; paused = false; lastTime = 0;
     enqueueWaveIntro(1);
   });
   document.getElementById('retryBtn').addEventListener('click', ()=>{
+    ensureAudio();
     document.getElementById('overOverlay').style.display='none';
     resetState(); running = true; paused = false; lastTime = 0;
     enqueueWaveIntro(1);
