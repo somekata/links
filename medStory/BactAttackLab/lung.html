@@ -140,7 +140,7 @@
   .modalCard .drugline{ font-size:0.72rem; text-align:left; margin-top:6px; }
   .modalCard .drugline b.best{ color:var(--access); }
   .modalCard button{ margin-top:10px; background:var(--accent); color:#052a26; border:none; border-radius:10px; padding:9px 22px; font-size:0.82rem; font-weight:700; cursor:pointer; }
-  .modalClose{ position:absolute; top:8px; right:8px; background:var(--panel-border); border:none; color:var(--text); width:26px; height:26px; border-radius:50%; font-size:0.8rem; cursor:pointer; }
+  .modalClose{ position:absolute; top:8px; right:8px; background:var(--panel-border); border:none; color:var(--text); width:26px; height:26px; padding:0; border-radius:50%; font-size:0.8rem; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; }
 
   .charGrid{ display:flex; flex-wrap:wrap; gap:5px; margin:8px 0 2px; }
   .charChip{ background:var(--panel); border:1px solid var(--panel-border); color:var(--text); border-radius:8px; padding:6px 9px; font-size:0.66rem; cursor:pointer; }
@@ -205,6 +205,8 @@
           防御ラインの代わりに患者の<b>SpO2（酸素飽和度）</b>ゲージが表示され、菌を取り逃すと低下します。SpO2が60%未満になるとゲームオーバーです。</p>
           <h3>耐性菌について</h3>
           <p>耐性を獲得した菌にはオーラが表示されます。<b style="color:#F59E0B">薄い黄色オーラ</b>は軽度耐性、<b style="color:#DC2626">強い赤オーラ</b>は高度耐性（複数回の攻撃が必要）を意味します。</p>
+          <h3>適正使用について</h3>
+          <p>それぞれの菌には「最も適した抗菌薬（適正使用）」が1つ決まっています。それ以外の効く薬は単なる「有効」扱いで、適正使用ほどのボーナスはありません。📖リファレンスや📕図鑑で確認できます。</p>
           <h3>AWaRe比率</h3>
           <p>画面上部のゲージには使った抗菌薬の内訳が<b style="color:var(--access)">Access(緑・狭域)</b>・<b style="color:var(--watch)">Watch(黄・中間)</b>・<b style="color:var(--reserve)">Reserve(赤・広域)</b>の3色で表示されます。Accessが多いほど適正使用です。</p>
           <h3>ステージ構成</h3>
@@ -526,6 +528,7 @@
   function drawMSMP(ctx,x,y,r,t){ drawMycoMaiko(ctx,x,y,r,t,0,"#FDE047"); }
   function drawMRMP(ctx,x,y,r,t){ drawMycoMaiko(ctx,x,y,r,t,2,"#CA8A04"); }
 
+
   function drawVirus(ctx, x, y, radius){
     ctx.save(); ctx.translate(x,y);
     ctx.beginPath(); ctx.arc(0,0,radius,0,Math.PI*2);
@@ -592,16 +595,15 @@
 
   // ==================== 敵データ ====================
   const ENEMY_DEFS = {
-    PSSP:  { label:'PSSP',  drawFn:'drawPSSP',  size:24, resistLevel:0, susceptibleTo:['ABPC','AMPC/CVA','CTRX','MEPM','VCM'] },
-    PRSP:  { label:'PRSP',  drawFn:'drawPRSP',  size:24, resistLevel:2, susceptibleTo:['CTRX','MEPM','VCM'] },
-    BLNAS: { label:'BLNAS', drawFn:'drawBLNAS', size:24, resistLevel:0, susceptibleTo:['ABPC','AMPC/CVA','CTRX','MEPM','AZM','CPFX'] },
-    BLPAR: { label:'BLPAR', drawFn:'drawBLPAR', size:24, resistLevel:1, susceptibleTo:['AMPC/CVA','CTRX','MEPM','AZM','CPFX'] },
-    BLNAR: { label:'BLNAR', drawFn:'drawBLNAR', size:24, resistLevel:2, susceptibleTo:['CTRX','MEPM','AZM','CPFX'] },
-    MSMP:  { label:'MSMP',  drawFn:'drawMSMP',  size:22, resistLevel:0, susceptibleTo:['AZM','CPFX'] },
-    MRMP:  { label:'MRMP',  drawFn:'drawMRMP',  size:22, resistLevel:2, susceptibleTo:['CPFX'] },
+    PSSP:  { label:'PSSP',  drawFn:'drawPSSP',  size:24, resistLevel:0, susceptibleTo:['ABPC','AMPC/CVA','CTRX','MEPM','VCM'], bestDrug:'ABPC' },
+    PRSP:  { label:'PRSP',  drawFn:'drawPRSP',  size:24, resistLevel:2, susceptibleTo:['CTRX','MEPM','VCM'], bestDrug:'CTRX' },
+    BLNAS: { label:'BLNAS', drawFn:'drawBLNAS', size:24, resistLevel:0, susceptibleTo:['ABPC','AMPC/CVA','CTRX','MEPM','AZM','CPFX'], bestDrug:'ABPC' },
+    BLPAR: { label:'BLPAR', drawFn:'drawBLPAR', size:24, resistLevel:1, susceptibleTo:['AMPC/CVA','CTRX','MEPM','AZM','CPFX'], bestDrug:'AMPC/CVA' },
+    BLNAR: { label:'BLNAR', drawFn:'drawBLNAR', size:24, resistLevel:2, susceptibleTo:['CTRX','MEPM','AZM','CPFX'], bestDrug:'CTRX' },
+    MSMP:  { label:'MSMP',  drawFn:'drawMSMP',  size:22, resistLevel:0, susceptibleTo:['AZM','CPFX'], bestDrug:'AZM' },
+    MRMP:  { label:'MRMP',  drawFn:'drawMRMP',  size:22, resistLevel:2, susceptibleTo:['CPFX'], bestDrug:'CPFX' },
   };
   function enemyMaxHp(def){ return def.resistLevel>=2 ? 2 : 1; }
-  function enemyBestTier(def){ return Math.min(...def.susceptibleTo.map(id=>TIER_RANK[WMAP[id].tier])); }
 
   const CHAR_FLAVOR = {
     PSSP:'肺炎の代表的な原因菌。ペニシリン感受性で、狭域の抗菌薬がよく効く「王様」タイプ。',
@@ -854,12 +856,10 @@
     else reserveJudgments++;
 
     if(isEffective){
-      const bestTier = enemyBestTier(enemy.def);
-      const diff = TIER_RANK[w.tier] - bestTier;
-      let bonus, msg, color;
-      if(diff<=0){ bonus=30; msg='適正使用!'; color='#22c55e'; }
-      else if(diff===1){ bonus=5; msg='有効(広域)…減点'; color='#f59e0b'; }
-      else { bonus=-20; msg='広域薬の乱用!'; color='#ef4444'; }
+      const isBest = w.id === enemy.def.bestDrug;
+      const bonus = isBest ? 30 : 10;
+      const msg = isBest ? '適正使用!' : '有効';
+      const color = isBest ? '#22c55e' : '#4fd1c5';
 
       enemy.hp -= weaponDamage(w);
       enemy.hitFlash = 0.15;
@@ -1158,15 +1158,14 @@
     let rows = '';
     Object.keys(ENEMY_DEFS).forEach(key=>{
       const def = ENEMY_DEFS[key];
-      const bestAsc = Math.min(...def.susceptibleTo.map(id=>WMAP[id].asc));
       const drugCells = def.susceptibleTo.map(id=>{
-        const isBest = WMAP[id].asc===bestAsc;
+        const isBest = id===def.bestDrug;
         return `<span class="${isBest?'best':'ok'}">${id}${isBest?'◎':''}</span>`;
       }).join(' / ');
       rows += `<tr><td><b>${def.label}</b></td><td>${drugCells}</td></tr>`;
     });
     rows += `<tr><td><b>かぜ</b><br>(ウイルス性)</td><td><span class="ok">どの抗菌薬も無効。安静にするのが正解</span></td></tr>`;
-    refTable.innerHTML = `<tr><td><b>菌種</b></td><td><b>有効な抗菌薬</b>（◎=最も狭域=推奨）</td></tr>` + rows;
+    refTable.innerHTML = `<tr><td><b>菌種</b></td><td><b>有効な抗菌薬</b>（◎=適正使用、他は単に有効）</td></tr>` + rows;
   }
   buildRefTable();
   refBtn.addEventListener('click', ()=>{
@@ -1180,7 +1179,7 @@
   function buildShopPanel(){
     let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <b style="font-size:0.78rem;">🛒 ショップ</b>
-        <button id="shopCloseBtn" style="background:var(--panel-border);border:none;color:var(--text);width:24px;height:24px;border-radius:50%;font-size:0.7rem;cursor:pointer;">✕</button>
+        <button id="shopCloseBtn" style="background:var(--panel-border);border:none;color:var(--text);width:24px;height:24px;padding:0;border-radius:50%;font-size:0.7rem;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</button>
       </div>
       <div style="font-size:0.68rem;margin-bottom:6px;color:var(--text-dim)">初期は★1、保有スコアで最大★5まで強化できる（威力が上がり、HPの高い耐性菌も倒しやすくなる）。</div>`;
     WEAPONS.forEach(w=>{
@@ -1244,9 +1243,8 @@
         </div>`).join('');
     const drugLines = members.map(mid=>{
       const def = ENEMY_DEFS[mid];
-      const bestTier = enemyBestTier(def);
       const cells = def.susceptibleTo.map(dd=>{
-        const isBest = TIER_RANK[WMAP[dd].tier]===bestTier;
+        const isBest = dd===def.bestDrug;
         return isBest ? `<b class="best">${dd}◎</b>` : dd;
       }).join('/');
       return `${def.label}=${cells}`;
@@ -1256,7 +1254,7 @@
       <div class="lat">${gramTag}</div>
       <div style="display:flex; justify-content:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">${canvasesHtml}</div>
       <p>${desc}</p>
-      <div class="drugline"><b>有効な抗菌薬：</b>${drugLines}　（◎=最も狭域=推奨）</div>
+      <div class="drugline"><b>有効な抗菌薬：</b>${drugLines}　（◎=適正使用、他は単に有効）</div>
     `;
     members.forEach((mid,i)=>{
       const c = document.getElementById('dexGroupCanvas'+i).getContext('2d');
