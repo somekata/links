@@ -129,14 +129,23 @@
   .modalCard{
     background:var(--panel); border:1px solid var(--panel-border); border-radius:16px;
     padding:16px; max-width:300px; width:100%; text-align:center; color:var(--text);
-    max-height:90vh; overflow-y:auto;
+    max-height:90vh; overflow-y:auto; position:relative;
   }
   .modalCard canvas{ width:120px; height:120px; margin:0 auto 8px; display:block; }
   .modalCard h3{ margin:0 0 4px; font-size:0.98rem; }
+  .modalCard .lat{ font-style:italic; font-size:0.7rem; color:var(--text-dim); margin-bottom:6px; }
   .modalCard p{ font-size:0.76rem; line-height:1.6; text-align:left; margin:6px 0; }
   .modalCard ul{ list-style:none; padding:0; margin:6px 0; text-align:left; }
   .modalCard li{ margin-bottom:5px; font-size:0.74rem; }
+  .modalCard .drugline{ font-size:0.72rem; text-align:left; margin-top:6px; }
+  .modalCard .drugline b.best{ color:var(--access); }
   .modalCard button{ margin-top:10px; background:var(--accent); color:#052a26; border:none; border-radius:10px; padding:9px 22px; font-size:0.82rem; font-weight:700; cursor:pointer; }
+  .modalClose{ position:absolute; top:8px; right:8px; background:var(--panel-border); border:none; color:var(--text); width:26px; height:26px; border-radius:50%; font-size:0.8rem; cursor:pointer; }
+
+  .charGrid{ display:flex; flex-wrap:wrap; gap:5px; margin:8px 0 2px; }
+  .charChip{ background:var(--panel); border:1px solid var(--panel-border); color:var(--text); border-radius:8px; padding:6px 9px; font-size:0.66rem; cursor:pointer; }
+  #dexPanel{ display:none; margin-top:10px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:10px 12px; font-size:0.68rem; line-height:1.6; }
+  #dexPanel.show{ display:block; }
 
   .toast{
     position:fixed; left:50%; top: calc(14px + env(safe-area-inset-top, 0px));
@@ -200,6 +209,9 @@
           <p>画面上部のゲージには使った抗菌薬の内訳が<b style="color:var(--access)">Access(緑・狭域)</b>・<b style="color:var(--watch)">Watch(黄・中間)</b>・<b style="color:var(--reserve)">Reserve(赤・広域)</b>の3色で表示されます。Accessが多いほど適正使用です。</p>
           <h3>ステージ構成</h3>
           <p>使える抗菌薬はWaveが進むごとに増えます。Wave3からは「かぜ(ウイルス)」も出現し、抗菌薬を使わず安静にするのが正解です。Wave12以降は一部の薬が<b>出荷停止</b>になることもあります。</p>
+          <h3>登場キャラクター図鑑</h3>
+          <p>タップすると詳しい解説がモーダルで開きます。</p>
+          <div class="charGrid" id="charGridAbout"></div>
         </div>
         <div class="pane" id="tab-howto">
           <h3>操作法</h3>
@@ -251,10 +263,12 @@
   <div class="controls-row">
     <button class="miniBtn" id="refBtn">📖 リファレンス</button>
     <button class="miniBtn" id="shopBtn">🛒 ショップ</button>
+    <button class="miniBtn" id="dexBtn">📕 図鑑</button>
   </div>
 
   <div id="refPanel"><table id="refTable"></table></div>
   <div id="shopPanel"></div>
+  <div id="dexPanel"></div>
 
   <footer>
     本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
@@ -266,6 +280,13 @@
 
 <div class="modalOverlay" id="flowModal">
   <div class="modalCard" id="flowCard"></div>
+</div>
+
+<div class="modalOverlay" id="charModal">
+  <div class="modalCard">
+    <button class="modalClose" id="charModalClose">✕</button>
+    <div id="charBody"></div>
+  </div>
 </div>
 
 <div class="modalOverlay" id="virusModal">
@@ -547,12 +568,12 @@
   const SHOP_COSTS = [100,300,1000,10000];
   const WEAPONS = [
     { id:'ABPC',     abbr:'ABPC',     full:'アンピシリン',                 asc:5,  tier:'access',  spectrum:'狭域',        level:1, unlockWave:1  },
-    { id:'AMPC/CVA', abbr:'AMPC/CVA', full:'アモキシシリン/クラブラン酸',   asc:7,  tier:'watch',   spectrum:'中等度',       level:1, unlockWave:4  },
+    { id:'AMPC/CVA', abbr:'AMPC/CVA', full:'アモキシシリン/クラブラン酸',   asc:7,  tier:'access',  spectrum:'中等度',       level:1, unlockWave:4  },
     { id:'CTRX',     abbr:'CTRX',     full:'セフトリアキソン',             asc:6,  tier:'watch',   spectrum:'中等度〜広域', level:1, unlockWave:3  },
-    { id:'MEPM',     abbr:'MEPM',     full:'メロペネム',                   asc:12, tier:'reserve', spectrum:'超広域',       level:1, unlockWave:10 },
+    { id:'MEPM',     abbr:'MEPM',     full:'メロペネム',                   asc:12, tier:'watch',   spectrum:'超広域',       level:1, unlockWave:10 },
     { id:'AZM',      abbr:'AZM',      full:'アジスロマイシン',             asc:6,  tier:'watch',   spectrum:'マクロライド', level:1, unlockWave:8  },
-    { id:'CPFX',     abbr:'CPFX',     full:'シプロフロキサシン',           asc:9,  tier:'reserve', spectrum:'ニューキノロン', level:1, unlockWave:9  },
-    { id:'VCM',      abbr:'VCM',      full:'バンコマイシン',               asc:5,  tier:'access',  spectrum:'グラム陽性限定', level:1, unlockWave:11 },
+    { id:'CPFX',     abbr:'CPFX',     full:'シプロフロキサシン',           asc:9,  tier:'watch',   spectrum:'ニューキノロン', level:1, unlockWave:9  },
+    { id:'VCM',      abbr:'VCM',      full:'バンコマイシン',               asc:5,  tier:'watch',   spectrum:'グラム陽性限定', level:1, unlockWave:11 },
   ];
   const WMAP = {}; WEAPONS.forEach(w=>WMAP[w.id]=w);
   const SHORTAGE_ELIGIBLE = ['CTRX','MEPM','VCM'];
@@ -592,6 +613,28 @@
     MRMP:'マクロライド耐性を獲得した手強いマイコプラズマ。限られた薬しか効かない。',
   };
   const WAVE_NEW_CHAR = { 1:['PSSP'], 2:['BLNAS'], 3:['PRSP'], 4:['BLPAR'], 5:['BLNAR'], 8:['MSMP'], 9:['MRMP'] };
+
+  // ==================== 図鑑（キャラクター詳細）====================
+  const VIRUS_DEF = { label:'かぜ', drawFn:'drawVirus', size:18, gramTag:'⚪ ウイルス(細菌ではない)',
+    desc:'原因はウイルスであり細菌ではない。抗菌薬を使っても症状は改善せず、副作用や耐性菌のリスクだけが残る。正しい対応は、必要のない抗菌薬を使わず安静・経過観察すること。' };
+  const DEX_SIZE = { PSSP:40, PRSP:40, BLNAS:40, BLPAR:36, BLNAR:36, MSMP:40, MRMP:40, VIRUS:40 };
+  const GROUP_DEFS = {
+    pneumo: {
+      title:'肺炎球菌', gramTag:'🔵 グラム陽性球菌', members:['PSSP','PRSP'],
+      desc:'肺炎球菌(Streptococcus pneumoniae)は市中肺炎の代表的な原因菌。ペニシリン感受性(PSSP)であれば狭域のペニシリン系(ABPC)がよく効くが、ペニシリン結合タンパク(PBP)の変異で耐性化するとPRSPとなり、ABPCやAMPC/CVAでは倒せずCTRXやVCMなど、より広域の薬が必要になる。',
+    },
+    influ: {
+      title:'インフルエンザ菌', gramTag:'🔴 グラム陰性桿菌', members:['BLNAS','BLPAR','BLNAR'],
+      desc:'インフルエンザ菌(Haemophilus influenzae)は、感受性の高いBLNASから、βラクタマーゼを産生してABPCが効かなくなったBLPAR、さらにPBPの変異でペニシリン系全般が効きにくくなった高度耐性のBLNARまで、様々な耐性パターンを持つ。',
+    },
+    myco: {
+      title:'マイコプラズマ', gramTag:'🟣 細胞壁を持たない非定型病原体', members:['MSMP','MRMP'],
+      desc:'マイコプラズマ(Mycoplasma pneumoniae)は細胞壁を持たない特殊な病原体で、細胞壁合成を阻害するβラクタム系はすべて無効。マクロライド系(AZM)が第一選択だが、耐性化したMRMPにはAZMも効かず、ニューキノロン系(CPFX)が頼りとなる。',
+    },
+  };
+  const ALL_CHAR_IDS = ['pneumo','influ','myco','VIRUS'];
+  function charDef(id){ return id==='VIRUS' ? VIRUS_DEF : ENEMY_DEFS[id]; }
+  function chipLabel(id){ return id==='VIRUS' ? VIRUS_DEF.label : GROUP_DEFS[id].title; }
 
   function getWaveEnemyTypes(wave){
     const table = {
@@ -1126,7 +1169,10 @@
     refTable.innerHTML = `<tr><td><b>菌種</b></td><td><b>有効な抗菌薬</b>（◎=最も狭域=推奨）</td></tr>` + rows;
   }
   buildRefTable();
-  refBtn.addEventListener('click', ()=>{ refPanel.classList.toggle('show'); closeShop(); });
+  refBtn.addEventListener('click', ()=>{
+    refPanel.classList.toggle('show');
+    closeShop(); closeDex();
+  });
 
   // ==================== ショップパネル ====================
   const shopBtn = document.getElementById('shopBtn');
@@ -1162,6 +1208,7 @@
     buildShopPanel();
     shopPanel.classList.add('show');
     refPanel.classList.remove('show');
+    closeDex();
     if(gameState.running) gameState.paused = true;
   }
   function closeShop(){
@@ -1170,6 +1217,93 @@
   }
   shopBtn.addEventListener('click', ()=>{
     if(shopPanel.classList.contains('show')) closeShop(); else openShop();
+  });
+
+  // ==================== 図鑑パネル・モーダル ====================
+  const dexBtn = document.getElementById('dexBtn');
+  const dexPanel = document.getElementById('dexPanel');
+  const charModal = document.getElementById('charModal');
+  const charBody = document.getElementById('charBody');
+  function renderCharChips(container){
+    container.innerHTML = '';
+    ALL_CHAR_IDS.forEach(id=>{
+      const chip = document.createElement('button');
+      chip.className = 'charChip';
+      chip.textContent = chipLabel(id);
+      chip.addEventListener('click', ()=> openCharModal(id));
+      container.appendChild(chip);
+    });
+  }
+  renderCharChips(document.getElementById('charGridAbout'));
+
+  function renderGroupModal(title, gramTag, members, desc){
+    const canvasesHtml = members.map((mid,i)=>`
+        <div style="text-align:center;">
+          <canvas id="dexGroupCanvas${i}" width="140" height="140" style="width:76px;height:76px;display:block;margin:0 auto;"></canvas>
+          <div style="font-size:0.6rem;margin-top:3px;line-height:1.4;">${ENEMY_DEFS[mid].label}</div>
+        </div>`).join('');
+    const drugLines = members.map(mid=>{
+      const def = ENEMY_DEFS[mid];
+      const bestTier = enemyBestTier(def);
+      const cells = def.susceptibleTo.map(dd=>{
+        const isBest = TIER_RANK[WMAP[dd].tier]===bestTier;
+        return isBest ? `<b class="best">${dd}◎</b>` : dd;
+      }).join('/');
+      return `${def.label}=${cells}`;
+    }).join('　');
+    charBody.innerHTML = `
+      <h3>${title}</h3>
+      <div class="lat">${gramTag}</div>
+      <div style="display:flex; justify-content:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">${canvasesHtml}</div>
+      <p>${desc}</p>
+      <div class="drugline"><b>有効な抗菌薬：</b>${drugLines}　（◎=最も狭域=推奨）</div>
+    `;
+    members.forEach((mid,i)=>{
+      const c = document.getElementById('dexGroupCanvas'+i).getContext('2d');
+      c.clearRect(0,0,140,140);
+      DRAW_FNS[ENEMY_DEFS[mid].drawFn](c, 70, 74, DEX_SIZE[mid] || 36, 0);
+    });
+    charModal.classList.add('show');
+  }
+  function openCharModal(id){
+    if(GROUP_DEFS[id]){
+      const g = GROUP_DEFS[id];
+      renderGroupModal(g.title, g.gramTag, g.members, g.desc);
+      return;
+    }
+    const d = charDef(id);
+    charBody.innerHTML = `
+      <canvas id="charCanvas" width="280" height="280" style="width:140px;height:140px;margin:0 auto 8px;display:block;"></canvas>
+      <h3>${d.label}</h3>
+      <div class="lat">${d.gramTag || ''}</div>
+      <p></p>
+      <div class="drugline"></div>
+    `;
+    const charCanvas = charBody.querySelector('canvas');
+    const cctx = charCanvas.getContext('2d');
+    cctx.clearRect(0,0,charCanvas.width,charCanvas.height);
+    cctx.save(); cctx.scale(2,2);
+    DRAW_FNS[d.drawFn](cctx, 70, 78, DEX_SIZE[id] || 40, 0);
+    cctx.restore();
+    charBody.querySelector('p').textContent = d.desc || '';
+    charBody.querySelector('.drugline').innerHTML = '<b>有効な抗菌薬：なし（抗菌薬は使用しない）</b>';
+    charModal.classList.add('show');
+  }
+  document.getElementById('charModalClose').addEventListener('click', ()=> charModal.classList.remove('show'));
+  charModal.addEventListener('click', (e)=>{ if(e.target===charModal) charModal.classList.remove('show'); });
+  function openDex(){
+    dexPanel.innerHTML = '<div style="font-size:0.68rem;margin-bottom:6px;color:var(--text-dim)">キャラクターをタップして詳細を見る</div>';
+    const grid = document.createElement('div');
+    grid.className = 'charGrid';
+    renderCharChips(grid);
+    dexPanel.appendChild(grid);
+    dexPanel.classList.add('show');
+    refPanel.classList.remove('show');
+    closeShop();
+  }
+  function closeDex(){ dexPanel.classList.remove('show'); }
+  dexBtn.addEventListener('click', ()=>{
+    if(dexPanel.classList.contains('show')) closeDex(); else openDex();
   });
 
   // ==================== エントリータブ ====================
@@ -1198,6 +1332,7 @@
     renderWeaponButtons(); updateHUD(); updateAwareGauge();
     shopPanel.classList.remove('show');
     refPanel.classList.remove('show');
+    dexPanel.classList.remove('show');
   }
   document.getElementById('startBtn').addEventListener('click', ()=>{
     document.getElementById('startOverlay').style.display = 'none';
