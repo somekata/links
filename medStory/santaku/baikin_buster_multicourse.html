@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>バイキンズ・バスター 30s — 精鋭3番勝負+</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","M PLUS Rounded 1c",sans-serif;
+background:#080b18;color:#f8fafc;touch-action:manipulation;user-select:none}
+button{font:inherit;-webkit-tap-highlight-color:transparent}
+.bg{position:fixed;inset:0;background:
+radial-gradient(circle at 20% 10%,#302060 0,transparent 35%),
+radial-gradient(circle at 90% 80%,#063c42 0,transparent 35%),
+linear-gradient(135deg,#0b1024,#090b15 55%,#180d28);z-index:-2}
+.wrap{width:min(100%,520px);height:100%;margin:auto;display:flex;flex-direction:column}
+header{height:68px;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;
+background:rgba(10,14,30,.92);border-bottom:1px solid #29324a;backdrop-filter:blur(12px);z-index:5}
+.stat{text-align:center;min-width:82px}.label{font-size:9px;color:#94a3b8;font-weight:900;letter-spacing:.12em}
+.value{font-size:22px;font-weight:1000}.score{color:#fbbf24}.combo{color:#a78bfa}.timer{color:#fb7185}
+main{flex:1;min-height:0;padding:12px;display:flex;flex-direction:column;justify-content:center}
+.panel{background:rgba(15,20,39,.94);border:1px solid #303a59;border-radius:25px;box-shadow:0 20px 60px #0008;padding:18px}
+.hidden{display:none!important}
+h1,h2,p{margin:0}.title{text-align:center;font-size:27px;font-weight:1000;
+background:linear-gradient(90deg,#fbbf24,#fb7185,#a78bfa);color:transparent;background-clip:text}
+.sub{text-align:center;color:#cbd5e1;font-size:12px;margin:6px 0 14px}
+.course-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.course{border:1px solid #3b4768;border-radius:17px;padding:12px;text-align:left;color:white;
+background:linear-gradient(135deg,#18213d,#10152a);min-height:78px;cursor:pointer}
+.course:active{transform:scale(.97)}
+.course strong{display:block;font-size:16px}.course span{font-size:10px;color:#94a3b8}
+.course.mix{grid-column:1/-1;background:linear-gradient(135deg,#4c1d95,#9f1239,#065f46)}
+.course .emoji{font-size:22px;float:right}
+.rules{margin-top:12px;background:#090d1c;border:1px solid #222b44;border-radius:16px;padding:11px;font-size:11px;color:#cbd5e1}
+.rules b{color:#fbbf24}
+.start-note{text-align:center;margin-top:12px;font-size:10px;color:#64748b}
+.game{height:100%;display:flex;flex-direction:column;justify-content:space-between}
+.card{position:relative;min-height:330px;border-radius:25px;padding:15px;
+background:linear-gradient(145deg,#121932,#0d1121);border:2px solid #46527c;
+display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+box-shadow:0 20px 50px #0008}
+.badges{width:100%;display:flex;justify-content:space-between;gap:8px}
+.badge{font-size:9px;font-weight:900;padding:5px 9px;border-radius:999px;background:#172036;border:1px solid #3b496b;color:#cbd5e1}
+.avatar{width:155px;height:155px;display:flex;align-items:center;justify-content:center;animation:float 2s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px) rotate(2deg)}}
+.name{font-size:25px;font-weight:1000;text-align:center}
+.desc{text-align:center;font-size:11px;color:#cbd5e1;margin-top:5px;background:#070b16;padding:7px 12px;border-radius:12px;border:1px solid #202a42}
+.qtype{font-size:10px;color:#fbbf24;font-weight:900;background:#3b2508;padding:5px 10px;border-radius:999px;border:1px solid #76500e}
+.question{text-align:center;font-size:14px;font-weight:900;margin:8px 0}
+.answers{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+.answer{border:1px solid #405070;border-radius:16px;padding:11px 12px;text-align:left;color:white;
+background:linear-gradient(135deg,#1b2745,#121a30);cursor:pointer;min-height:54px}
+.answer:active{transform:scale(.98)} .answer .ansmain{font-weight:1000;font-size:14px}.answer .anssub{font-size:9px;color:#94a3b8;margin-top:2px}
+.feedback{position:fixed;left:50%;top:20%;transform:translateX(-50%);font-size:25px;font-weight:1000;z-index:20;opacity:0;pointer-events:none}
+.feedback.show{animation:feed .55s ease-out}@keyframes feed{0%{opacity:0;transform:translate(-50%,20px) scale(.7)}30%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-45px) scale(1)}}
+.result{text-align:center;max-height:94vh;overflow:auto}.result h2{color:#fbbf24;font-size:27px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:13px 0}
+.box{background:#090d1a;border:1px solid #27314a;border-radius:14px;padding:8px}.box small{font-size:9px;color:#64748b}.box b{display:block;font-size:20px}
+.explain{text-align:left;background:#090d1a;border:1px solid #27314a;border-radius:16px;padding:12px;font-size:11px;color:#cbd5e1;line-height:1.6}
+.explain h3{margin:0 0 7px;color:#fbbf24;font-size:13px}
+.explain-item{padding:7px 8px;border-bottom:1px solid #1e293b}.explain-item:last-child{border-bottom:0}
+.btn{width:100%;margin-top:12px;padding:13px;border:0;border-radius:16px;font-weight:1000;color:#090b14;
+background:linear-gradient(90deg,#fbbf24,#fb7185);cursor:pointer}
+.back{margin-top:8px;background:#182036;color:#cbd5e1;border:1px solid #34415f}
+footer{text-align:center;font-size:9px;color:#475569;padding:5px}
+.mini{font-size:9px;color:#64748b;text-align:center;margin-top:8px}
+@media(max-height:700px){.card{min-height:275px}.avatar{width:120px;height:120px}.panel{padding:14px}.course{min-height:68px;padding:9px}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+<header>
+  <div class="stat"><div class="label">SCORE</div><div id="score" class="value score">0</div></div>
+  <div class="stat"><div class="label">TIME</div><div id="time" class="value timer">30.0</div></div>
+  <div class="stat"><div class="label">COMBO</div><div id="combo" class="value combo">0</div></div>
+</header>
+
+<main>
+<section id="start" class="panel">
+  <div style="text-align:center;font-size:12px;color:#fbbf24;font-weight:900">🦠 バイキンズ × 医学知識</div>
+  <h1 class="title">バイキンズ・バスター</h1>
+  <div class="sub">30秒で、菌を「多面的」に見抜け！</div>
+
+  <div class="course-grid">
+    <button class="course" data-course="drug"><span class="emoji">💊</span><strong>抗菌薬</strong><span>この菌に使える薬は？</span></button>
+    <button class="course" data-course="vaccine"><span class="emoji">💉</span><strong>ワクチン</strong><span>予防できるワクチンは？</span></button>
+    <button class="course" data-course="precaution"><span class="emoji">🛡️</span><strong>感染対策</strong><span>接触・飛沫・空気？</span></button>
+    <button class="course" data-course="disease"><span class="emoji">🏥</span><strong>疾患</strong><span>代表的な病気は？</span></button>
+    <button class="course" data-course="class"><span class="emoji">🔬</span><strong>菌の種類</strong><span>GPC・GNR・非定型など</span></button>
+    <button class="course mix" data-course="mix"><span class="emoji">🎯</span><strong>ミックス・コース</strong><span>全部ごちゃまぜ！何が問われるか分からない</span></button>
+  </div>
+
+  <div class="rules">
+    <b>⚡ ルール</b><br>
+    正解：+100pt ＋ コンボボーナス ＋0.5秒<br>
+    不正解：コンボリセット・−2秒<br>
+    <span style="color:#64748b">※学習用に単純化した問題です。実臨床では感染部位・重症度・感受性・耐性などを考慮します。</span>
+  </div>
+  <div class="start-note">コースを選ぶと30秒バトル開始</div>
+</section>
+
+<section id="game" class="game hidden">
+  <div class="card" id="card">
+    <div class="badges"><span id="badge" class="badge"></span><span id="tag" class="badge"></span></div>
+    <div id="avatar" class="avatar"></div>
+    <div>
+      <div id="name" class="name"></div>
+      <div id="desc" class="desc"></div>
+    </div>
+    <div id="qtype" class="qtype"></div>
+    <div id="question" class="question"></div>
+  </div>
+  <div id="answers" class="answers"></div>
+</section>
+
+<section id="result" class="panel result hidden">
+  <h2>タイムアップ！</h2>
+  <div id="resultCourse" class="sub"></div>
+  <div class="stats">
+    <div class="box"><small>スコア</small><b id="resScore" style="color:#fbbf24">0</b></div>
+    <div class="box"><small>正解数</small><b id="resCount" style="color:#34d399">0</b></div>
+    <div class="box"><small>最大コンボ</small><b id="resCombo" style="color:#a78bfa">0</b></div>
+  </div>
+  <div id="rank" style="font-size:20px;font-weight:1000;color:#fb7185;margin-bottom:10px"></div>
+  <div class="explain">
+    <h3>📚 今回の学習ポイント</h3>
+    <div id="explainList"></div>
+  </div>
+  <button id="retry" class="btn">もう一度挑戦</button>
+  <button id="home" class="btn back">コース選択へ戻る</button>
+</section>
+</main>
+<footer>バイキンズ・バスター © 感染症＆抗菌薬学習プロジェクト</footer>
+<div id="feedback" class="feedback"></div>
+
+<script>
+const B = {
+pneumo:{id:"pneumo",name:"肺炎球菌王",badge:"GPC・双球菌",tag:"莢膜を持つ",desc:"肺炎・髄膜炎などを起こす代表的な肺炎球菌！",color:"#a855f7",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><path d="M48 40l12 15 20-25 20 25 12-15-5 25H53z" fill="#fbbf24" stroke="#d97706" stroke-width="4"/><circle cx="62" cy="35" r="4" fill="#f43f5e"/><circle cx="80" cy="27" r="5" fill="#3b82f6"/><circle cx="98" cy="35" r="4" fill="#f43f5e"/><circle cx="62" cy="88" r="38" fill="#a855f7" stroke="#6b21a8" stroke-width="5"/><circle cx="98" cy="88" r="38" fill="#c084fc" stroke="#6b21a8" stroke-width="5"/><circle cx="52" cy="82" r="5" fill="#21123b"/><circle cx="69" cy="82" r="5" fill="#21123b"/><circle cx="91" cy="82" r="5" fill="#21123b"/><circle cx="108" cy="82" r="5" fill="#21123b"/><path d="M54 103q9 10 18 0M90 103q9 10 18 0" stroke="#21123b" stroke-width="4" fill="none"/></svg>`},
+myco:{id:"myco",name:"マイコプラズマ姫",badge:"細胞壁なし",tag:"非定型",desc:"細胞壁を持たないので、βラクタム系の標的がない！",color:"#ec4899",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><path d="M48 40Q120 20 125 78T82 130Q25 120 35 75T48 40z" fill="#f472b6" stroke="#db2777" stroke-width="5"/><path d="M65 34l9 12 7-15 8 15 10-12-5 20H70z" fill="#fef08a" stroke="#ca8a04" stroke-width="3"/><ellipse cx="65" cy="76" rx="8" ry="12" fill="#831843"/><ellipse cx="98" cy="76" rx="8" ry="12" fill="#831843"/><circle cx="63" cy="73" r="3" fill="white"/><circle cx="96" cy="73" r="3" fill="white"/><path d="M77 94q7 8 14 0" stroke="#831843" stroke-width="4" fill="none"/></svg>`},
+pseudo:{id:"pseudo",name:"リョクノーキン",badge:"GNR・桿菌",tag:"難治性バイキンズ",desc:"自然耐性や獲得耐性などで治療が難しくなることがある！",color:"#10b981",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><path d="M40 75Q10 55 8 80Q10 105 40 88" stroke="#34d399" stroke-width="6" fill="none"/><path d="M42 58h75q25 0 25 22t-25 22H42q-18 0-18-22t18-22z" fill="#10b981" stroke="#047857" stroke-width="5"/><circle cx="73" cy="78" r="5" fill="#064e3b"/><circle cx="103" cy="78" r="5" fill="#064e3b"/><path d="M75 92q14 12 28 0" stroke="#064e3b" stroke-width="4" fill="none"/></svg>`},
+mrsa:{id:"mrsa",name:"MRSA",badge:"GPC・ブドウ球菌",tag:"耐性菌",desc:"mec遺伝子によるPBP2aなど、βラクタム耐性がポイント！",color:"#ef4444",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><g fill="#ef4444" stroke="#991b1b" stroke-width="4"><circle cx="55" cy="62" r="30"/><circle cx="95" cy="60" r="30"/><circle cx="78" cy="95" r="30"/><circle cx="115" cy="96" r="25"/></g><path d="M45 72q15 12 30 0" stroke="#450a0a" stroke-width="4" fill="none"/><path d="M82 70l25 18M107 68l-25 20" stroke="#fef2f2" stroke-width="5"/></svg>`},
+mdrp:{id:"mdrp",name:"MDRP",badge:"GNR・緑膿菌",tag:"多剤耐性",desc:"多剤耐性緑膿菌。治療では薬剤感受性結果が重要！",color:"#06b6d4",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><path d="M38 60h85q25 0 25 20t-25 20H38q-22 0-22-20t22-20z" fill="#06b6d4" stroke="#0e7490" stroke-width="5"/><path d="M35 60Q8 42 8 25M35 100Q8 118 8 135" stroke="#67e8f9" stroke-width="5" fill="none"/><text x="53" y="88" font-size="25" font-weight="900" fill="#083344">MDRP</text></svg>`},
+legionella:{id:"legionella",name:"レジオネラ",badge:"GNR・桿菌",tag:"細胞内増殖",desc:"水系環境に関連し、肺炎を起こす細菌！",color:"#f59e0b",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><path d="M35 55q-20 15 0 30t0 30M55 45q-20 35 0 70M85 48q35 10 20 32t20 32" stroke="#fbbf24" stroke-width="9" fill="none" stroke-linecap="round"/><circle cx="73" cy="80" r="18" fill="#f59e0b" stroke="#b45309" stroke-width="4"/><circle cx="68" cy="75" r="4" fill="#451a03"/><circle cx="80" cy="75" r="4" fill="#451a03"/></svg>`},
+hib:{id:"hib",name:"インフルエンザ菌",badge:"GNR・短桿菌",tag:"Hib",desc:"Hibは小児の侵襲性感染症予防で重要なワクチン対象！",color:"#22c55e",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><rect x="30" y="55" width="100" height="50" rx="25" fill="#22c55e" stroke="#15803d" stroke-width="5"/><circle cx="65" cy="78" r="5" fill="#052e16"/><circle cx="95" cy="78" r="5" fill="#052e16"/><path d="M67 91q13 10 26 0" stroke="#052e16" stroke-width="4" fill="none"/><text x="58" y="125" font-size="18" font-weight="900" fill="#86efac">Hib</text></svg>`},
+mening:{id:"mening",name:"髄膜炎菌",badge:"GNC・双球菌",tag:"飛沫感染",desc:"髄膜炎・菌血症を起こす。ワクチンも重要！",color:"#8b5cf6",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><circle cx="67" cy="80" r="38" fill="#8b5cf6" stroke="#5b21b6" stroke-width="5"/><circle cx="101" cy="80" r="38" fill="#a78bfa" stroke="#5b21b6" stroke-width="5"/><circle cx="58" cy="76" r="5" fill="#1e1b4b"/><circle cx="76" cy="76" r="5" fill="#1e1b4b"/><circle cx="92" cy="76" r="5" fill="#1e1b4b"/><circle cx="110" cy="76" r="5" fill="#1e1b4b"/></svg>`},
+tb:{id:"tb",name:"結核菌",badge:"抗酸菌",tag:"空気感染",desc:"結核は空気感染対策が重要。",color:"#64748b",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><path d="M25 80q20-40 40 0t40 0t30 0" stroke="#94a3b8" stroke-width="15" fill="none" stroke-linecap="round"/><circle cx="54" cy="70" r="5" fill="#1e293b"/><circle cx="103" cy="70" r="5" fill="#1e293b"/></svg>`},
+strep:{id:"strep",name:"A群溶連菌",badge:"GPC・連鎖球菌",tag:"咽頭炎",desc:"咽頭炎などを起こす代表的なGPC！",color:"#f43f5e",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><g fill="#f43f5e" stroke="#9f1239" stroke-width="4"><circle cx="35" cy="80" r="24"/><circle cx="70" cy="80" r="24"/><circle cx="105" cy="80" r="24"/><circle cx="140" cy="80" r="15"/></g></svg>`},
+ecoli:{id:"ecoli",name:"大腸菌",badge:"GNR・桿菌",tag:"腸内細菌",desc:"尿路感染症など、さまざまな感染症を起こす！",color:"#f97316",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><rect x="25" y="55" width="110" height="50" rx="25" fill="#f97316" stroke="#c2410c" stroke-width="5"/><path d="M35 55Q10 30 15 15M125 105q25 25 20 40" stroke="#fdba74" stroke-width="5" fill="none"/><circle cx="65" cy="78" r="5" fill="#431407"/><circle cx="95" cy="78" r="5" fill="#431407"/></svg>`},
+welchii:{id:"welchii",name:"ウェルシュ菌",badge:"GPR・嫌気性",tag:"ガス壊疽",desc:"組織感染でガス壊疽を起こすことがある。",color:"#a16207",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><rect x="30" y="55" width="100" height="50" rx="20" fill="#a16207" stroke="#713f12" stroke-width="5"/><circle cx="65" cy="78" r="5" fill="#1c1917"/><circle cx="95" cy="78" r="5" fill="#1c1917"/><path d="M50 45q10-20 20 0M90 45q10-20 20 0" stroke="#facc15" stroke-width="4" fill="none"/></svg>`},
+chlamydia:{id:"chlamydia",name:"クラミジア",badge:"非定型",tag:"細胞内寄生",desc:"細胞内寄生性で、一般的な細菌とは少し違う性質を持つ。",color:"#e879f9",
+svg:`<svg viewBox="0 0 160 160" width="150" height="150"><circle cx="80" cy="80" r="58" fill="#e879f9" stroke="#a21caf" stroke-width="5"/><circle cx="80" cy="80" r="27" fill="#fae8ff" stroke="#a21caf" stroke-width="4"/><circle cx="80" cy="80" r="8" fill="#a21caf"/></svg>`}
+};
+
+const Q = {
+drug:[
+["pneumo","肺炎球菌に対する治療で用いられる代表的な薬は？",["ペニシリン系","アジスロマイシンのみ","抗真菌薬"],0,"βラクタム系など","肺炎球菌ではペニシリン結合蛋白（PBP）の変化によるβラクタム耐性も重要。"],
+["myco","マイコプラズマにβラクタム系が効きにくい理由は？",["細胞壁を持たない","莢膜が厚すぎる","芽胞を作る"],0,"細胞壁なし","βラクタム系は細胞壁合成を標的とするため、細胞壁を持たないマイコプラズマには作用点がない。"],
+["pseudo","緑膿菌に抗緑膿菌活性を持つ代表的薬は？",["セフタジジム","ペニシリンG","アジスロマイシン"],0,"CAZなど","緑膿菌では薬剤感受性を確認し、感染部位・重症度などを踏まえて薬剤を選択する。"],
+["mrsa","MRSAに対する代表的な治療薬の一つは？",["バンコマイシン","ペニシリンG","セファレキシン"],0,"バンコマイシン","MRSAは通常のβラクタム系が効きにくく、感染症の種類・重症度などに応じて治療薬を選択する。"],
+["legionella","レジオネラ肺炎で用いられる代表的な薬は？",["マクロライド系","ペニシリンGのみ","メトロニダゾールのみ"],0,"マクロライド系","レジオネラは細胞内で増殖するため、細胞内移行性などを考慮した薬剤選択が重要。"],
+["ecoli","大腸菌による膀胱炎では何を参考に治療薬を選ぶ？",["感染部位と感受性","菌名だけで常に同じ薬","グラム染色だけ"],0,"感受性など","大腸菌は耐性が問題になるため、臨床状況や地域の耐性状況、感受性結果などを考慮する。"]
+],
+vaccine:[
+["pneumo","肺炎球菌の予防に用いられるワクチンは？",["PCV","Hib","BCG"],0,"PCV","肺炎球菌ワクチンにはPCVなどがあり、年齢・リスクなどに応じて接種方針が決まる。"],
+["hib","Hibの予防に用いられるワクチンは？",["Hibワクチン","PCVのみ","BCG"],0,"Hibワクチン","Hibは侵襲性感染症予防の観点からワクチンが重要。"],
+["mening","髄膜炎菌ワクチンとして代表的なのは？",["MenACWY","Hibのみ","PCVのみ"],0,"MenACWY","MenACWYはA・C・W・Y群を対象とする髄膜炎菌ワクチン。"],
+["tb","結核予防で日本でも知られているワクチンは？",["BCG","PCV","Hib"],0,"BCG","BCGは結核に対するワクチンとして用いられている。"],
+["myco","マイコプラズマに対する一般的な定期予防ワクチンは？",["ない","PCV","Hib"],0,"なし","マイコプラズマには一般的な定期予防ワクチンはない。"]
+],
+precaution:[
+["mrsa","MRSAなどの接触伝播が問題となる病原体で考慮するのは？",["接触予防策","空気予防策のみ","紫外線予防策"],0,"接触予防策","MDROでは施設の方針や状況に応じて接触予防策を考慮する。"],
+["tb","結核で必要な感染経路別予防策は？",["空気予防策","接触予防策のみ","飛沫予防策のみ"],0,"空気予防策","結核は空気感染を起こし得るため、空気予防策が重要。"],
+["mening","髄膜炎菌感染症で考慮されるのは？",["飛沫予防策","空気予防策のみ","接触予防策のみ"],0,"飛沫予防策","髄膜炎菌は飛沫感染が問題となり、適切な予防策を行う。"],
+["hib","侵襲性Hib感染症で考慮される予防策は？",["飛沫予防策","空気予防策のみ","無菌室のみ"],0,"飛沫予防策","Hibは飛沫などによる伝播が問題となる。具体的な期間や範囲は疾患・施設方針に従う。"],
+["myco","マイコプラズマ肺炎で考慮される感染対策は？",["飛沫予防策を考慮","空気予防策のみ","接触予防策のみ"],0,"飛沫予防策","施設や疾患の状況に応じ、標準予防策に加えて飛沫予防策を考慮する。"]
+],
+disease:[
+["welchii","ウェルシュ菌が起こす代表的な疾患は？",["ガス壊疽","咽頭炎","膀胱炎"],0,"ガス壊疽","Clostridium perfringensは組織感染でガス壊疽を起こすことがある。"],
+["strep","A群溶連菌の代表的疾患は？",["咽頭炎","ガス壊疽","膀胱炎"],0,"咽頭炎","A群溶血性レンサ球菌は咽頭炎などを起こす。"],
+["ecoli","大腸菌の代表的な感染症は？",["膀胱炎","結核","レジオネラ肺炎"],0,"膀胱炎","大腸菌は尿路感染症の代表的な原因菌。"],
+["pneumo","肺炎球菌が起こす代表的疾患は？",["肺炎","ガス壊疽のみ","結核のみ"],0,"肺炎","肺炎球菌は市中肺炎、髄膜炎、中耳炎などの原因となる。"],
+["legionella","レジオネラが起こす代表的疾患は？",["レジオネラ肺炎","咽頭炎","ガス壊疽"],0,"レジオネラ肺炎","Legionella pneumophilaなどは肺炎を起こす。"]
+],
+class:[
+["pneumo","肺炎球菌の分類は？",["GPC","GNR","非定型"],0,"GPC","肺炎球菌はグラム陽性の双球菌。"],
+["pseudo","緑膿菌の分類は？",["GNR","GPC","抗酸菌"],0,"GNR","緑膿菌はグラム陰性桿菌。"],
+["chlamydia","クラミジアをこのゲームではどう分類する？",["非定型","GPC","GPR"],0,"非定型","クラミジアは細胞内寄生性で、一般的なグラム染色で扱う細菌とは異なる特徴を持つ。"],
+["strep","A群溶連菌の分類は？",["GPC","GNR","非定型"],0,"GPC","A群溶血性レンサ球菌はグラム陽性球菌。"],
+["ecoli","大腸菌の分類は？",["GNR","GPC","抗酸菌"],0,"GNR","大腸菌はグラム陰性桿菌。"],
+["welchii","ウェルシュ菌の分類は？",["GPR・嫌気性","GPC","GNR"],0,"GPR・嫌気性","Clostridium perfringensはグラム陽性桿菌で嫌気性。"],
+["legionella","レジオネラの分類は？",["GNR","GPC","抗酸菌"],0,"GNR","Legionellaはグラム陰性桿菌。"]
+]
+};
+
+const courseNames={drug:"💊 抗菌薬",vaccine:"💉 ワクチン",precaution:"🛡️ 感染対策",disease:"🏥 疾患",class:"🔬 菌の種類",mix:"🎯 ミックス"};
+let course="mix",score=0,combo=0,maxCombo=0,count=0,time=30,current=null,timer=null,locked=false;
+const $=id=>document.getElementById(id);
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function pool(){
+ if(course==="mix"){
+   let out=[];Object.keys(Q).forEach(k=>Q[k].forEach(x=>out.push({...x,kind:k})));
+   return out;
+ }
+ return Q[course].map(x=>({...x,kind:course}));
+}
+function newQuestion(){
+ const p=pool(); let q=shuffle(p)[0];
+ if(current) for(let i=0;i<10&&q[0]===current[0]&&p.length>1;i++) q=shuffle(p)[0];
+ current=q;
+ const b=B[q[0]]; $("badge").textContent=b.badge;$("tag").textContent=b.tag;
+ $("name").textContent=b.name;$("desc").textContent=b.desc;$("avatar").innerHTML=b.svg;
+ $("qtype").textContent=course==="mix"?"🎯 "+courseNames[q.kind]:"📚 "+courseNames[course];
+ $("question").textContent=q[1];
+ $("answers").innerHTML="";
+ let answers=q[2].map((text,i)=>({text,i}));
+ answers=shuffle(answers);
+ answers.forEach(a=>{
+   const btn=document.createElement("button");btn.className="answer";
+   btn.innerHTML=`<div class="ansmain">${a.text}</div><div class="anssub">タップして回答</div>`;
+   btn.onclick=()=>answer(a.i,q);
+   $("answers").appendChild(btn);
+ });
+}
+function answer(i,q){
+ if(locked||time<=0)return;
+ locked=true;
+ const ok=i===q[3];
+ if(ok){
+   combo++;count++;maxCombo=Math.max(maxCombo,combo);
+   const pts=100+(combo-1)*30;score+=pts;time=Math.min(30,time+.5);
+   feedback(`+${pts}pt! +0.5秒`,"#34d399");
+ }else{
+   combo=0;time=Math.max(0,time-2);
+   feedback("× 不正解　−2秒","#fb7185");
+ }
+ update();
+ setTimeout(()=>{locked=false;if(time>0)newQuestion()},180);
+}
+function feedback(t,c){$("feedback").textContent=t;$("feedback").style.color=c;$("feedback").classList.remove("show");void $("feedback").offsetWidth;$("feedback").classList.add("show")}
+function update(){$("score").textContent=score;$("combo").textContent=combo;$("time").textContent=time.toFixed(1)}
+function start(c){
+ course=c;score=0;combo=0;maxCombo=0;count=0;time=30;locked=false;
+ $("start").classList.add("hidden");$("result").classList.add("hidden");$("game").classList.remove("hidden");
+ update();newQuestion();clearInterval(timer);timer=setInterval(()=>{time-=.1;if(time<=0){time=0;end()}update()},100);
+}
+function end(){
+ clearInterval(timer);timer=null;$("game").classList.add("hidden");$("result").classList.remove("hidden");
+ $("resultCourse").textContent=courseNames[course]+"｜30秒間の結果";
+ $("resScore").textContent=score;$("resCount").textContent=count;$("resCombo").textContent=maxCombo;
+ let rank=score>=3000?"S+｜感染症・抗菌薬マスター":score>=2000?"S｜バイキンズ精鋭隊":score>=1200?"A｜防衛隊リーダー":score>=600?"B｜一般隊員":"C｜見習い隊員";
+ $("rank").textContent=rank;
+ const items=shuffle(pool()).slice(0,Math.min(5,pool().length));
+ $("explainList").innerHTML=items.map(q=>`<div class="explain-item"><b style="color:#a78bfa">${B[q[0]].name}</b>：${q[4]}<br><span>${q[5]}</span></div>`).join("");
+}
+document.querySelectorAll(".course").forEach(b=>b.onclick=()=>start(b.dataset.course));
+$("retry").onclick=()=>start(course);
+$("home").onclick=()=>{$("result").classList.add("hidden");$("start").classList.remove("hidden")};
+update();
+</script>
+</div>
+</body>
+</html>
