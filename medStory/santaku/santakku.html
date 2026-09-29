@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>バイキンズ・バスター 30s 【精鋭3番勝負】</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'M PLUS Rounded 1c', sans-serif; touch-action: manipulation; user-select: none; -webkit-user-select: none; background: #020617; color: #f1f5f9; }
+  .bounce-anim { animation: float 2s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+  .pop-in { animation: pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .shake { animation: shake 0.3s ease-in-out; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-12px); } 40% { transform: translateX(12px); } 60% { transform: translateX(-12px); } 80% { transform: translateX(12px); } }
+  .combo-glow { text-shadow: 0 0 12px rgba(251,191,36,.9), 0 0 24px rgba(245,158,11,.7); }
+  #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-hidden relative">
+<canvas id="particle-canvas"></canvas>
+<div class="fixed inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 opacity-95 -z-10"></div>
+
+<header class="w-full max-w-md mx-auto p-3.5 flex justify-between items-center bg-slate-900/90 backdrop-blur border-b border-slate-700/60 rounded-b-2xl shadow-xl z-10">
+  <div class="flex items-center space-x-1.5">
+    <span class="text-[10px] font-extrabold px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full">SCORE</span>
+    <span id="score-display" class="text-2xl font-black text-amber-400">0</span>
+  </div>
+  <div class="flex flex-col items-center">
+    <div id="timer-badge" class="px-3.5 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-full font-black text-xl tracking-wider">
+      <span id="time-display">30.0</span><span class="text-xs font-normal ml-0.5">s</span>
+    </div>
+  </div>
+  <div class="flex items-center space-x-1.5">
+    <span class="text-[10px] font-extrabold px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full">COMBO</span>
+    <span id="combo-display" class="text-xl font-black text-amber-300 combo-glow">0</span>
+  </div>
+</header>
+
+<main class="w-full max-w-md mx-auto flex-1 flex flex-col justify-center items-center px-4 py-2 relative z-10">
+
+  <!-- START -->
+  <div id="screen-start" class="w-full bg-slate-900/90 border-2 border-amber-500/40 rounded-3xl p-5 text-center shadow-2xl backdrop-blur pop-in my-auto">
+    <div class="flex justify-center space-x-2 mb-2">
+      <div class="w-16 h-16 bg-purple-950/60 rounded-2xl border border-purple-500/30 p-1" id="icon-pneumo"></div>
+      <div class="w-16 h-16 bg-emerald-950/60 rounded-2xl border border-emerald-500/30 p-1" id="icon-pseudo"></div>
+      <div class="w-16 h-16 bg-pink-950/60 rounded-2xl border border-pink-500/30 p-1" id="icon-myco"></div>
+    </div>
+    <div class="inline-block px-3 py-1 bg-amber-500/20 text-amber-300 text-xs font-bold rounded-full mb-1 border border-amber-500/30">バイキンズ × 抗菌薬 30秒勝負！</div>
+    <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 mb-2">
+      バイキンズ・バスター<br><span class="text-base text-amber-400">【精鋭3番勝負】</span>
+    </h1>
+    <div class="bg-slate-950/80 rounded-2xl p-2.5 mb-4 border border-slate-800 text-left space-y-2 text-[11px]">
+      <div class="text-amber-400 font-black text-center mb-1 text-xs">⚔️ 効き目ルール（これだけで勝てる！）</div>
+      <div class="flex justify-between items-center bg-slate-900/90 p-1.5 rounded border border-purple-800/40">
+        <span class="font-bold text-purple-300">👑 ハイエンキューキン王</span><span class="text-slate-400">➡️</span>
+        <span class="font-extrabold text-indigo-300 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-700/50">💊 ペニシリンG</span>
+      </div>
+      <div class="flex justify-between items-center bg-slate-900/90 p-1.5 rounded border border-emerald-800/40">
+        <span class="font-bold text-emerald-300">🟢 リョクノーキン</span><span class="text-slate-400">➡️</span>
+        <span class="font-extrabold text-teal-300 bg-teal-950/80 px-2 py-0.5 rounded border border-teal-700/50">💉 セフタジジム</span>
+      </div>
+      <div class="flex justify-between items-center bg-slate-900/90 p-1.5 rounded border border-pink-800/40">
+        <span class="font-bold text-pink-300">👸 マイコプラズマ姫</span><span class="text-slate-400">➡️</span>
+        <span class="font-extrabold text-pink-300 bg-pink-950/80 px-2 py-0.5 rounded border border-pink-700/50">🧪 アジスロマイシン</span>
+      </div>
+    </div>
+    <button id="btn-start" class="w-full py-3.5 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500 hover:opacity-90 text-slate-950 font-black text-lg rounded-2xl shadow-xl shadow-rose-950/50 transform active:scale-95 transition">30秒バトルスタート！</button>
+    <div class="mt-3 pt-2.5 border-t border-slate-800 flex justify-around text-xs text-slate-400">
+      <div>最高スコア: <span id="high-score-text" class="text-amber-400 font-bold text-sm">0</span></div>
+      <div>最高コンボ: <span id="max-combo-text" class="text-indigo-300 font-bold text-sm">0</span></div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game" class="w-full flex-1 flex flex-col justify-between items-center hidden py-1 relative">
+    <div id="feedback-pop" class="absolute top-1 font-black text-2xl opacity-0 pointer-events-none transition-all duration-300 z-30"></div>
+    <div id="baikin-card" class="w-full bg-slate-900/90 border-2 border-indigo-500/50 rounded-3xl p-4 shadow-2xl backdrop-blur relative flex flex-col items-center justify-between min-h-[280px]">
+      <div class="w-full flex justify-between items-center">
+        <span id="baikin-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border">分類名</span>
+        <span id="baikin-tag" class="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 rounded">特徴</span>
+      </div>
+      <div class="w-32 h-32 my-1 flex items-center justify-center bounce-anim relative">
+        <div id="baikin-svg-wrapper" class="w-full h-full"></div>
+      </div>
+      <div class="text-center w-full">
+        <h2 id="baikin-name" class="text-2xl font-black text-white mb-1"></h2>
+        <p id="baikin-desc" class="text-xs text-slate-200 font-medium bg-slate-950/70 py-1.5 px-3 rounded-xl border border-slate-800 inline-block"></p>
+      </div>
+      <div class="mt-1">
+        <span class="text-[10px] text-amber-300 bg-amber-950/60 px-3 py-1 rounded-full border border-amber-800 font-bold">効く抗菌薬を選んで攻撃せよ！</span>
+      </div>
+    </div>
+    <div class="w-full grid grid-cols-1 gap-2.5 mt-3" id="action-buttons-grid"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result" class="w-full bg-slate-900/95 border-2 border-amber-500/40 rounded-3xl p-5 text-center shadow-2xl backdrop-blur pop-in my-auto hidden flex-col max-h-[90vh]">
+    <h2 class="text-2xl font-black text-amber-400 mb-0.5">タイムアップ！</h2>
+    <p class="text-xs text-slate-400 mb-3">30秒間の結果発表</p>
+    <div class="bg-slate-950/80 rounded-2xl p-3 border border-slate-800 mb-3 grid grid-cols-3 gap-2 text-center">
+      <div><div class="text-[10px] text-slate-400">スコア</div><div id="res-score" class="text-xl font-black text-amber-400">0</div></div>
+      <div><div class="text-[10px] text-slate-400">倒した数</div><div id="res-count" class="text-xl font-black text-emerald-400">0</div></div>
+      <div><div class="text-[10px] text-slate-400">最大コンボ</div><div id="res-combo" class="text-xl font-black text-indigo-300">0</div></div>
+    </div>
+    <div class="mb-3">
+      <span class="text-xs text-slate-400">称号: </span>
+      <span id="res-rank" class="text-xl font-black text-rose-400 ml-1">S</span>
+    </div>
+    <div class="flex-1 overflow-y-auto pr-1 mb-3 text-left bg-slate-950/90 rounded-2xl p-3 border border-slate-800 text-xs space-y-2.5 max-h-48">
+      <div class="font-extrabold text-amber-300 border-b border-slate-800 pb-1">📖 薬学・医療豆知識（なぜ効くの？）</div>
+      <div class="space-y-2 text-[11px] text-slate-300">
+        <div class="bg-purple-950/40 p-2 rounded-lg border border-purple-800/40">
+          <span class="font-bold text-purple-300">👑 肺炎球菌（<i>Streptococcus pneumoniae</i>）× ペニシリンG</span>
+          <p class="text-[10px] text-slate-300 mt-0.5">肺炎球菌は頑丈な細胞壁を持つグラム陽性球菌！ペニシリンGが細胞壁の合成を阻害して撃退します。</p>
+        </div>
+        <div class="bg-emerald-950/40 p-2 rounded-lg border border-emerald-800/40">
+          <span class="font-bold text-emerald-300">🟢 緑膿菌（<i>Pseudomonas aeruginosa</i>）× セフタジジム</span>
+          <p class="text-[10px] text-slate-300 mt-0.5">緑膿菌は多くの抗菌薬が効きにくい強敵！抗緑膿菌作用を持つ第3世代セファロスポリン系「セフタジジム」が有効です。</p>
+        </div>
+        <div class="bg-pink-950/40 p-2 rounded-lg border border-pink-800/40">
+          <span class="font-bold text-pink-300">👸 マイコプラズマ（<i>Mycoplasma pneumoniae</i>）× アジスロマイシン</span>
+          <p class="text-[10px] text-slate-300 mt-0.5">マイコプラズマは細胞壁を持たない珍しい細菌！細胞壁合成を阻害するペニシリン系は無効なため、タンパク合成を阻害するマクロライド系「アジスロマイシン」が選ばれます。</p>
+        </div>
+      </div>
+    </div>
+    <button id="btn-retry" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-black text-base rounded-2xl shadow-lg transition transform active:scale-95">もう一度挑戦する！</button>
+  </div>
+</main>
+
+<footer class="w-full max-w-md mx-auto text-center py-2 px-3 text-[10px] leading-relaxed text-slate-400 z-10">
+  本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。<br>
+  バイキンズ・バスター © 感染症＆抗菌薬学習プロジェクト
+</footer>
+
+<script>
+class SoundEngine {
+  constructor() { this.ctx = null; }
+  init() {
+    try {
+      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    } catch (e) { this.ctx = null; }
+  }
+  tone(type, f0, f1, dur, vol, delay = 0, exp = true) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime + delay;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) {
+      if (exp) osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      else osc.frequency.linearRampToValueAtTime(f1, t + dur);
+    }
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + dur);
+  }
+  playCorrect() { this.tone('triangle', 523.25, 1046.5, 0.12, 0.2); }
+  playWrong() { this.tone('sawtooth', 220, 130, 0.2, 0.25, 0, false); }
+  playFinish() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.tone('sine', f, f, 0.25, 0.2, i * 0.08)); }
+}
+const sound = new SoundEngine();
+
+const BAIKIN_DATABASE = [
+  {
+    id: 'pneumococcus', name: 'ハイエンキューキン王', badgeText: 'グラム陽性双球菌',
+    badgeColor: 'bg-purple-900/60 text-purple-300 border-purple-700/60',
+    tag: '王冠を戴く球菌界の覇者', desc: '頑丈な細胞壁で身を守る王様！',
+    correctDrugId: 'penicillin_g', color: '#a855f7',
+    svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-lg">
+      <path d="M 32 25 L 40 35 L 50 20 L 60 35 L 68 25 L 65 42 L 35 42 Z" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+      <circle cx="32" cy="23" r="2.5" fill="#f43f5e"/><circle cx="50" cy="18" r="3" fill="#3b82f6"/><circle cx="68" cy="23" r="2.5" fill="#f43f5e"/>
+      <circle cx="38" cy="58" r="22" fill="#a855f7" stroke="#6b21a8" stroke-width="3"/>
+      <circle cx="62" cy="58" r="22" fill="#c084fc" stroke="#6b21a8" stroke-width="3"/>
+      <circle cx="32" cy="54" r="3" fill="#1e1b4b"/><circle cx="42" cy="54" r="3" fill="#1e1b4b"/>
+      <path d="M 34 64 Q 37 68 40 64" stroke="#1e1b4b" stroke-width="2" fill="none"/>
+      <circle cx="58" cy="54" r="3" fill="#1e1b4b"/><circle cx="68" cy="54" r="3" fill="#1e1b4b"/>
+      <path d="M 60 64 Q 63 68 66 64" stroke="#1e1b4b" stroke-width="2" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'pseudomonas', name: 'リョクノーキン', badgeText: 'グラム陰性桿菌',
+    badgeColor: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60',
+    tag: '鞭毛で泳ぐ緑色の難敵', desc: '多くの抗菌薬を跳ね返す緑のベトベト！',
+    correctDrugId: 'ceftazidime', color: '#10b981',
+    svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-lg" style="overflow:visible">
+      <path d="M 25 50 C 10 40, 5 60, -2 48" stroke="#34d399" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M 23 58 C 8 65, 3 80, -5 70" stroke="#34d399" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <rect x="25" y="32" width="54" height="36" rx="18" fill="#10b981" stroke="#047857" stroke-width="3.5"/>
+      <circle cx="45" cy="28" r="4" fill="#34d399"/><circle cx="65" cy="26" r="3" fill="#34d399"/>
+      <polygon points="45,46 52,43 50,50" fill="#064e3b"/><polygon points="63,46 70,43 68,50" fill="#064e3b"/>
+      <path d="M 50 58 Q 58 64 66 56" stroke="#064e3b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'mycoplasma', name: 'マイコプラズマ姫', badgeText: '細胞壁なし',
+    badgeColor: 'bg-pink-900/60 text-pink-300 border-pink-700/60',
+    tag: '細胞壁を持たない妖精姫', desc: '壁が無いからペニシリンが効かないの！',
+    correctDrugId: 'azithromycin', color: '#ec4899',
+    svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-lg">
+      <path d="M 32 28 Q 75 18 78 48 T 52 82 T 22 62 T 32 28 Z" fill="#f472b6" stroke="#db2777" stroke-width="3.5"/>
+      <path d="M 42 22 L 48 30 L 52 20 L 56 30 L 62 22 L 59 34 L 45 34 Z" fill="#fef08a" stroke="#ca8a04" stroke-width="1.5"/>
+      <ellipse cx="44" cy="46" rx="4" ry="6" fill="#831843"/><ellipse cx="62" cy="46" rx="4" ry="6" fill="#831843"/>
+      <circle cx="43" cy="44" r="1.5" fill="#fff"/><circle cx="61" cy="44" r="1.5" fill="#fff"/>
+      <ellipse cx="38" cy="54" rx="3" ry="1.5" fill="#f43f5e" opacity="0.6"/><ellipse cx="68" cy="54" rx="3" ry="1.5" fill="#f43f5e" opacity="0.6"/>
+      <path d="M 50 54 Q 53 58 56 54" stroke="#831843" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>`
+  }
+];
+
+const DRUG_BUTTONS = [
+  { id: 'penicillin_g', name: 'ペニシリンG', sub: 'ペニシリン系 (細胞壁合成阻害)', bg: 'from-indigo-600 to-purple-700 hover:from-indigo-500 hover:to-purple-600 border-indigo-400/40' },
+  { id: 'ceftazidime', name: 'セフタジジム', sub: '第3世代セファロスポリン (抗緑膿菌活性)', bg: 'from-teal-600 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 border-teal-400/40' },
+  { id: 'azithromycin', name: 'アジスロマイシン', sub: 'マクロライド系 (タンパク合成阻害)', bg: 'from-pink-600 to-rose-700 hover:from-pink-500 hover:to-rose-600 border-pink-400/40' }
+];
+
+/* Particles */
+const canvas = document.getElementById('particle-canvas');
+const cctx = canvas.getContext('2d');
+let particles = [];
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+function spawnParticles(x, y, color) {
+  for (let i = 0; i < 15; i++) {
+    particles.push({ x, y, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8 - 2,
+      radius: Math.random() * 4 + 2, color, alpha: 1, decay: Math.random() * 0.03 + 0.02 });
+  }
+}
+function updateParticles() {
+  cctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+    if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+    cctx.save(); cctx.globalAlpha = p.alpha; cctx.fillStyle = p.color;
+    cctx.beginPath(); cctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); cctx.fill(); cctx.restore();
+  }
+  requestAnimationFrame(updateParticles);
+}
+requestAnimationFrame(updateParticles);
+
+/* State */
+let score = 0, combo = 0, maxCombo = 0, defeatedCount = 0, timeLeft = 30.0, timerId = null, currentBaikin = null, playing = false;
+
+const $ = id => document.getElementById(id);
+const screenStart = $('screen-start'), screenGame = $('screen-game'), screenResult = $('screen-result');
+const scoreDisplay = $('score-display'), comboDisplay = $('combo-display'), timeDisplay = $('time-display');
+const baikinName = $('baikin-name'), baikinDesc = $('baikin-desc'), baikinBadge = $('baikin-badge'),
+      baikinTag = $('baikin-tag'), baikinSvgWrapper = $('baikin-svg-wrapper'),
+      actionGrid = $('action-buttons-grid'), feedbackPop = $('feedback-pop');
+
+$('icon-pneumo').innerHTML = BAIKIN_DATABASE[0].svg;
+$('icon-pseudo').innerHTML = BAIKIN_DATABASE[1].svg;
+$('icon-myco').innerHTML = BAIKIN_DATABASE[2].svg;
+
+/* Storage (safe) */
+function storeGet(k) { try { return parseInt(localStorage.getItem(k)) || 0; } catch (e) { return 0; } }
+function storeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function loadHighScores() {
+  $('high-score-text').textContent = storeGet('baikin3_high_score');
+  $('max-combo-text').textContent = storeGet('baikin3_max_combo');
+}
+loadHighScores();
+
+function startGame() {
+  sound.init();
+  score = 0; combo = 0; maxCombo = 0; defeatedCount = 0; timeLeft = 30.0; playing = true;
+  scoreDisplay.textContent = '0'; comboDisplay.textContent = '0'; timeDisplay.textContent = '30.0';
+  screenStart.classList.add('hidden');
+  screenResult.classList.add('hidden'); screenResult.classList.remove('flex');
+  screenGame.classList.remove('hidden');
+  renderActionButtons();
+  currentBaikin = null;
+  nextQuestion();
+  if (timerId) clearInterval(timerId);
+  timerId = setInterval(updateTimer, 100);
+}
+
+function updateTimer() {
+  timeLeft -= 0.1;
+  if (timeLeft <= 0) { timeLeft = 0; timeDisplay.textContent = '0.0'; endGame(); return; }
+  timeDisplay.textContent = timeLeft.toFixed(1);
+  const badge = $('timer-badge');
+  badge.className = timeLeft <= 5.0
+    ? 'px-3.5 py-0.5 bg-rose-600 text-white border border-rose-400 rounded-full font-black text-xl tracking-wider animate-pulse'
+    : 'px-3.5 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-full font-black text-xl tracking-wider';
+}
+
+function renderActionButtons() {
+  actionGrid.innerHTML = '';
+  DRUG_BUTTONS.forEach(drug => {
+    const btn = document.createElement('button');
+    btn.className = `w-full py-3 px-4 bg-gradient-to-r ${drug.bg} text-white font-black text-base rounded-2xl shadow-lg border active:scale-95 transition flex justify-between items-center`;
+    btn.innerHTML = `<div class="text-left"><div class="font-black text-base leading-tight">${drug.name}</div><div class="text-[10px] opacity-80 font-normal">${drug.sub}</div></div><span class="text-xs bg-black/20 px-2.5 py-1 rounded-full border border-white/20">撃退!</span>`;
+    btn.onclick = e => handleAnswer(drug.id, e);
+    actionGrid.appendChild(btn);
+  });
+}
+
+function nextQuestion() {
+  let idx = Math.floor(Math.random() * BAIKIN_DATABASE.length);
+  if (currentBaikin) {
+    while (BAIKIN_DATABASE[idx].id === currentBaikin.id) idx = Math.floor(Math.random() * BAIKIN_DATABASE.length);
+  }
+  currentBaikin = BAIKIN_DATABASE[idx];
+  baikinName.textContent = currentBaikin.name;
+  baikinDesc.textContent = currentBaikin.desc;
+  baikinTag.textContent = currentBaikin.tag;
+  baikinBadge.textContent = currentBaikin.badgeText;
+  baikinBadge.className = `text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${currentBaikin.badgeColor}`;
+  baikinSvgWrapper.innerHTML = currentBaikin.svg;
+  const card = $('baikin-card');
+  card.classList.remove('pop-in'); void card.offsetWidth; card.classList.add('pop-in');
+}
+
+function handleAnswer(selectedDrugId, event) {
+  if (!playing || timeLeft <= 0) return;
+  const isCorrect = selectedDrugId === currentBaikin.correctDrugId;
+  if (isCorrect) {
+    sound.playCorrect();
+    combo++; if (combo > maxCombo) maxCombo = combo;
+    defeatedCount++;
+    const points = 100 + (combo > 1 ? (combo - 1) * 30 : 0);
+    score += points;
+    timeLeft = Math.min(30.0, timeLeft + 0.5);
+    showFeedback(`+${points}pt! (+0.5s)`, 'text-emerald-400');
+    const x = event && event.clientX ? event.clientX : window.innerWidth / 2;
+    const y = event && event.clientY ? event.clientY : window.innerHeight / 2;
+    spawnParticles(x, y, currentBaikin.color);
+  } else {
+    sound.playWrong();
+    combo = 0;
+    timeLeft = Math.max(0, timeLeft - 2.0);
+    showFeedback('-2.0秒!', 'text-rose-400');
+    const card = $('baikin-card');
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 300);
+  }
+  scoreDisplay.textContent = score;
+  comboDisplay.textContent = combo;
+  timeDisplay.textContent = timeLeft.toFixed(1);
+  if (timeLeft <= 0) { endGame(); return; }
+  nextQuestion();
+}
+
+function showFeedback(text, colorClass) {
+  feedbackPop.textContent = text;
+  feedbackPop.className = `absolute top-1 font-black text-2xl pointer-events-none transition-all duration-300 z-30 opacity-100 ${colorClass}`;
+  setTimeout(() => {
+    feedbackPop.className = `absolute top-1 font-black text-2xl pointer-events-none transition-all duration-300 z-30 opacity-0 ${colorClass}`;
+  }, 450);
+}
+
+function endGame() {
+  if (!playing) return;
+  playing = false;
+  clearInterval(timerId);
+  sound.playFinish();
+  screenGame.classList.add('hidden');
+  screenResult.classList.remove('hidden'); screenResult.classList.add('flex');
+  $('res-score').textContent = score;
+  $('res-count').textContent = defeatedCount;
+  $('res-combo').textContent = maxCombo;
+  if (score > storeGet('baikin3_high_score')) storeSet('baikin3_high_score', score);
+  if (maxCombo > storeGet('baikin3_max_combo')) storeSet('baikin3_max_combo', maxCombo);
+  loadHighScores();
+
+  let rank = 'C (見習い薬剤師)', rankColor = 'text-slate-400';
+  if (score >= 3000) { rank = 'S+ (感染症専門医級)'; rankColor = 'text-amber-300'; }
+  else if (score >= 2000) { rank = 'S (抗菌薬マスター)'; rankColor = 'text-rose-400'; }
+  else if (score >= 1200) { rank = 'A (防衛隊リーダー)'; rankColor = 'text-indigo-300'; }
+  else if (score >= 600) { rank = 'B (一般隊員)'; rankColor = 'text-emerald-400'; }
+  const rankEl = $('res-rank');
+  rankEl.textContent = rank;
+  rankEl.className = `text-xl font-black ${rankColor} ml-1`;
+}
+
+$('btn-start').onclick = startGame;
+$('btn-retry').onclick = startGame;
+</script>
+</body>
+</html>
