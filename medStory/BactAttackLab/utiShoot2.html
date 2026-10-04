@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Uro Sepsis — 尿路由来の敗血症で学ぶ腸内細菌目の耐性機構（ESBL・AmpC・MBL・KPC）</title>
+<style>
+  :root{
+    --bg:#0b1220; --bg2:#141f36; --panel:#1b2947; --panel-border:#2c3d63;
+    --text:#eef2ff; --text-dim:#9fb0d0; --accent:#4fd1c5; --danger:#ef4444; --warn:#f59e0b;
+    --access:#22c55e; --watch:#f59e0b; --reserve:#ef4444;
+    --btn-bg:#1b2947; --btn-bg-active:#4fd1c5; --btn-text:#eef2ff; --btn-text-active:#052a26; --gold:#facc15;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]){
+      --bg:#eef2fb; --bg2:#ffffff; --panel:#ffffff; --panel-border:#d7deef;
+      --text:#111827; --text-dim:#586279; --btn-bg:#eef1fb; --btn-text:#111827;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#eef2fb; --bg2:#ffffff; --panel:#ffffff; --panel-border:#d7deef;
+    --text:#111827; --text-dim:#586279; --btn-bg:#eef1fb; --btn-text:#111827;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif, system-ui; padding-top: env(safe-area-inset-top, 0px); overflow-x:hidden; }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); }
+  .wrap{ max-width:540px; margin:0 auto; padding:10px 10px 4px; display:flex; flex-direction:column; min-height:100%; }
+  header{ text-align:center; padding:6px 0 4px; }
+  header h1{ font-size:1.06rem; margin:0 0 2px; letter-spacing:0.02em; }
+  header p{ margin:0; font-size:0.64rem; color:var(--text-dim); }
+
+  .hud{ display:flex; justify-content:space-between; align-items:center; gap:6px; padding:6px 4px 2px; font-size:0.72rem; flex-wrap:wrap; }
+  .hud .stat{ display:flex; flex-direction:column; align-items:center; min-width:46px; }
+  .hud .stat b{ font-size:0.9rem; }
+  .hp-outer{ flex:1; min-width:70px; height:16px; background:var(--panel-border); border-radius:8px; overflow:hidden; margin:0 4px; position:relative; }
+  .hp-inner{ height:100%; width:100%; transition:width .3s ease, background .3s ease; display:flex; align-items:center; justify-content:center; font-size:0.5rem; font-weight:700; color:#fff; }
+
+  .awareGauge{ position:relative; width:100%; height:14px; background:var(--panel-border); border-radius:8px; overflow:hidden; margin:4px 0 2px; display:flex; }
+  .awareGauge .seg{ height:100%; width:0%; transition:width .3s ease; }
+  .awareGauge .label{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.56rem; font-weight:700; color:#08130d; text-shadow:0 0 3px rgba(255,255,255,0.5); }
+
+  #canvasHolder{
+    position:relative; width:100%; aspect-ratio: 3 / 4; max-height:50vh; max-height:50dvh;
+    background:linear-gradient(180deg,var(--bg2),var(--bg));
+    border:1px solid var(--panel-border); border-radius:14px; overflow:hidden;
+    margin-top:8px; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+  }
+  canvas{ display:block; width:100%; height:100%; }
+
+  .restPrompt{ position:absolute; left:0; right:0; top:8px; display:none; justify-content:center; z-index:4; pointer-events:none; }
+  .restBox{ pointer-events:auto; background:rgba(15,23,42,0.94); border:1px solid var(--panel-border); border-radius:10px; padding:6px 8px 6px 10px; display:flex; align-items:center; gap:7px; box-shadow:0 4px 10px rgba(0,0,0,0.35); }
+  .restText{ font-size:0.58rem; color:#dbe4ff; max-width:130px; line-height:1.3; }
+  #restBtn{ background:var(--accent); color:#052a26; border:none; border-radius:8px; padding:6px 9px; font-size:0.6rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+
+  .weapons{ display:flex; flex-wrap:wrap; gap:3px; margin-top:10px; }
+  .weaponBtn{
+    flex:1 1 0; min-width:56px; background:var(--btn-bg); color:var(--btn-text);
+    border:2px solid var(--panel-border); border-radius:10px; padding:6px 1px 5px;
+    text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:1px;
+  }
+  .weaponBtn .abbr{ font-size:0.6rem; font-weight:800; white-space:nowrap; }
+  .weaponBtn .stars{ font-size:0.42rem; color:var(--gold); letter-spacing:0.5px; }
+  .weaponBtn.active{ background:var(--btn-bg-active); color:var(--btn-text-active); border-color:var(--accent); }
+  .weaponBtn.shortage{ opacity:0.4; pointer-events:none; }
+  .weaponBtn.shortage .stars{ color:var(--danger); font-size:0.4rem; }
+  .weaponBtn.locked{ opacity:0.3; pointer-events:none; }
+
+  .legend{ display:flex; gap:8px; justify-content:center; margin-top:8px; font-size:0.56rem; color:var(--text-dim); flex-wrap:wrap; }
+  .legend span{ display:inline-flex; align-items:center; gap:3px; }
+  .legend i.dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  .controls-row{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .miniBtn{ flex:1; min-width:80px; background:var(--panel); border:1px solid var(--panel-border); color:var(--text); border-radius:10px; padding:8px 6px; font-size:0.66rem; cursor:pointer; }
+
+  #refPanel table{ width:100%; border-collapse:collapse; }
+  #refPanel td{ padding:5px 3px; border-bottom:1px solid var(--panel-border); vertical-align:top; }
+  #refPanel .best{ color:var(--access); font-weight:700; }
+  #refPanel .ok{ color:var(--text-dim); }
+
+  .shopRow{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 8px; padding:7px 2px; border-bottom:1px solid var(--panel-border); }
+  .shopRow:last-child{ border-bottom:none; }
+  .shopRow .info{ display:flex; flex-direction:column; flex:1 1 150px; min-width:0; }
+  .shopRow .info b{ font-size:0.76rem; }
+  .shopRow .info span{ font-size:0.6rem; color:var(--text-dim); }
+  .shopRow button{ background:var(--accent); color:#052a26; border:none; border-radius:8px; padding:6px 10px; font-size:0.64rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .shopRow button:disabled{ background:var(--panel-border); color:var(--text-dim); cursor:not-allowed; }
+  .shopRow .btns{ display:flex; gap:6px; flex-shrink:0; }
+  .shopRow .btns button{ display:flex; flex-direction:column; align-items:center; line-height:1.3; padding:5px 10px; min-width:84px; }
+  .shopRow .btns button small{ font-size:0.58rem; font-weight:600; opacity:0.85; }
+  .shopRow .btns button.speedBtn:not(:disabled){ background:var(--warn); color:#3b2300; }
+
+  .overlay{
+    position:absolute; inset:0; background:rgba(5,10,25,0.94); display:flex; flex-direction:column;
+    align-items:center; padding:14px 12px; color:#eef2ff; z-index:5; overflow-y:auto; text-align:center;
+  }
+  .overlay h2{ margin:4px 0 2px; font-size:1.06rem; }
+  .overlay button#startBtn, .overlay button#retryBtn{
+    margin-top:10px; background:var(--accent); color:#052a26; border:none; border-radius:10px;
+    padding:11px 26px; font-size:0.9rem; font-weight:700; cursor:pointer; flex-shrink:0;
+  }
+  .overOverlayInner{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; margin:auto; width:100%; max-width:360px; }
+  .overSummary{ width:100%; text-align:left; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:10px 12px; font-size:0.7rem; line-height:1.6; color:var(--text); }
+  .overSummary h4{ font-size:0.72rem; margin:8px 0 4px; color:var(--text-dim); }
+  .overSummary h4:first-child{ margin-top:0; }
+  .overSummary table{ width:100%; border-collapse:collapse; }
+  .overSummary td{ padding:2px 0; color:var(--text); }
+  .overSummary td.num{ text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+  .overText{ font-size:0.72rem; color:#c8d3ee; margin:4px 0 8px; }
+
+  .entryTabs{ display:flex; gap:4px; width:100%; max-width:400px; margin:4px 0 10px; }
+  .entryTabBtn{
+    flex:1; background:var(--panel); color:var(--text); border:1px solid var(--panel-border);
+    border-radius:8px; padding:8px 4px; font-size:0.68rem; font-weight:700; cursor:pointer;
+  }
+  .entryTabBtn.active{ background:var(--accent); color:#052a26; border-color:var(--accent); }
+  .entryContent{ width:100%; max-width:420px; text-align:left; font-size:0.7rem; line-height:1.65; }
+  .entryContent .pane{ display:none; }
+  .entryContent .pane.show{ display:block; }
+  .entryContent h3{ font-size:0.8rem; margin:8px 0 4px; }
+  .entryContent ol, .entryContent ul{ margin:4px 0; padding-left:1.2em; }
+  .entryContent li{ margin-bottom:4px; }
+  .entryContent a{ color:var(--accent); }
+
+  .modalOverlay{
+    display:none; position:fixed; inset:0; background:rgba(2,6,16,0.82); z-index:60;
+    align-items:center; justify-content:center; padding:16px;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  .modalOverlay.show{ display:flex; }
+  .modalCard{
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:16px;
+    padding:16px; max-width:300px; width:100%; text-align:center; color:var(--text);
+    max-height:90vh; overflow-y:auto; position:relative;
+  }
+  .modalCard canvas{ width:120px; height:120px; margin:0 auto 8px; display:block; }
+  .modalCard h3{ margin:0 0 4px; font-size:0.98rem; }
+  .modalCard .lat{ font-style:italic; font-size:0.7rem; color:var(--text-dim); margin-bottom:6px; }
+  .modalCard p{ font-size:0.76rem; line-height:1.6; text-align:left; margin:6px 0; }
+  .modalCard ul{ list-style:none; padding:0; margin:6px 0; text-align:left; }
+  .modalCard li{ margin-bottom:5px; font-size:0.74rem; }
+  .modalCard .drugline{ font-size:0.72rem; text-align:left; margin-top:6px; }
+  .modalCard .drugline b.best{ color:var(--access); }
+  .modalCard button{ margin-top:10px; background:var(--accent); color:#052a26; border:none; border-radius:10px; padding:9px 22px; font-size:0.82rem; font-weight:700; cursor:pointer; }
+  .modalClose{ position:absolute; top:8px; right:8px; background:var(--panel-border); border:none; color:var(--text); width:26px; height:26px; padding:0; border-radius:50%; font-size:0.8rem; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+
+  .charGrid{ display:flex; flex-wrap:wrap; gap:5px; margin:8px 0 2px; }
+  .charChip{ background:var(--panel); border:1px solid var(--panel-border); color:var(--text); border-radius:8px; padding:6px 9px; font-size:0.66rem; cursor:pointer; }
+
+  .toastStack{
+    position:absolute; left:0; right:0; top:58px; z-index:4; display:flex; flex-direction:column; align-items:center;
+    gap:6px; padding:0 10px; pointer-events:none;
+  }
+  .toastStack.hold{ visibility:hidden; }
+  .toast{
+    max-width:100%; background:rgba(15,23,42,0.95); color:#fef3c7; border:1px solid #f59e0b;
+    padding:7px 12px; border-radius:10px; font-size:0.66rem; line-height:1.45; text-align:center;
+    box-shadow:0 6px 16px rgba(0,0,0,0.35); opacity:0; transform:translateY(-6px);
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{ opacity:1; transform:translateY(0); }
+
+  footer{ font-size:0.55rem; color:var(--text-dim); text-align:center; margin-top:8px; padding:8px 0; border-top:0.5px solid var(--panel-border); line-height:1.5; }
+
+  /* ---- iPhone対策: ダブルタップ拡大/選択/コールアウト/ゴムバンドを抑止 ---- */
+  html, body, *{ touch-action: manipulation; }
+  #gameCanvas{ touch-action: none; }                       /* ドラッグ操作するcanvasだけスクロール/ズームを無効化 */
+  .overlay, .overlay *{ touch-action: pan-y; }
+  .panelBody, .panelBody *, .modalCard, .modalCard *{ touch-action: pan-x pan-y; }   /* リファレンスの表など、横長の内容を横にスライドできるように */  /* スタート/ゲームオーバー/パネル/モーダルは縦スクロール可 */
+  .overlay button, .panelBody button, .modalCard button{ touch-action: manipulation; }
+  .overlay{ -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+  html,body{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  body{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; overscroll-behavior-y:none; }
+  a{ -webkit-user-select:auto; user-select:auto; }
+  body.noScroll{ overflow:hidden; }
+
+  /* スタート/もう一度ボタンは、長い説明をスクロールしていても常に画面下に見えるよう固定 */
+  .overlay button#startBtn, .overlay button#retryBtn{
+    position:sticky; bottom:8px; z-index:2; flex-shrink:0;
+    box-shadow:0 0 0 8px rgba(5,10,25,0.94), 0 -6px 10px 8px rgba(5,10,25,0.94);
+  }
+
+  /* ---- リファレンス/図鑑/ショップ: 画面全体のモーダル(下へスクロールせずに開閉) ---- */
+  .panelOverlay{
+    display:none; position:fixed; inset:0; z-index:58; background:rgba(2,6,16,0.82);
+    align-items:center; justify-content:center; padding:12px;
+    padding-top:calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .panelOverlay.show{ display:flex; }
+  .panelCard{
+    width:100%; max-width:480px; max-height:100%; display:flex; flex-direction:column; overflow:hidden;
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; color:var(--text);
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  }
+  .panelHead{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-bottom:1px solid var(--panel-border); flex-shrink:0; }
+  .panelHead b{ font-size:0.86rem; }
+  .panelHead .sub{ font-size:0.7rem; color:var(--gold); font-weight:700; margin-left:8px; }
+  .panelClose{ background:var(--panel-border); color:var(--text); border:none; border-radius:50%; width:30px; height:30px; font-size:0.85rem; cursor:pointer; flex-shrink:0; padding:0; }
+  .panelBody{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:10px 12px; font-size:0.7rem; line-height:1.6; }
+  .panelFoot{ padding:8px 12px; border-top:1px solid var(--panel-border); flex-shrink:0; }
+  .panelBack{ width:100%; background:var(--accent); color:#052a26; border:none; border-radius:10px; padding:11px 10px; font-size:0.88rem; font-weight:700; cursor:pointer; }
+
+  /* ---- Uro Sepsis 追加CSS ---- */
+  #refPanel .panelBody{ overflow-x:auto; overflow-y:auto; }
+  #refTable td:first-child{ position:sticky; left:0; z-index:1; background:var(--panel); box-shadow:2px 0 4px rgba(0,0,0,0.3); }
+  .refHint{ font-size:0.6rem; color:var(--accent); margin-bottom:5px; position:sticky; left:0; }
+  #refTable{ min-width:420px; }
+  #refTable td{ text-align:center; padding:3px 2px; }
+  #refTable td:first-child{ text-align:left; white-space:nowrap; font-size:0.62rem; }
+  #refTable .refDrug{ font-size:0.5rem; line-height:1.15; }
+  #refTable .tierDot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-top:2px; }
+  #refTable .tierDot.access{ background:var(--access); } #refTable .tierDot.watch{ background:var(--watch); } #refTable .tierDot.reserve{ background:var(--reserve); }
+  #refTable td.best{ color:var(--access); font-weight:800; font-size:0.8rem; }
+  #refTable td.ok{ color:var(--text); font-size:0.75rem; }
+  #refTable td.no{ color:var(--text-dim); opacity:0.55; font-size:0.7rem; }
+  .mechTable{ width:100%; border-collapse:collapse; font-size:0.62rem; margin:6px 0 10px; }
+  .mechTable th, .mechTable td{ border:1px solid var(--panel-border); padding:4px 5px; vertical-align:top; line-height:1.45; text-align:left; }
+  .mechTable th{ background:var(--panel); color:var(--accent); }
+  .enzTable{ width:100%; border-collapse:collapse; font-size:0.62rem; }
+  .enzTable th, .enzTable td{ border:1px solid var(--panel-border); padding:4px 5px; vertical-align:top; line-height:1.45; text-align:left; }
+  .enzTable th{ background:var(--panel); color:var(--accent); }
+  .modalCard .point{ background:rgba(79,209,197,0.12); border-left:3px solid var(--accent); padding:5px 8px; border-radius:4px; font-size:0.7rem; }
+  .modalCard .memberNote{ font-size:0.66rem; line-height:1.55; margin:4px 0; text-align:left; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Uro Sepsis</h1>
+    <p>尿路感染から敗血症へ。大腸菌・肺炎桿菌の耐性機構（ESBL・AmpC・MBL・KPC）を学び、必要十分な抗菌薬を選ぼう</p>
+  </header>
+
+  <div class="hud">
+    <div class="stat"><span style="font-size:0.58rem; color:var(--text-dim);">患者HP</span><b id="hpVal">100%</b></div>
+    <div class="hp-outer"><div class="hp-inner" id="hpBar" style="width:100%; background:#22c55e;">100%</div></div>
+    <div class="stat"><span style="font-size:0.58rem; color:var(--text-dim);">Wave</span><b id="waveVal">1</b></div>
+    <div class="stat"><span style="font-size:0.58rem; color:var(--text-dim);">Score</span><b id="scoreVal">0</b></div>
+  </div>
+  <div class="awareGauge">
+    <div class="seg" id="segAccess" style="background:var(--access)"></div>
+    <div class="seg" id="segWatch" style="background:var(--watch)"></div>
+    <div class="seg" id="segReserve" style="background:var(--reserve)"></div>
+    <div class="label" id="awareLabel">AWaRe比率 --</div>
+  </div>
+
+  <div id="canvasHolder">
+    <canvas id="gameCanvas"></canvas>
+    <div class="toastStack" id="toastStack"></div>
+
+    <div class="restPrompt" id="restPrompt">
+      <div class="restBox">
+        <div class="restText">無症候性細菌尿(ASB)に抗菌薬は不要。経過観察を。</div>
+        <button id="restBtn">👀 経過観察する</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="startOverlay">
+      <h2>Uro Sepsis</h2>
+      <div class="entryTabs">
+        <button class="entryTabBtn active" data-tab="about">解説</button>
+        <button class="entryTabBtn" data-tab="howto">操作法</button>
+        <button class="entryTabBtn" data-tab="links">リンク</button>
+      </div>
+      <div class="entryContent" id="entryContent">
+        <div class="pane show" id="tab-about">
+          <h3>目的</h3>
+          <p><b><i>Escherichia coli</i>（大腸菌）</b>と<b><i>Klebsiella pneumoniae</i>（肺炎桿菌）</b>を題材に、<b>β-ラクタマーゼによる耐性機構</b>（ペニシリナーゼ・ESBL・AmpC・メタロβ-ラクタマーゼ・KPC/GES型カルバペネマーゼ）と、<b>それに合わせた抗菌薬の選び方</b>を体験的に学ぶゲームです。</p>
+          <p>画面上方から、耐性機構の違う<b>8種類</b>の菌が降ってきます。各キャラが持つ「パックマン型の酵素」が耐性機構を表し、中の文字は<b>Ambler分類（A・B・C）</b>です。</p>
+          <h3>耐性機構と対応の早見表</h3>
+          <table class="mechTable">
+            <tr><th>機構</th><th>代表</th><th>分解するもの</th><th>効く薬の考え方</th></tr>
+            <tr><td>ペニシリナーゼ<br>（クラスA）</td><td>TEM-1, SHV-1</td><td>ペニシリン系</td><td>ABPCは×。CEZは○（クラブラン酸で阻害される）</td></tr>
+            <tr><td>ESBL<br>（クラスA）</td><td>CTX-M, 他</td><td>ペニシリン、第1〜4世代セフェム、アズトレオナム</td><td>カルバペネムが基本（セファマイシンも分解されにくい）</td></tr>
+            <tr><td>AmpC<br>（クラスC）</td><td>染色体の過剰発現、CMYなど</td><td>ペニシリン、第1〜3世代セフェム、セファマイシン</td><td>セフェピムは安定。クラブラン酸では阻害されない</td></tr>
+            <tr><td>クラスAカルバペネマーゼ</td><td>KPC, GES-5</td><td>上記＋カルバペネム</td><td>アビバクタム（CZA単剤）で阻害される。AZTの併用は不要</td></tr>
+            <tr><td>MBL<br>（クラスB）</td><td>IMP-6, NDM-1</td><td>アズトレオナム以外のほぼ全β-ラクタム</td><td>アビバクタムは無効（Zn²⁺依存）。第一選択はCZA＋AZT（CFDCも有効）</td></tr>
+          </table>
+          <h3>ゲームのしくみ</h3>
+          <p>画面上部の<b>患者HP</b>ゲージは、菌を取り逃す（画面下に到達する）と減ります。<b>耐性菌ほどダメージが大きく</b>、HPが0になるとゲームオーバーです。尿路の感染が血流に広がって敗血症になった患者を、原因菌に合った抗菌薬で救いましょう。</p>
+          <p>時々降ってくる<b>輸液</b>（HP+10）と、Wave6から出る<b>ノルアドレナリン</b>（昇圧薬、HP+20）を弾で回収すると、患者HP（循環）が回復します。ただし<b>輸液も昇圧薬も感染そのものを治しません</b>。主役はあくまで原因菌に効く抗菌薬です。</p>
+          <p>それぞれの菌には「最も適した抗菌薬（◎）」が決まっています。それ以外の効く薬は単なる「有効」で、広域すぎると加点が少なくなります。📖リファレンスで一覧表を確認できます。</p>
+          <h3>AWaRe比率</h3>
+          <p>画面上部のゲージには使った抗菌薬の内訳が<b style="color:var(--access)">Access(緑)</b>・<b style="color:var(--watch)">Watch(黄)</b>・<b style="color:var(--reserve)">Reserve(赤)</b>の3色で表示されます。耐性菌には新しい薬（Reserve）が必要になる場面もありますが、必要のない場面での使用は避けましょう。</p>
+          <h3>ステージ構成</h3>
+          <p>Wave1〜10は、1〜2種類ずつ新しい耐性機構と新しい抗菌薬が登場します（紹介が入ります）。Wave7〜10は、セリン型のカルバペネマーゼ（KPC・GES-5）→メタロβ-ラクタマーゼ（IMP-6・NDM-1）の順に出会います。Wave11以降は全種がランダムに出現します。Wave3からは<b>無症候性細菌尿（ASB）</b>が出現し、抗菌薬を使わず経過観察するのが正解です。Wave12以降は一部の薬が<b>出荷停止</b>になることもあります。</p>
+          <h3>登場キャラクター図鑑</h3>
+          <p>タップすると詳しい解説がモーダルで開きます。</p>
+          <div class="charGrid" id="charGridAbout"></div>
+          <p style="color:#c8d3ee; font-size:0.62rem; margin-top:10px;">※ ゲーム内の「効く・効かない」「適正」は学習用に単純化しています。実際の治療は、感受性検査・患者の状態・最新のガイドラインに基づいて判断してください。</p>
+        </div>
+        <div class="pane" id="tab-howto">
+          <h3>操作法</h3>
+          <ol>
+            <li>画面下の抗菌薬ボタンから1つ選ぶ。まだ解禁されていない薬・出荷停止中の薬は選べない。</li>
+            <li>画面をタッチ（PCはクリック）したまま左右にドラッグ（マウス移動）すると、画面下の注射器が横に動き、押している間は選んでいる抗菌薬を<b>自動で連射</b>する。菌は左右に揺れながら降りてくるので、動きを読んで狙おう。弾が当たった菌に攻撃したことになる。</li>
+            <li>効く薬なら効果あり。効かない薬は「効かない…」と表示され減点。さらに、<b>なぜ効かないのか</b>の解説が画面上部に出る。</li>
+            <li>耐性の強い菌（赤いオーラ）はHPが高く、複数回の攻撃が必要。</li>
+            <li>「無症候性細菌尿（ASB）」に抗菌薬を撃つと逆効果。見送るか、上部に出る👀<b>経過観察する</b>ボタンで対応しよう。</li>
+            <li><b>輸液パック</b>（Wave1〜、HP+10）と<b>ノルアドレナリンのアンプル</b>（Wave6〜、HP+20）が時々降ってくる。抗菌薬を選ばず、弾を当てるだけで患者HPが回復する（見逃しても減点はない）。どちらも抗菌薬の代わりにはならない。</li>
+            <li>菌を取り逃すと患者HPが低下する。耐性機構が強いほどダメージも大きい。</li>
+            <li><b>CZA+AZT</b>は2剤の併用薬。使うとASCも2剤分を合計して数える。</li>
+            <li>貯めたスコアは🛒ショップで各抗菌薬の<b>威力強化</b>（★1〜★5）と<b>連射強化</b>（Lv1〜Lv5）に使える。2つは別々に強化できる。</li>
+            <li>🔊音声ボタンで効果音のオン/オフを切り替えられる。</li>
+            <li>📖リファレンス・🛒ショップ・📕図鑑は画面いっぱいのウィンドウで開き、ゲームは自動で一時停止する。「▶ ゲームに戻る」（または外側をタップ）で、すぐにプレイへ戻れる。</li>
+          </ol>
+        </div>
+        <div class="pane" id="tab-links">
+          <h3>参考リンク</h3>
+          <ul>
+            <li><a href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener">BactPlatform</a></li>
+            <li><a href="https://somekata.github.io/bactPlatform/hub.html" target="_blank" rel="noopener">バイキンズキャラクターの紹介</a></li>
+            <li><a href="https://www.who.int/publications/i/item/B09489" target="_blank" rel="noopener">WHO AWaRe classification of antibiotics（公式ページ）</a></li>
+          </ul>
+          <p style="color:#c8d3ee">※ 医療上の判断は必ず最新のガイドライン・添付文書・専門家の指導に従ってください。</p>
+        </div>
+      </div>
+      <button id="startBtn">スタート</button>
+    </div>
+
+    <div class="overlay" id="gameOverOverlay" style="display:none;">
+      <div class="overOverlayInner">
+        <h2>GAME OVER</h2>
+        <p class="overText" id="overText"></p>
+        <div class="overSummary" id="gameSummary"></div>
+        <button id="retryBtn">もう一度遊ぶ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="weapons" id="weaponButtons"></div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:#FDA4AF"></i>大腸菌（べん毛）</span>
+    <span><i class="dot" style="background:#C4B5FD"></i>肺炎桿菌（莢膜）</span>
+    <span><i class="dot" style="background:#22C55E"></i>酵素A=セリン型</span>
+    <span><i class="dot" style="background:#FB923C"></i>酵素C=AmpC</span>
+    <span><i class="dot" style="background:#A855F7"></i>酵素B=MBL(Zn)</span>
+    <span><i class="dot" style="background:#F59E0B"></i>黄オーラ=第3世代セフェム耐性</span>
+    <span><i class="dot" style="background:#DC2626"></i>赤オーラ=カルバペネム耐性</span>
+  </div>
+
+  <div class="controls-row">
+    <button class="miniBtn" id="refBtn">📖 リファレンス</button>
+    <button class="miniBtn" id="shopBtn">🛒 ショップ</button>
+    <button class="miniBtn" id="dexBtn">📕 図鑑</button>
+    <button class="miniBtn" id="pauseBtn">⏸ 一時停止</button>
+    <button class="miniBtn" id="muteBtn">🔊 音声</button>
+  </div>
+
+  <footer>
+    本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<div class="panelOverlay" id="refPanel">
+  <div class="panelCard">
+    <div class="panelHead"><b>📖 リファレンス</b><button class="panelClose" data-close aria-label="閉じる">✕</button></div>
+    <div class="panelBody"><div class="refHint">↔ 左右にスライドすると、すべての薬を見られます</div><table id="refTable"></table></div>
+    <div class="panelFoot"><button class="panelBack" data-close>▶ ゲームに戻る</button></div>
+  </div>
+</div>
+
+<div class="panelOverlay" id="dexPanel">
+  <div class="panelCard">
+    <div class="panelHead"><b>📕 図鑑</b><button class="panelClose" data-close aria-label="閉じる">✕</button></div>
+    <div class="panelBody" id="dexBody"></div>
+    <div class="panelFoot"><button class="panelBack" data-close>▶ ゲームに戻る</button></div>
+  </div>
+</div>
+
+<div class="panelOverlay" id="shopPanel">
+  <div class="panelCard">
+    <div class="panelHead"><span><b>🛒 ショップ</b><span class="sub" id="shopScore"></span></span><button class="panelClose" data-close aria-label="閉じる">✕</button></div>
+    <div class="panelBody" id="shopBody"></div>
+    <div class="panelFoot"><button class="panelBack" data-close>▶ ゲームに戻る</button></div>
+  </div>
+</div>
+
+<div class="modalOverlay" id="flowModal">
+  <div class="modalCard" id="flowCard"></div>
+</div>
+
+<div class="modalOverlay" id="charModal">
+  <div class="modalCard">
+    <button class="modalClose" id="charModalClose">✕</button>
+    <div id="charBody"></div>
+  </div>
+</div>
+
+<div class="modalOverlay" id="asbModal">
+  <div class="modalCard">
+    <h3>🧪 無症候性細菌尿（ASB）</h3>
+    <p>尿から細菌が検出されても、<b>症状（発熱・排尿時痛・頻尿など）がなければ</b>、原則として抗菌薬で治療しません。治療しても症状は改善せず、副作用と耐性菌のリスクだけが残ります。<br>（妊婦や、粘膜に侵襲のある泌尿器科的処置の前などは例外です）</p>
+    <p>正しい対応は、<b>抗菌薬を使わず経過観察</b>することです。</p>
+    <button id="asbModalOk">👀 経過観察にする</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+      if (typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+      this.beginPath();
+      this.moveTo(x+r.tl,y); this.lineTo(x+w-r.tr,y); this.arcTo(x+w,y,x+w,y+r.tr,r.tr);
+      this.lineTo(x+w,y+h-r.br); this.arcTo(x+w,y+h,x+w-r.br,y+h,r.br);
+      this.lineTo(x+r.bl,y+h); this.arcTo(x,y+h,x,y+h-r.bl,r.bl);
+      this.lineTo(x,y+r.tl); this.arcTo(x,y,x+r.tl,y,r.tl);
+      this.closePath(); return this;
+    };
+  }
+
+  // ---- iPhone Safari: ダブルタップ/ピンチによる勝手な拡大縮小を防ぐ ----
+  ['gesturestart','gesturechange','gestureend'].forEach(t=>
+    document.addEventListener(t, (e)=> e.preventDefault(), { passive:false }));
+  document.addEventListener('dblclick', (e)=> e.preventDefault(), { passive:false });
+  let lastTouchEnd = 0, touchMoved = false;
+  document.addEventListener('touchstart', ()=>{ touchMoved = false; }, { passive:true });
+  document.addEventListener('touchmove',  ()=>{ touchMoved = true;  }, { passive:true });
+  document.addEventListener('touchend', (e)=>{
+    const now = Date.now();
+    // 指を動かさない素早い2回タップ(=ダブルタップ)だけ無効化。スクロール/ドラッグ操作とボタン/リンクには干渉しない
+    if(!touchMoved && now - lastTouchEnd <= 350 && e.cancelable && !(e.target.closest && e.target.closest('button,a,input,select,textarea,label'))) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive:false });
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  let W = 0, H = 0, DPR = 1;
+  const SPRITE_CACHE = new Map();   // スプライトキャッシュ(オフスクリーンCanvas)
+  function resizeCanvas(){
+    const holder = document.getElementById('canvasHolder');
+    const rect = holder.getBoundingClientRect();
+    const newDpr = Math.min(window.devicePixelRatio || 1, 2);
+    if(newDpr !== DPR) SPRITE_CACHE.clear();   // 解像度が変わったらキャッシュを作り直す
+    DPR = newDpr;
+    W = rect.width; H = rect.height;
+    targetX = Math.min(Math.max(targetX, PLAYER_MARGIN), Math.max(PLAYER_MARGIN, W-PLAYER_MARGIN));
+    playerX = Math.min(Math.max(playerX, PLAYER_MARGIN), Math.max(PLAYER_MARGIN, W-PLAYER_MARGIN));
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  // ---- シューティング用の状態 ----
+  const BULLET_R = 4;        // 弾の当たり半径(px)
+  const PLAYER_SIZE = 30;    // 自機(注射器)の大きさ
+  const PLAYER_MARGIN = 18;  // 自機が画面端に近づける限界(px)
+  let bullets = [];                 // {x,y,vy,wid,tier}
+  let pointerDown = false;          // タッチ/クリック中か(オートショット)
+  let playerX = 0, targetX = 0;     // 自機X(なめらか追従)と目標X。Yは playerY() で固定
+  let fireCd = 0;                   // 次の弾までの残り秒数
+  function playerY(){ return H - 46; }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // ==================== トースト(縦に積む。モーダル/パネル表示中は保留) ====================
+  const toastStack = document.getElementById('toastStack');
+  const MAX_TOASTS = 3;
+  let toasts = [];   // {el, text, left(ms)}
+  function removeToast(t){
+    const i = toasts.indexOf(t); if(i>=0) toasts.splice(i,1);
+    if(t.el.parentNode) t.el.parentNode.removeChild(t.el);
+  }
+  function clearToasts(){ toasts.slice().forEach(removeToast); }
+  function showToast(text, ms){
+    const dur = ms || 2600;
+    const same = toasts.find(t=>t.text===text);
+    if(same){ same.left = dur; return; }          // 同じ文言の連発は1つにまとめる
+    const el = document.createElement('div');
+    el.className = 'toast'; el.textContent = text;
+    toastStack.appendChild(el);
+    const t = { el, text, left:dur };
+    toasts.push(t);
+    while(toasts.length > MAX_TOASTS) removeToast(toasts[0]);   // 古いものから消す
+    setTimeout(()=> el.classList.add('show'), 16);
+  }
+  function toastTick(){
+    const hide = !gameState.running || flowActive || flowModal.classList.contains('show') || asbModal.classList.contains('show') || !!openPanelEl;
+    toastStack.classList.toggle('hold', hide);
+    if(hide || gameState.paused) return;          // 見えていない/停止中は時間を進めない
+    toasts.slice().forEach(t=>{ t.left -= 100; if(t.left<=0) removeToast(t); });
+  }
+  setInterval(toastTick, 100);
+
+  // ==================== サウンド(WebAudioの短い電子音。音声ファイル不要) ====================
+  let audioCtx = null;
+  let muted = false;
+  function ensureAudio(){
+    // iOS Safariはユーザー操作の中で生成/resumeしないと鳴らない。バックグラウンド復帰後は 'suspended' や 'interrupted' になる
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+    }
+    if(audioCtx && audioCtx.state !== 'running'){
+      try{ const p = audioCtx.resume(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
+    }
+  }
+  function tone(freq, startTime, dur, type, gain){
+    if(!audioCtx || muted) return;
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, startTime);
+    g.gain.setValueAtTime(0, startTime);
+    g.gain.linearRampToValueAtTime(gain != null ? gain : 0.16, startTime + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(startTime); osc.stop(startTime + dur + 0.02);
+  }
+  function sfxTap(){          // 抗菌薬の切替
+    if(!audioCtx || muted) return;
+    tone(1000, audioCtx.currentTime, 0.035, 'square', 0.05);
+  }
+  function sfxOptimal(){      // 適正使用(いちばん狭域の薬が当たった)
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(880, t, 0.09, 'triangle', 0.16);
+    tone(1320, t + 0.06, 0.12, 'triangle', 0.14);
+  }
+  function sfxSuboptimal(){   // 有効だが最適ではない
+    if(!audioCtx || muted) return;
+    tone(520, audioCtx.currentTime, 0.14, 'sine', 0.13);
+  }
+  function sfxResistant(){    // 効かない/耐性
+    if(!audioCtx || muted) return;
+    tone(160, audioCtx.currentTime, 0.16, 'sawtooth', 0.11);
+  }
+  function sfxKill(){         // 撃破
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(660, t, 0.08, 'square', 0.11);
+    tone(990, t + 0.06, 0.08, 'square', 0.11);
+    tone(1320, t + 0.12, 0.16, 'square', 0.11);
+  }
+  function sfxAsbPenalty(){ // 無症候性細菌尿に抗菌薬を当ててしまった
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(220, t, 0.12, 'sawtooth', 0.15);
+    tone(180, t + 0.14, 0.2, 'sawtooth', 0.15);
+  }
+  function sfxItem(){         // 輸液・ノルアドレナリンの回収
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    [660, 880, 1100, 1320].forEach((f, i) => tone(f, t + i * 0.045, 0.09, 'sine', 0.11));
+  }
+  function sfxWaveClear(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.09, 0.16, 'triangle', 0.14));
+  }
+  function sfxGameOver(){
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    [440, 392, 330, 220].forEach((f, i) => tone(f, t + i * 0.18, 0.24, 'sine', 0.14));
+  }
+  function sfxLock(){         // 出荷停止
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(300, t, 0.1, 'square', 0.1);
+    tone(250, t + 0.1, 0.14, 'square', 0.1);
+  }
+  function sfxDamage(){       // 菌を取り逃して患者HPが低下
+    if(!audioCtx || muted) return;
+    const t = audioCtx.currentTime;
+    tone(140, t, 0.18, 'sawtooth', 0.14);
+    tone(105, t + 0.1, 0.26, 'sawtooth', 0.14);
+  }
+  // 連射中に命中音が重なって濁らないよう間引く(90ms)
+  let lastHitSfxT = 0;
+  function sfxGate(fn){
+    const t = performance.now();
+    if(t - lastHitSfxT < 90) return;
+    lastHitSfxT = t; fn();
+  }
+
+  // ==================== 敵・アイテムの描画関数群 ====================
+  function drawResistAura(ctx, time, level){
+    if(level<=0) return;
+    const pulse = level===1 ? 0.05 : 0.09;
+    const auraScale = 1 + Math.sin(time*0.008)*pulse;
+    ctx.save(); ctx.scale(auraScale, auraScale);
+    const points = 14;
+    const outerR = level===1 ? 42 : 48;
+    const innerR = level===1 ? 33 : 30;
+    ctx.beginPath();
+    for(let i=0;i<points;i++){
+      const angle=(i/points)*Math.PI*2;
+      const r = i%2===0 ? outerR : innerR;
+      const px=Math.cos(angle)*r, py=Math.sin(angle)*r - 6;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = level===1 ? "rgba(250,204,21,0.35)" : "rgba(239,68,68,0.5)";
+    ctx.strokeStyle = level===1 ? "#F59E0B" : "#DC2626";
+    ctx.lineWidth = 2.5;
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ==================== 腸内細菌目キャラクター(大腸菌・肺炎桿菌) ====================
+  // 耐性機構(β-ラクタマーゼ)は「パックマン型の酵素」で表す。中の文字はAmbler分類(A=セリン型, B=メタロ, C=AmpC)
+  function drawSpikes(c, x, y, r, color){
+    c.save(); c.translate(x,y); c.fillStyle = color; c.globalAlpha = 0.55;
+    c.beginPath();
+    const n = 10;
+    for(let i=0;i<n*2;i++){
+      const ang = i/(n*2)*Math.PI*2;
+      const rr = i%2===0 ? r+5 : r-1;
+      const px = Math.cos(ang)*rr, py = Math.sin(ang)*rr;
+      if(i===0) c.moveTo(px,py); else c.lineTo(px,py);
+    }
+    c.closePath(); c.fill(); c.restore();
+  }
+  function drawEnzymeToken(c, x, y, sc, color, letter, ring){
+    c.save(); c.translate(x,y); c.scale(sc,sc);
+    c.fillStyle = color; c.strokeStyle = '#1f2937'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(0,0); c.arc(0,0,11,0.6,Math.PI*2-0.6); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#ffffff'; c.font = '800 10px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(letter, -2, 1);
+    if(ring){ c.strokeStyle = ring; c.lineWidth = 2; c.strokeRect(13,-3.5,7,7); }   // 分解される基質(β-ラクタム環)
+    c.restore();
+  }
+  function drawZn(c, x, y, r){
+    c.save(); c.translate(x,y);
+    c.fillStyle = '#94a3b8'; c.strokeStyle = '#334155'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(0,0,r,0,Math.PI*2); c.fill(); c.stroke();
+    c.fillStyle = '#0f172a'; c.font = '800 6px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('Zn', 0, 0.5);
+    c.restore();
+  }
+  const MECH_MOOD = { wt:'happy', pcase:'happy', esbl:'smug', ampc:'smug', imp6:'angry', kpc:'angry', ges:'angry', ndm:'angry' };
+  function drawEnteroBug(c, x, y, radius, time, cfg){
+    c.save(); c.translate(x,y);
+    const sc = radius/28; c.scale(sc,sc);
+    drawResistAura(c, time, cfg.aura);
+    if(cfg.species==='kp'){
+      // 肺炎桿菌: 厚い莢膜(ぬるっとした外殻)・べん毛なし
+      c.fillStyle = 'rgba(196,181,253,0.28)'; c.strokeStyle = '#8b5cf6'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect(-30,-38,60,76,30); c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 2.5;
+      c.beginPath(); c.arc(-13,-12,21,Math.PI*1.1,Math.PI*1.45); c.stroke();
+    } else {
+      // 大腸菌: べん毛
+      c.strokeStyle = '#fb7185'; c.lineWidth = 1.8; c.lineCap = 'round';
+      [[-16,-14,-32,-22,-40,-8],[-16,6,-31,10,-38,22],[16,-14,32,-22,40,-8],[16,6,31,10,38,22],[-8,22,-14,34,-6,42],[8,22,14,34,6,42]].forEach(p=>{
+        c.beginPath(); c.moveTo(p[0],p[1]); c.quadraticCurveTo(p[2],p[3],p[4],p[5]); c.stroke();
+      });
+    }
+    // 酵素(体の後ろに描く部分: スパイク)
+    if(cfg.mech==='esbl') drawSpikes(c,28,16,13,'#f59e0b');
+    if(cfg.mech==='kpc')  drawSpikes(c,28,16,14,'#ef4444');
+    if(cfg.mech==='ges')  drawSpikes(c,28,16,13,'#14b8a6');
+    if(cfg.mech==='ndm')  drawSpikes(c,28,16,14,'#7c3aed');
+    // 体(桿菌)
+    const body = cfg.species==='kp' ? '#c4b5fd' : '#fda4af';
+    const edge = cfg.species==='kp' ? '#5b21b6' : '#9f1239';
+    c.globalAlpha = cfg.mech==='imp6' ? 0.8 : 1;                       // IMP-6: 検査をすり抜ける「ステルス」
+    c.fillStyle = body; c.strokeStyle = edge; c.lineWidth = 2.6;
+    if(cfg.mech==='imp6') c.setLineDash([5,3]);
+    c.beginPath(); c.roundRect(-17,-24,34,48,17); c.fill(); c.stroke();
+    c.setLineDash([]); c.globalAlpha = 1;
+    c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2.2; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-9,-14); c.lineTo(-9,6); c.stroke();
+    // 顔
+    [-7,7].forEach(ex=>{
+      c.fillStyle = '#ffffff'; c.strokeStyle = '#111827'; c.lineWidth = 1.4;
+      c.beginPath(); c.arc(ex,-6,5,0,Math.PI*2); c.fill(); c.stroke();
+      c.fillStyle = '#111827'; c.beginPath(); c.arc(ex+(ex<0?1:-1)*0.6,-5.5,2.3,0,Math.PI*2); c.fill();
+    });
+    c.strokeStyle = '#111827'; c.lineWidth = 1.8; c.lineCap = 'round';
+    const mood = MECH_MOOD[cfg.mech] || 'happy';
+    if(mood==='happy'){
+      c.beginPath(); c.arc(0,5,6,0.15*Math.PI,0.85*Math.PI); c.stroke();
+    } else if(mood==='smug'){
+      c.beginPath(); c.moveTo(-6,10); c.quadraticCurveTo(0,13,7,7); c.stroke();
+      c.beginPath(); c.moveTo(-12,-13); c.lineTo(-3,-12); c.moveTo(12,-13); c.lineTo(3,-12); c.stroke();
+    } else {
+      c.beginPath(); c.moveTo(-12,-15); c.lineTo(-3,-10); c.moveTo(12,-15); c.lineTo(3,-10); c.stroke();
+      c.beginPath(); c.moveTo(-7,12); c.lineTo(-4,8); c.lineTo(-1,12); c.lineTo(2,8); c.lineTo(5,12); c.lineTo(8,8); c.stroke();
+    }
+    // 酵素トークン(耐性機構)
+    switch(cfg.mech){
+      case 'pcase': drawEnzymeToken(c,27,18,0.9,'#22c55e','A','#fde047'); break;
+      case 'esbl':  drawEnzymeToken(c,28,16,1.05,'#f59e0b','A','#fde047'); break;
+      case 'ampc':  // AmpC過剰発現: 小さな酵素が大量に漂う
+        [[-30,-12,0],[31,-4,2],[25,25,4]].forEach(p=> drawEnzymeToken(c,p[0],p[1]+Math.sin(time*0.008+p[2])*3,0.78,'#fb923c','C','#fde047'));
+        break;
+      case 'imp6':  drawEnzymeToken(c,28,16,1.05,'#a855f7','B','#fde047'); drawZn(c,39,3,5); drawZn(c,41,27,5); break;
+      case 'ndm':   drawEnzymeToken(c,28,16,1.15,'#a855f7','B','#fde047'); drawZn(c,40,2,5); drawZn(c,42,29,5); break;
+      case 'kpc':   drawEnzymeToken(c,28,16,1.15,'#ef4444','A','#fde047'); break;
+      case 'ges':   drawEnzymeToken(c,28,16,1.05,'#14b8a6','A','#fde047'); break;
+    }
+    c.restore();
+  }
+  function drawEcWt(c,x,y,r,t){ drawEnteroBug(c,x,y,r,t,{species:'ec',mech:'wt',aura:0}); }
+  function drawKpPcase(c,x,y,r,t){ drawEnteroBug(c,x,y,r,t,{species:'kp',mech:'pcase',aura:0}); }
+  function drawEcEsbl(c,x,y,r,t){ drawEnteroBug(c,x,y,r,t,{species:'ec',mech:'esbl',aura:1}); }
+  function drawEcAmpc(c,x,y,r,t){ drawEnteroBug(c,x,y,r,t,{species:'ec',mech:'ampc',aura:1}); }
+  function drawEcImp6(c,x,y,r,t){ drawEnteroBug(c,x,y,r,t,{species:'ec',mech:'imp6',aura:2}); }
+  function drawKpKpc1(c,x,y,r,t){ drawEnteroBug(c,x,y,r,t,{species:'kp',mech:'kpc',aura:2}); }
+  function drawKpGes5(c,x,y,r,t){ drawEnteroBug(c,x,y,r,t,{species:'kp',mech:'ges',aura:2}); }
+  function drawKpNdm1(c,x,y,r,t){ drawEnteroBug(c,x,y,r,t,{species:'kp',mech:'ndm',aura:2}); }
+
+  // 無症候性細菌尿(ASB): 尿コップ。症状がないのに細菌が検出されただけ→治療しない
+  function drawAsb(c, x, y, radius){
+    c.save(); c.translate(x,y); const s = radius/18; c.scale(s,s);
+    c.fillStyle = 'rgba(253,224,71,0.85)'; c.strokeStyle = '#92400e'; c.lineWidth = 2.2; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(-13,-6); c.lineTo(-10,20); c.quadraticCurveTo(0,24,10,20); c.lineTo(13,-6); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#e2e8f0'; c.strokeStyle = '#475569';
+    c.beginPath(); c.roundRect(-15,-14,30,9,3); c.fill(); c.stroke();
+    c.fillStyle = '#475569'; c.font = '800 5.5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('ASB', 0, -9.3);
+    c.fillStyle = '#fb7185';
+    [[-5,13],[4,15],[0,9.5]].forEach(p=>{ c.beginPath(); c.roundRect(p[0]-2.5,p[1]-1.5,5,3,1.5); c.fill(); });
+    c.fillStyle = '#78350f';
+    c.beginPath(); c.arc(-4.5,1,1.4,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(4.5,1,1.4,0,Math.PI*2); c.fill();
+    c.strokeStyle = '#78350f'; c.lineWidth = 1.4; c.lineCap = 'round';
+    c.beginPath(); c.arc(0,3.5,3.2,0.2*Math.PI,0.8*Math.PI); c.stroke();
+    c.restore();
+  }
+
+  // 輸液パック: 弾を当てると患者HPが回復
+  function drawIv(c, x, y, size){
+    c.save(); c.translate(x,y); const s = size/20; c.scale(s,s);
+    c.strokeStyle = '#64748b'; c.lineWidth = 2; c.beginPath(); c.arc(0,-24,4,Math.PI,0); c.stroke();
+    c.fillStyle = 'rgba(125,211,252,0.92)'; c.strokeStyle = '#0c4a6e'; c.lineWidth = 2;
+    c.beginPath(); c.roundRect(-11,-20,22,32,7); c.fill(); c.stroke();
+    c.strokeStyle = 'rgba(12,74,110,0.6)'; c.lineWidth = 1.2;
+    [-12,-6,0].forEach(yy=>{ c.beginPath(); c.moveTo(5,yy); c.lineTo(9,yy); c.stroke(); });
+    c.fillStyle = '#ffffff'; c.fillRect(-2,-12,4,14); c.fillRect(-7,-7,14,4);
+    c.strokeStyle = '#0c4a6e'; c.lineWidth = 2; c.beginPath(); c.moveTo(0,12); c.lineTo(0,18); c.stroke();
+    c.fillStyle = '#38bdf8'; c.beginPath(); c.arc(0,21,2.2,0,Math.PI*2); c.fill();
+    c.restore();
+  }
+
+  // ノルアドレナリン(ノルエピネフリン)のアンプル: 弾を当てると患者HP(血圧)が回復
+  function drawNe(c, x, y, size){
+    c.save(); c.translate(x,y); const s = size/20; c.scale(s,s);
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    // ガラスのアンプル(細い首+丸い胴)
+    c.fillStyle = 'rgba(241,245,249,0.96)'; c.strokeStyle = '#475569'; c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(-3,-27); c.lineTo(3,-27); c.lineTo(3,-19);
+    c.quadraticCurveTo(11,-15,11,-6); c.lineTo(11,17);
+    c.quadraticCurveTo(11,25,0,25); c.quadraticCurveTo(-11,25,-11,17);
+    c.lineTo(-11,-6); c.quadraticCurveTo(-11,-15,-3,-19); c.closePath(); c.fill(); c.stroke();
+    // 薬液
+    c.fillStyle = '#fda4af';
+    c.beginPath(); c.roundRect(-9,-4,18,27,6); c.fill();
+    // 首の折り目(オープンカット)の赤い印
+    c.strokeStyle = '#dc2626'; c.lineWidth = 2.4;
+    c.beginPath(); c.moveTo(-3.5,-22); c.lineTo(3.5,-22); c.stroke();
+    // ラベル「NA」
+    c.fillStyle = '#ffffff'; c.strokeStyle = '#be123c'; c.lineWidth = 1.2;
+    c.beginPath(); c.roundRect(-8,2,16,11,2); c.fill(); c.stroke();
+    c.fillStyle = '#be123c'; c.font = '800 8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('NA', 0, 7.8);
+    // きらり(ガラスの反射)
+    c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(-7,-8); c.lineTo(-7,-1); c.stroke();
+    c.restore();
+  }
+
+  const DRAW_FNS = { drawEcWt, drawKpPcase, drawEcEsbl, drawEcAmpc, drawEcImp6, drawKpKpc1, drawKpGes5, drawKpNdm1, drawAsb, drawIv, drawNe };
+
+  // ==================== スプライトキャッシュ ====================
+  // 各キャラを初回だけオフスクリーンCanvasへ描画し、以降は ctx.drawImage で使い回す。
+  const ANIM_FRAMES = 16;
+  const AURA_PERIOD = Math.PI*2/0.008;   // 耐性オーラの脈動(sin(time*0.008))の1周期(ms)
+  const ANIM_FNS = new Set(['drawEcEsbl','drawEcAmpc','drawEcImp6','drawKpKpc1','drawKpGes5','drawKpNdm1']);   // オーラが動くキャラだけ16コマ事前描画
+  const SPRITE_EXT = { drawAsb:1.7, drawIv:1.6, drawNe:1.6 };   // 描画がはみ出す範囲(size比)。細菌は既定値2.4
+  function makeSprite(half, paint){
+    const c = document.createElement('canvas');
+    c.width = c.height = Math.max(1, Math.round(half*2*DPR));
+    const k = c.width / (half*2);
+    const cx = c.getContext('2d');
+    cx.setTransform(k,0,0,k,0,0);
+    paint(cx, half);
+    return { canvas:c, half };
+  }
+  function getSpriteFrame(fnName, size, frame){
+    const key = fnName + '|' + size + '|' + frame;
+    let sp = SPRITE_CACHE.get(key);
+    if(sp) return sp;
+    const half = Math.ceil(size * (SPRITE_EXT[fnName] || 2.4));
+    sp = makeSprite(half, (cx,h)=> DRAW_FNS[fnName](cx, h, h, size, frame/ANIM_FRAMES*AURA_PERIOD));
+    SPRITE_CACHE.set(key, sp);
+    return sp;
+  }
+  function getSprite(fnName, size, time){
+    const frame = ANIM_FNS.has(fnName) ? (Math.floor((time % AURA_PERIOD)/AURA_PERIOD*ANIM_FRAMES) % ANIM_FRAMES) : 0;
+    return getSpriteFrame(fnName, size, frame);
+  }
+  // 菌名+HPバッジもテキスト単位でキャッシュ
+  let _measureCtx = null;
+  function getBadgeSprite(text){
+    const key = 'badge|' + text;
+    let sp = SPRITE_CACHE.get(key);
+    if(sp) return sp;
+    if(!_measureCtx) _measureCtx = document.createElement('canvas').getContext('2d');
+    _measureCtx.font = '700 9px sans-serif';
+    const w = Math.ceil(_measureCtx.measureText(text).width + 8), h = 11;
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w*DPR)); c.height = Math.max(1, Math.round(h*DPR));
+    const cx = c.getContext('2d');
+    cx.setTransform(c.width/w, 0, 0, c.height/h, 0, 0);
+    cx.fillStyle = 'rgba(255,255,255,0.9)'; cx.fillRect(0,0,w,h);
+    cx.fillStyle = '#0b1220'; cx.font = '700 9px sans-serif';
+    cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    cx.fillText(text, w/2, 6);
+    sp = { canvas:c, w, h };
+    SPRITE_CACHE.set(key, sp);
+    return sp;
+  }
+  // 自機(注射器)。薬液の色は選択中の抗菌薬のティア色
+  const TIER_LIQUID = { access:'#22c55e', watch:'#f59e0b', reserve:'#ef4444' };
+  const TIER_BULLET = { access:'#4ade80', watch:'#fbbf24', reserve:'#f87171' };
+  function drawSyringe(c, x, y, s, liquid){
+    c.save(); c.translate(x,y); c.scale(s,s);
+    c.lineJoin = 'round'; c.lineWidth = 2; c.strokeStyle = '#0f172a';
+    c.fillStyle = '#e2e8f0';                                   // 針
+    c.beginPath(); c.moveTo(-1.6,-20); c.lineTo(0,-31); c.lineTo(1.6,-20); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#94a3b8'; c.fillRect(-4,-22,8,4); c.strokeRect(-4,-22,8,4);   // ノズル
+    c.fillStyle = '#f8fafc'; c.beginPath(); c.roundRect(-9,-18,18,34,3); c.fill(); c.stroke(); // 筒
+    c.fillStyle = liquid; c.fillRect(-7,-6,14,20);             // 薬液
+    c.strokeStyle = '#64748b'; c.lineWidth = 1.2;              // 目盛り
+    for(let i=0;i<4;i++){ const yy = -14 + i*7; c.beginPath(); c.moveTo(3,yy); c.lineTo(8,yy); c.stroke(); }
+    c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.fillStyle = '#cbd5e1';
+    c.fillRect(-14,16,28,4); c.strokeRect(-14,16,28,4);        // フランジ
+    c.fillRect(-2,20,4,9); c.strokeRect(-2,20,4,9);            // 押し子
+    c.fillRect(-8,29,16,3); c.strokeRect(-8,29,16,3);
+    c.restore();
+  }
+  function getPlayerSprite(tier){
+    const key = 'player|' + tier;
+    let sp = SPRITE_CACHE.get(key);
+    if(!sp){ sp = makeSprite(32, (cx,h)=> drawSyringe(cx, h, h, PLAYER_SIZE/32, TIER_LIQUID[tier] || '#22c55e')); SPRITE_CACHE.set(key, sp); }
+    return sp;
+  }
+  function getBulletSprite(tier){
+    const key = 'bullet|' + tier;
+    let sp = SPRITE_CACHE.get(key);
+    if(!sp){
+      sp = makeSprite(10, (cx,h)=>{
+        cx.translate(h,h);
+        cx.fillStyle = TIER_BULLET[tier] || '#4ade80';
+        cx.beginPath(); cx.roundRect(-3,-8,6,16,3); cx.fill();
+        cx.fillStyle = '#ffffff'; cx.fillRect(-1,-6,2,9);
+      });
+      SPRITE_CACHE.set(key, sp);
+    }
+    return sp;
+  }
+  // 全キャラのスプライトを先に作っておく(ゲーム開始時に呼ぶ)
+  function prewarmSprites(){
+    Object.keys(ENEMY_DEFS).forEach(k=>{
+      const d = ENEMY_DEFS[k];
+      const frames = ANIM_FNS.has(d.drawFn) ? ANIM_FRAMES : 1;
+      for(let f=0; f<frames; f++) getSpriteFrame(d.drawFn, d.size, f);
+    });
+    getSpriteFrame('drawAsb', 18, 0);
+    getSpriteFrame('drawIv', 18, 0);
+    getSpriteFrame('drawNe', 18, 0);
+    ['access','watch','reserve'].forEach(t=>{ getPlayerSprite(t); getBulletSprite(t); });
+  }
+  function drawEnemies(){
+    for(let i=0;i<gameState.enemies.length;i++){
+      const e = gameState.enemies[i];
+      const sp = getSprite(e.def.drawFn, e.def.size, globalTime);
+      const d = sp.half*2;
+      if(e.y + sp.half < 0 || e.y - sp.half > H) continue;   // 画面外は描かない
+      // 揺れの向きに合わせて少し傾けて描く
+      const tilt = Math.cos(e.oscPhase) * 0.14;
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      ctx.rotate(tilt);
+      ctx.drawImage(sp.canvas, -sp.half, -sp.half, d, d);
+      if(e.hitFlash>0){   // 被弾フラッシュ: ctx.filterは重い/Safari非対応なので加算合成で代用
+        ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55;
+        ctx.drawImage(sp.canvas, -sp.half, -sp.half, d, d);
+      }
+      ctx.restore();
+      const badgeText = e.maxHp>1 ? `${e.def.label} HP${e.hp}` : e.def.label;
+      const bs = getBadgeSprite(badgeText);
+      const bx = Math.max(2, Math.min(W-bs.w-2, e.x-bs.w/2));   // 画面端で切れないように補正
+      ctx.drawImage(bs.canvas, bx, e.y+e.def.size*1.5, bs.w, bs.h);
+    }
+  }
+  function drawBullets(){
+    for(let i=0;i<bullets.length;i++){
+      const b = bullets[i];
+      const sp = getBulletSprite(b.tier);
+      ctx.drawImage(sp.canvas, b.x-sp.half, b.y-sp.half, sp.half*2, sp.half*2);
+    }
+  }
+  function drawPlayer(){
+    const sp = getPlayerSprite(WMAP[gameState.selectedWeapon].tier);
+    ctx.drawImage(sp.canvas, playerX-sp.half, playerY()-sp.half, sp.half*2, sp.half*2);
+  }
+
+  // ==================== 抗菌薬データ（ボタン表示順=固定、段階解禁） ====================
+  // ASC は DASC 原著(Kakiuchi et al., Clin Infect Dis 2022)の表の値。CZA+AZT は2剤併用なので CZA(8)+AZT(4)=12、投与数は2として数える
+  const TIER_RANK = { access:0, watch:1, reserve:2 };
+  const TIER_COLOR = { access:'var(--access)', watch:'var(--watch)', reserve:'var(--reserve)' };
+  const MAX_WEAPON_LEVEL = 5;
+  const MAX_SPEED_LEVEL = 5;
+  const SHOP_COSTS = [100,300,1000,10000];       // 威力: ★2,3,4,5にするコスト(初期は★1)
+  const SPEED_SHOP_COSTS = [100,300,1000,10000]; // 連射: Lv2,3,4,5にするコスト(初期はLv1)
+  const FIRE_INTERVALS = [0.45, 0.36, 0.29, 0.23, 0.18]; // 連射Lv1〜5の発射間隔(秒)
+  const WEAPONS = [
+    { id:'ABPC',   abbr:'ABPC',    full:'アンピシリン',                         asc:5,  doses:1, tier:'access',  spectrum:'狭域',            level:1, speedLevel:1, unlockWave:1  },
+    { id:'CEZ',    abbr:'CEZ',     full:'セファゾリン',                         asc:3,  doses:1, tier:'access',  spectrum:'狭域',            level:1, speedLevel:1, unlockWave:2  },
+    { id:'CTRX',   abbr:'CTRX',    full:'セフトリアキソン',                     asc:6,  doses:1, tier:'watch',   spectrum:'中等度〜広域',    level:1, speedLevel:1, unlockWave:3  },
+    { id:'CFPM',   abbr:'CFPM',    full:'セフェピム',                           asc:8,  doses:1, tier:'watch',   spectrum:'広域',            level:1, speedLevel:1, unlockWave:5  },
+    { id:'MEPM',   abbr:'MEPM',    full:'メロペネム',                           asc:12, doses:1, tier:'watch',   spectrum:'超広域',          level:1, speedLevel:1, unlockWave:4  },
+    { id:'IPM',    abbr:'IPM/CS',  full:'イミペネム/シラスタチン',              asc:12, doses:1, tier:'watch',   spectrum:'超広域',          level:1, speedLevel:1, unlockWave:4  },
+    { id:'CZA',    abbr:'CZA',     full:'セフタジジム/アビバクタム',            asc:8,  doses:1, tier:'reserve', spectrum:'広域',            level:1, speedLevel:1, unlockWave:7  },
+    { id:'CZAAZT', abbr:'CZA+AZT', full:'セフタジジム/アビバクタム＋アズトレオナム（併用）', asc:12, doses:2, tier:'reserve', spectrum:'超広域(2剤併用)', level:1, speedLevel:1, unlockWave:9 },
+    { id:'CFDC',   abbr:'CFDC',    full:'セフィデロコル',                       asc:5,  doses:1, tier:'reserve', spectrum:'広域(MBLにも)',   level:1, speedLevel:1, unlockWave:8  },
+    { id:'COL',    abbr:'COL',     full:'コリスチン',                           asc:6,  doses:1, tier:'reserve', spectrum:'グラム陰性のみ',  level:1, speedLevel:1, unlockWave:9  },
+  ];
+  const WMAP = {}; WEAPONS.forEach(w=>WMAP[w.id]=w);
+  const SHORTAGE_ELIGIBLE = ['MEPM','CFPM','CZA','CFDC'];
+  const SHORTAGE_START_WAVE = 12;
+  const SHORTAGE_MAX_CONCURRENT = 2;
+  function weaponDamage(w){ return w.level; }
+  function fireInterval(w){ return FIRE_INTERVALS[Math.min(MAX_SPEED_LEVEL, w.speedLevel) - 1]; }
+  const DRUG_EXPLANATIONS = {
+    'ABPC':'最も狭域のペニシリン。β-ラクタマーゼを作らない感受性菌に効く。ペニシリナーゼには分解される。',
+    'CEZ':'第1世代セフェム。ペニシリナーゼには比較的安定。ESBLやAmpCには分解される。',
+    'CTRX':'第3世代セフェム。ESBLやAmpCには分解されるため、これらには効かない。',
+    'CFPM':'第4世代セフェム。AmpCに安定で、AmpC過剰発現株の第一選択。ESBLには分解されるため推奨されない。',
+    'MEPM':'カルバペネム。ESBL・AmpCに安定で、ESBL産生菌の第一選択。MBL・KPCなどのカルバペネマーゼには分解される。超広域なので温存したい。',
+    'IPM':'カルバペネム（イミペネム/シラスタチン）。ESBL・AmpCに有効。IMP-6産生菌は検査でイミペネム感性（ISMR型）に見えるが、MBL産生菌の治療に使える根拠は確立していない。GES-5はイミペネムをよく分解する。',
+    'CZA':'セフタジジムにアビバクタム（β-ラクタマーゼ阻害薬）を配合。クラスA（ESBL・KPC・GES）とクラスC（AmpC）を阻害する。KPC・GES-5産生菌にはCZA単剤で足りる。MBL（IMP・NDM）は阻害できない。Reserve。',
+    'CZAAZT':'CZAとアズトレオナム（AZT）の併用。AZTはMBLに分解されないが、ESBLやAmpCを併産する菌には分解される。CZAのアビバクタムがそれらを抑えるので、MBL産生菌に有効（第一選択）。KPCなどセリン型にはCZA単剤で足りる。2剤を使うのでASCは合計して数える。',
+    'CFDC':'シデロフォアセフェム。鉄の取り込み経路から菌体内に入り、MBLを含む多くのβ-ラクタマーゼに安定。MBL産生菌に有効な代替選択肢。Reserve。',
+    'COL':'ポリミキシン系。グラム陰性菌の細胞膜に作用し、カルバペネマーゼ産生菌にも有効。腎毒性・神経毒性があり、最後の手段（Reserve）。',
+  };
+
+  // ==================== 敵データ ====================
+  // susceptibleTo=有効な薬(学習用に単純化) / bestDrugs=適正使用(◎) / hp=耐性機構ごとの体力 / dmg=取り逃した時の患者HPダメージ
+  const ALL_DRUG_IDS = ['ABPC','CEZ','CTRX','CFPM','MEPM','IPM','CZA','CZAAZT','CFDC','COL'];
+  // 有効/無効と第一選択(◎)は、参考資料の評価表（ESBL=MEPM、AmpC=CFPM、IMP-6/NDM-1=CZA+AZT など）に基づく。学習用に単純化
+  const ENEMY_DEFS = {
+    EC_WT:    { label:'大腸菌 ABPC感受性',        fullLabel:'大腸菌 ABPC感受性（野生型）',           species:'ec', drawFn:'drawEcWt',   size:24, hp:1, dmg:8,  resistLevel:0,
+                susceptibleTo:['ABPC','CEZ','CTRX','CFPM','MEPM','IPM','CZA','CZAAZT','CFDC','COL'], bestDrugs:['ABPC'] },
+    KP_PCASE: { label:'肺炎桿菌 ペニシリナーゼ', fullLabel:'肺炎桿菌 ペニシリナーゼ産生（SHV-1／CEZ感受性）', species:'kp', drawFn:'drawKpPcase', size:24, hp:1, dmg:8,  resistLevel:0,
+                susceptibleTo:['CEZ','CTRX','CFPM','MEPM','IPM','CZA','CZAAZT','CFDC','COL'], bestDrugs:['CEZ'] },
+    EC_ESBL:  { label:'大腸菌 ESBL(CTX-M-9)',      fullLabel:'大腸菌 CTX-M-9陽性ESBL',                species:'ec', drawFn:'drawEcEsbl',  size:24, hp:2, dmg:12, resistLevel:1,
+                susceptibleTo:['MEPM','IPM','CZA','CZAAZT','CFDC','COL'], bestDrugs:['MEPM'] },
+    EC_AMPC:  { label:'大腸菌 AmpC過剰発現',       fullLabel:'大腸菌 AmpC過剰発現',                   species:'ec', drawFn:'drawEcAmpc',  size:24, hp:2, dmg:12, resistLevel:1,
+                susceptibleTo:['CFPM','MEPM','IPM','CZA','CZAAZT','CFDC','COL'], bestDrugs:['CFPM'] },
+    EC_IMP6:  { label:'大腸菌 MBL(IMP-6)',         fullLabel:'大腸菌 IMP-6産生（MBL）',               species:'ec', drawFn:'drawEcImp6',  size:25, hp:3, dmg:18, resistLevel:2,
+                susceptibleTo:['IPM','CZAAZT','CFDC','COL'], bestDrugs:['CZAAZT'] },
+    KP_KPC1:  { label:'肺炎桿菌 KPC-1',            fullLabel:'肺炎桿菌 KPC-1産生（クラスAカルバペネマーゼ）', species:'kp', drawFn:'drawKpKpc1', size:25, hp:3, dmg:18, resistLevel:2,
+                susceptibleTo:['CZA','CZAAZT','CFDC','COL'], bestDrugs:['CZA'] },
+    KP_GES5:  { label:'肺炎桿菌 GES-5',            fullLabel:'肺炎桿菌 GES-5陽性（クラスAカルバペネマーゼ）', species:'kp', drawFn:'drawKpGes5', size:25, hp:3, dmg:18, resistLevel:2,
+                susceptibleTo:['CZA','CZAAZT','CFDC','COL'], bestDrugs:['CZA'] },
+    KP_NDM1:  { label:'肺炎桿菌 MBL(NDM-1)',       fullLabel:'肺炎桿菌 NDM-1産生（MBL）',             species:'kp', drawFn:'drawKpNdm1', size:25, hp:3, dmg:20, resistLevel:2,
+                susceptibleTo:['CZAAZT','CFDC','COL'], bestDrugs:['CZAAZT'] },
+  };
+  function enemyMaxHp(def){ return def.hp; }
+
+  const CHAR_FLAVOR = {
+    EC_WT:'<i>Escherichia coli</i>（大腸菌）の野生型。β-ラクタマーゼを持たず、ABPCをはじめ多くの抗菌薬が効く。尿路感染症の最も一般的な原因菌。',
+    KP_PCASE:'<i>Klebsiella pneumoniae</i>（肺炎桿菌）は染色体にペニシリナーゼ(SHV-1)の遺伝子を持ち、ABPCに本来耐性（固有耐性）。べん毛はなく、厚い莢膜をまとう。セファゾリン(CEZ)は分解されにくく、CEZ感受性。大腸菌のTEM-1などペニシリナーゼ産生株も、ABPCが効かない点は同じ。',
+    EC_ESBL:'ESBL（基質特異性拡張型β-ラクタマーゼ、クラスA）。国内の大腸菌ではCTX-M型が最も多く、CTX-M-9グループ（CTX-M-14・CTX-M-27など）が目立つ。ペニシリン・第1〜第4世代セフェム・アズトレオナムを分解する。カルバペネムは分解できず、クラブラン酸・タゾバクタムで阻害される。',
+    EC_AMPC:'大腸菌は染色体にAmpC（クラスC）を持つが、通常は少量しか作らない。プロモーターの変異などで過剰発現すると、ペニシリン・第1〜第3世代セフェム・セファマイシンを分解する。クラブラン酸では阻害されない（ESBLとの違い）。第4世代のセフェピムは分解されにくい。※肺炎桿菌は染色体AmpCを持たない。',
+    EC_IMP6:'IMP-6はメタロβ-ラクタマーゼ（MBL、クラスB）。亜鉛（Zn²⁺）を使い、アズトレオナム以外のほぼすべてのβ-ラクタム（カルバペネム含む）を分解する。日本で多い型で、メロペネムをよく分解する一方、イミペネムは分解しにくい。そのため「イミペネム感性・メロペネム耐性」という検査のすり抜け（ステルス）を示す。しばしばESBL（CTX-M-2）を併産する。',
+    KP_KPC1:'KPC（<i>Klebsiella pneumoniae</i> carbapenemase）はクラスAのセリン型カルバペネマーゼで、ペニシリン・セフェム・アズトレオナム・カルバペネムを分解する。アビバクタム（CZA）で阻害される。KPC-1は最初に報告された型（米国、2001年）で、のちに配列が修正されKPC-2と同一と判明した。日本ではまれだが、世界で広がっている。',
+    KP_GES5:'GES型はもともとESBLとして見つかったクラスAの酵素。GES-5はアミノ酸置換（Gly170）によりカルバペネマーゼ活性を獲得した。イミペネムをよく分解する一方、メロペネムのMICは上がりにくい株もあり、検査で見逃されやすい。アビバクタム（CZA）の対象になる。',
+    KP_NDM1:'NDM-1（New Delhi metallo-β-lactamase-1）は、インドで入院歴のある患者から2008年にスウェーデンで分離された<i>K. pneumoniae</i>で報告されたMBL（クラスB）。カルバペネムを含むほぼすべてのβ-ラクタム（アズトレオナムを除く）を分解し、アビバクタムでは阻害できない。ESBLなどを併産することが多く、アズトレオナムはCZAとの併用で使う。',
+  };
+  const CHAR_POINT = {
+    EC_WT:'ABPCが効く。感受性なら、最も狭いABPCを選ぼう。',
+    KP_PCASE:'肺炎桿菌にABPCは無効（固有耐性）。CEZを選ぼう。',
+    EC_ESBL:'ESBLにセフェム（CEZ・CTRX・CFPM）は禁物。第一選択はメロペネム。',
+    EC_AMPC:'AmpCにはCFPMが安定で第一選択。CTRXは分解される。カルバペネムは温存。',
+    EC_IMP6:'MBLにカルバペネム（MEPM）もCZA単剤も無効。第一選択はCZA+AZT。CFDCも有効。',
+    KP_KPC1:'クラスAカルバペネマーゼにはCZA単剤で足りる。AZTの併用は不要。',
+    KP_GES5:'GES-5もクラスA。カルバペネムは頼れず、CZA単剤を選ぼう。',
+    KP_NDM1:'MBLにCZA単剤は無効。第一選択はCZA+AZT。CFDCも有効。',
+  };
+  const WAVE_NEW_CHAR = { 1:['EC_WT'], 2:['KP_PCASE'], 4:['EC_ESBL'], 5:['EC_AMPC'], 7:['KP_KPC1'], 8:['KP_GES5'], 9:['EC_IMP6'], 10:['KP_NDM1'] };
+
+  // 「なぜ効かないか／なぜ最適でないか」の解説(同じ組み合わせは1プレイにつき1回だけ表示)。'*'は既定の文言
+  const TEACH = {
+    EC_WT:{ '*':'有効だが、ABPC感受性ならABPCで足りる（標的を絞った選択）。' },
+    KP_PCASE:{ ABPC:'肺炎桿菌はSHV-1ペニシリナーゼを染色体に持ち、ABPCは固有耐性。CEZは分解されにくい。',
+               '*':'有効だが広域です。CEZで足りる（Access）。' },
+    EC_ESBL:{ ABPC:'ペニシリン系はESBLに分解される。', CEZ:'ESBLは第1〜第3世代セフェムを分解する。', CTRX:'ESBLは第3世代セフェムを分解する。CTX-M型は特にセフォタキシム・CTRXをよく分解する。',
+              CFPM:'セフェピムは感性に見えても、ESBL産生菌には推奨されない（高接種効果）。',
+              '*':'有効だが、ESBLの第一選択はメロペネム。新しい薬（Reserve）は温存しよう。' },
+    EC_AMPC:{ ABPC:'ペニシリン系はAmpCに分解される。', CEZ:'AmpCの過剰発現は第1世代セフェムも分解する。', CTRX:'AmpCの過剰発現は第3世代セフェムを分解する（治療中に耐性化することも）。',
+              '*':'有効だが、AmpCの第一選択はセフェピム。カルバペネムは温存しよう。' },
+    EC_IMP6:{ IPM:'検査ではイミペネム感性（ISMR型）に見えるが、MBL産生菌の治療に使える根拠は確立していない。第一選択はCZA+AZT。',
+              MEPM:'MBLはメロペネムを効率よく分解する（IMP-6はイミペネムの約7倍）。',
+              CZA:'アビバクタムはMBLを阻害できない。MBLにはCZA単剤は無効。',
+              CFDC:'有効（代替選択肢）。第一選択はCZA+AZT。', COL:'有効だが腎毒性・神経毒性があり、最後の手段。まずCZA+AZT。',
+              '*':'MBLはアズトレオナム以外のβ-ラクタムをほぼすべて分解する。' },
+    KP_KPC1:{ MEPM:'KPC（クラスA）はカルバペネムも分解する。', IPM:'KPC（クラスA）はカルバペネムも分解する。',
+              CZAAZT:'有効だが、KPCにAZTの併用は不要。CZA単剤で足りる。', CFDC:'有効だが、まずCZA。', COL:'有効だが腎毒性・神経毒性があり、最後の手段。まずCZA。',
+              '*':'KPCは第3・第4世代セフェムも分解する。' },
+    KP_GES5:{ IPM:'GES-5はイミペネムを分解する（検査で見逃されやすい）。',
+              MEPM:'メロペネムのMICが低めの株もあるが、カルバペネマーゼ産生菌には頼れない。CZAを選ぼう。',
+              CZAAZT:'有効だが、AZTの併用は不要。CZA単剤で足りる。', CFDC:'有効だが、まずCZA。', COL:'有効だが腎毒性・神経毒性があり、最後の手段。まずCZA。',
+              '*':'GES-5はクラスAのカルバペネマーゼ。セフェム系も分解する。' },
+    KP_NDM1:{ CZA:'NDMはMBL。CZA単剤は無効で、AZTと併用する。', MEPM:'MBLはカルバペネムを分解する。', IPM:'MBLはカルバペネムを分解する。',
+              CFDC:'有効（代替選択肢）。第一選択はCZA+AZT。', COL:'有効だが腎毒性・神経毒性があり、最後の手段。まずCZA+AZT。',
+              '*':'NDM-1はMBL。アズトレオナム以外のβ-ラクタムをほぼすべて分解する。' },
+  };
+
+  // ==================== 図鑑（キャラクター詳細）====================
+  const ASB_DEF = { label:'ASB', fullLabel:'無症候性細菌尿（ASB）', drawFn:'drawAsb', size:18, gramTag:'🧪 細菌は検出されたが症状なし',
+    desc:'尿から細菌が検出されても、症状（発熱・排尿時痛・頻尿など）がなければ、原則として抗菌薬では治療しない。治療しても症状は改善せず、副作用と耐性菌のリスクだけが残る。正しい対応は、抗菌薬を使わず経過観察すること。（妊婦や、粘膜に侵襲のある泌尿器科的処置の前などは例外）' };
+  const DEX_SIZE = { EC_WT:36, KP_PCASE:36, EC_ESBL:36, EC_AMPC:36, EC_IMP6:36, KP_KPC1:36, KP_GES5:36, KP_NDM1:36, ASB:34 };
+  const GROUP_DEFS = {
+    ecoli: {
+      title:'大腸菌', gramTag:'🔴 グラム陰性桿菌（べん毛あり）', members:['EC_WT','EC_ESBL','EC_AMPC','EC_IMP6'],
+      desc:'大腸菌(<i>Escherichia coli</i>)は、尿路感染症や菌血症の代表的な原因菌。野生型はABPCなど狭域薬がよく効くが、ESBL（CTX-M-9など）・AmpC過剰発現・MBL（IMP-6）といった耐性機構を獲得すると、効く薬が大きく変わる。',
+    },
+    kpneu: {
+      title:'肺炎桿菌', gramTag:'🔴 グラム陰性桿菌（莢膜が厚い・べん毛なし）', members:['KP_PCASE','KP_KPC1','KP_GES5','KP_NDM1'],
+      desc:'肺炎桿菌(<i>Klebsiella pneumoniae</i>)は、染色体のペニシリナーゼ(SHV-1)によりABPCに固有耐性。さらにクラスAカルバペネマーゼ（KPC・GES-5）やMBL（NDM-1）を獲得すると、カルバペネム耐性腸内細菌目（CRE/CPE）となる。',
+    },
+  };
+  const ALL_CHAR_IDS = ['ecoli','kpneu','ENZ','ASB'];
+  function charDef(id){ return id==='ASB' ? ASB_DEF : ENEMY_DEFS[id]; }
+  function chipLabel(id){ return id==='ASB' ? ASB_DEF.label+'（無症候性細菌尿）' : (id==='ENZ' ? 'β-ラクタマーゼ早見表' : GROUP_DEFS[id].title); }
+
+  // Wave1〜10は新しい耐性機構を1つずつ導入。Wave11以降は全種
+  function getWaveEnemyTypes(wave){
+    const table = {
+      1: ['EC_WT'], 2: ['KP_PCASE'], 3: ['EC_WT','KP_PCASE'],
+      4: ['EC_ESBL'], 5: ['EC_AMPC'], 6: ['EC_WT','KP_PCASE','EC_ESBL','EC_AMPC'],
+      7: ['KP_KPC1'], 8: ['KP_GES5','KP_KPC1'], 9: ['EC_IMP6','KP_KPC1'], 10: ['KP_NDM1','EC_IMP6'],
+    };
+    if(wave>=11) return Object.keys(ENEMY_DEFS);
+    return table[wave] || ['EC_WT'];
+  }
+  const ASB_START_WAVE = 2;   // Wave3から出現
+  const IV_START_WAVE = 1;    // 輸液: 最初から出現
+  const NE_START_WAVE = 6;    // ノルアドレナリン: Wave6から出現(輸液だけでは足りない場面の昇圧薬)
+  const ASB_RATE = 0.14;      // 無症候性細菌尿(Wave3〜)の出現確率
+  const IV_RATE = 0.09;       // 輸液の出現確率
+  const NE_RATE = 0.07;       // ノルアドレナリンの出現確率(Wave6〜)
+  const IV_HEAL = 10;         // 輸液で回復する患者HP
+  const NE_HEAL = 20;         // ノルアドレナリンで回復する患者HP(輸液より大きい)
+
+  // ==================== ゲーム状態 ====================
+  let gameState = {
+    running:false, paused:false, wave:1, score:0, hp:100,
+    selectedWeapon:'ABPC', enemies:[], particles:[], floatTexts:[],
+    spawnTimer:0, spawnedThisWave:0,
+  };
+  let shortageSet = new Set();
+  let globalTime = 0;
+  let totalJudgments=0, goodJudgments=0, watchJudgments=0, reserveJudgments=0;
+  let totalASC=0, totalDoses=0, ineffectiveCount=0;
+  let killCounts={}, drugUseCounts={};
+  let weaponLockTimer=0;
+  let seenTypes = new Set();    // 今回のプレイで出会った耐性機構(振り返り用)
+  let shownHints = new Set();   // 表示済みの解説(同じ組み合わせは1プレイにつき1回)
+
+  function computeSpeed(wave){
+    const ramp = Math.min(wave-1, 25) * 0.028;
+    return (0.22 + ramp) * (0.9 + Math.random()*0.2);
+  }
+  const WAVE_QUOTA_MULT = 2;   // ウェーブクリアに必要な敵の数の倍率(旧:1倍)
+  function waveQuota(wave){ return (2 + Math.floor(wave/4)) * WAVE_QUOTA_MULT; }
+  function maxConcurrent(wave){ return Math.min(4, 2 + Math.floor(wave/6)); }
+
+  function isWeaponUnlocked(id){ return gameState.wave >= WMAP[id].unlockWave; }
+  function isDrugShortage(id){ return shortageSet.has(id); }
+  function currentAwarePct(){ return totalJudgments>0 ? (goodJudgments/totalJudgments*100) : 0; }
+  function currentDASC(){ return totalDoses>0 ? (totalASC/totalDoses) : null; }
+
+  function rollShortages(){
+    const prevSize = shortageSet.size;
+    shortageSet.clear();
+    if(gameState.wave >= SHORTAGE_START_WAVE){
+      const pool = SHORTAGE_ELIGIBLE.filter(id=>isWeaponUnlocked(id));
+      for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+      const count = Math.floor(Math.random()*(SHORTAGE_MAX_CONCURRENT+1));
+      for(let i=0;i<count && i<pool.length;i++) shortageSet.add(pool[i]);
+      if(shortageSet.has('CZA')) shortageSet.add('CZAAZT');   // CZA+AZTはCZAを含むので、CZAが止まれば併用も使えない
+    }
+    if(shortageSet.has(gameState.selectedWeapon)){
+      const fallback = WEAPONS.find(w=>isWeaponUnlocked(w.id) && !shortageSet.has(w.id));
+      if(fallback) gameState.selectedWeapon = fallback.id;
+    }
+    if(shortageSet.size>0){
+      showToast('⚠️ 出荷停止中: ' + Array.from(shortageSet).map(id=>WMAP[id].abbr).join('、') + '（今Waveの間のみ）');
+      sfxLock();
+    } else if(prevSize>0){
+      showToast('出荷状況が回復しました');
+    }
+  }
+
+  // ==================== スポーン ====================
+  function spawnEnemy(){
+    const wave = gameState.wave;
+    const roll = Math.random();
+    let kind, type;
+    const asbRate = wave>=ASB_START_WAVE+1 ? ASB_RATE : 0;   // ASBが出ないWaveではアイテムの確率に混ざらないようにする
+    if(roll < asbRate){ kind='asb'; type='ASB'; }
+    else if(wave>=IV_START_WAVE && roll < asbRate + IV_RATE){ kind='iv'; type='IV'; }
+    else if(wave>=NE_START_WAVE && roll < asbRate + IV_RATE + NE_RATE){ kind='ne'; type='NE'; }
+    else { kind='bacteria'; const waveTypes=getWaveEnemyTypes(wave); type = waveTypes[Math.floor(Math.random()*waveTypes.length)]; }
+
+    const x0 = 40 + Math.random() * Math.max(0, W - 80);
+    if(kind==='bacteria'){
+      const def = ENEMY_DEFS[type];
+      seenTypes.add(type);
+      gameState.enemies.push({
+        kind, type, def, x:x0, y:-30, baseX:x0,
+        speed: computeSpeed(wave), oscPhase: Math.random()*Math.PI*2,
+        oscSpeed: 0.025+Math.random()*0.012, oscAmp: 22+Math.random()*14,
+        hp: enemyMaxHp(def), maxHp: enemyMaxHp(def), hitFlash:0, judged:false,
+      });
+    } else if(kind==='asb'){
+      gameState.enemies.push({
+        kind, type, def:{label:'ASB', drawFn:'drawAsb', size:18},
+        x:x0, y:-30, baseX:x0, speed: computeSpeed(wave)*0.85,
+        oscPhase: Math.random()*Math.PI*2, oscSpeed:0.02+Math.random()*0.01, oscAmp:18+Math.random()*10,
+        hp:1, maxHp:1, hitFlash:0, judged:false,
+      });
+    } else if(kind==='iv'){
+      gameState.enemies.push({
+        kind, type, def:{label:'輸液', drawFn:'drawIv', size:18},
+        x:x0, y:-30, baseX:x0, speed: computeSpeed(wave)*0.9,
+        oscPhase: Math.random()*Math.PI*2, oscSpeed:0.02+Math.random()*0.01, oscAmp:16+Math.random()*10,
+        hp:1, maxHp:1, hitFlash:0, judged:false,
+      });
+    } else {
+      gameState.enemies.push({
+        kind, type, def:{label:'ノルアドレナリン', drawFn:'drawNe', size:18},
+        x:x0, y:-30, baseX:x0, speed: computeSpeed(wave)*0.9,
+        oscPhase: Math.random()*Math.PI*2, oscSpeed:0.02+Math.random()*0.01, oscAmp:16+Math.random()*10,
+        hp:1, maxHp:1, hitFlash:0, judged:false,
+      });
+    }
+  }
+
+  // ==================== HUD ====================
+  function hpBarPercent(hp){ return Math.max(0, Math.min(100, hp)); }
+  function updateHUD(){
+    const hp = Math.max(0, Math.min(100, gameState.hp));
+    document.getElementById('hpVal').textContent = Math.round(hp) + '%';
+    document.getElementById('waveVal').textContent = gameState.wave;
+    document.getElementById('scoreVal').textContent = gameState.score;
+    const bar = document.getElementById('hpBar');
+    bar.style.width = hpBarPercent(hp) + '%';
+    bar.textContent = Math.round(hp) + '%';
+    if(hp>=60) bar.style.background = '#22c55e';
+    else if(hp>=30) bar.style.background = '#f59e0b';
+    else bar.style.background = '#ef4444';
+  }
+  function updateAwareGauge(){
+    const total = totalJudgments;
+    const accessPct = total>0 ? Math.round(goodJudgments/total*100) : 0;
+    const watchPct = total>0 ? Math.round(watchJudgments/total*100) : 0;
+    const reservePct = total>0 ? Math.round(reserveJudgments/total*100) : 0;
+    document.getElementById('segAccess').style.width = accessPct + '%';
+    document.getElementById('segWatch').style.width = watchPct + '%';
+    document.getElementById('segReserve').style.width = reservePct + '%';
+    document.getElementById('awareLabel').textContent = total>0 ? `A${accessPct} Wa${watchPct} Re${reservePct}` : 'AWaRe比率 --';
+  }
+
+  function starsStr(level){ return '★'.repeat(level) + '☆'.repeat(MAX_WEAPON_LEVEL-level); }
+  let weaponBtnEls = {};
+  const weaponsEl = document.getElementById('weaponButtons');
+  function renderWeaponButtons(){
+    weaponsEl.innerHTML = '';
+    weaponBtnEls = {};
+    WEAPONS.filter(w=>isWeaponUnlocked(w.id)).forEach(w=>{
+      const isShort = isDrugShortage(w.id);
+      const btn = document.createElement('button');
+      btn.className = 'weaponBtn' + (gameState.selectedWeapon===w.id ? ' active' : '') + (isShort ? ' shortage' : '') + (weaponLockTimer>0 ? ' locked' : '');
+      btn.title = isShort ? `${w.full}（出荷停止中）` : `${w.full}（ASC:${w.asc} ${w.spectrum}）`;
+      btn.innerHTML = `<span class="abbr">${w.abbr}</span><span class="stars">${isShort?'停止中':starsStr(w.level)}</span>`;
+      btn.addEventListener('click', ()=> selectWeapon(w.id));
+      weaponsEl.appendChild(btn);
+      weaponBtnEls[w.id] = btn;
+    });
+  }
+  function selectWeapon(id){
+    if(weaponLockTimer>0) return;
+    if(isDrugShortage(id)) return;
+    if(id===gameState.selectedWeapon) return;
+    gameState.selectedWeapon = id;
+    renderWeaponButtons();
+    sfxTap();
+  }
+
+  // ==================== ASBモーダル・経過観察処理 ====================
+  const asbModal = document.getElementById('asbModal');
+  function hasActiveAsb(){ return gameState.enemies.some(e=>e.kind==='asb'); }
+  function resolveAllAsbes(){
+    const targets = gameState.enemies.filter(e=>e.kind==='asb');
+    targets.forEach(e=>{
+      totalJudgments++; goodJudgments++;
+      gameState.score += 30;
+      addFloatText(e.x, e.y, '経過観察で良好! +30', '#4fd1c5');
+      addParticles(e.x, e.y, '#cbd5e1');
+      const idx = gameState.enemies.indexOf(e);
+      if(idx>=0) gameState.enemies.splice(idx,1);
+    });
+    if(targets.length){ updateAwareGauge(); updateHUD(); sfxOptimal(); }
+  }
+  document.getElementById('restBtn').addEventListener('click', ()=>{
+    asbModal.classList.add('show');
+    setPaused(true);
+  });
+  document.getElementById('asbModalOk').addEventListener('click', ()=>{
+    asbModal.classList.remove('show');
+    setPaused(false);
+    resolveAllAsbes();
+  });
+
+  // ==================== 弾の発射・移動・当たり判定 ====================
+  function fireBullet(){
+    const w = WMAP[gameState.selectedWeapon];
+    bullets.push({ x:playerX, y:playerY() - 30*(PLAYER_SIZE/32), vy:H*1.4, wid:w.id, tier:w.tier });
+  }
+  function updateBullets(dt){
+    const enemies = gameState.enemies;
+    for(let i=bullets.length-1;i>=0;i--){
+      const b = bullets[i];
+      const prevY = b.y;
+      b.y -= b.vy*dt;
+      if(b.y < -12){ bullets.splice(i,1); continue; }
+      // 弾の移動線分(prevY→b.y)と敵の円との距離で判定(すり抜け防止)。複数候補なら手前(画面下側)の敵を優先
+      let target = null;
+      for(let k=0;k<enemies.length;k++){
+        const e = enemies[k];
+        if(e.kind==='asb' && e.judged) continue;      // 判定済みのASBは素通り
+        const r = e.def.size + BULLET_R + 4;
+        const dx = e.x - b.x;
+        if(dx > r || dx < -r) continue;
+        const cy = Math.min(prevY, Math.max(b.y, e.y));
+        const dy = e.y - cy;
+        if(dx*dx + dy*dy <= r*r && (!target || e.y > target.y)) target = e;
+      }
+      if(target){
+        bullets.splice(i,1);      // ヒットした弾は消去
+        handleHit(target, b.wid); // ダメージ処理 / アイテム回収
+      }
+    }
+  }
+  function updateShooter(dt){
+    playerX += (targetX - playerX) * Math.min(1, dt*20);          // Xのみ追従(Yは固定)
+    fireCd = Math.max(0, fireCd - dt);
+    const w = WMAP[gameState.selectedWeapon];
+    if(pointerDown && weaponLockTimer<=0 && fireCd<=0 && w && !isDrugShortage(w.id)){   // 押している間、連射レベルに応じた間隔で自動発射
+      fireBullet();
+      fireCd = fireInterval(w);
+    }
+    updateBullets(dt);
+  }
+
+  // ==================== 入力：ドラッグで自機を横移動、押している間オートショット ====================
+  function pointerToX(ev){
+    const rect = canvas.getBoundingClientRect();
+    const x = (ev.clientX - rect.left) * (W / (rect.width || W));
+    return Math.max(PLAYER_MARGIN, Math.min(W-PLAYER_MARGIN, x));
+  }
+  function stopFire(){ pointerDown = false; }
+  canvas.addEventListener('pointerdown', (ev)=>{
+    if(!ev.isPrimary) return;
+    ensureAudio();                       // iOS: 操作の中で音声を有効化/復帰
+    if(ev.pointerType==='mouse' && ev.button!==0) return;
+    pointerDown = true;
+    targetX = pointerToX(ev);
+    try{ canvas.setPointerCapture(ev.pointerId); }catch(e){}
+    ev.preventDefault();
+  });
+  canvas.addEventListener('pointermove', (ev)=>{
+    if(!ev.isPrimary) return;
+    targetX = pointerToX(ev);   // マウスは押さなくても追従、タッチはドラッグ中に追従
+  });
+  canvas.addEventListener('pointerup', stopFire);
+  canvas.addEventListener('pointercancel', stopFire);
+  canvas.addEventListener('lostpointercapture', stopFire);
+  canvas.addEventListener('contextmenu', (ev)=> ev.preventDefault());
+  window.addEventListener('pointerup', stopFire);
+  window.addEventListener('blur', stopFire);
+
+  // 連射中に同じ敵へ同じ文言が連発しないよう間引く
+  function popText(e, text, color){
+    if(globalTime - (e.msgT===undefined ? -1e9 : e.msgT) < 260) return;
+    e.msgT = globalTime;
+    addFloatText(e.x, e.y, text, color);
+  }
+
+  function showHint(type, drugId){
+    const t = TEACH[type]; if(!t) return;
+    const text = t[drugId] || t['*']; if(!text) return;
+    const key = type + '|' + (t[drugId] ? drugId : '*' + drugId);
+    if(shownHints.has(key)) return;
+    shownHints.add(key);
+    showToast(text, 4200);
+  }
+  function handleHit(enemy, wid){
+    if(enemy.kind==='iv'){
+      sfxItem();
+      const before = gameState.hp;
+      gameState.hp = Math.min(100, gameState.hp + IV_HEAL);
+      addFloatText(enemy.x, enemy.y, `輸液! HP+${Math.round(gameState.hp-before)}`, '#38BDF8');
+      addParticles(enemy.x, enemy.y, '#38BDF8');
+      gameState.enemies.splice(gameState.enemies.indexOf(enemy),1);
+      updateHUD();
+      return;
+    }
+    if(enemy.kind==='ne'){
+      sfxItem();
+      const before = gameState.hp;
+      gameState.hp = Math.min(100, gameState.hp + NE_HEAL);
+      addFloatText(enemy.x, enemy.y, `ノルアドレナリン! HP+${Math.round(gameState.hp-before)}`, '#fb7185');
+      addParticles(enemy.x, enemy.y, '#fb7185');
+      gameState.enemies.splice(gameState.enemies.indexOf(enemy),1);
+      updateHUD();
+      return;
+    }
+    if(enemy.kind==='asb'){
+      if(!enemy.judged){
+        enemy.judged = true;
+        gameState.score = Math.max(0, gameState.score-15);
+        weaponLockTimer = 1.5;
+        sfxAsbPenalty();
+        renderWeaponButtons();
+        addFloatText(enemy.x, enemy.y, '無効使用!-15', '#ef4444');
+        showToast('無症候性細菌尿に抗菌薬は不要です。👀経過観察するボタンで対応しましょう。');
+      }
+      updateHUD();
+      return;
+    }
+    // 通常の細菌
+    const w = WMAP[wid || gameState.selectedWeapon];   // 発射した時点の抗菌薬で判定
+    if(!w) return;
+    const isEffective = enemy.def.susceptibleTo.includes(w.id);
+    totalDoses += (w.doses||1); totalASC += w.asc;     // 併用薬は薬の数だけ投与数に数える(DASC/DOTの考え方)
+    drugUseCounts[w.id] = (drugUseCounts[w.id]||0) + 1;
+    totalJudgments++;
+    if(w.tier==='access') goodJudgments++;
+    else if(w.tier==='watch') watchJudgments++;
+    else reserveJudgments++;
+
+    if(isEffective){
+      const isBest = enemy.def.bestDrugs.includes(w.id);
+      const bonus = isBest ? 30 : 10;
+      const msg = isBest ? '適正使用!' : '有効';
+      const color = isBest ? '#22c55e' : '#4fd1c5';
+
+      enemy.hp -= weaponDamage(w);
+      enemy.hitFlash = 0.15;
+      if(isBest) sfxGate(sfxOptimal);                     // 適正使用
+      if(enemy.hp<=0) sfxKill();                          // 撃破
+      else if(!isBest) sfxGate(sfxSuboptimal);            // 有効だが最適ではない
+      if(!isBest) showHint(enemy.type, w.id);             // 「有効だが最適ではない」理由
+      addParticles(enemy.x, enemy.y, '#4fd1c5');
+      if(enemy.hp<=0){
+        gameState.score += 50 + bonus;
+        killCounts[enemy.type] = (killCounts[enemy.type]||0) + 1;
+        addFloatText(enemy.x, enemy.y, msg, color);
+        gameState.enemies.splice(gameState.enemies.indexOf(enemy),1);
+      } else {
+        gameState.score += Math.max(0, Math.round(bonus/2));
+        popText(enemy, 'ダメージ', color);
+      }
+      updateAwareGauge();
+    } else {
+      ineffectiveCount++;
+      sfxGate(sfxResistant);
+      gameState.score = Math.max(0, gameState.score - 10);
+      enemy.hitFlash = 0.15;
+      popText(enemy, '効かない…', '#ef4444');
+      showHint(enemy.type, w.id);                         // 「なぜ効かないか」の解説
+      updateAwareGauge();
+    }
+    updateHUD();
+  }
+
+  function addFloatText(x,y,text,color){
+    // 画面端で切れないようXを補正し、近くに表示中の文字があれば上へずらして重なりを避ける
+    ctx.font = '700 12px sans-serif';
+    const half = ctx.measureText(text).width/2 + 4;
+    const fx = Math.max(half, Math.min(Math.max(half, W-half), x));
+    const list = gameState.floatTexts;
+    let fy = y;
+    for(let tries=0; tries<8; tries++){
+      const clash = list.some(f => Math.abs(f.x-fx) < half + f.half && Math.abs((f.y - (1-f.life)*30) - fy) < 15);
+      if(!clash) break;
+      fy -= 15;
+    }
+    list.push({ x:fx, y:Math.max(16, fy), text, color, life:1.0, half });
+  }
+  function addParticles(x,y,color){
+    for(let i=0;i<6;i++){
+      const ang = (Math.PI*2*i)/6;
+      gameState.particles.push({x,y,vx:Math.cos(ang)*2.5,vy:Math.sin(ang)*2.5,color,life:0.5});
+    }
+  }
+
+  // ==================== ウェーブ前解説モーダル ====================
+  const flowModal = document.getElementById('flowModal');
+  const flowCard = document.getElementById('flowCard');
+  let flowQueue = [], flowActive = false;
+  function queueFlow(jobFn){ flowQueue.push(jobFn); pumpFlowQueue(); }
+  function pumpFlowQueue(){
+    if(flowActive) return;
+    if(flowQueue.length===0){ flowModal.classList.remove('show'); return; }
+    flowActive = true;
+    flowModal.classList.add('show');
+    const job = flowQueue.shift();
+    job(()=>{ flowActive = false; pumpFlowQueue(); });
+  }
+  function resetFlowQueue(){ flowQueue=[]; flowActive=false; flowModal.classList.remove('show'); }
+
+  function tipsJob(done){
+    flowCard.innerHTML = `
+      <h3>⚔️ 戦い方のポイント</h3>
+      <p>🎯 画面を<b>ドラッグ</b>して、画面下の注射器を左右に動かそう。押している間は選んだ抗菌薬を<b>自動で連射</b>する。</p>
+      <p>画面上部の<b>患者HPゲージ</b>は、菌を取り逃すと減る。<b>耐性菌ほどダメージが大きく</b>、0になるとゲームオーバー。</p>
+      <p>菌が持つ<b>パックマン型の酵素</b>が耐性機構。中の文字は<b>Ambler分類（A・B・C）</b>。どの薬を分解するかを考えて、薬を選ぼう！</p>
+      <p><b>AWaRe比率</b>ゲージは使った抗菌薬の内訳。<b style="color:var(--access)">Access(緑)</b>が多いほど狭域中心。</p>
+      <button id="flowNext">つぎへ</button>`;
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function charIntroJob(id){
+    return function(done){
+      const def = ENEMY_DEFS[id];
+      flowCard.innerHTML = `
+        <canvas id="flowCharCanvas" width="240" height="240" style="width:120px;height:120px;margin:0 auto 8px;display:block;"></canvas>
+        <h3>${def.fullLabel}</h3>
+        <p style="text-align:left;font-size:0.7rem;line-height:1.55;">${CHAR_FLAVOR[id] || ''}</p>
+        <p class="point">🎯 ${CHAR_POINT[id] || ''}</p>
+        <button id="flowNext">つぎへ</button>`;
+      const c = document.getElementById('flowCharCanvas').getContext('2d');
+      c.clearRect(0,0,240,240);
+      DRAW_FNS[def.drawFn](c, 120, 128, 52, 0);
+      document.getElementById('flowNext').addEventListener('click', done);
+    };
+  }
+  function drugIntroJob(id){
+    return function(done){
+      const w = WMAP[id];
+      const tierJp = w.tier==='access' ? 'Access' : (w.tier==='watch' ? 'Watch' : 'Reserve');
+      flowCard.innerHTML = `
+        <h3>💊 新しい抗菌薬: ${w.abbr}</h3>
+        <p><b>${w.full}</b>（${tierJp}／ASC:${w.asc}${(w.doses||1)>1?'／2剤併用':''}）</p>
+        <p style="text-align:left;font-size:0.7rem;line-height:1.55;">${DRUG_EXPLANATIONS[id] || ''}</p>
+        <button id="flowNext">つぎへ</button>`;
+      document.getElementById('flowNext').addEventListener('click', done);
+    };
+  }
+  function shopIntroJob(done){
+    flowCard.innerHTML = `
+      <h3>🛒 ショップの使い方</h3>
+      <p>抗菌薬は初期状態で★1・連射Lv1。貯めたスコアで、画面下の🛒ショップから<b>威力（最大★5）</b>と<b>連射（最大Lv5）</b>を別々に強化できる。</p>
+      <p>耐性の強い菌（HPが高い）は、威力を強化しておくと少ない回数で倒せるようになるぞ！</p>
+      <button id="flowNext">つぎへ</button>`;
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function ivIntroJob(done){
+    flowCard.innerHTML = `
+      <canvas id="flowItemCanvas" width="140" height="140" style="width:90px;height:90px;margin:0 auto 8px;display:block;"></canvas>
+      <h3>💧 輸液</h3>
+      <p style="text-align:left;font-size:0.7rem;line-height:1.55;">敗血症では、血管が広がり血液が血管の外に漏れて、循環する血液量が足りなくなる。<b>輸液</b>で循環血液量を補い、血圧と臓器への血流を保つのが蘇生の基本。</p>
+      <p class="point">🎯 時々降ってくる輸液パックを、抗菌薬を選ばず弾で回収すると患者HPが回復する。見逃しても減点はない。</p>
+      <p style="text-align:left;font-size:0.66rem;line-height:1.5;color:var(--text-dim)">ただし輸液は<b>感染そのものを治さない</b>。原因菌に効く抗菌薬が主役。</p>
+      <button id="flowNext">つぎへ</button>`;
+    const c = document.getElementById('flowItemCanvas').getContext('2d');
+    c.clearRect(0,0,140,140);
+    drawIv(c,70,78,40);
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function neIntroJob(done){
+    flowCard.innerHTML = `
+      <canvas id="flowItemCanvas" width="140" height="140" style="width:90px;height:90px;margin:0 auto 8px;display:block;"></canvas>
+      <h3>💉 ノルアドレナリン</h3>
+      <p style="text-align:left;font-size:0.7rem;line-height:1.55;">輸液だけで血圧が保てない敗血症性ショックでは、<b>昇圧薬</b>を使って血管の緊張を保つ。<b>第一選択はノルアドレナリン</b>（ノルエピネフリン）。初期の目標は<b>平均血圧（MAP）65 mmHg</b>が目安とされている。</p>
+      <p class="point">🎯 Wave6から時々降ってくるアンプルを、抗菌薬を選ばず弾で回収すると患者HPが<b>輸液より大きく</b>回復する。見逃しても減点はない。</p>
+      <p style="text-align:left;font-size:0.66rem;line-height:1.5;color:var(--text-dim)">ただし昇圧薬は<b>感染そのものを治さない</b>。原因菌に効く抗菌薬の早期投与と、感染源のコントロールが欠かせない。</p>
+      <button id="flowNext">つぎへ</button>`;
+    const c = document.getElementById('flowItemCanvas').getContext('2d');
+    c.clearRect(0,0,140,140);
+    drawNe(c,70,78,40);
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function asbIntroJob(done){
+    flowCard.innerHTML = `
+      <canvas id="flowAsbCanvas" width="140" height="140" style="width:90px;height:90px;margin:0 auto 8px;display:block;"></canvas>
+      <h3>🧪 無症候性細菌尿（ASB）が出現！</h3>
+      <p>尿から細菌が検出されても、症状がなければ原則として抗菌薬は使わない。治療しても症状は改善せず、副作用と耐性菌のリスクだけが残る。</p>
+      <p>撃たずに見送るか、上部に出る👀<b>経過観察する</b>ボタンから対応しよう。抗菌薬を当てると減点＆一時的にボタンと射撃が使えなくなるので注意！</p>
+      <button id="flowNext">つぎへ</button>`;
+    const c = document.getElementById('flowAsbCanvas').getContext('2d');
+    c.clearRect(0,0,140,140);
+    drawAsb(c,70,74,34);
+    document.getElementById('flowNext').addEventListener('click', done);
+  }
+  function buildIntroForWave(w){
+    const jobs = [];
+    if(w===1) jobs.push(tipsJob);
+    (WAVE_NEW_CHAR[w]||[]).forEach(id=>jobs.push(charIntroJob(id)));
+    WEAPONS.filter(wp=>wp.unlockWave===w).forEach(wp=>jobs.push(drugIntroJob(wp.id)));
+    if(w===2) jobs.push(shopIntroJob);
+    if(w===2) jobs.push(ivIntroJob);
+    if(w===NE_START_WAVE) jobs.push(neIntroJob);
+    if(w===3) jobs.push(asbIntroJob);
+    return jobs;
+  }
+  function enqueueWaveIntro(w){
+    buildIntroForWave(w).forEach((jobFn,i,arr)=>{
+      queueFlow((done)=>{
+        jobFn(done);
+        const btn = document.getElementById('flowNext');
+        if(btn && i===arr.length-1) btn.textContent = 'たたかう!';
+      });
+    });
+  }
+
+  // ==================== メインループ ====================
+  let lastTime = 0;
+  function loop(time){
+    if(!lastTime) lastTime = time;
+    const dt = Math.min(0.05, (time-lastTime)/1000);
+    lastTime = time;
+    if(!gameState.running || flowActive){ requestAnimationFrame(loop); return; }
+    globalTime = time;
+    if(!gameState.paused) update(dt);
+    draw();
+    document.getElementById('restPrompt').style.display = (!gameState.paused && hasActiveAsb()) ? 'flex' : 'none';
+    requestAnimationFrame(loop);
+  }
+
+  function update(dt){
+    if(weaponLockTimer>0){
+      weaponLockTimer = Math.max(0, weaponLockTimer-dt);
+      if(weaponLockTimer===0) renderWeaponButtons();
+    }
+    gameState.spawnTimer += dt;
+    const spawnInterval = 1.5;
+    const quota = waveQuota(gameState.wave);
+    const cap = maxConcurrent(gameState.wave);
+
+    while(gameState.spawnTimer >= spawnInterval && gameState.spawnedThisWave < quota && gameState.enemies.length < cap){
+      gameState.spawnTimer -= spawnInterval;
+      spawnEnemy();
+      gameState.spawnedThisWave++;
+    }
+
+    updateShooter(dt);   // 自機移動・オートショット・弾の当たり判定
+
+    // 速度・揺れは60fps換算(dt*60)にして、120Hz端末でも速くならないようにする
+    gameState.enemies.forEach(e=>{
+      e.oscPhase += e.oscSpeed*60*dt;
+      e.x = Math.max(8, Math.min(W-8, e.baseX + Math.sin(e.oscPhase) * e.oscAmp));   // 左右にゆらゆら
+      e.y += e.speed*60*dt;
+      e.hitFlash = Math.max(0, e.hitFlash - dt);
+    });
+
+    gameState.enemies = gameState.enemies.filter(e=>{
+      if(e.y > H + 20){
+        if(e.kind==='asb'){
+          if(!e.judged){
+            totalJudgments++; goodJudgments++;
+            gameState.score += 30;
+            addFloatText(e.x, H-20, '経過観察が正解! +30', '#4fd1c5');
+            sfxGate(sfxOptimal);
+            updateAwareGauge();
+          }
+        } else if(e.kind==='ne' || e.kind==='iv'){
+          // 取り逃し：ペナルティなし
+        } else {
+          const dmg = (e.def && e.def.dmg) || 10;       // 耐性機構が強いほど大きい
+          gameState.hp -= dmg;
+          addFloatText(e.x, H-20, `-${dmg} HP`, '#ef4444');
+          sfxDamage();
+        }
+        return false;
+      }
+      return true;
+    });
+
+    gameState.particles = gameState.particles.filter(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=dt;
+      return p.life>0;
+    });
+    gameState.floatTexts = gameState.floatTexts.filter(f=>{ f.life-=dt; return f.life>0; });
+
+    if(gameState.spawnedThisWave>=quota && gameState.enemies.length===0){
+      gameState.wave++;
+      sfxWaveClear();
+      gameState.spawnedThisWave = 0;
+      gameState.spawnTimer = 0;
+      rollShortages();
+      renderWeaponButtons();
+      enqueueWaveIntro(gameState.wave);
+    }
+
+    if(gameState.hp <= 0){
+      gameState.running = false;
+      pointerDown = false; bullets.length = 0;
+      showGameOver();
+    }
+    updateHUD();
+  }
+
+  let bgGrad = null, bgGradH = -1;
+  function draw(){
+    if(!bgGrad || bgGradH !== H){
+      bgGrad = ctx.createLinearGradient(0,0,0,H);
+      bgGrad.addColorStop(0,'#141f36'); bgGrad.addColorStop(1,'#0b1220');
+      bgGradH = H;
+    }
+    ctx.fillStyle = bgGrad; ctx.fillRect(0,0,W,H);
+
+    drawEnemies();
+    drawBullets();
+    drawPlayer();
+
+    gameState.particles.forEach(p=>{
+      ctx.globalAlpha = Math.max(0,p.life/0.5);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+
+    ctx.textAlign='center';
+    gameState.floatTexts.forEach(f=>{
+      ctx.globalAlpha = Math.max(0,f.life);
+      ctx.fillStyle = f.color;
+      ctx.font = '700 12px sans-serif';
+      ctx.fillText(f.text, f.x, f.y-(1-f.life)*30);
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  // ==================== ゲームオーバー・振り返り ====================
+  function buildEndSummary(){
+    const el = document.getElementById('gameSummary');
+    let html = '';
+    html += '<h4>🏆 撃退した菌</h4><table>';
+    const killIds = Object.keys(killCounts).filter(id=>killCounts[id]>0);
+    if(killIds.length===0){
+      html += '<tr><td colspan="2">撃退なし</td></tr>';
+    } else {
+      killIds.forEach(id=>{
+        html += `<tr><td>${ENEMY_DEFS[id] ? ENEMY_DEFS[id].label : id}</td><td class="num">${killCounts[id]}体</td></tr>`;
+      });
+    }
+    const totalKills = killIds.reduce((s,id)=>s+killCounts[id],0);
+    html += `<tr><td><b>合計</b></td><td class="num"><b>${totalKills}体</b></td></tr></table>`;
+
+    html += '<h4>💊 抗菌薬の使用回数</h4><table>';
+    const usedIds = WEAPONS.filter(w=>(drugUseCounts[w.id]||0)>0);
+    if(usedIds.length===0){
+      html += '<tr><td colspan="2">使用なし</td></tr>';
+    } else {
+      usedIds.forEach(w=>{
+        html += `<tr><td>${w.abbr}（${w.full}）</td><td class="num">${drugUseCounts[w.id]}回</td></tr>`;
+      });
+    }
+    html += '</table>';
+    html += `<h4>⚠️ 無効な攻撃</h4><table><tr><td>耐性菌・無症候性細菌尿への誤投薬など</td><td class="num">${ineffectiveCount}回</td></tr></table>`;
+    // 今回出会った耐性機構と、適正な薬(◎)の振り返り
+    const seen = Object.keys(ENEMY_DEFS).filter(id=>seenTypes.has(id));
+    if(seen.length){
+      html += '<h4>📚 出会った耐性機構と適正な薬</h4><table>';
+      seen.forEach(id=>{
+        const d = ENEMY_DEFS[id];
+        html += `<tr><td>${d.fullLabel}</td><td class="num">◎ ${d.bestDrugs.map(x=>WMAP[x].abbr).join(' / ')}</td></tr>`;
+      });
+      html += '</table>';
+    }
+    el.innerHTML = html;
+  }
+  function showGameOver(){
+    sfxGameOver();
+    buildEndSummary();
+    const accessPct = totalJudgments>0 ? Math.round(goodJudgments/totalJudgments*100) : 0;
+    const watchPct = totalJudgments>0 ? Math.round(watchJudgments/totalJudgments*100) : 0;
+    const reservePct = totalJudgments>0 ? Math.round(reserveJudgments/totalJudgments*100) : 0;
+    const dasc = currentDASC();
+    const dascText = dasc===null ? '--' : dasc.toFixed(1);
+    document.getElementById('overText').textContent =
+      `患者HPが0になりました… 到達Wave ${gameState.wave} / スコア ${gameState.score} / AWaRe比率 Access${accessPct}% Watch${watchPct}% Reserve${reservePct}% / 平均DASC ${dascText}`;
+    document.getElementById('gameOverOverlay').style.display = 'flex';
+  }
+
+  // ==================== リファレンス/ショップ/図鑑: 画面全体のモーダル。開くと自動で一時停止、閉じるとすぐ再開 ====================
+  const pauseBtnEl = document.getElementById('pauseBtn');
+  let openPanelEl = null, panelAutoPaused = false;
+  function setPaused(p){ gameState.paused = p; pauseBtnEl.textContent = p ? '▶ 再開' : '⏸ 一時停止'; }
+  function openPanel(el){
+    if(openPanelEl===el) return;
+    if(openPanelEl){
+      openPanelEl.classList.remove('show');            // パネル→パネルの切替では再開しない
+    } else {
+      panelAutoPaused = gameState.running && !gameState.paused;   // 自分で止めた時だけ、閉じる時に再開する
+      if(panelAutoPaused) setPaused(true);
+      pointerDown = false;                             // 押しっぱなしの連射を止める
+    }
+    openPanelEl = el;
+    el.classList.add('show');
+    document.body.classList.add('noScroll');
+    const body = el.querySelector('.panelBody'); if(body) body.scrollTop = 0;
+  }
+  function closePanel(){
+    if(!openPanelEl) return;
+    openPanelEl.classList.remove('show');
+    openPanelEl = null;
+    document.body.classList.remove('noScroll');
+    if(panelAutoPaused && gameState.running) setPaused(false);
+    panelAutoPaused = false;
+    lastTime = 0;                                      // 再開直後のdtが大きくならないように
+  }
+  document.querySelectorAll('.panelOverlay').forEach(ov=>{
+    ov.addEventListener('click', (e)=>{ if(e.target===ov) closePanel(); });                 // 背景タップで閉じる
+    ov.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', closePanel));
+  });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closePanel(); });
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && audioCtx) ensureAudio(); });
+  document.getElementById('muteBtn').addEventListener('click', ()=>{
+    muted = !muted;
+    document.getElementById('muteBtn').textContent = muted ? '🔇 ミュート' : '🔊 音声';
+    if(!muted){ ensureAudio(); sfxTap(); }          // 戻したときに確認音
+  });
+  pauseBtnEl.addEventListener('click', ()=>{
+    if(!gameState.running) return;
+    setPaused(!gameState.paused);
+  });
+
+  // ==================== リファレンスパネル ====================
+  const refBtn = document.getElementById('refBtn');
+  const refPanel = document.getElementById('refPanel');
+  const refTable = document.getElementById('refTable');
+  function buildRefTable(){
+    let head = '<tr><td><b>菌＼薬</b></td>' + WEAPONS.map(w=>`<td class="refDrug"><b>${w.abbr.replace('CZA+AZT','CZA<br>+AZT').replace('IPM/CS','IPM')}</b><br><span class="tierDot ${w.tier}"></span></td>`).join('') + '</tr>';
+    let rows = '';
+    Object.keys(ENEMY_DEFS).forEach(key=>{
+      const def = ENEMY_DEFS[key];
+      const cells = WEAPONS.map(w=>{
+        const eff = def.susceptibleTo.includes(w.id), best = def.bestDrugs.includes(w.id);
+        return `<td class="${best?'best':(eff?'ok':'no')}">${best?'◎':(eff?'○':'×')}</td>`;
+      }).join('');
+      rows += `<tr><td><b>${def.label}</b></td>${cells}</tr>`;
+    });
+    rows += `<tr><td><b>ASB</b><br>(無症候性細菌尿)</td><td colspan="${WEAPONS.length}" style="text-align:left"><span class="ok">どの抗菌薬も使わない。経過観察が正解</span></td></tr>`;
+    refTable.innerHTML = head + rows +
+      `<tr><td colspan="${WEAPONS.length+1}" style="text-align:left;font-size:0.58rem;color:var(--text-dim);line-height:1.5">◎=適正使用　○=有効（広域すぎる）　×=無効　／　薬の下の点：<span style="color:var(--access)">●</span>Access　<span style="color:var(--watch)">●</span>Watch　<span style="color:var(--reserve)">●</span>Reserve<br>※学習用に単純化した表です。実際の治療は感受性検査とガイドラインに従ってください。</td></tr>`;
+  }
+  buildRefTable();
+  refBtn.addEventListener('click', ()=> openPanel(refPanel));
+
+  // ==================== ショップパネル ====================
+  const shopBtn = document.getElementById('shopBtn');
+  const shopPanel = document.getElementById('shopPanel');
+  const shopBody = document.getElementById('shopBody');
+  const shopScoreEl = document.getElementById('shopScore');
+  function buildShopPanel(){
+    const keepScroll = shopBody.scrollTop;
+    let html = `<div style="font-size:0.68rem;margin-bottom:6px;color:var(--text-dim)">威力(★1〜★5)が上がるとダメージが増え、HPの高い耐性菌も倒しやすくなる。連射(Lv1〜Lv5)は1段階ごとに発射間隔が短くなる。どちらも保有スコアで別々に強化できる。</div>`;
+    WEAPONS.forEach(w=>{
+      const unlocked = isWeaponUnlocked(w.id);
+      if(!unlocked){
+        html += `<div class="shopRow">
+          <div class="info"><b>${w.abbr} <span style="color:var(--gold)">未解禁</span></b><span>${w.full}（ASC:${w.asc} ${w.spectrum}）</span></div>
+          <div class="btns"><button disabled>Wave${w.unlockWave}で解禁</button></div>
+        </div>`;
+        return;
+      }
+      const powCost = w.level<MAX_WEAPON_LEVEL ? SHOP_COSTS[w.level-1] : null;
+      const spdCost = w.speedLevel<MAX_SPEED_LEVEL ? SPEED_SHOP_COSTS[w.speedLevel-1] : null;
+      const statText = `威力 ${weaponDamage(w)}／連射 Lv${w.speedLevel}(${fireInterval(w).toFixed(2)}秒)／ASC:${w.asc} ${w.spectrum}`;
+      const powBtn = powCost!==null
+        ? `<button data-w="${w.id}" data-kind="power" ${gameState.score<powCost?'disabled':''}>威力強化<small>${powCost}p</small></button>`
+        : `<button disabled>威力 MAX<small>★${MAX_WEAPON_LEVEL}</small></button>`;
+      const spdBtn = spdCost!==null
+        ? `<button class="speedBtn" data-w="${w.id}" data-kind="speed" ${gameState.score<spdCost?'disabled':''}>連射強化<small>${spdCost}p</small></button>`
+        : `<button disabled>連射 MAX<small>Lv${MAX_SPEED_LEVEL}</small></button>`;
+      html += `<div class="shopRow">
+        <div class="info"><b>${w.abbr} <span style="color:var(--gold)">${starsStr(w.level)}</span> <span style="color:var(--warn)">⚡Lv${w.speedLevel}</span></b><span>${w.full}（${statText}）</span></div>
+        <div class="btns">${powBtn}${spdBtn}</div>
+      </div>`;
+    });
+    shopBody.innerHTML = html;
+    shopBody.scrollTop = keepScroll;                 // 購入後も同じ位置を保つ
+    shopScoreEl.textContent = `所持 ${gameState.score}p`;
+    shopBody.querySelectorAll('button[data-w]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const w = WMAP[btn.getAttribute('data-w')];
+        const kind = btn.getAttribute('data-kind');
+        if(kind==='power'){
+          if(w.level>=MAX_WEAPON_LEVEL) return;
+          const cost = SHOP_COSTS[w.level-1];
+          if(gameState.score<cost) return;
+          gameState.score -= cost; w.level++;
+        } else if(kind==='speed'){
+          if(w.speedLevel>=MAX_SPEED_LEVEL) return;
+          const cost = SPEED_SHOP_COSTS[w.speedLevel-1];
+          if(gameState.score<cost) return;
+          gameState.score -= cost; w.speedLevel++;
+        } else return;
+        updateHUD(); renderWeaponButtons(); buildShopPanel();
+      });
+    });
+  }
+  function openShop(){
+    buildShopPanel();
+    openPanel(shopPanel);
+  }
+  function closeShop(){
+    if(openPanelEl===shopPanel) closePanel();
+  }
+  shopBtn.addEventListener('click', ()=>{
+    if(shopPanel.classList.contains('show')) closeShop(); else openShop();
+  });
+
+  // ==================== 図鑑パネル・モーダル ====================
+  const dexBtn = document.getElementById('dexBtn');
+  const dexPanel = document.getElementById('dexPanel');
+  const charModal = document.getElementById('charModal');
+  const charBody = document.getElementById('charBody');
+  function renderCharChips(container){
+    container.innerHTML = '';
+    ALL_CHAR_IDS.forEach(id=>{
+      const chip = document.createElement('button');
+      chip.className = 'charChip';
+      chip.textContent = chipLabel(id);
+      chip.addEventListener('click', ()=> openCharModal(id));
+      container.appendChild(chip);
+    });
+  }
+  renderCharChips(document.getElementById('charGridAbout'));
+
+  function renderGroupModal(title, gramTag, members, desc){
+    const canvasesHtml = members.map((mid,i)=>`
+        <div style="text-align:center;">
+          <canvas id="dexGroupCanvas${i}" width="140" height="140" style="width:76px;height:76px;display:block;margin:0 auto;"></canvas>
+          <div style="font-size:0.56rem;margin-top:3px;line-height:1.3;max-width:84px;">${ENEMY_DEFS[mid].label}</div>
+        </div>`).join('');
+    const memberNotes = members.map(mid=>{
+      const def = ENEMY_DEFS[mid];
+      const eff = def.susceptibleTo.map(dd=> def.bestDrugs.includes(dd) ? `<b class="best">${WMAP[dd].abbr}◎</b>` : WMAP[dd].abbr).join(' / ');
+      return `<div class="memberNote"><b>${def.fullLabel}</b>：${CHAR_FLAVOR[mid]}<br><span style="color:var(--text-dim)">有効：</span>${eff}</div>`;
+    }).join('');
+    charBody.innerHTML = `
+      <h3>${title}</h3>
+      <div class="lat">${gramTag}</div>
+      <div style="display:flex; justify-content:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">${canvasesHtml}</div>
+      <p>${desc}</p>
+      ${memberNotes}
+      <div class="drugline">◎=第一選択（適正使用）、他は単に有効（学習用に単純化）</div>
+    `;
+    members.forEach((mid,i)=>{
+      const c = document.getElementById('dexGroupCanvas'+i).getContext('2d');
+      c.clearRect(0,0,140,140);
+      DRAW_FNS[ENEMY_DEFS[mid].drawFn](c, 70, 74, DEX_SIZE[mid] || 34, 0);
+    });
+    charModal.classList.add('show');
+  }
+  function renderEnzymeModal(){
+    charBody.innerHTML = `
+      <h3>β-ラクタマーゼ早見表</h3>
+      <div class="lat">Ambler分類（A・B・C）</div>
+      <table class="enzTable">
+        <tr><th>機構</th><th>分解</th><th>阻害</th><th>治療の考え方</th></tr>
+        <tr><td>ペニシリナーゼ<br>A: TEM-1, SHV-1</td><td>ペニシリン系</td><td>クラブラン酸・タゾバクタム・アビバクタム</td><td>ABPCは×。CEZは○</td></tr>
+        <tr><td>ESBL<br>A: CTX-M, 他</td><td>ペニシリン、第1〜4世代セフェム、アズトレオナム（セファマイシン・カルバペネムは分解しにくい）</td><td>クラブラン酸・タゾバクタム・アビバクタム</td><td>カルバペネムが基本。セフェピムは避ける</td></tr>
+        <tr><td>AmpC<br>C: 染色体の過剰発現、CMY</td><td>ペニシリン、第1〜3世代セフェム、セファマイシン</td><td>アビバクタム（クラブラン酸では阻害されない）</td><td>セフェピム（分解されにくい）、カルバペネム</td></tr>
+        <tr><td>KPC・GES-5<br>A: カルバペネマーゼ</td><td>上記＋カルバペネム</td><td>アビバクタム</td><td>CZA単剤</td></tr>
+        <tr><td>IMP-6・NDM-1<br>B: メタロ（Zn²⁺）</td><td>アズトレオナム以外のほぼ全β-ラクタム</td><td>アビバクタムは阻害できない（EDTAで阻害）</td><td>CZA＋AZT（CFDCも有効）。ESBL/AmpCの併産に注意</td></tr>
+      </table>
+      <p class="memberNote">※ IMP-6は「イミペネム感性・メロペネム耐性」（ISMR型）というすり抜けを示す。検査でイミペネム感性に見えても、MBL産生菌の治療に使える根拠は確立していない。<br>※ KPC-1は後の配列修正でKPC-2と同一と判明した。</p>
+    `;
+    charModal.classList.add('show');
+  }
+  function openCharModal(id){
+    if(id==='ENZ'){ renderEnzymeModal(); return; }
+    if(GROUP_DEFS[id]){
+      const g = GROUP_DEFS[id];
+      renderGroupModal(g.title, g.gramTag, g.members, g.desc);
+      return;
+    }
+    const d = charDef(id);
+    charBody.innerHTML = `
+      <canvas id="charCanvas" width="280" height="280" style="width:140px;height:140px;margin:0 auto 8px;display:block;"></canvas>
+      <h3>${d.fullLabel}</h3>
+      <div class="lat">${d.gramTag || ''}</div>
+      <p></p>
+      <div class="drugline"></div>
+    `;
+    const charCanvas = charBody.querySelector('canvas');
+    const cctx = charCanvas.getContext('2d');
+    cctx.clearRect(0,0,charCanvas.width,charCanvas.height);
+    cctx.save(); cctx.scale(2,2);
+    DRAW_FNS[d.drawFn](cctx, 70, 78, DEX_SIZE[id] || 34, 0);
+    cctx.restore();
+    charBody.querySelector('p').textContent = d.desc || '';
+    charBody.querySelector('.drugline').innerHTML = '<b>有効な抗菌薬：なし（抗菌薬は使用しない）</b>';
+    charModal.classList.add('show');
+  }
+  document.getElementById('charModalClose').addEventListener('click', ()=> charModal.classList.remove('show'));
+  charModal.addEventListener('click', (e)=>{ if(e.target===charModal) charModal.classList.remove('show'); });
+  const dexBody = document.getElementById('dexBody');
+  function openDex(){
+    dexBody.innerHTML = '<div style="font-size:0.68rem;margin-bottom:6px;color:var(--text-dim)">キャラクターをタップして詳細を見る</div>';
+    const grid = document.createElement('div');
+    grid.className = 'charGrid';
+    renderCharChips(grid);
+    dexBody.appendChild(grid);
+    openPanel(dexPanel);
+  }
+  function closeDex(){ if(openPanelEl===dexPanel) closePanel(); }
+  dexBtn.addEventListener('click', ()=>{
+    if(openPanelEl===dexPanel) closeDex(); else openDex();
+  });
+
+  // ==================== エントリータブ ====================
+  document.querySelectorAll('.entryTabBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.entryTabBtn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.entryContent .pane').forEach(p=>p.classList.remove('show'));
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.dataset.tab).classList.add('show');
+    });
+  });
+
+  // ==================== 開始・リトライ ====================
+  function resetState(){
+    gameState = {
+      running:false, paused:false, wave:1, score:0, hp:100,
+      selectedWeapon:'ABPC', enemies:[], particles:[], floatTexts:[],
+      spawnTimer:0, spawnedThisWave:0,
+    };
+    shortageSet = new Set();
+    totalJudgments=0; goodJudgments=0; watchJudgments=0; reserveJudgments=0;
+    totalASC=0; totalDoses=0; ineffectiveCount=0;
+    killCounts={}; drugUseCounts={}; weaponLockTimer=0;
+    seenTypes = new Set(); shownHints = new Set();
+    WEAPONS.forEach(w=>{ w.level=1; w.speedLevel=1; });
+    resetFlowQueue();
+    renderWeaponButtons(); updateHUD(); updateAwareGauge();
+    closePanel(); clearToasts();
+    bullets = []; pointerDown = false; fireCd = 0; playerX = targetX = W/2;
+    setPaused(false);
+    prewarmSprites();
+  }
+  document.getElementById('startBtn').addEventListener('click', ()=>{
+    ensureAudio();
+    document.getElementById('startOverlay').style.display = 'none';
+    resetState();
+    gameState.running = true; lastTime = 0;
+    enqueueWaveIntro(1);
+  });
+  document.getElementById('retryBtn').addEventListener('click', ()=>{
+    ensureAudio();
+    document.getElementById('gameOverOverlay').style.display = 'none';
+    resetState();
+    gameState.running = true; lastTime = 0;
+    enqueueWaveIntro(1);
+  });
+
+  buildShopPanel();
+  renderWeaponButtons();
+  updateHUD();
+  updateAwareGauge();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
