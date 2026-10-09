@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>緑膿菌のクオラムセンシングと RhlR｜細菌学実習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f5f8f7; --surface:#ffffff; --fg:#14201d; --muted:#51615c; --line:#d3deda;
+  --accent:#0b6b5c; --accent-fg:#ffffff; --warn:#9c2f2f; --code-bg:#eef3f1;
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme: light dark;
+}
+body.p-gas{--accent:#a63d2f}
+body.p-qs{--accent:#3a4fb0}
+body.p-pur{--accent:#8a5a00}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0f1715;--surface:#16211e;--fg:#e6efec;--muted:#9db0aa;--line:#2b3b37;--accent:#5cc9b3;--accent-fg:#06201a;--warn:#ee9b9b;--code-bg:#1b2a26}
+  body.p-gas{--accent:#f1a597}
+  body.p-qs{--accent:#a9b6ff}
+  body.p-pur{--accent:#e8b765}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.85}
+.wrap{max-width:900px;margin-inline:auto;padding-inline:16px}
+i{font-style:italic}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.soft{background:color-mix(in srgb,var(--accent) 11%,var(--surface))}
+/* site bar */
+.site{background:var(--bg);border-bottom:1px solid var(--line)}
+.site .wrap{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding-block:8px}
+.brand{font-weight:700;text-decoration:none;color:var(--fg);font-size:15px;margin-right:auto}
+.site nav{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+.site nav a{font-size:13px;padding:2px 10px;border:1px solid var(--line);border-radius:99px;text-decoration:none;color:var(--fg);background:var(--surface);white-space:nowrap}
+.site nav a[aria-current="page"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.site nav a:hover{border-color:var(--accent)}
+/* hero */
+.hero{padding-block:34px 8px}
+.kicker i{text-transform:none}
+.kicker{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--accent)}
+h1{font-size:clamp(26px,5vw,38px);line-height:1.3;margin:6px 0 12px;text-wrap:balance}
+.lead{color:var(--muted);margin:0;max-width:66ch}
+/* in-page nav */
+.pnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 0px);z-index:10;background:var(--bg);border-bottom:1px solid var(--line);margin-top:18px}
+.pnav .wrap{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding-block:7px}
+.pnav a.chip{font-size:13px;padding:1px 10px;border:1px solid var(--line);border-radius:99px;text-decoration:none;color:var(--fg);background:var(--surface);white-space:nowrap}
+.pnav a.chip:hover{border-color:var(--accent);color:var(--accent)}
+.pnav .tools{margin-left:auto;display:flex;gap:6px}
+button{font-family:inherit;font-size:13px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:3px 10px}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+/* sections */
+main{padding-bottom:30px}
+section{padding-top:34px;scroll-margin-top:92px}
+h2{font-size:23px;line-height:1.4;margin:0 0 4px;text-wrap:balance;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+h2 .sec{font-family:var(--f-mono);font-size:14px;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 8px}
+h3{font-size:18px;margin:22px 0 4px;text-wrap:balance}
+h4{font-size:15px;margin:14px 0 2px;color:var(--accent)}
+.sec-note{color:var(--muted);font-size:14px;margin:0 0 14px;max-width:70ch}
+p{margin:10px 0;max-width:72ch}
+ul,ol{margin:8px 0;padding-left:1.4em;max-width:72ch}
+li{margin:4px 0}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.mono{font-family:var(--f-mono);font-size:13px}
+/* QA */
+details.q{background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:8px}
+details.q[open]{border-color:var(--accent)}
+details.q>summary{cursor:pointer;list-style:none;display:flex;gap:10px;align-items:baseline;padding:10px 14px;font-weight:700}
+details.q>summary::-webkit-details-marker{display:none}
+details.q>summary::after{content:"＋";margin-left:auto;color:var(--accent);font-weight:400;flex:none;padding-left:8px}
+details.q[open]>summary::after{content:"－"}
+.qid{font-family:var(--f-mono);font-size:13px;color:var(--accent);flex:none;font-weight:600}
+.qt{min-width:0;flex:1}
+.ans{padding:2px 16px 14px;border-top:1px dashed var(--line)}
+.ans p,.ans ul,.ans ol{max-width:none}
+a.ref{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-decoration:none;white-space:nowrap;margin-left:1px}
+a.ref:hover{color:var(--accent);text-decoration:underline}
+/* callouts */
+.callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));padding:9px 14px;border-radius:0 6px 6px 0;margin:12px 0;font-size:15px;max-width:none}
+.callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--surface))}
+.callout p{margin:4px 0}
+/* tables */
+.tw{overflow-x:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px;line-height:1.65}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:color-mix(in srgb,var(--accent) 12%,var(--surface));font-size:13px;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.card h3{margin:0 0 4px;font-size:16px}
+.card p{margin:6px 0;font-size:14px;color:var(--muted)}
+a.card{text-decoration:none;color:var(--fg);display:block}
+a.card:hover{border-color:var(--accent)}
+a.card .go{color:var(--accent);font-size:13px;font-weight:700}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:0 7px;border-radius:3px;background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--accent);line-height:1.8}
+/* flow */
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch;margin:14px 0}
+.flow .st{flex:1 1 130px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:14px;min-width:0}
+.flow .st b{display:block;color:var(--accent);font-size:13px}
+.flow .ar{align-self:center;color:var(--muted)}
+/* code box */
+.code{position:relative;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:10px 74px 10px 12px;margin:8px 0;font-family:var(--f-mono);font-size:13px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap}
+.code button{position:absolute;top:6px;right:6px;font-size:12px;padding:1px 8px}
+/* open questions */
+.open{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:10px 0}
+.open h3{margin:0 0 4px;font-size:16px}
+.open .why{color:var(--muted);font-size:14px;margin:2px 0 6px}
+.open .hint{font-size:14px;margin:4px 0}
+.open .lnk{font-size:13px}
+.open .num{font-family:var(--f-mono);color:var(--accent);font-size:13px;margin-right:6px}
+/* tool */
+.tool{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:12px 0}
+.tool label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+.tool input[type=text],.tool select{width:100%;font:inherit;font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.tool .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 12px}
+.tool .chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--fg);margin-top:8px}
+.tool .out{margin-top:12px}
+.tool .out h4{margin:10px 0 2px}
+/* quiz / checklist (purification page) */
+.question{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:10px 0}
+.question h3{font-size:16px;margin:0 0 8px}
+.choices{display:grid;gap:6px}
+.choices button{font-size:15px;text-align:left;padding:8px 12px}
+.feedback{margin-top:8px;font-weight:700;min-height:1.5em;font-size:15px}
+.feedback.good{color:var(--accent)}
+.feedback.bad{color:var(--warn)}
+.checklist{display:grid;gap:6px}
+.checklist label{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);padding:8px 12px;border-radius:6px;font-size:15px}
+.checklist input{margin-top:6px}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0}
+.bar div{height:100%;width:0;background:var(--accent);transition:width .2s}
+.choices button.ok{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.choices button.ng{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--surface))}
+.flow .st.hl{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+/* svg */
+svg text{fill:var(--fg);font-family:var(--f-body)}
+svg .bx{fill:var(--surface);stroke:var(--accent);stroke-width:1.5}
+svg .bx2{fill:color-mix(in srgb,var(--accent) 12%,var(--surface));stroke:var(--accent);stroke-width:1.5}
+svg .ln{stroke:var(--muted);stroke-width:1.5;fill:none}
+svg .bar-f{fill:var(--accent)}
+svg .gr{stroke:var(--line);stroke-width:1}
+svg .sm{font-size:12px;fill:var(--muted)}
+/* refs / footer */
+.refs{font-size:14px;color:var(--muted)}
+.refs ol{padding-left:2.2em;max-width:none}
+.refs li{margin:5px 0;overflow-wrap:anywhere}
+footer{margin-top:36px;border-top:1px solid var(--line);background:var(--surface)}
+footer .wrap{padding-block:18px 28px;font-size:13px;color:var(--muted);line-height:1.8}
+footer p{margin:0 0 6px;max-width:none}
+@media (max-width:560px){.pnav .tools{margin-left:0}.brand{width:100%}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bar div{transition:none}}
+@media print{.site,.pnav,.tools,.code button{display:none!important}details.q{break-inside:avoid}}
+</style>
+</head>
+<body class="p-qs">
+<header class="site"><div class="wrap"><a class="brand" href="index.html">細菌学実習 事前学習</a><nav aria-label="ページ"><a href="index.html">調べ方ガイド</a><a href="auris.html"><i>C. auris</i></a><a href="gas.html">GAS</a><a href="qs.html" aria-current="page">QS・RhlR</a><a href="purification.html">物質精製</a></nav></div></header>
+<div class="wrap hero">
+<div class="kicker">THEME 3 · 緑膿菌のクオラムセンシング：RhlR 変異体の評価</div>
+<h1>緑膿菌のクオラムセンシングと RhlR を、実験の裏側まで知る</h1>
+<p class="lead">なぜレポーターアッセイで評価するのか。なぜ緑膿菌ではなく大腸菌を使うのか。——その理由を言える状態を目指す。</p>
+</div>
+<div class="pnav"><div class="wrap"><a class="chip" href="#A">緑膿菌</a><a class="chip" href="#B">耐性・病原因子</a><a class="chip" href="#C">QS</a><a class="chip" href="#D">RhlR</a><a class="chip" href="#E">評価法</a><a class="chip" href="#F">進化・臨床</a><a class="chip" href="#G">阻害薬</a><a class="chip" href="#open">調べてみよう</a><a class="chip" href="#refs">文献</a><span class="tools"><button type="button" id="open-all">すべて開く</button><button type="button" id="close-all">すべて閉じる</button></span></div></div>
+<main class="wrap">
+<section id="intro"><h2><span class="sec">はじめに</span>この資料の使い方</h2><p class="sec-note">完成した教科書ではありません。骨格だけを示し、「次に調べる」問いを残しています。</p><div class="cards">
+<div class="card"><h3>1. まず自分で答える</h3><p>質問を開く前に、紙に1〜2行で答えを書く。</p></div>
+<div class="card"><h3>2. 答えと比べる</h3><p>数字・断定は [番号] の文献で確認する。</p></div>
+<div class="card"><h3>3. 問いを持ち帰る</h3><p>特に <a href="#E">E章</a> の『なぜレポーターアッセイか』『なぜ大腸菌か』を、自分の言葉で説明できるようにする。</p></div></div><div class="callout warn"><p><b>注意：</b>本文は AI 検索サービス（OpenEvidence）の回答の整理です。文献の実在・数値・解釈は原典で確認してください。E章の一部（大腸菌の性質、安全区分など）は一般的知識に基づく説明で、文献での確認が必要な箇所を明記してあります。</p></div><div class="callout"><p><b>実習とのつながり：</b>実習では <i>P. aeruginosa</i> の RhlR 変異体を評価します。RhlR とは何か、変異で何が変わりうるか、評価系が『何を測っていて何を測っていないか』を理解することが目的です。実験デザインの詳細（どの株・どのレポーターを使うか）は指導教員の指示に従ってください。</p></div></section>
+<section id="A"><h2><span class="sec">A</span>緑膿菌の基本</h2><details class="q" id="A1"><summary><span class="qid">A1</span><span class="qt"><i>P. aeruginosa</i>とは何か。どこにいる菌か。</span></summary><div class="ans"><p>グラム陰性桿菌、ブドウ糖非発酵、オキシダーゼ陽性。青緑色の<b>ピオシアニン</b>と黄緑色の<b>ピオベルジン</b>を産生する日和見病原体。1882年に兵士の創傷包帯から初めて分離され、種小名 <i>aeruginosa</i> はラテン語の aerūgō（緑青）に由来する。</p>
+<p>『どこにでもいる菌』とされてきたが、近年の系統的解析では、<b>未汚染の自然環境での検出は意外に少なく（約12%）</b>、動物の糞便・堆肥（約32%）など人や動物の活動の影響が強い環境で多い。下水や都市河川など人為的に汚染された水が重要なリザーバー。<a class="ref" href="#ref-1">[1]</a></p>
+<div class="callout"><p><b>次に調べる：</b>ピオシアニンとピオベルジンの化学的な違いは？ 色素の産生は菌にとってどんな意味があるか（ヒント：酸化還元、鉄獲得）。『オキシダーゼ陽性』『ブドウ糖非発酵』を確かめる試験を、実際にどうやるか。</p></div></div></details>
+<details class="q" id="A2"><summary><span class="qid">A2</span><span class="qt"><i>P. aeruginosa</i>はどんな患者に、どんな感染症を起こすか。</span></summary><div class="ans"><p>健常人にはまれで、<b>免疫不全患者</b>に急性・慢性の感染症を起こす。<a class="ref" href="#ref-1">[1]</a><a class="ref" href="#ref-2">[2]</a></p><div class="tw"><table><thead><tr><th>感染症</th><th>主な背景</th><th>ポイント</th></tr></thead><tbody><tr><td>院内肺炎・人工呼吸器関連肺炎</td><td>ICU、人工呼吸、広域抗菌薬使用歴</td><td>VAP の約10〜26%、死亡率が高い</td></tr><tr><td>菌血症・敗血症</td><td>好中球減少、カテーテル、重症熱傷</td><td>敗血症性ショックに進展</td></tr><tr><td>嚢胞性線維症（CF）の慢性肺感染</td><td>CF</td><td>ムコイド型、生涯にわたる感染</td></tr><tr><td>熱傷創感染</td><td>熱傷</td><td>バイオフィルム、MDR 株</td></tr><tr><td>複雑性尿路感染</td><td>尿道カテーテル</td><td>器具上のバイオフィルム</td></tr><tr><td>角膜炎</td><td>コンタクトレンズ、外傷</td><td>急速な角膜破壊</td></tr></tbody></table></div><div class="callout"><p><b>次に調べる：</b>『日和見感染』とは何か。なぜ免疫不全の人で重症化するのか。CF で <i>P. aeruginosa</i> が定着する理由は？（粘液、CFTR）</p></div></div></details>
+<details class="q" id="A3"><summary><span class="qid">A3</span><span class="qt">日本の状況：MDRP とは何か。DTR-P とは何か。</span></summary><div class="ans"><p>日本の <b>MDRP</b> は『カルバペネム系、アミカシン、フルオロキノロン系の<b>3系統すべてに非感受性</b>の緑膿菌』と定義され、感染症法の5類感染症（定点把握）。NESID（1999年）と JANIS（2000年）の2つのサーベイランスがある。報告数は2003年のピーク以降減少したが、真の減少か過小評価かは評価が分かれる。2023年のAMRアクションプランでは、<b>緑膿菌のカルバペネム耐性率を2027年までに3%以下</b>とする目標が設定された。<a class="ref" href="#ref-3">[3]</a></p>
+<p><b>DTR-P（difficult-to-treat resistance）</b>は2018年に提唱された概念で、ピペラシリン・タゾバクタム、セフタジジム、セフェピム、アズトレオナム、メロペネム、イミペネム・シラスタチン、シプロフロキサシン、レボフロキサシンの<b>すべてに非感受性</b>と定義される。治療選択肢としてセフトロザン／タゾバクタム、セフタジジム／アビバクタム、イミペネム／レレバクタム、セフィデロコルがある（MBL 産生株にはセフィデロコルが最も安定）。<a class="ref" href="#ref-4">[4]</a><a class="ref" href="#ref-5">[5]</a><a class="ref" href="#ref-2">[2]</a></p>
+<div class="callout"><p><b>次に調べる：</b>MDRP と DTR-P は『何を基準に』耐性と呼んでいるか。同じ菌が両方に当たることはあるか。WHO の優先病原体リストでカルバペネム耐性緑膿菌の分類が2017年と2024年で変わったのはなぜか。</p></div></div></details>
+</section>
+<section id="B"><h2><span class="sec">B</span>耐性・病原因子・バイオフィルム</h2><details class="q" id="B1"><summary><span class="qid">B1</span><span class="qt"><i>P. aeruginosa</i>の薬剤耐性機序を整理せよ。</span></summary><div class="ans"><p>低い外膜透過性と多数の多剤排出ポンプにより<b>本質的に多剤耐性</b>。</p>
+<ul><li><b>OprD ポーリンの欠失</b>：イミペネムの取り込み経路が遮断され、カルバペネム耐性の主要機序。</li>
+<li><b>MexAB-OprM などの排出ポンプ</b>：キノロン、テトラサイクリン、クロラムフェニコール、マクロライド、β-ラクタムなどの本質的耐性。MexR、NalC、NalD の変異で過剰発現。MexAB-OprM は<b>C4-HSL などの QS シグナル分子の排出</b>にも関与する。</li>
+<li><b>AmpC（PDC）</b>：染色体性セファロスポリナーゼ。AmpD 不活化、PBP4 低下などで過剰発現。</li>
+<li><b>メタロ-β-ラクタマーゼ（MBL）</b>：VIM、IMP、NDM など、獲得性カルバペネマーゼ。</li></ul>
+<p><a class="ref" href="#ref-5">[5]</a><a class="ref" href="#ref-6">[6]</a></p>
+<div class="callout"><p><b>次に調べる：</b>排出ポンプが『抗菌薬』と『QSシグナル』の両方を排出するとはどういうことか。RhlR の評価で、この性質が結果に影響する場面はあるか？（→ E章）</p></div></div></details>
+<details class="q" id="B2"><summary><span class="qid">B2</span><span class="qt">主な病原因子と、その臨床像は？</span></summary><div class="ans"><div class="tw"><table><thead><tr><th>病原因子</th><th>機序</th><th>臨床像</th></tr></thead><tbody><tr><td>Exotoxin A</td><td>EF-2 を ADP リボシル化し、タンパク質合成を阻害</td><td>組織壊死、重症度</td></tr><tr><td>エラスターゼ（LasB）</td><td>細胞外マトリックス分解、線毛クリアランス障害</td><td>組織侵入・播種</td></tr><tr><td>ピオシアニン</td><td>レドックス活性フェナジン</td><td>宿主組織傷害にも寄与</td></tr><tr><td>ラムノリピド</td><td>上皮・免疫細胞への細胞毒性</td><td>バイオフィルム・運動性</td></tr><tr><td>III型分泌装置：ExoS</td><td>ADP リボシルトランスフェラーゼ＋GAP の二機能</td><td>浸潤性株</td></tr><tr><td>III型分泌装置：ExoU</td><td>パタチン様ホスホリパーゼ A<sub>2</sub></td><td>ICU・熱傷での高病原性（ExoS と相互排他的）</td></tr></tbody></table></div><p class="small muted"><a class="ref" href="#ref-1">[1]</a><a class="ref" href="#ref-2">[2]</a><a class="ref" href="#ref-7">[7]</a></p><div class="callout"><p><b>次に調べる：</b>III型分泌装置は、どうやってエフェクターを宿主細胞の中に注入するのか（注射針の構造）。<b>QS が制御する病原因子</b>と<b>QS とは別に制御される病原因子</b>を、表の中で分けてみよう。</p></div></div></details>
+<details class="q" id="B3"><summary><span class="qid">B3</span><span class="qt">バイオフィルムはどう形成され、なぜ抗菌薬が効きにくいのか。</span></summary><div class="ans"><p>5段階モデル：<b>可逆的付着 → 不可逆的付着 → 成熟I（クラスター） → 成熟II（微小コロニー） → 分散</b>。発達は <b>c-di-GMP シグナル</b>と<b>クオラムセンシング</b>の両方で制御される。マトリックスの主成分は<b>アルギン酸、Psl、Pel</b>の3種の多糖。ムコイド型（アルギン酸過剰産生）は CF 慢性感染株の特徴で、<i>mucA</i> 変異に起因することが多い。バイオフィルム内の細胞は表現型が不均一で、増殖が遅く、抗菌薬耐性・慢性感染を促進する。<a class="ref" href="#ref-8">[8]</a><a class="ref" href="#ref-1">[1]</a></p>
+<div class="callout"><p><b>次に調べる：</b>c-di-GMP とは何か（環状ジヌクレオチド）。浮遊状態の菌とバイオフィルム内の菌では、MIC はどう違うか。『MBEC』という指標がある。調べてみよう。</p></div></div></details>
+</section>
+<section id="C"><h2><span class="sec">C</span>クオラムセンシング</h2><details class="q" id="C1"><summary><span class="qid">C1</span><span class="qt">クオラムセンシング（QS）とは何か。</span></summary><div class="ans"><p><b>菌の密度に応じて遺伝子発現を変える細胞間コミュニケーション</b>。菌が自分でシグナル分子（オートインデューサー）を作って分泌し、密度が上がると濃度が閾値を超え、同族の受容体に結合して転写を変える。多くのグラム陰性菌では、<b>LuxI 型合成酵素が AHL（アシルホモセリンラクトン）を合成し、LuxR 型受容体がそれを認識</b>して正のフィードバックをかける。<a class="ref" href="#ref-1">[1]</a></p>
+<div class="callout"><p><b>次に調べる：</b><i>Vibrio fischeri</i> の発光が QS の原点とされる。その発見の経緯を調べよう。『密度依存的』なのに、なぜ『1細胞』でも濃度が上がることがあるのか（拡散制限、閉じ込め）。QS を一言で説明するとき、『菌が相談している』は正確か？</p></div></div></details>
+<details class="q" id="C2"><summary><span class="qid">C2</span><span class="qt"><i>P. aeruginosa</i> の QS システム（Las、Rhl、PQS、IQS）を整理せよ。</span></summary><div class="ans"><p>ゲノムの約10%の転写が QS で調節される。<a class="ref" href="#ref-1">[1]</a><a class="ref" href="#ref-9">[9]</a></p><div class="tw"><table><thead><tr><th>システム</th><th>合成酵素</th><th>シグナル分子</th><th>受容体</th><th>主な役割</th></tr></thead><tbody><tr><td>Las</td><td>LasI</td><td>3-oxo-C12-HSL</td><td>LasR</td><td>階層の頂点。<i>rhlR</i>、<i>rhlI</i>、<i>pqsR</i> を活性化</td></tr><tr><td>Rhl</td><td>RhlI</td><td>C4-HSL</td><td>RhlR</td><td>プロテアーゼ、ラムノリピド、ピオシアニンなど、ほとんどの QS 依存性病原因子の最終的な実行役</td></tr><tr><td>PQS</td><td>PqsABCD（HHQ）、PqsH（HHQ→PQS）</td><td>PQS、HHQ</td><td>PqsR（MvfR）</td><td>鉄飢餓応答。PqsE（RhlR と直接相互作用し、病原性に必須）</td></tr><tr><td>IQS</td><td>（未解明な点が多い）</td><td>IQS</td><td>IqsR</td><td>リン酸飢餓条件で重要とされる</td></tr></tbody></table></div><div class="callout"><p><b>次に調べる：</b>C4-HSL と 3-oxo-C12-HSL は、アシル鎖の長さと酸素の有無でどう違うか。構造式を描き、膜を通りやすいのはどちらかを予想しよう。PQS はなぜ AHL ではない『キノロン』なのか？</p></div></div></details>
+<details class="q" id="C3"><summary><span class="qid">C3</span><span class="qt">QS の階層構造は固定されているのか。</span></summary><div class="ans"><p>古典的モデルでは <b>Las が頂点</b>で、Rhl と PQS の両方を活性化する。LasR–3-oxo-C12-HSL は <i>rhlR</i>、<i>rhlI</i>、<i>pqsR</i> の転写を直接活性化し、PQS 系は RhlI 発現を促して Rhl 系を増強する一方、Rhl 系は <i>pqsR</i>・<i>pqs</i> オペロンを抑制する。</p>
+<p>ただし、これは実験室標準株（PAO1、PA14）での知見で、<b>臨床分離株では普遍的でない</b>。<b>LasR 不活化変異を持つ株</b>が一定数あり、そこでは回路が再配線されて LasR 非依存的に Rhl 系が動き、ラムノリピド、HCN、エラスターゼ、ピオシアニンなどの発現が維持される。<b>リン酸飢餓条件では Rhl 系が Las 系に代わって頂点に立つ</b>ことも報告されている。<a class="ref" href="#ref-1">[1]</a><a class="ref" href="#ref-9">[9]</a><a class="ref" href="#ref-10">[10]</a></p>
+<div class="callout"><p><b>次に調べる：</b>『階層』という言葉は何を意味するか。標準株で作った模式図を、臨床分離株にそのまま当てはめてよいか。実習で使う株の背景（PAO1 か PA14 か、それ以外か）は？</p></div></div></details>
+</section>
+<section id="D"><h2><span class="sec">D</span>RhlR とその変異</h2><details class="q" id="D1"><summary><span class="qid">D1</span><span class="qt">RhlR とはどんなタンパク質か。PqsE との関係は？</span></summary><div class="ans"><p>LuxR 型転写因子。N 末端に<b>リガンド結合ドメイン（LBD）</b>、C 末端に<b>DNA 結合ドメイン（らせん-ターン-らせん）</b>を持つ。コグネイトなオートインデューサー <b>C4-HSL</b> が LBD に結合すると構造が変わり、ホモ二量体化と DNA 結合が可能になる。結合部位では Trp68、Tyr64、Asp81、Ser135 などの保存残基が水素結合を形成し、アシル鎖は疎水性ポケットに収まる。ChIP-seq では<b>ゲノム上に40か所の結合部位</b>が同定された。<a class="ref" href="#ref-11">[11]</a><a class="ref" href="#ref-12">[12]</a></p>
+<p><b>PqsE</b>は単なる下流のエフェクターではなく、<b>RhlR の転写因子活性そのものを調節する、シャペロン様の直接的タンパク質間相互作用</b>。結晶構造では、PqsE 二量体と RhlR 二量体がヘテロ四量体を作り、2か所で接触する（主接触領域1は約850 Å<sup>2</sup>）。接触領域1内の変異（RhlR の D41A、E147A、E150A、PqsE の R150A、R172A）はピオシアニン産生をほぼ消失させ、領域2の変異は影響しなかった。<a class="ref" href="#ref-13">[13]</a><a class="ref" href="#ref-14">[14]</a></p>
+<p>大腸菌の異種レポーター解析からは、RhlR が <b>C4-HSL／PqsE の有無で3通りの活性化様式</b>（PqsE 結合のみ、C4-HSL 結合のみ、両方）をとるという段階的な機構が提唱され、プロモーターごとに依存性が異なる：<i>rhlA</i> は PqsE 非依存的、<i>phzM</i> は PqsE 依存的、<i>azeB</i> は PqsE により逆に抑制される。<a class="ref" href="#ref-11">[11]</a><a class="ref" href="#ref-14">[14]</a><a class="ref" href="#ref-15">[15]</a></p>
+<div class="callout"><p><b>次に調べる：</b>『ヘテロ四量体』とは何か。接触面積（Å<sup>2</sup>）で何が分かるか。<b>変異体 RhlR を評価するとき、変異が『C4-HSL 結合』『DNA 結合』『PqsE 結合』『二量体化』のどこに効くか</b>を、どの実験で見分けるか（E章に続く）。</p></div></div></details>
+<details class="q" id="D2"><summary><span class="qid">D2</span><span class="qt">臨床分離株での rhlR 変異はどれくらい多いか。lasR と比べると？</span></summary><div class="ans"><p><b>rhlR 変異は lasR 変異に比べて著しくまれ</b>。2,583株の CF 分離株の大規模シーケンスで <i>lasR</i> 変異は<b>22%</b>、<i>rhlR</i> 系の変異ははるかに少ない。北イランの研究でも、<i>lasI</i> 欠失が複数あったのに対し <i>rhlR</i> 欠失は1株のみ。CF 由来株 PA80 では <i>rhlR</i> 遺伝子座全体の欠失と <i>rhlI</i> の非同義変異が確認された。<a class="ref" href="#ref-10">[10]</a><a class="ref" href="#ref-16">[16]</a></p>
+<div class="callout"><p><b>次に調べる：</b>rhlR 変異が少ないのは、『起こらない』のか『起こっても不利で消える』のか。この問いは、変異体を作って実験する意義と何の関係があるか。『臨床分離株を集めて遺伝子型を調べる』には、何株あれば何が言えるか。</p></div></div></details>
+<details class="q" id="D3"><summary><span class="qid">D3</span><span class="qt">CF 慢性感染で LasR 変異株が多いのはなぜか。そこで Rhl 系はどう動くか。</span></summary><div class="ans"><p>CF の分離株では <i>lasR</i> 変異が約22%。一方 <i>rhlR</i> はほぼ野生型のまま維持される。<i>lasR</i> 変異株の約1/6は機能的な LasR タンパク質をコードし、<b>LasR 欠失株の約半数が RhlR 活性を保持</b>していた。進化実験では、<b>LasR 変異株が C4-HSL 産生菌と共存すると、<i>mexT</i> 変異を伴う LasR 非依存的 RhlI–RhlR 系を獲得した集団が急速に現れた</b>。MexT は MexEF-OprN 排出ポンプなどを制御する転写因子で、この変異により C4-HSL の細胞外排出が増加すると考えられる。<a class="ref" href="#ref-10">[10]</a><a class="ref" href="#ref-17">[17]</a></p>
+<p>5つの CF 分離株の横断解析では、Las 優位から Rhl 優位への転換を説明する共通の遺伝的機構は見つからなかったが、全分離株に共通する<b>20遺伝子・7産物の『コア RhlR レギュロン』</b>が同定された。RhlI の点変異（G62S、D83E、P159S）は、LasR 非機能株で C4-HSL 産生量を再較正し、ピオシアニン産生を野生型レベルまで回復させる。<a class="ref" href="#ref-18">[18]</a><a class="ref" href="#ref-19">[19]</a><a class="ref" href="#ref-20">[20]</a></p>
+<div class="callout"><p><b>次に調べる：</b>『レギュロン』とは何か。コア RhlR レギュロンの20遺伝子は何をしているか。MexT 変異でなぜ C4-HSL の排出が増えるのか（MexEF-OprN と MexAB-OprM の関係）。</p></div></div></details>
+<details class="q" id="D4"><summary><span class="qid">D4</span><span class="qt">RhlR 系の変異と LasR 変異の本質的な違いは？</span></summary><div class="ans"><p>LasR 変異は大規模な欠失や完全な機能喪失で QS の実行力そのものを失う傾向がある。一方 <b>Rhl 系（RhlR、RhlI）の変異は、レギュロンの『変調（modulation）』</b>——つまり QS 形質プロファイルの質的な再編成——をもたらす。61株の実験進化株の研究では、Las 変異株の大半は Las レギュロンの大規模欠失で QS を完全に失い、<b>Rhl 変異株は LasR・RhlR の過剰発現と QS 形質プロファイルの変化を示した</b>。<a class="ref" href="#ref-21">[21]</a></p>
+<div class="callout"><p><b>次に調べる：</b>『機能喪失』と『変調』は、実験でどう区別するか（1つの表現型だけでなく、複数の表現型の『プロファイル』で見る意義）。実習の変異体は、機能喪失型か、変調型か。どの評価をすれば分かるか？</p></div></div></details>
+</section>
+<section id="E"><h2><span class="sec">E</span>QS 変異体の評価法：なぜレポーター？ なぜ大腸菌？</h2><p class="sec-note">実習の評価系を理解するための中心の章です。</p><details class="q" id="E1"><summary><span class="qid">E1</span><span class="qt">QS の機能を評価する表現型アッセイには何があるか。</span></summary><div class="ans"><ul><li><b>ピオシアニン</b>：培養上清をクロロホルム抽出→酸性化→吸光度（約520 nm）。Rhl 系（特に PqsE 依存的な <i>phz</i>）の指標。</li>
+<li><b>ラムノリピド・溶血</b>：血液寒天の溶血環、またはメチレンブルー–CTAB 寒天の沈殿ハロー。Las、Rhl、PhoRB、BqsSR など<b>多因子制御</b>のため、RhlR 単独の活性だけを反映しない。</li>
+<li><b>エラスターゼ</b>：エラスチン–コンゴレッド寒天や Enz-Chek 基質。主に LasR 依存的な <i>lasB</i> を反映する。</li>
+<li><b>スウォーミング運動性</b>：軟寒天上の拡がり。ラムノリピド産生と QS の両方を反映。</li>
+<li><b>バイオフィルム</b>：クリスタルバイオレット染色。c-di-GMP と QS の両方が関与するため、QS 単独の寄与を切り分けにくい。</li></ul>
+<p><a class="ref" href="#ref-11">[11]</a><a class="ref" href="#ref-22">[22]</a><a class="ref" href="#ref-16">[16]</a><a class="ref" href="#ref-9">[9]</a></p>
+<div class="callout"><p><b>次に調べる：</b>各アッセイは『誰の活性』を反映しているか。1つの表現型が変わったとき、その原因を RhlR に帰すには、他に何を確認する必要があるか。</p></div></div></details>
+<details class="q" id="E2"><summary><span class="qid">E2</span><span class="qt">なぜ『レポーターアッセイ』で評価するのか</span></summary><div class="ans"><p><b>問い：</b>ピオシアニンや運動性を測れば『QS が働いているか』は分かるのに、なぜわざわざレポーター株を作るのか。</p>
+<h4>表現型アッセイの限界</h4>
+<ul><li><b>多因子の合算</b>：ピオシアニンやラムノリピドは RhlR だけでなく、PqsE、Las、PQS、RpoS、Vfr、栄養条件などの影響を受ける。変異体で値が下がっても、<b>『RhlR の変異のせい』と言い切れない</b>。</li>
+<li><b>間接的・遅い</b>：産物の蓄積（代謝・分解も含む）を、増殖後期に測っている。</li>
+<li><b>定量性・感度・スループット</b>：色素抽出や寒天上のハローは、用量反応や多検体の比較に向かない。</li></ul>
+<h4>レポーターアッセイの強み</h4>
+<ul><li><b>転写活性を直接、定量的に測れる</b>：RhlR 応答性プロモーター（<i>rhlA</i>、<i>phzM</i>、<i>azeB</i> など）の下流に <i>lacZ</i>、GFP、ルシフェラーゼなどを連結し、<b>『RhlR がそのプロモーターをどれだけ動かしたか』</b>を数値にする。</li>
+<li><b>比較が公平</b>：同じプロモーター・同じ読み出しで、変数を『RhlR の変異』だけにできる。</li>
+<li><b>用量反応</b>：C4-HSL の濃度を振って EC<sub>50</sub> を出せば、変異による<b>リガンド感受性</b>の変化（上げる／下げる）も見える。実際、リガンド感受性を人為的に高めた RhlR 変異体が、PqsE の発現とフェナジン遺伝子での占有を変えることが報告されている。<a class="ref" href="#ref-15">[15]</a></li>
+<li><b>プロモーターごとの依存性</b>を使い分けられる：<i>rhlA</i>（PqsE 非依存）と <i>phzM</i>（PqsE 依存）を並べれば、『C4-HSL 依存性』と『PqsE 依存性』のどちらが壊れたかの手がかりになる。<a class="ref" href="#ref-11">[11]</a><a class="ref" href="#ref-14">[14]</a></li></ul>
+<div class="callout"><p><b>レポーターは万能ではない</b>：読み出しは『1つのプロモーターの転写』だけ。細胞内の病原因子産生・病原性そのものを意味しない。表現型アッセイと<b>組み合わせて</b>、結論を支える。</p></div><div class="callout"><p><b>次に調べる：</b>レポーターに使う3つのタンパク質（β-ガラクトシダーゼ、GFP、ルシフェラーゼ）の長所と短所を表にしてみよう（感度、ダイナミックレンジ、生細胞での連続測定、基質コスト、自家蛍光）。<i>lacZ</i> アッセイで Miller unit を計算する式の各項は何か。</p></div></div></details>
+<details class="q" id="E3"><summary><span class="qid">E3</span><span class="qt">なぜ、緑膿菌ではなく大腸菌を使うのか</span></summary><div class="ans"><p><b>問い：</b>調べたいのは <i>P. aeruginosa</i> の RhlR なのに、なぜ別の菌である大腸菌でレポーター実験をするのか。</p>
+<h4>大腸菌を『きれいな試験管』として使う</h4>
+<ul><li><b>背景が静か</b>：大腸菌は RhlR、PqsE、Las/Rhl/PQS の QS 回路を<b>持たない</b>。そこに <i>rhlR</i> とレポーターだけを入れれば、<b>『RhlR のこの変異体が、このプロモーターを動かせるか』</b>という1点だけを見られる。緑膿菌の中では、内因性の RhlR・LasR・PqsE・その他の調節因子が結果に混ざる。</li>
+<li><b>リガンドを自分で決められる</b>：大腸菌は C4-HSL を<b>自分では作らない</b>（AHL 合成酵素を持たない）。したがって、<b>C4-HSL を外から正確な濃度で加えられる</b>。緑膿菌では菌自身が C4-HSL を作り、排出ポンプ（MexAB-OprM など）が出し入れするため、濃度の管理が難しい。<a class="ref" href="#ref-11">[11]</a><a class="ref" href="#ref-14">[14]</a><a class="ref" href="#ref-6">[6]</a></li>
+<li><b>PqsE の有無を操作できる</b>：<i>pqsE</i> を別プラスミドで入れる／入れないで、PqsE 依存性を実験的に切り分けられる。</li>
+<li><b>扱いやすさ</b>：増殖が速く、プラスミド操作やクローニングの手法が確立している。変異体の作製・比較が速い。</li>
+<li><b>安全性・取り扱い</b>：緑膿菌は日和見病原体。一般的な実験用大腸菌（K-12 系統）は低リスクとされる。<span class="muted">（所属機関のバイオセーフティ区分は必ず確認。ここは一般的な説明）</span></li></ul>
+<h4>大腸菌の結果は緑膿菌の結果と一致するのか</h4>
+<p>大腸菌の異種レポーター株での測定パターンは、<b>緑膿菌本来の系での測定パターンと高い相関を示す</b>ことが報告されている。<a class="ref" href="#ref-14">[14]</a></p>
+<h4>それでも注意すること（限界）</h4>
+<ul><li>膜透過性や排出ポンプが違う：リガンドや被験化合物の<b>細胞内濃度</b>が緑膿菌と異なる。</li>
+<li>タンパク質の発現量・折りたたみ・安定性が違う：<b>変異体の活性低下が、『機能の変化』ではなく『発現量・不安定さ』による</b>可能性。発現量の確認（ウェスタン、融合タグ）が必要。</li>
+<li>緑膿菌でのみ起こる調節（RpoS、c-di-GMP、他の QS）は再現されない。</li>
+<li>被験化合物が大腸菌に毒性を示すと、レポーターの低下が『阻害』に見える（増殖で正規化する）。</li></ul>
+<p>→ だから、<b>大腸菌で『RhlR 自体の性質』を調べ、緑膿菌（変異株・表現型）で『細胞内での意味』を確認する</b>という二段構えになる。</p>
+<div class="callout warn"><p><b>要確認（一般的知識）：</b>『大腸菌は AHL を合成しない』『K-12 は低リスク』は一般的な説明で、この資料の OpenEvidence の回答にはありません。大腸菌は LuxR 型の SdiA を持ち外来 AHL に応答しうるとされるため、実験デザインとの関係は原典で確認してください。</p></div><div class="callout"><p><b>次に調べる：</b><b>この問いに答えるために自分で調べること：</b>(1) 大腸菌の SdiA は何をするタンパク質か。レポーター実験に影響するか。(2) 緑膿菌の中で同じ測定を行うには、どんな株（例：<i>rhlI</i> 欠損株）が必要か。(3) 大腸菌と緑膿菌の外膜の違いが、化合物の取り込みにどう影響するか。</p></div></div></details>
+<details class="q" id="E4"><summary><span class="qid">E4</span><span class="qt">レポーターの結果をどう解釈するか。（解釈の練習）</span></summary><div class="ans"><p>仮想の結果です。『何が考えられるか』『次に何をするか』を、答えを見る前に考えてみよう。</p><svg viewBox="0 0 660 330" role="img" aria-label="緑膿菌内の本来の制御系と、大腸菌レポーター系の比較" style="width:100%;height:auto;max-width:660px">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+<text x="150" y="18" text-anchor="middle" font-size="14" font-weight="700">緑膿菌の中（本来の系）</text>
+<rect class="bx" x="10" y="28" width="290" height="292" rx="10" style="fill:none;stroke-dasharray:4 3"/>
+<rect class="bx2" x="22" y="42" width="84" height="30" rx="5"/><text x="64" y="62" text-anchor="middle" font-size="13">LasR</text>
+<rect class="bx2" x="22" y="82" width="84" height="30" rx="5"/><text x="64" y="102" text-anchor="middle" font-size="13">PqsR / PQS</text>
+<rect class="bx2" x="22" y="122" width="84" height="30" rx="5"/><text x="64" y="142" text-anchor="middle" font-size="13">RpoS・Vfr他</text>
+<rect class="bx" x="170" y="52" width="118" height="30" rx="5"/><text x="229" y="72" text-anchor="middle" font-size="13">RhlR + C4-HSL</text>
+<rect class="bx" x="170" y="96" width="118" height="30" rx="5"/><text x="229" y="116" text-anchor="middle" font-size="13">PqsE</text>
+<rect class="bx2" x="150" y="170" width="140" height="32" rx="5"/><text x="220" y="191" text-anchor="middle" font-size="12">rhlA / phzM プロモーター</text>
+<rect class="bx" x="150" y="236" width="140" height="48" rx="5"/><text x="220" y="256" text-anchor="middle" font-size="13">ラムノリピド</text><text x="220" y="274" text-anchor="middle" font-size="13">ピオシアニン など</text>
+<path class="ln" d="M106 57L168 65" marker-end="url(#ah)"/><path class="ln" d="M106 97L168 75" marker-end="url(#ah)"/><path class="ln" d="M106 137L168 80" marker-end="url(#ah)"/>
+<path class="ln" d="M229 82L229 94"/><path class="ln" d="M229 126L229 168" marker-end="url(#ah)"/><path class="ln" d="M255 82L270 168" marker-end="url(#ah)"/>
+<path class="ln" d="M220 202L220 234" marker-end="url(#ah)"/>
+<text class="sm" x="150" y="304" text-anchor="middle">上流の因子が多数。出力も多因子の合算</text>
+<text x="500" y="18" text-anchor="middle" font-size="14" font-weight="700">大腸菌レポーター系</text>
+<rect class="bx" x="330" y="28" width="320" height="292" rx="26" style="fill:none"/>
+<text class="sm" x="490" y="48" text-anchor="middle">大腸菌（RhlR・PqsE・AHL合成系を持たない宿主）</text>
+<rect class="bx2" x="350" y="62" width="280" height="42" rx="5"/><text x="490" y="80" text-anchor="middle" font-size="13">プラスミドA：構成的プロモーター → <tspan font-style="italic">rhlR</tspan></text><text x="490" y="97" text-anchor="middle" class="sm">（変異体はここを入れ替える）</text>
+<rect class="bx" x="350" y="118" width="280" height="42" rx="5"/><text x="490" y="136" text-anchor="middle" font-size="13">プラスミドB：P<tspan font-size="10" dy="3" font-style="italic">rhlA</tspan><tspan dy="-3"> → lacZ / GFP</tspan></text><text x="490" y="153" text-anchor="middle" class="sm">（読み出し：色・蛍光）</text>
+<rect class="bx" x="350" y="174" width="280" height="30" rx="5" style="stroke-dasharray:4 3"/><text x="490" y="194" text-anchor="middle" font-size="13">（任意）プラスミドC：<tspan font-style="italic">pqsE</tspan></text>
+<rect class="bx2" x="350" y="222" width="130" height="34" rx="5"/><text x="415" y="244" text-anchor="middle" font-size="13">C4-HSL を添加</text>
+<rect class="bx2" x="500" y="222" width="130" height="34" rx="5"/><text x="565" y="244" text-anchor="middle" font-size="13">被験化合物</text>
+<path class="ln" d="M415 256L415 276L480 276" marker-end="url(#ah)"/><path class="ln" d="M565 256L565 276L500 276" marker-end="url(#ah)"/>
+<rect class="bx" x="440" y="282" width="100" height="28" rx="5"/><text x="490" y="301" text-anchor="middle" font-size="13">活性を測定</text>
+<text class="sm" x="490" y="326" text-anchor="middle">変数を少数に絞って「RhlR だけ」を見る</text>
+</svg><div class="tw"><table><thead><tr><th>観察</th><th>考えられる解釈（例）</th><th>次の確認</th></tr></thead><tbody><tr><td>レポーターも表現型（ピオシアニン）も低下</td><td>RhlR の機能低下（リガンド結合・DNA 結合・二量体化・PqsE 結合のどこか）</td><td>C4-HSL の用量反応（EC<sub>50</sub> は上がったか／最大値が下がったか）、発現量</td></tr><tr><td>レポーターは正常だが表現型が低下</td><td>RhlR 単独の転写は保たれるが、PqsE 依存的な出力や緑膿菌内の調節が障害</td><td><i>phzM</i> レポーター＋<i>pqsE</i> 共発現、PqsE–RhlR 接触領域の変異を確認</td></tr><tr><td>低濃度の C4-HSL でもレポーター上昇</td><td>リガンド感受性が上がった変異体の可能性</td><td>EC<sub>50</sub> の比較（野生型と変異体）</td></tr><tr><td>レポーター低下、ただし RhlR 発現量も低い</td><td>不安定化・不溶化による。リガンド結合の変化とは限らない</td><td>発現量の確認、可溶性、温度を下げた培養</td></tr><tr><td>C4-HSL なしでもレポーター上昇</td><td>リガンド非依存的な活性、またはバックグラウンド</td><td>リガンド（–）対照、ベクターのみ、プロモーター（–）対照</td></tr><tr><td>化合物添加でレポーター低下、ただし OD も低下</td><td>阻害ではなく増殖阻害・毒性の可能性</td><td>OD で正規化、生菌数、溶媒対照</td></tr></tbody></table></div><p class="small muted">表の解釈は、<a class="ref" href="#ref-11">[11]</a><a class="ref" href="#ref-14">[14]</a><a class="ref" href="#ref-15">[15]</a> の知見に基づく一般的な考え方の例で、実習の実際の結果ではありません。</p><div class="callout"><p><b>次に調べる：</b>あなたの実習の結果を、この表に当てはめて解釈してみよう。必要な対照（ネガティブ・ポジティブ）は何か。『結果が出た』ときより『結果が出なかった』ときの方が、対照の設計が重要なのはなぜか。</p></div></div></details>
+</section>
+<section id="F"><h2><span class="sec">F</span>進化と臨床的意義</h2><details class="q" id="F1"><summary><span class="qid">F1</span><span class="qt">QS 欠損株が集団内に維持されるのはなぜか（チーターと公共財）。</span></summary><div class="ans"><p>QS 制御下の分泌産物（プロテアーゼ、ラムノリピド、シデロフォアなど）は、産生者だけでなく周囲の集団全体に利益をもたらす<b>『公共財』</b>。<i>lasR</i> 変異株などの QS 欠損株は、<b>産生コストを払わず、野生型が作った公共財を利用する『社会的チーター』</b>として振る舞い、集団内での相対適応度を高める（特定の in vitro 条件とマウスモデルで支持）。<a class="ref" href="#ref-1">[1]</a><a class="ref" href="#ref-21">[21]</a></p>
+<p>チーターの頻度が閾値を超えると、公共財自体の産生が落ちてチーターの適応度上昇も頭打ちになる（<b>負の頻度依存選択</b>）ため、QS 陽性株とチーターが共存する集団構造が維持されうる。実験進化では、Las 系変異は大規模欠失（チーター的）、Rhl 系・PQS 系の変異はレギュロンの変調を示し、同じ選択圧下で異なる進化的結末が並行して起きた。<a class="ref" href="#ref-21">[21]</a></p>
+<div class="callout"><p><b>次に調べる：</b>『公共財ゲーム』を数理モデルで説明するとき、何が仮定されているか。実験でチーターを検出するには、野生型とのどんな共培養をするか。実習の変異体が『チーター』的に振る舞うかどうかを、どう調べるか？</p></div></div></details>
+<details class="q" id="F2"><summary><span class="qid">F2</span><span class="qt">慢性感染で QS が失われることは、臨床的に何を意味するか。</span></summary><div class="ans"><p>動物モデルでは、QS 変異（特に <i>lasR</i>）は急性感染での病原性低下と関連する一方、<b>慢性感染やヒトの CF 肺、カテーテル関連尿路感染（CAUTI）では、宿主環境（例：尿素による AHL 阻害）が QS を抑制するため、QS 欠損株がむしろ有利に選択される</b>可能性が示されている。<a class="ref" href="#ref-23">[23]</a></p>
+<p><i>lasR</i> 変異の出現理由には少なくとも3つの仮説がある：(1) <b>チーター仮説</b>、(2) <b>適応的成長優位性</b>（CF 肺の特徴的な条件で変異株が独立して有利）、(3) <b>QS 不要仮説</b>（慢性感染では QS が必要なくなり、LasR が中立的に失われる）。いずれも in vitro やマウスで支持されているが、<b>ヒト感染での実証はない</b>。<a class="ref" href="#ref-1">[1]</a></p>
+<p>また、LasR 非機能でも RhlR 活性が保たれる株は、3次元ヒト肺上皮モデルで野生型と同等の細胞毒性を保った。<b>『QS の喪失＝病原性低下＝臨床的に有利』という単純な図式は成り立たない</b>。<a class="ref" href="#ref-18">[18]</a><a class="ref" href="#ref-1">[1]</a></p>
+<div class="callout"><p><b>次に調べる：</b>慢性感染と急性感染で『有利な戦略』が違うのはなぜか。QS 阻害薬は『急性』『慢性』のどちらに向くか。</p></div></div></details>
+</section>
+<section id="G"><h2><span class="sec">G</span>QS 阻害薬とアンチビルレンス</h2><details class="q" id="G1"><summary><span class="qid">G1</span><span class="qt">QS 阻害薬の試みと、実用化の難しさは？</span></summary><div class="ans"><ul><li><b>アジスロマイシン</b>：CF 患者で臨床転帰の改善が報告されるが、達成可能な濃度は <i>P. aeruginosa</i> の MIC を大きく下回る。プロテオーム解析では、QS 制御プロテオームの半数以上に変化を与えるが、QS レギュロン全体では12〜13%にしか影響しない——『QS の完全遮断』ではなく『サブレギュロンの摂動』と結論された。<a class="ref" href="#ref-24">[24]</a></li>
+<li><b>ガーリック抽出物由来の合成アンタゴニスト</b>：PqsR を標的とする非対称ジスルフィド。<i>Galleria mellonella</i> モデルで有効、抗菌薬との併用で活性が増強。<a class="ref" href="#ref-25">[25]</a></li>
+<li><b>植物由来化合物</b>（アリシン、アジョエン、ジアリルジスルフィドなど）：<i>lasB</i>、<i>rhlA</i>、<i>pqsA</i> プロモーター活性を指標に評価。<a class="ref" href="#ref-9">[9]</a><a class="ref" href="#ref-25">[25]</a></li>
+<li><b>整理された5つの戦略</b>：オートインデューサー合成の阻害、酵素的分解（ラクトナーゼ・アシラーゼ）、膜小胞を介した放出の阻害、受容体（LasR/RhlR/PqsR）アンタゴニスト、下流シグナル経路の阻害。<a class="ref" href="#ref-26">[26]</a></li></ul>
+<p><b>実用化が難しい理由：</b>分子の安定性、株間の変異性（QS 階層の再配線により LasR 標的薬が無効化しうる）、生体内利用率の限界。<a class="ref" href="#ref-26">[26]</a></p>
+<div class="callout"><p><b>次に調べる：</b>『アゾール系抗真菌薬』と同じく、標的が違えば耐性機序も違う。QS 阻害薬の耐性はどう生じうるか（OE の回答は、<i>pqsR</i> 不活化や <i>mexT</i> 変異を介する代替経路に触れている）。アジスロマイシンはなぜ QS に影響するのか？ 本来のマクロライドの作用機序（50S リボソーム）と、どう関係するか。</p></div></div></details>
+<details class="q" id="G2"><summary><span class="qid">G2</span><span class="qt">アンチビルレンス戦略の利点と欠点は？</span></summary><div class="ans"><p><b>利点：</b>菌の生存そのものを標的としないため、殺菌圧による耐性選択を避けられるとされる。</p>
+<p><b>欠点：</b>分子安定性・生体内利用率の課題に加え、<b>臨床分離株での QS 階層の再配線（LasR 非依存的 RhlR 活性化）により、LasR だけを狙う薬は容易に回避される</b>。このため近年は、より普遍的で回避されにくい標的として <b>RhlR そのもの、あるいは PqsE–RhlR の相互作用界面</b>が注目されている。<a class="ref" href="#ref-1">[1]</a><a class="ref" href="#ref-26">[26]</a></p>
+<div class="callout"><p><b>次に調べる：</b>『耐性が出にくい』の根拠は何か。QS 阻害で、QS 欠損株のほうが増える状況（チーター）では何が起こるか。実習の RhlR 変異体の評価は、阻害薬探索の中でどんな役割を持つか？</p></div></div></details>
+<details class="q" id="G3"><summary><span class="qid">G3</span><span class="qt">QS と抗菌薬耐性はどうつながるか。</span></summary><div class="ans"><p>QS はバイオフィルム形成を制御する主要経路の一つで、マトリックス内の細胞は抗菌薬への物理的・生理的耐性を獲得する。<b>QS 阻害はバイオフィルム形成を抑えて抗菌薬感受性を回復させる</b>可能性がある。排出ポンプ（MexAB-OprM、MexEF-OprN）は C4-HSL 等のシグナル自体の排出にも関わり、QS と多剤排出は相互に連関する。ガーリック抽出物由来の QS 阻害化合物と抗菌薬の併用で、活性が有意に増強された。<a class="ref" href="#ref-6">[6]</a><a class="ref" href="#ref-25">[25]</a><a class="ref" href="#ref-26">[26]</a></p>
+<div class="callout"><p><b>次に調べる：</b>QS 阻害薬＋抗菌薬の併用効果は、どう試験するか（チェッカーボード法、バイオフィルム MBEC）。in vitro で効いても臨床で効かないとき、何が足りないのか。</p></div></div></details>
+</section>
+<section id="open"><h2><span class="sec">調べてみよう</span>ここから先はあなたの番</h2><p class="sec-note">答えを書かない問いです。1つ選び、検索して、分かったことを3行にまとめてみてください。</p><div class="open"><h3><span class="num">Q1</span>RhlR のどのアミノ酸が何をしているか</h3><p class="why">リガンド結合・二量体化・DNA 結合・PqsE 接触のどれに効く変異か、見分ける設計を考える。</p><p class="hint"><b>調べ方のヒント：</b>構造論文（PqsE/RhlR/C4-HSL 複合体）の図を読み、残基番号を一覧にする。PDB で実際に構造を見る。</p><div class="code" data-copy="&quot;RhlR&quot;[tiab] AND (&quot;crystal structure&quot;[tiab] OR &quot;ligand binding&quot;[tiab]) AND &quot;Pseudomonas aeruginosa&quot;[tiab]">&quot;RhlR&quot;[tiab] AND (&quot;crystal structure&quot;[tiab] OR &quot;ligand binding&quot;[tiab]) AND &quot;Pseudomonas aeruginosa&quot;[tiab]<button type="button">コピー</button></div><p class="lnk"><a href="https://pubmed.ncbi.nlm.nih.gov/?term=%22RhlR%22%5Btiab%5D%20AND%20%28%22crystal%20structure%22%5Btiab%5D%20OR%20%22ligand%20binding%22%5Btiab%5D%29%20AND%20%22Pseudomonas%20aeruginosa%22%5Btiab%5D" target="_blank" rel="noopener">PubMedで検索</a></p></div>
+<div class="open"><h3><span class="num">Q2</span>PqsE–RhlR 相互作用を標的とした創薬</h3><p class="why">OpenEvidence が最後に提案した問い。</p><p class="hint"><b>調べ方のヒント：</b>『界面を塞ぐ低分子』は可能か？ 見つかっている化合物と、その評価系は何か。</p><div class="code" data-copy="(&quot;PqsE&quot;[tiab]) AND (&quot;RhlR&quot;[tiab]) AND (inhibitor[tiab] OR inhibitors[tiab])">(&quot;PqsE&quot;[tiab]) AND (&quot;RhlR&quot;[tiab]) AND (inhibitor[tiab] OR inhibitors[tiab])<button type="button">コピー</button></div><p class="lnk"><a href="https://pubmed.ncbi.nlm.nih.gov/?term=%28%22PqsE%22%5Btiab%5D%29%20AND%20%28%22RhlR%22%5Btiab%5D%29%20AND%20%28inhibitor%5Btiab%5D%20OR%20inhibitors%5Btiab%5D%29" target="_blank" rel="noopener">PubMedで検索</a></p></div>
+<div class="open"><h3><span class="num">Q3</span>なぜ <i>P. aeruginosa</i> の QS は『階層的』に見えるのか</h3><p class="why">進化的・生理的な意味を考える。</p><p class="hint"><b>調べ方のヒント：</b>モデル（PAO1）と臨床分離株の違い。リン酸飢餓条件の影響。</p><div class="code" data-copy="&quot;Pseudomonas aeruginosa&quot;[tiab] AND &quot;quorum sensing&quot;[tiab] AND hierarchy[tiab]">&quot;Pseudomonas aeruginosa&quot;[tiab] AND &quot;quorum sensing&quot;[tiab] AND hierarchy[tiab]<button type="button">コピー</button></div><p class="lnk"><a href="https://pubmed.ncbi.nlm.nih.gov/?term=%22Pseudomonas%20aeruginosa%22%5Btiab%5D%20AND%20%22quorum%20sensing%22%5Btiab%5D%20AND%20hierarchy%5Btiab%5D" target="_blank" rel="noopener">PubMedで検索</a></p></div>
+<div class="open"><h3><span class="num">Q4</span>大腸菌での測定は、緑膿菌の結果とどれくらい一致するのか</h3><p class="why">『高い相関』を示した実験は何で、何と何を比べたのか。</p><p class="hint"><b>調べ方のヒント：</b>引用論文を読み、図の横軸・縦軸、サンプル数、相関の指標を確認する。→ <a href='index.html#paper'>論文の読み方</a></p></div>
+<div class="open"><h3><span class="num">Q5</span>レポーター遺伝子の選び方</h3><p class="why">lacZ・GFP・luxCDABE の違いは何か。実習ではなぜそれを選んだのか。</p><p class="hint"><b>調べ方のヒント：</b>『reporter gene』のレビューや、実習プロトコルの背景を指導教員に尋ねる。</p><div class="code" data-copy="(&quot;reporter gene&quot;[tiab]) AND (lacZ[tiab] OR GFP[tiab] OR luciferase[tiab]) AND (&quot;quorum sensing&quot;[tiab])">(&quot;reporter gene&quot;[tiab]) AND (lacZ[tiab] OR GFP[tiab] OR luciferase[tiab]) AND (&quot;quorum sensing&quot;[tiab])<button type="button">コピー</button></div><p class="lnk"><a href="https://pubmed.ncbi.nlm.nih.gov/?term=%28%22reporter%20gene%22%5Btiab%5D%29%20AND%20%28lacZ%5Btiab%5D%20OR%20GFP%5Btiab%5D%20OR%20luciferase%5Btiab%5D%29%20AND%20%28%22quorum%20sensing%22%5Btiab%5D%29" target="_blank" rel="noopener">PubMedで検索</a></p></div>
+<div class="open"><h3><span class="num">Q6</span>実習の変異体を『臨床分離株で見つかる変異』と比べる</h3><p class="why">OE の回答に出た G62S、D83E、P159S（RhlI）などは、何の変異か。</p><p class="hint"><b>調べ方のヒント：</b>変異の位置、結果として何が起こるかを一覧にする。実習の RhlR 変異体との共通点・相違点は？</p><div class="code" data-copy="(&quot;rhlI&quot;[tiab] OR &quot;RhlI&quot;[tiab]) AND mutation[tiab] AND (&quot;clinical isolates&quot;[tiab])">(&quot;rhlI&quot;[tiab] OR &quot;RhlI&quot;[tiab]) AND mutation[tiab] AND (&quot;clinical isolates&quot;[tiab])<button type="button">コピー</button></div><p class="lnk"><a href="https://pubmed.ncbi.nlm.nih.gov/?term=%28%22rhlI%22%5Btiab%5D%20OR%20%22RhlI%22%5Btiab%5D%29%20AND%20mutation%5Btiab%5D%20AND%20%28%22clinical%20isolates%22%5Btiab%5D%29" target="_blank" rel="noopener">PubMedで検索</a></p></div>
+<div class="open"><h3><span class="num">Q7</span>アジスロマイシンの QS への影響を再評価する</h3><p class="why">『12〜13%』という数字の意味を、原典で確認する。</p><p class="hint"><b>調べ方のヒント：</b>分母は何か（QS 制御タンパク質の総数？）。比較対象は？</p><div class="code" data-copy="azithromycin[tiab] AND &quot;quorum sensing&quot;[tiab] AND proteome[tiab]">azithromycin[tiab] AND &quot;quorum sensing&quot;[tiab] AND proteome[tiab]<button type="button">コピー</button></div><p class="lnk"><a href="https://pubmed.ncbi.nlm.nih.gov/?term=azithromycin%5Btiab%5D%20AND%20%22quorum%20sensing%22%5Btiab%5D%20AND%20proteome%5Btiab%5D" target="_blank" rel="noopener">PubMedで検索</a></p></div>
+</section>
+<section id="refs" class="refs"><h2><span class="sec">文献</span>参照した資料</h2><p class="sec-note">本文中の [番号] に対応します。OpenEvidence の回答に付いていた文献と、公的機関のページを整理したものです。実在と内容は、必ず原典で確認してください。</p><ol><li id="ref-1">Letizia M, Diggle SP, Whiteley M. <i>Pseudomonas aeruginosa</i>: ecology, evolution, pathogenesis and antimicrobial susceptibility. Nat Rev Microbiol 2025;23(11):701-17. <a href="https://doi.org/10.1038/s41579-025-01193-8" target="_blank" rel="noopener">doi:10.1038/s41579-025-01193-8</a></li><li id="ref-2">Reynolds D, Kollef M. The epidemiology and pathogenesis and treatment of <i>Pseudomonas aeruginosa</i> infections: an update. Drugs 2021;81(18):2117-31. <a href="https://doi.org/10.1007/s40265-021-01635-6" target="_blank" rel="noopener">doi:10.1007/s40265-021-01635-6</a></li><li id="ref-3">Otake S, Yamagishi T, Shiomoto T, et al. What we can and cannot see from the surveillance for drug-resistant <i>Pseudomonas aeruginosa</i>: findings from the evaluation of a surveillance system for multidrug-resistant <i>P. aeruginosa</i> infections in Japan. PLoS One 2025;20(8):e0329635. <a href="https://doi.org/10.1371/journal.pone.0329635" target="_blank" rel="noopener">doi:10.1371/journal.pone.0329635</a></li><li id="ref-4">Karlowsky JA, Lob SH, DeRyke CA, et al. In vitro activity of ceftolozane-tazobactam, imipenem-relebactam, ceftazidime-avibactam, and comparators against <i>Pseudomonas aeruginosa</i> isolates collected in United States hospitals (SMART 2018-2020). Antimicrob Agents Chemother 2022;66(5):e0018922. <a href="https://doi.org/10.1128/aac.00189-22" target="_blank" rel="noopener">doi:10.1128/aac.00189-22</a></li><li id="ref-5">Miller WR, Arias CA. ESKAPE pathogens: antimicrobial resistance, epidemiology, clinical impact and therapeutics. Nat Rev Microbiol 2024;22(10):598-616. <a href="https://doi.org/10.1038/s41579-024-01054-w" target="_blank" rel="noopener">doi:10.1038/s41579-024-01054-w</a></li><li id="ref-6">Horna G, López M, Guerra H, Saénz Y, Ruiz J. Interplay between MexAB-OprM and MexEF-OprN in clinical isolates of <i>Pseudomonas aeruginosa</i>. Sci Rep 2018;8(1):16463. <a href="https://doi.org/10.1038/s41598-018-34694-z" target="_blank" rel="noopener">doi:10.1038/s41598-018-34694-z</a></li><li id="ref-7">Sawa T, Shimizu M, Moriyama K, Wiener-Kronish JP. Association between <i>Pseudomonas aeruginosa</i> type III secretion, antibiotic resistance, and clinical outcome: a review. Crit Care 2014;18(6):668. <a href="https://doi.org/10.1186/s13054-014-0668-9" target="_blank" rel="noopener">doi:10.1186/s13054-014-0668-9</a></li><li id="ref-8">Sauer K, Stoodley P, Goeres DM, et al. The biofilm life cycle: expanding the conceptual model of biofilm formation. Nat Rev Microbiol 2022;20(10):608-20. <a href="https://doi.org/10.1038/s41579-022-00767-0" target="_blank" rel="noopener">doi:10.1038/s41579-022-00767-0</a></li><li id="ref-9">Chadha J, Harjai K, Chhibber S. Revisiting the virulence hallmarks of <i>Pseudomonas aeruginosa</i>: a chronicle through the perspective of quorum sensing. Environ Microbiol 2022;24(6):2630-56. <a href="https://doi.org/10.1111/1462-2920.15784" target="_blank" rel="noopener">doi:10.1111/1462-2920.15784</a></li><li id="ref-10">Feltner JB, Wolter DJ, Pope CE, et al. LasR variant cystic fibrosis isolates reveal an adaptable quorum-sensing hierarchy in <i>Pseudomonas aeruginosa</i>. mBio 2016;7(5):e01513-16. <a href="https://doi.org/10.1128/mBio.01513-16" target="_blank" rel="noopener">doi:10.1128/mBio.01513-16</a></li><li id="ref-11">Keegan NR, Colón Torres NJ, Stringer AM, et al. Promoter selectivity of the RhlR quorum-sensing transcription factor receptor in <i>Pseudomonas aeruginosa</i> is coordinated by distinct and overlapping dependencies on C4-homoserine lactone and PqsE. PLoS Genet 2023;19(12):e1010900. <a href="https://doi.org/10.1371/journal.pgen.1010900" target="_blank" rel="noopener">doi:10.1371/journal.pgen.1010900</a></li><li id="ref-12">Chowdhury N, Bagchi A. Identification of ligand binding activity and DNA recognition by RhlR protein from opportunistic pathogen <i>Pseudomonas aeruginosa</i>: a molecular dynamic simulation approach. J Mol Recognit 2018;31(12):e2738. <a href="https://doi.org/10.1002/jmr.2738" target="_blank" rel="noopener">doi:10.1002/jmr.2738</a></li><li id="ref-13">Borgert SR, Henke S, Witzgall F, et al. Moonlighting chaperone activity of the enzyme PqsE contributes to RhlR-controlled virulence of <i>Pseudomonas aeruginosa</i>. Nat Commun 2022;13(1):7402. <a href="https://doi.org/10.1038/s41467-022-35030-w" target="_blank" rel="noopener">doi:10.1038/s41467-022-35030-w</a></li><li id="ref-14">Tchadi BV, Derringer JJ, Detweiler AK, Taylor IR. PqsE adapts the activity of the <i>Pseudomonas aeruginosa</i> quorum-sensing transcription factor RhlR to both autoinducer concentration and promoter sequence identity. J Bacteriol 2025;207(5):e0051624. <a href="https://doi.org/10.1128/jb.00516-24" target="_blank" rel="noopener">doi:10.1128/jb.00516-24</a></li><li id="ref-15">Pope AN, Bavda VR, Schumacher ML, et al. RhlR quorum-sensing receptor ligand sensitivity regulates the differential expression of phenazine genes in <i>Pseudomonas aeruginosa</i>. J Bacteriol 2026;208(5):e0001326. <a href="https://doi.org/10.1128/jb.00013-26" target="_blank" rel="noopener">doi:10.1128/jb.00013-26</a></li><li id="ref-16">Wang Y, Gao L, Rao X, et al. Characterization of <i>lasR</i>-deficient clinical isolates of <i>Pseudomonas aeruginosa</i>. Sci Rep 2018;8(1):13344. <a href="https://doi.org/10.1038/s41598-018-30813-y" target="_blank" rel="noopener">doi:10.1038/s41598-018-30813-y</a></li><li id="ref-17">Kostylev M, Kim DY, Smalley NE, et al. Evolution of the <i>Pseudomonas aeruginosa</i> quorum-sensing hierarchy. Proc Natl Acad Sci USA 2019;116(14):7027-32. <a href="https://doi.org/10.1073/pnas.1819796116" target="_blank" rel="noopener">doi:10.1073/pnas.1819796116</a></li><li id="ref-18">Cruz RL, Asfahl KL, Van den Bossche S, et al. RhlR-regulated acyl-homoserine lactone quorum sensing in a cystic fibrosis isolate of <i>Pseudomonas aeruginosa</i>. mBio 2020;11(2):e00532-20. <a href="https://doi.org/10.1128/mBio.00532-20" target="_blank" rel="noopener">doi:10.1128/mBio.00532-20</a></li><li id="ref-19">Asfahl KL, Smalley NE, Chang AP, Dandekar AA. Genetic and transcriptomic characteristics of RhlR-dependent quorum sensing in cystic fibrosis isolates of <i>Pseudomonas aeruginosa</i>. mSystems 2022;7(2):e0011322. <a href="https://doi.org/10.1128/msystems.00113-22" target="_blank" rel="noopener">doi:10.1128/msystems.00113-22</a></li><li id="ref-20">Simanek KA, Schumacher ML, Mallery CP, et al. Quorum-sensing synthase mutations re-calibrate autoinducer concentrations in clinical isolates of <i>Pseudomonas aeruginosa</i> to enhance pathogenesis. Nat Commun 2023;14(1):7986. <a href="https://doi.org/10.1038/s41467-023-43702-4" target="_blank" rel="noopener">doi:10.1038/s41467-023-43702-4</a></li><li id="ref-21">Jayakumar P, Figueiredo ART, Kümmerli R. Evolution of quorum sensing in <i>Pseudomonas aeruginosa</i> can occur via loss of function and regulon modulation. mSystems 2022;7(5):e0035422. <a href="https://doi.org/10.1128/msystems.00354-22" target="_blank" rel="noopener">doi:10.1128/msystems.00354-22</a></li><li id="ref-22">Soberón-Chávez G, González-Valdez A, Soto-Aceves MP, Cocotl-Yañez M. Rhamnolipids produced by <i>Pseudomonas</i>: from molecular genetics to the market. Microb Biotechnol 2021;14(1):136-46. <a href="https://doi.org/10.1111/1751-7915.13700" target="_blank" rel="noopener">doi:10.1111/1751-7915.13700</a></li><li id="ref-23">Cole SJ, Hall CL, Schniederberend M, et al. Host suppression of quorum sensing during catheter-associated urinary tract infections. Nat Commun 2018;9(1):4436. <a href="https://doi.org/10.1038/s41467-018-06882-y" target="_blank" rel="noopener">doi:10.1038/s41467-018-06882-y</a></li><li id="ref-24">Swatton JE, Davenport PW, Maunders EA, et al. Impact of azithromycin on the quorum sensing-controlled proteome of <i>Pseudomonas aeruginosa</i>. PLoS One 2016;11(1):e0147698. <a href="https://doi.org/10.1371/journal.pone.0147698" target="_blank" rel="noopener">doi:10.1371/journal.pone.0147698</a></li><li id="ref-25">Zhang ZS, Zhao DS, Zhu D, et al. Design, synthesis, and biological evaluation of asymmetrical disulfides based on garlic extract as <i>Pseudomonas aeruginosa</i> PQS quorum sensing inhibitors. J Agric Food Chem 2025;73(10):5850-9. <a href="https://doi.org/10.1021/acs.jafc.4c12713" target="_blank" rel="noopener">doi:10.1021/acs.jafc.4c12713</a></li><li id="ref-26">Sánchez-Mateos J, Flores-Félix JD. Quorum sensing inhibition strategies for the control of <i>Pseudomonas aeruginosa</i> infections. World J Microbiol Biotechnol 2026;42(7):342. <a href="https://doi.org/10.1007/s11274-026-05014-9" target="_blank" rel="noopener">doi:10.1007/s11274-026-05014-9</a></li></ol></section>
+</main>
+<footer><div class="wrap">
+<p>本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。</p>
+<p>二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>
+<p><a href="index.html">調べ方ガイド</a> ／ <a href="auris.html"><i>C. auris</i></a> ／ <a href="gas.html">GAS</a> ／ <a href="qs.html">QS・RhlR</a> ／ <a href="purification.html">物質精製</a> ／ 作成日：2026年10月9日（初稿）</p>
+</div></footer>
+<script>
+(function(){
+  function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));}
+  var o=document.getElementById('open-all'),c=document.getElementById('close-all');
+  if(o)o.onclick=function(){qsa('details.q').forEach(function(d){d.open=true;});};
+  if(c)c.onclick=function(){qsa('details.q').forEach(function(d){d.open=false;});};
+  // open the Q that matches the URL hash
+  if(location.hash){var t=document.getElementById(location.hash.slice(1));if(t&&t.tagName==='DETAILS')t.open=true;}
+  // copy buttons
+  qsa('.code button').forEach(function(b){
+    b.addEventListener('click',function(){
+      var box=b.parentNode;var txt=box.getAttribute('data-copy')||box.firstChild.textContent;
+      function done(){var old=b.textContent;b.textContent='コピー済み';setTimeout(function(){b.textContent=old;},1400);}
+      function fallback(){var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){}document.body.removeChild(ta);}
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,fallback);}else{fallback();}
+    });
+  });
+})();
+</script>
+</body>
+</html>
