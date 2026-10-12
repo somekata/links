@@ -91,6 +91,33 @@ button:disabled{background:#aaa;cursor:not-allowed}
 .helpStep .body h4{margin:2px 0 6px;font-size:16px}
 .helpStep .body p{margin:0;color:#45505a;line-height:1.75}
 .helpStep .body code{background:#eef3f7;padding:1px 6px;border-radius:5px;font-size:13px}
+
+/* --- search options --- */
+.optPanel{margin-top:18px;background:#f7f9fb;border:1px solid #e2e6ea;border-radius:10px;padding:12px 16px}
+.optTitle{font-weight:800;margin-bottom:8px}
+.optTitle .hint{font-weight:500;color:#7a838c;font-size:13px}
+.optRow{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center;margin:6px 0}
+.optLabel{font-weight:700;font-size:14px}
+.chk{display:inline-flex;align-items:center;gap:6px;font-weight:500;margin:0;font-size:14px;cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:#1769aa;margin:0}
+.chk .small{margin-left:2px}
+
+/* --- match kind badges --- */
+.kindBadge,.kindChip{font-size:11px;border-radius:10px;padding:2px 8px;font-weight:700;white-space:nowrap}
+.kindChips{display:inline-flex;gap:5px;flex-wrap:wrap}
+.k-exact{background:#dcebf8;color:#0f4c81}
+.k-ja{background:#dff1e0;color:#1f6b2a}
+.k-en{background:#fbeccb;color:#7a4b00}
+.k-partial{background:#e8eaed;color:#4f565d}
+.legend{font-size:12px;color:#7a838c;margin:0 0 6px;line-height:1.7}
+.dupNotice{background:#fff8e1;border:1px solid #f0d98a;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px;line-height:1.8}
+.dupNotice button{margin-left:8px;padding:5px 12px;font-size:13px}
+.freeTag{font-size:11px;color:#7a838c;background:#f0f2f4;border-radius:10px;padding:2px 8px}
+.termGroupHeader{flex-wrap:wrap}
+.indexKind{font-size:12px;color:#7a838c;margin:-4px 0 10px;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}
+
+/* --- footer --- */
+.siteFooter{max-width:1100px;margin:6px auto 36px;padding:0 18px;font-size:12px;color:#68717b;line-height:1.8;text-align:center}
 </style>
 </head>
 <body>
@@ -121,6 +148,21 @@ button:disabled{background:#aaa;cursor:not-allowed}
     <div id="termsContainer"></div>
     <button id="addTermBtn" class="ghost addTermBtn" type="button">＋ 用語を追加</button>
 
+    <div class="optPanel">
+      <div class="optTitle">🔎 検索の範囲　<span class="hint">辞書に登録された語は、和名・英名・略称の表記ゆれもまとめて検索します（変更すると自動で再検索）</span></div>
+      <div class="optRow">
+        <label class="chk"><input type="checkbox" checked disabled> 完全一致（常にON）</label>
+        <label class="chk"><input id="optAlias" type="checkbox" checked> 英名・略称も含める <span class="small">例：緑膿菌 → <i>Pseudomonas aeruginosa</i>, <i>P. aeruginosa</i></span></label>
+        <label class="chk"><input id="optJa" type="checkbox" checked> 日本語表記も含める <span class="small">例：MRSA → メチシリン耐性黄色ブドウ球菌</span></label>
+        <label class="chk"><input id="optPartial" type="checkbox"> 部分一致も含める <span class="small">語の一部・属名のみ（ノイズが増えます）</span></label>
+      </div>
+      <div class="optRow">
+        <span class="optLabel">結果の見出し：</span>
+        <label class="chk"><input type="radio" name="viewMode" value="term" checked> 入力した語ごと</label>
+        <label class="chk"><input type="radio" name="viewMode" value="concept"> 同じ概念は1つに統合</label>
+      </div>
+    </div>
+
     <div class="actions" style="margin-top:16px">
       <button id="searchBtn" disabled>🔍 一括検索</button>
       <button id="csvBtn" class="secondary" disabled>CSV出力（全用語）</button>
@@ -131,6 +173,7 @@ button:disabled{background:#aaa;cursor:not-allowed}
 
   <div id="resultCard" class="card" style="display:none">
     <div id="summary" class="summary"></div>
+    <div id="dupNotice"></div>
     <div id="results"></div>
   </div>
 
@@ -209,6 +252,13 @@ button:disabled{background:#aaa;cursor:not-allowed}
     </div>
 
     <div class="note" style="margin-top:20px;padding-top:16px;border-top:1px solid #e6e9ec">
+      <b>検索の範囲と一致の種類について</b><br>
+      完全一致：入力した語と同じ表記です（英数字は単語単位。略語は大文字・小文字を区別します）。<br>
+      英名・略称／日本語：辞書に登録された別表記です（例：緑膿菌 ⇔ <i>Pseudomonas aeruginosa</i> ⇔ <i>P. aeruginosa</i>）。ヒットごとに種類のバッジを表示します。<br>
+      部分一致：語の一部（例：<i>Pseudomonas</i> 属名のみ、IMP が IMPORTANT に含まれる場合など）です。ノイズが増えるため初期設定はOFFです。日本語は単語の区切りがないため、入力語を含む表記はすべて完全一致として扱います。<br>
+      辞書にない語は、入力どおりの表記（完全一致・部分一致）のみを検索します。<br>
+      見出しは「入力した語ごと」（初期設定）か「同じ概念は1つに統合」を選べます。同じ概念を複数入力すると同じ箇所が重複して表示されるため、その場合は統合表示への切り替えをご案内します。リストの（完・英・和・部）は、それぞれ完全一致・英名/略称・日本語・部分一致を表します。<br>
+      <br>
       <b>ページ・行番号について</b><br>
       PDF：PDF内部のページを基準に表示します。行番号はPDF内の文字座標から算出した推定行です。<br>
       DOCX：DOCXにはWord上の固定されたページ情報が基本的に保存されていないため、
@@ -224,6 +274,11 @@ button:disabled{background:#aaa;cursor:not-allowed}
 </div>
 
 </div>
+
+<footer class="siteFooter">
+  本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
 
 <script src="https://unpkg.com/mammoth@1.9.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
@@ -402,8 +457,6 @@ const PALETTE=["#fff19a","#ffd08a","#a8e6ff","#c3f2b0","#e3c6ff","#ffb8c6","#bde
 
 let currentFile=null;
 let docIndex=null;        // {type, lines:[{page,line,paragraph,text}], pageCount}
-let lastAllResults=[];    // flat list for CSV: {no,term,page,line,source,paragraph,context}
-let lastPerTerm=[];       // [{term,color,hits:[{page,line}]}]
 
 /* ---------------- helpers ---------------- */
 
@@ -591,6 +644,7 @@ function setFile(file){
   }
   currentFile=file;
   docIndex=null; // ファイルが変わったら再解析
+  lastTermResults=[];lastGroups=[];
   fileName.textContent="選択中： "+file.name;
   csvBtn.disabled=true;
   copyIndexBtn.disabled=true;
@@ -672,59 +726,170 @@ async function indexDOCX(onProgress){
 
 /* ---------------- search ---------------- */
 
-function highlight(text,term,color){
-  const safe=escapeHtml(text);
-  const esc=term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-  return safe.replace(new RegExp(esc,"gi"),m=>`<span class="hit" style="background:${color}">${m}</span>`);
+const optAlias=document.getElementById("optAlias");
+const optJa=document.getElementById("optJa");
+const optPartial=document.getElementById("optPartial");
+const viewModeRadios=[...document.querySelectorAll('input[name="viewMode"]')];
+const dupNotice=document.getElementById("dupNotice");
+
+const KIND_KEYS=["exact","en","ja","partial"];
+const KIND_ORDER={exact:0,ja:1,en:2,partial:3};
+const KIND_LABEL={exact:"完全一致",en:"英名・略称",ja:"日本語",partial:"部分一致"};
+const KIND_SHORT={exact:"完",en:"英",ja:"和",partial:"部"};
+const HAS_JA=/[ぁ-んァ-ヶ一-龥]/;
+
+let lastTermResults=[];   // [{term,entry,key,color,hits}]  入力語ごとの生の検索結果
+let lastGroups=[];        // 表示用グループ（見出しモードに応じて作り直す）
+let lastOpts={alias:true,ja:true,partial:false};
+let lastTotal=0;
+let lastCsvRows=[];
+
+function norm(s){ return s.normalize("NFKC").toLowerCase().replace(/\s+/g," ").trim(); }
+function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+
+function getOptions(){
+  return {alias:optAlias.checked, ja:optJa.checked, partial:optPartial.checked};
+}
+function getViewMode(){
+  const r=viewModeRadios.find(x=>x.checked);
+  return r?r.value:"term";
+}
+
+/* 入力語 → 辞書エントリ（term / aliases / ja のいずれかと一致すれば同じ概念） */
+function resolveEntry(term){
+  const q=norm(term);
+  for(let i=0;i<FLAT_DICT.length;i++){
+    const it=FLAT_DICT[i];
+    if([it.term,...it.aliases,it.ja].filter(Boolean).some(t=>norm(t)===q)){
+      return {entry:it,key:"E"+i};
+    }
+  }
+  return {entry:null,key:"T"+q};
+}
+
+/* 正規表現の作成：英数字の語は単語境界を付ける。短い全大文字略語は大文字小文字を区別 */
+function makeRegex(text,partial){
+  let body=escRe(text).replace(/\s+/g,"\\s+");
+  if(!partial){
+    if(/^[A-Za-z0-9]/.test(text)) body="(?<![A-Za-z0-9])"+body;
+    if(/[A-Za-z0-9]$/.test(text)) body=body+"(?![A-Za-z0-9])";
+  }
+  const caseSensitive=/^[A-Z][A-Z0-9-]{1,7}$/.test(text);
+  return new RegExp(body,caseSensitive?"g":"gi");
+}
+
+function buildPatterns(term,entry,opts){
+  const pats=[];
+  const seen=new Set();
+  function add(text,kind,partial){
+    if(!text)return;
+    const k=kind+"|"+partial+"|"+text.toLowerCase();
+    if(seen.has(k))return;
+    seen.add(k);
+    pats.push({text,kind,re:makeRegex(text,partial)});
+  }
+  add(term,"exact",false);
+  if(entry){
+    const q=norm(term);
+    [entry.term,...entry.aliases,entry.ja].filter(Boolean).forEach(t=>{
+      if(norm(t)===q){ add(t,"exact",false); return; }
+      if(HAS_JA.test(t)){ if(opts.ja) add(t,"ja",false); }
+      else { if(opts.alias) add(t,"en",false); }
+    });
+  }
+  if(opts.partial){
+    add(term,"partial",true);
+    if(entry && (entry.italic===true || entry.italic==="genus-only")){
+      const genus=entry.term.split(" ")[0];
+      if(norm(genus)!==norm(term)) add(genus,"partial",false); // 属名のみ
+    }
+  }
+  return pats;
+}
+
+/* 1行内の一致を収集し、重なりは 完全＞日本語＞英名・略称＞部分 の優先順位で排除 */
+function findMatches(text,pats){
+  const cand=[];
+  pats.forEach(p=>{
+    p.re.lastIndex=0;
+    let m;
+    while((m=p.re.exec(text))!==null){
+      if(m[0].length===0){ p.re.lastIndex++; continue; }
+      cand.push({start:m.index,end:m.index+m[0].length,kind:p.kind,matched:m[0]});
+    }
+  });
+  cand.sort((a,b)=>KIND_ORDER[a.kind]-KIND_ORDER[b.kind] || (b.end-b.start)-(a.end-a.start) || a.start-b.start);
+  const acc=[];
+  cand.forEach(c=>{
+    if(!acc.some(a=>c.start<a.end && a.start<c.end)) acc.push(c);
+  });
+  acc.sort((a,b)=>a.start-b.start);
+  return acc;
+}
+
+function computeHits(term,entry,opts){
+  const pats=buildPatterns(term,entry,opts);
+  const hits=[];
+  docIndex.lines.forEach(ln=>{
+    findMatches(ln.text,pats).forEach(m=>{
+      const cs=Math.max(0,m.start-100);
+      const ce=Math.min(ln.text.length,m.end+200);
+      hits.push({
+        page:ln.page,line:ln.line,paragraph:ln.paragraph,
+        kind:m.kind,matched:m.matched,
+        context:ln.text.slice(cs,ce),hs:m.start-cs,he:m.end-cs
+      });
+    });
+  });
+  return hits;
+}
+
+function highlightRange(text,hs,he,color){
+  return escapeHtml(text.slice(0,hs))
+    +`<span class="hit" style="background:${color}">${escapeHtml(text.slice(hs,he))}</span>`
+    +escapeHtml(text.slice(he));
+}
+
+/* 見出しの表示用マークアップ（学名はイタリック。血清型はイタリックにしない） */
+function inputMarkup(term,entry){
+  const e=escapeHtml(term);
+  if(HAS_JA.test(term)) return e;
+  if(entry && entry.category==="bacteria"){
+    if(norm(term)===norm(entry.term)) return renderTermMarkup(entry);
+    return `<i>${e}</i>`;
+  }
+  if(!entry && /^[A-Z][a-z]{2,}(\s+[a-z]{3,})+$/.test(term)) return `<i>${e}</i>`;
+  return e;
 }
 
 searchBtn.addEventListener("click",search);
 csvBtn.addEventListener("click",downloadCSV);
 copyIndexBtn.addEventListener("click",copyIndexText);
 
+[optAlias,optJa,optPartial].forEach(el=>el.addEventListener("change",()=>{
+  if(currentFile && lastTermResults.length && hasAnyTerm()) search();
+}));
+viewModeRadios.forEach(el=>el.addEventListener("change",()=>{
+  if(docIndex && lastTermResults.length) renderAll();
+}));
+
 async function search(){
   const terms=getTerms();
   if(!currentFile||!terms.length)return;
 
   searchBtn.disabled=true;csvBtn.disabled=true;copyIndexBtn.disabled=true;
-  resultCard.style.display="none";results.innerHTML="";
-  lastAllResults=[];lastPerTerm=[];
 
   try{
     await ensureIndexed(msg=>{ status.textContent=msg; });
 
-    let totalHits=0;
-    terms.forEach((term,ti)=>{
-      const color=PALETTE[ti%PALETTE.length];
-      const re=new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi");
-      const hits=[];
-
-      docIndex.lines.forEach(entry=>{
-        re.lastIndex=0;
-        let m;
-        while((m=re.exec(entry.text))!==null){
-          const start=Math.max(0,m.index-100);
-          const end=Math.min(entry.text.length,m.index+term.length+200);
-          const context=entry.text.slice(start,end);
-          hits.push({page:entry.page,line:entry.line,paragraph:entry.paragraph,context});
-          lastAllResults.push({
-            no:lastAllResults.length+1,term,page:entry.page,line:entry.line,
-            source:docIndex.type,paragraph:entry.paragraph,context
-          });
-          totalHits++;
-          if(m[0].length===0)re.lastIndex++;
-        }
-      });
-
-      lastPerTerm.push({term,color,hits});
+    lastOpts=getOptions();
+    lastTermResults=terms.map((term,ti)=>{
+      const {entry,key}=resolveEntry(term);
+      return {term,entry,key,color:PALETTE[ti%PALETTE.length],hits:computeHits(term,entry,lastOpts)};
     });
 
-    renderIndex();
-    renderDetailedResults();
-    showSummary(totalHits,docIndex.pageCount,docIndex.type,terms.length);
-    status.textContent=`検索完了：${terms.length}語 / 計${totalHits}件`;
-    csvBtn.disabled=totalHits===0;
-    copyIndexBtn.disabled=totalHits===0;
+    renderAll();
+    status.textContent=`検索完了：${terms.length}語 / 計${lastTotal}件`;
   }catch(err){
     console.error(err);
     status.innerHTML='<span class="error">解析中にエラーが発生しました。ファイルが破損していないか確認してください。</span>';
@@ -733,10 +898,86 @@ async function search(){
   }
 }
 
+/* 表示用グループの作成（入力した語ごと／同じ概念を統合） */
+function buildGroups(){
+  if(getViewMode()==="term"){
+    return lastTermResults.map(r=>({
+      key:r.key,plain:r.term,labelHtml:inputMarkup(r.term,r.entry),
+      color:r.color,hits:r.hits,entry:r.entry,inputs:[r.term],ja:""
+    }));
+  }
+  const order=[];
+  const map=new Map();
+  lastTermResults.forEach(r=>{
+    if(!map.has(r.key)){ map.set(r.key,{first:r,inputs:[]}); order.push(r.key); }
+    map.get(r.key).inputs.push(r.term);
+  });
+  return order.map(k=>{
+    const g=map.get(k), r=g.first;
+    if(!r.entry){
+      return {key:k,plain:r.term,labelHtml:inputMarkup(r.term,null),color:r.color,hits:r.hits,entry:null,inputs:[r.term],ja:""};
+    }
+    // 統合表示では見出しを辞書の正式表記に揃え、同じ概念の全表記を1回だけ数える
+    const hits=computeHits(r.entry.term,r.entry,lastOpts);
+    return {key:k,plain:r.entry.term,labelHtml:renderTermMarkup(r.entry),color:r.color,hits,entry:r.entry,inputs:g.inputs,ja:r.entry.ja||""};
+  });
+}
+
+function countKinds(hits){
+  const c={exact:0,en:0,ja:0,partial:0};
+  hits.forEach(h=>{ c[h.kind]++; });
+  return c;
+}
+
+function renderAll(){
+  lastGroups=buildGroups();
+  lastTotal=lastGroups.reduce((s,g)=>s+g.hits.length,0);
+
+  lastCsvRows=[];
+  lastGroups.forEach(g=>g.hits.forEach(h=>{
+    lastCsvRows.push([lastCsvRows.length+1,g.plain,g.inputs.join(" / "),KIND_LABEL[h.kind],h.matched,h.page,h.line,docIndex.type,h.paragraph,h.context]);
+  }));
+
+  renderIndex();
+  renderDupNotice();
+  renderDetailedResults();
+  showSummary(lastTotal,docIndex.pageCount,docIndex.type,lastGroups.length);
+  csvBtn.disabled=lastTotal===0;
+  copyIndexBtn.disabled=lastTotal===0;
+}
+
+/* 同じ概念を複数入力した場合の案内（入力語ごと表示のとき） */
+function renderDupNotice(){
+  dupNotice.innerHTML="";
+  if(getViewMode()!=="term") return;
+  const byKey=new Map();
+  lastTermResults.forEach(r=>{
+    if(!r.entry) return;
+    if(!byKey.has(r.key)) byKey.set(r.key,[]);
+    byKey.get(r.key).push(r.term);
+  });
+  const dups=[...byKey.values()].filter(a=>a.length>1);
+  if(!dups.length) return;
+  const text=dups.map(a=>a.map(t=>"「"+escapeHtml(t)+"」").join("と")).join("、");
+  const div=document.createElement("div");
+  div.className="dupNotice";
+  div.innerHTML=`${text}は辞書上で同じ概念のため、同じ箇所が重複して表示されます。`;
+  const btn=document.createElement("button");
+  btn.type="button";
+  btn.className="ghost";
+  btn.textContent="同じ概念を1つに統合して表示";
+  btn.addEventListener("click",()=>{
+    const r=viewModeRadios.find(x=>x.value==="concept");
+    if(r){ r.checked=true; renderAll(); }
+  });
+  div.appendChild(btn);
+  dupNotice.appendChild(div);
+}
+
 function renderIndex(){
   indexBox.innerHTML=`<div class="indexTitle">📎 用語：ページ・行一覧</div>`;
 
-  if(!lastPerTerm.length){
+  if(!lastGroups.length){
     const empty=document.createElement("div");
     empty.className="empty";
     empty.textContent="まだ検索していません。「メイン」タブで用語を入力し検索してください。";
@@ -744,26 +985,31 @@ function renderIndex(){
     return;
   }
 
-  lastPerTerm.forEach(({term,color,hits})=>{
+  const legend=document.createElement("div");
+  legend.className="indexKind";
+  legend.textContent="（完＝完全一致／英＝英名・略称／和＝日本語／部＝部分一致）";
+  indexBox.appendChild(legend);
+
+  lastGroups.forEach(g=>{
     const row=document.createElement("div");
     row.className="indexRow";
 
     const swatch=document.createElement("span");
     swatch.className="termSwatch";
-    swatch.style.background=color;
+    swatch.style.background=g.color;
     swatch.style.display="inline-block";
     swatch.style.marginTop="0";
     row.appendChild(swatch);
 
     const termEl=document.createElement("span");
     termEl.className="indexTerm";
-    termEl.textContent=term+"：";
+    termEl.innerHTML=g.labelHtml+"：";
     row.appendChild(termEl);
 
     const listEl=document.createElement("span");
-    if(hits.length){
+    if(g.hits.length){
       listEl.className="indexList";
-      listEl.textContent=hits.map(h=>`P${h.page},L${h.line}`).join("; ");
+      listEl.textContent=indexListText(g.hits);
     }else{
       listEl.className="indexNone";
       listEl.textContent="（該当なし）";
@@ -774,42 +1020,67 @@ function renderIndex(){
   });
 }
 
+function indexListText(hits){
+  return hits.map(h=>`P${h.page},L${h.line}(${KIND_SHORT[h.kind]})`).join("; ");
+}
+
 function renderDetailedResults(){
   results.innerHTML="";
-  lastPerTerm.forEach(({term,color,hits})=>{
+  if(!lastGroups.length) return;
+
+  const legend=document.createElement("div");
+  legend.className="legend";
+  legend.textContent="一致の種類：完全一致＝入力した語（見出し）と同じ表記／英名・略称・日本語＝辞書に登録された別表記／部分一致＝語の一部";
+  results.appendChild(legend);
+
+  const concept=getViewMode()==="concept";
+
+  lastGroups.forEach(g=>{
+    const counts=countKinds(g.hits);
+    const chips=KIND_KEYS.filter(k=>counts[k]).map(k=>`<span class="kindChip k-${k}">${KIND_LABEL[k]} ${counts[k]}</span>`).join("");
+
     const header=document.createElement("div");
     header.className="termGroupHeader";
     header.innerHTML=`
-      <span class="termSwatch" style="background:${color};display:inline-block;margin-top:0"></span>
-      <h3>${escapeHtml(term)}</h3>
-      <span class="count">${hits.length}件</span>`;
+      <span class="termSwatch" style="background:${g.color};display:inline-block;margin-top:0"></span>
+      <h3>${g.labelHtml}</h3>
+      ${concept&&g.ja?`<span class="small">${escapeHtml(g.ja)}</span>`:""}
+      <span class="count">${g.hits.length}件</span>
+      <span class="kindChips">${chips}</span>
+      ${g.entry?"":'<span class="freeTag">辞書未登録語（入力どおりの表記のみ）</span>'}
+      ${concept&&g.entry?`<span class="small">入力：${g.inputs.map(escapeHtml).join(" / ")}</span>`:""}`;
     results.appendChild(header);
 
-    if(!hits.length){
+    if(!g.hits.length){
+      let hint="";
+      if(!g.entry) hint="（辞書未登録語のため、和名・英名への展開は行っていません）";
+      else if(!lastOpts.alias || !lastOpts.ja) hint="（検索範囲の設定により、一部の別表記は検索していません）";
       const empty=document.createElement("div");
       empty.className="empty";
-      empty.textContent=`「${escapeHtml(term)}」は見つかりませんでした。`;
+      empty.innerHTML=`「${g.labelHtml}」は見つかりませんでした。${hint}`;
       results.appendChild(empty);
       return;
     }
 
-    hits.forEach((h,i)=>{
+    g.hits.forEach((h,i)=>{
       const div=document.createElement("div");
       div.className="result";
       div.innerHTML=`
         <div class="meta">#${i+1}　P.${h.page} / L.${h.line}
+          <span class="kindBadge k-${h.kind}">${KIND_LABEL[h.kind]}</span>
           <span class="badge">${docIndex.type}</span>
           ${h.paragraph?`<span class="small">（段落 ${h.paragraph}）</span>`:""}
+          ${h.kind!=="exact"?`<span class="small">ヒット表記：${escapeHtml(h.matched)}</span>`:""}
         </div>
-        <div class="context">…${highlight(h.context,term,color)}…</div>`;
+        <div class="context">…${highlightRange(h.context,h.hs,h.he,g.color)}…</div>`;
       results.appendChild(div);
     });
   });
 }
 
-function showSummary(hits,pages,type,termCount){
+function showSummary(hits,pages,type,groupCount){
   summary.innerHTML=`
-    <div class="stat"><b>${termCount}</b>検索語</div>
+    <div class="stat"><b>${groupCount}</b>${getViewMode()==="concept"?"検索語（概念）":"検索語"}</div>
     <div class="stat"><b>${hits}</b>該当箇所（合計）</div>
     <div class="stat"><b>${pages}</b>${type==="PDF"?"ページ":"推定ページ"}</div>
     <div class="stat"><b>${type}</b>ファイル</div>`;
@@ -823,12 +1094,12 @@ function csvEscape(v){
 }
 
 function downloadCSV(){
-  if(!lastAllResults.length)return;
+  if(!lastCsvRows.length)return;
   const rows=[
-    ["No","検索語","ページ","行","ファイル種別","段落","前後の文章"],
-    ...lastAllResults.map(r=>[r.no,r.term,r.page,r.line,r.source,r.paragraph,r.context])
+    ["No","見出し","入力語","一致種別","ヒットした表記","ページ","行","ファイル種別","段落","前後の文章"],
+    ...lastCsvRows
   ];
-  const csv="\uFEFF"+rows.map(r=>r.map(csvEscape).join(",")).join("\r\n");
+  const csv="﻿"+rows.map(r=>r.map(csvEscape).join(",")).join("\r\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -837,10 +1108,10 @@ function downloadCSV(){
 }
 
 async function copyIndexText(){
-  if(!lastPerTerm.length)return;
-  const lines=lastPerTerm.map(({term,hits})=>{
-    const list=hits.length?hits.map(h=>`P${h.page},L${h.line}`).join("; "):"（該当なし）";
-    return `${term}：${list}`;
+  if(!lastGroups.length)return;
+  const lines=lastGroups.map(g=>{
+    const list=g.hits.length?indexListText(g.hits):"（該当なし）";
+    return `${g.plain}：${list}`;
   });
   const text=lines.join("\n");
   try{
