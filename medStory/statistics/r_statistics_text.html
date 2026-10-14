@@ -30,6 +30,9 @@ th{background:var(--code-bg)}
 .warn{background:var(--warn-bg);border-left:5px solid #d98e04}
 .note b:first-child,.warn b:first-child{display:block;margin-bottom:2px}
 .eq{text-align:center;margin:.8em 0;font-size:1.05rem;overflow-x:auto}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:.5em 0 1em}
+.flow span{border:1px solid var(--line);background:var(--code-bg);border-radius:8px;padding:4px 12px}
+.flow .arrow{border:none;background:none;color:var(--accent);font-weight:bold}
 footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;line-height:1.7}
 @media (max-width:600px){body{font-size:16px}.wrap{padding:12px}h1{font-size:1.45rem}}
 </style>
@@ -38,7 +41,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <div class="wrap">
 <header>
 <h1>Rと統計学</h1>
-<p class="sub">Rの基本・2群の検定・カイ二乗検定とFisherの正確検定・95%信頼区間・ggplot2・メタ解析・パイプ・条件分岐と繰り返し・復元抽出と非復元抽出・RスクリプトとRmd・ANOVA・生存分析・回帰・多変量解析・次元削減・用語集</p>
+<p class="sub">Rの基本・2群の検定・カイ二乗検定とFisherの正確検定・95%信頼区間・ggplot2・メタ解析・パイプ・条件分岐と繰り返し・復元抽出と非復元抽出・RスクリプトとRmd・ANOVA・生存分析・回帰・多変量解析・次元削減・研究デザイン・用語集</p>
 </header>
 
 <nav>
@@ -60,7 +63,8 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li><a href="#s14">14. RスクリプトとR Markdown（Rmd）</a></li>
 <li><a href="#s15">15. ANOVA・生存分析・ログランク検定</a></li>
 <li><a href="#s16">16. 回帰・多変量解析・次元削減・ハザード</a></li>
-<li><a href="#s17">17. 用語集</a></li>
+<li><a href="#s17">17. 研究デザイン（コホート研究と症例対照研究）</a></li>
+<li><a href="#s18">18. 用語集</a></li>
 </ul>
 </nav>
 
@@ -1168,7 +1172,146 @@ cox.zph(fit_cox)       # 比例ハザード性の確認</code></pre>
 </ol>
 <p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。結果の数値は、Pythonなどで同一データを計算して確認したものです。RStudioで動作をご確認ください。</p>
 
-<h2 id="s17">17. 用語集</h2>
+<h2 id="s17">17. 研究デザイン</h2>
+<p>同じ統計手法を使っても、データの集め方（<b>研究デザイン</b>）によって、わかること、わからないこと、結果の解釈が変わります（この節は、節末の参考文献1を参考にしています）。ここでは、研究デザインの全体像と、特に間違えやすい<b>コホート研究と症例対照研究の違い</b>を説明します。</p>
+
+<h3>1. 実験研究と観察研究</h3>
+<div class="table-scroll"><table>
+<tr><th></th><th>実験研究（介入研究）</th><th>観察研究</th></tr>
+<tr><td>内容</td><td>研究者が、対象に何らかの<b>介入</b>（投薬、治療など）を行い、その効果を調べる</td><td>介入せず、<b>観察</b>によってデータを集めて解析する</td></tr>
+<tr><td>代表例</td><td>ランダム化比較試験（RCT）、クロスオーバー試験</td><td>横断研究、コホート研究、症例対照研究</td></tr>
+<tr><td>例</td><td>降圧薬の群とプラセボの群で、血圧を比べる</td><td>喫煙する人としない人を追跡し、肺がんの発症を比べる</td></tr>
+</table></div>
+<ul>
+<li><b>ランダム化比較試験（RCT：Randomized Controlled Trial）：</b>介入群と対照群への割り付けを、<b>ランダム</b>に行います。これにより、年齢や重症度などの背景（測定していないものも含む）の違いが、偶然を除いて、2群でほぼ同じになります。そのため、2群の差を、介入の効果と考えやすくなります。</li>
+<li><b>クロスオーバー試験：</b>対象者を2群に分けて介入し、一定の休薬期間（ウォッシュアウト）の後に、介入を入れ替えて、もう一度行います。同じ人が両方の介入を受けるため、少ない人数で実施できます（データは<b>対応あり</b>なので、paired のt検定などで解析します）。ただし、先の介入の効果が残る<b>持ち越し効果</b>に注意が必要です。</li>
+<li>実験が、倫理的・現実的に行えない場合（喫煙を無理に始めさせることはできません）には、観察研究が行われます。</li>
+</ul>
+
+<h3>2. 観察研究の3つの代表</h3>
+<div class="table-scroll"><table>
+<tr><th></th><th>横断研究</th><th>コホート研究</th><th>症例対照研究<br>（ケースコントロール研究）</th></tr>
+<tr><td>出発点</td><td>ある1時点で、要因と結果を同時に調べる</td><td><b>原因（曝露）</b>の有無で群を分ける</td><td><b>結果（病気）</b>の有無で群を分ける</td></tr>
+<tr><td>時間の向き</td><td>なし（断面）</td><td>曝露 → 時間の経過 → 発症（<b>原因から結果へ</b>）</td><td>発症 → 過去にさかのぼる → 曝露（<b>結果から原因へ</b>）</td></tr>
+<tr><td>主な指標</td><td>有病率</td><td>罹患率、リスク比（相対リスク）、リスク差、ハザード比</td><td>オッズ比</td></tr>
+<tr><td>向いている場面</td><td>現状の把握。仮説を立てる</td><td>曝露がまれな場合。1つの曝露による、複数の結果を調べる</td><td><b>まれな病気</b>。複数の曝露を調べる。短期間で安く行いたい</td></tr>
+<tr><td>弱み</td><td>要因と結果の時間的な前後がわからない</td><td>時間と費用がかかる。まれな病気には不向き。追跡からの脱落</td><td>発症率やリスクを直接求められない。対照の選び方によるバイアス。記憶に頼ることによるバイアス</td></tr>
+</table></div>
+<p>例：「年齢と視力」の関係を、さまざまな年齢の人の視力検査で調べるのは、横断研究です。</p>
+
+<h3>3. コホート研究と症例対照研究の違い</h3>
+<p>2つの研究は、<b>研究を始めるときに、何を基準に人を集めるか</b>が逆です。</p>
+<p><b>コホート研究</b>：曝露の有無で集め、未来に向かって追跡して、結果を調べる。</p>
+<div class="flow"><span>曝露あり群 ／ 曝露なし群</span><span class="arrow">→ 追跡 →</span><span>発症した人 ／ しなかった人</span></div>
+<p><b>症例対照研究</b>：結果の有無で集め、過去にさかのぼって、曝露を調べる。</p>
+<div class="flow"><span>症例（発症した人） ／ 対照（発症していない人）</span><span class="arrow">← さかのぼる ←</span><span>曝露あり ／ なし</span></div>
+<p>感染症の例で考えてみましょう。</p>
+<ul>
+<li><b>コホート研究：</b>ある抗菌薬を使用した患者の群と、使用しなかった患者の群を集め、その後、耐性菌が検出されるかを追跡する。</li>
+<li><b>症例対照研究：</b>耐性菌が検出された患者（症例）と、検出されなかった患者（対照）を集め、過去の抗菌薬の使用歴を比べる。</li>
+</ul>
+<div class="note"><b>「前向き」「後ろ向き」の用語に注意</b>
+<ul>
+<li>コホート研究には、<b>前向き</b>（今から未来に向かって追跡する）と、<b>後ろ向き</b>（過去の記録をもとに、曝露の群を決め、すでに起こった結果までを調べる）があります。</li>
+<li>症例対照研究は、結果から出発する点で、一般に後ろ向きの研究です。</li>
+<li>「前向き／後ろ向き」は、時間の向きについて、論文によって使い方がまちまちです。「何を基準に集めたか（曝露か、結果か）」で区別すると確実です。</li>
+</ul></div>
+
+<h3>4. 研究の出発点は逆でも、変数の役割は逆にならない</h3>
+<p>ここが、最も混乱しやすいところです。</p>
+<ul>
+<li><b>研究を始めるときの順番</b>（原因が先か、結果が先か）は、コホート研究と症例対照研究で<b>逆</b>です。</li>
+<li>しかし、<b>変数の役割</b>は、どちらの研究でも<b>同じ</b>です。<b>曝露（原因）が「説明変数（独立変数）」、結果（病気の有無）が「目的変数（従属変数）」</b>になります。</li>
+</ul>
+<div class="table-scroll"><table>
+<tr><th></th><th>コホート研究</th><th>症例対照研究</th></tr>
+<tr><td>集める基準</td><td>曝露の有無</td><td>病気の有無</td></tr>
+<tr><td>説明変数（独立変数）</td><td>曝露の有無</td><td>曝露の有無</td></tr>
+<tr><td>目的変数（従属変数）</td><td>発症の有無</td><td>発症の有無</td></tr>
+<tr><td>主な指標</td><td>リスク比、ハザード比、オッズ比</td><td>オッズ比</td></tr>
+</table></div>
+<p>症例対照研究では、病気の有無を基準に人を集めますが、最終的に知りたいのは、「<b>その曝露によって、病気になりやすさが、どれくらい変わるか</b>」だからです。ロジスティック回帰でも、<b>病気の有無を目的変数、曝露を説明変数</b>として、同じように設定します。</p>
+<pre><code>病気の有無（目的変数） ~ 曝露の有無（説明変数）    # Rの式：glm(case ~ exposure, family = binomial)</code></pre>
+<div class="warn"><b>2つの注意</b>
+<ul>
+<li><b>「説明変数 = 原因」は、原因を調べる研究（疫学など）での整理です。</b>予測モデルでは、原因でなくても、結果の予測に役立つ変数を説明変数に入れます。また、説明変数と目的変数に関連があっても、それが因果関係とは限りません（交絡の可能性があります）。</li>
+<li><b>症例対照研究の注意：</b>症例と対照の人数の比は、研究者が決めたものです。このため、発症の割合（リスク）は計算できません。ロジスティック回帰の切片も、解釈できません。解釈できるのは、説明変数の係数から求める<b>オッズ比</b>です。</li>
+</ul></div>
+
+<h3>5. 数値で確認する：2×2表とオッズ比</h3>
+<p>同じ関連を、2つのデザインで調べた場合を考えます（数値は練習用のダミーです）。</p>
+<h4>コホート研究：曝露の有無で、200人を追跡</h4>
+<div class="table-scroll"><table>
+<tr><th></th><th>発症あり</th><th>発症なし</th><th>合計</th></tr>
+<tr><th>曝露あり</th><td>30</td><td>70</td><td>100</td></tr>
+<tr><th>曝露なし</th><td>10</td><td>90</td><td>100</td></tr>
+</table></div>
+<ul>
+<li>リスク（発症の割合）：曝露あり 30/100 = 0.30、曝露なし 10/100 = 0.10</li>
+<li><b>リスク比</b> = 0.30 / 0.10 = <b>3.0</b>　　<b>リスク差</b> = 0.30 − 0.10 = 0.20</li>
+<li><b>オッズ比</b> = (30 × 90) / (70 × 10) ≈ <b>3.86</b></li>
+</ul>
+<h4>症例対照研究：症例40人と、対照80人を集めて、曝露を調べる</h4>
+<div class="table-scroll"><table>
+<tr><th></th><th>症例</th><th>対照</th></tr>
+<tr><th>曝露あり</th><td>30</td><td>35</td></tr>
+<tr><th>曝露なし</th><td>10</td><td>45</td></tr>
+<tr><th>合計</th><td>40</td><td>80</td></tr>
+</table></div>
+<ul>
+<li><b>オッズ比</b> = (30 × 45) / (10 × 35) ≈ <b>3.86</b>（コホート研究のオッズ比と一致）</li>
+<li>「曝露ありの発症の割合 = 30/65」は、対照を何人集めるかで変わってしまうので、意味がありません。<b>リスク比は求められません。</b></li>
+</ul>
+<div class="note"><b>オッズ比が使える理由</b>オッズ比には、「曝露の有無から見た、病気のオッズの比」と、「病気の有無から見た、曝露のオッズの比」が<b>等しい</b>という性質があります。このため、結果から出発する症例対照研究でも、オッズ比なら、正しく推定できます。<br>
+また、病気が<b>まれ</b>であれば、オッズ比はリスク比に近い値になります。この例は、発症が約2割とまれではないため、オッズ比（3.86）とリスク比（3.0）が離れています。</div>
+<pre><code># コホート研究
+a &lt;- 30; b &lt;- 70      # 曝露あり：発症あり、なし
+c &lt;- 10; d &lt;- 90      # 曝露なし：発症あり、なし
+(a / (a + b)) / (c / (c + d))     # リスク比 3.0
+(a * d) / (b * c)                 # オッズ比 3.857
+
+# 症例対照研究：オッズ比だけを求める
+(30 * 45) / (10 * 35)             # 3.857
+
+# ロジスティック回帰（目的変数 = 病気の有無、説明変数 = 曝露の有無）
+cc &lt;- data.frame(
+  case     = rep(c(1, 1, 0, 0), times = c(30, 10, 35, 45)),
+  exposure = rep(c(1, 0, 1, 0), times = c(30, 10, 35, 45))
+)
+fit &lt;- glm(case ~ exposure, data = cc, family = binomial)
+exp(coef(fit))      # exposure の値がオッズ比（3.857）。切片は解釈しない</code></pre>
+<p>2×2表を <code>fisher.test()</code> に入れても、オッズ比と信頼区間を求められます（推定の方法が少し異なるため、上の単純な計算値と、小数点以下がわずかに異なることがあります）。</p>
+
+<h3>6. 研究デザインとバイアス</h3>
+<div class="table-scroll"><table>
+<tr><th>バイアス</th><th>内容</th><th>起こりやすい場面</th></tr>
+<tr><td><b>選択バイアス</b></td><td>対象者の選び方が偏り、結果がゆがむ</td><td>症例対照研究の<b>対照の選び方</b>。ランダム化でない研究</td></tr>
+<tr><td><b>思い出しバイアス</b></td><td>病気の人のほうが、過去の曝露を、よく思い出す（または、誤って答える）</td><td>症例対照研究（曝露を、記憶や聞き取りで調べるとき）</td></tr>
+<tr><td><b>交絡</b></td><td>曝露と結果の両方に関係する第3の要因が、関連をゆがめる</td><td>観察研究全般。RCTではランダム化で抑えられる</td></tr>
+<tr><td><b>脱落（追跡からの脱落）</b></td><td>追跡できなくなる人が、偏って生じる</td><td>コホート研究、RCT</td></tr>
+</table></div>
+<p>交絡は、<b>多変量解析（第16節）</b>で調整できます。ただし、測定していない要因は調整できません。RCTは、ランダム化によって、測定していない要因も含めて、2群を揃えることができます。</p>
+
+<h3>7. 研究の問いを整理する：PECO / PICO</h3>
+<p>研究の問いは、次の4つの要素で整理します。このうち、<b>E（I）が説明変数、O が目的変数</b>に対応します。</p>
+<div class="table-scroll"><table>
+<tr><th></th><th>PECO（観察研究）</th><th>PICO（介入研究）</th><th>対応する変数</th></tr>
+<tr><td>P</td><td>Patient / Population：対象</td><td>同左</td><td>対象集団</td></tr>
+<tr><td>E / I</td><td>Exposure：曝露</td><td>Intervention：介入</td><td><b>説明変数（独立変数）</b></td></tr>
+<tr><td>C</td><td>Comparison：比較対照</td><td>同左</td><td>説明変数の比較のもう一方</td></tr>
+<tr><td>O</td><td>Outcome：結果</td><td>同左</td><td><b>目的変数（従属変数）</b></td></tr>
+</table></div>
+
+<h3>8. 母集団と標本</h3>
+<p>研究では、知りたい対象全体（<b>母集団</b>）の、すべてを調べることは難しいため、その一部（<b>標本</b>）を調べて、母集団について推測します（<b>標本調査</b>。全員を調べるのが<b>全数調査</b>）。標本が母集団を正しく代表するように、<b>無作為に</b>選ぶ（無作為抽出）ことが重要です。第13節の復元抽出・非復元抽出は、この無作為抽出を、計算で行う方法です。</p>
+
+<h3>参考文献</h3>
+<ol>
+<li>統計WEB（BellCurve）. 16-4. 研究デザイン. SSRI Co., Ltd. <a href="https://bellcurve.jp/statistics/course/18127.html" target="_blank" rel="noopener">https://bellcurve.jp/statistics/course/18127.html</a>（2026年10月15日閲覧）</li>
+</ol>
+<p>この節の、実験研究と観察研究の分類、RCT、クロスオーバー試験、横断研究、コホート研究、症例対照研究の説明は、上記の文献を参考にしています。コホート研究と症例対照研究の変数の役割、数値例、バイアス、PECO/PICOの説明は、本テキストで補ったものです。</p>
+
+<h2 id="s18">18. 用語集</h2>
 <p>このテキストに出てくる用語を、分野ごとにまとめました。「Rでの例」の列には、関連する関数や書き方を書いています。</p>
 
 <h3>まず、4つの基本用語を例で確認しよう</h3>
@@ -1185,7 +1328,26 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <li><b>戻り値（返り値）：</b>関数が返す結果。変数に代入して、次の処理に使える。</li>
 </ul>
 
-<h3>1. データ構造・操作の基本</h3>
+<h3>1. 変数の役割と種類</h3>
+<p>「何を原因（または予測の材料）とし、何を結果として扱うか」で、変数に役割がつきます。同じ意味の言葉が、分野によって複数あるので、まとめて確認しましょう。</p>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>説明変数</b><br>Explanatory variable</td><td>結果に影響すると考える（結果を説明・予測する）変数。疫学では、<b>曝露（原因、リスク因子）</b>にあたる。<b>独立変数</b>と同じ意味</td><td>式 <code>y ~ x</code> の右辺（<code>x</code>）</td></tr>
+<tr><td><b>目的変数</b><br>Response / Outcome variable</td><td>説明したい、予測したい<b>結果</b>の変数。疫学では<b>アウトカム</b>（病気の有無など）。<b>従属変数</b>と同じ意味</td><td>式 <code>y ~ x</code> の左辺（<code>y</code>）</td></tr>
+<tr><td><b>独立変数</b><br>Independent variable</td><td><b>説明変数</b>の別名。他の変数に依存せず、設定・観察される側の変数。（他に、予測変数、因子などとも呼ばれる）</td><td>—</td></tr>
+<tr><td><b>従属変数</b><br>Dependent variable</td><td><b>目的変数</b>の別名。独立変数に依存して決まる側の変数。（他に、応答変数、結果変数とも呼ばれる）</td><td>—</td></tr>
+<tr><td><b>曝露</b><br>Exposure</td><td>研究で注目する要因。薬剤の使用、喫煙、危険因子など。コホート研究でも症例対照研究でも、説明変数になる</td><td>—</td></tr>
+<tr><td><b>アウトカム</b><br>Outcome</td><td>注目する結果。発症、死亡、検出など。目的変数になる</td><td>—</td></tr>
+<tr><td><b>共変量</b><br>Covariate</td><td>調整のために、モデルに加える説明変数。年齢、性別など</td><td><code>y ~ x + age + sex</code></td></tr>
+<tr><td><b>交絡因子</b><br>Confounder</td><td>曝露とアウトカムの両方に関係して、両者の関連をゆがめる因子</td><td>共変量として、モデルに加える</td></tr>
+<tr><td><b>量的変数・質的変数</b><br>Quantitative / Qualitative variable</td><td>量的変数は、数値の大小に意味がある（身長、血圧など）。質的変数（カテゴリ変数）は、種類を表す（性別、血液型など）</td><td><code>numeric</code>、<code>factor</code></td></tr>
+<tr><td><b>連続変数・離散変数</b><br>Continuous / Discrete variable</td><td>連続変数は、小数まで細かい値をとる（体重）。離散変数は、とびとびの値をとる（回数、人数）</td><td>—</td></tr>
+<tr><td><b>2値変数</b><br>Binary variable</td><td>2つの値だけをとる変数（あり／なし、0／1）。ロジスティック回帰の目的変数になる</td><td><code>0</code> / <code>1</code>、<code>TRUE</code> / <code>FALSE</code></td></tr>
+<tr><td><b>変数の尺度</b><br>Scale of measurement</td><td>変数の性質の分類。<b>名義尺度</b>（区別のみ。血液型）、<b>順序尺度</b>（順序に意味がある。重症度のグレード）、<b>間隔尺度</b>（差に意味がある。摂氏の温度）、<b>比尺度</b>（比にも意味がある。身長、体重）。どの検定や平均を使えるかが、尺度で決まる</td><td><code>factor</code>、<code>ordered()</code></td></tr>
+</table></div>
+<div class="note"><b>Rの式 <code>y ~ x</code> の読み方</b><code>~</code>（チルダ）の<b>左側が目的変数、右側が説明変数</b>です。「<code>y</code> を、<code>x</code> で説明する」と読みます。第15節の <code>aov(Sepal.Length ~ Species)</code> も、第16節の <code>lm()</code> や <code>glm()</code>、<code>coxph()</code> も、同じ書き方です。</div>
+
+<h3>2. データ構造・操作の基本</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>変数</b><br>Variable</td><td>値に名前をつけて入れておく箱。なお、統計では、データの「列」（身長、年齢など）も「変数」と呼ぶ。同じ言葉に、2つの意味がある</td><td><code>a &lt;- 1</code></td></tr>
@@ -1200,7 +1362,7 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>縦長・横長データ</b><br>Long / Wide format</td><td>縦長は「1行 = 1つの観測」、横長は「1行 = 1人で、項目が横に並ぶ」形。ggplot2は縦長が得意</td><td><code>pivot_longer()</code>、<code>pivot_wider()</code></td></tr>
 </table></div>
 
-<h3>2. 関数とパイプライン処理</h3>
+<h3>3. 関数とパイプライン処理</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>関数</b><br>Function</td><td>引数を受け取り、処理をして、戻り値を返す、処理のまとまり</td><td><code>mean()</code>、<code>t.test()</code></td></tr>
@@ -1213,7 +1375,7 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>繰り返し</b><br>Loop</td><td>同じ処理を、何度も行う</td><td><code>for</code>、<code>while</code>、<code>replicate()</code>、<code>sapply()</code></td></tr>
 </table></div>
 
-<h3>3. 基本統計量とデータの可視化</h3>
+<h3>4. 基本統計量とデータの可視化</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>5要約量</b><br>Five-number summary</td><td>最小値、第1四分位数、中央値、第3四分位数、最大値の5つ。これに平均を加えたものが、<code>summary()</code> の6つの基本統計量</td><td><code>summary()</code>、<code>fivenum()</code></td></tr>
@@ -1222,14 +1384,17 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>最小値・最大値</b><br>Minimum / Maximum</td><td>データの最も小さい値、最も大きい値</td><td><code>min()</code>、<code>max()</code></td></tr>
 <tr><td><b>四分位数</b><br>Quartile</td><td>データを小さい順に並べて、4等分する点。25%点が第1、50%点が第2（中央値）、75%点が第3四分位数</td><td><code>quantile()</code></td></tr>
 <tr><td><b>標準偏差</b><br>Standard deviation</td><td>データのばらつきの大きさを表す値</td><td><code>sd()</code></td></tr>
+<tr><td><b>分散</b><br>Variance</td><td>データのばらつきを表す値。各データと平均の差を2乗して平均したもの（標本からは、n−1で割った不偏分散を使う）。標準偏差は、分散の平方根</td><td><code>var()</code></td></tr>
+<tr><td><b>標準誤差</b><br>Standard error (SE)</td><td>平均値などの推定値が、標本ごとにどれくらいばらつくかを表す値。標準偏差（データのばらつき）とは別のもの。信頼区間の計算に使う</td><td><code>sd(x) / sqrt(length(x))</code></td></tr>
 <tr><td><b>相関係数</b><br>Correlation coefficient</td><td>2つの変数の直線的な関係の強さ（−1〜1）</td><td><code>cor()</code></td></tr>
+<tr><td><b>外れ値</b><br>Outlier</td><td>他のデータから大きく離れた値。平均値や、パラメトリック検定は引きずられやすい。箱ひげ図では点で表される</td><td><code>boxplot.stats()$out</code></td></tr>
 <tr><td><b>ヒストグラム</b><br>Histogram</td><td>データの分布を、柱の高さで表すグラフ。正規分布の確認に使う</td><td><code>hist()</code>、<code>geom_histogram()</code></td></tr>
 <tr><td><b>散布図</b><br>Scatter plot</td><td>2つの変数の関係を、点で表すグラフ</td><td><code>plot()</code>、<code>geom_point()</code></td></tr>
 <tr><td><b>箱ひげ図／周辺箱ひげ図</b><br>Boxplot / Marginal boxplot</td><td>箱で四分位範囲と中央値、ひげと点で、ばらつきと外れ値を表すグラフ。周辺箱ひげ図は、散布図の余白に、箱ひげ図をつけたもの</td><td><code>boxplot()</code>、<code>geom_boxplot()</code>、<code>ggMarginal()</code></td></tr>
 <tr><td><b>帯グラフ</b><br>Stacked bar plot</td><td>各グループの内訳の割合を、積み上げた棒で表すグラフ</td><td><code>geom_bar(position = "fill")</code></td></tr>
 </table></div>
 
-<h3>4. 統計的推定と確率の基礎</h3>
+<h3>5. 統計的推定と確率の基礎</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>順問題・逆問題</b><br>Forward / Inverse problem</td><td>順問題は、元の確率がわかっていて、結果を予測する問題。逆問題は、結果がわかっていて、元の確率を推定する問題。実際の研究の多くは逆問題</td><td>—</td></tr>
@@ -1242,7 +1407,7 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>乱数の種</b><br>Seed</td><td>乱数の出方を決める数。同じ種なら、毎回同じ乱数になる</td><td><code>set.seed()</code></td></tr>
 </table></div>
 
-<h3>5. 主要な確率分布</h3>
+<h3>6. 主要な確率分布</h3>
 <p>Rの分布の関数は、頭文字で用途を表します。<code>d</code>（確率・密度）、<code>p</code>（累積確率）、<code>q</code>（分位点）、<code>r</code>（乱数）です。たとえば正規分布なら <code>dnorm()</code>、<code>pnorm()</code>、<code>qnorm()</code>、<code>rnorm()</code> です。</p>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
@@ -1257,11 +1422,15 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>極値分布</b><br>Extreme value distribution</td><td>多くの値のうちの、最大値（または最小値）がしたがう分布。Gumbel分布などがある</td><td>追加のパッケージ（<code>evd</code> など）を使う</td></tr>
 </table></div>
 
-<h3>6. 統計的検定（単変量解析）</h3>
+<h3>7. 統計的検定（単変量解析）</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>帰無仮説</b><br>Null hypothesis</td><td>「差がない」「関係がない」という、否定したい仮説。検定は、この仮説を前提に、確率を計算する</td><td>—</td></tr>
 <tr><td><b>有意差・p値</b><br>Statistical significance / p-value</td><td>p値は、帰無仮説が正しいと仮定したとき、観察されたもの以上に極端な結果が出る確率。小さい（慣習的に0.05未満）と「有意差あり」とする。効果の大きさや重要さを表すものではない</td><td><code>res$p.value</code></td></tr>
+<tr><td><b>有意水準</b><br>Significance level</td><td>帰無仮説を棄却する基準にする確率。慣習的に0.05（5%）。p値がこれより小さいと「有意」とする</td><td>—</td></tr>
+<tr><td><b>第1種の過誤・第2種の過誤</b><br>Type I / Type II error</td><td>第1種の過誤は、本当は差がないのに、差があると判断する誤り（確率は有意水準）。第2種の過誤は、本当は差があるのに、見逃す誤り（確率は1−検出力）</td><td>—</td></tr>
+<tr><td><b>両側検定・片側検定</b><br>Two-sided / One-sided test</td><td>両側検定は、差がどちらの向きにあってもよい検定。片側検定は、一方の向きだけを検定する。通常は両側検定を使う</td><td><code>alternative = "two.sided"</code></td></tr>
+<tr><td><b>効果量</b><br>Effect size</td><td>差や関連の大きさを表す値。p値は、標本が大きいと小さくなるが、効果量は、その差の大きさを表す。平均差、標準化平均差、オッズ比など</td><td>—</td></tr>
 <tr><td><b>検出力</b><br>Power</td><td>本当に差があるときに、検定で、差を見つけられる確率</td><td><code>power.t.test()</code></td></tr>
 <tr><td><b>パラメトリック・ノンパラメトリック検定</b><br>Parametric / Non-parametric test</td><td>パラメトリックは、数値そのものを使い、基本的に正規分布を仮定する。ノンパラメトリックは、順位だけを使い、外れ値に強いが、検出力はやや低い</td><td>—</td></tr>
 <tr><td><b>対応のあるデータ・対応のないデータ</b><br>Paired / Unpaired data</td><td>対応ありは、同じ対象の前後など、組になったデータ。対応なしは、独立した別々のグループ</td><td><code>paired = TRUE</code></td></tr>
@@ -1278,7 +1447,7 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>多重性の問題・多重比較</b><br>Multiple comparisons</td><td>検定を繰り返すと、誤って有意になる確率が上がる問題。それを補正して比べる方法が、多重比較</td><td><code>TukeyHSD()</code>、<code>p.adjust()</code></td></tr>
 </table></div>
 
-<h3>7. 生存分析</h3>
+<h3>8. 生存分析</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>生存分析</b><br>Survival analysis</td><td>イベントが起きるまでの時間を分析する方法</td><td><code>survival</code> パッケージ</td></tr>
@@ -1289,7 +1458,7 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>ハザード比</b><br>Hazard ratio (HR)</td><td>2つのグループのハザードの比。0.6なら、一方が他方の0.6倍</td><td><code>exp(coef(fit_cox))</code></td></tr>
 </table></div>
 
-<h3>8. 予測モデルと多変量解析</h3>
+<h3>9. 予測モデルと多変量解析</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>単変量解析</b><br>Univariable analysis</td><td>1つの原因と1つの結果の関係だけを見る解析</td><td><code>t.test()</code>、<code>lm(y ~ x)</code></td></tr>
@@ -1297,12 +1466,12 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>単回帰分析</b><br>Simple linear regression</td><td>1つの説明変数から、数値を予測する</td><td><code>lm()</code></td></tr>
 <tr><td><b>重回帰分析</b><br>Multiple linear regression</td><td>複数の説明変数から、数値を予測する</td><td><code>lm()</code></td></tr>
 <tr><td><b>ロジスティック回帰分析</b><br>Logistic regression</td><td>2択（YES / NO）の確率を予測する。係数からオッズ比を求められる</td><td><code>glm(family = binomial)</code></td></tr>
-<tr><td><b>オッズ比</b><br>Odds ratio (OR)</td><td>オッズ（起きる確率 ÷ 起きない確率）の比。1なら差なし。メタ解析やロジスティック回帰で使う</td><td><code>exp(coef(fit))</code></td></tr>
+<tr><td><b>オッズ比</b><br>Odds ratio (OR)</td><td>オッズ（起きる確率 ÷ 起きない確率）の比。1なら差なし。症例対照研究、メタ解析、ロジスティック回帰で使う。まれな病気では、リスク比に近い値になる</td><td><code>exp(coef(fit))</code></td></tr>
 <tr><td><b>コックス比例ハザードモデル</b><br>Cox proportional hazards model</td><td>生存期間に、複数の要因がどう影響するかを解析する、生存分析の回帰</td><td><code>coxph()</code></td></tr>
 <tr><td><b>統計的調整・交絡</b><br>Adjustment / Confounding</td><td>結果にも原因にも関係する要因（交絡因子）の影響を、モデルに入れて取り除くこと</td><td>モデルの式に <code>+ age</code> などと加える</td></tr>
 </table></div>
 
-<h3>9. 次元削減（特徴抽出）</h3>
+<h3>10. 次元削減（特徴抽出）</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>次元削減</b><br>Dimensionality reduction</td><td>多数の変数をもつデータを、特徴を保ちながら、少ない次元（2次元など）にまとめる</td><td>—</td></tr>
@@ -1311,7 +1480,7 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>UMAP</b></td><td>t-SNEに似た可視化の方法で、速く、全体の構造も比較的保つ</td><td><code>umap()</code>（uwot）</td></tr>
 </table></div>
 
-<h3>10. メタ解析</h3>
+<h3>11. メタ解析</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>メタ解析</b><br>Meta-analysis</td><td>同じ問いを扱った複数の研究の結果を、統計的に統合する方法</td><td><code>metabin()</code>、<code>metacont()</code></td></tr>
@@ -1324,7 +1493,7 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>感度分析（1つ抜き解析）</b><br>Sensitivity analysis / Leave-one-out analysis</td><td>研究を1つずつ除いて、再計算し、結果が頑健かを確かめる</td><td><code>metainf()</code></td></tr>
 </table></div>
 
-<h3>11. ファイル形式と環境</h3>
+<h3>12. ファイル形式と環境</h3>
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>IDE</b><br>Integrated development environment</td><td>コードを書き、実行し、結果を見るための統合開発環境。RではRStudioが一般的</td><td>RStudio、VSCode</td></tr>
@@ -1338,6 +1507,34 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>作業ディレクトリ</b><br>Working directory</td><td>Rが、今、ファイルを探したり保存したりする場所（フォルダ）</td><td><code>getwd()</code>、<code>setwd()</code></td></tr>
 <tr><td><b>Base R</b></td><td>追加のパッケージなしで使える、Rの標準の機能</td><td><code>mean()</code>、<code>plot()</code></td></tr>
 <tr><td><b>Tidyverse</b></td><td>データの整形・可視化などに便利な、パッケージの詰め合わせ（dplyr、ggplot2、readr など）</td><td><code>library(tidyverse)</code></td></tr>
+</table></div>
+
+<h3>13. 研究デザインと疫学の指標</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>関連</th></tr>
+<tr><td><b>実験研究（介入研究）</b><br>Experimental study</td><td>研究者が介入を行い、その効果を調べる研究</td><td>RCT、クロスオーバー試験</td></tr>
+<tr><td><b>観察研究</b><br>Observational study</td><td>介入せず、観察によってデータを集める研究</td><td>横断、コホート、症例対照</td></tr>
+<tr><td><b>ランダム化比較試験（RCT）</b><br>Randomized controlled trial</td><td>介入群と対照群への割り付けを、ランダムに行う実験研究。背景の違いを、偶然を除いて揃えられる</td><td>—</td></tr>
+<tr><td><b>ランダム化（無作為割り付け）</b><br>Randomization</td><td>偶然によって、対象を群に割り付けること</td><td><code>sample()</code></td></tr>
+<tr><td><b>クロスオーバー試験</b><br>Crossover trial</td><td>同じ対象が、介入の順番を入れ替えて、両方を受ける試験。対応のあるデータになる</td><td><code>t.test(paired = TRUE)</code></td></tr>
+<tr><td><b>持ち越し効果</b><br>Carryover effect</td><td>先の介入の効果が、次の期間に残ること。休薬期間（ウォッシュアウト）で防ぐ</td><td>—</td></tr>
+<tr><td><b>横断研究</b><br>Cross-sectional study</td><td>ある1時点で、要因と結果を同時に調べる研究。有病率を求められるが、時間的な前後はわからない</td><td>—</td></tr>
+<tr><td><b>コホート研究</b><br>Cohort study</td><td>曝露の有無で群を分け、時間の経過に沿って、発症を観察する研究。罹患率、リスク比を求められる</td><td>リスク比、ハザード比、<code>coxph()</code></td></tr>
+<tr><td><b>症例対照研究（ケースコントロール研究）</b><br>Case-control study</td><td>病気の人（症例）と、そうでない人（対照）を集め、過去の曝露を比べる研究。まれな病気に向く。オッズ比を求める</td><td>オッズ比、<code>glm(family = binomial)</code></td></tr>
+<tr><td><b>前向き研究・後ろ向き研究</b><br>Prospective / Retrospective study</td><td>前向きは、これから未来に向かって調べる。後ろ向きは、過去の記録や記憶をもとに調べる。論文によって使い方が異なるので、何を基準に集めたかで確認する</td><td>—</td></tr>
+<tr><td><b>症例・対照</b><br>Case / Control</td><td>症例は、注目する病気になった人。対照は、比較のために選ぶ、病気になっていない人</td><td>—</td></tr>
+<tr><td><b>母集団・標本</b><br>Population / Sample</td><td>母集団は、知りたい対象の全体。標本は、そこから調べるために選んだ一部</td><td><code>sample()</code></td></tr>
+<tr><td><b>全数調査・標本調査</b><br>Census / Sample survey</td><td>全数調査は、母集団の全員を調べる。標本調査は、標本だけを調べて、母集団を推測する</td><td>—</td></tr>
+<tr><td><b>無作為抽出</b><br>Random sampling</td><td>偶然にまかせて、母集団から標本を選ぶこと。選び方の偏りを防ぐ</td><td><code>sample()</code></td></tr>
+<tr><td><b>バイアス（偏り）</b><br>Bias</td><td>結果を、一方向にゆがめる、系統的な誤り。選択バイアス、思い出しバイアスなど。標本を増やしても、なくならない</td><td>—</td></tr>
+<tr><td><b>選択バイアス</b><br>Selection bias</td><td>対象者の選び方が偏って、結果がゆがむこと。症例対照研究の対照の選び方で起こりやすい</td><td>—</td></tr>
+<tr><td><b>思い出しバイアス</b><br>Recall bias</td><td>病気の人のほうが過去の曝露を思い出しやすい、などの記憶の偏り。症例対照研究で起こりやすい</td><td>—</td></tr>
+<tr><td><b>リスク（発症割合）</b><br>Risk</td><td>ある期間に、発症する人の割合（発症した人 ÷ 全体）</td><td>—</td></tr>
+<tr><td><b>リスク比（相対リスク）</b><br>Risk ratio / Relative risk</td><td>曝露ありのリスクを、曝露なしのリスクで割った値。1なら差なし。コホート研究やRCTで求められる</td><td>—</td></tr>
+<tr><td><b>リスク差</b><br>Risk difference</td><td>曝露ありのリスクから、曝露なしのリスクを引いた値</td><td>—</td></tr>
+<tr><td><b>オッズ</b><br>Odds</td><td>起きる確率 ÷ 起きない確率。確率が0.2ならオッズは0.25</td><td>—</td></tr>
+<tr><td><b>罹患率・有病率</b><br>Incidence / Prevalence</td><td>罹患率は、一定の期間に、新しく発症する人の割合（人時あたりの発生率）。有病率は、ある時点で、病気をもつ人の割合</td><td>—</td></tr>
+<tr><td><b>PECO / PICO</b></td><td>研究の問いを、対象（P）、曝露または介入（E／I）、比較（C）、結果（O）で整理する枠組み</td><td>E／I＝説明変数、O＝目的変数</td></tr>
 </table></div>
 
 <footer>

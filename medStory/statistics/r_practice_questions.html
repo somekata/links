@@ -43,7 +43,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <div class="wrap">
 <header>
 <h1>Rと統計学 練習問題</h1>
-<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全39問）</p>
+<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全63問）</p>
 </header>
 
 <div class="note"><b>使い方</b>
@@ -51,7 +51,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li>RStudio（またはPosit Cloud）を開き、<b>自分で考えてコードを書いてから</b>、「解答例を見る」を開いて答え合わせをしましょう。</li>
 <li>解答は1通りではありません。同じ結果が出れば、別の書き方でも正解です。</li>
 <li>特に断りがなければ、先頭で <code>library(tidyverse)</code> を実行してある前提です。</li>
-<li>乱数を使う問題（第E部）は、実行するたびに値が変わります。</li>
+<li>乱数を使う問題（第E部、Q63）は、実行するたびに値が変わります。</li>
 <li>★は難易度の目安です（★ 基本、★★ 標準、★★★ 応用）。</li>
 </ul></div>
 
@@ -70,6 +70,10 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li><a href="#pd">D. 検定と信頼区間 Q25〜Q30</a></li>
 <li><a href="#pe">E. 条件分岐・繰り返し・抽出・パイプ Q31〜Q37</a></li>
 <li><a href="#pf">F. メタ解析とレポート作成 Q38〜Q39</a></li>
+<li><a href="#pg">G. 用語と変数の役割 Q40〜Q45</a></li>
+<li><a href="#ph">H. ANOVA・生存分析 Q46〜Q50</a></li>
+<li><a href="#pi">I. 回帰・多変量解析・次元削減 Q51〜Q55</a></li>
+<li><a href="#pj">J. 研究デザイン Q56〜Q63</a></li>
 </ul>
 </nav>
 
@@ -632,6 +636,306 @@ ggplot(students, aes(x = team, y = score, fill = team)) +
   geom_boxplot()
 ```</code></pre>
 <p>全体の平均点は、インラインコード（<code>`r mean(students$score)`</code>）で入れているので、データが変わってKnitし直せば、文章の数値も更新されます（この例では、77.8になります）。</p>
+</details></div>
+
+<!-- ============ G ============ -->
+<h2 id="pg">G. 用語と変数の役割</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q40</span>次のコードについて、(1) <b>関数名</b>、(2) <b>引数</b>、(3) <b>戻り値を受け取っている変数</b>を、それぞれ答えなさい。<span class="lv">★</span>
+<pre><code>res &lt;- t.test(class_A, class_B, paired = FALSE)</code></pre></div>
+<details><summary>解答例を見る</summary>
+<ul>
+<li>関数名：<code>t.test</code></li>
+<li>引数：<code>class_A</code>、<code>class_B</code>、<code>paired = FALSE</code>（<code>paired</code> は、名前をつけて渡した引数）</li>
+<li>戻り値を受け取っている変数：<code>res</code>（検定結果のまとまりが入る）</li>
+</ul>
+<p>戻り値から、必要な値を取り出すには、<code>res$p.value</code>（p値）や <code>res$conf.int</code>（95%信頼区間）のようにします。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q41</span><code>x &lt;- c(1, 2, NA)</code> について、<code>mean(x)</code> と <code>mean(x, na.rm = TRUE)</code> の結果をそれぞれ予想し、実行して確かめなさい。<code>na.rm = TRUE</code> は何にあたりますか。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>x &lt;- c(1, 2, NA)
+mean(x)                    # NA
+mean(x, na.rm = TRUE)      # 1.5</code></pre>
+<p>欠損値（<code>NA</code>）が含まれると、平均は計算できず、<code>NA</code> が返ります。<code>na.rm = TRUE</code> は、関数 <code>mean()</code> に渡す<b>引数</b>で、「欠損値を除いて計算する」という指定です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q42</span>次の(a)〜(d)で、<b>説明変数（独立変数）</b>と<b>目的変数（従属変数）</b>は、それぞれ何ですか。<span class="lv">★★</span>
+<ul>
+<li>(a) 身長から、体重を予測する。</li>
+<li>(b) 喫煙する群としない群を10年間追跡し、肺がんの発症を比べる（コホート研究）。</li>
+<li>(c) 肺がんの患者と、そうでない人を集め、過去の喫煙の有無を比べる（症例対照研究）。</li>
+<li>(d) 降圧薬の群とプラセボの群で、血圧の平均を比べる。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<div class="table-scroll"><table>
+<tr><th></th><th>説明変数（独立変数）</th><th>目的変数（従属変数）</th></tr>
+<tr><td>(a)</td><td>身長</td><td>体重</td></tr>
+<tr><td>(b)</td><td>喫煙の有無</td><td>肺がんの発症の有無</td></tr>
+<tr><td>(c)</td><td>喫煙の有無</td><td>肺がんの有無</td></tr>
+<tr><td>(d)</td><td>投与群（降圧薬かプラセボか）</td><td>血圧</td></tr>
+</table></div>
+<p>(b)と(c)は、研究を始めるときの順番（原因が先か、結果が先か）が逆ですが、<b>どちらも、曝露（喫煙）が説明変数、結果（肺がん）が目的変数</b>です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q43</span>Q42の(a)と(c)を解析するための、Rの式を書きなさい。データフレームは、(a)が <code>d1</code>（列は <code>height</code>、<code>weight</code>）、(c)が <code>d2</code>（列は <code>case</code>（0／1）、<code>smoke</code>（0／1））とします。<span class="lv">★★</span></div>
+<p class="hint">ヒント：<code>~</code> の左が目的変数、右が説明変数です。(c)の目的変数は2値です。</p>
+<details><summary>解答例を見る</summary>
+<pre><code># (a) 単回帰
+lm(weight ~ height, data = d1)
+
+# (c) ロジスティック回帰（目的変数 = 病気の有無、説明変数 = 喫煙の有無）
+glm(case ~ smoke, data = d2, family = binomial)</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q44</span>次の空欄を埋めなさい。<span class="lv">★</span>
+<ul>
+<li>説明変数 ＝ （ ① ）変数　　目的変数 ＝ （ ② ）変数</li>
+<li>疫学で、説明変数にあたる言葉は（ ③ ）、目的変数にあたる言葉は（ ④ ）。</li>
+<li>年齢や性別など、調整のためにモデルに加える変数を（ ⑤ ）という。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<p>① 独立　② 従属　③ 曝露（リスク因子）　④ アウトカム　⑤ 共変量（結果と曝露の両方に関係する場合は、交絡因子）</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q45</span>次の変数を、<b>量的変数</b>か<b>質的変数</b>かで分け、さらに尺度（名義、順序、間隔、比）を答えなさい。<span class="lv">★★</span>
+<ul>
+<li>(a) 血液型　(b) 重症度のグレード（軽症・中等症・重症）　(c) 体温（摂氏）　(d) 体重（kg）</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<div class="table-scroll"><table>
+<tr><th></th><th>量的／質的</th><th>尺度</th></tr>
+<tr><td>(a) 血液型</td><td>質的</td><td>名義尺度</td></tr>
+<tr><td>(b) 重症度のグレード</td><td>質的</td><td>順序尺度（順序に意味があるが、間隔は等しいとは限らない）</td></tr>
+<tr><td>(c) 体温（摂氏）</td><td>量的</td><td>間隔尺度（差に意味があるが、0は「ない」ではない）</td></tr>
+<tr><td>(d) 体重（kg）</td><td>量的</td><td>比尺度（0が「ない」を表し、比にも意味がある）</td></tr>
+</table></div>
+</details></div>
+
+<!-- ============ H ============ -->
+<h2 id="ph">H. ANOVA・生存分析</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q46</span>有意水準5%のt検定を、(1) 3回、(2) 10回繰り返したとき、少なくとも1回は誤って有意になる確率の目安（検定が独立と仮定）を計算しなさい。これは何の問題を表していますか。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>1 - 0.95^3      # 約 0.143（14%）
+1 - 0.95^10     # 約 0.401（40%）</code></pre>
+<p>検定を繰り返すほど、偶然の差を有意と誤判定する確率が上がります。これが<b>多重性の問題</b>です。3群以上の比較では、ANOVAでまず全体を1回で検定し、その後の多重比較で補正します。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q47</span><code>iris</code> の3種で、<code>Petal.Length</code> の平均値に差があるかを、分散分析（ANOVA）で検定しなさい。有意なら、どの種の間に差があるかも調べなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>res_anova &lt;- aov(Petal.Length ~ Species, data = iris)
+summary(res_anova)       # F値とp値
+TukeyHSD(res_anova)      # どの種の間に差があるか（多重比較）</code></pre>
+<p>F ≈ 1180（自由度 2 と 147）で、p値は極めて小さく（<code>&lt; 2e-16</code> と表示）、種によって平均値が異なります。Tukey法の多重比較では、3つの組み合わせ（versicolor-setosa、virginica-setosa、virginica-versicolor）のすべてで、有意な差があります。</p>
+<p>ANOVAは「どこかに差がある」ことしかわからないので、どの間に差があるかは、多重比較で調べます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q48</span>Q47と同じ問いを、データが正規分布しないと仮定して、ノンパラメトリックな方法で検定しなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>kruskal.test(Petal.Length ~ Species, data = iris)</code></pre>
+<p>Kruskal-Wallis検定です。3群以上の、対応のない、ノンパラメトリックな検定にあたります（2群のときのMann-WhitneyのU検定の拡張）。有意なので、種によって分布の位置が異なります。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q49</span>次の生存データ（各群8人、<code>status</code>：1＝イベント発生、0＝打ち切り）で、<b>カプラン・マイヤー曲線</b>を描き、<b>ログランク検定</b>を行いなさい。「打ち切り」とは何ですか。<span class="lv">★★★</span>
+<pre><code>library(survival)
+surv_data &lt;- data.frame(
+  time   = c(6, 12, 20, 25, 30, 36, 40, 48,    # New群
+             3,  5,  8, 10, 15, 18, 22, 30),   # Standard群
+  status = c(1, 1, 0, 1, 1, 0, 1, 0,
+             1, 1, 1, 1, 0, 1, 1, 1),
+  group  = rep(c("New", "Standard"), each = 8)
+)</code></pre></div>
+<details><summary>解答例を見る</summary>
+<pre><code>fit &lt;- survfit(Surv(time, status) ~ group, data = surv_data)
+plot(fit, col = c("red", "blue"),
+     xlab = "Time", ylab = "Survival probability")
+legend("topright", legend = c("New", "Standard"), col = c("red", "blue"), lty = 1)
+
+survdiff(Surv(time, status) ~ group, data = surv_data)</code></pre>
+<p>ログランク検定の結果は、χ² ≈ 4.4（自由度 1）、p ≈ 0.035です（Pythonで同一データを計算した目安）。New群のイベント数は5、Standard群は7で、New群のほうが、生存曲線が上にあり、有意な差があります。</p>
+<p><b>打ち切り</b>とは、イベントが観察されないまま、観察が終わることです（観察期間の終了、追跡不能など）。「少なくともその時点まではイベントが起きていない」という情報をもつので、捨てずに計算に使います。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q50</span>Q49のデータで、コックス比例ハザードモデルを当てはめなさい。ハザード比が「0.6」と出た場合、どう解釈しますか。<span class="lv">★★★</span></div>
+<p class="hint">ヒント：基準にする群を先頭にするために、<code>factor()</code> の <code>levels</code> を指定します。</p>
+<details><summary>解答例を見る</summary>
+<pre><code>surv_data$group &lt;- factor(surv_data$group, levels = c("Standard", "New"))
+
+fit_cox &lt;- coxph(Surv(time, status) ~ group, data = surv_data)
+summary(fit_cox)       # exp(coef) がハザード比（New群 / Standard群）
+cox.zph(fit_cox)       # 比例ハザード性の確認</code></pre>
+<p>この例では、New群のほうがイベントが少ないので、ハザード比は<b>1より小さく</b>なります。</p>
+<p>ハザード比「0.6」は、「基準の群に比べて、どの時点でも、イベントの起きる勢い（ハザード）が0.6倍、つまり40%低い」という意味です。「40%の人が助かる」「累積のリスクが40%減る」という意味ではありません。比例ハザード性（ハザード比が時間によらず一定）が、前提です。</p>
+</details></div>
+
+<!-- ============ I ============ -->
+<h2 id="pi">I. 回帰・多変量解析・次元削減</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q51</span><code>iris</code> で、<code>Petal.Length</code> から <code>Petal.Width</code> を予測する<b>単回帰</b>を行いなさい。傾き、切片、決定係数を読み取り、<code>Petal.Length</code> が4のときの予測値も求めなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>fit1 &lt;- lm(Petal.Width ~ Petal.Length, data = iris)
+summary(fit1)
+
+predict(fit1, newdata = data.frame(Petal.Length = 4))</code></pre>
+<p>傾きは約0.416、切片は約−0.363、決定係数R²は約0.927です。<code>Petal.Length</code> が4のときの予測値は、−0.363 + 0.416 × 4 ≈ <b>1.30</b>です。花びらが1cm長いと、幅が約0.42cm大きい、と読みます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q52</span>Q51のモデルに、<code>Species</code>（種）を<b>説明変数として加え</b>、<code>Petal.Length</code> の係数が、Q51からどう変わるかを調べなさい。なぜ変わるのか、<b>調整</b>の言葉で説明しなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>fit2 &lt;- lm(Petal.Width ~ Petal.Length + Species, data = iris)
+summary(fit2)</code></pre>
+<p><code>Petal.Length</code> の係数は、約0.416から約0.230に小さくなります（versicolor は setosa より約0.435、virginica は約0.838大きい。決定係数R²は約0.946）。</p>
+<p>種によって、花びらの長さも幅も大きく異なります（種が<b>交絡因子</b>の役割をします）。Q51の傾きには、「種の違い」による見かけの関連が含まれていました。種を説明変数に加える（<b>調整する</b>）と、同じ種の中での、長さと幅の関係が推定され、係数が小さくなります。これが、多変量解析で、背景の影響を調整する意味です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q53</span>第17節の症例対照研究の例（症例40人：曝露あり30・なし10、対照80人：曝露あり35・なし45）を、<b>ロジスティック回帰</b>で解析し、曝露のオッズ比を求めなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>cc &lt;- data.frame(
+  case     = rep(c(1, 1, 0, 0), times = c(30, 10, 35, 45)),
+  exposure = rep(c(1, 0, 1, 0), times = c(30, 10, 35, 45))
+)
+fit &lt;- glm(case ~ exposure, data = cc, family = binomial)
+exp(coef(fit))             # exposure のオッズ比：約3.86
+exp(confint.default(fit))  # オッズ比の95%信頼区間（Wald法）</code></pre>
+<p>オッズ比は (30 × 45) / (10 × 35) ≈ 3.86で、手計算と一致します。曝露があると、病気のオッズが約3.9倍です。症例と対照の人数比は、研究者が決めたものなので、切片は解釈しません。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q54</span><code>iris</code> の4つの数値の列に<b>主成分分析（PCA）</b>を行い、第1・第2主成分で説明される割合を求め、種ごとに色分けした散布図を描きなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>pca &lt;- prcomp(iris[, 1:4], scale. = TRUE)    # 標準化してから実行
+summary(pca)
+
+pca_df &lt;- data.frame(pca$x, Species = iris$Species)
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Species)) +
+  geom_point(size = 2.5)</code></pre>
+<p>第1主成分で約73%、第2主成分で約23%を説明し、合計は約96%です。4次元のデータが、2次元の図に、ほとんどの情報を保ったまま、まとめられています。散布図では、setosaが他の2種から、はっきり分かれて見えます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q55</span>次の(a)〜(e)に、最も適した方法を、下から選びなさい。<span class="lv">★★</span>
+<ul>
+<li>(a) A薬、B薬、C薬の3群で、血圧の平均値を比べる。</li>
+<li>(b) 年齢と性別を調整して、喫煙が心筋梗塞の発症（あり／なし）に与える影響を調べる。</li>
+<li>(c) 新薬群と従来薬群で、再発までの期間を比べる（途中で観察が終わった人もいる）。</li>
+<li>(d) 1万個の遺伝子の発現量をもつ細胞のデータを、2次元で眺めたい。</li>
+<li>(e) 同じ患者10人の、治療前後の血圧を比べる。</li>
+</ul>
+選択肢：ア 対応のあるt検定　イ ロジスティック回帰　ウ ログランク検定　エ ANOVA　オ PCA（またはUMAP）</div>
+<details><summary>解答例を見る</summary>
+<p>(a) エ　(b) イ　(c) ウ（さらに、他の要因も調整するなら、コックス比例ハザードモデル）　(d) オ　(e) ア</p>
+</details></div>
+
+<!-- ============ J ============ -->
+<h2 id="pj">J. 研究デザイン</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q56</span>次の(a)〜(d)の研究デザインを答えなさい。選択肢：RCT、クロスオーバー試験、横断研究、コホート研究、症例対照研究。<span class="lv">★★</span>
+<ul>
+<li>(a) ある1日に、さまざまな年齢の人の視力を検査し、年齢と視力の関係を調べた。</li>
+<li>(b) 耐性菌が検出された患者と、検出されなかった患者を集め、過去の抗菌薬の使用歴を比べた。</li>
+<li>(c) 抗菌薬を使用した患者と、使用しなかった患者を集め、1年間追跡して、耐性菌の検出を比べた。</li>
+<li>(d) 患者をランダムに2群に分け、一方に新薬、他方にプラセボを投与して、効果を比べた。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<p>(a) 横断研究　(b) 症例対照研究（結果から出発し、過去の曝露を調べている）　(c) コホート研究（曝露から出発し、結果を追跡している）　(d) RCT（ランダム化比較試験）</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q57</span><b>コホート研究</b>と<b>症例対照研究</b>の違いを、「何を基準に人を集めるか」「時間の向き」「主な指標」の3点で、説明しなさい。また、<b>説明変数と目的変数</b>は、両者で逆になるか答えなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<div class="table-scroll"><table>
+<tr><th></th><th>コホート研究</th><th>症例対照研究</th></tr>
+<tr><td>基準</td><td>曝露の有無で集める</td><td>病気の有無（症例と対照）で集める</td></tr>
+<tr><td>時間の向き</td><td>曝露 → 追跡 → 発症（原因から結果へ）</td><td>発症 → 過去にさかのぼる → 曝露（結果から原因へ）</td></tr>
+<tr><td>主な指標</td><td>リスク比、リスク差、ハザード比、オッズ比</td><td>オッズ比</td></tr>
+</table></div>
+<p>研究の出発点は逆ですが、<b>説明変数と目的変数は逆になりません</b>。どちらも、曝露が説明変数、病気の有無が目的変数です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q58</span>コホート研究で、喫煙者200人のうち40人、非喫煙者300人のうち30人が、10年間に病気を発症した。<b>リスク</b>（発症割合）、<b>リスク比</b>、<b>リスク差</b>、<b>オッズ比</b>を求めなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>a &lt;- 40; b &lt;- 160     # 喫煙者：発症あり、なし
+c &lt;- 30; d &lt;- 270     # 非喫煙者：発症あり、なし
+
+a / (a + b)                          # 喫煙者のリスク 0.20
+c / (c + d)                          # 非喫煙者のリスク 0.10
+(a / (a + b)) / (c / (c + d))        # リスク比 2.0
+(a / (a + b)) - (c / (c + d))        # リスク差 0.10
+(a * d) / (b * c)                    # オッズ比 2.25</code></pre>
+<p>喫煙者の発症リスクは、非喫煙者の2倍（リスク比2.0）で、リスク差は10ポイントです。オッズ比（2.25）は、リスク比（2.0）より大きく、発症が、まれではないために、差が出ています。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q59</span>症例対照研究で、症例50人のうち35人が曝露あり、対照100人のうち30人が曝露ありであった。<b>オッズ比</b>を求めなさい。また、この研究で<b>リスク比を求められない</b>のは、なぜですか。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code># 症例：曝露あり35、なし15　対照：曝露あり30、なし70
+(35 * 70) / (15 * 30)      # オッズ比 約5.44</code></pre>
+<p>オッズ比は約5.44です。</p>
+<p>症例対照研究では、症例と対照の人数（ここでは50人と100人）を、<b>研究者が決めて</b>集めています。そのため、「曝露ありの人のうち、発症した割合」（35/65）は、対照を何人集めるかで変わってしまい、本当のリスクを表しません。リスク比は求められません。一方、オッズ比は、「曝露のオッズの比」と「病気のオッズの比」が等しい性質があるため、結果から出発する研究でも、正しく推定できます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q60</span>Q59のデータを、ロジスティック回帰で解析するコードを書きなさい。目的変数と説明変数は、何ですか。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>cc &lt;- data.frame(
+  case     = rep(c(1, 1, 0, 0), times = c(35, 15, 30, 70)),
+  exposure = rep(c(1, 0, 1, 0), times = c(35, 15, 30, 70))
+)
+fit &lt;- glm(case ~ exposure, data = cc, family = binomial)
+exp(coef(fit))      # exposure の値がオッズ比（約5.44）</code></pre>
+<p>目的変数は<b>病気の有無（<code>case</code>）</b>、説明変数は<b>曝露の有無（<code>exposure</code>）</b>です。症例対照研究でも、変数の役割は、コホート研究と同じです。切片は、対照の選び方で決まるので、解釈しません。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q61</span>次の(a)〜(d)の問題は、どのバイアスにあたりますか。選択肢：選択バイアス、思い出しバイアス、交絡、脱落。<span class="lv">★★</span>
+<ul>
+<li>(a) 症例対照研究で、病気の人のほうが、過去の曝露をよく思い出して答える。</li>
+<li>(b) 症例対照研究で、対照を、健康意識の高い人ばかりから選んでしまった。</li>
+<li>(c) 喫煙と肺がんの関連を調べたが、年齢が、喫煙にも肺がんにも関係していた。</li>
+<li>(d) 10年間の追跡で、体調が悪化した人ほど、追跡できなくなった。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<p>(a) 思い出しバイアス　(b) 選択バイアス　(c) 交絡（年齢が交絡因子。多変量解析で調整する）　(d) 脱落（追跡からの脱落による偏り）</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q62</span>「カルバペネム系抗菌薬の使用歴と、カルバペネム耐性菌の検出との関連」を、症例対照研究で調べる。<b>PECO</b>（対象、曝露、比較、結果）を書き、症例と対照を、どう選ぶか答えなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<ul>
+<li>P（対象）：入院患者</li>
+<li>E（曝露）：カルバペネム系抗菌薬の使用歴</li>
+<li>C（比較）：使用歴がない</li>
+<li>O（結果）：カルバペネム耐性菌の検出</li>
+</ul>
+<p>症例は、耐性菌が検出された患者です。対照は、同じ施設・同じ期間に入院した、耐性菌が検出されていない患者から選びます。対照の選び方に偏りがあると、選択バイアスが生じるため、年齢や入院期間などが、症例と似るように選ぶ（マッチングする）ことがあります。説明変数は抗菌薬の使用歴、目的変数は耐性菌の検出の有無です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q63</span>20人の患者を、<b>ランダムに</b>、介入群10人と対照群10人に割り付けるコードを書きなさい。なぜ、ランダム化が重要ですか。<span class="lv">★★</span></div>
+<p class="hint">ヒント：<code>rep()</code> で群のラベルを作り、<code>sample()</code> で並べ替えます（非復元抽出）。</p>
+<details><summary>解答例を見る</summary>
+<pre><code>set.seed(2026)
+patients &lt;- data.frame(id = 1:20)
+patients$group &lt;- sample(rep(c("介入", "対照"), each = 10))   # 10人ずつを並べ替え
+table(patients$group)      # 介入10、対照10</code></pre>
+<p>ランダム化によって、年齢や重症度などの背景（測定していないものも含む）が、偶然を除いて、2群で同程度になります。そのため、2群の差を、介入の効果と考えやすくなります。</p>
 </details></div>
 
 <h2>おわりに</h2>
