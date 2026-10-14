@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rと統計学 練習問題</title>
+<style>
+:root{--bg:#fff;--fg:#111;--muted:#555;--accent:#1f5f8b;--line:#d5dbe0;--code-bg:#f4f6f8;--note-bg:#eef6fb;--warn-bg:#fff6e5;--ans-bg:#f3f9f1;--ans-line:#4c9a3a}
+@media (prefers-color-scheme:dark){:root{--bg:#15181b;--fg:#e8eaec;--muted:#a3abb2;--accent:#7cc0ea;--line:#333a40;--code-bg:#1e2327;--note-bg:#192630;--warn-bg:#2b2517;--ans-bg:#1b2619;--ans-line:#6fbf5c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"BIZ UDPGothic","Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.85;font-size:17px}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+header{border-bottom:3px solid var(--accent);margin-bottom:8px}
+h1{font-size:1.7rem;margin:.6em 0 .2em}
+.sub{color:var(--muted);margin:0 0 .8em}
+nav{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;margin:16px 0}
+nav a{color:var(--accent);text-decoration:none}
+nav ul{margin:.3em 0;padding-left:1.2em}
+h2{font-size:1.4rem;border-left:6px solid var(--accent);padding-left:10px;margin:2em 0 .6em}
+h3{font-size:1.1rem;margin:1.4em 0 .4em;color:var(--accent)}
+.q{border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin:1.2em 0}
+.q .qt{font-weight:bold;margin:.2em 0 .4em}
+.q .qt .no{display:inline-block;background:var(--accent);color:#fff;border-radius:6px;padding:0 10px;margin-right:8px}
+.lv{color:var(--muted);font-size:.85rem;margin-left:6px;font-weight:normal}
+.hint{color:var(--muted);font-size:.92rem;margin:.2em 0}
+details{background:var(--ans-bg);border-left:5px solid var(--ans-line);border-radius:6px;padding:6px 14px;margin:.8em 0 .4em}
+summary{cursor:pointer;font-weight:bold}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"BIZ UDGothic",Consolas,Menlo,monospace;background:var(--code-bg);padding:1px 5px;border-radius:4px;font-size:.92em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;margin:.8em 0;width:100%;font-size:.95rem}
+th,td{border:1px solid var(--line);padding:5px 10px;text-align:left}
+th{background:var(--code-bg)}
+.table-scroll{overflow-x:auto}
+.note,.warn{border-radius:8px;padding:10px 14px;margin:1em 0}
+.note{background:var(--note-bg);border-left:5px solid var(--accent)}
+.warn{background:var(--warn-bg);border-left:5px solid #d98e04}
+footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;line-height:1.7}
+@media (max-width:600px){body{font-size:16px}.wrap{padding:12px}h1{font-size:1.45rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>Rと統計学 練習問題</h1>
+<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全39問）</p>
+</header>
+
+<div class="note"><b>使い方</b>
+<ul>
+<li>RStudio（またはPosit Cloud）を開き、<b>自分で考えてコードを書いてから</b>、「解答例を見る」を開いて答え合わせをしましょう。</li>
+<li>解答は1通りではありません。同じ結果が出れば、別の書き方でも正解です。</li>
+<li>特に断りがなければ、先頭で <code>library(tidyverse)</code> を実行してある前提です。</li>
+<li>乱数を使う問題（第E部）は、実行するたびに値が変わります。</li>
+<li>★は難易度の目安です（★ 基本、★★ 標準、★★★ 応用）。</li>
+</ul></div>
+
+<div class="note"><b>使うデータ</b>
+<ul>
+<li><b><code>iris</code>：</b>Rに最初から入っているアヤメ（<i>Iris</i> 属）のデータ。3種（<i>I. setosa</i>、<i>I. versicolor</i>、<i>I. virginica</i>）、150行。列は <code>Sepal.Length</code>、<code>Sepal.Width</code>、<code>Petal.Length</code>、<code>Petal.Width</code>、<code>Species</code>。</li>
+<li><b><code>students</code>：</b>Q3で自分で作る、10人の成績データ。</li>
+</ul></div>
+
+<nav>
+<b>目次</b>
+<ul>
+<li><a href="#pa">A. 基本（変数・ベクトル・データフレーム）Q1〜Q4</a></li>
+<li><a href="#pb">B. 基本統計量とグラフ（iris）Q5〜Q12</a></li>
+<li><a href="#pc">C. データの並べ替え・抽出・加工・CSV出力 Q13〜Q24</a></li>
+<li><a href="#pd">D. 検定と信頼区間 Q25〜Q30</a></li>
+<li><a href="#pe">E. 条件分岐・繰り返し・抽出・パイプ Q31〜Q37</a></li>
+<li><a href="#pf">F. メタ解析とレポート作成 Q38〜Q39</a></li>
+</ul>
+</nav>
+
+<!-- ============ A ============ -->
+<h2 id="pa">A. 基本（変数・ベクトル・データフレーム）</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q1</span>変数 <code>x</code> に17を代入し、<code>x</code> を5で割った<b>余り</b>を求めなさい。<span class="lv">★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>x &lt;- 17
+x %% 5
+# 結果： 2</code></pre>
+<p>余りを求める演算子は <code>%%</code> です（<code>%</code> ではありません）。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q2</span><code>a &lt;- c(1,2,3,4)</code>、<code>b &lt;- c(4,5,6,7,8)</code> のとき、<code>a + b</code> の結果を<b>先に予想</b>してから、実行して確かめなさい。何か表示されたか、その意味も答えなさい。<span class="lv">★</span></div>
+<p class="hint">ヒント：成分の数が合わないときのルール（リサイクル規則）</p>
+<details><summary>解答例を見る</summary>
+<pre><code>a &lt;- c(1,2,3,4)
+b &lt;- c(4,5,6,7,8)
+a + b
+# 結果： 5  7  9 11  9</code></pre>
+<p><code>a</code> の成分が足りないので、先頭に戻って <code>1 + 8</code> を計算しています。警告（長いオブジェクトの長さが、短いオブジェクトの長さの倍数ではない）が表示されます。エラーではありませんが、意図しない計算のサインです。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q3</span>次の表と同じ内容のデータフレーム <code>students</code> を作りなさい（以降の問題で使います）。<span class="lv">★</span></div>
+<div class="table-scroll"><table>
+<tr><th>name</th><th>team</th><th>score</th></tr>
+<tr><td>Aoi</td><td>A</td><td>95</td></tr>
+<tr><td>Ren</td><td>A</td><td>82</td></tr>
+<tr><td>Sora</td><td>B</td><td>67</td></tr>
+<tr><td>Hina</td><td>B</td><td>45</td></tr>
+<tr><td>Kai</td><td>A</td><td>78</td></tr>
+<tr><td>Mio</td><td>B</td><td>91</td></tr>
+<tr><td>Riku</td><td>A</td><td>59</td></tr>
+<tr><td>Yui</td><td>B</td><td>73</td></tr>
+<tr><td>Haru</td><td>A</td><td>88</td></tr>
+<tr><td>Nao</td><td>B</td><td>100</td></tr>
+</table></div>
+<details><summary>解答例を見る</summary>
+<pre><code>students &lt;- data.frame(
+  name  = c("Aoi", "Ren", "Sora", "Hina", "Kai",
+            "Mio", "Riku", "Yui", "Haru", "Nao"),
+  team  = c("A", "A", "B", "B", "A", "B", "A", "B", "A", "B"),
+  score = c(95, 82, 67, 45, 78, 91, 59, 73, 88, 100)
+)
+print(students)</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q4</span><code>students</code> の <code>score</code> 列の、<b>平均値</b>と<b>中央値</b>を求めなさい。<span class="lv">★</span></div>
+<p class="hint">ヒント：データフレームの列は <code>データフレーム名$列名</code> で取り出せます。</p>
+<details><summary>解答例を見る</summary>
+<pre><code>mean(students$score)     # 77.8
+median(students$score)   # 80</code></pre>
+</details></div>
+
+<!-- ============ B ============ -->
+<h2 id="pb">B. 基本統計量とグラフ（iris）</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q5</span><code>iris</code> のデータの<b>統計基本量</b>を表示しなさい。<span class="lv">★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>summary(iris)</code></pre>
+<p>数値の列ごとに、最小値、第1四分位数、中央値、平均、第3四分位数、最大値が表示されます。<code>Species</code> は種ごとの個数（各50）が表示されます。たとえば <code>Sepal.Length</code> は、最小4.3、中央値5.8、平均5.843、最大7.9です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q6</span><code>iris$Sepal.Length</code> の、<b>平均値、標準偏差、中央値</b>を求めなさい。<span class="lv">★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>mean(iris$Sepal.Length)     # 約 5.843
+sd(iris$Sepal.Length)       # 約 0.828
+median(iris$Sepal.Length)   # 5.8</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q7</span>種（<code>Species</code>）ごとの <code>Petal.Length</code> の<b>平均値</b>を求めなさい。<span class="lv">★★</span></div>
+<p class="hint">ヒント：<code>group_by()</code> と <code>summarise()</code></p>
+<details><summary>解答例を見る</summary>
+<pre><code>iris %&gt;%
+  group_by(Species) %&gt;%
+  summarise(mean_petal_length = mean(Petal.Length))</code></pre>
+<div class="table-scroll"><table>
+<tr><th>Species</th><th>mean_petal_length</th></tr>
+<tr><td>setosa</td><td>1.462</td></tr>
+<tr><td>versicolor</td><td>4.260</td></tr>
+<tr><td>virginica</td><td>5.552</td></tr>
+</table></div>
+<p>Base Rでは、<code>aggregate(Petal.Length ~ Species, data = iris, FUN = mean)</code> でも求められます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q8</span><code>Sepal.Length</code> の<b>ヒストグラム</b>を描きなさい。<span class="lv">★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code># Base R
+hist(iris$Sepal.Length)
+
+# ggplot2
+ggplot(iris, aes(x = Sepal.Length)) +
+  geom_histogram(bins = 20)</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q9</span><code>iris</code> のデータの<b>散布図</b>を描きなさい（横軸 <code>Sepal.Length</code>、縦軸 <code>Sepal.Width</code>）。<span class="lv">★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code># Base R
+plot(iris$Sepal.Length, iris$Sepal.Width)
+
+# ggplot2
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +
+  geom_point()</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q10</span>Q9の散布図を、<b>種ごとに色分け</b>し、タイトルと軸ラベルをつけなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(title = "Sepal length and width",
+       x = "Sepal.Length (cm)",
+       y = "Sepal.Width (cm)")</code></pre>
+<p>日本語のタイトルや軸ラベルで文字化けする場合は、英語にして試してみましょう。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q11</span>種ごとの <code>Petal.Length</code> の<b>箱ひげ図</b>を描きなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code># Base R
+boxplot(Petal.Length ~ Species, data = iris)
+
+# ggplot2
+ggplot(iris, aes(x = Species, y = Petal.Length, fill = Species)) +
+  geom_boxplot()</code></pre>
+<p>箱は第1〜第3四分位数、箱の中の線は中央値です。ひげの外側の点は外れ値です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q12</span><code>Sepal.Length</code> と <code>Sepal.Width</code> の<b>相関係数</b>、および <code>Petal.Length</code> と <code>Petal.Width</code> の相関係数を求め、どちらが強い関係か答えなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>cor(iris$Sepal.Length, iris$Sepal.Width)    # 約 -0.118
+cor(iris$Petal.Length, iris$Petal.Width)    # 約  0.963</code></pre>
+<p>花びら（Petal）の長さと幅のほうが、強い正の相関があります（絶対値が1に近い）。がく片（Sepal）の長さと幅は、ほぼ無相関です。</p>
+</details></div>
+
+<!-- ============ C ============ -->
+<h2 id="pc">C. データの並べ替え・抽出・加工・CSV出力</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q13</span><code>iris</code> から <code>Species</code> が <code>virginica</code> の行だけを取り出し、<code>Sepal.Length</code> の<b>大きい順</b>に並べ、上位3行を表示しなさい。<span class="lv">★★</span></div>
+<p class="hint">ヒント：<code>filter()</code>、<code>arrange()</code>、<code>desc()</code>、<code>head()</code></p>
+<details><summary>解答例を見る</summary>
+<pre><code>iris %&gt;%
+  filter(Species == "virginica") %&gt;%
+  arrange(desc(Sepal.Length)) %&gt;%
+  head(3)</code></pre>
+<p>1行目の <code>Sepal.Length</code> は7.9です。比較には <code>==</code>（等しい）を使い、<code>=</code> は使いません。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q14</span><code>Species</code> が <code>setosa</code> で、かつ <code>Sepal.Length</code> が5.5より大きい行を取り出しなさい。何行ありますか。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>iris %&gt;%
+  filter(Species == "setosa", Sepal.Length &gt; 5.5)
+# 3行</code></pre>
+<p><code>filter()</code> の中のコンマは「かつ（&amp;）」と同じ意味です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q15</span><code>Sepal.Length</code> が7以上の行は、全部で何行ありますか。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>iris %&gt;%
+  filter(Sepal.Length &gt;= 7) %&gt;%
+  nrow()
+# 13
+
+# Base Rでは
+sum(iris$Sepal.Length &gt;= 7)   # TRUEの数を数える</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q16</span><code>iris</code> から、<code>Species</code>、<code>Sepal.Length</code>、<code>Petal.Length</code> の<b>3列だけ</b>を取り出しなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>iris %&gt;%
+  select(Species, Sepal.Length, Petal.Length)</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q17</span><code>iris</code> に、<code>Sepal.Length</code> を <code>Sepal.Width</code> で割った値の列 <code>ratio</code> を<b>追加</b>しなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>iris2 &lt;- iris %&gt;%
+  mutate(ratio = Sepal.Length / Sepal.Width)
+
+head(iris2)</code></pre>
+<p>元の <code>iris</code> は変わりません。結果を新しい名前（<code>iris2</code>）に入れて使います。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q18</span><code>students</code> を、<code>team</code> の昇順（A → B）、同じチームの中では <code>score</code> の<b>高い順</b>に並べなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>students %&gt;%
+  arrange(team, desc(score))</code></pre>
+<div class="table-scroll"><table>
+<tr><th>name</th><th>team</th><th>score</th></tr>
+<tr><td>Aoi</td><td>A</td><td>95</td></tr>
+<tr><td>Haru</td><td>A</td><td>88</td></tr>
+<tr><td>Ren</td><td>A</td><td>82</td></tr>
+<tr><td>Kai</td><td>A</td><td>78</td></tr>
+<tr><td>Riku</td><td>A</td><td>59</td></tr>
+<tr><td>Nao</td><td>B</td><td>100</td></tr>
+<tr><td>Mio</td><td>B</td><td>91</td></tr>
+<tr><td>Yui</td><td>B</td><td>73</td></tr>
+<tr><td>Sora</td><td>B</td><td>67</td></tr>
+<tr><td>Hina</td><td>B</td><td>45</td></tr>
+</table></div>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q19</span><code>students</code> から、<code>team</code> が <code>A</code> で、<code>score</code> が80以上の人だけを取り出しなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>students %&gt;%
+  filter(team == "A", score &gt;= 80)
+# Aoi（95）、Ren（82）、Haru（88）の3人</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q20</span><code>students</code> の、<code>team</code> ごとの<b>平均点、最高点、最低点</b>を求めなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>students %&gt;%
+  group_by(team) %&gt;%
+  summarise(mean_score = mean(score),
+            max_score  = max(score),
+            min_score  = min(score))</code></pre>
+<div class="table-scroll"><table>
+<tr><th>team</th><th>mean_score</th><th>max_score</th><th>min_score</th></tr>
+<tr><td>A</td><td>80.4</td><td>95</td><td>59</td></tr>
+<tr><td>B</td><td>75.2</td><td>100</td><td>45</td></tr>
+</table></div>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q21</span><code>students</code> の <code>score</code> に応じて、次の基準で判定して、<code>assess</code> 列に<b>追加</b>しなさい。<span class="lv">★★★</span>
+<div class="table-scroll"><table>
+<tr><th>判定</th><th>S</th><th>A</th><th>B</th><th>C</th><th>D</th><th>F</th></tr>
+<tr><th>score</th><td>90以上</td><td>80〜89</td><td>70〜79</td><td>60〜69</td><td>50〜59</td><td>50未満</td></tr>
+</table></div></div>
+<p class="hint">ヒント：<code>mutate()</code> と <code>case_when()</code>。条件は上から順に調べられます。</p>
+<details><summary>解答例を見る</summary>
+<pre><code>students &lt;- students %&gt;%
+  mutate(assess = case_when(
+    score &gt;= 90 ~ "S",
+    score &gt;= 80 ~ "A",
+    score &gt;= 70 ~ "B",
+    score &gt;= 60 ~ "C",
+    score &gt;= 50 ~ "D",
+    TRUE        ~ "F"
+  ))
+
+print(students)</code></pre>
+<div class="table-scroll"><table>
+<tr><th>name</th><td>Aoi</td><td>Ren</td><td>Sora</td><td>Hina</td><td>Kai</td><td>Mio</td><td>Riku</td><td>Yui</td><td>Haru</td><td>Nao</td></tr>
+<tr><th>score</th><td>95</td><td>82</td><td>67</td><td>45</td><td>78</td><td>91</td><td>59</td><td>73</td><td>88</td><td>100</td></tr>
+<tr><th>assess</th><td>S</td><td>A</td><td>C</td><td>F</td><td>B</td><td>S</td><td>D</td><td>B</td><td>A</td><td>S</td></tr>
+</table></div>
+<p><b>別解（Base Rの <code>cut()</code>）：</b></p>
+<pre><code>students$assess &lt;- cut(students$score,
+                       breaks = c(-Inf, 50, 60, 70, 80, 90, Inf),
+                       labels = c("F", "D", "C", "B", "A", "S"),
+                       right  = FALSE)   # 区間は「以上〜未満」</code></pre>
+<p><code>right = FALSE</code> を忘れると、「50を超えて60以下」のように区間の境目が逆になり、60点がDになってしまいます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q22</span>判定（<code>assess</code>）ごとの<b>人数</b>を数えなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>table(students$assess)
+
+# tidyverse
+students %&gt;% count(assess)</code></pre>
+<p>S が3人、A が2人、B が2人、C が1人、D が1人、F が1人です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q23</span><code>assess</code> 列を追加した <code>students</code> を、<code>students_assess.csv</code> という名前の<b>CSVファイルで出力（エクスポート）</b>しなさい。<span class="lv">★★</span></div>
+<p class="hint">ヒント：<code>write_csv()</code>（tidyverse）、または <code>write.csv()</code>（Base R）</p>
+<details><summary>解答例を見る</summary>
+<pre><code># tidyverse（readr）：UTF-8で保存される
+write_csv(students, "students_assess.csv")
+
+# Base R：行番号の列を付けないよう row.names = FALSE を指定
+write.csv(students, "students_assess.csv", row.names = FALSE)</code></pre>
+<div class="warn"><b>日本語を含むCSVをExcelで開くとき</b>UTF-8のCSVは、Excelで文字化けすることがあります。その場合は <code>write_excel_csv(students, "students_assess.csv")</code> を使うと、Excelで開いても読めます。</div>
+<p>ファイルは、作業ディレクトリ（<code>getwd()</code> で確認できます）に保存されます。Posit Cloudでは、右下の「Files」パネルに表示されるので、ダウンロードできます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q24</span>Q23で出力したCSVを、Rに<b>読み込み直して</b>、中身を確認しなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>check &lt;- read_csv("students_assess.csv")
+print(check)
+names(check)    # 列名の確認：name, team, score, assess</code></pre>
+</details></div>
+
+<!-- ============ D ============ -->
+<h2 id="pd">D. 検定と信頼区間</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q25</span>同じ患者10人の治療前後の収縮期血圧が次のとおりであった。治療前後で血圧に差があるかを検定しなさい。どのt検定を使いますか。<span class="lv">★★</span>
+<pre><code>before &lt;- c(145, 152, 138, 160, 148, 135, 155, 142, 150, 144)
+after  &lt;- c(130, 138, 132, 142, 135, 130, 140, 136, 141, 138)</code></pre></div>
+<details><summary>解答例を見る</summary>
+<pre><code>t.test(before, after, paired = TRUE)</code></pre>
+<p>同じ人の前後の比較なので、<b>対応のある（paired）t検定</b>です。t = 7.04、自由度 = 9、p = 6.1×10<sup>-5</sup>（Rでは <code>6.074e-05</code> と表示）。差の平均は10.7 mmHgで、治療後に有意に低下しています。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q26</span>AクラスとBクラスのテストの点数が次のとおりであった。2つのクラスの平均点に差があるかを検定しなさい。<span class="lv">★★</span>
+<pre><code>class_A &lt;- c(75, 82, 68, 90, 78, 65, 85, 72, 80, 74)
+class_B &lt;- c(62, 70, 65, 80, 58, 72, 68, 75, 61, 66, 73)</code></pre></div>
+<details><summary>解答例を見る</summary>
+<pre><code>t.test(class_A, class_B)    # paired = FALSE がデフォルト</code></pre>
+<p>対応のない（unpaired）t検定で、Rは既定で<b>Welchのt検定</b>を行います。t = 2.78、自由度 = 17.89、p = 0.0125。平均点はAクラス76.9、Bクラス68.2で、有意差があります。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q27</span>Q25、Q26のデータが正規分布しないと仮定して、ノンパラメトリック検定を行いなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code># Q25（対応あり）：Wilcoxonの符号付き順位検定
+wilcox.test(before, after, paired = TRUE)
+
+# Q26（対応なし）：Mann-WhitneyのU検定（Wilcoxonの順位和検定）
+wilcox.test(class_A, class_B)</code></pre>
+<p>同じ値（同順位）があると、「厳密なp値を計算できない（cannot compute exact p-value with ties）」という警告が出ることがあります。警告は、正規近似でp値を計算したという意味で、エラーではありません。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q28</span><code>iris</code> の <code>Sepal.Length</code> について、<i>setosa</i> と <i>versicolor</i> の2種で平均値に差があるかを検定しなさい。<span class="lv">★★★</span></div>
+<p class="hint">ヒント：まず、それぞれの種の <code>Sepal.Length</code> を、別々のベクトルに取り出します。</p>
+<details><summary>解答例を見る</summary>
+<pre><code>set_sl &lt;- iris$Sepal.Length[iris$Species == "setosa"]
+ver_sl &lt;- iris$Sepal.Length[iris$Species == "versicolor"]
+
+t.test(set_sl, ver_sl)</code></pre>
+<p>平均値は <i>setosa</i> が5.006、<i>versicolor</i> が5.936です。t = −10.5、自由度 ≈ 86.5で、p値は <code>&lt; 2.2e-16</code> と表示され、有意差があります。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q29</span>ワクチンを接種した群（20人）と、接種しない群（20人）で、感染した人数が次のとおりであった。感染の有無に偏りがあるかを、カイ二乗検定とFisherの正確検定の両方で検定し、結果を比べなさい。期待度数も確認しなさい。<span class="lv">★★★</span>
+<div class="table-scroll"><table>
+<tr><th></th><th>感染</th><th>非感染</th></tr>
+<tr><th>接種あり</th><td>3</td><td>17</td></tr>
+<tr><th>接種なし</th><td>10</td><td>10</td></tr>
+</table></div></div>
+<details><summary>解答例を見る</summary>
+<pre><code>m &lt;- matrix(c(3, 17,
+              10, 10),
+            nrow = 2, byrow = TRUE)
+rownames(m) &lt;- c("接種あり", "接種なし")
+colnames(m) &lt;- c("感染", "非感染")
+
+chisq.test(m)            # 既定でYatesの連続修正が入る
+chisq.test(m)$expected   # 期待度数
+fisher.test(m)</code></pre>
+<ul>
+<li>カイ二乗検定（Yates補正あり）：χ² = 4.10、自由度 1、p = 0.043</li>
+<li>Fisherの正確検定：p = 0.041</li>
+<li>期待度数：感染は両群とも6.5、非感染は両群とも13.5（すべて5以上）</li>
+</ul>
+<p>どちらも5%未満で有意ですが、p値は少し異なります。連続修正なし（<code>chisq.test(m, correct = FALSE)</code>）では p = 0.018と、さらに小さくなります。このように、<b>検定法の選択でp値が変わる</b>ことを確認しましょう。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q30</span>コインを20回投げて、表が7回出た。<code>binom.test()</code> で、<b>表の出る確率の95%信頼区間</b>と、「表の確率が0.5」であるという仮説の検定を行いなさい。また、<code>p = 0.1</code> を指定した場合、95%信頼区間は変わるか答えなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>res &lt;- binom.test(x = 7, n = 20, p = 0.5)
+print(res)
+res$conf.int</code></pre>
+<p>95%信頼区間は約0.154〜0.592、p値は約0.263で、「0.5である」という仮説は棄却されません。<code>p = 0.1</code> を指定しても、<b>95%信頼区間は変わりません</b>（データ x、n だけで決まるため）。変わるのは、p値のほうです。</p>
+</details></div>
+
+<!-- ============ E ============ -->
+<h2 id="pe">E. 条件分岐・繰り返し・抽出・パイプ</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q31</span>変数 <code>x</code> に数値を代入し、<code>x</code> が60以上なら「合格」、そうでなければ「不合格」と表示するコードを、<code>if</code> と <code>else</code> で書きなさい。<span class="lv">★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>x &lt;- 72
+
+if (x &gt;= 60) {
+  print("合格")
+} else {
+  print("不合格")
+}</code></pre>
+<p><code>} else {</code> は、同じ行に書きます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q32</span>1から100までの整数のうち、<b>3の倍数の合計</b>を、<code>for</code> を使う方法と、使わない方法の2通りで求めなさい。<span class="lv">★★</span></div>
+<p class="hint">ヒント：3の倍数は、<code>%%</code> で余りが0になる数です。</p>
+<details><summary>解答例を見る</summary>
+<pre><code># for を使う
+total &lt;- 0
+for (i in 1:100) {
+  if (i %% 3 == 0) {
+    total &lt;- total + i
+  }
+}
+print(total)    # 1683
+
+# for を使わない（ベクトル計算）
+sum(seq(3, 99, by = 3))              # 1683
+x &lt;- 1:100
+sum(x[x %% 3 == 0])                  # 1683</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q33</span><code>score &lt;- c(55, 62, 70, 75, 78, 80, 82, 85, 90, 100)</code> の各要素について、60以上なら「合格」、60未満なら「不合格」というベクトルを、<code>ifelse()</code> で作りなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>score &lt;- c(55, 62, 70, 75, 78, 80, 82, 85, 90, 100)
+ifelse(score &gt;= 60, "合格", "不合格")
+# 最初の1つ（55）だけ「不合格」で、残りの9つは「合格」</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q34</span>(1) サイコロを10回振る（同じ目が何度も出てよい）。(2) 1〜10の整数から、重複なく5個を選ぶ。それぞれを <code>sample()</code> で行いなさい。最後に、<code>sample(1:5, size = 10)</code> を実行するとどうなるか、理由とともに答えなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>set.seed(123)
+
+sample(1:6, size = 10, replace = TRUE)   # (1) 復元抽出
+sample(1:10, size = 5)                   # (2) 非復元抽出（replace = FALSE が既定）
+
+sample(1:5, size = 10)                   # エラー</code></pre>
+<p>最後はエラー（<code>cannot take a sample larger than the population when 'replace = FALSE'</code>）になります。戻さずに選ぶ（非復元抽出）場合、母集団（5個）より多い10個は選べないためです。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q35</span>赤玉3個、白玉2個が入った袋から、玉を2回引く。「2回とも赤」になる確率を、(1) 引いた玉を戻す場合、(2) 戻さない場合の両方で、<b>手計算</b>で求め、さらに<b>シミュレーション</b>（10000回）でも確かめなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<p><b>手計算：</b>(1) 3/5 × 3/5 = 0.36　(2) 3/5 × 2/4 = 0.30</p>
+<pre><code>set.seed(1)
+bag &lt;- c("赤", "赤", "赤", "白", "白")
+
+# (1) 戻す（復元抽出）
+mean(replicate(10000, all(sample(bag, 2, replace = TRUE) == "赤")))
+
+# (2) 戻さない（非復元抽出）
+mean(replicate(10000, all(sample(bag, 2, replace = FALSE) == "赤")))</code></pre>
+<p>(1) は0.36前後、(2) は0.30前後になります（乱数なので、ぴったりにはなりません）。<code>replicate()</code> が10000回の繰り返しを行い、<code>all()</code> が「2回とも赤か」を判定し、<code>mean()</code> が、TRUE の割合（確率）を求めます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q36</span><code>score</code>（Q33のデータ）の平均値の95%信頼区間を、<b>ブートストラップ法</b>（復元抽出を10000回）で求めなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>set.seed(2026)
+boot_means &lt;- replicate(10000, mean(sample(score, replace = TRUE)))
+quantile(boot_means, c(0.025, 0.975))</code></pre>
+<p>元の平均値は77.7です。信頼区間は、その前後に広がります（値は乱数の種などで少し変わります）。<code>sample(score, replace = TRUE)</code> は、<code>size</code> を省略すると、元のデータと同じ個数を選びます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q37</span><code>a &lt;- c(1,2,3,4)</code>、<code>b &lt;- c(3,4,5,6)</code> について、「<code>a + b</code> を計算 → 小さい順に並べ替え → 5より大きいものを取り出す」処理を、(1) 入れ子（マトリョーシカ）、(2) パイプ <code>|&gt;</code>、(3) tidyverseの <code>%&gt;%</code> の3通りで書きなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>a &lt;- c(1, 2, 3, 4)
+b &lt;- c(3, 4, 5, 6)
+
+# (1) 入れ子
+subset(sort(a + b), sort(a + b) &gt; 5)
+
+# (2) Base Rのパイプ（無名関数を使う）
+(a + b) |&gt; sort() |&gt; (\(x) x[x &gt; 5])()
+
+# (3) tidyverse：表（データフレーム）にして、列名で指定
+data.frame(value = a + b) %&gt;%
+  arrange(value) %&gt;%
+  filter(value &gt; 5)</code></pre>
+<p>どれも、結果は 6、8、10です。</p>
+</details></div>
+
+<!-- ============ F ============ -->
+<h2 id="pf">F. メタ解析とレポート作成</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q38</span>次のデータを、CSVファイル <code>meta_data.csv</code> として保存し、Rに読み込んで、オッズ比でメタ解析（共通効果モデルとランダム効果モデルの両方）を行いなさい。さらに、フォレストプロットとファンネルプロットを描き、1つ抜き解析も行いなさい。結果（統合オッズ比と異質性）を、文章で説明しなさい。<span class="lv">★★★</span>
+<div class="table-scroll"><table>
+<tr><th>study</th><th>ee</th><th>en</th><th>ce</th><th>cn</th></tr>
+<tr><td>Study A</td><td>10</td><td>100</td><td>20</td><td>100</td></tr>
+<tr><td>Study B</td><td>25</td><td>150</td><td>35</td><td>150</td></tr>
+<tr><td>Study C</td><td>5</td><td>80</td><td>12</td><td>80</td></tr>
+<tr><td>Study D</td><td>45</td><td>200</td><td>50</td><td>200</td></tr>
+<tr><td>Study E</td><td>12</td><td>110</td><td>15</td><td>110</td></tr>
+<tr><td>Study F</td><td>18</td><td>130</td><td>22</td><td>130</td></tr>
+<tr><td>Study G</td><td>30</td><td>180</td><td>55</td><td>180</td></tr>
+<tr><td>Study H</td><td>8</td><td>90</td><td>10</td><td>90</td></tr>
+</table></div>
+<p class="hint">ee・en：治療群のイベント数・総数、ce・cn：対照群のイベント数・総数。<code>meta</code> パッケージを使います。</p></div>
+<details><summary>解答例を見る</summary>
+<pre><code>library(tidyverse)
+library(meta)
+
+# CSVを作る（Excelで作ってもよい）
+meta_data &lt;- data.frame(
+  study = paste("Study", LETTERS[1:8]),
+  ee = c(10, 25, 5, 45, 12, 18, 30, 8),
+  en = c(100, 150, 80, 200, 110, 130, 180, 90),
+  ce = c(20, 35, 12, 50, 15, 22, 55, 10),
+  cn = c(100, 150, 80, 200, 110, 130, 180, 90)
+)
+write_csv(meta_data, "meta_data.csv")
+
+# 読み込み
+d &lt;- read_csv("meta_data.csv")
+
+# メタ解析
+res &lt;- metabin(event.e = ee, n.e = en, event.c = ce, n.c = cn,
+               studlab = study, data = d, sm = "OR",
+               common = TRUE, random = TRUE, method.tau = "REML")
+print(res)
+
+forest(res)                                        # フォレストプロット
+funnel(res)                                        # ファンネルプロット
+sens &lt;- metainf(res); forest(sens)                  # 1つ抜き解析</code></pre>
+<p><b>結果の説明の例：</b>統合オッズ比は約0.64（95%信頼区間 約0.51〜0.82）で、治療群でイベントが少ないという結果です。研究間のばらつきはほとんどなく（I² ≈ 0%）、共通効果モデルとランダム効果モデルの結果はほぼ同じです。ただし、研究数は8件と少なく、ファンネルプロットの解釈には限界があります（データはダミーです）。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q39</span>Q21の判定を行った <code>students</code> のデータについて、「<b>チームごとの平均点の表</b>」と「<b>点数の箱ひげ図</b>」を含む、HTMLのレポートを、<b>R Markdown</b>で作りなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<p><b>手順：</b>「File」→「New File」→「R Markdown...」で新規作成し、以下のように書いて、「Knit」を押します。<code>library(tidyverse)</code> やデータの作成は、Rmdの中に、すべて書いておきます。</p>
+<pre><code>---
+title: "成績レポート"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+students &lt;- data.frame(
+  name  = c("Aoi", "Ren", "Sora", "Hina", "Kai",
+            "Mio", "Riku", "Yui", "Haru", "Nao"),
+  team  = c("A", "A", "B", "B", "A", "B", "A", "B", "A", "B"),
+  score = c(95, 82, 67, 45, 78, 91, 59, 73, 88, 100)
+)
+```
+
+# チームごとの平均点
+
+```{r}
+students %&gt;%
+  group_by(team) %&gt;%
+  summarise(mean_score = mean(score))
+```
+
+全体の平均点は `r mean(students$score)` 点でした。
+
+# 点数の分布
+
+```{r}
+ggplot(students, aes(x = team, y = score, fill = team)) +
+  geom_boxplot()
+```</code></pre>
+<p>全体の平均点は、インラインコード（<code>`r mean(students$score)`</code>）で入れているので、データが変わってKnitし直せば、文章の数値も更新されます（この例では、77.8になります）。</p>
+</details></div>
+
+<h2>おわりに</h2>
+<p>解答は、1つの正解を覚えるものではありません。自分で書いて動かし、エラーが出たらメッセージを読んで直す、という経験を重ねることが、上達の近道です。</p>
+
+<footer>
+本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。<br>
+※ 解答例の数値は、Python（SciPy など）で同一データを再計算して確認したものです。Rのコード自体は、作成環境にRがないため実行していません。ご自身の環境で動作をご確認ください。
+</footer>
+</div>
+</body>
+</html>

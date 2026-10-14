@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rと統計学</title>
+<style>
+:root{--bg:#fff;--fg:#111;--muted:#555;--accent:#1f5f8b;--line:#d5dbe0;--code-bg:#f4f6f8;--note-bg:#eef6fb;--warn-bg:#fff6e5}
+@media (prefers-color-scheme:dark){:root{--bg:#15181b;--fg:#e8eaec;--muted:#a3abb2;--accent:#7cc0ea;--line:#333a40;--code-bg:#1e2327;--note-bg:#192630;--warn-bg:#2b2517}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"BIZ UDPGothic","Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.85;font-size:17px}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+header{border-bottom:3px solid var(--accent);margin-bottom:8px}
+h1{font-size:1.7rem;margin:.6em 0 .2em}
+.sub{color:var(--muted);margin:0 0 .8em}
+nav{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;margin:16px 0}
+nav a{color:var(--accent);text-decoration:none}
+nav ul{margin:.3em 0;padding-left:1.2em}
+h2{font-size:1.4rem;border-left:6px solid var(--accent);padding-left:10px;margin:2em 0 .6em}
+h3{font-size:1.15rem;margin:1.6em 0 .4em;color:var(--accent)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"BIZ UDGothic",Consolas,Menlo,monospace;background:var(--code-bg);padding:1px 5px;border-radius:4px;font-size:.92em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;margin:.8em 0;width:100%;font-size:.95rem}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+th{background:var(--code-bg)}
+.table-scroll{overflow-x:auto}
+.note,.warn{border-radius:8px;padding:10px 14px;margin:1em 0}
+.note{background:var(--note-bg);border-left:5px solid var(--accent)}
+.warn{background:var(--warn-bg);border-left:5px solid #d98e04}
+.note b:first-child,.warn b:first-child{display:block;margin-bottom:2px}
+.eq{text-align:center;margin:.8em 0;font-size:1.05rem;overflow-x:auto}
+footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;line-height:1.7}
+@media (max-width:600px){body{font-size:16px}.wrap{padding:12px}h1{font-size:1.45rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>Rと統計学</h1>
+<p class="sub">Rの基本・2群の検定・カイ二乗検定とFisherの正確検定・95%信頼区間・ggplot2・メタ解析・パイプ・条件分岐と繰り返し・復元抽出と非復元抽出・RスクリプトとRmd・ANOVA・生存分析・回帰・多変量解析・次元削減・用語集</p>
+</header>
+
+<nav>
+<b>目次</b>
+<ul>
+<li><a href="#s1">1. Rの基本</a></li>
+<li><a href="#s2">2. ベクトルとデータフレーム</a></li>
+<li><a href="#s3">3. パラメトリックとノンパラメトリック</a></li>
+<li><a href="#s4">4. t検定（paired / unpaired）</a></li>
+<li><a href="#s5">5. ノンパラメトリック検定と基本統計量</a></li>
+<li><a href="#s6">6. カイ二乗検定とFisherの正確検定</a></li>
+<li><a href="#s7">7. 95%信頼区間とは</a></li>
+<li><a href="#s8">8. まとめと、R・RStudio・Posit Cloudの準備</a></li>
+<li><a href="#s9">9. とりあえず、コピペで入力してみよう</a></li>
+<li><a href="#s10">10. メタ解析</a></li>
+<li><a href="#s11">11. 入れ子（マトリョーシカ）とパイプ</a></li>
+<li><a href="#s12">12. 条件分岐と繰り返し</a></li>
+<li><a href="#s13">13. 復元抽出と非復元抽出</a></li>
+<li><a href="#s14">14. RスクリプトとR Markdown（Rmd）</a></li>
+<li><a href="#s15">15. ANOVA・生存分析・ログランク検定</a></li>
+<li><a href="#s16">16. 回帰・多変量解析・次元削減・ハザード</a></li>
+<li><a href="#s17">17. 用語集</a></li>
+</ul>
+</nav>
+
+<h2 id="s1">1. Rの基本</h2>
+<p>Rは統計専用の言語であり、解析環境でもあります。実際にはRStudioというIDE（統合開発環境）を使うのが一般的ですが、VSCodeなどの汎用IDEでも動かせます。</p>
+<p>なお、Base Rを使う練習までは、R playgroundを用います。<br>
+<a href="https://codapi.org/r/" target="_blank" rel="noopener">https://codapi.org/r/</a></p>
+<p>RStudioやPosit Cloudの準備方法は、<a href="#s8">第8節</a>の末尾にまとめています。</p>
+
+<h3>変数と代入</h3>
+<pre><code>a &lt;- 1          # aに1を代入する
+str &lt;- "文字列"  # strに文字列を代入する</code></pre>
+<p>基本のデータ型は<b>数値</b>、<b>文字列</b>、<b>真偽値</b>（TRUE / FALSE）です。</p>
+
+<h3>四則計算など</h3>
+<pre><code>a + b    # 加算
+a - b    # 減算
+a * b    # 乗算
+a / b    # 除算
+a %% b   # 剰余（余り）</code></pre>
+<div class="warn"><b>注意</b>Rで剰余を求める演算子は <code>%</code> ではなく <code>%%</code> です。整数除算は <code>%/%</code> です。</div>
+
+<h2 id="s2">2. ベクトルとデータフレーム</h2>
+<p><code>c(1,2,3,4)</code> の形を<b>ベクトル</b>といいます。変数に代入することもできます。</p>
+<pre><code>vector &lt;- c(1,2,3,4)</code></pre>
+<p>ベクトル同士の計算は、<b>対応する成分同士</b>で行われます。成分の数が合わないときは、短い方が先頭に戻って繰り返し使われます（リサイクル規則）。</p>
+<pre><code>a &lt;- c(1,2,3,4)
+b &lt;- c(4,5,6,7,8)
+a + b
+# 1+4, 2+5, 3+6, 4+7, 1+8 を計算 → c(5, 7, 9, 11, 9)</code></pre>
+<div class="note"><b>補足</b>長さが倍数関係にないとき、Rは「長いオブジェクトの長さが短いオブジェクトの長さの倍数ではない」という警告を出します。エラーではなく警告ですが、意図しない計算のサインなので確認しましょう。</div>
+
+<h3>データフレーム</h3>
+<p>ベクトルが1次元のデータであるのに対し、データフレームは<b>2次元のデータ</b>（表）です。</p>
+<pre><code>a &lt;- c(1,2,3,4)
+b &lt;- c(4,5,6,7)
+df &lt;- data.frame(a, b)
+print(df)</code></pre>
+<div class="table-scroll"><table>
+<tr><th></th><th>a</th><th>b</th></tr>
+<tr><td>1</td><td>1</td><td>4</td></tr>
+<tr><td>2</td><td>2</td><td>5</td></tr>
+<tr><td>3</td><td>3</td><td>6</td></tr>
+<tr><td>4</td><td>4</td><td>7</td></tr>
+</table></div>
+
+<h3>列名・行名をつける</h3>
+<pre><code>a &lt;- c(1,2,3,4)
+b &lt;- c(4,5,6,7)
+
+# 列名は name1 = a のように指定、行名は row.names で指定
+df &lt;- data.frame(name1 = a, name2 = b, row.names = c("a","b","c","d"))
+print(df)</code></pre>
+<div class="table-scroll"><table>
+<tr><th></th><th>name1</th><th>name2</th></tr>
+<tr><td>a</td><td>1</td><td>4</td></tr>
+<tr><td>b</td><td>2</td><td>5</td></tr>
+<tr><td>c</td><td>3</td><td>6</td></tr>
+<tr><td>d</td><td>4</td><td>7</td></tr>
+</table></div>
+
+<h2 id="s3">3. パラメトリックとノンパラメトリック</h2>
+<p>検定は大きく2種類に分けられます。<b>パラメーター（生の数値）を使うか、使わないか</b>の違いです。</p>
+<div class="table-scroll"><table>
+<tr><th></th><th>パラメトリック</th><th>ノンパラメトリック</th></tr>
+<tr><td>使う情報</td><td>数値そのもの</td><td>順位のみ</td></tr>
+<tr><td>検出力</td><td>高い（情報を失わない）</td><td>やや低い（情報を失う）</td></tr>
+<tr><td>外れ値</td><td>引きずられやすい</td><td>強い</td></tr>
+<tr><td>前提</td><td>基本的に正規分布</td><td>分布を仮定しない</td></tr>
+</table></div>
+
+<h3>正規分布かどうか</h3>
+<ul>
+<li>身長は正規分布に近いと言われます。体重や収入は正規分布しないことが多い（右に裾の長い分布）。</li>
+<li>簡便な確認法は、<b>ヒストグラムを描いてきれいな釣鐘型になるか</b>を見ること。正式な正規性の検定もありますが、ここでは省略します。</li>
+</ul>
+
+<h3>分散が異なる場合</h3>
+<p>正規分布でも、釣鐘の裾野が広いものと狭いもの（<b>分散が異なる</b>）を直接比較するときは補正が必要です。補正の要否はF検定で判断できますが、Rの <code>t.test()</code> は既定で自動的に補正（Welch法）を行うため、通常は意識しなくて構いません。</p>
+
+<h3>t分布・F分布・近似の話</h3>
+<p>t検定やF検定の「t」「F」は、それぞれt分布・F分布という確率分布の表（分布表）を使って判定することに由来します。</p>
+<p>統計ではnが大きいデータを扱うことが多く、正確な確率を厳密に計算すると計算量が膨大になります。そこで<b>近似</b>を使います。近似には精度の高いものと、やや粗いものがあります。</p>
+<ul>
+<li>精度の高い近似：t分布、F分布</li>
+<li>やや粗い近似：χ²（カイ二乗）分布、Z分布（正規分布）</li>
+</ul>
+<p>nが大きければ粗い近似でも誤差は無視できます。逆に<b>nが小さく近似の誤差が大きい場合は、正確な確率計算</b>（第6節のFisherの正確検定など）を行います。</p>
+
+<h2 id="s4">4. t検定（paired / unpaired）</h2>
+<p>t検定はパラメトリックな検定で、<b>paired（対応あり）</b>と<b>unpaired（対応なし）</b>があります。</p>
+<ul>
+<li>同じ人の治療前と治療後の血圧 → <b>paired</b></li>
+<li>2つのクラスの成績 → <b>unpaired</b></li>
+</ul>
+
+<h3>対応のあるt検定</h3>
+<pre><code># 同じ患者10人の、治療前(before)と治療後(after)の収縮期血圧
+before &lt;- c(145, 152, 138, 160, 148, 135, 155, 142, 150, 144)
+after  &lt;- c(130, 138, 132, 142, 135, 130, 140, 136, 141, 138)
+
+# paired = TRUE を指定するのがポイント
+res_paired &lt;- t.test(before, after, paired = TRUE)
+print(res_paired)</code></pre>
+<div class="note"><b>結果の目安</b>平均値は治療前146.9、治療後136.2で、差の平均は10.7 mmHg。t = 7.04、自由度 = 9、p = 6.1×10<sup>-5</sup>（Python/SciPyで同一データを計算して確認）。治療前後で有意に血圧が低下したと解釈できます。</div>
+
+<h3>対応のないt検定</h3>
+<pre><code># Aクラス(10人)とBクラス(11人)のテストの点数
+class_A &lt;- c(75, 82, 68, 90, 78, 65, 85, 72, 80, 74)
+class_B &lt;- c(62, 70, 65, 80, 58, 72, 68, 75, 61, 66, 73)
+
+# paired = FALSE（省略可）。var.equal = FALSE で Welch のt検定
+res_unpaired &lt;- t.test(class_A, class_B, paired = FALSE, var.equal = FALSE)
+print(res_unpaired)</code></pre>
+<div class="note"><b>結果の目安</b>平均点はAクラス76.9、Bクラス68.2。t = 2.78、自由度 = 17.89（整数にならないのがWelch法の特徴）、p = 0.0125。</div>
+
+<p>等分散を仮定するt検定を<b>Student t</b>、仮定しない（補正する）ものを<b>Welch t</b>と呼びます。Rは最初からWelchを使う設定（<code>var.equal = FALSE</code>）なので、等分散でない場合でも自動的に補正されます。</p>
+
+<h2 id="s5">5. ノンパラメトリック検定と基本統計量</h2>
+<h3>正規分布でない場合の検定</h3>
+<div class="table-scroll"><table>
+<tr><th>状況</th><th>検定</th><th>Rの関数</th></tr>
+<tr><td>対応あり</td><td>Wilcoxonの符号付き順位検定</td><td><code>wilcox.test(x, y, paired = TRUE)</code></td></tr>
+<tr><td>対応なし</td><td>Mann-WhitneyのU検定<br>（Wilcoxonの順位和検定）</td><td><code>wilcox.test(x, y)</code></td></tr>
+</table></div>
+<p>RではどちらもU検定を含めて <code>wilcox.test()</code> で実行します。</p>
+
+<h3>5要約量と基本統計量</h3>
+<p><b>5要約量</b>は、最小値、第1四分位数、中央値（第2四分位数）、第3四分位数、最大値の5つです。これに<b>平均</b>を加えた6つが、<code>summary()</code> で表示される基本統計量です。</p>
+<pre><code>score &lt;- c(55, 62, 70, 75, 78, 80, 82, 85, 90, 100)
+summary(score)</code></pre>
+<div class="table-scroll"><table>
+<tr><th>Min.</th><th>1st Qu.</th><th>Median</th><th>Mean</th><th>3rd Qu.</th><th>Max.</th></tr>
+<tr><td>55.00</td><td>71.25</td><td>79.00</td><td>77.70</td><td>84.25</td><td>100.00</td></tr>
+</table></div>
+<p>（上記の値はPythonで同一データを計算して確認。Rの <code>summary()</code> の既定の四分位の計算法と一致します。）</p>
+
+<h2 id="s6">6. カイ二乗検定とFisherの正確検定</h2>
+<p>どちらも<b>クロス集計表（分割表）で、行と列の間に偏り（関連性）があるか</b>を調べる検定です。違いは計算方法にあります。</p>
+<ul>
+<li><b>カイ二乗検定</b>：近似を使う検定。</li>
+<li><b>Fisherの正確検定</b>：すべてのパターンを数え上げて、正確な確率を計算する検定。</li>
+</ul>
+
+<h3>Fisherの正確検定の考え方</h3>
+<p>二項検定（コイン投げのような2択の確率計算）の発想を、クロス集計表に応用したものと捉えると理解しやすくなります。具体的には、行の合計（例：サプリあり10人・なし10人）と列の合計（例：風邪9人・健康11人）、すなわち<b>周辺度数を固定</b>した上で、</p>
+<div class="note"><b>問い</b>「その枠組みの中で、観察されたもの以上に極端な偏りが生じる確率はどれくらいか？」</div>
+<p>という確率を、<b>超幾何分布</b>を使ってすべて数え上げます。</p>
+
+<h3>Rで実行</h3>
+<pre><code># Aクラス: 眼鏡12人、なし18人 (計30人)
+# Bクラス: 眼鏡 4人、なし21人 (計25人)
+glasses_matrix &lt;- matrix(c(12, 18,
+                            4, 21),
+                          nrow = 2, byrow = TRUE)
+rownames(glasses_matrix) &lt;- c("Aクラス", "Bクラス")
+colnames(glasses_matrix) &lt;- c("眼鏡あり", "眼鏡なし")
+print(glasses_matrix)
+
+# カイ二乗検定（2x2では既定でYatesの連続修正が入る）
+res_chi2 &lt;- chisq.test(glasses_matrix)
+print(res_chi2)
+
+# Fisherの正確検定
+res_fisher &lt;- fisher.test(glasses_matrix)
+print(res_fisher)</code></pre>
+
+<h3>結果の比較</h3>
+<div class="table-scroll"><table>
+<tr><th>検定</th><th>統計量</th><th>p値</th></tr>
+<tr><td>カイ二乗検定（Yates補正あり、Rの既定）</td><td>χ² = 2.73、自由度 1</td><td>0.098</td></tr>
+<tr><td>カイ二乗検定（補正なし）</td><td>χ² = 3.81、自由度 1</td><td>0.051</td></tr>
+<tr><td>Fisherの正確検定</td><td>—</td><td>0.075</td></tr>
+</table></div>
+<p>実際に入力すると、<b>結果が微妙に異なる</b>ことが確認できます。この例ではどの検定でもp値が0.05前後〜0.1で、有意水準5%で有意とは言えません。<b>p値が0.05の付近にあるとき、検定法の選択で結論が変わりうる</b>ことは重要な教訓です。</p>
+<div class="note"><b>補足</b>期待度数（眼鏡あり：Aクラス8.7人、Bクラス7.3人／眼鏡なし：17.7人〜21.3人）はすべて5以上で、カイ二乗検定の目安は満たしています。それでも差が出るのは、近似と正確計算の違いによるものです。事前に検定法を決めておき、結果を見てから選び直さないようにしましょう。</div>
+
+<h2 id="s7">7. 95%信頼区間とは</h2>
+<p>95%CI（confidence interval）は<b>信頼区間</b>です。統計には2つの向きがあります。</p>
+<ol>
+<li>元の確率がわかっていて、結果を予測する。</li>
+<li>結果がわかっていて、元の確率を推測する。</li>
+</ol>
+<p>実際の研究では多くが後者です。</p>
+
+<h3>前者の例：確率がわかっているとき</h3>
+<p>公平なコインを2枚投げます。表の確率 P = 0.5、裏の確率 1−P = 0.5 とします。</p>
+<ul>
+<li>表表：0.5 × 0.5 = 0.25</li>
+<li>裏裏：0.5 × 0.5 = 0.25</li>
+<li>表裏または裏表：0.5 × 0.5 + 0.5 × 0.5 = 0.5</li>
+</ul>
+
+<h3>後者の例：結果から確率を推測する</h3>
+<p>結果が「表1枚、裏1枚」だったとします。元の確率Pはわからないので、この結果が出る確率は</p>
+<div class="eq">P(1−P) + (1−P)P = 2P(1−P)</div>
+<p>となります。ここから、Pの下限P<sub>L</sub>と上限P<sub>U</sub>を推測します。</p>
+
+<h3>下限 P<sub>L</sub> を求める</h3>
+<p>「本当の確率がP<sub>L</sub>だとしたら、<b>表が1枚以上</b>出る確率が、ギリギリ2.5%しかない」という式を立てます。</p>
+<div class="eq">2P<sub>L</sub>(1−P<sub>L</sub>) + P<sub>L</sub><sup>2</sup> = 0.025</div>
+<p>整理すると 1 − (1−P<sub>L</sub>)<sup>2</sup> = 0.025、つまり (1−P<sub>L</sub>)<sup>2</sup> = 0.975 となります。</p>
+<div class="eq">P<sub>L</sub> = 1 − √0.975 ≈ 0.01258</div>
+
+<h3>上限 P<sub>U</sub> を求める</h3>
+<p>「本当の確率がP<sub>U</sub>だとしたら、<b>表が1枚以下</b>しか出ない確率が、ギリギリ2.5%しかない」という式を立てます。</p>
+<div class="eq">2P<sub>U</sub>(1−P<sub>U</sub>) + (1−P<sub>U</sub>)<sup>2</sup> = 0.025</div>
+<p>整理すると 1 − P<sub>U</sub><sup>2</sup> = 0.025、つまり P<sub>U</sub><sup>2</sup> = 0.975 となります。</p>
+<div class="eq">P<sub>U</sub> = √0.975 ≈ 0.98742</div>
+<p>したがって、2枚中1枚が表だった場合の95%信頼区間は <b>約0.013〜0.987</b> です。2枚だけでは、ほとんど何も言えないに等しい幅になります。これは <code>binom.test(1, 2)$conf.int</code> の出力とも一致します。</p>
+
+<h3>nが増えると</h3>
+<p>10回投げて5回表が出た場合も同様に式は立てられますが、10次方程式になり手計算では解けません。そこで計算機で数値的に解きます。Rでは <code>binom.test()</code> を使います。</p>
+<pre><code># 結果：10枚中、表が5枚出た（x = 5, n = 10）
+
+res_50  &lt;- binom.test(x = 5, n = 10, p = 0.5)   # p = 0.5
+res_10  &lt;- binom.test(x = 5, n = 10, p = 0.1)   # p = 0.1（適当に置いてみる）
+res_def &lt;- binom.test(x = 5, n = 10)            # pを省略（既定は0.5）
+
+print(res_50$conf.int)
+print(res_10$conf.int)
+print(res_def$conf.int)</code></pre>
+<div class="note"><b>ここがポイント</b>3つの95%信頼区間は<b>すべて同じ値（約0.187〜0.813）</b>になります。<code>p</code>は「帰無仮説の値」で、p値の計算には影響しますが、データ（5/10）から求める信頼区間には影響しないためです。一方、p値は変わります（p = 0.5ならp = 1、p = 0.1なら極めて小さい値）。信頼区間は「データから推定した範囲」、p値は「指定した仮説との整合性」と区別して理解しましょう。</div>
+
+<div class="warn"><b>信頼区間の解釈</b>「真の確率が95%の確率でこの区間に入る」という言い方は厳密には誤りです。正しくは「同じ方法で区間を繰り返し作ると、その95%が真の値を含む」という意味です。</div>
+
+<h2 id="s8">8. まとめと、R・RStudio・Posit Cloudの準備</h2>
+<h3>まとめ</h3>
+<ul>
+<li>ベクトルは成分ごとに計算され、長さが違うと短い方が繰り返される。</li>
+<li>パラメトリック検定は検出力が高いが外れ値に弱く、ノンパラメトリック検定はその逆。</li>
+<li>Rの <code>t.test()</code> は既定でWelch法。対応のあるデータでは <code>paired = TRUE</code> を忘れない。</li>
+<li>ノンパラメトリック検定は <code>wilcox.test()</code>。</li>
+<li>分割表の検定は、nが小さいときはFisherの正確検定。p値が境界付近では検定法で結論が変わりうる。</li>
+<li>95%CIは「結果から元の確率を推測する」範囲。</li>
+</ul>
+<h3>次のステップ</h3>
+<p>Base Rだけでなく、<b>tidyverse</b>をインストールして、<b>ggplot2</b>で図を表示します。実際に動かすのは<a href="#s9">第9節</a>です。</p>
+
+<h3 id="s8-install">自分のパソコンにR・RStudioをインストールする</h3>
+<p>手元のパソコンで使う場合は、<b>先にR本体、次にRStudio</b>の順でインストールします（RStudioはRを使うための操作画面であり、R本体は別にインストールが必要です）。</p>
+<div class="table-scroll"><table>
+<tr><th>ソフト</th><th>URL</th></tr>
+<tr><td>R本体（CRAN）</td><td><a href="https://cran.r-project.org/" target="_blank" rel="noopener">https://cran.r-project.org/</a></td></tr>
+<tr><td>RStudio Desktop（Posit社）</td><td><a href="https://posit.co/download/rstudio-desktop/" target="_blank" rel="noopener">https://posit.co/download/rstudio-desktop/</a></td></tr>
+</table></div>
+<ol>
+<li><b>Rをインストールする。</b>CRANのページを開き、お使いのOS（Windows / macOS / Linux）のリンクを選びます。Windowsなら「base」→「Download R-x.x.x for Windows」、macOSならChip（Apple SiliconかIntel）に合ったインストーラ（.pkg）をダウンロードします。ダウンロードしたファイルを実行し、基本的に既定の設定のまま進めます。</li>
+<li><b>RStudio Desktopをインストールする。</b>上記のPosit社のページを開き、OSに合ったインストーラ（Windowsは.exe、macOSは.dmg）をダウンロードして実行します。macOSでは、.dmgを開いてRStudioをApplicationsフォルダにドラッグします。</li>
+<li><b>起動して確認する。</b>RStudioを起動し、左側のConsoleに <code>1 + 1</code> と入力してEnterキーを押し、<code>2</code> と表示されれば成功です。</li>
+</ol>
+<div class="note"><b>補足</b>RStudio Desktop（オープンソース版）の対応OSは、Windows 11、macOS 14以降、Linuxです（2026年10月時点の公式ページの記載）。バージョンやOSの対応は更新されるため、最新情報は公式ページで確認してください。</div>
+<p>tidyverseは、RStudioのConsoleで次のようにインストールします（最初の1回だけ）。</p>
+<pre><code>install.packages("tidyverse")   # 初回のみ。数分かかることがある
+library(tidyverse)              # 使うたびに読み込む</code></pre>
+
+<h3 id="s8-posit">インストール不要：Posit Cloud（ブラウザ版RStudio）</h3>
+<p>パソコンに何もインストールせず、ブラウザだけでRStudioを使えるのが<b>Posit Cloud</b>です。授業や講習会で、全員の環境をそろえたいときに便利です。</p>
+<p>URL：<a href="https://posit.cloud/" target="_blank" rel="noopener">https://posit.cloud/</a></p>
+<h4>アカウントの作成方法</h4>
+<ol>
+<li>ブラウザで <a href="https://posit.cloud/" target="_blank" rel="noopener">https://posit.cloud/</a> を開く。</li>
+<li>画面の「Sign up」（アカウント作成）を選ぶ。</li>
+<li>画面の案内に従い、メールアドレスなどで登録する（登録方法の選択肢は画面に表示されます）。確認メールが届いた場合は、メール内の指示に従って認証を完了する。</li>
+<li>ログイン後、新しいプロジェクト（RStudioのプロジェクト）を作成すると、ブラウザ上でRStudioが開く。</li>
+</ol>
+<div class="warn"><b>注意</b>無料プランには、利用時間やメモリなどの上限があります。上限の内容は変更されることがあるため、利用前に公式サイトの料金ページで最新の条件を確認してください。大きなデータの解析や長時間の計算には、自分のパソコンへのインストールが向いています。</div>
+
+<h2 id="s9">9. とりあえず、コピペで入力してみよう</h2>
+<p>RStudio（またはPosit Cloud）が使える状態になったら、まずは中身を理解する前に、コードをコピー＆ペーストして動かしてみましょう。「きれいなグラフが出た」という体験が、最初の一歩になります。</p>
+
+<h3>RStudioは4つのパネルでできている</h3>
+<p>RStudioの画面は、基本的に4つのパネル（ペイン）に分かれています。</p>
+<div class="table-scroll"><table>
+<tr><th>位置</th><th>パネル</th><th>役割</th></tr>
+<tr><td>左上</td><td>Source（ソース）</td><td>スクリプト（R、Rmd）を書く場所。ファイルを開いたときだけ表示される</td></tr>
+<tr><td>左下</td><td>Console（コンソール）</td><td>Rに命令を入力し、結果が表示される場所</td></tr>
+<tr><td>右上</td><td>Environment / History</td><td>作成した変数やデータの一覧、入力の履歴</td></tr>
+<tr><td>右下</td><td>Files / Plots / Packages / Help / Viewer</td><td>グラフ（Plots）の表示、パッケージの管理、ヘルプの表示など</td></tr>
+</table></div>
+<div class="note"><b>補足</b>起動直後でスクリプトを開いていないときは、Sourceパネルが表示されず、左側全体がConsoleになっています。パネルの配置は設定で変更できます。</div>
+
+<h3>動かし方は2種類</h3>
+<ol>
+<li><b>コンソールに直接入力して、1行ずつRunする。</b><br>
+Consoleにコードを入力し、Enterキーを押すとその場で実行されます。短い確認や、試し打ちに向いています。入力した内容は保存されません。</li>
+<li><b>スクリプトに書いて、まとめてRunする。</b><br>
+スクリプト（R または Rmd）に書いて保存し、まとめて実行します。再現・修正・共有ができるので、解析の本番はこちらです。</li>
+</ol>
+<div class="warn"><b>RとRmdではやり方が異なります</b>
+<code>.R</code> は純粋なRのコードだけを書くファイル、<code>.Rmd</code>（R Markdown）は文章とコードを一緒に書いて、レポートにまとめられるファイルです。実行方法も異なります（Rmdではコードを「チャンク」という塊に書いて実行します）。<b>今回は、Rスクリプト（.R）で進めます。</b>Rmdについては、<a href="#s14">第14節</a>で説明します。</div>
+
+<h4>Rスクリプトの使い方</h4>
+<ol>
+<li>メニューの「File」→「New File」→「R Script」を選ぶ（左上にSourceパネルが開く）。</li>
+<li>下のコードをコピーして、Sourceパネルに貼り付ける。</li>
+<li>実行する。
+<ul>
+<li>1行（または選択した範囲）だけ実行：カーソルをその行に置き、<code>Ctrl + Enter</code>（Macは <code>Cmd + Enter</code>）</li>
+<li>全部をまとめて実行：右上の「Source」ボタン、または <code>Ctrl + Shift + Enter</code>（Macは <code>Cmd + Shift + Enter</code>）</li>
+</ul></li>
+<li>グラフは右下の「Plots」タブに表示される。</li>
+</ol>
+
+<h3>準備：パッケージのインストール（最初の1回だけ）</h3>
+<p>この節のコードで使うパッケージを、Consoleに入力してインストールします。数分かかることがあります。</p>
+<pre><code>install.packages("tidyverse")   # ggplot2などを含むパッケージ群
+install.packages("ggExtra")     # 散布図の周辺に箱ひげ図をつけるためのパッケージ</code></pre>
+<p><code>library()</code> による読み込みは、RStudioを起動し直すたびに必要です。<code>install.packages()</code> は最初の1回だけで構いません。</p>
+
+<h3>例1：クラス別の眼鏡着用比率（帯グラフ）</h3>
+<p>第6節で使った眼鏡のデータを、帯グラフ（パーセント表示の積み上げ棒グラフ）にします。AクラスとBクラスは人数が異なるため、<b>全体を100%としたときの比率</b>で比べると、違いがわかりやすくなります。</p>
+<pre><code># 1. ライブラリの読み込み
+library(tidyverse)
+
+# 2. データの準備（マトリックスの作成）
+glasses_matrix &lt;- matrix(c(12, 18,  # Aクラス：[眼鏡あり, なし]
+                            4, 21), # Bクラス：[眼鏡あり, なし]
+                          nrow = 2, byrow = TRUE)
+
+rownames(glasses_matrix) &lt;- c("Aクラス", "Bクラス")
+colnames(glasses_matrix) &lt;- c("眼鏡あり", "眼鏡なし")
+
+# 3. ggplot2で描画するためにデータを整形（縦長 = Long format）
+plot_data &lt;- glasses_matrix %&gt;%
+  # マトリックスをデータフレームに変換し、行名を「クラス」列にする
+  as.data.frame() %&gt;%
+  rownames_to_column(var = "クラス") %&gt;%
+  # 「1行 = 1要素」の縦長データに変形
+  pivot_longer(cols = c("眼鏡あり", "眼鏡なし"),
+               names_to = "ステータス",
+               values_to = "人数")
+
+# 整形後のデータを確認
+print(plot_data)
+
+# 4. ggplot2による可視化（パーセント表示の帯グラフ）
+ggplot(plot_data, aes(x = クラス, y = 人数, fill = ステータス)) +
+  # position = "fill" で、各クラスを100%に換算した帯グラフになる
+  geom_bar(stat = "identity", position = "fill", width = 0.6) +
+  # Y軸の目盛りをパーセント表記（0% 〜 100%）に
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal(base_family = "sans") +
+  scale_fill_brewer(palette = "Set2") +
+  labs(title = "クラス別の眼鏡着用比率の比較",
+       x = "クラス",
+       y = "比率（%）",
+       fill = "眼鏡の有無") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+        axis.text = element_text(size = 11),
+        legend.position = "bottom")</code></pre>
+<div class="note"><b>コードのポイント</b>
+<ul>
+<li><code>pivot_longer()</code>：行列（横に並んだ表）を、ggplot2が扱いやすい「1行＝1要素」の縦長データフレームに変換します。</li>
+<li><code>position = "fill"</code>：各クラスの総人数（30人と25人）が異なっていても、全体を100%として引き伸ばして積み上げます。</li>
+<li><code>scales::percent</code>：Y軸の目盛りを 0.3 のような小数ではなく、30% のように表示します。</li>
+<li><code>%&gt;%</code>（パイプ）：左の結果を、右の関数の入力として渡します。「→ 次に」と読むと理解しやすくなります。</li>
+</ul></div>
+
+<h3>例2：irisデータの散布図と、周辺箱ひげ図</h3>
+<p><code>iris</code>（アヤメのデータ）は、Rに最初から入っているデータなので、そのまま使えます。がく片の長さ（Sepal.Length）と幅（Sepal.Width）を、アヤメの品種（Species）ごとに色分けして散布図にします。</p>
+<h4>(1) 散布図</h4>
+<pre><code>library(tidyverse)
+
+p_scatter &lt;- ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point(size = 3, alpha = 0.7) +   # ドットの大きさと透明度
+  theme_minimal(base_family = "sans") +
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    title = "irisデータの散布図（がく片の長さと幅）",
+    x = "がく片の長さ (Sepal.Length)",
+    y = "がく片の幅 (Sepal.Width)",
+    color = "品種 (Species)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    legend.position = "bottom"
+  )
+
+# グラフを表示
+print(p_scatter)</code></pre>
+
+<h4>(2) 散布図の周辺に箱ひげ図をつける</h4>
+<p>散布図の上と右の余白に、箱ひげ図をドッキングさせます。点の広がり（相関）を見ながら、各変数の分布も同時に確認できます。<code>ggExtra</code> パッケージの <code>ggMarginal()</code> を使います。</p>
+<pre><code>library(tidyverse)
+library(ggExtra)
+
+# ベースとなる散布図（ggMarginalを使うので、凡例は一度消しておく）
+base_plot &lt;- ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point(size = 2.5, alpha = 0.7) +
+  theme_minimal(base_family = "sans") +
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    x = "がく片の長さ (Sepal.Length)",
+    y = "がく片の幅 (Sepal.Width)"
+  ) +
+  theme(legend.position = "none")
+
+# 散布図の上と右に箱ひげ図をドッキング
+p_marginal_box &lt;- ggMarginal(
+  base_plot,
+  type = "boxplot",     # "density"（密度曲線）や "histogram" に変えることもできる
+  groupColour = TRUE,   # 品種ごとの色分けを箱ひげ図にも反映
+  groupFill = TRUE      # 箱ひげ図の中身も品種ごとに色塗り
+)
+
+# グラフを表示
+grid::grid.newpage()
+grid::grid.draw(p_marginal_box)</code></pre>
+<div class="note"><b>コードのポイント</b>
+<ul>
+<li>irisはRに最初から入っているため、<code>data(iris)</code> を実行しなくても使えます。</li>
+<li><code>ggMarginal()</code>：ggplot2単体では難しい、散布図の余白への箱ひげ図の配置を、レイアウトを崩さずに行います。</li>
+<li><b>5要約量との関係：</b>箱ひげ図の「箱」は第1四分位数〜第3四分位数、箱の中の線は中央値です。ひげ（線）は、既定では最小値・最大値ではなく、箱から四分位範囲（IQR）の1.5倍以内にある最も遠いデータまでで、それより外側のデータは点（外れ値）として描かれます。</li>
+</ul></div>
+
+<div class="warn"><b>うまくいかないとき</b>
+<ul>
+<li><b>日本語が文字化けする（□や?になる）：</b>環境にあるフォントによって起こります。まずは <code>labs()</code> のタイトルや軸ラベルを英語にして、グラフが出るか確認してください。</li>
+<li><b><code>there is no package called ...</code> というエラー：</b>パッケージのインストール（<code>install.packages()</code>）がまだです。</li>
+<li><b><code>could not find function "%&gt;%"</code> というエラー：</b><code>library(tidyverse)</code> を実行していません。</li>
+<li><b>グラフが出ない：</b>右下の「Plots」タブを選んでいるか確認してください。</li>
+</ul></div>
+<p>※ここのコードは、本文の作成環境にRがないため、実行して確認していません。お手元のRStudioで動作をご確認ください。</p>
+
+<h2 id="s10">10. メタ解析</h2>
+<p><b>メタ解析（メタアナリシス）</b>は、同じ問いを扱った複数の研究の結果を統計的に統合して、全体としての効果を推定する方法です。1つ1つの研究は人数が少なく結論が揺らぎやすくても、まとめることで推定の精度（信頼区間の狭さ）を上げられます。ここでも、まずはコードをコピペして動かし、結果の読み方を確認します。</p>
+
+<h3>準備：パッケージのインストール（最初の1回だけ）</h3>
+<pre><code>install.packages("meta")   # メタ解析用のパッケージ</code></pre>
+<div class="note"><b>補足</b>下のコードの <code>common = TRUE</code>、<code>random = TRUE</code>、<code>w.common</code> は、metaパッケージのバージョン7.0以降の書き方です。古いバージョンでは <code>comb.fixed</code>、<code>comb.random</code>、<code>w.fixed</code> を使っていました。エラーが出たら、<code>install.packages("meta")</code> で更新してください。</div>
+
+<h3>考え方</h3>
+<ul>
+<li><b>効果の指標：</b>この例では、2値のアウトカム（イベントが起きたか否か）を<b>オッズ比（OR）</b>で比較します。OR &lt; 1 なら、治療群でイベントが少ないことを示します。</li>
+<li><b>共通効果モデル（common effect）：</b>すべての研究が同じ1つの真の効果を測っていると仮定します。</li>
+<li><b>ランダム効果モデル（random effects）：</b>研究ごとに真の効果が少しずつ異なる（ばらつく）と仮定します。そのばらつきの大きさが<b>τ²</b>（タウ二乗）です。</li>
+<li><b>異質性（heterogeneity）：</b>研究間のばらつきの大きさ。<b>Q検定</b>、<b>I²</b>（ばらつきのうち偶然では説明できない割合）、<b>τ²</b>で評価します。</li>
+</ul>
+
+<h3>コード</h3>
+<pre><code># 1. 必要なライブラリの読み込み
+library(tidyverse)
+library(meta)
+
+# ----------------------------------------------------
+# 2. メタ解析用のダミーデータ作成（2×2の分割表データ）
+# ----------------------------------------------------
+# 8つの臨床試験（Study A〜H）のデータ
+# ee: 治療群のイベント数,  en: 治療群の総人数
+# ce: 対照群のイベント数,  cn: 対照群の総人数
+dummy_data &lt;- data.frame(
+  study = c("Study A", "Study B", "Study C", "Study D",
+            "Study E", "Study F", "Study G", "Study H"),
+  ee = c(10, 25, 5, 45, 12, 18, 30, 8),
+  en = c(100, 150, 80, 200, 110, 130, 180, 90),
+  ce = c(20, 35, 12, 50, 15, 22, 55, 10),
+  cn = c(100, 150, 80, 200, 110, 130, 180, 90)
+)
+
+print("--- [作成したダミーデータ] ---")
+print(dummy_data)
+
+
+# ----------------------------------------------------
+# 3. メタ解析の実行（metabin関数）
+# ----------------------------------------------------
+# オッズ比（OR）を指標としてメタ解析を行う
+meta_res &lt;- metabin(
+  event.e = ee, n.e = en,    # 治療群のイベント数と総人数
+  event.c = ce, n.c = cn,    # 対照群のイベント数と総人数
+  studlab = study,           # 試験名
+  data = dummy_data,
+  sm = "OR",                 # 評価指標：オッズ比（Odds Ratio）
+  common = TRUE,             # 共通効果モデルを計算
+  random = TRUE,             # ランダム効果モデルを計算
+  method.tau = "REML"        # τの推定方法（制限付き最大尤度法）
+)
+
+# 解析結果（異質性、τ、p値など）の出力
+print("=== [メタ解析の結果一覧] ===")
+print(meta_res)
+
+
+# ----------------------------------------------------
+# 4. Forest plot（フォレストプロット）の描画
+# ----------------------------------------------------
+# 共通効果、ランダム効果の両方の統合値が同時に表示される
+forest(
+  meta_res,
+  leftcols = c("studlab"),
+  rightcols = c("effect", "ci", "w.common", "w.random"),
+  col.square = "blue",
+  col.diamond = "red"
+)
+
+
+# ----------------------------------------------------
+# 5. Funnel plot（ファンネルプロット）の描画
+# ----------------------------------------------------
+# 出版バイアス（偏り）を視覚的に評価するグラフ
+funnel(
+  meta_res,
+  contour = c(0.95, 0.99),            # 95%、99%の信頼区間の等高線を表示
+  col.contour = c("gray70", "gray90")
+)
+
+
+# ----------------------------------------------------
+# 6. Sensitivity analysis（感度分析：1つ抜き解析）
+# ----------------------------------------------------
+# 各研究を1つずつ除外して、結果が大きく変わらないか（頑健性）を検証
+sens_res &lt;- metainf(meta_res)
+
+print("=== [感度分析（1つ抜き解析）の結果] ===")
+print(sens_res)
+
+# 感度分析のフォレストプロット
+forest(sens_res, leftcols = c("studlab"))</code></pre>
+
+<h3>結果の目安</h3>
+<p>このダミーデータでは、すべての研究で治療群のイベント数が対照群より少なく（各研究で両群の人数は同じ）、同じ式で別のソフト（Python）で計算した目安は次のとおりです。</p>
+<div class="table-scroll"><table>
+<tr><th>項目</th><th>目安の値</th></tr>
+<tr><td>統合オッズ比（共通効果）</td><td>約0.64（95%信頼区間 約0.51〜0.82）</td></tr>
+<tr><td>統合オッズ比（ランダム効果）</td><td>約0.64（95%信頼区間 約0.51〜0.82）</td></tr>
+<tr><td>異質性</td><td>Q検定 p ≈ 0.55、I² ≈ 0%、τ² はほぼ0</td></tr>
+</table></div>
+<p>治療群でイベントが約36%減る（OR ≈ 0.64）と読め、研究間のばらつきはほとんどないため、共通効果とランダム効果で結果はほぼ同じになります。実際にRで出力される数値は、計算法（共通効果の既定はMantel-Haenszel法）の違いなどで小数点以下がわずかに異なることがあります。</p>
+
+<h3>グラフの見方</h3>
+<ul>
+<li><b>Forest plot：</b>各研究のORと95%信頼区間（四角と横線）が並び、最下段のひし形が統合値です。縦線（OR = 1）をひし形の横幅が跨いでいなければ、統合値は有意です。四角の大きさは研究の重み（精度）を表します。</li>
+<li><b>Funnel plot：</b>横軸が効果、縦軸が精度（標準誤差）です。出版バイアスがなければ、点は統合値を中心に左右対称の漏斗型に広がります。偏りがあると、左右非対称になります。</li>
+<li><b>感度分析（1つ抜き解析）：</b>1つの研究を除いて再計算した統合値が、全体の結果と大きく変わらなければ、特定の研究に結論が左右されていない（頑健）と判断できます。</li>
+</ul>
+<div class="warn"><b>注意</b>
+<ul>
+<li><b>ここのデータはダミーです。</b>実際の臨床研究の結果ではありません。</li>
+<li>ファンネルプロットは、一般に<b>研究数が10件以上</b>ないと解釈が難しいとされます。この例は8件なので、練習用として見てください。</li>
+<li>実際のメタ解析では、研究の収集方法（系統的検索）、バイアスのリスク評価、エビデンスの確実性の評価（GRADEなど）が重要です。統計処理だけで完結するものではありません。</li>
+</ul></div>
+<h3>実際には、CSVでデータを作って取り込む</h3>
+<p>上のコードは、データをRの中に直接書いたダミーデータでした。実際の解析では、<b>Excelなどで作ったCSVファイルを、Rに取り込む</b>ことが多くなります。</p>
+
+<h4>(1) CSVファイルを用意する</h4>
+<p>ExcelなどでCSVを作ります。<b>1行目は列名（ヘッダー）</b>とし、下のコードで使う <code>study, ee, en, ce, cn</code> と一致させます。ここでは <code>meta_data.csv</code> という名前で保存したとします。</p>
+<div class="table-scroll"><table>
+<tr><th>study</th><th>ee</th><th>en</th><th>ce</th><th>cn</th></tr>
+<tr><td>Study A</td><td>10</td><td>100</td><td>20</td><td>100</td></tr>
+<tr><td>Study B</td><td>25</td><td>150</td><td>35</td><td>150</td></tr>
+<tr><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td></tr>
+</table></div>
+<div class="note"><b>練習用のCSVをRで作る</b>Excelがなくても、上のダミーデータからCSVを作れます。<code>dummy_data</code> を作った後に、次の1行を実行してください。作業フォルダに <code>meta_data.csv</code> が保存されます（UTF-8形式）。
+<pre><code>write_csv(dummy_data, "meta_data.csv")</code></pre></div>
+
+<h4>(2) CSVを読み込んで、メタ解析を実行する</h4>
+<pre><code># 1. ライブラリの読み込み
+library(tidyverse)
+library(meta)
+
+# ----------------------------------------------------
+# 2. CSVファイルの読み込み
+# ----------------------------------------------------
+# ファイルパスは自分の環境に合わせて変更する
+# 例："~/Desktop/meta_data.csv"
+file_path &lt;- "meta_data.csv"
+
+# UTF-8のCSVの場合
+my_meta_data &lt;- read_csv(file_path, locale = locale(encoding = "UTF-8"))
+
+# ExcelのCSV（Shift-JIS）で文字化けする場合は、こちらを使う
+# my_meta_data &lt;- read_csv(file_path, locale = locale(encoding = "CP932"))
+
+# 読み込んだデータの中身を確認
+print("--- [読み込んだCSVデータ] ---")
+print(my_meta_data)
+
+
+# ----------------------------------------------------
+# 3. メタ解析の実行（metabin関数）
+# ----------------------------------------------------
+# CSVの列名（ee, en, ce, cn, study）をそのまま指定する
+meta_res &lt;- metabin(
+  event.e = ee, n.e = en,
+  event.c = ce, n.c = cn,
+  studlab = study,
+  data = my_meta_data,       # 読み込んだデータフレームを指定
+  sm = "OR",
+  common = TRUE,
+  random = TRUE,
+  method.tau = "REML"
+)
+
+print("=== [メタ解析の結果一覧] ===")
+print(meta_res)
+
+
+# ----------------------------------------------------
+# 4. プロット図の出力
+# ----------------------------------------------------
+forest(meta_res, leftcols = c("studlab"))                  # フォレストプロット
+funnel(meta_res, contour = c(0.95, 0.99),
+       col.contour = c("gray70", "gray90"))                # ファンネルプロット</code></pre>
+
+<h4>エラーが出たときのチェックリスト</h4>
+<ol>
+<li><b>「ファイルが見つからない（No such file or directory など）」と言われる</b><br>
+Rが今見ている場所（作業ディレクトリ）にCSVがないのが原因です。RStudioのメニューで「Session」→「Set Working Directory」→「To Source File Location」を選ぶと、スクリプトと同じフォルダが作業場所になります（スクリプトを保存してあることが前提です）。現在の場所は <code>getwd()</code> で確認できます。<br>
+<b>Posit Cloudの場合：</b>CSVは自分のパソコンにあるので、右下の「Files」パネルの「Upload」ボタンで、先にアップロードしてください。</li>
+<li><b>列名が一致していない</b><br>
+CSVの1行目の列名と、コード内の <code>event.e = ee</code> などの指定が、1文字でもずれるとエラーになります。大文字・小文字も区別されます（<code>EE</code> と <code>ee</code> は別）。読み込んだ後に <code>names(my_meta_data)</code> で列名を確認しましょう。</li>
+<li><b>文字化けする</b><br>
+日本語版ExcelのCSV（コンマ区切り）は、Shift-JIS（CP932）形式で保存されます。上のコードの <code>encoding = "CP932"</code> の行を使ってください。Excelで保存するときに「CSV UTF-8（コンマ区切り）」を選べば、UTF-8の読み込みで問題なく読めます。</li>
+<li><b>空欄（欠損値）がある</b><br>
+データが抜けている行があると、計算が止まることがあります。<code>my_meta_data &lt;- drop_na(my_meta_data)</code> で不完全な行を除外できますが、<b>どの研究が除外されたかを必ず確認</b>してください。メタ解析で研究を黙って除くのは、結果に影響する重要な判断です。</li>
+</ol>
+
+<div class="note"><b>データがイベント数ではなく、連続量のとき</b>体重や血圧のように、平均値と標準偏差で報告されたデータの場合は、<code>metabin()</code> ではなく <code>metacont()</code>（引数は <code>n.e, mean.e, sd.e, n.c, mean.c, sd.c</code>）を使います。指標は平均差（MD）や標準化平均差（SMD）になります。</div>
+
+<p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。お手元のRStudioで動作をご確認ください。</p>
+
+<h2 id="s11">11. 入れ子（マトリョーシカ）とパイプ</h2>
+<p>これまでのコードに出てきた <code>%&gt;%</code> は「パイプ」と呼ばれ、<b>処理を左から右へ、順番につなげて書く</b>ための記号です。パイプを使わない書き方と比べて、何が違うのかを見てみましょう。</p>
+<p>題材は「2つのベクトルを足して、並べ替えて、5より大きいものだけを取り出す」処理です。</p>
+<pre><code>a &lt;- c(1, 2, 3, 4)
+b &lt;- c(3, 4, 5, 6)
+a + b    # 4  6  8 10</code></pre>
+
+<h3>書き方1：入れ子（マトリョーシカ方式）</h3>
+<p>関数の中に関数を入れる書き方です。<b>一番内側から外側へ</b>読む必要があります。</p>
+<pre><code>subset(sort(a + b), sort(a + b) &gt; 5)
+# 結果： 6  8 10</code></pre>
+<p>「足す → 並べ替える → 5より大きいものを取り出す」という処理の順番が、コードの読む順番と逆になり、<code>sort(a + b)</code> も2回出てきて読みにくくなります。<code>subset()</code> は、ベクトルにも使えます（<code>subset(ベクトル, 条件)</code>）。</p>
+
+<h3>書き方2：途中の結果を変数に入れる</h3>
+<pre><code>x &lt;- a + b
+x &lt;- sort(x)
+x[x &gt; 5]     # [ ] で条件に合うものを取り出す
+# 結果： 6  8 10</code></pre>
+<p>確実で読みやすい方法です。ただし、途中の変数が増えます。</p>
+
+<h3>書き方3：パイプ（1本道方式）</h3>
+<p>パイプは、左の結果を右の関数に渡します。処理の順番どおりに、左から右へ書けます。パイプには2種類あります。</p>
+<div class="table-scroll"><table>
+<tr><th></th><th><code>|&gt;</code>（Base Rのパイプ）</th><th><code>%&gt;%</code>（magrittrのパイプ）</th></tr>
+<tr><td>使える環境</td><td>R 4.1以降。パッケージ不要</td><td><code>library(tidyverse)</code> で使える</td></tr>
+<tr><td>左の結果を入れる場所</td><td>既定では右の関数の<b>第1引数</b>。別の場所に入れるときは <code>_</code> を使う（<b>引数名をつけて</b>書く）</td><td>既定では右の関数の<b>第1引数</b>。別の場所に入れるときは <code>.</code> を使う</td></tr>
+</table></div>
+<p>RStudioでは、パイプの入力は <code>Ctrl + Shift + M</code>（Macは <code>Cmd + Shift + M</code>）のショートカットが使えます。<code>|&gt;</code> と <code>%&gt;%</code> のどちらが入力されるかは、メニューの「Tools」→「Global Options」→「Code」にある、ネイティブパイプ（native pipe）の設定で切り替えられます。</p>
+
+<h4>Base Rのパイプ <code>|&gt;</code> で書く</h4>
+<pre><code>(a + b) |&gt; sort() |&gt; (\(x) x[x &gt; 5])()
+# 結果： 6  8 10</code></pre>
+<p><code>\(x) x[x &gt; 5]</code> は、その場で作る小さな関数（無名関数）です。パイプの右側に「ベクトルを条件で取り出す」処理を置くときは、このように関数にして渡します。</p>
+<div class="warn"><b>よくある間違い</b>
+<pre><code>(a + b) |&gt; sort() |&gt; subset(_ &gt; 5)    # エラーになる</code></pre>
+<code>_</code>（プレースホルダー）は、<code>関数(引数名 = _)</code> のように<b>引数名をつけた形</b>でしか使えないため、<code>subset(_ &gt; 5)</code> のように条件式の中に入れるとエラー（<code>pipe placeholder can only be used as a named argument</code>）になります。</div>
+
+<h3>書き方4：tidyverse（dplyr）で、表（データフレーム）として扱う</h3>
+<p>列名（ここでは <code>value</code>）を指定して操作したいときは、ベクトルを一度データフレーム（表）に変換します。</p>
+<pre><code>library(tidyverse)
+
+a &lt;- c(1, 2, 3, 4)
+b &lt;- c(3, 4, 5, 6)
+
+# 1. 「value」という列名をもつデータフレームを作る
+data.frame(value = a + b) %&gt;%
+  # 2. value列を基準に並べ替える
+  arrange(value) %&gt;%
+  # 3. valueが5より大きい行を取り出す
+  filter(value &gt; 5)</code></pre>
+<div class="table-scroll"><table>
+<tr><th></th><th>value</th></tr>
+<tr><td>1</td><td>6</td></tr>
+<tr><td>2</td><td>8</td></tr>
+<tr><td>3</td><td>10</td></tr>
+</table></div>
+<p><code>%&gt;%</code> は、左の結果（表）を、右の <code>arrange()</code> や <code>filter()</code> の第1引数（最初の材料）として自動的に渡します。そのため、表の中の <code>value</code> という列名を、そのまま指定できます。</p>
+
+<h3>エラーの原因：ベクトルには「列名」がない</h3>
+<p>次のようなエラーは、よく出会います。</p>
+<ul>
+<li><b>ベクトルに対して <code>filter(value &gt; 5)</code> を使った：</b><code>filter()</code>（dplyr）は、表（データフレーム）の行を条件で取り出す関数です。ただの数字の列（ベクトル）には <code>value</code> という列がないため、動きません。</li>
+<li><b>存在しない列名を指定した：</b>表を作るときに <code>data.frame(value = ...)</code> と名前をつけていなければ、<code>value</code> は存在しません。</li>
+</ul>
+<p>ベクトルのままなら <code>[ ]</code> か <code>subset()</code>、表にするなら <code>data.frame()</code> / <code>tibble()</code> と <code>filter()</code> を使う、と覚えておきましょう。</p>
+<div class="note"><b>確認用の練習</b>この例の <code>a + b</code> の最大値は 10 です。条件を <code>&gt; 10</code> にすると、該当するものが1つもなく、ベクトルでは <code>numeric(0)</code>（空）、表では0行になります。「結果が空になる」ことと「エラー」は別のものなので、条件の数字を変えて試してみましょう。</div>
+<p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。結果の値は、手計算で確認したものです。</p>
+
+<h2 id="s12">12. 条件分岐と繰り返し</h2>
+<p>プログラミングの基本である<b>条件分岐</b>（もし〜なら…、そうでなければ…）と<b>繰り返し</b>（同じ処理を何度も行う）を、Rで書いてみましょう。</p>
+
+<h3>条件分岐：if と else</h3>
+<pre><code>x &lt;- 7
+
+if (x &gt; 5) {
+  print("5より大きい")
+} else {
+  print("5以下")
+}
+# 結果： "5より大きい"</code></pre>
+<div class="warn"><b>注意</b><code>} else {</code> は、<b>同じ行に</b>書きます。<code>}</code> の後で改行して <code>else</code> を次の行に書くと、スクリプトやコンソールで、エラーになることがあります。</div>
+<p><code>if</code> に渡す条件は、<b>TRUE か FALSE が1つだけ</b>の値である必要があります。「かつ」「または」を使うときは、<code>&amp;&amp;</code>（かつ）、<code>||</code>（または）を使います。</p>
+<pre><code>x &lt;- 7
+if (x &gt; 5 &amp;&amp; x &lt; 10) print("5より大きく10より小さい")</code></pre>
+
+<h3>ベクトル全体に条件分岐する：ifelse()</h3>
+<p>統計では、データの全部に対して一度に条件分岐したいことが多くあります。それには <code>ifelse(条件, 真のとき, 偽のとき)</code> を使います。</p>
+<pre><code>score &lt;- c(55, 62, 70, 75, 78, 80, 82, 85, 90, 100)
+ifelse(score &gt;= 60, "合格", "不合格")
+# 結果： "不合格" "合格" "合格" "合格" "合格" "合格" "合格" "合格" "合格" "合格"</code></pre>
+
+<h3>3つ以上に分ける：case_when()（tidyverse）</h3>
+<pre><code>library(tidyverse)
+
+tibble(score) %&gt;%
+  mutate(grade = case_when(
+    score &gt;= 90 ~ "A",
+    score &gt;= 80 ~ "B",
+    score &gt;= 60 ~ "C",
+    TRUE        ~ "D"     # 上のどれにも当てはまらないもの
+  ))</code></pre>
+<div class="table-scroll"><table>
+<tr><th>score</th><td>55</td><td>62</td><td>70</td><td>75</td><td>78</td><td>80</td><td>82</td><td>85</td><td>90</td><td>100</td></tr>
+<tr><th>grade</th><td>D</td><td>C</td><td>C</td><td>C</td><td>C</td><td>B</td><td>B</td><td>B</td><td>A</td><td>A</td></tr>
+</table></div>
+<p><code>case_when()</code> は<b>上から順に</b>条件を調べ、最初に当てはまったものを採用します。条件を書く順番が大切です。</p>
+
+<h3>繰り返し：for と while</h3>
+<h4>for：回数が決まっている繰り返し</h4>
+<pre><code>for (i in 1:5) {
+  print(i^2)
+}
+# 結果： 1  4  9  16  25（1つずつ表示される）</code></pre>
+<p><code>i</code> に <code>1, 2, 3, 4, 5</code> が順番に入り、その度に <code>{ }</code> の中が実行されます。<b>スクリプトの繰り返しの中では、<code>print()</code> を書かないと、結果が表示されません。</b></p>
+<p>1から10までの合計を、繰り返しで求めると次のようになります。</p>
+<pre><code>total &lt;- 0
+for (i in 1:10) {
+  total &lt;- total + i
+}
+print(total)   # 結果： 55</code></pre>
+
+<h4>while：条件を満たす間、繰り返す</h4>
+<pre><code>n &lt;- 0
+while (n &lt; 3) {
+  n &lt;- n + 1
+  print(n)
+}
+# 結果： 1  2  3</code></pre>
+<div class="warn"><b>注意</b><code>while</code> は、条件がいつまでも FALSE にならないと終わらなくなります（無限ループ）。止まらなくなったら、RStudioのConsoleの右上にある赤い停止ボタン、または <code>Esc</code> キーで中断できます。</div>
+
+<h4>Rでは「繰り返しを書かない」のが基本</h4>
+<p>Rはベクトルの計算が得意です。上の合計は、次の1行で済みます。</p>
+<pre><code>sum(1:10)    # 55</code></pre>
+<p>繰り返しが必要なのは、「同じ処理を、条件を変えながら何度も行う」ときです。たとえば、次の節の乱数による試行を1000回、10000回と繰り返すときは、<code>for</code> の代わりに <code>replicate(回数, 処理)</code> を使うと簡潔に書けます。</p>
+
+<h2 id="s13">13. 復元抽出と非復元抽出</h2>
+<p>データの中から、いくつかを無作為に選ぶことを<b>無作為抽出</b>といいます。選び方は2種類あります。</p>
+<div class="table-scroll"><table>
+<tr><th></th><th>復元抽出</th><th>非復元抽出</th></tr>
+<tr><td>選んだものを</td><td><b>元に戻して</b>から、次を選ぶ</td><td><b>戻さずに</b>、次を選ぶ</td></tr>
+<tr><td>同じものが</td><td>何度も選ばれうる</td><td>1回しか選ばれない</td></tr>
+<tr><td>各回の確率</td><td>毎回同じ（各回は独立）</td><td>選ぶたびに変わる</td></tr>
+<tr><td>対応する確率分布</td><td>二項分布</td><td>超幾何分布</td></tr>
+<tr><td>Rの指定</td><td><code>replace = TRUE</code></td><td><code>replace = FALSE</code>（既定）</td></tr>
+</table></div>
+
+<h3>例：袋から玉を2回引く</h3>
+<p>赤玉3個、白玉2個が入った袋から、2回引いて「2回とも赤」になる確率を考えます。</p>
+<ul>
+<li><b>復元抽出</b>（引いた玉を戻す）：3/5 × 3/5 = <b>0.36</b></li>
+<li><b>非復元抽出</b>（戻さない）：3/5 × 2/4 = <b>0.30</b>（2回目は、残り4個のうち赤が2個）</li>
+</ul>
+<p>戻さないと、1回目の結果が2回目の確率に影響します。これが、第6節で出てきた<b>Fisherの正確検定が超幾何分布を使う理由</b>です（周辺度数を固定して、中のものを入れ替える、つまり戻さずに選ぶ状況にあたります）。第7節の<code>binom.test()</code>のコイン投げは、毎回同じ確率で独立なので、復元抽出（二項分布）の考え方です。</p>
+
+<h3>Rで実行：sample()</h3>
+<p>Rでは <code>sample(x, size, replace)</code> で、<code>x</code> の中から <code>size</code> 個を選びます。乱数を使うので、<b>実行するたびに結果が変わります</b>。結果を毎回そろえたいときは、先に <code>set.seed()</code> で乱数の「種」を決めます。</p>
+<pre><code>set.seed(123)   # 乱数の種（数字は何でもよい）
+
+# 1. サイコロを10回振る（復元抽出：同じ目が何度も出る）
+sample(1:6, size = 10, replace = TRUE)
+
+# 2. 1〜10から5個選ぶ（非復元抽出：同じ数字は出ない）
+sample(1:10, size = 5)               # replace = FALSE が既定
+
+# 3. 母集団より多く、戻さずに選ぼうとするとエラー
+sample(1:5, size = 10)
+# Error: cannot take a sample larger than the population
+#        when 'replace = FALSE'</code></pre>
+<div class="note"><b>補足</b>出力される数字は、お使いのRのバージョンによって異なることがあります。数字そのものではなく、「サイコロでは同じ目が複数回出てよい」「非復元では重複しない」「3は、エラーになる」という違いを確認してください。</div>
+
+<h4>コイン投げ（第7節との関係）</h4>
+<pre><code>set.seed(1)
+toss &lt;- sample(c("表", "裏"), size = 10, replace = TRUE)
+toss
+sum(toss == "表")                       # 表の回数
+binom.test(sum(toss == "表"), n = 10)   # 第7節と同じ95%信頼区間の計算</code></pre>
+
+<h3>統計での使い道</h3>
+<div class="table-scroll"><table>
+<tr><th>方法</th><th>抽出</th><th>内容</th></tr>
+<tr><td>ブートストラップ法</td><td>復元</td><td>手元のデータから、同じ人数を<b>復元抽出</b>で何度も選び直し、統計量（平均など）のばらつきから信頼区間を求める</td></tr>
+<tr><td>無作為割付・対象者の抽出</td><td>非復元</td><td>同じ人を2回選ばないように、名簿からn人を選ぶ</td></tr>
+<tr><td>並べ替え（順列）検定</td><td>非復元</td><td>データを並べ替えて、群のラベルを付け替え、偶然に差が出る確率を求める</td></tr>
+</table></div>
+
+<h4>例：ブートストラップ法で、平均の95%信頼区間を求める</h4>
+<p>第5節の <code>score</code> を使い、繰り返し（<code>replicate()</code>）と復元抽出を組み合わせます。</p>
+<pre><code>score &lt;- c(55, 62, 70, 75, 78, 80, 82, 85, 90, 100)
+
+set.seed(2026)
+# 復元抽出で10人を選び直して、平均を求める操作を10000回繰り返す
+boot_means &lt;- replicate(10000, mean(sample(score, replace = TRUE)))
+
+# 平均の分布の、2.5%点と97.5%点が、95%信頼区間
+quantile(boot_means, c(0.025, 0.975))</code></pre>
+<p><code>sample(score, replace = TRUE)</code> は、<code>size</code> を省略すると、元のデータと同じ人数（10個）を選びます。元の平均は77.7で、信頼区間はその前後に広がります（値は、乱数の種などで少し変わります）。</p>
+<div class="warn"><b>注意</b><code>sample(5)</code> のように、<b>1つの数字だけ</b>を渡すと、<code>1:5</code> から選ぶ（並べ替える）という意味になります。数字が1つだけのベクトルから選びたいときは、意図しない動作になるので注意してください。</div>
+<p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。確率の値（0.36、0.30）は手計算で確認しました。</p>
+
+<h2 id="s14">14. RスクリプトとR Markdown（Rmd）</h2>
+<p>Rのコードを保存するファイルには、主に2種類あります。どちらもコードを書くファイルですが、<b>何のために使うか</b>が異なります。</p>
+
+<div class="table-scroll"><table>
+<tr><th></th><th>Rスクリプト（.R）</th><th>R Markdown（.Rmd）</th></tr>
+<tr><td>目的</td><td>データの加工や計算を<b>実行・自動化</b>する</td><td>誰かに渡す<b>レポートや資料</b>を作る</td></tr>
+<tr><td>中身</td><td>すべてRのコード。メモは <code>#</code> をつけてコメントにする</td><td>文章の途中に、Rのコード（コードチャンク）を埋め込む</td></tr>
+<tr><td>出力</td><td>実行結果（Console、Plotsパネル）</td><td>HTML、Word、PDFなどの文書（文章・コード・結果・グラフが1つになる）</td></tr>
+<tr><td>実行方法</td><td>Run（<code>Ctrl + Enter</code>）、Source</td><td>チャンクのRun、または Knit</td></tr>
+</table></div>
+
+<h3>1. Rスクリプト（.R）</h3>
+<p>上から順にコードを実行していく、純粋なプログラムのファイルです。</p>
+<h4>書き方の見本</h4>
+<pre><code># --------------------------------------------------
+# タイトル：血圧データのt検定
+# --------------------------------------------------
+# # をつけると「コメント（メモ）」になり、Rは無視する
+
+# 1. データの準備
+before &lt;- c(145, 152, 138, 160, 148)
+after  &lt;- c(130, 138, 132, 142, 135)
+
+# 2. 対応のあるt検定の実行
+res &lt;- t.test(before, after, paired = TRUE)
+
+# 3. 結果の表示
+print(res)</code></pre>
+<h4>使い方</h4>
+<ol>
+<li>RStudioの左上の「＋」ボタン、またはメニューの「File」→「New File」→「R Script」で、スクリプトを作る。</li>
+<li>コードを書き、実行したい行にカーソルを置いて <code>Ctrl + Enter</code>（Macは <code>Cmd + Enter</code>）を押すと、その行が実行される。</li>
+<li>全部を一気に実行するときは、右上の「Source」ボタン（または <code>Ctrl + Shift + Enter</code>）を押す。</li>
+</ol>
+<div class="note"><b>結果の目安</b>この5人のデータでは、差の平均は13.2 mmHg、t = 6.65、自由度 = 4、p = 0.0027です（Pythonで同一データを計算して確認）。</div>
+
+<h3>2. R Markdown（.Rmd）</h3>
+<p>普通の文章の中に、Rのコードの「小部屋」（<b>コードチャンク</b>）を埋め込んでいく形式です。ボタン1つで、文章・コード・計算結果・グラフが一体になったレポートができます。</p>
+<h4>ファイルの3つの部分</h4>
+<ul>
+<li><b>YAMLヘッダー：</b>先頭の <code>---</code> で囲まれた部分。タイトル、作成者、日付、出力形式を指定する。</li>
+<li><b>文章（Markdown）：</b>見出しは <code>#</code>、箇条書きは <code>-</code> など、Markdown記法で書く。</li>
+<li><b>コードチャンク：</b><code>```{r}</code> の行から、<code>```</code> の行までの間に、Rのコードを書く。</li>
+</ul>
+<h4>書き方の見本</h4>
+<pre><code>---
+title: "血圧解析レポート"
+author: "分析担当者"
+date: "2026-10-14"
+output: html_document
+---
+
+# 1. はじめに
+本レポートでは、治療前後の血圧の変化について統計的な検証を行います。
+
+## 1.1 データの確認
+以下は、被験者5名の治療前後の血圧データです。
+
+```{r}
+before &lt;- c(145, 152, 138, 160, 148)
+after  &lt;- c(130, 138, 132, 142, 135)
+
+data.frame(Before = before, After = after)
+```
+
+## 1.2 解析結果
+対応のあるt検定を行いました。
+
+```{r}
+t.test(before, after, paired = TRUE)
+```</code></pre>
+<h4>使い方（レポートの出力方法）</h4>
+<ol>
+<li>メニューの「File」→「New File」→「R Markdown...」を選び、タイトルを決めて作成する。最初に入っているテンプレート文章は、消してしまって構いません（YAMLヘッダーは残す）。</li>
+<li>文章は普通に書く。コードを書くところでは、<code>Ctrl + Alt + I</code>（Macは <code>Cmd + Option + I</code>）を押すと、コードチャンクが挿入される。</li>
+<li>画面上部の「Knit」（毛糸のアイコン）ボタンを押すと、HTMLなどのレポートが作られる。出力形式は、Knitボタンの横の矢印から、HTML、PDF、Wordなどに変更できる。</li>
+</ol>
+<p>コードチャンクだけを試しに動かしたいときは、チャンクの右上の「▶」ボタン（または <code>Ctrl + Shift + Enter</code>）を使います。</p>
+<div class="note"><b>初回の準備</b>初めてKnitするときは、RStudioが必要なパッケージ（rmarkdownなど）のインストールを求めることがあります。案内に従ってインストールしてください。</div>
+
+<h4>文章の中に、計算結果を入れる（インラインコード）</h4>
+<p>文章の途中に、バッククォート1つで囲んだ <code>r 式</code> を書くと、計算結果がその場に入ります。</p>
+<pre><code>治療前の平均血圧は `r mean(before)` mmHg、治療後は `r mean(after)` mmHg でした。</code></pre>
+<p>「有意な低下が認められた」という結論の文を手で書くと、データが変わったときに、文章だけ古いまま残る危険があります。数値は、インラインコードで入れておくと、レポートを作り直すたびに最新の値に更新されます。</p>
+
+<h4>よく使うチャンクオプション</h4>
+<p>チャンクの先頭の <code>{r}</code> の中に、オプションを書いて表示を調整します。</p>
+<div class="table-scroll"><table>
+<tr><th>書き方</th><th>意味</th></tr>
+<tr><td><code>{r, echo=FALSE}</code></td><td>コードは表示せず、結果だけ表示する</td></tr>
+<tr><td><code>{r, eval=FALSE}</code></td><td>コードは表示するが、実行はしない</td></tr>
+<tr><td><code>{r, message=FALSE, warning=FALSE}</code></td><td>メッセージや警告を、レポートに表示しない（<code>library(tidyverse)</code> の読み込み時の表示を消すときなど）</td></tr>
+<tr><td><code>{r, fig.width=6, fig.height=4}</code></td><td>グラフの大きさ（インチ）を指定する</td></tr>
+</table></div>
+
+<div class="warn"><b>Rmdでつまずきやすいポイント</b>
+<ul>
+<li><b>Rmdは、自分のファイルがあるフォルダを作業場所として実行されます。</b>第10節のCSVの読み込みで <code>read_csv("meta_data.csv")</code> のように相対パスで書くときは、CSVを、Rmdファイルと同じフォルダに置いてください。</li>
+<li><b>Rmdは、まっさらな状態から、上から順に実行されます。</b>ConsoleやRスクリプトで作った変数は、Rmdの中からは見えません。必要なデータの読み込みやパッケージの読み込み（<code>library()</code>）は、すべてRmdの中に書いてください。</li>
+<li><b>PDFへの出力には、LaTeXが必要です。</b>日本語のPDFには、追加の設定も必要で、HTMLよりつまずきやすくなります。まずはHTMLかWordから試すのがおすすめです。</li>
+</ul></div>
+
+<div class="note"><b>補足：Quarto（.qmd）</b>R Markdownの発展形として、Quarto（拡張子は <code>.qmd</code>）という形式も広く使われています。基本的な考え方（文章の中にコードを埋め込み、Renderしてレポートにする）は同じです。</div>
+
+<h3>実務での使い分け</h3>
+<ol>
+<li><b>下書き・試行錯誤は、Rスクリプトで行う。</b>まず .R ファイルで、「エラーなく動くか」「どんなグラフにするか」を実験します。</li>
+<li><b>報告書・記録として残すものは、Rmdで行う。</b>コードが完成したら、.Rmd にコピー＆ペーストし、前後の説明文を日本語で書き足してKnitします。</li>
+</ol>
+<p>これにより、「データが変わるたびに、Excelでグラフを作り直してWordに貼り直す」という作業がなくなり、データを差し替えてKnitし直すだけで、最新のレポートができあがります。</p>
+<p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。RStudioでKnitの動作を、ご確認ください。</p>
+
+<h2 id="s15">15. ANOVA・生存分析・ログランク検定</h2>
+<p>ここでは、「3つ以上のグループを比べる方法（ANOVA）」と、「時間の経過とイベントの発生を追う方法（生存分析、ログランク検定）」を説明します。</p>
+
+<h3>1. ANOVA（分散分析：Analysis of Variance）</h3>
+<ul>
+<li><b>どんなときに使うか：</b>3つ以上のグループの平均値に差があるかを、一度に調べたいとき。</li>
+<li><b>何のために使うか：</b>t検定を何度も繰り返すことで起こる、<b>多重性の問題</b>を避けるため。</li>
+<li><b>具体例：</b>A薬、B薬、C薬（または偽薬）の3群で、血圧の平均値に差があるか。</li>
+</ul>
+<div class="note"><b>なぜ、t検定を繰り返してはいけないのか</b>
+3つのグループ（A、B、C）を比べるために、「AとB」「BとC」「AとC」とt検定を3回行うと、<b>偶然の差を「有意差あり」と誤って判定する確率</b>が上がります。1回の検定で5%の誤りを許すとき、3回のうち少なくとも1回で誤る確率は、独立と仮定した概算で 1 − 0.95<sup>3</sup> ≈ 14%です。ANOVAは、まず「全体として、どこかに差があるか」を、F分布を使って1回で判定します。</div>
+
+<h4>Rでの基本コード</h4>
+<pre><code># aov(数値の列 ~ グループの列, data = データフレーム)
+res_anova &lt;- aov(Sepal.Length ~ Species, data = iris)
+summary(res_anova)       # F値とp値を確認する</code></pre>
+<p>irisの3種で <code>Sepal.Length</code> の平均値を比べると、F = 119.3（自由度 2 と 147）、p &lt; 2×10<sup>-16</sup> となり、「どこかに差がある」と判定されます。</p>
+<div class="warn"><b>ANOVAがわかること、わからないこと</b>
+ANOVAは「どこかに差がある」ことはわかりますが、<b>どのグループとどのグループの間に差があるか</b>はわかりません。それを調べるのが<b>多重比較</b>です（検定の多重性を補正します）。
+<pre><code>TukeyHSD(res_anova)      # Tukey法の多重比較
+pairwise.t.test(iris$Sepal.Length, iris$Species,
+                p.adjust.method = "holm")   # 補正つきのt検定</code></pre></div>
+<ul>
+<li>ANOVAは、パラメトリックな検定です。基本的には、各グループが正規分布し、分散が等しいことを前提にします。</li>
+<li>分散が等しくない場合は <code>oneway.test()</code>（Welch法のANOVA）、正規分布しない場合は <code>kruskal.test()</code>（Kruskal-Wallis検定）を使います。</li>
+</ul>
+
+<h3>2. 生存分析（Survival Analysis）</h3>
+<ul>
+<li><b>どんなときに使うか：</b>「イベントが起きたか（死亡、再発など）」だけでなく、「イベントが起きるまでに、どれくらい時間がかかったか」を一緒に分析したいとき。</li>
+<li><b>何のために使うか：</b>途中で観察が終わった人（<b>打ち切りデータ</b>）を、正しく計算に含めるため。</li>
+<li><b>具体例：</b>
+<ul>
+<li>医療：新薬を使った患者が、何ヶ月生存できたか。</li>
+<li>ビジネス：サブスクリプションに契約した利用者が、何日間解約せずに継続したか。</li>
+</ul></li>
+</ul>
+<p><b>打ち切り</b>とは、イベントが観察されないまま、観察が終わることです（観察期間が終わった、転居して追えなくなった、など）。打ち切られた人は「少なくとも、その時点までは、イベントが起きなかった」という情報をもっているので、捨てずに計算に使います。</p>
+<p>生存分析では、時間が経つにつれて、生存率が階段状に下がっていくグラフ、<b>カプラン・マイヤー曲線</b>（Kaplan-Meier curve）を描くことができます。</p>
+
+<h3>3. ログランク検定（Log-rank Test）</h3>
+<ul>
+<li><b>どんなときに使うか：</b>生存分析で、2つ以上のグループの生存曲線に、統計的な差があるかを検定したいとき。</li>
+<li><b>具体例：</b>新しい薬の群と、従来の薬の群で、生存期間に差があるか。カイ二乗分布を使って、検定します。</li>
+</ul>
+
+<h4>Rでの生存分析とログランク検定</h4>
+<p>生存分析には、<code>survival</code> パッケージ（Rに標準で含まれています）を使います。</p>
+<pre><code>library(survival)
+
+# 練習用のダミーデータ：各群8人
+# status: 1 = イベント発生（死亡など）、0 = 打ち切り（観察が終了）
+surv_data &lt;- data.frame(
+  time   = c(6, 12, 20, 25, 30, 36, 40, 48,   # New群
+             3,  5,  8, 10, 15, 18, 22, 30),  # Standard群
+  status = c(1, 1, 0, 1, 1, 0, 1, 0,
+             1, 1, 1, 1, 0, 1, 1, 1),
+  group  = rep(c("New", "Standard"), each = 8)
+)
+
+# 1. 生存時間とイベントを合わせた「生存時間データ」を作る
+surv_object &lt;- Surv(surv_data$time, surv_data$status)
+print(surv_object)      # 打ち切りのデータには「+」がつく
+
+# 2. カプラン・マイヤー曲線
+fit &lt;- survfit(Surv(time, status) ~ group, data = surv_data)
+plot(fit, col = c("red", "blue"),
+     xlab = "Time", ylab = "Survival probability")
+legend("topright", legend = c("New", "Standard"),
+       col = c("red", "blue"), lty = 1)
+
+# 3. ログランク検定
+res_logrank &lt;- survdiff(Surv(time, status) ~ group, data = surv_data)
+print(res_logrank)</code></pre>
+<div class="note"><b>結果の目安</b>このダミーデータでは、χ² ≈ 4.4（自由度 1）、p ≈ 0.035です（同じ式で別のソフト（Python）で計算した目安です）。New群のほうが、生存期間が長い傾向が示されます。</div>
+<p>グラフは、<code>survminer</code> パッケージの <code>ggsurvplot()</code> を使うと、ggplot2のようにきれいに描けます（<code>install.packages("survminer")</code> が必要です）。</p>
+
+<h3>3つの関係</h3>
+<ul>
+<li><b>ANOVA：</b>時間の概念はなく、3つ以上のグループの平均値を比べる。</li>
+<li><b>生存分析：</b>「イベントが起きるまでの時間」を、グラフ（カプラン・マイヤー曲線）にして可視化する。</li>
+<li><b>ログランク検定：</b>その生存曲線に、グループ間で差があるかを検定する。</li>
+</ul>
+
+<h2 id="s16">16. 回帰・多変量解析・次元削減・ハザード</h2>
+<p>ここでは、予測や調整に使うモデル（回帰）、データを2次元にまとめる方法（次元削減）、生存分析の「リスクの強さ」を表す考え方（ハザード）を説明します。数式はできるだけ使わず、イメージを説明します。</p>
+
+<h3>1. 予測の基本：単回帰、重回帰、ロジスティック回帰</h3>
+<p>いずれも、何か（原因・説明変数）を使って、何か（結果・目的変数）を予測・説明する数式（モデル）です。</p>
+<div class="table-scroll"><table>
+<tr><th>手法</th><th>一言で</th><th>具体例</th><th>Rの関数</th></tr>
+<tr><td><b>単回帰</b></td><td>1つの原因から、1つの数値（連続量）を予測する</td><td>身長から体重を予測する（y = ax + b の直線）</td><td><code>lm(y ~ x)</code></td></tr>
+<tr><td><b>重回帰</b></td><td>複数の原因から、1つの数値（連続量）を予測する</td><td>駅からの徒歩分数、築年数、広さから、家賃を予測する</td><td><code>lm(y ~ x1 + x2 + x3)</code></td></tr>
+<tr><td><b>ロジスティック回帰</b></td><td>原因から、「YESかNOか（2択）」の確率を予測する</td><td>年齢、喫煙量、血圧から、5年以内に心筋梗塞を発症する確率を予測する</td><td><code>glm(y ~ x, family = binomial)</code></td></tr>
+</table></div>
+<p>ロジスティック回帰は、結果が「発症する（1）」か「しない（0）」の2択になるため、直線ではなく、S字のカーブ（ロジスティック曲線）を使います。係数を <code>exp()</code> すると、<b>オッズ比</b>になります。</p>
+<pre><code># 単回帰：花びらの長さから、幅を予測する
+fit1 &lt;- lm(Petal.Width ~ Petal.Length, data = iris)
+summary(fit1)
+# 傾き 約0.416、切片 約-0.363、決定係数R² 約0.927
+
+# 重回帰：説明変数を2つにする
+fit2 &lt;- lm(Sepal.Length ~ Petal.Length + Sepal.Width, data = iris)
+summary(fit2)
+
+# ロジスティック回帰：車の重さ（wt）から、マニュアル車（am = 1）かどうかを予測する
+fit3 &lt;- glm(am ~ wt, data = mtcars, family = binomial)
+summary(fit3)
+exp(coef(fit3))          # オッズ比</code></pre>
+
+<h3>2. 解析の範囲：単変量解析と多変量解析</h3>
+<p>データを分析するとき、「一度に何個の変数（要因）を扱うか」の違いです。</p>
+<ul>
+<li><b>単変量解析：</b>1つの原因と1つの結果だけを見る。例：t検定、U検定、カイ二乗検定、単回帰。「塩分摂取量と血圧の関係だけを見る」ように、他の要素は考えません。</li>
+<li><b>多変量解析：</b>複数の変数を、同時に扱う。例：重回帰、ロジスティック回帰、コックス比例ハザードモデル。「年齢の影響（高齢なほど血圧が高い）を調整した上で、塩分摂取量が血圧に与える影響を調べる」といったことができます。</li>
+</ul>
+<div class="note"><b>補足：統計的調整（交絡の調整）</b>年齢や性別など、結果にも原因にも関係する要因を<b>交絡因子</b>といいます。多変量解析では、交絡因子もモデルに入れて、その影響を取り除いた（調整した）上で、調べたい原因の影響を推定します。</div>
+<div class="note"><b>補足：「多変量」と「多変数」</b>医学論文では、説明変数が複数ある回帰（重回帰、ロジスティック回帰など）を、厳密には「多変数（multivariable）解析」と呼び、結果の変数が複数ある解析を「多変量（multivariate）解析」と区別することがあります。日本語の文献では、どちらも「多変量解析」と書かれることが多いので、読むときは、どちらの意味か注意しましょう。</div>
+
+<h3>3. 特徴をまとめる（次元削減）：PCA、t-SNE、UMAP</h3>
+<p>「1万個の遺伝子のデータ」や「50項目のアンケート」のような、<b>変数の数が多い（高次元）データ</b>を、特徴をなるべく保ったまま、2次元（散布図）にまとめて見えるようにする方法です。</p>
+<div class="table-scroll"><table>
+<tr><th>手法</th><th>一言で</th><th>特徴</th></tr>
+<tr><td><b>PCA</b>（主成分分析）</td><td>データの「ばらつき」が最も大きい方向を見つけ、直線的にまとめる</td><td>計算が速く、全体の位置関係がわかりやすい。各主成分が、元のどの変数と関係するかも読める。複雑に曲がった構造は、うまく表せない</td></tr>
+<tr><td><b>t-SNE</b></td><td>近くにあるもの同士を、近くに配置する</td><td>塊（クラスター）がはっきり見えやすい。塊と塊の間の距離や、塊の大きさは、解釈できない</td></tr>
+<tr><td><b>UMAP</b></td><td>t-SNEと同様に近さを重視しつつ、全体の構造も比較的保つ</td><td>t-SNEより速いことが多く、細胞解析などで広く使われる。ただし、塊の間の距離を過信してはいけない</td></tr>
+</table></div>
+<div class="warn"><b>注意</b>t-SNEとUMAPは、<b>見える化（可視化）のための方法</b>です。設定（パラメーター）や乱数の種によって、図の見た目が変わります。図の見た目だけで、グループの違いを結論づけないでください。</div>
+<pre><code># PCA（Base R）：4つの変数を、標準化してまとめる
+pca &lt;- prcomp(iris[, 1:4], scale. = TRUE)
+summary(pca)             # 第1主成分で約73%、第2主成分で約23%（合計約96%）を説明
+
+pca_df &lt;- data.frame(pca$x, Species = iris$Species)
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Species)) +
+  geom_point(size = 2.5)
+
+# t-SNE（Rtsneパッケージ）：irisには重複した行が1つあるので、check_duplicates = FALSE を指定
+# install.packages("Rtsne")
+library(Rtsne)
+set.seed(1)
+tsne &lt;- Rtsne(as.matrix(iris[, 1:4]), perplexity = 30, check_duplicates = FALSE)
+
+# UMAP（uwotパッケージ）
+# install.packages("uwot")
+library(uwot)
+set.seed(1)
+um &lt;- umap(iris[, 1:4])</code></pre>
+
+<h3>4. 生存分析の核心：ハザードとコックス比例ハザードモデル</h3>
+<ul>
+<li><b>ハザード（瞬間危険率）：</b>「その瞬間に、イベント（死亡、解約など）が起きる勢い（発生率）」です。「今、まだ生きている人が、次の瞬間に亡くなる割合」のように、時間ごとの危険の強さを表します。<b>確率そのものではなく、単位時間あたりの発生率</b>です。</li>
+<li><b>コックス比例ハザードモデル：</b>生存分析における「重回帰」のようなモデルです。年齢、ステージ、治療法などが、生存期間（ハザード）にどれくらい影響するかを、同時に解析します。</li>
+<li><b>ハザード比（HR：Hazard Ratio）：</b>このモデルから得られる、重要な数値です。たとえば「新薬群のハザード比が0.6」とは、「従来薬群に比べて、どの時点でも、イベントの起きる勢い（ハザード）が0.6倍（40%減）」という意味です。医療論文でよく使われる指標です。</li>
+</ul>
+<div class="warn"><b>注意</b>ハザード比は、「ハザードの比が、時間によらず一定である（比例ハザード性）」という仮定にもとづきます。また、「ハザードが40%減る」ことは、「死亡する人の割合（累積のリスク）が40%減る」こととは、同じではありません。</div>
+<pre><code>library(survival)
+
+# 基準にする群（比べられる側）を先頭にする：Standardを基準にする
+surv_data$group &lt;- factor(surv_data$group, levels = c("Standard", "New"))
+
+fit_cox &lt;- coxph(Surv(time, status) ~ group, data = surv_data)
+summary(fit_cox)       # exp(coef) がハザード比（New群 / Standard群）
+cox.zph(fit_cox)       # 比例ハザード性の確認</code></pre>
+<p>年齢などの調整したい変数があるときは、<code>Surv(time, status) ~ group + age</code> のように、<code>+</code> で足します。</p>
+
+<h3>データ解析の全体の流れ（まとめ）</h3>
+<ol>
+<li>データを手に入れたら、まず <code>summary()</code>（5要約量）で中身を確認する。</li>
+<li><code>ggplot2</code>（散布図、箱ひげ図など）で可視化する。変数が多すぎるときは、PCAなどで2次元にして眺める。</li>
+<li>2グループの単純な比較は、データの性質に合わせて、t検定、U検定、カイ二乗検定、Fisherの正確検定を選ぶ（単変量解析）。3グループ以上は、ANOVAなど。</li>
+<li>年齢や性別などの背景（交絡）を調整しながら、原因を調べたり予測したりするときは、重回帰、ロジスティック回帰、コックス比例ハザードモデルを使う（多変量解析）。</li>
+</ol>
+<p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。結果の数値は、Pythonなどで同一データを計算して確認したものです。RStudioで動作をご確認ください。</p>
+
+<h2 id="s17">17. 用語集</h2>
+<p>このテキストに出てくる用語を、分野ごとにまとめました。「Rでの例」の列には、関連する関数や書き方を書いています。</p>
+
+<h3>まず、4つの基本用語を例で確認しよう</h3>
+<pre><code>score &lt;- c(55, 62, 70)          # score：変数（c(55, 62, 70) が入っている）
+m &lt;- mean(x = score)            # mean：関数、x = score：引数、結果の 62.33… が戻り値
+print(m)                        # m：戻り値を入れた変数
+
+res &lt;- t.test(class_A, class_B) # t.test：関数、class_A と class_B：引数
+res$p.value                     # t.test() の戻り値（検定結果のまとまり）から、p値を取り出す</code></pre>
+<ul>
+<li><b>変数：</b>値に名前をつけて入れておく「箱」。</li>
+<li><b>関数：</b>名前のついた、処理のまとまり。材料（引数）を渡すと、処理をして、結果（戻り値）を返す。</li>
+<li><b>引数（アーギュメント）：</b>関数に渡す材料。<code>mean(x = score, na.rm = TRUE)</code> の <code>x</code> や <code>na.rm</code> のように、名前をつけて渡せる。</li>
+<li><b>戻り値（返り値）：</b>関数が返す結果。変数に代入して、次の処理に使える。</li>
+</ul>
+
+<h3>1. データ構造・操作の基本</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>変数</b><br>Variable</td><td>値に名前をつけて入れておく箱。なお、統計では、データの「列」（身長、年齢など）も「変数」と呼ぶ。同じ言葉に、2つの意味がある</td><td><code>a &lt;- 1</code></td></tr>
+<tr><td><b>代入</b><br>Assignment</td><td>変数に値を入れる操作</td><td><code>&lt;-</code></td></tr>
+<tr><td><b>データ型</b><br>Data type</td><td>値の種類。数値、文字列、真偽値（TRUE / FALSE）など</td><td><code>class()</code>、<code>str()</code></td></tr>
+<tr><td><b>ベクトル</b><br>Vector</td><td>同じ型の値を一列に並べたもの（1次元）</td><td><code>c(1, 2, 3)</code></td></tr>
+<tr><td><b>データフレーム</b><br>Data frame</td><td>表の形（2次元）のデータ。列ごとに型が異なってもよい</td><td><code>data.frame()</code>、<code>tibble()</code></td></tr>
+<tr><td><b>マトリックス（行列）／分割表</b><br>Matrix / Contingency table</td><td>すべて同じ型の2次元データ。分割表は、2つのカテゴリの組み合わせごとの人数を並べた表</td><td><code>matrix()</code>、<code>table()</code></td></tr>
+<tr><td><b>因子型</b><br>Factor</td><td>カテゴリ（水準）を表す型。群分けなどに使う</td><td><code>factor()</code>、<code>levels()</code></td></tr>
+<tr><td><b>欠損値</b><br>NA (Not Available)</td><td>値が入っていないこと</td><td><code>is.na()</code>、<code>na.rm = TRUE</code>、<code>drop_na()</code></td></tr>
+<tr><td><b>行名・列名</b><br>rownames / colnames</td><td>行や列につけた名前</td><td><code>rownames()</code>、<code>colnames()</code>、<code>names()</code></td></tr>
+<tr><td><b>縦長・横長データ</b><br>Long / Wide format</td><td>縦長は「1行 = 1つの観測」、横長は「1行 = 1人で、項目が横に並ぶ」形。ggplot2は縦長が得意</td><td><code>pivot_longer()</code>、<code>pivot_wider()</code></td></tr>
+</table></div>
+
+<h3>2. 関数とパイプライン処理</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>関数</b><br>Function</td><td>引数を受け取り、処理をして、戻り値を返す、処理のまとまり</td><td><code>mean()</code>、<code>t.test()</code></td></tr>
+<tr><td><b>引数（アーギュメント）</b><br>Argument</td><td>関数に渡す材料や設定。名前をつけて渡すことも、順番で渡すこともできる</td><td><code>t.test(x, y, paired = TRUE)</code></td></tr>
+<tr><td><b>戻り値（返り値）</b><br>Return value</td><td>関数が返す結果。変数に代入して使える</td><td><code>res &lt;- t.test(x, y)</code></td></tr>
+<tr><td><b>パッケージ</b><br>Package</td><td>追加の関数のセット。インストールは最初の1回、読み込みは使うたびに</td><td><code>install.packages()</code>、<code>library()</code></td></tr>
+<tr><td><b>入れ子（マトリョーシカ構造）</b><br>Nested structure</td><td>関数の中に関数を入れる書き方。内側から外側へ読む</td><td><code>subset(sort(a + b), ...)</code></td></tr>
+<tr><td><b>パイプ</b><br>Pipe operator</td><td>左の結果を、右の関数に渡して、処理を左から右へつなぐ記号</td><td><code>|&gt;</code>（Base R）、<code>%&gt;%</code>（tidyverse）</td></tr>
+<tr><td><b>条件分岐</b><br>Conditional</td><td>「もし〜なら…、そうでなければ…」と、処理を分ける</td><td><code>if</code> / <code>else</code>、<code>ifelse()</code>、<code>case_when()</code></td></tr>
+<tr><td><b>繰り返し</b><br>Loop</td><td>同じ処理を、何度も行う</td><td><code>for</code>、<code>while</code>、<code>replicate()</code>、<code>sapply()</code></td></tr>
+</table></div>
+
+<h3>3. 基本統計量とデータの可視化</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>5要約量</b><br>Five-number summary</td><td>最小値、第1四分位数、中央値、第3四分位数、最大値の5つ。これに平均を加えたものが、<code>summary()</code> の6つの基本統計量</td><td><code>summary()</code>、<code>fivenum()</code></td></tr>
+<tr><td><b>平均値</b><br>Mean</td><td>合計をデータ数で割った値。外れ値に引きずられやすい</td><td><code>mean()</code></td></tr>
+<tr><td><b>中央値</b><br>Median</td><td>小さい順に並べたときの、真ん中の値（第2四分位数）。外れ値に強い</td><td><code>median()</code></td></tr>
+<tr><td><b>最小値・最大値</b><br>Minimum / Maximum</td><td>データの最も小さい値、最も大きい値</td><td><code>min()</code>、<code>max()</code></td></tr>
+<tr><td><b>四分位数</b><br>Quartile</td><td>データを小さい順に並べて、4等分する点。25%点が第1、50%点が第2（中央値）、75%点が第3四分位数</td><td><code>quantile()</code></td></tr>
+<tr><td><b>標準偏差</b><br>Standard deviation</td><td>データのばらつきの大きさを表す値</td><td><code>sd()</code></td></tr>
+<tr><td><b>相関係数</b><br>Correlation coefficient</td><td>2つの変数の直線的な関係の強さ（−1〜1）</td><td><code>cor()</code></td></tr>
+<tr><td><b>ヒストグラム</b><br>Histogram</td><td>データの分布を、柱の高さで表すグラフ。正規分布の確認に使う</td><td><code>hist()</code>、<code>geom_histogram()</code></td></tr>
+<tr><td><b>散布図</b><br>Scatter plot</td><td>2つの変数の関係を、点で表すグラフ</td><td><code>plot()</code>、<code>geom_point()</code></td></tr>
+<tr><td><b>箱ひげ図／周辺箱ひげ図</b><br>Boxplot / Marginal boxplot</td><td>箱で四分位範囲と中央値、ひげと点で、ばらつきと外れ値を表すグラフ。周辺箱ひげ図は、散布図の余白に、箱ひげ図をつけたもの</td><td><code>boxplot()</code>、<code>geom_boxplot()</code>、<code>ggMarginal()</code></td></tr>
+<tr><td><b>帯グラフ</b><br>Stacked bar plot</td><td>各グループの内訳の割合を、積み上げた棒で表すグラフ</td><td><code>geom_bar(position = "fill")</code></td></tr>
+</table></div>
+
+<h3>4. 統計的推定と確率の基礎</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>順問題・逆問題</b><br>Forward / Inverse problem</td><td>順問題は、元の確率がわかっていて、結果を予測する問題。逆問題は、結果がわかっていて、元の確率を推定する問題。実際の研究の多くは逆問題</td><td>—</td></tr>
+<tr><td><b>95%信頼区間</b><br>95% confidence interval</td><td>推定値の不確かさを表す範囲。「同じ方法で区間を何度も作ると、その95%が、真の値を含む」という意味</td><td><code>binom.test()$conf.int</code>、<code>t.test()$conf.int</code></td></tr>
+<tr><td><b>正確信頼区間（Clopper-Pearson法）</b><br>Exact confidence interval</td><td>二項分布をもとに、近似を使わずに、正確に求める信頼区間</td><td><code>binom.test()</code></td></tr>
+<tr><td><b>復元抽出</b><br>Sampling with replacement</td><td>選んだものを戻してから、次を選ぶ。同じものが何度も選ばれうる。二項分布に対応</td><td><code>sample(x, replace = TRUE)</code></td></tr>
+<tr><td><b>非復元抽出</b><br>Sampling without replacement</td><td>選んだものを戻さずに、次を選ぶ。超幾何分布に対応</td><td><code>sample(x)</code>（<code>replace = FALSE</code> が既定）</td></tr>
+<tr><td><b>ブートストラップ法</b><br>Bootstrap</td><td>手元のデータから、復元抽出で何度も選び直し、統計量のばらつきを調べる方法</td><td><code>replicate()</code> と <code>sample()</code></td></tr>
+<tr><td><b>累積確率</b><br>Cumulative probability</td><td>ある値以下になる確率の合計（P(X ≤ x)）</td><td><code>pnorm()</code>、<code>pbinom()</code>、<code>pt()</code></td></tr>
+<tr><td><b>乱数の種</b><br>Seed</td><td>乱数の出方を決める数。同じ種なら、毎回同じ乱数になる</td><td><code>set.seed()</code></td></tr>
+</table></div>
+
+<h3>5. 主要な確率分布</h3>
+<p>Rの分布の関数は、頭文字で用途を表します。<code>d</code>（確率・密度）、<code>p</code>（累積確率）、<code>q</code>（分位点）、<code>r</code>（乱数）です。たとえば正規分布なら <code>dnorm()</code>、<code>pnorm()</code>、<code>qnorm()</code>、<code>rnorm()</code> です。</p>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>標準正規分布（Z分布）</b><br>Standard normal distribution</td><td>平均0、標準偏差1の正規分布。釣鐘型で左右対称</td><td><code>pnorm()</code>、<code>qnorm(0.975)</code>（約1.96）</td></tr>
+<tr><td><b>t分布</b><br>t-distribution</td><td>正規分布に似て、裾がやや重い分布。小さいデータの平均の検定に使う。自由度が大きいと、正規分布に近づく</td><td><code>pt()</code>、<code>qt()</code></td></tr>
+<tr><td><b>F分布</b><br>F-distribution</td><td>分散の比の分布。F検定やANOVAで使う</td><td><code>pf()</code>、<code>qf()</code></td></tr>
+<tr><td><b>カイ二乗分布</b><br>χ²-distribution</td><td>標準正規分布に従う値を、二乗して足した値の分布。分割表の検定やログランク検定などで使う</td><td><code>pchisq()</code>、<code>qchisq()</code></td></tr>
+<tr><td><b>二項分布</b><br>Binomial distribution</td><td>成功確率pの試行をn回行ったとき、成功する回数の分布。コイン投げなど</td><td><code>dbinom()</code>、<code>pbinom()</code></td></tr>
+<tr><td><b>超幾何分布</b><br>Hypergeometric distribution</td><td>戻さずに（非復元抽出で）選んだとき、当たりの個数の分布。Fisherの正確検定の基礎</td><td><code>dhyper()</code>、<code>phyper()</code></td></tr>
+<tr><td><b>ポアソン分布</b><br>Poisson distribution</td><td>一定の期間や範囲で、まれな事象が起きる回数の分布。平均と分散が等しい</td><td><code>dpois()</code>、<code>ppois()</code></td></tr>
+<tr><td><b>負の二項分布</b><br>Negative binomial distribution</td><td>成功をr回得るまでの、失敗の回数の分布。また、ポアソン分布よりばらつきが大きい（過分散の）回数データにも使う</td><td><code>dnbinom()</code>、<code>pnbinom()</code></td></tr>
+<tr><td><b>極値分布</b><br>Extreme value distribution</td><td>多くの値のうちの、最大値（または最小値）がしたがう分布。Gumbel分布などがある</td><td>追加のパッケージ（<code>evd</code> など）を使う</td></tr>
+</table></div>
+
+<h3>6. 統計的検定（単変量解析）</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>帰無仮説</b><br>Null hypothesis</td><td>「差がない」「関係がない」という、否定したい仮説。検定は、この仮説を前提に、確率を計算する</td><td>—</td></tr>
+<tr><td><b>有意差・p値</b><br>Statistical significance / p-value</td><td>p値は、帰無仮説が正しいと仮定したとき、観察されたもの以上に極端な結果が出る確率。小さい（慣習的に0.05未満）と「有意差あり」とする。効果の大きさや重要さを表すものではない</td><td><code>res$p.value</code></td></tr>
+<tr><td><b>検出力</b><br>Power</td><td>本当に差があるときに、検定で、差を見つけられる確率</td><td><code>power.t.test()</code></td></tr>
+<tr><td><b>パラメトリック・ノンパラメトリック検定</b><br>Parametric / Non-parametric test</td><td>パラメトリックは、数値そのものを使い、基本的に正規分布を仮定する。ノンパラメトリックは、順位だけを使い、外れ値に強いが、検出力はやや低い</td><td>—</td></tr>
+<tr><td><b>対応のあるデータ・対応のないデータ</b><br>Paired / Unpaired data</td><td>対応ありは、同じ対象の前後など、組になったデータ。対応なしは、独立した別々のグループ</td><td><code>paired = TRUE</code></td></tr>
+<tr><td><b>Studentのt検定</b><br>Student's t-test</td><td>2群の分散が等しいと仮定する、平均値の検定</td><td><code>t.test(var.equal = TRUE)</code></td></tr>
+<tr><td><b>Welchのt検定</b><br>Welch's t-test</td><td>分散が等しいと仮定しない、平均値の検定。Rの既定</td><td><code>t.test()</code></td></tr>
+<tr><td><b>Mann-WhitneyのU検定</b><br>Mann-Whitney U test</td><td>対応のない2群を、順位で比べるノンパラメトリック検定</td><td><code>wilcox.test(x, y)</code></td></tr>
+<tr><td><b>Wilcoxonの順位和検定</b><br>Wilcoxon rank sum test</td><td>Mann-WhitneyのU検定と、同じ検定（別名）</td><td><code>wilcox.test(x, y)</code></td></tr>
+<tr><td><b>Wilcoxonの符号付き順位検定</b><br>Wilcoxon signed rank test</td><td>対応のある2群を、差の順位で比べるノンパラメトリック検定</td><td><code>wilcox.test(x, y, paired = TRUE)</code></td></tr>
+<tr><td><b>カイ二乗検定</b><br>Chi-squared test</td><td>分割表で、行と列の間に偏りがあるかを、近似で検定する</td><td><code>chisq.test()</code></td></tr>
+<tr><td><b>Yatesの連続修正</b><br>Yates' continuity correction</td><td>2×2の分割表で、近似の誤差を減らすための補正。Rの <code>chisq.test()</code> は、既定で行う</td><td><code>chisq.test(correct = TRUE)</code></td></tr>
+<tr><td><b>Fisherの正確確率検定</b><br>Fisher's exact test</td><td>周辺度数を固定して、超幾何分布で、正確な確率を数え上げる検定。データが少ないときに使う</td><td><code>fisher.test()</code></td></tr>
+<tr><td><b>二項検定</b><br>Binomial test</td><td>二項分布をもとに、割合が、ある値と異なるかを、正確に検定する</td><td><code>binom.test()</code></td></tr>
+<tr><td><b>分散分析（ANOVA）</b><br>Analysis of variance</td><td>3つ以上のグループの平均値に差があるかを、一度に調べる</td><td><code>aov()</code></td></tr>
+<tr><td><b>多重性の問題・多重比較</b><br>Multiple comparisons</td><td>検定を繰り返すと、誤って有意になる確率が上がる問題。それを補正して比べる方法が、多重比較</td><td><code>TukeyHSD()</code>、<code>p.adjust()</code></td></tr>
+</table></div>
+
+<h3>7. 生存分析</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>生存分析</b><br>Survival analysis</td><td>イベントが起きるまでの時間を分析する方法</td><td><code>survival</code> パッケージ</td></tr>
+<tr><td><b>打ち切りデータ</b><br>Censored data</td><td>イベントが観察されないまま、観察が終わったデータ</td><td><code>Surv(time, status)</code></td></tr>
+<tr><td><b>カプラン・マイヤー曲線</b><br>Kaplan-Meier curve</td><td>生存率が、時間とともに階段状に下がっていくグラフ</td><td><code>survfit()</code></td></tr>
+<tr><td><b>ログランク検定</b><br>Log-rank test</td><td>2つ以上のグループの生存曲線に、差があるかを検定する</td><td><code>survdiff()</code></td></tr>
+<tr><td><b>ハザード（瞬間危険率）</b><br>Hazard</td><td>ある瞬間に、イベントが起きる勢い（単位時間あたりの発生率）</td><td>—</td></tr>
+<tr><td><b>ハザード比</b><br>Hazard ratio (HR)</td><td>2つのグループのハザードの比。0.6なら、一方が他方の0.6倍</td><td><code>exp(coef(fit_cox))</code></td></tr>
+</table></div>
+
+<h3>8. 予測モデルと多変量解析</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>単変量解析</b><br>Univariable analysis</td><td>1つの原因と1つの結果の関係だけを見る解析</td><td><code>t.test()</code>、<code>lm(y ~ x)</code></td></tr>
+<tr><td><b>多変量解析</b><br>Multivariable / Multivariate analysis</td><td>複数の変数を、同時に扱う解析</td><td><code>lm(y ~ x1 + x2)</code></td></tr>
+<tr><td><b>単回帰分析</b><br>Simple linear regression</td><td>1つの説明変数から、数値を予測する</td><td><code>lm()</code></td></tr>
+<tr><td><b>重回帰分析</b><br>Multiple linear regression</td><td>複数の説明変数から、数値を予測する</td><td><code>lm()</code></td></tr>
+<tr><td><b>ロジスティック回帰分析</b><br>Logistic regression</td><td>2択（YES / NO）の確率を予測する。係数からオッズ比を求められる</td><td><code>glm(family = binomial)</code></td></tr>
+<tr><td><b>オッズ比</b><br>Odds ratio (OR)</td><td>オッズ（起きる確率 ÷ 起きない確率）の比。1なら差なし。メタ解析やロジスティック回帰で使う</td><td><code>exp(coef(fit))</code></td></tr>
+<tr><td><b>コックス比例ハザードモデル</b><br>Cox proportional hazards model</td><td>生存期間に、複数の要因がどう影響するかを解析する、生存分析の回帰</td><td><code>coxph()</code></td></tr>
+<tr><td><b>統計的調整・交絡</b><br>Adjustment / Confounding</td><td>結果にも原因にも関係する要因（交絡因子）の影響を、モデルに入れて取り除くこと</td><td>モデルの式に <code>+ age</code> などと加える</td></tr>
+</table></div>
+
+<h3>9. 次元削減（特徴抽出）</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>次元削減</b><br>Dimensionality reduction</td><td>多数の変数をもつデータを、特徴を保ちながら、少ない次元（2次元など）にまとめる</td><td>—</td></tr>
+<tr><td><b>主成分分析（PCA）</b><br>Principal component analysis</td><td>ばらつきが最大の方向を見つけて、直線的にまとめる</td><td><code>prcomp()</code></td></tr>
+<tr><td><b>t-SNE</b></td><td>近くにあるもの同士を近くに配置して、塊を見やすくする可視化の方法</td><td><code>Rtsne()</code>（Rtsne）</td></tr>
+<tr><td><b>UMAP</b></td><td>t-SNEに似た可視化の方法で、速く、全体の構造も比較的保つ</td><td><code>umap()</code>（uwot）</td></tr>
+</table></div>
+
+<h3>10. メタ解析</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>メタ解析</b><br>Meta-analysis</td><td>同じ問いを扱った複数の研究の結果を、統計的に統合する方法</td><td><code>metabin()</code>、<code>metacont()</code></td></tr>
+<tr><td><b>共通効果モデル</b><br>Common effect model</td><td>すべての研究が、同じ1つの真の効果を測っていると仮定するモデル</td><td><code>common = TRUE</code></td></tr>
+<tr><td><b>ランダム効果モデル</b><br>Random effects model</td><td>研究ごとに、真の効果が少しずつ異なると仮定するモデル</td><td><code>random = TRUE</code></td></tr>
+<tr><td><b>異質性</b><br>Heterogeneity (τ², I²)</td><td>研究間の、結果のばらつき。τ² はばらつきの大きさ、I² は、ばらつきのうち、偶然では説明できない割合</td><td><code>print(meta_res)</code> に表示</td></tr>
+<tr><td><b>フォレストプロット</b><br>Forest plot</td><td>各研究の効果と信頼区間、統合値を並べたグラフ</td><td><code>forest()</code></td></tr>
+<tr><td><b>ファンネルプロット</b><br>Funnel plot</td><td>効果と精度を、点で表したグラフ。左右非対称なら、出版バイアスなどを疑う</td><td><code>funnel()</code></td></tr>
+<tr><td><b>出版バイアス</b><br>Publication bias</td><td>結果が良い（有意な）研究ほど、論文として公表されやすいために起こる偏り</td><td><code>metabias()</code></td></tr>
+<tr><td><b>感度分析（1つ抜き解析）</b><br>Sensitivity analysis / Leave-one-out analysis</td><td>研究を1つずつ除いて、再計算し、結果が頑健かを確かめる</td><td><code>metainf()</code></td></tr>
+</table></div>
+
+<h3>11. ファイル形式と環境</h3>
+<div class="table-scroll"><table>
+<tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
+<tr><td><b>IDE</b><br>Integrated development environment</td><td>コードを書き、実行し、結果を見るための統合開発環境。RではRStudioが一般的</td><td>RStudio、VSCode</td></tr>
+<tr><td><b>Posit Cloud</b></td><td>ブラウザで使える、RStudioのクラウド版</td><td>—</td></tr>
+<tr><td><b>Console（コンソール）</b></td><td>コードを入力して、結果が表示される場所。1行ずつ実行する</td><td>RStudioの左下</td></tr>
+<tr><td><b>Rスクリプト（.R）</b><br>R script</td><td>Rのコードだけを書いて、保存するファイル</td><td><code>Ctrl + Enter</code>、Source</td></tr>
+<tr><td><b>R Markdown（.Rmd）</b></td><td>文章とコードを一緒に書いて、レポートにまとめるファイル</td><td>Knit</td></tr>
+<tr><td><b>コードチャンク</b><br>Code chunk</td><td>Rmdの中の、Rのコードを書く部分</td><td><code>```{r}</code> 〜 <code>```</code></td></tr>
+<tr><td><b>Knit（ニット）</b></td><td>Rmdを実行して、HTMLやWordなどのレポートを作る操作</td><td>Knitボタン</td></tr>
+<tr><td><b>CSVファイル（.csv）</b></td><td>コンマ区切りの、テキスト形式の表データ。Excelなどと、やりとりできる</td><td><code>read_csv()</code>、<code>write_csv()</code></td></tr>
+<tr><td><b>作業ディレクトリ</b><br>Working directory</td><td>Rが、今、ファイルを探したり保存したりする場所（フォルダ）</td><td><code>getwd()</code>、<code>setwd()</code></td></tr>
+<tr><td><b>Base R</b></td><td>追加のパッケージなしで使える、Rの標準の機能</td><td><code>mean()</code>、<code>plot()</code></td></tr>
+<tr><td><b>Tidyverse</b></td><td>データの整形・可視化などに便利な、パッケージの詰め合わせ（dplyr、ggplot2、readr など）</td><td><code>library(tidyverse)</code></td></tr>
+</table></div>
+
+<footer>
+本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。<br>
+※ 数値例の結果は、Python（SciPy）で同一データを再計算して確認したものです。Rの実行結果と一致することを、ご自身の環境でもご確認ください。
+</footer>
+</div>
+</body>
+</html>
