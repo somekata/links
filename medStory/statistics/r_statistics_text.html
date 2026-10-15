@@ -41,7 +41,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <div class="wrap">
 <header>
 <h1>Rと統計学</h1>
-<p class="sub">Rの基本・2群の検定・カイ二乗検定とFisherの正確検定・95%信頼区間・ggplot2・メタ解析・パイプ・条件分岐と繰り返し・復元抽出と非復元抽出・RスクリプトとRmd・ANOVA・生存分析・回帰・多変量解析・次元削減・研究デザイン・用語集</p>
+<p class="sub">Rの基本・2群の検定・カイ二乗検定とFisherの正確検定・95%信頼区間・ggplot2・メタ解析・パイプ・条件分岐と繰り返し・復元抽出と非復元抽出・RスクリプトとRmd・ANOVA・生存分析・回帰・多変量解析・次元削減・図の一覧・研究デザイン・用語集</p>
 </header>
 
 <nav>
@@ -63,8 +63,9 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li><a href="#s14">14. RスクリプトとR Markdown（Rmd）</a></li>
 <li><a href="#s15">15. ANOVA・生存分析・ログランク検定</a></li>
 <li><a href="#s16">16. 回帰・多変量解析・次元削減・ハザード</a></li>
-<li><a href="#s17">17. 研究デザイン（コホート研究と症例対照研究）</a></li>
-<li><a href="#s18">18. 用語集</a></li>
+<li><a href="#s17">17. 統計学的な図（グラフ）の一覧と選び方</a></li>
+<li><a href="#s18">18. 研究デザイン（コホート研究と症例対照研究）</a></li>
+<li><a href="#s19">19. 用語集</a></li>
 </ul>
 </nav>
 
@@ -1172,7 +1173,146 @@ cox.zph(fit_cox)       # 比例ハザード性の確認</code></pre>
 </ol>
 <p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。結果の数値は、Pythonなどで同一データを計算して確認したものです。RStudioで動作をご確認ください。</p>
 
-<h2 id="s17">17. 研究デザイン</h2>
+<h2 id="s17">17. 統計学的な図（グラフ）の一覧と選び方</h2>
+<p>これまでに出てきた図と、データ解析でよく使われる図を、役割ごとに整理しました。「<b>何を知りたいか</b>」から、使う図を選びます。全19種です。</p>
+
+<div class="table-scroll"><table>
+<tr><th>グループ</th><th>図（グラフ）</th><th>主な役割・知りたいこと</th><th>Rの主な関数</th></tr>
+<tr><td rowspan="5"><b>1. データの散らばり・分布</b></td><td>ヒストグラム</td><td>1つの変数の偏りや、全体の「分布の形」を、棒で見る</td><td><code>hist()</code>、<code>geom_histogram()</code></td></tr>
+<tr><td>分布図（密度プロット）</td><td>ヒストグラムを、滑らかな曲線（確率密度）で表す。群ごとに重ねて比べやすい</td><td><code>density()</code>、<code>geom_density()</code></td></tr>
+<tr><td>箱ひげ図</td><td>ばらつき、中央値、外れ値を、コンパクトに比べる</td><td><code>boxplot()</code>、<code>geom_boxplot()</code></td></tr>
+<tr><td>バイオリンプロット</td><td>箱ひげ図に、分布の形（山の数など）の情報を加えたもの</td><td><code>geom_violin()</code></td></tr>
+<tr><td>QQプロット</td><td>データが、正規分布などの理論的な分布に従うかを調べる</td><td><code>qqnorm()</code>、<code>qqline()</code></td></tr>
+<tr><td rowspan="5"><b>2. 変数の関係・つながり</b></td><td>散布図</td><td>2つの変数の間に、相関（右肩上がりなど）があるかを見る</td><td><code>plot()</code>、<code>geom_point()</code></td></tr>
+<tr><td>線形回帰直線（散布図上）</td><td>データに、1本の直線を当てはめて、予測・説明する</td><td><code>lm()</code>、<code>geom_smooth(method = "lm")</code></td></tr>
+<tr><td>多項式回帰曲線（散布図上）</td><td>2乗などの項を加えて、データに沿った曲線を当てはめる</td><td><code>lm(y ~ poly(x, 2))</code></td></tr>
+<tr><td>散布図行列（ペアプロット）</td><td>変数が3つ以上のとき、すべての組み合わせの散布図を、格子状に並べる</td><td><code>pairs()</code></td></tr>
+<tr><td>ヒートマップ</td><td>相関係数などの大きさを、行列上の色の濃淡で表す</td><td><code>heatmap()</code>、<code>geom_tile()</code></td></tr>
+<tr><td rowspan="2"><b>3. 基本の比較・時間変化</b></td><td>棒グラフ</td><td>カテゴリごとの量の大きさを、比べる</td><td><code>barplot()</code>、<code>geom_col()</code></td></tr>
+<tr><td>折れ線グラフ</td><td>時間の経過に伴う、数値の推移（トレンド）を見る</td><td><code>plot(type = "l")</code>、<code>geom_line()</code></td></tr>
+<tr><td rowspan="2"><b>4. 高次元・高度な分布</b></td><td>PCA散布図</td><td>多数の変数を、情報の損失をおさえて、2つの軸（PC1、PC2）にまとめる</td><td><code>prcomp()</code></td></tr>
+<tr><td>バッグプロット</td><td>2変数を同時に考えて、2次元空間での中心と外れ値を見つける。箱ひげ図の2次元版</td><td><code>aplpack::bagplot()</code></td></tr>
+<tr><td rowspan="2"><b>5. 生存時間・リスク</b></td><td>生存曲線（カプラン・マイヤー）</td><td>時間とともに、イベントが起きずに生き残る確率を見る</td><td><code>survfit()</code></td></tr>
+<tr><td>ハザード関数プロット</td><td>ある時点まで生き残った人が、その直後にイベントを起こす勢い（リスク）を見る</td><td><code>muhaz::muhaz()</code>、<code>plot(fit, fun = "cumhaz")</code></td></tr>
+<tr><td rowspan="3"><b>6. メタ解析・予測の評価</b></td><td>フォレストプロット</td><td>複数の研究の結果（四角と信頼区間の線）を並べ、統合した効果（ひし形）を見る</td><td><code>meta::forest()</code></td></tr>
+<tr><td>ファンネルプロット（漏斗図）</td><td>研究の規模と効果のばらつきから、出版バイアスを疑う</td><td><code>meta::funnel()</code></td></tr>
+<tr><td>ROC曲線</td><td>検査や予測モデルが、陽性・陰性をどれくらい正確に判定できるかを評価する</td><td><code>pROC::roc()</code></td></tr>
+</table></div>
+
+<div class="warn"><b>この表についての補足</b>
+<ul>
+<li><b>種類の数：</b>上の表は、5＋5＋2＋2＋2＋3＝<b>19種</b>です。</li>
+<li><b>「2次元箱ひげ図」の呼び方に注意：</b>第9節で描いた、<b>散布図の上と右に箱ひげ図をつけたもの</b>（<code>ggMarginal()</code>）は、「周辺箱ひげ図」です。表の<b>バッグプロット</b>は、別のグラフで、2変数の点の広がりを、中心（深さの中央）を囲む「バッグ」（データの半分を含む領域）と、その外側の外れ値で表す、箱ひげ図の2次元版です。</li>
+<li>第9節の<b>帯グラフ</b>（積み上げ棒グラフ）や、周辺箱ひげ図も、よく使う図です。</li>
+</ul></div>
+
+<h3>グループ別のコード例と読み方</h3>
+<p>ここでは、Rに最初から入っている <code>iris</code> などを使います。先頭で <code>library(tidyverse)</code> を実行してある前提です。</p>
+
+<h4>1. データの散らばり・分布</h4>
+<pre><code>ggplot(iris, aes(x = Sepal.Length)) + geom_histogram(bins = 20)                   # ヒストグラム
+ggplot(iris, aes(x = Sepal.Length, fill = Species)) + geom_density(alpha = 0.4)   # 密度プロット
+ggplot(iris, aes(x = Species, y = Sepal.Length)) + geom_boxplot()                 # 箱ひげ図
+ggplot(iris, aes(x = Species, y = Sepal.Length, fill = Species)) + geom_violin()  # バイオリンプロット
+
+qqnorm(iris$Sepal.Length)    # QQプロット
+qqline(iris$Sepal.Length)    # 基準の直線を重ねる</code></pre>
+<ul>
+<li><b>ヒストグラム：</b>柱の数（<code>bins</code>）や幅によって、見た目が変わります。山が1つで左右対称なら、正規分布に近いと考えます。<b>棒グラフとの違い：</b>ヒストグラムは連続した量を区切って数えるので、柱がくっつきます。</li>
+<li><b>QQプロット：</b>点が基準の直線の近くに並べば、正規分布に近いと考えます。両端が直線から大きくずれれば、裾が重い（外れ値が多い）などの、正規分布からのずれを示します。第3節の「正規分布かどうか」の確認に使えます。</li>
+<li><b>箱ひげ図とバイオリンプロット：</b>箱ひげ図では見えない「山が2つ」といった形が、バイオリンプロットでは見えます。</li>
+</ul>
+
+<h4>2. 変数の関係・つながり</h4>
+<pre><code>p &lt;- ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) + geom_point()   # 散布図
+p + geom_smooth(method = "lm")                                  # 線形回帰直線（信頼区間の帯つき）
+p + geom_smooth(method = "lm", formula = y ~ poly(x, 2))        # 多項式回帰曲線（2次）
+
+pairs(iris[, 1:4], col = iris$Species)                          # 散布図行列
+
+# 相関係数のヒートマップ
+cm &lt;- cor(iris[, 1:4])
+as_tibble(cm, rownames = "var1") |&gt;
+  pivot_longer(-var1, names_to = "var2", values_to = "r") |&gt;
+  ggplot(aes(x = var1, y = var2, fill = r)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-1, 1))</code></pre>
+<ul>
+<li><b>回帰直線と曲線：</b>当てはまりがよいからといって、次数を上げすぎる（複雑な曲線にする）と、手元のデータだけにぴったり合って、新しいデータの予測が悪くなる（<b>過学習</b>）ことがあります。</li>
+<li><b>ヒートマップ：</b>相関係数の場合、色の濃さが相関の強さを表します（−1〜1）。変数が多いときに、全体を一目で見るのに向きます。</li>
+<li><b>散布図と相関：</b>相関があっても、因果関係があるとは限りません。外れ値や、群ごとの違い（層別）にも注意しましょう。</li>
+</ul>
+
+<h4>3. 基本の比較・時間変化</h4>
+<pre><code>iris |&gt; count(Species) |&gt; ggplot(aes(x = Species, y = n)) + geom_col()   # 棒グラフ
+ggplot(economics, aes(x = date, y = unemploy)) + geom_line()             # 折れ線グラフ</code></pre>
+<div class="warn"><b>注意</b>群の「平均値」だけを棒グラフで示すと、データのばらつきや分布が見えません。可能なら、箱ひげ図や、実際のデータの点を重ねて示しましょう。</div>
+
+<h4>4. 高次元・高度な分布</h4>
+<pre><code># PCA散布図（第16節）
+pca &lt;- prcomp(iris[, 1:4], scale. = TRUE)
+pca_df &lt;- data.frame(pca$x, Species = iris$Species)
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Species)) + geom_point()
+
+# バッグプロット
+# install.packages("aplpack")
+library(aplpack)
+bagplot(iris$Sepal.Length, iris$Sepal.Width)</code></pre>
+<p>PCA散布図では、PC1・PC2が全体のばらつきの何%を説明するかを、合わせて確認します（<code>summary(pca)</code>）。<code>aplpack</code> は、環境によっては、追加の設定が必要になることがあります。</p>
+
+<h4>5. 生存時間・リスク</h4>
+<pre><code>library(survival)
+
+# survival パッケージ付属の lung データ（status：1 = 打ち切り、2 = 死亡）
+fit &lt;- survfit(Surv(time, status) ~ sex, data = lung)
+plot(fit, col = c("blue", "red"), xlab = "Days", ylab = "Survival probability")   # 生存曲線
+
+plot(fit, fun = "cumhaz", col = c("blue", "red"))                                  # 累積ハザード
+
+# ハザード関数（滑らかに推定）
+# install.packages("muhaz")
+library(muhaz)
+h &lt;- muhaz(lung$time, lung$status == 2)
+plot(h)</code></pre>
+<ul>
+<li><b>生存曲線：</b>曲線が下がる階段の段差が、イベントの発生を表します。目盛り（＋）は打ち切りを表します。</li>
+<li><b>ハザード関数：</b>生存曲線が「生き残る確率」を表すのに対し、ハザードは「その瞬間のイベントの勢い」を表します。ハザードは、時間とともに上がる、下がる、一定、のように、形を見て、リスクの時間変化を考えます。</li>
+</ul>
+
+<h4>6. メタ解析・予測の評価</h4>
+<pre><code># フォレストプロット、ファンネルプロット：第10節の meta_res を使う
+forest(meta_res)
+funnel(meta_res)
+
+# ROC曲線：virginica かどうかを、Petal.Length で判定する例
+# install.packages("pROC")
+library(pROC)
+is_virginica &lt;- as.integer(iris$Species == "virginica")
+roc_obj &lt;- roc(is_virginica, iris$Petal.Length)
+plot(roc_obj)
+auc(roc_obj)       # 曲線下の面積（AUC）：約0.99</code></pre>
+<ul>
+<li><b>ROC曲線の読み方：</b>縦軸は<b>感度</b>（病気の人を陽性と判定できる割合）、横軸は<b>1−特異度</b>（病気でない人を、誤って陽性と判定する割合）です。判定の基準値（カットオフ）を動かしたときの、変化を表します。左上の角に近いほど、よい判定です。</li>
+<li><b>AUC：</b>曲線の下の面積です。0.5は、でたらめな判定（対角線）、1.0は完全な判定を意味します。この例では、約0.99（Pythonで同一データを計算して確認）で、花びらの長さだけでも、virginica かどうかをほぼ判定できます。</li>
+<li><b>基準値の決め方：</b>「感度＋特異度−1」が最大になる点（Youden指数）などを使います。何を重視するか（見逃しを減らすか、誤診を減らすか）で決めます。</li>
+</ul>
+
+<h3>図を選ぶときのポイント</h3>
+<div class="table-scroll"><table>
+<tr><th>知りたいこと</th><th>選ぶ図</th></tr>
+<tr><td>1つの変数の分布の形</td><td>ヒストグラム、密度プロット、QQプロット</td></tr>
+<tr><td>群ごとの分布を比べる</td><td>箱ひげ図、バイオリンプロット</td></tr>
+<tr><td>2つの量の関係</td><td>散布図（回帰直線を重ねる）</td></tr>
+<tr><td>多数の変数の関係</td><td>散布図行列、ヒートマップ、PCA散布図</td></tr>
+<tr><td>カテゴリの量・割合を比べる</td><td>棒グラフ、帯グラフ</td></tr>
+<tr><td>時間による変化</td><td>折れ線グラフ</td></tr>
+<tr><td>イベントまでの時間</td><td>生存曲線、ハザード関数</td></tr>
+<tr><td>複数研究の統合と偏り</td><td>フォレストプロット、ファンネルプロット</td></tr>
+<tr><td>検査や予測モデルの精度</td><td>ROC曲線</td></tr>
+</table></div>
+<p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。RStudioで動作をご確認ください。AUCの値は、Pythonで同一データを計算して確認したものです。</p>
+
+<h2 id="s18">18. 研究デザイン</h2>
 <p>同じ統計手法を使っても、データの集め方（<b>研究デザイン</b>）によって、わかること、わからないこと、結果の解釈が変わります（この節は、節末の参考文献1を参考にしています）。ここでは、研究デザインの全体像と、特に間違えやすい<b>コホート研究と症例対照研究の違い</b>を説明します。</p>
 
 <h3>1. 実験研究と観察研究</h3>
@@ -1282,6 +1422,69 @@ fit &lt;- glm(case ~ exposure, data = cc, family = binomial)
 exp(coef(fit))      # exposure の値がオッズ比（3.857）。切片は解釈しない</code></pre>
 <p>2×2表を <code>fisher.test()</code> に入れても、オッズ比と信頼区間を求められます（推定の方法が少し異なるため、上の単純な計算値と、小数点以下がわずかに異なることがあります）。</p>
 
+<h3>5-2. リスク比とオッズ比は、何が違うか（喫煙と肺がんの例）</h3>
+<p>喫煙（要因）と肺がん（結果）の、架空のコホート研究データで、リスク比とオッズ比の計算と、解釈の違いを確認します。喫煙する人と、しない人を、100人ずつ調べたとします。</p>
+<div class="table-scroll"><table>
+<tr><th></th><th>肺がんになった</th><th>肺がんにならなかった</th><th>全体</th></tr>
+<tr><th>喫煙する（要因あり）</th><td>40</td><td>60</td><td>100</td></tr>
+<tr><th>喫煙しない（要因なし）</th><td>10</td><td>90</td><td>100</td></tr>
+</table></div>
+
+<h4>1. リスク比（Risk Ratio）：「全体に対する発生確率」の比</h4>
+<ul>
+<li>喫煙する人のリスク：40 / 100 = 0.40（40%）</li>
+<li>喫煙しない人のリスク：10 / 100 = 0.10（10%）</li>
+<li><b>リスク比 = 0.40 / 0.10 = 4.0</b></li>
+</ul>
+<p><b>解釈：</b>喫煙する人は、喫煙しない人に比べて、肺がんになる<b>リスク（確率）が4.0倍</b>である。</p>
+
+<h4>2. オッズ比（Odds Ratio）：「なった人とならなかった人の比（オッズ）」の比</h4>
+<ul>
+<li>喫煙する人のオッズ：40 / 60 ≈ 0.67（がんになる人は、ならない人の約0.67倍いる）</li>
+<li>喫煙しない人のオッズ：10 / 90 ≈ 0.11（がんになる人は、ならない人の約0.11倍いる）</li>
+<li><b>オッズ比 = 0.67 / 0.11 = (40 × 90) / (60 × 10) = 6.0</b></li>
+</ul>
+<p><b>解釈：</b>喫煙する人は、喫煙しない人に比べて、肺がんになる<b>オッズが6.0倍</b>である。</p>
+<div class="warn"><b>オッズ比6.0を、「6倍なりやすい」と読んではいけません</b>
+オッズは確率とは別のものです。この例の確率の比（リスク比）は4.0なので、「肺がんになる確率が6倍」と言うのは、誤りです。オッズ比は、「オッズが6倍」と正確に読みます。</div>
+
+<h4>なぜ、値がずれるのか</h4>
+<p>肺がんになる確率が、比較的<b>高い</b>（10〜40%）ときは、オッズ比（6.0）が、リスク比（4.0）より、1から遠い値（大きい値）になります。オッズ比は、リスク比よりも極端に出る性質があります。</p>
+<p>病気が<b>まれ</b>であれば、「ならなかった人」の数が圧倒的に多くなり、分母（ならなかった人）が、全体にほぼ等しくなるため、<b>オッズ比はリスク比とほぼ同じ値</b>になります。同じリスク比（4.0）で、発症の確率だけを変えて比べてみましょう。</p>
+<div class="table-scroll"><table>
+<tr><th>喫煙しない人の発症確率</th><th>喫煙する人の発症確率</th><th>リスク比</th><th>オッズ比</th></tr>
+<tr><td>10%（10 / 100）</td><td>40%（40 / 100）</td><td>4.0</td><td><b>6.0</b></td></tr>
+<tr><td>1%（10 / 1000）</td><td>4%（40 / 1000）</td><td>4.0</td><td>約4.12</td></tr>
+<tr><td>0.01%（1 / 10000）</td><td>0.04%（4 / 10000）</td><td>4.0</td><td>約4.001</td></tr>
+</table></div>
+<p>発症の確率が小さいほど、オッズ比はリスク比に近づきます。このことは、症例対照研究（オッズ比しか求められない研究）で、<b>まれな病気なら、オッズ比をリスク比の近似として読める</b>理由です。逆に、病気がまれでないときは、オッズ比を「リスクの比」として読むと、過大評価になります。</p>
+
+<h4>どちらを使うか</h4>
+<ul>
+<li><b>コホート研究、RCT：</b>リスク（発症の割合）を直接求められるので、<b>リスク比</b>（と、リスク差）が、わかりやすい指標です。</li>
+<li><b>症例対照研究：</b>リスクを求められないので、<b>オッズ比</b>を使います。</li>
+<li><b>ロジスティック回帰：</b>係数を <code>exp()</code> にすると、<b>オッズ比</b>になります。</li>
+</ul>
+
+<h4>Rで計算する関数を作ってみよう</h4>
+<p>計算を何度も行うときは、<b>関数</b>にしておくと便利です。<code>a, b, c, d</code> が<b>引数</b>で、最後の <code>c(...)</code> が<b>戻り値</b>です（第19節の用語集を参照）。</p>
+<pre><code># a：要因ありで発症、b：要因ありで非発症
+# c：要因なしで発症、d：要因なしで非発症
+risk_odds &lt;- function(a, b, c, d) {
+  risk1 &lt;- a / (a + b)       # 要因ありのリスク
+  risk0 &lt;- c / (c + d)       # 要因なしのリスク
+  odds1 &lt;- a / b             # 要因ありのオッズ
+  odds0 &lt;- c / d             # 要因なしのオッズ
+  c(risk_exposed = risk1, risk_unexposed = risk0,
+    risk_ratio = risk1 / risk0, risk_difference = risk1 - risk0,
+    odds_ratio = odds1 / odds0)
+}
+
+risk_odds(40, 60, 10, 90)           # 喫煙の例：リスク比 4.0、オッズ比 6.0
+risk_odds(4, 9996, 1, 9999)         # まれな病気：リスク比 4.0、オッズ比 約4.001</code></pre>
+<p>自分のデータの、「要因あり／なし」それぞれの「発症した人数」と「発症しなかった人数」を、引数に入れて、計算してみましょう。</p>
+<div class="note"><b>補足</b>関数の中の変数名 <code>c</code> は、ベクトルを作る関数 <code>c()</code> と同じ名前です。この例のように、Rは区別して動作しますが、紛らわしいので、実際の解析では、<code>a, b, c, d</code> の代わりに、<code>ex_case, ex_non, un_case, un_non</code> のような名前をつけると、読みやすくなります。</div>
+
 <h3>6. 研究デザインとバイアス</h3>
 <div class="table-scroll"><table>
 <tr><th>バイアス</th><th>内容</th><th>起こりやすい場面</th></tr>
@@ -1311,7 +1514,7 @@ exp(coef(fit))      # exposure の値がオッズ比（3.857）。切片は解�
 </ol>
 <p>この節の、実験研究と観察研究の分類、RCT、クロスオーバー試験、横断研究、コホート研究、症例対照研究の説明は、上記の文献を参考にしています。コホート研究と症例対照研究の変数の役割、数値例、バイアス、PECO/PICOの説明は、本テキストで補ったものです。</p>
 
-<h2 id="s18">18. 用語集</h2>
+<h2 id="s19">19. 用語集</h2>
 <p>このテキストに出てくる用語を、分野ごとにまとめました。「Rでの例」の列には、関連する関数や書き方を書いています。</p>
 
 <h3>まず、4つの基本用語を例で確認しよう</h3>
@@ -1391,6 +1594,16 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>ヒストグラム</b><br>Histogram</td><td>データの分布を、柱の高さで表すグラフ。正規分布の確認に使う</td><td><code>hist()</code>、<code>geom_histogram()</code></td></tr>
 <tr><td><b>散布図</b><br>Scatter plot</td><td>2つの変数の関係を、点で表すグラフ</td><td><code>plot()</code>、<code>geom_point()</code></td></tr>
 <tr><td><b>箱ひげ図／周辺箱ひげ図</b><br>Boxplot / Marginal boxplot</td><td>箱で四分位範囲と中央値、ひげと点で、ばらつきと外れ値を表すグラフ。周辺箱ひげ図は、散布図の余白に、箱ひげ図をつけたもの</td><td><code>boxplot()</code>、<code>geom_boxplot()</code>、<code>ggMarginal()</code></td></tr>
+<tr><td><b>密度プロット</b><br>Density plot</td><td>ヒストグラムを、滑らかな曲線（確率密度）にしたグラフ。群ごとに重ねて比べやすい</td><td><code>geom_density()</code></td></tr>
+<tr><td><b>バイオリンプロット</b><br>Violin plot</td><td>箱ひげ図に、分布の形の情報を加えたグラフ</td><td><code>geom_violin()</code></td></tr>
+<tr><td><b>QQプロット</b><br>Q-Q plot</td><td>データの分位点を、理論的な分布（正規分布など）の分位点と比べるグラフ。点が直線に並べば、その分布に近い</td><td><code>qqnorm()</code>、<code>qqline()</code></td></tr>
+<tr><td><b>散布図行列</b><br>Scatterplot matrix / Pair plot</td><td>3つ以上の変数の、すべての組み合わせの散布図を並べたもの</td><td><code>pairs()</code></td></tr>
+<tr><td><b>ヒートマップ</b><br>Heatmap</td><td>行列の数値（相関係数など）を、色の濃淡で表したグラフ</td><td><code>heatmap()</code>、<code>geom_tile()</code></td></tr>
+<tr><td><b>回帰直線（回帰曲線）</b><br>Regression line</td><td>散布図に当てはめた、予測のための直線（または曲線）。複雑にしすぎると過学習になる</td><td><code>geom_smooth(method = "lm")</code></td></tr>
+<tr><td><b>バッグプロット</b><br>Bagplot</td><td>2変数の広がりを、中心を囲む領域（バッグ）と外れ値で表す、箱ひげ図の2次元版。散布図に箱ひげ図をつけた周辺箱ひげ図とは別</td><td><code>aplpack::bagplot()</code></td></tr>
+<tr><td><b>ROC曲線・AUC</b><br>ROC curve / AUC</td><td>判定の基準値を動かしたときの、感度と（1−特異度）の関係を描いた曲線。AUCはその下の面積で、0.5はでたらめ、1.0は完全な判定</td><td><code>pROC::roc()</code>、<code>auc()</code></td></tr>
+<tr><td><b>感度・特異度</b><br>Sensitivity / Specificity</td><td>感度は、病気の人を陽性と判定できる割合。特異度は、病気でない人を陰性と判定できる割合</td><td>—</td></tr>
+<tr><td><b>過学習</b><br>Overfitting</td><td>モデルが、手元のデータに合いすぎて、新しいデータの予測が悪くなること</td><td>—</td></tr>
 <tr><td><b>帯グラフ</b><br>Stacked bar plot</td><td>各グループの内訳の割合を、積み上げた棒で表すグラフ</td><td><code>geom_bar(position = "fill")</code></td></tr>
 </table></div>
 

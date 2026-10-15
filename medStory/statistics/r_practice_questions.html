@@ -43,7 +43,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <div class="wrap">
 <header>
 <h1>Rと統計学 練習問題</h1>
-<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全63問）</p>
+<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全76問）</p>
 </header>
 
 <div class="note"><b>使い方</b>
@@ -51,7 +51,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li>RStudio（またはPosit Cloud）を開き、<b>自分で考えてコードを書いてから</b>、「解答例を見る」を開いて答え合わせをしましょう。</li>
 <li>解答は1通りではありません。同じ結果が出れば、別の書き方でも正解です。</li>
 <li>特に断りがなければ、先頭で <code>library(tidyverse)</code> を実行してある前提です。</li>
-<li>乱数を使う問題（第E部、Q63）は、実行するたびに値が変わります。</li>
+<li>乱数を使う問題（第E部、Q63、Q71）は、実行するたびに値が変わります。</li>
 <li>★は難易度の目安です（★ 基本、★★ 標準、★★★ 応用）。</li>
 </ul></div>
 
@@ -73,7 +73,8 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li><a href="#pg">G. 用語と変数の役割 Q40〜Q45</a></li>
 <li><a href="#ph">H. ANOVA・生存分析 Q46〜Q50</a></li>
 <li><a href="#pi">I. 回帰・多変量解析・次元削減 Q51〜Q55</a></li>
-<li><a href="#pj">J. 研究デザイン Q56〜Q63</a></li>
+<li><a href="#pj">J. 研究デザイン（リスク比・オッズ比を含む）Q56〜Q68</a></li>
+<li><a href="#pk">K. 図（グラフ）の選び方と読み方 Q69〜Q76</a></li>
 </ul>
 </nav>
 
@@ -803,7 +804,7 @@ summary(fit2)</code></pre>
 </details></div>
 
 <div class="q">
-<div class="qt"><span class="no">Q53</span>第17節の症例対照研究の例（症例40人：曝露あり30・なし10、対照80人：曝露あり35・なし45）を、<b>ロジスティック回帰</b>で解析し、曝露のオッズ比を求めなさい。<span class="lv">★★★</span></div>
+<div class="qt"><span class="no">Q53</span>第18節の症例対照研究の例（症例40人：曝露あり30・なし10、対照80人：曝露あり35・なし45）を、<b>ロジスティック回帰</b>で解析し、曝露のオッズ比を求めなさい。<span class="lv">★★★</span></div>
 <details><summary>解答例を見る</summary>
 <pre><code>cc &lt;- data.frame(
   case     = rep(c(1, 1, 0, 0), times = c(30, 10, 35, 45)),
@@ -936,6 +937,189 @@ patients &lt;- data.frame(id = 1:20)
 patients$group &lt;- sample(rep(c("介入", "対照"), each = 10))   # 10人ずつを並べ替え
 table(patients$group)      # 介入10、対照10</code></pre>
 <p>ランダム化によって、年齢や重症度などの背景（測定していないものも含む）が、偶然を除いて、2群で同程度になります。そのため、2群の差を、介入の効果と考えやすくなります。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q64</span>喫煙する人100人のうち40人、喫煙しない人100人のうち10人が、肺がんになった（架空のコホート研究）。それぞれの<b>リスク</b>、<b>リスク比</b>、<b>オッズ</b>、<b>オッズ比</b>を求めなさい。<span class="lv">★★</span>
+<div class="table-scroll"><table>
+<tr><th></th><th>肺がんになった</th><th>ならなかった</th><th>全体</th></tr>
+<tr><th>喫煙する</th><td>40</td><td>60</td><td>100</td></tr>
+<tr><th>喫煙しない</th><td>10</td><td>90</td><td>100</td></tr>
+</table></div></div>
+<details><summary>解答例を見る</summary>
+<pre><code>risk1 &lt;- 40 / 100       # 0.40
+risk0 &lt;- 10 / 100       # 0.10
+risk1 / risk0           # リスク比 4.0
+
+odds1 &lt;- 40 / 60        # 約0.67
+odds0 &lt;- 10 / 90        # 約0.11
+odds1 / odds0           # オッズ比 6.0（= (40 * 90) / (60 * 10)）</code></pre>
+<p>リスク比は4.0、オッズ比は6.0です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q65</span>Q64で、「喫煙する人は、肺がんに<b>6倍なりやすい</b>」と言ってよいか答えなさい。また、オッズ比がリスク比（4.0）より大きい理由を説明しなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<p>言えません。オッズ比6.0は、「肺がんになる<b>オッズ</b>が6倍」という意味で、確率（リスク）が6倍という意味ではありません。確率の比（リスク比）は4.0なので、「リスクが4倍」と言うのが正確です。</p>
+<p>肺がんになる確率が、比較的高い（10〜40%）ときは、「ならなかった人」の数が、全体に比べて小さくなくなるため、オッズ比が、リスク比よりも1から遠い値（大きい値）になります。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q66</span>(1) 2×2表の4つの人数（<code>a, b, c, d</code>）を引数にとり、<b>リスク比とオッズ比</b>（とリスク差）を戻り値として返す関数 <code>risk_odds()</code> を作りなさい。(2) 作った関数で、Q64のデータと、<b>まれな病気</b>のデータ（喫煙する人10000人のうち4人、しない人10000人のうち1人が発症）を計算し、結果の違いを説明しなさい。<span class="lv">★★★</span></div>
+<p class="hint">ヒント：<code>a</code>：要因ありで発症、<code>b</code>：要因ありで非発症、<code>c</code>：要因なしで発症、<code>d</code>：要因なしで非発症。戻り値は <code>c(名前 = 値, ...)</code> でまとめられます（引数名の <code>c</code> と、関数 <code>c()</code> は、Rが区別して扱います）。</p>
+<details><summary>解答例を見る</summary>
+<pre><code>risk_odds &lt;- function(a, b, c, d) {
+  risk1 &lt;- a / (a + b)
+  risk0 &lt;- c / (c + d)
+  c(risk_ratio      = risk1 / risk0,
+    risk_difference = risk1 - risk0,
+    odds_ratio      = (a / b) / (c / d))
+}
+
+risk_odds(40, 60, 10, 90)         # リスク比 4.0、リスク差 0.30、オッズ比 6.0
+risk_odds(4, 9996, 1, 9999)       # リスク比 4.0、リスク差 0.0003、オッズ比 約4.001</code></pre>
+<p>どちらも、リスク比は4.0ですが、オッズ比は、発症の確率が高いデータで6.0、まれな病気のデータで約4.001です。病気がまれなほど、「ならなかった人」が、ほとんど全体に等しくなるため、オッズ比は、リスク比に近づきます。このため、症例対照研究のオッズ比は、まれな病気ならば、リスク比の近似として読めます。</p>
+<p>この関数では、<code>a, b, c, d</code> が<b>引数</b>、<code>c(...)</code> でまとめた値が<b>戻り値</b>です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q67</span>次の(a)〜(d)で、主な指標として適切なのは、リスク比とオッズ比のどちらですか。<span class="lv">★★</span>
+<ul>
+<li>(a) 新薬群とプラセボ群を追跡する、RCT。</li>
+<li>(b) まれな病気について、症例と対照を集めて、過去の曝露を比べる研究。</li>
+<li>(c) ロジスティック回帰の係数を、<code>exp()</code> にして得られる値。</li>
+<li>(d) 喫煙者と非喫煙者を追跡する、コホート研究。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<p>(a) リスク比（発症の割合を直接求められる）　(b) オッズ比（リスクは求められない。まれな病気なので、リスク比の近似として読める）　(c) オッズ比　(d) リスク比（オッズ比、ハザード比も使われる）</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q68</span>Q64のデータを、ロジスティック回帰で解析し、<b>オッズ比と95%信頼区間</b>を求めなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>d &lt;- data.frame(
+  cancer = rep(c(1, 0, 1, 0), times = c(40, 60, 10, 90)),
+  smoke  = rep(c(1, 1, 0, 0), times = c(40, 60, 10, 90))
+)
+fit &lt;- glm(cancer ~ smoke, data = d, family = binomial)
+exp(coef(fit))               # smoke の値がオッズ比：6.0
+exp(confint.default(fit))    # 95%信頼区間（Wald法）</code></pre>
+<p>オッズ比は6.0で、95%信頼区間は、約2.8〜12.9です（1を含まないので、有意）。目的変数は<b>肺がんの有無</b>、説明変数は<b>喫煙の有無</b>です。<code>confint()</code> を使うと、プロファイル尤度法による、少し異なる区間が得られます。</p>
+</details></div>
+
+<!-- ============ K ============ -->
+<h2 id="pk">K. 図（グラフ）の選び方と読み方</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q69</span>次の(a)〜(f)の目的に合う図を、下から選びなさい。<span class="lv">★★</span>
+<ul>
+<li>(a) 1つの変数が、正規分布に近いかを確認したい。</li>
+<li>(b) 3つの群のばらつきと、外れ値を比べたい。</li>
+<li>(c) 4つの変数のすべての組み合わせの関係を、一度に見たい。</li>
+<li>(d) 複数の研究の結果を並べて、統合した効果を示したい。</li>
+<li>(e) 検査の判定の基準値を変えたときの、性能の変化を見たい。</li>
+<li>(f) 時間の経過に伴う、数値の推移を見たい。</li>
+</ul>
+選択肢：ア 折れ線グラフ　イ 箱ひげ図　ウ 散布図行列　エ フォレストプロット　オ ROC曲線　カ QQプロット（またはヒストグラム）</div>
+<details><summary>解答例を見る</summary>
+<p>(a) カ　(b) イ　(c) ウ　(d) エ　(e) オ　(f) ア</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q70</span><code>iris</code> の <code>Sepal.Length</code> について、(1) ヒストグラム、(2) 種ごとに色分けした密度プロット、(3) 種ごとの箱ひげ図、(4) 種ごとのバイオリンプロットを描きなさい。箱ひげ図とバイオリンプロットで、わかることの違いは何ですか。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>ggplot(iris, aes(x = Sepal.Length)) + geom_histogram(bins = 20)
+ggplot(iris, aes(x = Sepal.Length, fill = Species)) + geom_density(alpha = 0.4)
+ggplot(iris, aes(x = Species, y = Sepal.Length)) + geom_boxplot()
+ggplot(iris, aes(x = Species, y = Sepal.Length, fill = Species)) + geom_violin()</code></pre>
+<p>箱ひげ図は、中央値、四分位範囲、外れ値を、コンパクトに表します。バイオリンプロットは、これに加えて、分布の<b>形</b>（山が1つか2つか、偏りなど）も表します。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q71</span><code>set.seed(1)</code> の後、<code>x1 &lt;- rnorm(100)</code>（正規分布）と <code>x2 &lt;- rexp(100)</code>（指数分布：右に裾が長い）の<b>QQプロット</b>を描き、違いを説明しなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>set.seed(1)
+x1 &lt;- rnorm(100)
+x2 &lt;- rexp(100)
+
+par(mfrow = c(1, 2))        # 2つの図を並べる
+qqnorm(x1, main = "rnorm"); qqline(x1)
+qqnorm(x2, main = "rexp");  qqline(x2)
+par(mfrow = c(1, 1))</code></pre>
+<p><code>x1</code> の点は、基準の直線の近くに並びます（正規分布に近い）。<code>x2</code> の点は、直線から外れて曲がり、特に右上で、直線より上にずれます（右に裾の長い分布）。QQプロットで、正規分布からのずれが大きいときは、ノンパラメトリック検定や、データの変換を考えます。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q72</span><code>iris</code> で、<code>Petal.Length</code>（横軸）と <code>Petal.Width</code>（縦軸）の散布図に、(1) 線形回帰直線、(2) 2次の多項式回帰曲線を重ねなさい。2つの決定係数R²を比べると、2次の曲線は必要ですか。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>p &lt;- ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) + geom_point()
+p + geom_smooth(method = "lm")
+p + geom_smooth(method = "lm", formula = y ~ poly(x, 2))
+
+summary(lm(Petal.Width ~ Petal.Length, data = iris))$r.squared              # 約0.9271
+summary(lm(Petal.Width ~ poly(Petal.Length, 2), data = iris))$r.squared     # 約0.9272</code></pre>
+<p>R²は、直線で約0.9271、2次の曲線で約0.9272と、ほとんど変わりません。2次の項を加えても、当てはまりはほとんど改善しないので、<b>単純な直線で十分</b>です。次数を上げると（6次で約0.942）、R²は少し上がりますが、手元のデータに合わせすぎる<b>過学習</b>になります。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q73</span><code>iris</code> の4つの数値の列について、(1) 散布図行列、(2) 相関係数のヒートマップを描きなさい。最も強い正の相関がある組み合わせはどれですか。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>pairs(iris[, 1:4], col = iris$Species)
+
+cm &lt;- cor(iris[, 1:4])
+as_tibble(cm, rownames = "var1") |&gt;
+  pivot_longer(-var1, names_to = "var2", values_to = "r") |&gt;
+  ggplot(aes(x = var1, y = var2, fill = r)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-1, 1))</code></pre>
+<p>最も強い正の相関は、<code>Petal.Length</code> と <code>Petal.Width</code>（r ≈ 0.96）です。次いで、<code>Sepal.Length</code> と <code>Petal.Length</code>（r ≈ 0.87）が強く、<code>Sepal.Width</code> は、他の変数と弱い負の相関（r ≈ −0.12〜−0.43）です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q74</span><code>iris</code> で、「virginica かどうか」を判定する検査として、<code>Petal.Length</code> と <code>Sepal.Length</code> を比べる。それぞれの<b>ROC曲線</b>を描き、<b>AUC</b>を比べなさい。ROC曲線の縦軸と横軸は何ですか。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code># install.packages("pROC")
+library(pROC)
+is_virginica &lt;- as.integer(iris$Species == "virginica")
+
+roc_pl &lt;- roc(is_virginica, iris$Petal.Length)
+roc_sl &lt;- roc(is_virginica, iris$Sepal.Length)
+
+plot(roc_pl, col = "red")
+plot(roc_sl, col = "blue", add = TRUE)
+auc(roc_pl)      # 約0.99
+auc(roc_sl)      # 約0.89</code></pre>
+<p>AUCは、<code>Petal.Length</code> で約0.99、<code>Sepal.Length</code> で約0.89です（Pythonで計算して確認）。<code>Petal.Length</code> のほうが、判定の性能が高く、曲線が左上の角に近づきます。</p>
+<p>縦軸は<b>感度</b>（virginica を、正しく陽性と判定できる割合）、横軸は<b>1−特異度</b>（virginica でないものを、誤って陽性と判定する割合）です。AUCは0.5がでたらめな判定、1.0が完全な判定です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q75</span>Q49の <code>surv_data</code> で、(1) 生存曲線、(2) 累積ハザードのグラフを描きなさい。<b>生存曲線</b>と<b>ハザード</b>は、それぞれ何を表しますか。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>library(survival)
+fit &lt;- survfit(Surv(time, status) ~ group, data = surv_data)
+
+plot(fit, col = c("red", "blue"), xlab = "Time", ylab = "Survival probability")   # 生存曲線
+plot(fit, fun = "cumhaz", col = c("red", "blue"),
+     xlab = "Time", ylab = "Cumulative hazard")                                   # 累積ハザード</code></pre>
+<p><b>生存曲線</b>は、時間とともに、イベントが起きずに生き残っている確率を表します（下がる階段の段差がイベント）。<b>ハザード</b>は、ある時点まで生き残った人が、その直後にイベントを起こす勢い（単位時間あたりの発生率）を表します。累積ハザードは、ハザードを時間で足し上げたもので、イベントが多い群ほど、早く上がります。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q76</span>次の(a)〜(d)の記述が、正しいか誤りかを答え、誤りは直しなさい。<span class="lv">★★</span>
+<ul>
+<li>(a) フォレストプロットで、統合値のひし形が、OR = 1 の縦線をまたいでいれば、統合した効果は有意である。</li>
+<li>(b) ファンネルプロットが左右対称なら、出版バイアスが、強く疑われる。</li>
+<li>(c) 群の平均値を棒グラフだけで示せば、データのばらつきも伝わる。</li>
+<li>(d) ヒストグラムと棒グラフは、同じものである。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<ul>
+<li>(a) 誤り。ひし形が OR = 1 の縦線を<b>またいでいる</b>と、統合した効果は、<b>有意でない</b>（信頼区間が1を含む）。またいでいなければ有意。</li>
+<li>(b) 誤り。<b>左右非対称</b>のときに、出版バイアスなどが疑われる。対称なら、偏りは疑われにくい（研究数が少ないと、解釈は難しい）。</li>
+<li>(c) 誤り。棒グラフだけでは、ばらつきや分布が見えない。箱ひげ図や、実際のデータの点を重ねて示す。</li>
+<li>(d) 誤り。ヒストグラムは、連続した量を区切って数えるグラフで、柱がくっつく。棒グラフは、カテゴリごとの量を比べるグラフ。</li>
+</ul>
 </details></div>
 
 <h2>おわりに</h2>
