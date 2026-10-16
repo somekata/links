@@ -74,7 +74,10 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <h2 id="s1">1. Rの基本</h2>
 <p>Rは統計専用の言語であり、解析環境でもあります。実際にはRStudioというIDE（統合開発環境）を使うのが一般的ですが、VSCodeなどの汎用IDEでも動かせます。</p>
 <p>なお、Base Rを使う練習までは、R playgroundを用います。<br>
-<a href="https://codapi.org/r/" target="_blank" rel="noopener">https://codapi.org/r/</a></p>
+<a href="https://codapi.org/r/" target="_blank" rel="noopener">https://codapi.org/r/</a><br>
+もう1つの選択肢として、rdrr.ioのR snippets（ブラウザ上でRのコードを書いて実行できるサイト）も使えます。<br>
+<a href="https://rdrr.io/snippets/" target="_blank" rel="noopener">https://rdrr.io/snippets/</a><br>
+どちらのサイトも、使えるパッケージが限られることがあります。パッケージが読み込めないときは、RStudioやPosit Cloud（<a href="#s8">第8節</a>）を使いましょう。</p>
 <p>RStudioやPosit Cloudの準備方法は、<a href="#s8">第8節</a>の末尾にまとめています。</p>
 
 <h3>変数と代入</h3>
@@ -625,6 +628,32 @@ grid::grid.draw(p_marginal_box)</code></pre>
 <li><code>ggMarginal()</code>：ggplot2単体では難しい、散布図の余白への箱ひげ図の配置を、レイアウトを崩さずに行います。</li>
 <li><b>5要約量との関係：</b>箱ひげ図の「箱」は第1四分位数〜第3四分位数、箱の中の線は中央値です。ひげ（線）は、既定では最小値・最大値ではなく、箱から四分位範囲（IQR）の1.5倍以内にある最も遠いデータまでで、それより外側のデータは点（外れ値）として描かれます。</li>
 </ul></div>
+
+<h4>(3) もっとシンプルな版：凡例を下に置き、引数を明示する</h4>
+<p>上の(2)を、短くしたものです。凡例を下側に置き、<code>ggMarginal()</code> の引数を、すべて書いています。</p>
+<pre><code># 必要なパッケージを読み込む
+library(ggplot2)
+library(ggExtra)
+
+# 1. ベースとなる散布図を作成して、変数「p」に保存する
+# （がく片の長さ: Sepal.Length と 幅: Sepal.Width を使い、アヤメの種類で色分け）
+p &lt;- ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point(size = 2.5, alpha = 0.8) +
+  theme_bw() +
+  theme(legend.position = "bottom")   # 凡例を下側に移動して、箱ひげ図と被らないようにする
+
+# 2. ggMarginalで、上と右の余白に箱ひげ図を追加する
+ggMarginal(p,
+           type = "boxplot",      # 周辺プロットの種類を「箱ひげ図」に指定
+           margins = "both",      # x軸とy軸の両方に追加
+           size = 5,              # 散布図に対する箱ひげ図の大きさの比（数字が小さいほど太くなる）
+           groupColour = TRUE,    # 散布図の色分け(Species)を、箱ひげ図の枠線にも反映
+           groupFill = TRUE)      # 散布図の色分け(Species)を、箱ひげ図の塗りつぶしにも反映</code></pre>
+<ul>
+<li>(2)との違いは、<code>theme_bw()</code>（白背景に枠線）と、凡例を下側に表示している点です。</li>
+<li><code>margins = "both"</code> と <code>size = 5</code> は、既定値と同じです。書かなくても動きますが、意味を覚えるために、あえて書いています。<code>margins = "x"</code> なら上だけ、<code>"y"</code> なら右だけになります。</li>
+<li><code>type</code> を <code>"density"</code> や <code>"histogram"</code> に変えると、箱ひげ図の代わりに、密度曲線やヒストグラムが付きます。</li>
+</ul>
 
 <div class="warn"><b>うまくいかないとき</b>
 <ul>
