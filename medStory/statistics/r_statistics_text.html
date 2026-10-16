@@ -675,7 +675,7 @@ ggMarginal(p,
 
 <h3>準備：パッケージのインストール（最初の1回だけ）</h3>
 <pre><code>install.packages("meta")   # メタ解析用のパッケージ</code></pre>
-<div class="note"><b>補足</b>下のコードの <code>common = TRUE</code>、<code>random = TRUE</code>、<code>w.common</code> は、metaパッケージのバージョン7.0以降の書き方です。古いバージョンでは <code>comb.fixed</code>、<code>comb.random</code>、<code>w.fixed</code> を使っていました。エラーが出たら、<code>install.packages("meta")</code> で更新してください。</div>
+<div class="note"><b>補足：metaパッケージのバージョンによる書き方の違い</b>下のコードは、実際にRで動作を確認していただいた書き方です（<code>fixed = TRUE</code>、<code>w.fixed</code>、<code>metaleaveoneout()</code>）。metaパッケージは、バージョンによって引数や関数の名前が変わっており、環境によっては、<code>common = TRUE</code>、<code>w.common</code>、<code>metainf()</code> という書き方になっていることもあります。<b>エラーが出たら、まず、エラーメッセージの引数名や関数名を確認し、上の別の書き方に置き換えてみてください。</b>いずれも、共通効果（固定効果）モデルの指定、その重みの列、1つ抜き解析を指しています。<code>packageVersion("meta")</code> で、バージョンを確認できます。</div>
 
 <h3>考え方</h3>
 <ul>
@@ -719,7 +719,7 @@ meta_res &lt;- metabin(
   studlab = study,           # 試験名
   data = dummy_data,
   sm = "OR",                 # 評価指標：オッズ比（Odds Ratio）
-  common = TRUE,             # 共通効果モデルを計算
+  fixed = TRUE,              # 共通効果（固定効果）モデルを計算
   random = TRUE,             # ランダム効果モデルを計算
   method.tau = "REML"        # τの推定方法（制限付き最大尤度法）
 )
@@ -736,7 +736,7 @@ print(meta_res)
 forest(
   meta_res,
   leftcols = c("studlab"),
-  rightcols = c("effect", "ci", "w.common", "w.random"),
+  rightcols = c("effect", "ci", "w.fixed", "w.random"),
   col.square = "blue",
   col.diamond = "red"
 )
@@ -757,7 +757,7 @@ funnel(
 # 6. Sensitivity analysis（感度分析：1つ抜き解析）
 # ----------------------------------------------------
 # 各研究を1つずつ除外して、結果が大きく変わらないか（頑健性）を検証
-sens_res &lt;- metainf(meta_res)
+sens_res &lt;- metaleaveoneout(meta_res)
 
 print("=== [感度分析（1つ抜き解析）の結果] ===")
 print(sens_res)
@@ -834,7 +834,7 @@ meta_res &lt;- metabin(
   studlab = study,
   data = my_meta_data,       # 読み込んだデータフレームを指定
   sm = "OR",
-  common = TRUE,
+  fixed = TRUE,
   random = TRUE,
   method.tau = "REML"
 )
@@ -1883,13 +1883,13 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <div class="table-scroll"><table>
 <tr><th>用語</th><th>説明</th><th>Rでの例</th></tr>
 <tr><td><b>メタ解析</b><br>Meta-analysis</td><td>同じ問いを扱った複数の研究の結果を、統計的に統合する方法</td><td><code>metabin()</code>、<code>metacont()</code></td></tr>
-<tr><td><b>共通効果モデル</b><br>Common effect model</td><td>すべての研究が、同じ1つの真の効果を測っていると仮定するモデル</td><td><code>common = TRUE</code></td></tr>
+<tr><td><b>共通効果モデル</b><br>Common effect model</td><td>すべての研究が、同じ1つの真の効果を測っていると仮定するモデル</td><td><code>fixed = TRUE</code>（環境により <code>common = TRUE</code>）</td></tr>
 <tr><td><b>ランダム効果モデル</b><br>Random effects model</td><td>研究ごとに、真の効果が少しずつ異なると仮定するモデル</td><td><code>random = TRUE</code></td></tr>
 <tr><td><b>異質性</b><br>Heterogeneity (τ², I²)</td><td>研究間の、結果のばらつき。τ² はばらつきの大きさ、I² は、ばらつきのうち、偶然では説明できない割合</td><td><code>print(meta_res)</code> に表示</td></tr>
 <tr><td><b>フォレストプロット</b><br>Forest plot</td><td>各研究の効果と信頼区間、統合値を並べたグラフ</td><td><code>forest()</code></td></tr>
 <tr><td><b>ファンネルプロット</b><br>Funnel plot</td><td>効果と精度を、点で表したグラフ。左右非対称なら、出版バイアスなどを疑う</td><td><code>funnel()</code></td></tr>
 <tr><td><b>出版バイアス</b><br>Publication bias</td><td>結果が良い（有意な）研究ほど、論文として公表されやすいために起こる偏り</td><td><code>metabias()</code></td></tr>
-<tr><td><b>感度分析（1つ抜き解析）</b><br>Sensitivity analysis / Leave-one-out analysis</td><td>研究を1つずつ除いて、再計算し、結果が頑健かを確かめる</td><td><code>metainf()</code></td></tr>
+<tr><td><b>感度分析（1つ抜き解析）</b><br>Sensitivity analysis / Leave-one-out analysis</td><td>研究を1つずつ除いて、再計算し、結果が頑健かを確かめる</td><td><code>metaleaveoneout()</code>（環境により <code>metainf()</code>）</td></tr>
 </table></div>
 
 <h3>12. ファイル形式と環境</h3>
