@@ -37,6 +37,12 @@ th{background:var(--code-bg)}
 .column h3{margin-top:.6em}
 footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;line-height:1.7}
 @media (max-width:600px){body{font-size:16px}.wrap{padding:12px}h1{font-size:1.45rem}}
+.codewrap{position:relative;margin:1em 0}
+.codewrap pre{margin:0}
+.copybtn{position:absolute;top:6px;right:6px;font:inherit;font-size:.78rem;padding:2px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);cursor:pointer;opacity:.85}
+.copybtn:hover,.copybtn:focus-visible{opacity:1;border-color:var(--accent)}
+.copybtn.done{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+@media print{.copybtn{display:none}}
 </style>
 </head>
 <body>
@@ -1936,5 +1942,22 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 ※ 数値例の結果は、Python（SciPy）で同一データを再計算して確認したものです。Rの実行結果と一致することを、ご自身の環境でもご確認ください。
 </footer>
 </div>
+<script>
+(function(){
+  function fallback(t){var a=document.createElement("textarea");a.value=t;a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();var ok=false;try{ok=document.execCommand("copy")}catch(e){}document.body.removeChild(a);return ok}
+  document.querySelectorAll("pre").forEach(function(pre){
+    var w=document.createElement("div");w.className="codewrap";
+    pre.parentNode.insertBefore(w,pre);w.appendChild(pre);
+    var b=document.createElement("button");b.type="button";b.className="copybtn";b.textContent="コピー";b.setAttribute("aria-label","コードをコピー");
+    w.appendChild(b);
+    b.addEventListener("click",function(){
+      var t=pre.innerText.replace(/\n$/,"");
+      function ok(){b.textContent="コピーしました";b.classList.add("done");setTimeout(function(){b.textContent="コピー";b.classList.remove("done")},2000)}
+      function ng(){if(fallback(t))ok();else{b.textContent="コピーできません"}}
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,ng)}else ng();
+    });
+  });
+})();
+</script>
 </body>
 </html>
