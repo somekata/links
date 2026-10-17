@@ -99,6 +99,56 @@ a / b    # 除算
 a %% b   # 剰余（余り）</code></pre>
 <div class="warn"><b>注意</b>Rで剰余を求める演算子は <code>%</code> ではなく <code>%%</code> です。整数除算は <code>%/%</code> です。</div>
 
+<div class="column">
+<h3 id="col-grammar">蘊蓄コラム：Rの文法 ― 変数・代入・関数・引数・戻り値</h3>
+<p>Rのコードは、ほとんどが、次の5つの言葉で読み解けます。先に、ざっと眺めておくと、この後の節が楽になります。</p>
+<h4>1. 変数と代入、コメント</h4>
+<pre><code>a &lt;- 1     # aという変数に、1を代入する</code></pre>
+<ul>
+<li><b>変数</b>は、値に付ける名札です。<code>&lt;-</code> で、右の値を左の名前に代入します。</li>
+<li><code>#</code> から行末までは<b>コメント</b>で、処理には関係しません。メモを書くために使います。</li>
+</ul>
+<h4>2. 関数と引数：関数名(引数)</h4>
+<pre><code>sum(1, 2, 3, 4)     # 10</code></pre>
+<p><code>sum</code> が<b>関数</b>（処理の名前）、<code>( )</code> の中の <code>1, 2, 3, 4</code> が<b>引数</b>（処理に渡す材料）です。Rでは、<b>関数名(引数)</b> の形で書きます。関数は、処理の結果として、<b>戻り値</b>（返り値）を返します。<code>sum()</code> の戻り値は、足し合わせた <code>10</code> です。</p>
+<h4>3. <code>c()</code> や <code>data.frame()</code> も関数</h4>
+<p>データのまとまり（オブジェクト）を作る <code>c()</code> や <code>data.frame()</code> も、実は関数で、同じ <code>関数名(引数)</code> の形をしています。</p>
+<pre><code>c(1, 2, 3, 4)
+# 戻り値：1 2 3 4 という数字の並び（ベクトル）
+
+data.frame(name = c("a", "b"), score = c(1, 2))
+# 戻り値：次のような表（データフレーム）
+#   name score
+# 1    a     1
+# 2    b     2</code></pre>
+<h4>4. 関数のネスト（入れ子）</h4>
+<pre><code>mean(c(1, 2, 3, 4))     # 2.5</code></pre>
+<p>この式では、内側の <code>c(1, 2, 3, 4)</code> が先に実行され、その<b>戻り値</b>（1 2 3 4 の並び）が、外側の <code>mean()</code> の<b>引数</b>になります。つまり、「関数の戻り値を、別の関数の引数に使う」のがネストです。<code>data.frame(name = c("a", "b"), ...)</code> も、<code>c()</code> が <code>data.frame()</code> の中に入ったネストです。</p>
+<h4>5. 引数には「順番」と「名前」がある</h4>
+<p>次の書き方は、<b>間違い</b>です。</p>
+<pre><code>mean(1, 2, 3, 4)     # 間違い：平均の 2.5 にはならない</code></pre>
+<p><code>mean()</code> は、平均を計算する対象として、<b>第1引数だけ</b>を使います。第2引数以降には、別の意味（端を切り落とす割合 <code>trim</code>、欠損値の扱い <code>na.rm</code> など）があるため、<code>mean(1, 2, 3, 4)</code> は、「1」の平均を、よくわからない設定で求めることになります。エラーにならずに、平均ではない値（1）が返るので、気づきにくい間違いです。複数の数値の平均を求めるときは、<code>c()</code> でまとめて、1つの引数にします。</p>
+<p>一方、<code>sum()</code> は、<code>sum(1, 2, 3, 4)</code> のように、いくつでも並べられる関数です。<b>関数ごとに、引数の決まりが違う</b>ので、迷ったら、<code>?mean</code> や <code>?sum</code> でヘルプを開いて確認します。</p>
+<p>引数は、「<b>引数名 = 値</b>」の形で、名前をつけて渡すこともできます。<code>mean()</code> の第1引数の名前は <code>x</code> で、完全な書き方は次のとおりです。</p>
+<pre><code>mean(x = c(1, 2, 3, 4))     # 完全な書き方
+mean(c(1, 2, 3, 4))         # x = を省略した書き方（第1引数なので、省略できる）</code></pre>
+<p>名前を省略すると、書いた順番で、第1引数、第2引数…に当てはめられます。</p>
+<p><code>data.frame()</code> は、少し特別です。</p>
+<pre><code>data.frame(name = c("a", "b"), score = c(1, 2))</code></pre>
+<ul>
+<li>引数を書いた順に、第1引数が1列目、第2引数が2列目になります。</li>
+<li>引数の名前（<code>name</code>、<code>score</code>）は、<b>自由に決められ</b>、戻り値の表では、その名前が<b>列名</b>になります。</li>
+</ul>
+<div class="note"><b>まとめ</b>
+<ul>
+<li>変数：値の名札　／　代入：<code>&lt;-</code> で名札をつける</li>
+<li>関数：処理の名前　／　引数：関数に渡す材料　／　戻り値：関数が返す結果</li>
+<li>書き方は <b>関数名(引数)</b>。関数の戻り値を、別の関数の引数にできる（ネスト）。</li>
+<li>引数には順番と名前があり、意味は関数ごとに決まっている。用語集（第19節）も参照。</li>
+</ul></div>
+<p>※このコラムのコードは、環境にRがないため、実行していません。</p>
+</div>
+
 <h2 id="s2">2. ベクトルとデータフレーム</h2>
 <p><code>c(1,2,3,4)</code> の形を<b>ベクトル</b>といいます。変数に代入することもできます。</p>
 <pre><code>vector &lt;- c(1,2,3,4)</code></pre>
@@ -137,6 +187,64 @@ print(df)</code></pre>
 <tr><td>c</td><td>3</td><td>6</td></tr>
 <tr><td>d</td><td>4</td><td>7</td></tr>
 </table></div>
+
+<div class="column">
+<h3 id="col-extract">蘊蓄コラム：データの取り出し方 ― <code>[ ]</code> と <code>$</code>、戻り値の形</h3>
+<p>ベクトルやデータフレームから、必要な部分だけを取り出すときには、<code>[ ]</code>（角かっこ）を使います。何が取り出されるかは、<b>戻り値の形</b>（ベクトルか、表か）まで含めて、おぼえておきましょう。</p>
+
+<h4>1. ベクトルから取り出す：<code>[ ]</code></h4>
+<pre><code>vector &lt;- c(4, 5, 7, 2)
+
+vector[2]           # 2番目の要素：5
+vector[c(2, 4)]     # 2番目と4番目の要素：5 2（取り出す位置も、c() で並べたベクトル）
+vector[-1]          # 1番目を除く：5 7 2</code></pre>
+<p><code>vector[c(2, 4)]</code> も、<code>c(2, 4)</code> という戻り値を、引数のように <code>[ ]</code> の中に入れた、ネストの形です。</p>
+
+<h4>2. データフレームから取り出す：<code>[行, 列]</code></h4>
+<p>データフレームは2次元なので、<code>[ ]</code> の中に、<b>行, 列</b>の順に、カンマで区切って書きます。</p>
+<pre><code>df &lt;- data.frame(col1 = c(4, 5, 7, 2), col2 = c(3, 2, 6, 3))
+df
+#   col1 col2
+# 1    4    3
+# 2    5    2
+# 3    7    6
+# 4    2    3
+
+df[1, 2]     # 1行2列目の1つの値：col2 の1つ目の要素、3
+df[1, ]      # 1行目だけ（列は全部）：col1 = 4, col2 = 3（1行の表）
+df[, 2]      # 2列目だけ（行は全部）：col2 の全て、3 2 6 3（ベクトル）</code></pre>
+<ul>
+<li>カンマの<b>前が行、後ろが列</b>です。書かなかった側は「全部」の意味になります。</li>
+<li>列名は <code>col1</code>、<code>col2</code> のように、列に付いた名前です（行ではありません）。</li>
+</ul>
+
+<h4>3. 列は <code>$</code> でも取り出せる</h4>
+<pre><code>df$col2      # 3 2 6 3（df[, 2] と同じ戻り値のベクトル）</code></pre>
+<p><code>$</code> は、<b>オブジェクトの中身を、名前で指定して取り出す</b>記号です。データフレームは、内部では、「名前の付いたベクトルの詰め合わせ」（リスト）として作られているので、<code>df$col2</code> のように、列名を書いて取り出せます。位置（何列目か）ではなく、名前で指定できるので、列の順番が変わっても、間違いません。</p>
+<p><code>$</code> は、列の取り出し専用ではありません。<b>名前の付いた部品が入ったオブジェクト</b>（リスト）なら、何にでも使えます。よく使うのは、検定の結果から、必要な数値だけを取り出すときです。</p>
+<pre><code>res &lt;- t.test(extra ~ group, data = sleep)   # 検定を実行して、結果を res に入れる
+
+res$p.value        # p値だけを取り出す
+res$statistic      # t値だけを取り出す
+names(res)         # res の中に、どんな名前の部品があるか一覧する</code></pre>
+<p>関数の<b>戻り値</b>は、1つの数値とは限らず、このように、複数の部品がまとまったオブジェクトのこともあります。<code>$</code> は、その中から、お目当ての部品だけを取り出す「取っ手」です。</p>
+<div class="warn"><b><code>$</code> が使えないもの</b>
+単なるベクトル（<code>c(1, 2, 3)</code> など）には、名前の付いた部品がないので、<code>$</code> は使えず、エラーになります。ベクトルの要素は、<code>[ ]</code> で取り出します。</div>
+
+<h4>4. 戻り値の形をコントロールする</h4>
+<p>1列だけを取り出すと、戻り値は、表ではなく<b>ベクトル</b>になります（<code>df[, 2]</code>、<code>df$col2</code>）。表のまま取り出したいときは、次のようにします。</p>
+<pre><code>df[, 2]                   # ベクトル  3 2 6 3
+df[, 2, drop = FALSE]     # 1列の表（データフレーム）のまま
+df[2]                     # カンマなしで列だけを指定：1列の表のまま
+df[["col2"]]              # [[ ]] は、ベクトルとして取り出す（$ と同じ）</code></pre>
+<div class="table-scroll"><table>
+<tr><th>書き方</th><th>戻り値の形</th></tr>
+<tr><td><code>df[, 2]</code>、<code>df$col2</code>、<code>df[["col2"]]</code></td><td>ベクトル</td></tr>
+<tr><td><code>df[1, ]</code>、<code>df[2]</code>、<code>df[, 2, drop = FALSE]</code></td><td>表（データフレーム）</td></tr>
+</table></div>
+<p>次に何をするかで、ベクトルが必要か、表が必要かが決まります。たとえば、<code>mean()</code> に渡すのはベクトル、<code>ggplot()</code> に渡すのは表です。tibble（第9節の前のコラム）では、<code>df[, 2]</code> でも表のままになります。</p>
+<p>※このコラムのコードは、環境にRがないため、実行していません。</p>
+</div>
 
 <div class="column">
 <h3 id="col-yota">与太話：統計学は「微妙な違い」のためにある</h3>
@@ -486,6 +594,51 @@ library(tidyverse)              # 使うたびに読み込む</code></pre>
 <li>ログイン後、新しいプロジェクト（RStudioのプロジェクト）を作成すると、ブラウザ上でRStudioが開く。</li>
 </ol>
 <div class="warn"><b>注意</b>無料プランには、利用時間やメモリなどの上限があります。上限の内容は変更されることがあるため、利用前に公式サイトの料金ページで最新の条件を確認してください。大きなデータの解析や長時間の計算には、自分のパソコンへのインストールが向いています。</div>
+
+<div class="column">
+<h3 id="col-tibble">蘊蓄コラム：data.frame と tibble</h3>
+<p><b>tibble（ティブル）</b>は、data.frame の改良版です。基本的な機能はほぼ同じで、表形式のデータを扱います。基本的には data.frame で十分ですが、tibble のほうが、安全で扱いやすい場面もあります。</p>
+<div class="table-scroll"><table>
+<tr><th></th><th>data.frame</th><th>tibble</th></tr>
+<tr><td>使える場所</td><td>base R（何も読み込まなくてよい）</td><td>tidyverse に含まれる。<code>library(tidyverse)</code> または <code>library(tibble)</code> で使う</td></tr>
+<tr><td>作り方</td><td><code>data.frame()</code></td><td><code>tibble()</code>、または <code>as_tibble(既存のデータフレーム)</code></td></tr>
+<tr><td>画面への表示</td><td>全部の行を表示しようとする（巨大なデータでは、画面が埋まる）</td><td>最初の10行だけを表示し、各列の型（<code>&lt;dbl&gt;</code>、<code>&lt;chr&gt;</code> など）も表示する</td></tr>
+<tr><td><code>df[, "score"]</code> で1列だけ取り出す</td><td><b>ベクトルに変わる</b>（表の形が崩れる）</td><td><b>tibble（表）のまま</b></td></tr>
+</table></div>
+
+<h4>列を取り出したときの違い</h4>
+<p>「data.frame は、列を取り出すとベクトルになり、tibble は表のまま」と言われますが、正確には、<b>取り出し方によって異なります</b>。</p>
+<div class="table-scroll"><table>
+<tr><th>取り出し方</th><th>data.frame</th><th>tibble</th></tr>
+<tr><td><code>df$score</code>、<code>df[["score"]]</code></td><td>ベクトル</td><td>ベクトル</td></tr>
+<tr><td><code>df[, "score"]</code>（カンマあり）</td><td>ベクトル（勝手に表をやめる）</td><td>tibble（表のまま）</td></tr>
+<tr><td><code>df["score"]</code>（カンマなし）</td><td>data.frame（表のまま）</td><td>tibble（表のまま）</td></tr>
+</table></div>
+<pre><code>df &lt;- data.frame(name = c("a", "b"), score = c(1, 2))
+tb &lt;- tibble::tibble(name = c("a", "b"), score = c(1, 2))
+
+df$score          # ベクトル 1 2
+tb$score          # ベクトル 1 2（$ では、どちらもベクトル）
+
+df[, "score"]     # ベクトル 1 2（表ではなくなる）
+tb[, "score"]     # tibble（1列の表のまま）
+
+class(df[, "score"])    # "numeric"
+class(tb[, "score"])    # "tbl_df" "tbl" "data.frame"</code></pre>
+<p>つまり、違いが出るのは、主に <code>[ , ]</code>（カンマを使った指定）で<b>1列だけ</b>を取り出したときです。</p>
+
+<h4>なぜ tibble のほうが安全なのか</h4>
+<p>プログラムの途中で、データが、勝手にベクトルに変わると、次の関数が「表」を期待しているのに、「ただの数字の並び」が来て、エラーになることがあります。tibble は、<b>形を勝手に変えない</b>ので、予期せぬエラーが起こりにくく、関数をつないでいく（ネストやパイプ）ときに安全です。そのため、tidyverse では、tibble が標準です。</p>
+<ul>
+<li>ベクトルが欲しいときは、<code>tb$score</code> や <code>tb[["score"]]</code>、または tidyverse の <code>pull(tb, score)</code> を使います。</li>
+<li>tibble は、<code>$</code> で、列名を途中まで書いても補完しません（data.frame では、<code>df$sc</code> でも <code>score</code> 列が取り出されることがあり、間違いに気づきにくい）。</li>
+<li>tidyverse の関数（<code>filter()</code>、<code>select()</code> など）は、tibble を返します。<code>read_csv()</code> で読み込んだデータも、tibble です（第10節）。</li>
+<li>tibble と data.frame は、<b>互いに変換</b>できます。<code>as_tibble(df)</code>、<code>as.data.frame(tb)</code>。tibble は、data.frame の一種でもあるので、多くの関数が、そのまま使えます。</li>
+</ul>
+<div class="note"><b>どちらを使うか</b>
+この本文では、基本の説明に data.frame を使い、tidyverse の操作（ggplot2、<code>read_csv()</code> など）では tibble が出てきます。違いを意識するのは、<code>[ , ]</code> で1列を取り出すときと、画面表示のときだけで十分です。</div>
+<p>※このコラムのコードは、環境にRがないため、実行していません。</p>
+</div>
 
 <h2 id="s9">9. とりあえず、コピペで入力してみよう</h2>
 <p>RStudio（またはPosit Cloud）が使える状態になったら、まずは中身を理解する前に、コードをコピー＆ペーストして動かしてみましょう。「きれいなグラフが出た」という体験が、最初の一歩になります。</p>
