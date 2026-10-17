@@ -197,6 +197,38 @@ print(df)</code></pre>
 <tr><td>d</td><td>4</td><td>7</td></tr>
 </table></div>
 
+<h3>あとから行名をつける</h3>
+<p>行名は、<code>data.frame()</code> の中の <code>row.names</code> で指定するほかに、データフレームを作った<b>あとから</b>、<code>rownames()</code> に、行名にしたい文字のベクトルを<b>代入</b>してつけることもできます。次のデータは、練習問題でも使います。</p>
+<pre><code>students &lt;- data.frame(
+  name  = c("Aoi", "Ren", "Sora", "Hina", "Kai",
+            "Mio", "Riku", "Yui", "Haru", "Nao"),
+  team  = c("A", "A", "B", "B", "A", "B", "A", "B", "A", "B"),
+  score = c(95, 82, 67, 45, 78, 91, 59, 73, 88, 100)
+)
+
+# 行名は、行の数（10個）と同じ長さの、文字のベクトルで指定する
+rownames(students) &lt;- c("id_1", "id_2", "id_3", "id_4", "id_5",
+                        "id_6", "id_7", "id_8", "id_9", "id_10")
+print(students)     # 左端の 1, 2, 3, ... が、id_1, id_2, id_3, ... に変わる</code></pre>
+<p><code>rownames(students) &lt;- ...</code> は、<code>rownames()</code> という関数に見えますが、「<b>行名の部分に、右の値を代入する</b>」という書き方です（<code>colnames()</code> や <code>names()</code> も同じです）。</p>
+
+<h4>既存の列を、行名にする</h4>
+<p>データの中の列（たとえば <code>name</code> 列）を、そのまま行名にすることもできます。行名は、<b>重複できません</b>（同じ名前が2つあるとエラーになります）。</p>
+<pre><code>rownames(students) &lt;- students$name     # name 列の文字を、行名に代入する
+students["Aoi", ]                        # 行名で、行を取り出せる（[行, 列] の「行」に名前を書く）
+
+students$name &lt;- NULL                    # 行名にした name 列は、重複するので、列からは消す
+
+# 上の2つを、まとめて行う方法（tibble パッケージの関数）
+# students &lt;- tibble::column_to_rownames(students, "name")</code></pre>
+<div class="warn"><b>tibble には、行名がありません</b>
+tibble は、行名という考え方を、意図的に廃止しています。<code>tibble()</code> で作ったデータに <code>rownames()</code> で行名をつけようとしても、警告が出たり、表示されなかったりします。tibble では、ID や名前も、<b>ふつうの列</b>の1つとして持ちます。
+<ul>
+<li>行名を、列に変える：<code>tibble::rownames_to_column(df, var = "name")</code>、または <code>as_tibble(df, rownames = "name")</code></li>
+<li>列を、行名に変える：<code>tibble::column_to_rownames(df, "name")</code>（data.frame に戻して使う）</li>
+</ul></div>
+<p>※このコードは、環境にRがないため、実行していません。</p>
+
 <div class="column">
 <h3 id="col-extract">蘊蓄コラム：データの取り出し方 ― <code>[ ]</code> と <code>$</code>、戻り値の形</h3>
 <p>ベクトルやデータフレームから、必要な部分だけを取り出すときには、<code>[ ]</code>（角かっこ）を使います。何が取り出されるかは、<b>戻り値の形</b>（ベクトルか、表か）まで含めて、おぼえておきましょう。</p>
