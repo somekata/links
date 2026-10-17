@@ -49,7 +49,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <div class="wrap">
 <header>
 <h1>Rと統計学 練習問題</h1>
-<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全76問）</p>
+<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全84問）</p>
 </header>
 
 <div class="note"><b>使い方</b>
@@ -81,6 +81,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li><a href="#pi">I. 回帰・多変量解析・次元削減 Q51〜Q55</a></li>
 <li><a href="#pj">J. 研究デザイン（リスク比・オッズ比を含む）Q56〜Q68</a></li>
 <li><a href="#pk">K. 図（グラフ）の選び方と読み方 Q69〜Q76</a></li>
+<li><a href="#pl">L. データの取り出し（<code>[ ]</code> と <code>$</code>）Q77〜Q84</a></li>
 </ul>
 </nav>
 
@@ -1125,6 +1126,121 @@ plot(fit, fun = "cumhaz", col = c("red", "blue"),
 <li>(b) 誤り。<b>左右非対称</b>のときに、出版バイアスなどが疑われる。対称なら、偏りは疑われにくい（研究数が少ないと、解釈は難しい）。</li>
 <li>(c) 誤り。棒グラフだけでは、ばらつきや分布が見えない。箱ひげ図や、実際のデータの点を重ねて示す。</li>
 <li>(d) 誤り。ヒストグラムは、連続した量を区切って数えるグラフで、柱がくっつく。棒グラフは、カテゴリごとの量を比べるグラフ。</li>
+</ul>
+</details></div>
+
+<!-- ============ L ============ -->
+<h2 id="pl">L. データの取り出し（<code>[ ]</code> と <code>$</code>）</h2>
+<p>第2節の「データの取り出し方」のコラムの復習です。次のデータフレームを使います。</p>
+<pre><code>df &lt;- data.frame(row1 = c(4, 5, 7, 2), row2 = c(3, 2, 6, 3), group = c("A", "B", "A", "B"))</code></pre>
+<p>（<code>row1</code>、<code>row2</code> は、行ではなく、<b>列の名前</b>です。）</p>
+
+<div class="q">
+<div class="qt"><span class="no">Q77</span>次の(1)〜(4)の結果が、どうなるかを<b>先に予想</b>してから、実行して確かめなさい。また、(3)(4)の戻り値は、ベクトルと表のどちらですか。<span class="lv">★</span>
+<ul>
+<li>(1) <code>df[1, 2]</code></li>
+<li>(2) <code>df[1, ]</code></li>
+<li>(3) <code>df[, 2]</code></li>
+<li>(4) <code>df$row2</code></li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<pre><code>df[1, 2]     # 3     （1行2列目：row2 の1つ目の要素）
+df[1, ]      #   row1 row2 group
+             # 1    4    3     A      （1行目の全ての列：1行の表）
+df[, 2]      # 3 2 6 3          （2列目の全ての行：ベクトル）
+df$row2      # 3 2 6 3          （df[, 2] と同じ戻り値）</code></pre>
+<p>カンマの<b>前が行、後ろが列</b>です。書かなかった側は「全部」を意味します。(3)(4)は、どちらも<b>ベクトル</b>です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q78</span><code>group</code> が <code>"A"</code> である行だけを、全ての列について取り出しなさい。<code>[ ]</code> の中の、カンマの位置にも注意すること。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>df[df$group == "A", ]
+#   row1 row2 group
+# 1    4    3     A
+# 3    7    6     A</code></pre>
+<p><code>df$group == "A"</code> は、<code>TRUE FALSE TRUE FALSE</code> という論理値のベクトルになり、TRUE の行だけが残ります。<b>行の場所（カンマの前）に条件を書き、カンマを入れて、列は空欄</b>にします（全ての列を取り出す）。カンマを忘れると、行ではなく列を選ぶことになり、意図した結果になりません。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q79</span><code>row1</code> が4より大きい行について、<code>row1</code> 列と <code>group</code> 列だけを取り出しなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>df[df$row1 &gt; 4, c("row1", "group")]
+#   row1 group
+# 2    5     B
+# 3    7     A</code></pre>
+<p>行の場所に条件、列の場所に、列名を <code>c()</code> で並べたベクトルを入れます。列は、番号でも指定できます（<code>c(1, 3)</code>）が、<b>名前で指定すると、列の順番が変わっても間違いません</b>。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q80</span><code>a &lt;- c(1, 2, 3, 4)</code> について、次の結果を答えなさい。また、(4)が<b>エラー</b>になる理由を説明しなさい。<span class="lv">★★</span>
+<ul>
+<li>(1) <code>a[a &gt; 2]</code></li>
+<li>(2) <code>sum(a &gt; 2)</code></li>
+<li>(3) <code>mean(a &gt; 2)</code></li>
+<li>(4) <code>a(a &gt; 2)</code></li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<pre><code>a[a &gt; 2]       # 3 4
+sum(a &gt; 2)     # 2     （TRUE の個数）
+mean(a &gt; 2)    # 0.5   （TRUE の割合）
+a(a &gt; 2)       # Error: could not find function "a"</code></pre>
+<p><code>a &gt; 2</code> は、<code>FALSE FALSE TRUE TRUE</code> になります。TRUE は1、FALSE は0として計算されるので、<code>sum()</code> で件数、<code>mean()</code> で割合が求まります。(4)は、丸かっこ <code>( )</code> が「関数 <code>a</code> を実行する」という意味になるためエラーです。<b>取り出すときは角かっこ <code>[ ]</code>、関数を呼ぶときは丸かっこ <code>( )</code></b> を使います。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q81</span><code>df[, 2]</code> と <code>df[, 2, drop = FALSE]</code> の戻り値は、それぞれ、何になりますか。<code>class()</code> で確かめなさい。1列を<b>表のまま</b>取り出す書き方を、他にも1つ挙げなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>class(df[, 2])                  # "numeric"      （ベクトル）
+class(df[, 2, drop = FALSE])    # "data.frame"   （1列の表）
+class(df["row2"])               # "data.frame"   （カンマなし：表のまま）</code></pre>
+<p>1列だけを取り出すと、表がベクトルに変わります（<code>drop = TRUE</code> が既定のため）。表のまま取り出すには、<code>drop = FALSE</code> を付けるか、カンマなしの <code>df["row2"]</code> と書きます。<code>df$row2</code> と <code>df[["row2"]]</code> は、ベクトルです。tibble では、<code>[ , 2]</code> でも表のままです。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q82</span>次の条件に合う行を取り出す式を書きなさい。<span class="lv">★★★</span>
+<ul>
+<li>(1) <code>row1</code> が5以上、<b>かつ</b>、<code>group</code> が <code>"B"</code></li>
+<li>(2) <code>group</code> が <code>"A"</code>、<b>または</b>、<code>row1</code> が3未満</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<pre><code>df[df$row1 &gt;= 5 &amp; df$group == "B", ]
+#   row1 row2 group
+# 2    5    2     B
+
+df[df$group == "A" | df$row1 &lt; 3, ]
+#   row1 row2 group
+# 1    4    3     A
+# 3    7    6     A
+# 4    2    3     B</code></pre>
+<p><code>&amp;</code>（かつ）、<code>|</code>（または）で条件をつなぎます。条件に合わない行を残すときは、<code>!</code>（でない）を使います。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q83</span>Rに入っている <code>sleep</code> データ（<code>extra</code> は睡眠時間の増加量、<code>group</code> は薬の群）で、<code>res &lt;- t.test(extra ~ group, data = sleep)</code> を実行し、<b>p値だけ</b>と<b>t値だけ</b>を取り出しなさい。結果の中に、どんな名前の部品があるかを調べる方法も答えなさい。<span class="lv">★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>res &lt;- t.test(extra ~ group, data = sleep)
+
+res$p.value      # 0.0794
+res$statistic    # t = -1.861
+names(res)       # 結果の中にある部品の名前の一覧</code></pre>
+<p><code>$</code> は、オブジェクトの中身を、名前で取り出す記号です。データフレームの列だけでなく、<code>t.test()</code> の結果のような、名前付きの部品が入ったオブジェクトにも使えます。この検定はWelchのt検定で、t = −1.86、自由度 = 17.78、p = 0.079 です（5%水準では、有意とは言えません）。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q84</span><code>df</code>（上のデータフレーム）について、次の(a)〜(d)の記述が、正しいか誤りかを答え、誤りは直しなさい。<span class="lv">★★</span>
+<ul>
+<li>(a) <code>df[2, 1]</code> は、1行2列目の値を取り出す。</li>
+<li>(b) <code>df$row2</code> と <code>df[, 2]</code> は、同じ戻り値（ベクトル）になる。</li>
+<li>(c) <code>df[df$group == "A"]</code>（カンマなし）で、<code>group</code> が <code>"A"</code> の行が取り出せる。</li>
+<li>(d) <code>df[df$row1 &gt; 4, ]</code> は、<code>row1</code> が4より大きい<b>列</b>を取り出す。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<ul>
+<li>(a) 誤り。<code>[行, 列]</code> の順なので、<code>df[2, 1]</code> は、<b>2行1列目</b>の値（5）。1行2列目は <code>df[1, 2]</code>（3）。</li>
+<li>(b) 正しい。どちらも <code>3 2 6 3</code> のベクトル。</li>
+<li>(c) 誤り。カンマがないと、条件が、行ではなく<b>列</b>を選ぶために使われ、意図した結果にならない。行を選ぶには、<code>df[df$group == "A", ]</code> と、カンマを入れる。</li>
+<li>(d) 誤り。カンマの前は<b>行</b>なので、<code>row1</code> が4より大きい<b>行</b>を、全ての列について取り出す。</li>
 </ul>
 </details></div>
 
