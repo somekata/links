@@ -54,7 +54,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <div class="wrap">
 <header>
 <h1>Rと統計学 練習問題</h1>
-<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全89問）</p>
+<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全90問）</p>
 <div class="filenav"><a href="r_statistics_text.html">本文</a><b>練習問題</b><a href="r_checklist.html">チェックリスト（簡易）</a><a href="r_checklist_detail.html">チェックリスト（詳細）</a></div>
 </header>
 
@@ -88,6 +88,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li><a href="#pj">J. 研究デザイン（リスク比・オッズ比を含む）Q56〜Q68</a></li>
 <li><a href="#pk">K. 図（グラフ）の選び方と読み方 Q69〜Q76</a></li>
 <li><a href="#pl">L. データの取り出し（<code>[ ]</code> と <code>$</code>）Q77〜Q89</a></li>
+<li><a href="#pm">M. 多重比較の補正 Q90</a></li>
 </ul>
 </nav>
 
@@ -1335,6 +1336,31 @@ boxplot.stats(x)$out             # 59（外れ値）
 <li>(b) 誤り。外れ値の<b>点を描かない</b>だけで、データは計算に使われる（箱やひげの位置は変わらない）。</li>
 <li>(c) 誤り。ひげの端は、フェンス（Q1 − 1.5×IQR、Q3 + 1.5×IQR）の内側の、実際のデータの最小値・最大値。外側のデータは、外れ値の点。</li>
 <li>(d) 誤り。<code>coef = 0</code> では、フェンスが箱の位置になり、ひげはほとんど消える。最小値・最大値まで伸ばすのは、<code>coef = Inf</code>。</li>
+</ul>
+</details></div>
+
+<!-- ============ M ============ -->
+<h2 id="pm">M. 多重比較の補正</h2>
+
+<div class="q">
+<div class="qt"><span class="no">Q90</span>3群（A、B、C）を、2群ずつ比べて、検定を3回行いました。<span class="lv">★★★</span>
+<ul>
+<li>(1) 補正なし（各検定の有意水準5%）のとき、「どこかで1回でも偶然有意になる」確率を求めなさい。</li>
+<li>(2) ボンフェローニの補正で、1回ごとの有意水準をいくらにするか答えなさい。</li>
+<li>(3) 3回の検定のp値が <code>0.012, 0.030, 0.200</code> でした。ボンフェローニ補正後のp値を <code>p.adjust()</code> で求め、5%で有意なものを答えなさい。</li>
+<li>(4) 「AはBとCを合わせたものより良い」と、<b>データを見る前に決め</b>、1回だけ検定するとき、有意水準を下げる必要がありますか。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<pre><code>1 - (1 - 0.05)^3                         # (1) 0.1426（約14.3%）
+0.05 / 3                                 # (2) 0.01667（約1.67%）
+
+p &lt;- c(0.012, 0.030, 0.200)
+p.adjust(p, method = "bonferroni")       # (3) 0.036 0.090 0.600</code></pre>
+<ul>
+<li>(1) 1 − 0.95<sup>3</sup> ≒ 0.143。本当は差がなくても、約14.3%の確率で、どこかに有意差があると誤判定します。</li>
+<li>(2) 5% ÷ 3 ≒ 1.67%。1回ごとの基準を、p &lt; 0.0167 にします。</li>
+<li>(3) 補正後のp値は、0.036、0.090、0.600。5%で有意なのは、<b>1つ目だけ</b>です（補正前は、2つ目の0.030も有意でしたが、補正で有意でなくなります）。0.012 &lt; 0.0167、0.030 &gt; 0.0167 とも一致します。</li>
+<li>(4) 不要です。検定が1回だけで、データを見る前に決めた「計画された対比」なら、有意水準は5%のままです。A対B、A対Cを個別に比べる（2回）なら、補正が必要です（2.5%）。</li>
 </ul>
 </details></div>
 
