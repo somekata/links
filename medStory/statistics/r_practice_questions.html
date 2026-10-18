@@ -54,7 +54,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <div class="wrap">
 <header>
 <h1>Rと統計学 練習問題</h1>
-<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全84問）</p>
+<p class="sub">「Rと統計学」のテキストに対応した練習問題集（全89問）</p>
 <div class="filenav"><a href="r_statistics_text.html">本文</a><b>練習問題</b><a href="r_checklist.html">チェックリスト（簡易）</a><a href="r_checklist_detail.html">チェックリスト（詳細）</a></div>
 </header>
 
@@ -87,7 +87,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li><a href="#pi">I. 回帰・多変量解析・次元削減 Q51〜Q55</a></li>
 <li><a href="#pj">J. 研究デザイン（リスク比・オッズ比を含む）Q56〜Q68</a></li>
 <li><a href="#pk">K. 図（グラフ）の選び方と読み方 Q69〜Q76</a></li>
-<li><a href="#pl">L. データの取り出し（<code>[ ]</code> と <code>$</code>）Q77〜Q84</a></li>
+<li><a href="#pl">L. データの取り出し（<code>[ ]</code> と <code>$</code>）Q77〜Q89</a></li>
 </ul>
 </nav>
 
@@ -1247,6 +1247,94 @@ names(res)       # 結果の中にある部品の名前の一覧</code></pre>
 <li>(b) 正しい。どちらも <code>3 2 6 3</code> のベクトル。</li>
 <li>(c) 誤り。カンマがないと、条件が、行ではなく<b>列</b>を選ぶために使われ、意図した結果にならない。行を選ぶには、<code>df[df$group == "A", ]</code> と、カンマを入れる。</li>
 <li>(d) 誤り。カンマの前は<b>行</b>なので、<code>row1</code> が4より大きい<b>行</b>を、全ての列について取り出す。</li>
+</ul>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q85</span>次の<code>students</code>で、(1) <code>name</code> 列を行名にし、(2) 行名 <code>"Aoi"</code> の行を取り出し、(3) 行名にした <code>name</code> 列を、列から消しなさい。また、tibble では、この操作ができない理由を答えなさい。<span class="lv">★★</span>
+<pre><code>students &lt;- data.frame(
+  name  = c("Aoi", "Ren", "Sora", "Hina", "Kai",
+            "Mio", "Riku", "Yui", "Haru", "Nao"),
+  team  = c("A", "A", "B", "B", "A", "B", "A", "B", "A", "B"),
+  score = c(95, 82, 67, 45, 78, 91, 59, 73, 88, 100)
+)</code></pre></div>
+<details><summary>解答例を見る</summary>
+<pre><code>rownames(students) &lt;- students$name    # (1) name 列を、行名にする
+students["Aoi", ]                       # (2) 行名で、行を取り出す
+#     name team score
+# Aoi  Aoi    A    95
+
+students$name &lt;- NULL                   # (3) name 列を、列から消す</code></pre>
+<p>行名は、重複できません。tibble は、行名という考え方を廃止しているため、行名をつけられません（警告が出たり、表示されなかったりします）。ID や名前は、ふつうの列として持ちます。行名と列を相互に変換するには、<code>rownames_to_column()</code>、<code>column_to_rownames()</code> を使います。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q86</span>次のコードの<code>{ }</code>と<code>.</code>（ドット）の意味を説明しなさい。また、<code>{ }</code>がないとどうなるか答え、同じ検定を、もっと簡単に書き直しなさい。<span class="lv">★★★</span>
+<pre><code>students %&gt;%
+  { t.test(.$score[.$team == "A"], .$score[.$team == "B"]) }</code></pre></div>
+<details><summary>解答例を見る</summary>
+<ul>
+<li><code>.</code> は、パイプの左から流れてきた表（<code>students</code>）を指します。<code>.$score[.$team == "A"]</code> は、「A班の点数」を取り出しています。</li>
+<li><code>{ }</code> がないと、<code>%&gt;%</code> が、表を <code>t.test()</code> の<b>第1引数に自動で入れてしまい</b>、意図しない形（<code>t.test(students, A班の点数, B班の点数)</code>）になって、エラーになります。<code>{ }</code> で包むと、自動の挿入が止まり、<code>.</code> を書いた場所にだけ、表が入ります。</li>
+</ul>
+<pre><code>t.test(score ~ team, data = students)          # 式で書く（同じ結果）
+students %&gt;% t.test(score ~ team, data = .)    # 表を data = に受けさせる
+# 結果：A班の平均 80.4、B班の平均 75.2、t = 0.457、自由度 = 6.75、p = 0.66</code></pre>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q87</span>上の<code>students</code>で、班（A、B）ごとの箱ひげ図に、(1) 半透明の塗り、(2) 実際のデータの点、(3) t検定のp値（数値）を重ねて描きなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>library(tidyverse)
+library(ggsignif)
+
+students %&gt;%
+  ggplot(aes(x = team, y = score, fill = team)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +      # 半透明。外れ値の点は、ここでは描かない
+  geom_jitter(width = 0.15, size = 3, alpha = 0.8) +   # 全部のデータを、点として重ねる
+  geom_signif(
+    comparisons = list(c("A", "B")),
+    test = "t.test",                                   # 既定は wilcox.test なので、明示する
+    map_signif_level = FALSE                           # FALSE：数値を表示（TRUE：* の記号）
+  )</code></pre>
+<p>このデータでは、p ≈ 0.66 です。<code>ggsignif</code> が初めてのときは、<code>install.packages("ggsignif")</code> が必要です。</p>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q88</span>A班の点数 <code>59, 78, 82, 88, 95</code> で、(1) Q1・Q3・IQRを求め、(2) 箱ひげ図のひげのフェンス（IQRの1.5倍）を計算し、(3) 外れ値があるか答えなさい。また、(4) 下のひげが短く見える理由と、(5) ひげを最小値・最大値まで伸ばす書き方を答えなさい。<span class="lv">★★★</span></div>
+<details><summary>解答例を見る</summary>
+<pre><code>x &lt;- c(59, 78, 82, 88, 95)
+quantile(x, c(0.25, 0.75))       # Q1 = 78, Q3 = 88
+IQR(x)                           # 10
+q &lt;- quantile(x, c(0.25, 0.75))
+c(q[1] - 1.5 * IQR(x), q[2] + 1.5 * IQR(x))    # フェンス：63, 103
+boxplot.stats(x)$out             # 59（外れ値）
+
+# ひげを、最小値・最大値まで伸ばす
+# geom_boxplot(coef = Inf)</code></pre>
+<ul>
+<li>(1) Q1 = 78、Q3 = 88、IQR = 10。</li>
+<li>(2) 下のフェンス = 78 − 15 = 63、上のフェンス = 88 + 15 = 103。</li>
+<li>(3) 59点は、下のフェンス（63）より低いので、<b>外れ値</b>。</li>
+<li>(4) ひげは、フェンスの内側の最小値（78）で止まり、箱の底と同じ位置になるため、ほとんど見えない。59点は、外れ値の点として描かれる（<code>outlier.shape = NA</code> で消した場合は、<code>geom_jitter()</code> で見える）。</li>
+<li>(5) <code>coef = Inf</code>。<code>coef = 0</code> では、フェンスが箱の位置になり、最小値・最大値にはならない。</li>
+</ul>
+</details></div>
+
+<div class="q">
+<div class="qt"><span class="no">Q89</span>次の(a)〜(d)の記述が、正しいか誤りかを答え、誤りは直しなさい。<span class="lv">★★</span>
+<ul>
+<li>(a) <code>geom_signif()</code> の検定の既定は、t検定である。</li>
+<li>(b) <code>geom_boxplot(outlier.shape = NA)</code> は、外れ値のデータそのものを、計算から取り除く。</li>
+<li>(c) 箱ひげ図のひげの端は、必ず、最小値・最大値である。</li>
+<li>(d) <code>geom_boxplot(coef = 0)</code> で、ひげが、最小値・最大値まで伸びる。</li>
+</ul></div>
+<details><summary>解答例を見る</summary>
+<ul>
+<li>(a) 誤り。既定は <code>"wilcox.test"</code>。t検定にするには、<code>test = "t.test"</code> と書く。</li>
+<li>(b) 誤り。外れ値の<b>点を描かない</b>だけで、データは計算に使われる（箱やひげの位置は変わらない）。</li>
+<li>(c) 誤り。ひげの端は、フェンス（Q1 − 1.5×IQR、Q3 + 1.5×IQR）の内側の、実際のデータの最小値・最大値。外側のデータは、外れ値の点。</li>
+<li>(d) 誤り。<code>coef = 0</code> では、フェンスが箱の位置になり、ひげはほとんど消える。最小値・最大値まで伸ばすのは、<code>coef = Inf</code>。</li>
 </ul>
 </details></div>
 

@@ -1224,6 +1224,106 @@ data.frame(value = a + b) %&gt;%
 <div class="note"><b>確認用の練習</b>この例の <code>a + b</code> の最大値は 10 です。条件を <code>&gt; 10</code> にすると、該当するものが1つもなく、ベクトルでは <code>numeric(0)</code>（空）、表では0行になります。「結果が空になる」ことと「エラー」は別のものなので、条件の数字を変えて試してみましょう。</div>
 <p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。結果の値は、手計算で確認したものです。</p>
 
+<h3 id="p-dot">パイプの中で、表の「一部」を使う：<code>{ }</code> とドット <code>.</code></h3>
+<p>次の <code>students</code> は、練習問題でも使う、10人の成績データです。A班とB班の点数を、<code>t.test()</code> で比べます。</p>
+<pre><code>library(tidyverse)
+
+students &lt;- data.frame(
+  name  = c("Aoi", "Ren", "Sora", "Hina", "Kai",
+            "Mio", "Riku", "Yui", "Haru", "Nao"),
+  team  = c("A", "A", "B", "B", "A", "B", "A", "B", "A", "B"),
+  score = c(95, 82, 67, 45, 78, 91, 59, 73, 88, 100)
+)
+
+students %&gt;%
+  # t.test() の中で、表の列データを使う（ドット . が、左から流れてきた表を表す）
+  { t.test(.$score[.$team == "A"], .$score[.$team == "B"]) }</code></pre>
+<p>この書き方は、3つの部品でできています。</p>
+<ol>
+<li><b><code>.</code>（ドット）：</b>パイプの左から流れてきたもの（ここでは <code>students</code> の表）を指す名前です。<code>.$score</code> は <code>students$score</code> と同じで、<code>.$team == "A"</code> は A班の行を選ぶ条件（TRUE / FALSE のベクトル）です。つまり、<code>.$score[.$team == "A"]</code> は、「A班の点数」を取り出しています（第2節の取り出し方と同じ）。</li>
+<li><b><code>{ }</code>（波かっこ）：</b>これがないと、<code>%&gt;%</code> は、左の表を、<code>t.test()</code> の<b>第1引数に自動で入れてしまいます</b>（<code>t.test(students, A班の点数, B班の点数)</code> のような、意図しない形になり、エラーになります）。<b>{ } で包むと、自動の挿入が止まり</b>、<code>.</code> を書いた場所だけに、表が入ります。</li>
+<li><b><code>t.test(A班の点数, B班の点数)</code>：</b>2つのベクトルを引数に渡す、対応のないt検定です（既定のWelchのt検定）。</li>
+</ol>
+<div class="note"><b>結果の目安</b>
+A班の平均は80.4、B班の平均は75.2で、t = 0.457、自由度 = 6.75、p = 0.66 です（Pythonで再計算）。差は有意ではありません。</div>
+
+<h4>もっと簡単な書き方</h4>
+<p>表から検定するだけなら、<b>ドットを使わない書き方</b>のほうが、読みやすく、おすすめです。</p>
+<pre><code># 1. 式（~）で書く：左が目的変数、右が説明変数（群）。同じ結果になる
+t.test(score ~ team, data = students)
+
+# 2. 表をパイプで渡して、data = に受けさせる（. を使う）
+students %&gt;% t.test(score ~ team, data = .)
+
+# 3. with() で、列名だけで書く
+with(students, t.test(score[team == "A"], score[team == "B"]))</code></pre>
+<ul>
+<li>2の <code>data = .</code> は、「パイプの左の表を、<code>data</code> 引数に入れる」という意味です。<code>.</code> が<b>引数そのもの</b>として書かれているので、第1引数への自動挿入は起こらず、<code>{ }</code> は要りません。</li>
+<li>ベースRのパイプ <code>|&gt;</code> では、ドットの代わりに <code>_</code> を使い、<code>students |&gt; t.test(score ~ team, data = _)</code> と書きます（<code>_</code> は、名前つきの引数にだけ使えます）。<code>{ }</code> を使った書き方は、<code>%&gt;%</code> 独自のものです。</li>
+</ul>
+
+<h3 id="p-signif">パイプでグラフまで一気につなぐ：有意差のバーとp値（ggsignif）</h3>
+<p>データの作成から、グラフの描画まで、パイプでつなげます。<code>ggsignif</code> パッケージを使うと、箱ひげ図に、検定の結果（p値）を書き込めます。初回は <code>install.packages("ggsignif")</code> でインストールします。</p>
+<pre><code>library(tidyverse)
+library(ggsignif)     # 有意差のバーと、p値を書き込むパッケージ
+
+students %&gt;%
+  ggplot(aes(x = team, y = score, fill = team)) +
+  # 1. alpha = 0.5 で、箱ひげ図の色を半透明にする（0が透明、1が不透明）
+  #    outlier.shape = NA は、外れ値の点を描かない（次の geom_jitter で、全部の点を描くため）
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  # 2. 実際のデータを、点として重ねて描く（横にずらして、点が重ならないようにする）
+  geom_jitter(width = 0.15, size = 3, alpha = 0.8) +
+  # 3. 検定のp値を自動で計算して、書き入れる
+  geom_signif(
+    comparisons = list(c("A", "B")),    # 比べたい群の組み合わせを、リストで指定
+    test = "t.test",                    # 実行する検定（t検定）を指定
+    map_signif_level = FALSE            # FALSE：「*」ではなく、p値の数値を表示
+  )</code></pre>
+<ul>
+<li><code>geom_boxplot(alpha = 0.5, outlier.shape = NA)</code>：<code>alpha</code> は透明度（0が透明、1が不透明）です。<code>outlier.shape = NA</code> は、箱ひげ図の外れ値の点を<b>描かない</b>指定です。外れ値の点は、次の <code>geom_jitter()</code> が、全部のデータの点として描くため、二重に描かないようにしています。</li>
+<li><code>geom_jitter(width = 0.15, size = 3, alpha = 0.8)</code>：<b>実際のデータを点として重ねる</b>関数です。同じ群の点が重ならないよう、横方向に少しずらして（<code>width</code>）描きます。箱ひげ図だけでは見えない、データの数やばらつきがわかります。</li>
+<li><code>students %&gt;% ggplot(...)</code>：パイプの左の表が、<code>ggplot()</code> の第1引数（<code>data</code>）に入ります。ここでは自動挿入が、思いどおりに働いています。</li>
+<li><code>geom_signif()</code> は、<code>+</code> で重ねる部品の1つです。<code>comparisons</code> に、<code>list(c("A", "B"))</code> と、比べる群の組み合わせを渡し、<code>test</code> で検定の種類を選びます。<b>既定の検定は <code>"wilcox.test"</code> なので、t検定にしたいときは <code>test = "t.test"</code> と書きます</b>。</li>
+<li><code>map_signif_level = TRUE</code> にすると、p値の代わりに、<code>*</code>（p &lt; 0.05）、<code>**</code>（p &lt; 0.01）などの記号が表示されます。<code>FALSE</code> で、数値が表示されます。</li>
+<li>表示されるp値は、上の <code>t.test()</code> と同じ検定（この例では p ≈ 0.66）の結果です。数値の表示形式は、パッケージのバージョンで、少し違うことがあります。</li>
+</ul>
+<h4 id="p-whisker">箱ひげ図の読み方：なぜ、A班の下のひげが短いのか</h4>
+<p>上のグラフでは、A班の箱の下に、ひげがほとんど見えず、B班より短く見えます。これは、箱ひげ図の<b>ひげの決まり</b>で説明できます。実際の点数を、低い順に並べます。</p>
+<div class="table-scroll"><table>
+<tr><th></th><th>低い順に並べた点数</th><th>Q1（下位25%点）</th><th>中央値</th><th>Q3（上位25%点）</th><th>IQR</th></tr>
+<tr><td>A班</td><td>59, 78, 82, 88, 95</td><td>78</td><td>82</td><td>88</td><td>10</td></tr>
+<tr><td>B班</td><td>45, 67, 73, 91, 100</td><td>67</td><td>73</td><td>91</td><td>24</td></tr>
+</table></div>
+<p>（Q1・Q3は、Rの既定の計算（<code>quantile()</code>）による値です。）Rの箱ひげ図のひげは、単純な最小値・最大値ではなく、<b>テューキー（Tukey）の方法</b>で決まります。</p>
+<ol>
+<li><b>IQR（四分位範囲）</b>＝ Q3 − Q1 を求める。IQRは、真ん中50%のデータの幅。</li>
+<li>箱の上下から、<b>IQRの1.5倍</b>まで、境界線（フェンス）を考える。<br>下のフェンス ＝ Q1 − 1.5 × IQR　／　上のフェンス ＝ Q3 + 1.5 × IQR</li>
+<li>ひげは、<b>フェンスの内側にある、実際のデータの最小値・最大値</b>まで伸ばす。</li>
+<li>フェンスの外側にあるデータは、<b>外れ値</b>として、点で描く。</li>
+</ol>
+<div class="table-scroll"><table>
+<tr><th></th><th>下のフェンス</th><th>上のフェンス</th><th>ひげの下端</th><th>ひげの上端</th><th>外れ値</th></tr>
+<tr><td>A班</td><td>78 − 15 = 63</td><td>88 + 15 = 103</td><td>78</td><td>95</td><td><b>59</b>（63より低い）</td></tr>
+<tr><td>B班</td><td>67 − 36 = 31</td><td>91 + 36 = 127</td><td>45</td><td>100</td><td>なし</td></tr>
+</table></div>
+<p>A班は、IQRが小さい（10）ので、フェンスが箱に近く（63）、最小の<b>59点（Riku）がフェンスの外側＝外れ値</b>になります。そのため、下のひげは、59ではなく、フェンスの内側にある最小値の78（箱の底と同じ位置）で止まり、ひげがほとんど見えなくなります。B班は、IQRが大きい（24）ので、フェンスが遠く（31）、最小の45点まで、ひげが伸びます。</p>
+<div class="note"><b>外れ値の点が見えない理由</b>
+上のコードでは、<code>outlier.shape = NA</code> で、箱ひげ図の外れ値の点を消していますが、<code>geom_jitter()</code> が、全部のデータを点で描くので、59点（Riku）の点は、ちゃんと見えます。もし <code>geom_jitter()</code> もなければ、外れ値の点が消え、<b>下のひげが短く見えるだけで、59点のデータがあることが、グラフから消えてしまいます</b>。外れ値を隠すときは、データの点を重ねて描くのが安全です。</div>
+<ul>
+<li>ひげの上端・下端が、<b>最小値・最大値とは限らない</b>こと、<b>ひげの長さが同じとは限らない</b>ことに注意します（データの偏りを表します）。</li>
+<li>ひげを、1.5倍ルールではなく、<b>最小値・最大値まで</b>伸ばしたいときは、<code>geom_boxplot(coef = Inf)</code> と書きます。<code>coef</code> は、IQRの何倍までをフェンスにするかの指定で、既定は1.5です（<code>coef = 0</code> では、フェンスが箱の位置になり、ほとんどのデータが外れ値になるので、最小値・最大値にはなりません）。</li>
+<li>5つの数値は、<code>summary()</code> や <code>boxplot.stats()</code> で確かめられます（<code>boxplot.stats()</code> の <code>$out</code> が外れ値です）。第5節の5要約量も参照してください。</li>
+</ul>
+<pre><code>boxplot.stats(students$score[students$team == "A"])
+# $stats  78 78 82 88 95   （下のひげの端、箱の底、中央値、箱の上端、上のひげの端）
+# $out    59               ← 外れ値</code></pre>
+<p>※このコードと出力は、手計算で確かめた値で、Rでは実行していません。</p>
+
+<div class="warn"><b>注意：検定を何回もしていないか</b>
+グラフに、p値を書き込むのは簡単ですが、3群以上で、群の組み合わせごとに検定すると、<b>検定の回数が増え、偶然「有意」になる確率が上がります</b>（多重検定の問題）。3群以上では、第15節のANOVAと多重比較を使います。</div>
+<p>※ここのコードは、本文の作成環境にRがないため、Rでは実行していません。結果の値は、Pythonで再計算したものです。</p>
+
 <h2 id="s12">12. 条件分岐と繰り返し</h2>
 <p>プログラミングの基本である<b>条件分岐</b>（もし〜なら…、そうでなければ…）と<b>繰り返し</b>（同じ処理を何度も行う）を、Rで書いてみましょう。</p>
 
