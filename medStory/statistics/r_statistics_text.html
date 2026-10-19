@@ -144,6 +144,27 @@ data.frame(name = c("a", "b"), score = c(1, 2))
 <pre><code>mean(1, 2, 3, 4)     # 間違い：平均の 2.5 にはならない</code></pre>
 <p><code>mean()</code> は、平均を計算する対象として、<b>第1引数だけ</b>を使います。第2引数以降には、別の意味（端を切り落とす割合 <code>trim</code>、欠損値の扱い <code>na.rm</code> など）があるため、<code>mean(1, 2, 3, 4)</code> は、「1」の平均を、よくわからない設定で求めることになります。エラーにならずに、平均ではない値（1）が返るので、気づきにくい間違いです。複数の数値の平均を求めるときは、<code>c()</code> でまとめて、1つの引数にします。</p>
 <p>一方、<code>sum()</code> は、<code>sum(1, 2, 3, 4)</code> のように、いくつでも並べられる関数です。<b>関数ごとに、引数の決まりが違う</b>ので、迷ったら、<code>?mean</code> や <code>?sum</code> でヘルプを開いて確認します。</p>
+<h4 id="g-dots">なぜ <code>sum()</code> と <code>mean()</code> で違うのか：引数の設計</h4>
+<p>違いは、関数の<b>引数の受け取り方（設計）</b>にあります。ヘルプ（<code>?sum</code>、<code>?mean</code>）では、次のように書かれています。</p>
+<div class="table-scroll"><table>
+<tr><th>関数</th><th>引数の設計（簡略）</th><th><code>1, 2, 3, 4</code> を並べて入れたとき</th></tr>
+<tr><td><code>sum()</code></td><td><code>sum(..., na.rm = FALSE)</code></td><td><code>...</code>（ドット・ドット・ドット）は、<b>いくつでも受け取れる</b>特別な引数。カンマで区切った数字が、全部、足す対象になる。</td></tr>
+<tr><td><code>mean()</code></td><td><code>mean(x, trim = 0, na.rm = FALSE, ...)</code></td><td>平均する対象は、<b><code>x</code> という1つだけ</b>。2番目以降は、設定用の引数になる。</td></tr>
+</table></div>
+<p>そのため、<code>mean(1, 2, 3, 4)</code> は、次のように解釈されます。</p>
+<ul>
+<li>第1引数：<code>x = 1</code>（「1」の平均を求める）</li>
+<li>第2引数：<code>trim = 2</code>（端を切り落とす割合の設定。平均の対象ではない）</li>
+<li>第3引数：<code>na.rm = 3</code>（欠損値を除くかの設定）</li>
+<li>第4引数：その他（<code>...</code>）</li>
+</ul>
+<p>つまり、「1」という数字1つの平均を、後ろの3つを設定項目と受け取ったうえで計算することになり、<b>平均 2.5 にはなりません</b>。エラーにならず、意図と違う値が返ることもあるので、気づきにくい間違いです。</p>
+<ul>
+<li>❌ <code>mean(1, 2, 3, 4)</code>　⭕ <code>mean(c(1, 2, 3, 4))</code>（2.5）。複数の数値の平均は、<code>c()</code> で1つのベクトルにして、第1引数に渡します。</li>
+<li>数値をそのまま並べて渡せるのは、<code>sum()</code>、<code>max()</code>、<code>min()</code> など、<code>...</code> を持つ関数です。</li>
+<li><code>mean()</code>、<code>median()</code>（中央値）、<code>sd()</code>（標準偏差）など、統計量を出す多くの関数は、第1引数に<b>ベクトル</b>を1つ受け取る設計なので、<code>c()</code> でまとめて渡します。</li>
+<li>迷ったら、<code>?関数名</code> で、ヘルプの「Usage（使い方）」を見て、引数の並びを確認します。</li>
+</ul>
 <p>引数は、「<b>引数名 = 値</b>」の形で、名前をつけて渡すこともできます。<code>mean()</code> の第1引数の名前は <code>x</code> で、完全な書き方は次のとおりです。</p>
 <pre><code>mean(x = c(1, 2, 3, 4))     # 完全な書き方
 mean(c(1, 2, 3, 4))         # x = を省略した書き方（第1引数なので、省略できる）</code></pre>
@@ -379,6 +400,29 @@ print(result)     # "合格"</code></pre>
 ifelse(scores &gt;= 80, "ベリーグッド", "がんばろう")
 # "ベリーグッド" "がんばろう" "ベリーグッド"</code></pre></div>
 <p>この「すべてが関数」という考え方は、「あらゆる操作を、組み合わせたり、関数そのものを別の関数に渡したりしやすくする」ための、Rの一貫した設計です。ふだんの解析で、バッククォートを使うことはほとんどありませんが、「記号に見えるものも、実は関数」と知っておくと、エラーメッセージや、ヘルプ（<code>?`if`</code>）が読みやすくなります。</p>
+
+<h4 id="e-nest">9. 入れ子にできるのは「リスト」だけ</h4>
+<p>ベクトル <code>c()</code> は、<b>平らな（フラットな）1次元</b>で、すべて同じ型でなければなりません。ベクトルの中に、ベクトルやデータフレームを入れようとしても、入れ子にはならず、<b>平らにつながる</b>だけです。入れ子（階層）にできるのは、<b>リスト <code>list()</code></b> です。</p>
+<pre><code>c(c(1, 2), c(3, 4))        # 1 2 3 4（入れ子にならず、1本のベクトルになる）
+
+list(c(1, 2), c(3, 4))     # 入れ子にできる（リスト）
+nested &lt;- list(c(1, 2), data.frame(id = 1:2, name = c("a", "b")))
+nested[[1]]                # 1つ目の部品（ベクトル）を取り出す。リストの取り出しは [[ ]]</code></pre>
+<div class="table-scroll"><table>
+<tr><th>データ構造</th><th>他の構造を入れ子にできるか</th></tr>
+<tr><td>ベクトル <code>c()</code></td><td>できない（平らにつながる）</td></tr>
+<tr><td>リスト <code>list()</code></td><td>何でも入れられる（ベクトル、データフレーム、別のリスト）</td></tr>
+<tr><td>データフレーム／tibble</td><td>列を<b>リスト</b>にすれば、セルの中に入れられる（リスト列：list-column）</td></tr>
+</table></div>
+<ul>
+<li>データフレームの正体は、「すべての列の長さが同じ<b>リスト</b>」です。だから、<code>df$col2</code> のように <code>$</code> で、列（リストの部品）を取り出せます。</li>
+<li>長さが同じベクトルを並べるだけなら、行列（<code>rbind()</code>、<code>cbind()</code>）を使います。</li>
+<li>グループごとに、データフレームを丸ごと入れ子にするには、tidyr の <code>nest()</code> を使います。結果の <code>data</code> 列には、<code>&lt;tibble [50 × 4]&gt;</code> のように、グループごとの表が入ります。
+<pre><code>library(tidyverse)
+iris %&gt;% nest(data = -Species)      # 品種ごとに、残りの列を表として、data 列に入れる</code></pre></li>
+<li>ベースRで作るなら、<code>data.frame(group = c("G1", "G2"), data = I(list(sub_df1, sub_df2)))</code> のように <code>I()</code> を使います。</li>
+</ul>
+<p>「入れ子にしたい」と思ったら、裏側では<b>リスト</b>が動いている、と覚えておくとよいでしょう。</p>
 <p>※このコラムのコードは、環境にRがないため、実行していません。</p>
 </div>
 
