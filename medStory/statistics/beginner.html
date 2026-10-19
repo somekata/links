@@ -1,1 +1,739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R研究室 / 関数は、もう知っている。</title>
 
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#F7F1E6; --surface-2:#F5F0E6; --surface-3:#FBF8F2;
+      --ink:#1E1E1E; --ink-2:#6B645C; --ink-3:#9A9082;
+      --line:#E9DFCC; --accent:#FF6A2D;
+    }
+    html,body{height:100%;margin:0;overflow:hidden;}
+    body{
+      font-family:"Zen Maru Gothic","Noto Sans JP",sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 600px at 20% 0%, #FFF8EE 0%, transparent 60%),
+        radial-gradient(800px 400px at 90% 10%, #FFF1EB 0%, transparent 50%),
+        var(--bg);
+    }
+    .mono{font-family:"JetBrains Mono",monospace;}
+    .maru{font-family:"Zen Maru Gothic",sans-serif;}
+    .soft-shadow{box-shadow:0 12px 40px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.03);}
+
+    /* ===== Slide track ===== */
+    #track{display:flex;height:100%;transition:transform .55s cubic-bezier(.16,1,.3,1);will-change:transform;}
+    .slide{flex:0 0 100%;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;}
+    .slide-inner{max-width:1280px;margin:0 auto;padding:28px 72px 28px;min-height:100%;display:flex;flex-direction:column;justify-content:center;}
+    .slide::-webkit-scrollbar{width:6px}
+    .slide::-webkit-scrollbar-thumb{background:#D8CCB2;border-radius:10px}
+
+    /* ===== Chat bubbles ===== */
+    .chat{display:flex;flex-direction:column;gap:14px;}
+    .row{display:flex;gap:12px;align-items:flex-start;max-width:86%;}
+    .row.stu{flex-direction:row-reverse;align-self:flex-end;}
+    .avatar{width:42px;height:42px;border-radius:999px;display:grid;place-items:center;font-size:20px;flex-shrink:0;margin-top:4px;}
+    .row.prof .avatar{background:#FFF1EB;border:1px solid #FFD9C7;}
+    .row.stu .avatar{background:#FFE7D2;border:1px solid #FFD0A8;}
+    .name{font-size:12px;font-weight:700;margin-bottom:3px;}
+    .row.stu .name{text-align:right;}
+    .bubble-prof,.bubble-stu{padding:11px 16px;font-size:15px;line-height:1.75;}
+    .bubble-prof{background:#fff;border:1px solid var(--line);border-radius:18px 18px 18px 6px;}
+    .bubble-stu{background:#FFE7D2;border:1px solid #FFD0A8;color:#4A2A14;border-radius:18px 18px 6px 18px;}
+    .row.stu > div:last-child{display:flex;flex-direction:column;align-items:flex-end;}
+
+    /* Bubbles pop in when the slide becomes active */
+    .slide .row{opacity:0;transform:translateY(10px);}
+    .slide.active .row{animation:pop .55s cubic-bezier(.16,1,.3,1) forwards;}
+    .slide.active .row:nth-child(1){animation-delay:.15s}
+    .slide.active .row:nth-child(2){animation-delay:.35s}
+    .slide.active .row:nth-child(3){animation-delay:.55s}
+    .slide.active .row:nth-child(4){animation-delay:.75s}
+    .slide.active .row:nth-child(5){animation-delay:.95s}
+    .slide.active .row:nth-child(6){animation-delay:1.15s}
+    @keyframes pop{to{opacity:1;transform:translateY(0)}}
+
+    /* ===== Cards / widgets ===== */
+    .card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:20px 24px;}
+    .label{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.15em;color:var(--ink-3);}
+    .pill-input{height:38px;border-radius:999px;background:var(--surface-3);border:1px solid var(--line);padding:0 14px;font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;outline:none;}
+    .pill-input:focus{border-color:var(--accent);}
+    .num{width:58px;text-align:center;padding:0;}
+    .btn{height:38px;padding:0 20px;border-radius:999px;font-weight:700;font-size:13px;transition:opacity .15s,transform .15s;}
+    .btn:hover:not(:disabled){opacity:.9;transform:translateY(-1px);}
+    .btn-accent{background:var(--accent);color:#fff;}
+    .btn-dark{background:var(--ink);color:#fff;}
+    .btn-ghost{background:#fff;border:1px solid var(--line);}
+    .btn:disabled{background:#F5F2EB;color:var(--ink-3);border:1px solid var(--line);cursor:not-allowed;}
+    .out{font-family:"JetBrains Mono",monospace;font-size:13px;line-height:1.65;white-space:pre-wrap;background:#F2F9E9;border:1px solid #C5E6B0;border-radius:14px;padding:10px 14px;margin-top:12px;min-height:44px;max-height:200px;overflow:auto;color:#2E5A22;}
+    .out:empty::before{content:"ここにRの答えが出てくるよ";color:#6AA35A;opacity:.7;}
+    .doc{font-family:"JetBrains Mono",monospace;font-size:10px;padding:4px 10px;border-radius:999px;background:var(--surface-3);border:1px solid var(--line);color:var(--ink-2);}
+    .doc:hover{border-color:var(--ink);}
+    .code-hint{font-family:"JetBrains Mono",monospace;font-size:11px;background:var(--surface-3);border:1px solid var(--line);border-radius:12px;padding:8px 12px;color:var(--ink-2);margin-top:10px;word-break:break-all;}
+    input[type=range]{accent-color:var(--accent);}
+    .h-scene{font-weight:900;font-size:28px;line-height:1.25;}
+    .tag{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;padding:4px 12px;border-radius:999px;}
+
+    /* ===== Navigation ===== */
+    .arrow{position:absolute;top:50%;transform:translateY(-50%);width:56px;height:56px;border-radius:999px;background:rgba(255,255,255,.9);border:1px solid var(--line);display:grid;place-items:center;font-size:24px;z-index:30;box-shadow:0 6px 20px rgba(0,0,0,.08);transition:opacity .2s,transform .2s;opacity:.55;}
+    .arrow:hover{opacity:1;transform:translateY(-50%) scale(1.06);}
+    .arrow:disabled{opacity:.12;cursor:default;transform:translateY(-50%);}
+    #prev{left:12px} #next{right:12px}
+    .dot{width:9px;height:9px;border-radius:999px;background:#D8CCB2;transition:all .25s;}
+    .dot.on{width:26px;background:var(--accent);}
+  </style>
+</head>
+
+<body>
+<div class="flex flex-col" style="height:100vh;height:100dvh;width:100vw;">
+
+  <!-- ===== Header ===== -->
+  <header class="h-[52px] shrink-0 flex items-center justify-between px-6 border-b border-[var(--line)] bg-[rgba(247,241,230,.9)] backdrop-blur-[16px] z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-white border border-[var(--line)] grid place-items-center">👨‍🏫</div>
+      <div>
+        <div class="maru text-[13px] font-bold leading-none">R研究室 / やさしいR</div>
+        <div class="mono text-[10px] text-[var(--ink-3)] mt-1">SCENE DRAMA × webR</div>
+      </div>
+    </div>
+    <div id="badge" class="mono text-[10px] border rounded-full px-3 py-1.5 flex items-center gap-2 border-[var(--line)] bg-white text-[var(--ink-3)]">
+      <span id="badgeDot" class="w-1.5 h-1.5 rounded-full bg-[var(--ink-3)]"></span>
+      <span id="badgeText">準備中</span>
+    </div>
+  </header>
+
+  <!-- ===== Slide viewport ===== -->
+  <main id="viewport" class="relative flex-1 overflow-hidden">
+    <button id="prev" class="arrow" aria-label="前のスライド">‹</button>
+    <button id="next" class="arrow" aria-label="次のスライド">›</button>
+
+    <div id="track">
+
+      <!-- ============================================================
+           Slide 0 : Title
+      ============================================================ -->
+      <section class="slide" data-slide="0">
+        <div class="slide-inner">
+          <div class="rounded-[28px] bg-[#1E1E1E] text-white p-12 relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-[420px] h-[420px] rounded-full" style="background:radial-gradient(circle at center,rgba(255,106,45,.38),transparent 70%)"></div>
+            <div class="relative">
+              <div class="mono text-[12px] tracking-[0.2em] opacity-60">AFTERNOON IN LAB / 午後、研究室で</div>
+              <h1 class="maru font-black leading-[1.2] mt-5" style="font-size:56px;">関数は、もう知っている。</h1>
+              <p class="mt-5 text-[20px] leading-[1.8] opacity-80 max-w-[760px]">教授と学生の会話でわかる、こわくないR。<br>あとは箱の名前を覚えるだけ。</p>
+              <p class="mt-4 text-[14px] leading-[1.8] opacity-60 max-w-[760px]">黒い画面は出てきません。会話を進めると、その場で本物のRがブラウザの中で動きます。</p>
+              <div class="mt-8 flex flex-wrap gap-3">
+                <div class="px-4 py-2 rounded-full bg-white/10 border border-white/10 mono text-[12px] flex items-center gap-2"><span>👨‍🏫</span>R教授 60代 / Rの専門家 / 優しい</div>
+                <div class="px-4 py-2 rounded-full border mono text-[12px] flex items-center gap-2" style="background:rgba(255,231,210,.2);border-color:rgba(255,231,210,.2)"><span>🧑‍🎓</span>ユキさん 学部2年 / プログラミング苦手 / 文系</div>
+              </div>
+              <div class="mt-10 mono text-[12px] opacity-50">→ キー / Space / 右の矢印 / スワイプ で次へ</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           Slide 1 : f(x)=2x+1
+      ============================================================ -->
+      <section class="slide" data-slide="1">
+        <div class="slide-inner">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="tag bg-[var(--ink)] text-white">Scene 1</span>
+            <h2 class="maru h-scene">プログラミングって難しい？ — f(x)=2x+1は知ってる？</h2>
+          </div>
+          <div class="grid gap-6" style="grid-template-columns:1.15fr 1fr;align-items:start;">
+            <div class="chat">
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">先生…私、プログラミングってどうしても苦手で。黒い画面がこわくて…。</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">大丈夫、大丈夫。ユキさん、数学の f(x)=2x+1 って覚えてる？</div></div></div>
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">はい！xに1を入れたら f(1)=3 になるやつですよね。</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">そう！その <b>3</b> が「戻り値」だよ。関数は<b>決まった作業をするやさしい箱</b>。入れるもの → 箱 → 出てくるもの。Rも全く同じなんだ。</div></div></div>
+            </div>
+
+            <div class="card soft-shadow">
+              <div class="flex items-center justify-between">
+                <div class="label">🧩 CALCULATOR BLOCK / f(x)=2x+1</div>
+                <a class="doc" href="https://rdrr.io/r/base/function.html" target="_blank" rel="noopener">rdrr.io: function() →</a>
+              </div>
+              <div class="mt-4 flex items-center gap-3">
+                <div class="flex-1 bg-[var(--surface-3)] border border-[var(--line)] rounded-[16px] p-3 flex items-center gap-2">
+                  <span class="mono text-[11px] text-[var(--ink-3)]">x=</span>
+                  <input id="s1-x" type="range" min="0" max="10" value="3" class="flex-1">
+                  <span id="s1-xv" class="w-10 h-8 rounded-full bg-white border border-[var(--line)] grid place-items-center mono text-[13px] font-bold">3</span>
+                </div>
+                <div class="text-[20px]">→</div>
+                <div class="bg-[var(--ink)] text-white rounded-full px-5 h-[48px] inline-flex items-center gap-2">
+                  <span class="mono text-[10px] opacity-60">f(x)=</span>
+                  <span id="s1-fx" class="maru text-[20px] font-black">7</span>
+                </div>
+              </div>
+              <div id="s1-note" class="mt-2 mono text-[11px] text-[var(--ink-3)] text-center">2×3+1=7</div>
+              <div class="code-hint" id="s1-code"></div>
+              <div class="mt-3 flex items-center gap-2">
+                <button class="btn btn-accent run-btn" data-run="s1">やってみる → Rで実行</button>
+                <span class="mono text-[10px] text-[var(--ink-3)]">function(x) 2*x+1 を作って呼び出す</span>
+              </div>
+              <pre id="s1-out" class="out"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           Slide 2 : f(x, y) -- apple eat
+      ============================================================ -->
+      <section class="slide" data-slide="2">
+        <div class="slide-inner">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="tag bg-white border border-[var(--line)]">Scene 2</span>
+            <h2 class="maru h-scene">f(りんご, 食べる)ってあり？ — 秀逸な例</h2>
+          </div>
+          <div class="grid gap-6" style="grid-template-columns:1.15fr 1fr;align-items:start;">
+            <div class="chat">
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">でも先生、数学の関数は x が数字だけですよね？ プログラミングは x, y と2つ入れるって聞いて…。</div></div></div>
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">あ、例えば f(りんご, 食べる) って…ありですか？笑 変ですよね？</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">いや、秀逸だよユキさん！まさにそれなんだ！👏 数学は数字だけだけど、プログラミングの関数は「りんご」「食べる」みたいな<b>文字</b>も入れられる。</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">これを<b>オブジェクト</b>って言うんだけどね、何でも入るかわいい<b>箱</b>だと思ってくれればいい。</div></div></div>
+            </div>
+
+            <div class="card soft-shadow">
+              <div class="flex items-center justify-between">
+                <div class="label">💬 f(x, y) = 「xをy」</div>
+                <a class="doc" href="https://rdrr.io/r/base/paste.html" target="_blank" rel="noopener">rdrr.io: paste0() →</a>
+              </div>
+              <div class="mt-4 flex flex-wrap items-center gap-2">
+                <select id="s2-x" class="pill-input" style="height:44px;font-family:'Zen Maru Gothic'">
+                  <option>りんご</option><option>本</option><option>レポート</option><option>データ</option><option>コーヒー</option>
+                </select>
+                <span class="mono text-[12px] text-[var(--ink-3)]">を</span>
+                <select id="s2-y" class="pill-input" style="height:44px;font-family:'Zen Maru Gothic'">
+                  <option>食べる</option><option>読む</option><option>書く</option><option>分析する</option><option>淹れる</option>
+                </select>
+                <span class="text-[var(--ink-3)]">→</span>
+                <div id="s2-preview" class="h-[44px] px-5 rounded-full bg-[var(--ink)] text-white inline-flex items-center maru text-[15px] font-bold"></div>
+              </div>
+              <div class="code-hint" id="s2-code"></div>
+              <div class="mt-3 flex items-center gap-2">
+                <button class="btn btn-accent run-btn" data-run="s2">やってみる → Rで実行</button>
+                <span class="mono text-[10px] text-[var(--ink-3)]">文字も箱に入る</span>
+              </div>
+              <pre id="s2-out" class="out"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           Slide 3 : c()
+      ============================================================ -->
+      <section class="slide" data-slide="3">
+        <div class="slide-inner">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="tag bg-[var(--accent)] text-white">Scene 3</span>
+            <h2 class="maru h-scene">Rで箱を作ってみよう — c() は combine</h2>
+          </div>
+          <div class="grid gap-6" style="grid-template-columns:1.15fr 1fr;align-items:start;">
+            <div class="chat">
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">さて、ここからがRの本番。何でも入る箱を作れるんだ。<b>c()</b> って書くんだけど、combine＝合わせる、の c なんだよ。</div></div></div>
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">箱を作る…？</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">例えばテストの点数を5つ、ひとつの箱に入れたいとするでしょ？ c(1,2,3,4,5) と書けば、それで一つの箱。Excelの1行と同じだと思って。</div></div></div>
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">あっ…！本当に箱になった！Excelみたい！</div></div></div>
+            </div>
+
+            <div class="card soft-shadow">
+              <div class="flex items-center justify-between mb-3">
+                <div class="label">📦 c() / 箱を作る機械</div>
+                <a class="doc" href="https://rdrr.io/r/base/c.html" target="_blank" rel="noopener">rdrr.io: c() →</a>
+              </div>
+              <div id="s3-boxes" class="flex flex-wrap gap-2 items-center"></div>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <button id="s3-add" class="btn btn-dark" style="width:38px;padding:0">＋</button>
+                <button id="s3-del" class="btn btn-ghost" style="width:38px;padding:0">−</button>
+                <div class="flex items-center gap-2 ml-2">
+                  <span class="mono text-[11px]">×</span>
+                  <input id="s3-k" type="range" min="1" max="10" value="2" class="w-[110px]">
+                  <span id="s3-kv" class="px-3 h-8 rounded-full bg-white border border-[var(--line)] mono text-[12px] font-bold inline-flex items-center">2</span>
+                </div>
+              </div>
+              <div class="code-hint" id="s3-code"></div>
+              <div class="mt-3 flex items-center gap-2">
+                <button class="btn btn-accent run-btn" data-run="s3">やってみる → Rで実行</button>
+                <span class="mono text-[10px] text-[var(--ink-3)]">箱を作って、全部をk倍する</span>
+              </div>
+              <pre id="s3-out" class="out"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           Slide 4 : mean()
+      ============================================================ -->
+      <section class="slide" data-slide="4">
+        <div class="slide-inner">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="tag bg-white border border-[var(--line)]">Scene 4</span>
+            <h2 class="maru h-scene">平均は？ — 1,2,3,4,5の平均は6？</h2>
+          </div>
+          <div class="grid gap-6" style="grid-template-columns:1.15fr 1fr;align-items:start;">
+            <div class="chat">
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">先生、1,2,3,4,5の平均って…6ですか？ たしか…。</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">ふふ、おしい！6は一番大きい数字の「次」だね。平均は<b>真ん中あたり</b>だよ。1から5の真ん中は…？</div></div></div>
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">あっ！3か！そうか、真ん中…！</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">そうそう。Rには <b>mean()</b> という道具があって、さっきの箱を渡すとポンッと3を返してくれる。統計の言葉がそのまま名前なんだ。</div></div></div>
+            </div>
+
+            <div class="card soft-shadow">
+              <div class="flex items-center justify-between">
+                <div class="label">⚖️ mean() / 平均を出す機械</div>
+                <a class="doc" href="https://rdrr.io/r/base/mean.html" target="_blank" rel="noopener">rdrr.io: mean() →</a>
+              </div>
+              <div id="s4-sliders" class="mt-4 flex flex-wrap gap-2"></div>
+              <div class="mt-3 flex gap-2">
+                <button id="s4-add" class="btn btn-ghost" style="width:38px;padding:0">＋</button>
+                <button id="s4-del" class="btn btn-ghost" style="width:38px;padding:0">−</button>
+              </div>
+              <div class="code-hint" id="s4-code"></div>
+              <div class="mt-3 flex items-center gap-2">
+                <button class="btn btn-accent run-btn" data-run="s4">やってみる → 平均を出す</button>
+                <span id="s4-hint" class="mono text-[10px] text-[var(--ink-3)]"></span>
+              </div>
+              <pre id="s4-out" class="out"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           Slide 5 : t.test()
+      ============================================================ -->
+      <section class="slide" data-slide="5">
+        <div class="slide-inner">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="tag bg-white border border-[var(--line)]">Scene 5</span>
+            <h2 class="maru h-scene">2つのクラスを比べたい — t.test()</h2>
+          </div>
+          <div class="grid gap-6" style="grid-template-columns:1.15fr 1fr;align-items:start;">
+            <div class="chat">
+              <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">そういえば先生、ゼミのデータでA組とB組の点数を比べたいんです。平均が違うか見たいんですけど…。</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">お、いいね。卒論の主役だよ、それ。<b>t.test()</b> という道具があって、2つの箱を渡すと「違いは本物？」を一発で判定してくれる。</div></div></div>
+              <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">結果の <b>p値</b> が小さいと「違いは偶然ではなさそう」ということ。難しいところは授業でやろう。まずはボタンを押してみよう。</div></div></div>
+            </div>
+
+            <div class="card soft-shadow">
+              <div class="flex items-center justify-between">
+                <div class="label">🔬 t.test() / 比べる機械</div>
+                <a class="doc" href="https://rdrr.io/r/stats/t.test.html" target="_blank" rel="noopener">rdrr.io: t.test() →</a>
+              </div>
+              <div class="mt-4 grid gap-3" style="grid-template-columns:1fr 1fr;">
+                <div class="rounded-[14px] bg-[#FFF5F0] border border-[#FFD9C7] p-3">
+                  <div class="label">A組の箱（カンマ区切り）</div>
+                  <input id="s5-a" class="pill-input w-full mt-2" value="82, 85, 88, 90">
+                </div>
+                <div class="rounded-[14px] bg-[#F2F9E9] border border-[#C5E6B0] p-3">
+                  <div class="label">B組の箱（カンマ区切り）</div>
+                  <input id="s5-b" class="pill-input w-full mt-2" value="75, 78, 80, 79">
+                </div>
+              </div>
+              <div class="code-hint" id="s5-code"></div>
+              <div class="mt-3 flex items-center gap-2">
+                <button class="btn btn-dark run-btn" data-run="s5">やってみる → 違いを調べる</button>
+                <span class="mono text-[10px] text-[var(--ink-3)]">平均差とp値が出てくるよ</span>
+              </div>
+              <pre id="s5-out" class="out" style="font-size:11px;"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           Slide 6 : data.frame() / read.csv() / memo
+      ============================================================ -->
+      <section class="slide" data-slide="6">
+        <div class="slide-inner">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="tag bg-[var(--ink)] text-white">Scene 6</span>
+            <h2 class="maru h-scene">表にすると便利 — data.frame() と read.csv()</h2>
+          </div>
+          <div class="grid gap-5" style="grid-template-columns:1fr 1fr;align-items:start;">
+
+            <!-- Left: dialogue + table -->
+            <div class="flex flex-col gap-4">
+              <div class="chat">
+                <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">最後は表にしよう。<b>data.frame()</b> でExcelみたいな表が作れる。実は <b>read.csv()</b> を使えば、ExcelのcsvもそのままRに持ってこれるんだよ。</div></div></div>
+                <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">表なら分かる！csvで持ってこれるなら、レポートも楽そう…！</div></div></div>
+              </div>
+
+              <div class="card soft-shadow">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                  <div class="label">📋 data.frame() / 表にする機械</div>
+                  <div class="flex gap-2">
+                    <a class="doc" href="https://rdrr.io/r/base/data.frame.html" target="_blank" rel="noopener">rdrr.io: data.frame() →</a>
+                    <a class="doc" href="https://rdrr.io/r/utils/read.table.html" target="_blank" rel="noopener">rdrr.io: read.csv() →</a>
+                  </div>
+                </div>
+                <div class="mt-3 rounded-[14px] border border-[var(--line)] overflow-hidden">
+                  <div class="grid bg-[var(--surface-3)] mono text-[11px] font-bold px-3 py-2 border-b border-[var(--line)]" style="grid-template-columns:1fr 1fr 40px;"><span>名前</span><span>点数</span><span></span></div>
+                  <div id="s6-rows"></div>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <button id="s6-add" class="btn btn-ghost">＋ 行を追加</button>
+                  <button class="btn btn-accent run-btn" data-run="s6">やってみる → 表を作る</button>
+                  <button class="btn btn-dark run-btn" data-run="s6csv">CSVにして読み戻す</button>
+                </div>
+                <div class="code-hint" id="s6-code"></div>
+                <pre id="s6-out" class="out" style="max-height:150px;"></pre>
+              </div>
+            </div>
+
+            <!-- Right: summary + memo -->
+            <div class="flex flex-col gap-4">
+              <div class="chat">
+                <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">今日のまとめだよ。<b>c()</b> で箱、<b>mean()</b> で平均、<b>t.test()</b> で比べる、<b>data.frame()</b> で表。この4つで卒論の8割はいける。</div></div></div>
+                <div class="row stu"><div class="avatar">🧑‍🎓</div><div><div class="name">ユキさん</div><div class="bubble-stu">この後、自分でも数字を入れて遊んでみていいですか？</div></div></div>
+                <div class="row prof"><div class="avatar">👨‍🏫</div><div><div class="name">R教授</div><div class="bubble-prof">もちろん。<span class="font-bold bg-[#FFF1EB] px-1 rounded">c(1,2,3,4,5)</span> と紙に書いて帰ろう。それが最初のプログラムだよ。下のメモで試してみて。</div></div></div>
+              </div>
+
+              <div class="card soft-shadow" style="background:#FFFEFB;">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="label">📝 自由研究ノート / MEMO</div>
+                  <span id="memoStatus" class="mono text-[10px] px-2.5 py-1 rounded-full border border-[var(--line)] bg-white">○ じゅんび中</span>
+                </div>
+                <div class="rounded-[16px] border border-[var(--line)] bg-white overflow-hidden">
+                  <div class="p-3" style="background-image:repeating-linear-gradient(0deg,transparent,transparent 31px,#F0EAD9 31px,#F0EAD9 32px);">
+                    <div class="mono text-[11px] text-[var(--ink-3)] mb-1">数字をカンマ区切りで 例: 1, 2, 3, 4, 5</div>
+                    <textarea id="memo" class="w-full bg-transparent mono text-[15px] font-bold outline-none resize-none" style="height:64px;">1, 2, 3, 4, 5</textarea>
+                  </div>
+                  <div class="flex flex-wrap gap-2 p-3 bg-[var(--surface-3)] border-t border-[var(--line)] items-center">
+                    <button class="btn btn-ghost memo-preset" style="height:30px;font-size:11px;padding:0 12px" data-v="1, 2, 3, 4, 5">1-5の平均</button>
+                    <button class="btn btn-ghost memo-preset" style="height:30px;font-size:11px;padding:0 12px" data-v="10, 3, 87, 2, 45">バラバラ</button>
+                    <button class="btn btn-ghost memo-preset" style="height:30px;font-size:11px;padding:0 12px" data-v="82, 85, 90, 78">テスト点</button>
+                    <button class="btn btn-accent run-btn ml-auto" style="height:30px;font-size:12px" data-run="memo">計算する →</button>
+                  </div>
+                </div>
+                <pre id="memo-out" class="out" style="min-height:40px;"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /#track -->
+  </main>
+
+  <!-- ===== Bottom nav: dots + page number ===== -->
+  <nav class="h-[40px] shrink-0 flex items-center justify-center gap-5 bg-[rgba(247,241,230,.9)] border-t border-[var(--line)]">
+    <div id="dots" class="flex items-center gap-2"></div>
+    <div id="counter" class="mono text-[12px] font-bold text-[var(--ink-2)]">1 / 7</div>
+  </nav>
+
+  <!-- ===== Footer notice ===== -->
+  <footer class="shrink-0 px-6 py-1.5 bg-[#FFFEFB] border-t border-[var(--line)] text-center mono text-[10px] leading-[1.5] text-[var(--ink-3)]">
+    本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<script type="module">
+/* =====================================================================
+   Helpers
+===================================================================== */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const rStr = (s) => JSON.stringify(String(s));                       // R string literal
+const parseNums = (s) => s.split(/[,\s、，]+/).map(Number).filter((n) => Number.isFinite(n));
+const numsToR = (arr) => `c(${arr.join(", ")})`;
+
+/* =====================================================================
+   Slide navigation
+===================================================================== */
+const track  = $("#track");
+const slides = $$(".slide");
+const TOTAL  = slides.length;
+const dotsEl = $("#dots");
+let idx = 0;
+
+slides.forEach((_, i) => {
+  const d = document.createElement("button");
+  d.className = "dot";
+  d.setAttribute("aria-label", `スライド ${i + 1}`);
+  d.addEventListener("click", () => go(i));
+  dotsEl.appendChild(d);
+});
+
+function go(n) {
+  idx = Math.max(0, Math.min(TOTAL - 1, n));
+  track.style.transform = `translateX(-${idx * 100}%)`;
+  slides.forEach((s, i) => s.classList.toggle("active", i === idx));
+  $$(".dot").forEach((d, i) => d.classList.toggle("on", i === idx));
+  $("#counter").textContent = `${idx + 1} / ${TOTAL}`;
+  $("#prev").disabled = idx === 0;
+  $("#next").disabled = idx === TOTAL - 1;
+  slides[idx].scrollTop = 0;
+}
+const next = () => go(idx + 1);
+const prev = () => go(idx - 1);
+
+$("#next").addEventListener("click", next);
+$("#prev").addEventListener("click", prev);
+
+// Keyboard: ← → Space (ignored while typing in a form field)
+window.addEventListener("keydown", (e) => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (["input", "textarea", "select"].includes(tag)) return;
+  if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); next(); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+});
+
+// Touch swipe
+let tx = 0, ty = 0, tracking = false;
+$("#viewport").addEventListener("touchstart", (e) => {
+  const t = e.target;
+  tracking = !(t.closest("input,textarea,select,pre"));
+  tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+}, { passive: true });
+$("#viewport").addEventListener("touchend", (e) => {
+  if (!tracking) return;
+  const dx = e.changedTouches[0].clientX - tx;
+  const dy = e.changedTouches[0].clientY - ty;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) (dx < 0 ? next : prev)();
+});
+
+/* =====================================================================
+   webR init
+===================================================================== */
+let webR = null, shelter = null, rState = "idle"; // idle | loading | ready | error
+
+function setBadge(state, msg) {
+  rState = state;
+  const badge = $("#badge"), dot = $("#badgeDot"), text = $("#badgeText");
+  const styles = {
+    idle:    ["border-[var(--line)] bg-white text-[var(--ink-3)]", "bg-[var(--ink-3)]", "準備中"],
+    loading: ["border-[#FFD9C7] bg-[#FFF5F0] text-[#8A3A14]",     "bg-[var(--accent)] animate-pulse", "R起動中…"],
+    ready:   ["border-[#C5E6B0] bg-[#F2F9E9] text-[#3A5A14]",     "bg-[#6BCB4A]", "R 起動OK ●"],
+    error:   ["border-red-200 bg-red-50 text-red-700",            "bg-red-500", "オフライン"],
+  }[state];
+  badge.className = "mono text-[10px] border rounded-full px-3 py-1.5 flex items-center gap-2 " + styles[0];
+  dot.className = "w-1.5 h-1.5 rounded-full " + styles[1];
+  text.textContent = msg || styles[2];
+  $$(".run-btn").forEach((b) => (b.disabled = state !== "ready"));
+  const ms = $("#memoStatus");
+  ms.textContent = state === "ready" ? "● じゅんびOK" : "○ じゅんび中";
+  ms.className = "mono text-[10px] px-2.5 py-1 rounded-full border " +
+    (state === "ready" ? "bg-[#F2F9E9] border-[#C5E6B0] text-[#3A6B2E]" : "bg-white border-[var(--line)]");
+}
+
+async function initWebR() {
+  setBadge("loading");
+  try {
+    const mod = await import("https://webr.r-wasm.org/latest/webr.mjs");
+    webR = new mod.WebR({ interactive: false });
+    await webR.init();
+    shelter = await new webR.Shelter();
+    setBadge("ready");
+  } catch (err) {
+    console.error(err);
+    setBadge("error", "オフライン");
+    $$(".out").forEach((o) => {
+      if (!o.textContent) o.textContent = "Rを読み込めませんでした。オンラインで開き直してください。";
+    });
+  }
+}
+
+async function runR(code, outEl, btn) {
+  if (rState !== "ready" || !shelter) {
+    outEl.textContent = rState === "error"
+      ? "Rを読み込めませんでした。オンラインで開き直してください。"
+      : "R起動中です。少し待ってからもう一度押してね。";
+    return;
+  }
+  btn && (btn.disabled = true);
+  outEl.textContent = "計算中…";
+  try {
+    const res = await shelter.captureR(code, {
+      withAutoprint: true, captureStreams: true, captureConditions: false,
+    });
+    const text = (res.output || []).map((o) => o.data).join("");
+    outEl.textContent = text.trim() || "(出力なし)";
+  } catch (e) {
+    outEl.textContent = "エラー: " + (e?.message || String(e));
+  } finally {
+    btn && (btn.disabled = rState !== "ready");
+  }
+}
+
+/* =====================================================================
+   Slide 1 : f(x) = 2x + 1
+===================================================================== */
+const s1 = { x: 3 };
+function renderS1() {
+  const fx = 2 * s1.x + 1;
+  $("#s1-xv").textContent = s1.x;
+  $("#s1-fx").textContent = fx;
+  $("#s1-note").textContent = `2×${s1.x}+1=${fx}　（この ${fx} が戻り値）`;
+  $("#s1-code").textContent = `f <- function(x) 2*x + 1;  f(${s1.x})`;
+}
+$("#s1-x").addEventListener("input", (e) => { s1.x = Number(e.target.value); renderS1(); });
+const codeS1 = () => `f <- function(x) 2*x + 1\nf(${s1.x})`;
+renderS1();
+
+/* =====================================================================
+   Slide 2 : f(x, y) -> "xをy"
+===================================================================== */
+function renderS2() {
+  const x = $("#s2-x").value, y = $("#s2-y").value;
+  $("#s2-preview").textContent = `${x}を${y}`;
+  $("#s2-code").textContent = `f <- function(x, y) paste0(x, "を", y);  f("${x}", "${y}")`;
+}
+$("#s2-x").addEventListener("change", renderS2);
+$("#s2-y").addEventListener("change", renderS2);
+const codeS2 = () =>
+  `f <- function(x, y) paste0(x, "を", y)\nf(${rStr($("#s2-x").value)}, ${rStr($("#s2-y").value)})`;
+renderS2();
+
+/* =====================================================================
+   Slide 3 : c()
+===================================================================== */
+const s3 = { vec: [1, 2, 3, 4, 5], k: 2 };
+function renderS3() {
+  const box = $("#s3-boxes");
+  box.innerHTML = '<span class="mono text-[12px] font-bold">c(</span>';
+  s3.vec.forEach((v, i) => {
+    const inp = document.createElement("input");
+    inp.type = "number"; inp.value = v; inp.className = "pill-input num";
+    inp.addEventListener("input", () => { s3.vec[i] = Number(inp.value) || 0; updateS3Code(); });
+    box.appendChild(inp);
+  });
+  box.insertAdjacentHTML("beforeend", '<span class="mono text-[12px] font-bold">)</span>');
+  updateS3Code();
+}
+function updateS3Code() {
+  $("#s3-kv").textContent = s3.k;
+  $("#s3-code").textContent = `vec <- c(${s3.vec.join(", ")});  vec;  vec * ${s3.k}`;
+}
+$("#s3-add").addEventListener("click", () => { s3.vec.push((s3.vec.at(-1) || 0) + 1); renderS3(); });
+$("#s3-del").addEventListener("click", () => { if (s3.vec.length > 1) { s3.vec.pop(); renderS3(); } });
+$("#s3-k").addEventListener("input", (e) => { s3.k = Number(e.target.value); updateS3Code(); });
+const codeS3 = () => `vec <- c(${s3.vec.join(", ")})\nvec\nvec * ${s3.k}`;
+renderS3();
+
+/* =====================================================================
+   Slide 4 : mean()
+===================================================================== */
+const s4 = { v: [1, 2, 3, 4, 5] };
+function renderS4() {
+  const wrap = $("#s4-sliders");
+  wrap.innerHTML = "";
+  s4.v.forEach((val, i) => {
+    const cell = document.createElement("div");
+    cell.className = "flex items-center gap-1 bg-[var(--surface-3)] border border-[var(--line)] rounded-full px-2 h-10";
+    cell.innerHTML = `<input type="range" min="0" max="10" value="${val}" class="w-[54px]"><input type="number" value="${val}" class="w-[40px] bg-transparent mono text-[12px] font-bold text-center outline-none">`;
+    const [rng, num] = cell.querySelectorAll("input");
+    rng.addEventListener("input", () => { s4.v[i] = Number(rng.value); num.value = rng.value; updateS4(); });
+    num.addEventListener("input", () => { s4.v[i] = Number(num.value) || 0; rng.value = s4.v[i]; updateS4(); });
+    wrap.appendChild(cell);
+  });
+  updateS4();
+}
+function updateS4() {
+  $("#s4-code").textContent = `mean(c(${s4.v.join(", ")}))`;
+  const m = s4.v.reduce((a, b) => a + b, 0) / (s4.v.length || 1);
+  $("#s4-hint").textContent = `手計算なら ${Number.isFinite(m) ? m.toFixed(1) : "?"} のはず`;
+}
+$("#s4-add").addEventListener("click", () => { s4.v.push(3); renderS4(); });
+$("#s4-del").addEventListener("click", () => { if (s4.v.length > 1) { s4.v.pop(); renderS4(); } });
+const codeS4 = () => `scores <- c(${s4.v.join(", ")})\nmean(scores)`;
+renderS4();
+
+/* =====================================================================
+   Slide 5 : t.test()
+===================================================================== */
+function updateS5() {
+  $("#s5-code").textContent = `t.test(c(${parseNums($("#s5-a").value).join(", ")}), c(${parseNums($("#s5-b").value).join(", ")}))`;
+}
+$("#s5-a").addEventListener("input", updateS5);
+$("#s5-b").addEventListener("input", updateS5);
+const codeS5 = () => {
+  const a = parseNums($("#s5-a").value), b = parseNums($("#s5-b").value);
+  return `a <- ${numsToR(a)}\nb <- ${numsToR(b)}\nt.test(a, b)`;
+};
+updateS5();
+
+/* =====================================================================
+   Slide 6 : data.frame() / read.csv() / memo
+===================================================================== */
+const s6 = { names: ["山田", "鈴木", "田中"], scores: [80, 92, 76] };
+function renderS6() {
+  const wrap = $("#s6-rows");
+  wrap.innerHTML = "";
+  s6.names.forEach((nm, i) => {
+    const row = document.createElement("div");
+    row.className = "grid px-3 py-1.5 border-b border-dashed border-[var(--line)] items-center gap-2 last:border-0";
+    row.style.gridTemplateColumns = "1fr 1fr 40px";
+    row.innerHTML = `<input class="pill-input" style="height:32px;font-family:'Zen Maru Gothic'" value="${nm.replace(/"/g, "&quot;")}"><input type="number" class="pill-input" style="height:32px;text-align:center" value="${s6.scores[i]}"><button class="btn btn-ghost" style="height:30px;width:30px;padding:0;font-size:12px">✕</button>`;
+    const [n, sc, del] = row.querySelectorAll("input,button");
+    n.addEventListener("input", () => { s6.names[i] = n.value; updateS6(); });
+    sc.addEventListener("input", () => { s6.scores[i] = Number(sc.value) || 0; updateS6(); });
+    del.addEventListener("click", () => { s6.names.splice(i, 1); s6.scores.splice(i, 1); renderS6(); });
+    wrap.appendChild(row);
+  });
+  updateS6();
+}
+function updateS6() {
+  $("#s6-code").textContent =
+    `data.frame(名前 = c(${s6.names.map(rStr).join(", ")}), 点数 = c(${s6.scores.join(", ")}))`;
+}
+$("#s6-add").addEventListener("click", () => { s6.names.push("新規"); s6.scores.push(70); renderS6(); });
+const dfCode = () =>
+  `df <- data.frame(\n  名前 = c(${s6.names.map(rStr).join(", ")}),\n  点数 = c(${s6.scores.join(", ")})\n)`;
+const codeS6 = () => `${dfCode()}\ndf`;
+const codeS6csv = () =>
+  `${dfCode()}\ntmp <- tempfile(fileext = ".csv")\nwrite.csv(df, tmp, row.names = FALSE)\nread.csv(tmp)`;
+renderS6();
+
+// Memo
+$$(".memo-preset").forEach((b) => b.addEventListener("click", () => { $("#memo").value = b.dataset.v; }));
+const codeMemo = () => {
+  const v = parseNums($("#memo").value);
+  const arr = v.length ? v : [1, 2, 3];
+  return `mydata <- ${numsToR(arr)}\nmydata\ncat("個数:", length(mydata), "/ 平均:", round(mean(mydata), 2), "\\n")\nmydata * 2`;
+};
+
+/* =====================================================================
+   Run buttons (key -> code builder, output <pre>)
+===================================================================== */
+const runners = {
+  s1:    { code: codeS1,    out: "#s1-out" },
+  s2:    { code: codeS2,    out: "#s2-out" },
+  s3:    { code: codeS3,    out: "#s3-out" },
+  s4:    { code: codeS4,    out: "#s4-out" },
+  s5:    { code: codeS5,    out: "#s5-out" },
+  s6:    { code: codeS6,    out: "#s6-out" },
+  s6csv: { code: codeS6csv, out: "#s6-out" },
+  memo:  { code: codeMemo,  out: "#memo-out" },
+};
+$$(".run-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const r = runners[btn.dataset.run];
+    runR(r.code(), $(r.out), btn);
+  });
+});
+
+/* =====================================================================
+   Start
+===================================================================== */
+go(0);
+setBadge("idle");
+initWebR();
+</script>
+</body>
+</html>
