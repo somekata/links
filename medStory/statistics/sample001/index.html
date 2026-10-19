@@ -1,1 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>細菌増殖曲線サンプル（sample001）</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #111111;
+    --muted: #555555;
+    --accent: #0b5cad;
+    --line: #d0d7de;
+    --code-bg: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    line-height: 1.7;
+  }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-size: 1.6rem; border-bottom: 3px solid var(--accent); padding-bottom: 8px; }
+  h2 { font-size: 1.25rem; margin-top: 2rem; border-left: 5px solid var(--accent); padding-left: 10px; }
+  a { color: var(--accent); }
+  .dl {
+    display: inline-block;
+    padding: 10px 18px;
+    border: 2px solid var(--accent);
+    border-radius: 6px;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  .dl:hover { background: var(--accent); color: #fff; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: right; white-space: nowrap; }
+  th { background: var(--code-bg); }
+  td:first-child, th:first-child { text-align: center; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  code { font-family: Consolas, "Courier New", monospace; }
+  ul { padding-left: 1.4rem; }
+  .code-block { margin: 12px 0 20px; }
+  .code-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: #e8eef5;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    font-weight: bold;
+  }
+  .code-block pre { margin: 0; border-radius: 0 0 6px 6px; }
+  .copy-btn {
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 4px 14px;
+    border: 1.5px solid var(--accent);
+    border-radius: 5px;
+    background: #fff;
+    color: var(--accent);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { background: var(--accent); color: #fff; }
+  .copy-btn.done { background: #1a7f37; border-color: #1a7f37; color: #fff; }
+  .tip { border: 1px solid var(--line); border-radius: 8px; padding: 4px 16px 8px; margin: 16px 0; }
+  .tip h3 { margin: 12px 0 4px; font-size: 1.05rem; }
+  .tip p { margin: 4px 0; }
+  .note { background: #fff8e1; border-left: 4px solid #f0b400; padding: 8px 12px; margin: 10px 0; font-size: 0.92rem; }
+  footer {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>細菌増殖曲線サンプル（CFU/mL, Log10軸）</h1>
 
+  <p>3群（A, B, C）× triplicate の生菌数データ（ワイド型）と、Rで増殖曲線を描画するスクリプトです。</p>
+
+  <h2>1. データファイル</h2>
+  <p><a class="dl" href="sample001.csv" download>sample001.csv をダウンロード</a></p>
+  <ul>
+    <li>形式: ワイド型（列名 = 培養時間 0, 2, 4, 6, 8, 10, 24 h）</li>
+    <li>群: A（典型的な増殖）、B（やや遅い増殖）、C（lag phase が長い増殖）</li>
+    <li>値: 生菌数（CFU/mL）。0時間で約10<sup>5</sup>、24時間で約10<sup>9</sup></li>
+  </ul>
+
+  <h3>プレビュー</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Group</th><th>Replicate</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th><th>10</th><th>24</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>1.1e5</td><td>1.8e5</td><td>2.4e6</td><td>3.9e7</td><td>2.4e8</td><td>6.3e8</td><td>1.2e9</td></tr>
+        <tr><td>A</td><td>2</td><td>9.5e4</td><td>1.5e5</td><td>1.9e6</td><td>3.2e7</td><td>2.0e8</td><td>5.8e8</td><td>9.8e8</td></tr>
+        <tr><td>A</td><td>3</td><td>1.0e5</td><td>1.6e5</td><td>2.1e6</td><td>3.6e7</td><td>2.3e8</td><td>6.1e8</td><td>1.1e9</td></tr>
+        <tr><td>B</td><td>1</td><td>1.0e5</td><td>1.2e5</td><td>6.5e5</td><td>8.0e6</td><td>7.5e7</td><td>3.2e8</td><td>1.0e9</td></tr>
+        <tr><td>B</td><td>2</td><td>1.2e5</td><td>1.4e5</td><td>7.8e5</td><td>9.5e6</td><td>8.6e7</td><td>3.6e8</td><td>8.8e8</td></tr>
+        <tr><td>B</td><td>3</td><td>9.0e4</td><td>1.1e5</td><td>5.9e5</td><td>7.1e6</td><td>6.8e7</td><td>2.9e8</td><td>9.4e8</td></tr>
+        <tr><td>C</td><td>1</td><td>1.1e5</td><td>1.0e5</td><td>2.2e5</td><td>1.5e6</td><td>1.6e7</td><td>1.1e8</td><td>7.5e8</td></tr>
+        <tr><td>C</td><td>2</td><td>1.0e5</td><td>9.5e4</td><td>2.6e5</td><td>1.8e6</td><td>1.9e7</td><td>1.3e8</td><td>8.2e8</td></tr>
+        <tr><td>C</td><td>3</td><td>9.2e4</td><td>1.1e5</td><td>2.0e5</td><td>1.3e6</td><td>1.4e7</td><td>9.8e7</td><td>6.9e8</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>2. Rスクリプト</h2>
+  <p><code>sample001.csv</code> と同じフォルダを作業ディレクトリにして実行してください（<code>tidyverse</code> が必要です）。</p>
+<div class="code-block">
+<div class="code-head"><span>growth_curve.R</span><button class="copy-btn" type="button" data-target="rscript">コピー</button></div>
+<pre><code id="rscript"># ============================================
+# 細菌増殖曲線（CFU/mL, Log10軸）
+# ============================================
+library(tidyverse)
+
+# 1. 読み込み（ワイド型）
+df_wide &lt;- read_csv("sample001.csv")
+
+# 2. ロング型へ変換 &amp; 3. Hourを数値化
+df_long &lt;- df_wide %&gt;%
+  pivot_longer(
+    cols      = -c(Group, Replicate),
+    names_to  = "Hour",
+    values_to = "CFU"
+  ) %&gt;%
+  mutate(
+    Hour  = as.numeric(Hour),
+    Group = factor(Group, levels = c("A", "B", "C"))
+  )
+
+# 4. 群 × 時間ごとの平均値とSD
+df_summary &lt;- df_long %&gt;%
+  group_by(Group, Hour) %&gt;%
+  summarise(
+    Mean = mean(CFU),
+    SD   = sd(CFU),
+    .groups = "drop"
+  )
+
+# 5. プロット
+p &lt;- ggplot(df_summary, aes(x = Hour, y = Mean, colour = Group, group = Group)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 3) +
+  geom_errorbar(
+    aes(ymin = Mean - SD, ymax = Mean + SD),
+    width = 0.4, linewidth = 0.6
+  ) +
+  scale_y_log10(
+    labels = scales::label_log(),
+    breaks = scales::breaks_log(n = 6)
+  ) +
+  scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 24)) +
+  scale_colour_brewer(palette = "Set1") +
+  labs(
+    x = "Time (Hours)",
+    y = "CFU/mL",
+    colour = "Group"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    panel.border    = element_rect(colour = "black", fill = NA, linewidth = 1),
+    axis.line       = element_blank(),
+    axis.text       = element_text(colour = "black"),
+    legend.position = "right"
+  )
+
+print(p)
+
+# 保存（論文用）
+ggsave("growth_curve.png", p, width = 7, height = 5, dpi = 300)
+ggsave("growth_curve.pdf", p, width = 7, height = 5)
+</code></pre>
+</div>
+
+  <h2>3. グラフの作り変えヒント</h2>
+  <p>以下は上のスクリプトの「<code># 5. プロット</code>」部分を書き換えるためのヒントです。各コードの右上のボタンでコピーできます。</p>
+  <div class="note">
+    <code>linewidth</code> は ggplot2 3.4.0 以降の引数です。古い版では <code>size</code> を使ってください。凡例を図の内側に置く <code>legend.position = "inside"</code> は 3.5.0 以降です。
+  </div>
+
+  <div class="tip">
+    <h3>3-1. 線・点・エラーバーを太く／大きくする</h3>
+    <p><code>geom_line</code> の <code>linewidth</code>、<code>geom_point</code> の <code>size</code>、<code>geom_errorbar</code> の <code>linewidth</code> と <code>width</code>（キャップの横幅）を変更します。</p>
+    <div class="code-block">
+      <div class="code-head"><span>線・点・エラーバーのサイズ</span><button class="copy-btn" type="button" data-target="tip1">コピー</button></div>
+<pre><code id="tip1">geom_line(linewidth = 1.5) +                       # 線の太さ（元: 0.8）
+geom_point(size = 4) +                             # 点の大きさ（元: 3）
+geom_errorbar(
+  aes(ymin = Mean - SD, ymax = Mean + SD),
+  width = 0.6, linewidth = 1.0                     # キャップの幅・線の太さ
+) +</code></pre>
+    </div>
+  </div>
+
+  <div class="tip">
+    <h3>3-2. 色を変える</h3>
+    <p>群ごとに色を直接指定するなら <code>scale_colour_manual</code>、既成パレットなら <code>scale_colour_brewer(palette = ...)</code> を使います。<code>scale_colour_brewer(palette = "Set1")</code> の行を差し替えてください。</p>
+    <div class="code-block">
+      <div class="code-head"><span>色の指定（どれか1つを選ぶ）</span><button class="copy-btn" type="button" data-target="tip2">コピー</button></div>
+<pre><code id="tip2"># (a) 群ごとに手動指定（色名またはカラーコード）
+scale_colour_manual(values = c(A = "#0072B2", B = "#D55E00", C = "#009E73")) +
+
+# (b) 色覚多様性に配慮したパレット（"Dark2", "Paired", "Set2" なども可）
+scale_colour_brewer(palette = "Dark2") +
+
+# (c) 白黒印刷向けのグレースケール
+scale_colour_grey(start = 0, end = 0.6) +
+
+# (d) 全群を黒1色にしたい場合は、先頭の aes() から colour = Group を外し、
+#     geom_line / geom_point / geom_errorbar に colour = "black" を指定する</code></pre>
+    </div>
+  </div>
+
+  <div class="tip">
+    <h3>3-3. 実線を点線にする</h3>
+    <p>全部の線を変えるなら <code>geom_line(linetype = ...)</code>。群ごとに変えるなら <code>aes(linetype = Group)</code> を指定して <code>scale_linetype_manual</code> で割り当てます。線種は <code>"solid"</code>（実線）、<code>"dashed"</code>（破線）、<code>"dotted"</code>（点線）、<code>"dotdash"</code>、<code>"longdash"</code>、<code>"twodash"</code> が使えます。</p>
+    <div class="code-block">
+      <div class="code-head"><span>線種の変更</span><button class="copy-btn" type="button" data-target="tip3">コピー</button></div>
+<pre><code id="tip3"># (a) 全部の線を点線にする
+geom_line(linewidth = 0.8, linetype = "dotted") +
+
+# (b) 群ごとに線種を変える（geom_line を次の2行に差し替える）
+geom_line(aes(linetype = Group), linewidth = 0.8) +
+scale_linetype_manual(values = c(A = "solid", B = "dashed", C = "dotted")) +</code></pre>
+    </div>
+  </div>
+
+  <div class="tip">
+    <h3>3-4. 点の形を群ごとに変える</h3>
+    <p><code>shape</code> に数値を指定します（16 = ●、17 = ▲、15 = ■、18 = ◆、1 = ○、2 = △、0 = □）。</p>
+    <div class="code-block">
+      <div class="code-head"><span>点の形</span><button class="copy-btn" type="button" data-target="tip4">コピー</button></div>
+<pre><code id="tip4">geom_point(aes(shape = Group), size = 3) +
+scale_shape_manual(values = c(A = 16, B = 17, C = 15)) +</code></pre>
+    </div>
+  </div>
+
+  <div class="tip">
+    <h3>3-5. 凡例の変更</h3>
+    <p>位置・タイトル・ラベル（群名の表示）を変えられます。</p>
+    <div class="code-block">
+      <div class="code-head"><span>凡例の位置・タイトル・ラベル</span><button class="copy-btn" type="button" data-target="tip5">コピー</button></div>
+<pre><code id="tip5"># --- 位置（theme() の中の legend.position を書き換える）---
+legend.position = "bottom"      # "top", "left", "right", "bottom"
+legend.position = "none"        # 凡例を消す
+# 図の内側に置く（ggplot2 3.5.0 以降）。座標は 0〜1 の相対位置
+legend.position = "inside",
+legend.position.inside = c(0.15, 0.85)
+
+# --- タイトル（labs() の colour を書き換える）---
+labs(x = "Time (Hours)", y = "CFU/mL", colour = "Strain")
+# タイトルを消す（theme() の中に追加）
+legend.title = element_blank()
+
+# --- ラベル（A, B, C の表示名を変える。scale_colour_*() の中に labels を追加）---
+scale_colour_brewer(
+  palette = "Set1",
+  labels  = c(A = "Control", B = "Drug 1", C = "Drug 2")
+) +
+
+# --- 凡例に枠を付ける（theme() の中に追加）---
+legend.background = element_rect(colour = "black", fill = "white")</code></pre>
+    </div>
+    <div class="note">
+      色・線種・点の形を同時に群へ割り当てる場合は、凡例が分裂しないよう、<code>labs()</code> のタイトルと各 <code>scale_*()</code> の <code>labels</code> を揃えてください（例: <code>labs(colour = "Strain", linetype = "Strain", shape = "Strain")</code>）。
+    </div>
+  </div>
+
+  <div class="tip">
+    <h3>3-6. 色・線種・点の形をまとめて群ごとに変える（白黒印刷でも区別できる版）</h3>
+    <p>「# 5. プロット」の <code>p &lt;- ggplot(...)</code> から <code>scale_colour_brewer(...)</code> までを、次のように差し替えます。</p>
+    <div class="code-block">
+      <div class="code-head"><span>colour + linetype + shape の併用</span><button class="copy-btn" type="button" data-target="tip6">コピー</button></div>
+<pre><code id="tip6">p &lt;- ggplot(df_summary,
+            aes(x = Hour, y = Mean, colour = Group,
+                linetype = Group, shape = Group, group = Group)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3.5) +
+  geom_errorbar(
+    aes(ymin = Mean - SD, ymax = Mean + SD),
+    width = 0.5, linewidth = 0.6, linetype = "solid"
+  ) +
+  scale_y_log10(
+    labels = scales::label_log(),
+    breaks = scales::breaks_log(n = 6)
+  ) +
+  scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 24)) +
+  scale_colour_manual(values   = c(A = "#0072B2", B = "#D55E00", C = "#009E73")) +
+  scale_linetype_manual(values = c(A = "solid", B = "dashed", C = "dotted")) +
+  scale_shape_manual(values    = c(A = 16, B = 17, C = 15)) +
+  labs(x = "Time (Hours)", y = "CFU/mL",
+       colour = "Group", linetype = "Group", shape = "Group") +
+  theme_classic(base_size = 14) +
+  theme(
+    panel.border    = element_rect(colour = "black", fill = NA, linewidth = 1),
+    axis.line       = element_blank(),
+    axis.text       = element_text(colour = "black"),
+    legend.position = "right"
+  )</code></pre>
+    </div>
+  </div>
+
+  <div class="tip">
+    <h3>3-7. 軸・文字・保存サイズ</h3>
+    <p>軸の範囲、全体の文字サイズ、外枠線の太さ、学名のイタリック表記、保存サイズの変更例です。</p>
+    <div class="code-block">
+      <div class="code-head"><span>軸・文字・保存</span><button class="copy-btn" type="button" data-target="tip7">コピー</button></div>
+<pre><code id="tip7"># Y軸の表示範囲を固定する（+ の連結に追加）
+coord_cartesian(ylim = c(1e4, 1e10)) +
+
+# 全体の文字サイズ（theme_classic の base_size を変更）
+theme_classic(base_size = 18) +
+
+# 外枠線を太くする（theme() の panel.border の linewidth）
+panel.border = element_rect(colour = "black", fill = NA, linewidth = 1.5)
+
+# 学名をイタリックでタイトルに入れる（血清型などはイタリックにしない）
+labs(title = expression(italic("Escherichia coli")),
+     x = "Time (Hours)", y = "CFU/mL")
+# 種名の後ろに血清型を付ける例: expression(italic("Salmonella") ~ "Typhi")
+
+# 保存サイズ・解像度
+ggsave("growth_curve.png", p, width = 8, height = 6, dpi = 600)</code></pre>
+    </div>
+  </div>
+
+  <h2>4. 注意点</h2>
+  <ul>
+    <li>列名が数値のみ（<code>0</code>, <code>2</code>, ...）でも <code>read_csv</code> は文字列の列名として読み込むため、<code>pivot_longer</code> 後に <code>as.numeric()</code> で数値化しています。</li>
+    <li>対数軸では、エラーバーの下端（Mean − SD）が 0 以下になると描画できません。SDが大きい実測データでは、先に <code>log10(CFU)</code> へ変換してから平均・SDを計算する方法もあります。</li>
+  </ul>
+</main>
+
+<footer>
+  <p>本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>
+</footer>
+
+<script>
+document.querySelectorAll('.copy-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var el = document.getElementById(btn.dataset.target);
+    var text = el.textContent;
+    function ok() {
+      var old = btn.textContent;
+      btn.textContent = 'コピーしました';
+      btn.classList.add('done');
+      setTimeout(function () { btn.textContent = old; btn.classList.remove('done'); }, 1500);
+    }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); ok(); } catch (e) { btn.textContent = '失敗'; }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(ok, fallback);
+    } else {
+      fallback();
+    }
+  });
+});
+</script>
+</body>
+</html>
