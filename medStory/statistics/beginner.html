@@ -76,11 +76,28 @@
     .btn-dark{background:var(--ink);color:#fff;}
     .btn-ghost{background:#fff;border:1px solid var(--line);}
     .btn:disabled{background:#F5F2EB;color:var(--ink-3);border:1px solid var(--line);cursor:not-allowed;}
-    .out{font-family:"JetBrains Mono",monospace;font-size:13px;line-height:1.65;white-space:pre-wrap;background:#F2F9E9;border:1px solid #C5E6B0;border-radius:14px;padding:10px 14px;margin-top:12px;min-height:44px;max-height:200px;overflow:auto;color:#2E5A22;}
+
+    /* R output (multi-line) */
+    .out{
+      font-family:"JetBrains Mono",monospace;font-size:13px;line-height:1.7;
+      white-space:pre-wrap;tab-size:2;
+      background:#F2F9E9;border:1px solid #C5E6B0;border-radius:14px;
+      padding:12px 16px;margin-top:12px;min-height:44px;max-height:220px;overflow:auto;color:#2E5A22;
+    }
     .out:empty::before{content:"ここにRの答えが出てくるよ";color:#6AA35A;opacity:.7;}
+
+    /* R code preview (multi-line) */
+    .code-hint{
+      font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.7;
+      white-space:pre-wrap;tab-size:2;
+      background:var(--surface-3);border:1px solid var(--line);border-left:4px solid var(--accent);
+      border-radius:12px;padding:10px 14px;color:var(--ink);margin-top:10px;
+      overflow-x:auto;
+    }
+    .code-hint::before{content:"R code";display:block;font-size:9px;letter-spacing:.15em;color:var(--ink-3);margin-bottom:4px;}
+
     .doc{font-family:"JetBrains Mono",monospace;font-size:10px;padding:4px 10px;border-radius:999px;background:var(--surface-3);border:1px solid var(--line);color:var(--ink-2);}
     .doc:hover{border-color:var(--ink);}
-    .code-hint{font-family:"JetBrains Mono",monospace;font-size:11px;background:var(--surface-3);border:1px solid var(--line);border-radius:12px;padding:8px 12px;color:var(--ink-2);margin-top:10px;word-break:break-all;}
     input[type=range]{accent-color:var(--accent);}
     .h-scene{font-weight:900;font-size:28px;line-height:1.25;}
     .tag{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;padding:4px 12px;border-radius:999px;}
@@ -497,8 +514,7 @@ window.addEventListener("keydown", (e) => {
 // Touch swipe
 let tx = 0, ty = 0, tracking = false;
 $("#viewport").addEventListener("touchstart", (e) => {
-  const t = e.target;
-  tracking = !(t.closest("input,textarea,select,pre"));
+  tracking = !(e.target.closest("input,textarea,select,pre"));
   tx = e.touches[0].clientX; ty = e.touches[0].clientY;
 }, { passive: true });
 $("#viewport").addEventListener("touchend", (e) => {
@@ -562,7 +578,8 @@ async function runR(code, outEl, btn) {
     const res = await shelter.captureR(code, {
       withAutoprint: true, captureStreams: true, captureConditions: false,
     });
-    const text = (res.output || []).map((o) => o.data).join("");
+    // captureR の出力は1行ずつ別要素で、改行を含まないので "\n" でつなぐ
+    const text = (res.output || []).map((o) => o.data).join("\n");
     outEl.textContent = text.trim() || "(出力なし)";
   } catch (e) {
     outEl.textContent = "エラー: " + (e?.message || String(e));
@@ -575,35 +592,35 @@ async function runR(code, outEl, btn) {
    Slide 1 : f(x) = 2x + 1
 ===================================================================== */
 const s1 = { x: 3 };
+const codeS1 = () => `f <- function(x) {\n  2 * x + 1\n}\nf(${s1.x})`;
 function renderS1() {
   const fx = 2 * s1.x + 1;
   $("#s1-xv").textContent = s1.x;
   $("#s1-fx").textContent = fx;
   $("#s1-note").textContent = `2×${s1.x}+1=${fx}　（この ${fx} が戻り値）`;
-  $("#s1-code").textContent = `f <- function(x) 2*x + 1;  f(${s1.x})`;
+  $("#s1-code").textContent = codeS1();
 }
 $("#s1-x").addEventListener("input", (e) => { s1.x = Number(e.target.value); renderS1(); });
-const codeS1 = () => `f <- function(x) 2*x + 1\nf(${s1.x})`;
 renderS1();
 
 /* =====================================================================
    Slide 2 : f(x, y) -> "xをy"
 ===================================================================== */
+const codeS2 = () =>
+  `f <- function(x, y) {\n  paste0(x, "を", y)\n}\nf(${rStr($("#s2-x").value)}, ${rStr($("#s2-y").value)})`;
 function renderS2() {
-  const x = $("#s2-x").value, y = $("#s2-y").value;
-  $("#s2-preview").textContent = `${x}を${y}`;
-  $("#s2-code").textContent = `f <- function(x, y) paste0(x, "を", y);  f("${x}", "${y}")`;
+  $("#s2-preview").textContent = `${$("#s2-x").value}を${$("#s2-y").value}`;
+  $("#s2-code").textContent = codeS2();
 }
 $("#s2-x").addEventListener("change", renderS2);
 $("#s2-y").addEventListener("change", renderS2);
-const codeS2 = () =>
-  `f <- function(x, y) paste0(x, "を", y)\nf(${rStr($("#s2-x").value)}, ${rStr($("#s2-y").value)})`;
 renderS2();
 
 /* =====================================================================
    Slide 3 : c()
 ===================================================================== */
 const s3 = { vec: [1, 2, 3, 4, 5], k: 2 };
+const codeS3 = () => `vec <- c(${s3.vec.join(", ")})\nvec\nvec * ${s3.k}`;
 function renderS3() {
   const box = $("#s3-boxes");
   box.innerHTML = '<span class="mono text-[12px] font-bold">c(</span>';
@@ -618,18 +635,18 @@ function renderS3() {
 }
 function updateS3Code() {
   $("#s3-kv").textContent = s3.k;
-  $("#s3-code").textContent = `vec <- c(${s3.vec.join(", ")});  vec;  vec * ${s3.k}`;
+  $("#s3-code").textContent = codeS3();
 }
 $("#s3-add").addEventListener("click", () => { s3.vec.push((s3.vec.at(-1) || 0) + 1); renderS3(); });
 $("#s3-del").addEventListener("click", () => { if (s3.vec.length > 1) { s3.vec.pop(); renderS3(); } });
 $("#s3-k").addEventListener("input", (e) => { s3.k = Number(e.target.value); updateS3Code(); });
-const codeS3 = () => `vec <- c(${s3.vec.join(", ")})\nvec\nvec * ${s3.k}`;
 renderS3();
 
 /* =====================================================================
    Slide 4 : mean()
 ===================================================================== */
 const s4 = { v: [1, 2, 3, 4, 5] };
+const codeS4 = () => `scores <- c(${s4.v.join(", ")})\nmean(scores)`;
 function renderS4() {
   const wrap = $("#s4-sliders");
   wrap.innerHTML = "";
@@ -645,33 +662,35 @@ function renderS4() {
   updateS4();
 }
 function updateS4() {
-  $("#s4-code").textContent = `mean(c(${s4.v.join(", ")}))`;
+  $("#s4-code").textContent = codeS4();
   const m = s4.v.reduce((a, b) => a + b, 0) / (s4.v.length || 1);
   $("#s4-hint").textContent = `手計算なら ${Number.isFinite(m) ? m.toFixed(1) : "?"} のはず`;
 }
 $("#s4-add").addEventListener("click", () => { s4.v.push(3); renderS4(); });
 $("#s4-del").addEventListener("click", () => { if (s4.v.length > 1) { s4.v.pop(); renderS4(); } });
-const codeS4 = () => `scores <- c(${s4.v.join(", ")})\nmean(scores)`;
 renderS4();
 
 /* =====================================================================
    Slide 5 : t.test()
 ===================================================================== */
-function updateS5() {
-  $("#s5-code").textContent = `t.test(c(${parseNums($("#s5-a").value).join(", ")}), c(${parseNums($("#s5-b").value).join(", ")}))`;
-}
-$("#s5-a").addEventListener("input", updateS5);
-$("#s5-b").addEventListener("input", updateS5);
 const codeS5 = () => {
   const a = parseNums($("#s5-a").value), b = parseNums($("#s5-b").value);
   return `a <- ${numsToR(a)}\nb <- ${numsToR(b)}\nt.test(a, b)`;
 };
+function updateS5() { $("#s5-code").textContent = codeS5(); }
+$("#s5-a").addEventListener("input", updateS5);
+$("#s5-b").addEventListener("input", updateS5);
 updateS5();
 
 /* =====================================================================
    Slide 6 : data.frame() / read.csv() / memo
 ===================================================================== */
 const s6 = { names: ["山田", "鈴木", "田中"], scores: [80, 92, 76] };
+const dfCode = () =>
+  `df <- data.frame(\n  名前 = c(${s6.names.map(rStr).join(", ")}),\n  点数 = c(${s6.scores.join(", ")})\n)`;
+const codeS6 = () => `${dfCode()}\ndf`;
+const codeS6csv = () =>
+  `${dfCode()}\ntmp <- tempfile(fileext = ".csv")\nwrite.csv(df, tmp, row.names = FALSE)\nread.csv(tmp)`;
 function renderS6() {
   const wrap = $("#s6-rows");
   wrap.innerHTML = "";
@@ -688,16 +707,8 @@ function renderS6() {
   });
   updateS6();
 }
-function updateS6() {
-  $("#s6-code").textContent =
-    `data.frame(名前 = c(${s6.names.map(rStr).join(", ")}), 点数 = c(${s6.scores.join(", ")}))`;
-}
+function updateS6() { $("#s6-code").textContent = codeS6(); }
 $("#s6-add").addEventListener("click", () => { s6.names.push("新規"); s6.scores.push(70); renderS6(); });
-const dfCode = () =>
-  `df <- data.frame(\n  名前 = c(${s6.names.map(rStr).join(", ")}),\n  点数 = c(${s6.scores.join(", ")})\n)`;
-const codeS6 = () => `${dfCode()}\ndf`;
-const codeS6csv = () =>
-  `${dfCode()}\ntmp <- tempfile(fileext = ".csv")\nwrite.csv(df, tmp, row.names = FALSE)\nread.csv(tmp)`;
 renderS6();
 
 // Memo
