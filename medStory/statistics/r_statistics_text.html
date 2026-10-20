@@ -54,7 +54,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <div class="wrap">
 <header>
 <h1>Rと統計学</h1>
-<p class="sub">Rの基本・2群の検定・カイ二乗検定とFisherの正確検定・95%信頼区間・ggplot2・メタ解析・パイプ・条件分岐と繰り返し・復元抽出と非復元抽出・RスクリプトとRmd・ANOVA・生存分析・回帰・多変量解析・次元削減・図の一覧・研究デザイン・用語集</p>
+<p class="sub">Rの基本・2群の検定・カイ二乗検定とFisherの正確検定・95%信頼区間・ggplot2・メタ解析・パイプ・条件分岐と繰り返し・復元抽出と非復元抽出・RスクリプトとRmd・ANOVA・生存分析・回帰・多変量解析・次元削減・図の一覧・研究デザイン・用語集・よく使うコード一覧</p>
 <div class="filenav"><b>本文</b><a href="r_practice_questions.html">練習問題</a><a href="r_checklist.html">チェックリスト（簡易）</a><a href="r_checklist_detail.html">チェックリスト（詳細）</a></div>
 </header>
 
@@ -80,6 +80,7 @@ footer{margin-top:3em;padding-top:12px;border-top:1px solid var(--line);color:va
 <li><a href="#s17">17. 統計学的な図（グラフ）の一覧と選び方</a></li>
 <li><a href="#s18">18. 研究デザイン（コホート研究と症例対照研究）</a></li>
 <li><a href="#s19">19. 用語集</a></li>
+<li><a href="#s20">20. よく使うコード一覧</a></li>
 </ul>
 </nav>
 
@@ -2448,6 +2449,107 @@ res$p.value                     # t.test() の戻り値（検定結果のまと�
 <tr><td><b>罹患率・有病率</b><br>Incidence / Prevalence</td><td>罹患率は、一定の期間に、新しく発症する人の割合（人時あたりの発生率）。有病率は、ある時点で、病気をもつ人の割合</td><td>—</td></tr>
 <tr><td><b>PECO / PICO</b></td><td>研究の問いを、対象（P）、曝露または介入（E／I）、比較（C）、結果（O）で整理する枠組み</td><td>E／I＝説明変数、O＝目的変数</td></tr>
 </table></div>
+
+<h2 id="s20">20. よく使うコード一覧</h2>
+<p>これまでに出てきた、よく使うコードを、まとめた一覧です。左が<b>Base R</b>（Rに最初から入っている書き方）、右が<b>tidyverse</b>（<code>library(tidyverse)</code> で使える書き方）です。「（共通）」は、どちらでも同じ書き方、「—」は、標準の書き方がないという意味です。細かい引数は、<code>?関数名</code> でヘルプを確認してください。</p>
+<div class="note"><b>どちらを使うか</b>
+Base Rは、パッケージを入れずに使えます。tidyverseは、<code>%&gt;%</code> や <code>|&gt;</code> でつなげて書くと、処理の流れが読みやすく、後から見直しやすくなります。この本文では、両方を使っています。</div>
+<h3>1. データ・ファイルの読み書き</h3>
+<div class="table-scroll"><table>
+<tr><th>やりたいこと</th><th>Base R</th><th>tidyverse</th><th>ひとこと</th></tr>
+<tr><td>ベクトルを作る</td><td><code>c(1, 2, 3)</code></td><td>（共通）</td><td>同じ型の要素を並べる</td></tr>
+<tr><td>連続する数・繰り返し</td><td><code>1:10、seq(0, 1, 0.1)、rep(1:2, each = 2)</code></td><td>（共通）</td><td>等差数列、繰り返し。<code>rep(1:2, each = 2)</code> は 1 1 2 2</td></tr>
+<tr><td>表を作る</td><td><code>data.frame(x = ..., y = ...)</code></td><td><code>tibble(x = ..., y = ...)</code></td><td>行ごとに書くなら <code>tribble()</code></td></tr>
+<tr><td>リスト・行列</td><td><code>list(...)、matrix(x, nrow, ncol)</code></td><td>（共通）</td><td>リストは何でも入る。行列は同じ型の2次元</td></tr>
+<tr><td>因子（カテゴリ）</td><td><code>factor(x, levels = ...)</code></td><td><code>forcats::as_factor(x)</code></td><td>文字列をカテゴリ型にする</td></tr>
+<tr><td>CSVを読む</td><td><code>read.csv("a.csv")</code></td><td><code>read_csv("a.csv")</code></td><td>readr は文字コードをUTF-8と仮定。日本語版ExcelのCSVは <code>locale = locale(encoding = "CP932")</code></td></tr>
+<tr><td>CSVを書く</td><td><code>write.csv(df, "a.csv", row.names = FALSE)</code></td><td><code>write_csv(df, "a.csv")</code></td><td><code>write_csv()</code> は行番号を出力しない</td></tr>
+<tr><td>Excelを読む</td><td>（標準では不可）</td><td><code>readxl::read_excel("a.xlsx", sheet = 1)</code></td><td>readxl は、tidyverse に含まれるが、別途 <code>library(readxl)</code> が必要</td></tr>
+<tr><td>Rオブジェクトの保存</td><td><code>saveRDS(x, "a.rds")、readRDS("a.rds")</code></td><td><code>write_rds()、read_rds()</code></td><td>解析結果を、そのまま保存・復元</td></tr>
+</table></div>
+<h3>2. データの中身を確認する</h3>
+<div class="table-scroll"><table>
+<tr><th>やりたいこと</th><th>Base R</th><th>tidyverse</th><th>ひとこと</th></tr>
+<tr><td>型・構造</td><td><code>class(x)、str(df)</code></td><td><code>glimpse(df)</code></td><td><code>glimpse()</code> は列を縦に表示</td></tr>
+<tr><td>先頭・末尾</td><td><code>head(df, 10)、tail(df, 10)</code></td><td>（共通）</td><td>最初・最後の10行</td></tr>
+<tr><td>行数・列数・列名</td><td><code>nrow(df)、ncol(df)、dim(df)、names(df)</code></td><td>（共通）</td><td>表の大きさと変数名</td></tr>
+<tr><td>基本統計量</td><td><code>summary(df)</code></td><td>（共通）</td><td>最小・四分位・中央値・平均・最大</td></tr>
+<tr><td>欠損値の数</td><td><code>sum(is.na(x))、colSums(is.na(df))</code></td><td>（共通）</td><td>NA の個数（列ごとにも）</td></tr>
+</table></div>
+<h3>3. 抽出・並べ替え・加工</h3>
+<div class="table-scroll"><table>
+<tr><th>やりたいこと</th><th>Base R</th><th>tidyverse</th><th>ひとこと</th></tr>
+<tr><td>列を選ぶ</td><td><code>df[, c("a", "b")]、df$a</code></td><td><code>select(a, b)</code></td><td><code>select(starts_with("score"))</code> のような指定も可</td></tr>
+<tr><td>列を除く</td><td><code>df[, !names(df) %in% "c"]</code></td><td><code>select(-c)</code></td><td>列 c を除く</td></tr>
+<tr><td>行を条件で選ぶ</td><td><code>df[df$age &gt;= 20, ]</code></td><td><code>filter(age &gt;= 20)</code></td><td><code>filter()</code> は NA の行を自動で除く</td></tr>
+<tr><td>行を番号で選ぶ</td><td><code>df[1:10, ]</code></td><td><code>slice(1:10)</code></td><td>1〜10行目</td></tr>
+<tr><td>並べ替え（昇順・降順）</td><td><code>df[order(df$s), ]、df[order(-df$s), ]</code></td><td><code>arrange(s)、arrange(desc(s))</code></td><td><code>s</code> の小さい順・大きい順</td></tr>
+<tr><td>ランダムに抽出</td><td><code>df[sample(nrow(df), 5), ]</code></td><td><code>slice_sample(n = 5)</code></td><td><code>set.seed()</code> で再現できる</td></tr>
+<tr><td>列を追加・変更</td><td><code>df$new &lt;- df$a + df$b</code></td><td><code>mutate(new = a + b)</code></td><td>作った列を、次の計算にすぐ使える</td></tr>
+<tr><td>列名を変える</td><td><code>names(df)[names(df) == "old"] &lt;- "new"</code></td><td><code>rename(new = old)</code></td><td>新名 = 旧名</td></tr>
+<tr><td>重複を除く</td><td><code>df[!duplicated(df), ]</code></td><td><code>distinct()</code></td><td>完全に同じ行を除く</td></tr>
+<tr><td>2分岐</td><td><code>ifelse(a &gt; 50, "Pass", "Fail")</code></td><td><code>if_else(a &gt; 50, "Pass", "Fail")</code></td><td><code>if_else()</code> は型が厳密</td></tr>
+<tr><td>多分岐</td><td>ネストした ifelse()</td><td><code>case_when(a &gt;= 90 ~ "S", a &gt;= 80 ~ "A", .default = "B")</code></td><td>条件を上から順に判定（<code>.default</code> は新しい dplyr）</td></tr>
+<tr><td>数値を区間に分ける</td><td><code>cut(x, breaks = c(0, 60, 80, 100))</code></td><td>（共通）</td><td>年齢層・点数帯など</td></tr>
+</table></div>
+<h3>4. 集計・グループ化</h3>
+<div class="table-scroll"><table>
+<tr><th>やりたいこと</th><th>Base R</th><th>tidyverse</th><th>ひとこと</th></tr>
+<tr><td>グループ別の集計</td><td><code>aggregate(s ~ team, df, mean)</code></td><td><code>df %&gt;% group_by(team) %&gt;% summarise(m = mean(s))</code></td><td>チーム別の平均点など</td></tr>
+<tr><td>件数を数える</td><td><code>table(df$team)</code></td><td><code>count(team)</code></td><td>度数表</td></tr>
+<tr><td>グループ解除</td><td>—</td><td><code>ungroup()</code></td><td><code>group_by()</code> の後で使う</td></tr>
+<tr><td>行ごとの合計・平均</td><td><code>rowSums(df[, 1:3])、rowMeans(df[, 1:3])</code></td><td>（共通）</td><td>3教科の合計・平均など</td></tr>
+<tr><td>累積和</td><td><code>cumsum(x)</code></td><td><code>cummean(x) ほか</code></td><td>上から順に足した値</td></tr>
+</table></div>
+<h3>5. 結合・欠損値・形の変換</h3>
+<div class="table-scroll"><table>
+<tr><th>やりたいこと</th><th>Base R</th><th>tidyverse</th><th>ひとこと</th></tr>
+<tr><td>縦・横にくっつける</td><td><code>rbind(df1, df2)、cbind(df1, df2)</code></td><td><code>bind_rows()、bind_cols()</code></td><td>列名・行数が合うこと</td></tr>
+<tr><td>キーで結合</td><td><code>merge(x, y, by = "ID")</code></td><td><code>left_join(x, y, by = "ID")</code></td><td><code>inner_join()</code>、<code>full_join()</code>、<code>anti_join()</code> もある</td></tr>
+<tr><td>欠損値を除く</td><td><code>na.omit(df)</code></td><td><code>drop_na(df)</code></td><td><code>drop_na(a)</code> で、列 a だけを見る</td></tr>
+<tr><td>欠損値を置換</td><td><code>x[is.na(x)] &lt;- 0</code></td><td><code>replace_na(df, list(x = 0))</code></td><td>0や中央値で埋める</td></tr>
+<tr><td>上の値で埋める</td><td>—</td><td><code>fill(a, .direction = "down")</code></td><td>空欄を上のセルの値で埋める</td></tr>
+<tr><td>横長→縦長</td><td><code>reshape(..., direction = "long")</code></td><td><code>pivot_longer(cols, names_to, values_to)</code></td><td>教科の列を、教科・点数の2列に</td></tr>
+<tr><td>縦長→横長</td><td><code>reshape(..., direction = "wide")</code></td><td><code>pivot_wider(names_from, values_from)</code></td><td>集計表向き</td></tr>
+<tr><td>列を分ける・合わせる</td><td><code>strsplit()、paste()</code></td><td><code>separate_wider_delim()、unite()</code></td><td>「東京都_千代田区」を2列に、など</td></tr>
+</table></div>
+<h3>6. 文字列</h3>
+<div class="table-scroll"><table>
+<tr><th>やりたいこと</th><th>Base R</th><th>tidyverse</th><th>ひとこと</th></tr>
+<tr><td>結合</td><td><code>paste(a, b, sep = "")、paste0(a, b)</code></td><td><code>str_c(a, b)</code></td><td><code>str_c()</code> は NA があると NA になる</td></tr>
+<tr><td>文字数</td><td><code>nchar(x)</code></td><td><code>str_length(x)</code></td><td>全角・半角とも1文字と数える</td></tr>
+<tr><td>含むかどうか</td><td><code>grepl("abc", x)</code></td><td><code>str_detect(x, "abc")</code></td><td>正規表現も使える</td></tr>
+<tr><td>置換</td><td><code>gsub("old", "new", x)</code></td><td><code>str_replace_all(x, "old", "new")</code></td><td>すべて置換</td></tr>
+<tr><td>一部を切り出す</td><td><code>substr(x, 1, 3)</code></td><td><code>str_sub(x, 1, 3)</code></td><td>1〜3文字目</td></tr>
+<tr><td>前後の空白を除く</td><td><code>trimws(x)</code></td><td><code>str_trim(x)</code></td><td>余計なスペース</td></tr>
+</table></div>
+<h3>7. 統計量・検定・モデル</h3>
+<div class="table-scroll"><table>
+<tr><th>やりたいこと</th><th>Base R</th><th>tidyverse</th><th>ひとこと</th></tr>
+<tr><td>平均・中央値・SD</td><td><code>mean(x, na.rm = TRUE)、median(x)、sd(x)</code></td><td>（共通）</td><td>欠損値があるときは <code>na.rm = TRUE</code></td></tr>
+<tr><td>四分位数・分散</td><td><code>quantile(x)、var(x)、IQR(x)</code></td><td>（共通）</td><td>データのばらつき</td></tr>
+<tr><td>相関</td><td><code>cor(x, y)、cor.test(x, y)</code></td><td>（共通）</td><td><code>method = "spearman"</code> で順位相関</td></tr>
+<tr><td>t検定</td><td><code>t.test(y ~ g, data = df)</code></td><td><code>broom::tidy(t.test(...))</code></td><td>対応ありは <code>paired = TRUE</code>。<code>broom</code> は結果を表に</td></tr>
+<tr><td>ノンパラメトリック</td><td><code>wilcox.test(y ~ g, data = df)、kruskal.test()</code></td><td>（共通）</td><td>順位を使う検定</td></tr>
+<tr><td>分割表の検定</td><td><code>chisq.test(tab)、fisher.test(tab)</code></td><td>（共通）</td><td><code>tab</code> は <code>table()</code> か <code>matrix()</code></td></tr>
+<tr><td>割合の検定・信頼区間</td><td><code>binom.test(k, n)、prop.test(k, n)</code></td><td>（共通）</td><td><code>$conf.int</code> で信頼区間</td></tr>
+<tr><td>分散分析・多重比較</td><td><code>aov(y ~ g, data = df)、TukeyHSD(res)</code></td><td><code>broom::tidy(aov(...))</code></td><td><code>summary(res)</code> でF値・p値</td></tr>
+<tr><td>多重比較の補正</td><td><code>p.adjust(p, method = "bonferroni")</code></td><td>（共通）</td><td><code>"holm"</code>、<code>"BH"</code> などもある</td></tr>
+<tr><td>回帰</td><td><code>lm(y ~ x1 + x2, data = df)、glm(y ~ x, family = binomial)</code></td><td>（共通）</td><td><code>summary(fit)</code> で係数と p値</td></tr>
+<tr><td>生存分析</td><td><code>survfit(Surv(time, status) ~ g)、survdiff()、coxph()</code></td><td>（共通）</td><td>survival パッケージ</td></tr>
+<tr><td>検定結果から値を取り出す</td><td><code>res$p.value、res$conf.int</code></td><td>（共通）</td><td><code>names(res)</code> で、部品の一覧</td></tr>
+</table></div>
+<h3>8. グラフ</h3>
+<div class="table-scroll"><table>
+<tr><th>やりたいこと</th><th>Base R</th><th>tidyverse</th><th>ひとこと</th></tr>
+<tr><td>散布図</td><td><code>plot(df$x, df$y)</code></td><td><code>ggplot(df, aes(x, y)) + geom_point()</code></td><td><code>color = g</code> で色分け</td></tr>
+<tr><td>折れ線</td><td><code>plot(x, y, type = "l")</code></td><td><code>+ geom_line()</code></td><td>時間変化</td></tr>
+<tr><td>ヒストグラム</td><td><code>hist(x, breaks = 10)</code></td><td><code>+ geom_histogram(binwidth = 5)</code></td><td>分布</td></tr>
+<tr><td>箱ひげ図</td><td><code>boxplot(y ~ g, data = df)</code></td><td><code>+ geom_boxplot() + geom_jitter()</code></td><td>点を重ねると、データの数も見える</td></tr>
+<tr><td>棒グラフ</td><td><code>barplot(table(x))</code></td><td><code>+ geom_bar()、+ geom_col()</code></td><td><code>geom_bar()</code> は件数、<code>geom_col()</code> は値そのもの</td></tr>
+<tr><td>保存</td><td><code>png("g.png"); plot(x); dev.off()</code></td><td><code>ggsave("g.png", width = 6, height = 4)</code></td><td>単位はインチ（既定）</td></tr>
+</table></div>
+<p>※この一覧のコードは、環境にRがないため、実行していません。引数名や関数名は、パッケージのバージョンによって変わることがあります（第10節の注記を参照）。エラーが出たら、<code>?関数名</code> のヘルプを確認してください。</p>
 
 <footer>
 本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
