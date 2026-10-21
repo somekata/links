@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>感染管理のためのウイルス分類｜エンベロープと消毒薬</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f4ee; --paper:#ffffff; --ink:#1d1d1f; --muted:#5b5b60; --line:#d9d4c7;
+  --env:#c2410c;      /* エンベロープあり：アルコール有効 */
+  --env-bg:#fff1e8;
+  --non:#1d4ed8;      /* エンベロープなし：アルコール抵抗性 */
+  --non-bg:#e8f0ff;
+  --danger:#9f1239; --danger-bg:#fde8ee;
+  --accent:#0f766e;   --accent-bg:#e3f4f1;
+  --footer-h:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:"BIZ UDPGothic","Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif;}
+#deck{position:fixed;inset:0 0 var(--footer-h) 0;overflow:hidden}
+#track{display:flex;height:100%;width:100%;transition:transform .45s cubic-bezier(.22,.8,.3,1);will-change:transform}
+.slide{flex:0 0 100vw;width:100vw;height:100%;overflow-y:auto;padding:clamp(20px,4vh,48px) clamp(20px,6vw,96px) 72px;}
+.slide > .inner{max-width:1280px;margin:0 auto}
+h1,h2{font-family:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;line-height:1.3}
+h1{font-size:clamp(30px,4.6vw,60px);font-weight:800}
+h2{font-size:clamp(24px,3vw,40px);font-weight:800;margin-bottom:.5em;padding-bottom:.3em;border-bottom:3px solid var(--ink)}
+h3{font-size:clamp(17px,1.7vw,24px);margin:.2em 0 .4em}
+p,li{font-size:clamp(15px,1.55vw,22px);line-height:1.75}
+ul{padding-left:1.3em}
+li{margin:.25em 0}
+.kicker{display:inline-block;font-size:clamp(13px,1.2vw,17px);font-weight:700;letter-spacing:.08em;
+  color:#fff;background:var(--ink);padding:.15em .8em;border-radius:99px;margin-bottom:.8em}
+.sub{color:var(--muted);font-size:clamp(14px,1.4vw,20px)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(14px,2vw,32px)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(12px,1.6vw,24px)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:clamp(14px,1.8vw,26px)}
+.card.env{border-top:8px solid var(--env);background:var(--env-bg)}
+.card.non{border-top:8px solid var(--non);background:var(--non-bg)}
+.card.danger{border-top:8px solid var(--danger);background:var(--danger-bg)}
+.card.accent{border-top:8px solid var(--accent);background:var(--accent-bg)}
+.tag{display:inline-block;font-weight:700;font-size:.8em;padding:.05em .6em;border-radius:6px;color:#fff;margin-right:.3em}
+.tag.env{background:var(--env)} .tag.non{background:var(--non)} .tag.danger{background:var(--danger)} .tag.accent{background:var(--accent)}
+.big{font-size:clamp(20px,2.4vw,34px);font-weight:700}
+table{width:100%;border-collapse:collapse;background:var(--paper);border-radius:10px;overflow:hidden;
+  font-size:clamp(13px,1.3vw,19px)}
+th,td{border:1px solid var(--line);padding:.55em .75em;text-align:left;vertical-align:top;line-height:1.55}
+th{background:var(--ink);color:#fff;font-weight:700;white-space:nowrap}
+table.non th{background:var(--non)} table.env th{background:var(--env)} table.danger th{background:var(--danger)}
+td.name{font-weight:700;white-space:nowrap}
+.note{margin-top:1em;padding:.7em 1em;border-left:6px solid var(--accent);background:var(--accent-bg);border-radius:0 10px 10px 0;font-size:clamp(14px,1.4vw,20px);line-height:1.7}
+.warn{border-left-color:var(--danger);background:var(--danger-bg)}
+.center{display:flex;flex-direction:column;justify-content:center;min-height:100%}
+.title-slide{background:linear-gradient(135deg,#fff 0%,#f6f4ee 60%,#e8f0ff 100%)}
+.matrix{display:grid;grid-template-columns:140px 1fr 1fr;gap:10px}
+.matrix > div{padding:.8em 1em;border-radius:12px;font-size:clamp(14px,1.4vw,20px);line-height:1.6}
+.matrix .h{font-weight:700;background:var(--ink);color:#fff;text-align:center}
+.matrix .rowh{font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center}
+.matrix .rowh.non{background:var(--non);color:#fff}.matrix .rowh.env{background:var(--env);color:#fff}
+.matrix .c.non{background:var(--non-bg);border:1px solid var(--non)}
+.matrix .c.env{background:var(--env-bg);border:1px solid var(--env)}
+.matrix .rule{grid-column:2 / span 2;text-align:center;font-weight:700;border:2px dashed currentColor}
+.matrix .rule.non{color:var(--non);background:#fff}.matrix .rule.env{color:var(--env);background:#fff}
+/* quiz */
+.q{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:.8em 1em;margin-bottom:.8em}
+.q .qt{font-weight:700;font-size:clamp(15px,1.5vw,21px);margin-bottom:.4em;line-height:1.6}
+.opts{display:flex;flex-wrap:wrap;gap:.5em}
+.opts button{font:inherit;font-size:clamp(13px,1.3vw,18px);padding:.4em .9em;border:2px solid var(--line);background:#fff;border-radius:99px;cursor:pointer}
+.opts button:hover{border-color:var(--ink)}
+.opts button.ok{background:#16a34a;color:#fff;border-color:#16a34a}
+.opts button.ng{background:#dc2626;color:#fff;border-color:#dc2626}
+.exp{display:none;margin-top:.5em;font-size:clamp(13px,1.3vw,18px);line-height:1.65;color:var(--ink)}
+.q.done .exp{display:block}
+.q.done .opts button{pointer-events:none}
+/* nav */
+#bar{position:fixed;left:0;top:0;height:5px;background:var(--accent);width:0;transition:width .35s;z-index:20}
+.navbtn{position:fixed;top:50%;transform:translateY(-50%);z-index:15;width:48px;height:72px;border:none;border-radius:12px;
+  background:rgba(29,29,31,.78);color:#fff;font-size:28px;cursor:pointer;opacity:.85}
+.navbtn:hover{opacity:1}.navbtn[disabled]{opacity:.15;cursor:default}
+#prev{left:8px}#next{right:8px}
+#counter{position:fixed;right:14px;top:12px;z-index:20;font-size:14px;font-weight:700;background:rgba(255,255,255,.9);
+  border:1px solid var(--line);border-radius:99px;padding:.15em .8em}
+#toc{position:fixed;left:14px;top:12px;z-index:20;font-size:14px;font-weight:700;background:rgba(255,255,255,.9);
+  border:1px solid var(--line);border-radius:99px;padding:.15em .8em;cursor:pointer}
+#tocpanel{position:fixed;left:14px;top:48px;z-index:25;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.5em;
+  max-height:70vh;overflow:auto;display:none;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+#tocpanel button{display:block;width:100%;text-align:left;font:inherit;font-size:14px;border:none;background:none;padding:.4em .8em;cursor:pointer;border-radius:8px}
+#tocpanel button:hover,#tocpanel button.cur{background:var(--accent-bg)}
+footer{position:fixed;left:0;right:0;bottom:0;height:var(--footer-h);z-index:10;background:#1d1d1f;color:#e5e5e5;
+  padding:6px clamp(12px,3vw,40px);font-size:11px;line-height:1.5;display:flex;align-items:center}
+footer small{font-size:11px}
+@media (max-width:820px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .matrix{grid-template-columns:90px 1fr 1fr}
+  .navbtn{width:36px;height:56px;font-size:22px}
+  footer{height:72px} :root{--footer-h:72px}
+  .slide{padding-left:46px;padding-right:46px}
+  table{display:block;overflow-x:auto}
+}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<button id="toc" aria-label="目次">☰ 目次</button>
+<div id="tocpanel"></div>
+<div id="counter">1 / 1</div>
+<button class="navbtn" id="prev" aria-label="前へ">‹</button>
+<button class="navbtn" id="next" aria-label="次へ">›</button>
+
+<div id="deck"><div id="track">
+
+<!-- 1 タイトル -->
+<section class="slide title-slide" data-title="タイトル"><div class="inner center">
+  <span class="kicker">感染管理認定看護師 教育課程｜微生物学・感染防止技術・職業感染管理</span>
+  <h1>感染管理のための<br>ウイルス分類</h1>
+  <p class="big" style="margin-top:.6em">「エンベロープの有無」で消毒薬が決まる</p>
+  <p class="sub" style="margin-top:1em">総論（エンベロープ・消毒薬・核酸）→ 各論（主要ウイルス）→ 確認表 → 確認問題</p>
+  <p class="sub" style="margin-top:2em">操作：← → キー / スワイプ / 画面端のボタン　／　左上「目次」からジャンプ</p>
+</div></section>
+
+<!-- 2 ゴール -->
+<section class="slide" data-title="この資料のゴール"><div class="inner">
+  <h2>この資料のゴール</h2>
+  <div class="grid2">
+    <div class="card accent">
+      <h3>ここができるようになる</h3>
+      <ul>
+        <li>ウイルスを<b>エンベロープの有無</b>で2群に分けられる</li>
+        <li>群ごとに<b>手指衛生・環境消毒</b>の原則を言える</li>
+        <li>核酸（DNA/RNA）・分節の有無と<b>変異・流行監視</b>を結び付けられる</li>
+        <li>主要ウイルスの<b>感染経路・隔離・職員の免疫管理</b>を整理できる</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>カリキュラム上の位置づけ</h3>
+      <ul>
+        <li>微生物学：病原微生物の分類と特徴</li>
+        <li>感染防止技術：標準予防策・感染経路別予防策</li>
+        <li>職業感染管理：流行性ウイルス感染症・血液媒介病原体、ワクチンプログラム</li>
+        <li>洗浄・消毒・滅菌：消毒薬の選択</li>
+      </ul>
+      <p class="sub" style="margin-top:.6em">出典：認定看護師教育基準カリキュラム（B課程）感染管理</p>
+    </div>
+  </div>
+  <div class="note">なぜ最重要の識別軸か：<b>消毒薬の選択（手指衛生・環境クロス）に直結する</b>から。</div>
+</div></section>
+
+<!-- 3 総論1 -->
+<section class="slide" data-title="総論① エンベロープ"><div class="inner">
+  <span class="kicker">総論 ①</span>
+  <h2>エンベロープの有無 ― 構造の違い</h2>
+  <div class="grid2">
+    <div class="card non">
+      <h3><span class="tag non">なし</span>ノンエンベロープウイルス</h3>
+      <ul>
+        <li>脂質二重膜をもたず、<b>タンパク質の殻（カプシド）</b>で覆われる</li>
+        <li><b>環境抵抗性が非常に高い</b>（乾燥・消毒薬に強い）</li>
+        <li>親水性</li>
+        <li>例：ノロ、ロタ、アデノ、A型・E型肝炎、エンテロ</li>
+      </ul>
+    </div>
+    <div class="card env">
+      <h3><span class="tag env">あり</span>エンベロープウイルス</h3>
+      <ul>
+        <li>宿主細胞由来の<b>脂質膜</b>をもつ</li>
+        <li>膜が壊れると<b>感染力を失う</b> → 環境抵抗性は低い</li>
+        <li>親油性</li>
+        <li>例：インフルエンザ、コロナ、麻疹、水痘、HBV、HCV、HIV、エボラ</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">覚え方：<b>「膜があれば脆い、殻だけなら頑丈」</b>。アルコールは脂質膜を壊すので、膜のない群には効きにくい。</div>
+</div></section>
+
+<!-- 4 総論2 消毒 -->
+<section class="slide" data-title="総論② 消毒薬の選択"><div class="inner">
+  <span class="kicker">総論 ②</span>
+  <h2>群ごとの手指衛生と環境消毒</h2>
+  <table>
+    <tr><th></th><th style="background:var(--non)">エンベロープなし</th><th style="background:var(--env)">エンベロープあり</th></tr>
+    <tr><td class="name">手指衛生</td>
+      <td><b>流水と石けん</b>による物理的除去が原則<br>（一部の酸性アルコール製剤は補助的効果あり）</td>
+      <td><b>速乾性手指消毒薬（アルコール）</b>が極めて有効</td></tr>
+    <tr><td class="name">環境消毒</td>
+      <td><b>次亜塩素酸ナトリウム</b>（0.02〜0.1％以上）、加速化過酸化水素、熱水（85℃・1分以上）</td>
+      <td>通常の消毒薬で容易に不活化：アルコール、環境用界面活性剤など</td></tr>
+    <tr><td class="name">効きにくい薬剤</td>
+      <td>アルコール（エタノール）、逆性石けんは<b>無効または不十分</b></td>
+      <td>（一般的な消毒薬は概ね有効）</td></tr>
+  </table>
+  <div class="note warn">ノロウイルスの吐物・糞便処理は <b>PPE（ガウン・マスク・手袋）＋次亜塩素酸ナトリウム</b>。濃度は汚染物・汚染箇所で高め（約0.1％）、一般環境は約0.02％が目安。</div>
+</div></section>
+
+<!-- 5 総論3 核酸 -->
+<section class="slide" data-title="総論③ 核酸分類"><div class="inner">
+  <span class="kicker">総論 ③</span>
+  <h2>核酸分類（DNA / RNA）と感染管理</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>RNAウイルスは変異しやすい</h3>
+      <ul>
+        <li>インフルエンザ、コロナ、ノロなど</li>
+        <li><b>アウトブレイクの監視</b>・<b>ワクチンの有効性</b>に注意が必要</li>
+      </ul>
+    </div>
+    <div class="card danger">
+      <h3>分節型RNAウイルス：遺伝子再構成</h3>
+      <ul>
+        <li>例：インフルエンザ（8分節、C型は7分節）、ロタ（11分節）</li>
+        <li>再集合により<b>不連続変異（抗原シフト）</b>が起こり得る → 新型ウイルス出現の背景</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">ポイント：<b>消毒薬の選択はエンベロープ</b>、<b>流行の読み・ワクチン戦略は核酸と分節</b>と、見る軸が違う。</div>
+</div></section>
+
+<!-- 6 各論1 -->
+<section class="slide" data-title="各論① エンベロープなし"><div class="inner">
+  <span class="kicker" style="background:var(--non)">各論 ①</span>
+  <h2>エンベロープなし（アルコール抵抗性・最重要群）</h2>
+  <table class="non">
+    <tr><th>ウイルス</th><th>核酸</th><th>科・構造</th><th>主要リスクと対策</th></tr>
+    <tr><td class="name">ノロウイルス</td><td>ss(+)RNA</td><td>カリシウイルス科</td><td><b>環境集団感染（最重要）</b>。吐物・糞便処理はPPEと次亜塩素酸ナトリウムが必須</td></tr>
+    <tr><td class="name">ロタウイルス</td><td>dsRNA</td><td>レオウイルス科／11分節</td><td>乳幼児の急性胃腸炎。接触感染対策。ワクチンによる予防</td></tr>
+    <tr><td class="name">アデノウイルス</td><td>dsDNA</td><td>アデノウイルス科</td><td>流行性角結膜炎、咽頭結膜熱。<b>眼科器具（結膜プレッサー、スリットランプ等）</b>を介した院内感染リスクが大きい</td></tr>
+    <tr><td class="name">A型肝炎（HAV）</td><td>ss(+)RNA</td><td>ピコルナウイルス科</td><td>糞口感染。急性肝炎。食品取扱者の管理</td></tr>
+    <tr><td class="name">E型肝炎（HEV）</td><td>ss(+)RNA</td><td>ヘペウイルス科</td><td>糞口感染（主に人獣共通感染）。妊婦で重症化リスク</td></tr>
+    <tr><td class="name">エンテロウイルス<br>（コクサッキー、ポリオ含む）</td><td>ss(+)RNA</td><td>ピコルナウイルス科</td><td>手足口病、ヘルパンギーナ、無菌性髄膜炎。夏季に流行。糞口・飛沫感染</td></tr>
+  </table>
+</div></section>
+
+<!-- 7 各論2a -->
+<section class="slide" data-title="各論② 呼吸器・発疹性"><div class="inner">
+  <span class="kicker" style="background:var(--env)">各論 ②</span>
+  <h2>エンベロープあり ― 呼吸器・発疹性ウイルス</h2>
+  <table class="env">
+    <tr><th>ウイルス</th><th>核酸</th><th>科・構造</th><th>主要リスクと対策</th></tr>
+    <tr><td class="name">インフルエンザ</td><td>ss(−)RNA</td><td>遺伝子分節（8または7）</td><td>飛沫・接触感染対策。シーズン前の職員・患者へのワクチン推奨、抗ウイルス薬の予防投与の検討</td></tr>
+    <tr><td class="name">コロナ<br>（SARS-CoV-2、MERS等）</td><td>ss(+)RNA</td><td>コロナウイルス科</td><td>飛沫・接触感染対策が基本。エアロゾル（空気予防策）への配慮、<b>換気の徹底</b>、サージカルマスク／N95マスクの使い分け</td></tr>
+    <tr><td class="name">麻疹</td><td>ss(−)RNA</td><td>パラミクソウイルス科／非分節</td><td><b>空気感染</b>。陰圧室隔離。職員の抗体価管理（2回接種歴）が必須</td></tr>
+    <tr><td class="name">ムンプス</td><td>ss(−)RNA</td><td>パラミクソウイルス科／非分節</td><td>飛沫・接触感染対策。医療従事者の感受性（抗体）管理</td></tr>
+    <tr><td class="name">風疹</td><td>ss(+)RNA</td><td>トガウイルス科（＊）</td><td>飛沫感染対策。<b>先天性風疹症候群（CRS）</b>予防のため、妊婦への接触遮断と職員のワクチン接種</td></tr>
+    <tr><td class="name">水痘・帯状疱疹（VZV）</td><td>dsDNA</td><td>ヘルペスウイルス科</td><td>水痘・播種性帯状疱疹は<b>空気・飛沫・接触感染対策</b>。陰圧室隔離</td></tr>
+  </table>
+  <p class="sub" style="margin-top:.6em">＊ 分類の更新により、風疹ウイルスは現在 Matonaviridae（マトナウイルス科）に分類されています。</p>
+</div></section>
+
+<!-- 8 各論2b -->
+<section class="slide" data-title="各論② 血液媒介"><div class="inner">
+  <span class="kicker" style="background:var(--env)">各論 ②</span>
+  <h2>エンベロープあり ― 血液媒介ウイルス</h2>
+  <table class="env">
+    <tr><th>ウイルス</th><th>核酸</th><th>科・構造</th><th>主要リスクと対策</th></tr>
+    <tr><td class="name">B型肝炎（HBV）</td><td>dsDNA</td><td>ヘパドナウイルス科（一部ss領域あり）</td><td>血液・体液曝露（針刺し）リスク。<b>環境抵抗性が比較的高い</b>。ワクチンと曝露後対応（HBIG、ワクチン）</td></tr>
+    <tr><td class="name">C型肝炎（HCV）</td><td>ss(+)RNA</td><td>フラビウイルス科</td><td>血液・体液曝露リスク</td></tr>
+    <tr><td class="name">HIV</td><td>ss(+)RNA</td><td>レトロウイルス（逆転写）</td><td>血液・体液曝露リスク。標準予防策の徹底</td></tr>
+  </table>
+  <div class="note warn">エンベロープがあっても安心しない：HBVのように<b>乾燥血液中で長く生存</b>するものがある。針刺し防止（安全器材）と曝露後対応のフローを整備する。</div>
+</div></section>
+
+<!-- 9 一類 -->
+<section class="slide" data-title="各論③ 一類感染症"><div class="inner">
+  <span class="kicker" style="background:var(--danger)">各論 ③</span>
+  <h2>稀・極めて危険なウイルス（一類感染症）</h2>
+  <p>すべてエンベロープをもつ。致死率が極めて高く、消毒の容易さよりも <b>厳密な接触・飛沫・空気の遮断</b> と <b>個人防護具の完全化（全身防護）</b> が最優先。</p>
+  <table class="danger" style="margin-top:.8em">
+    <tr><th>ウイルス</th><th>核酸</th><th>科・構造</th><th>主要リスクと対策</th></tr>
+    <tr><td class="name">エボラ</td><td>ss(−)RNA</td><td>フィロウイルス科／非分節</td><td>血液・嘔吐物・汗などの体液との直接接触。<b>防護服の着脱訓練が必須</b></td></tr>
+    <tr><td class="name">マールブルグ</td><td>ss(−)RNA</td><td>フィロウイルス科／非分節</td><td>エボラと同様の厳重な隔離とPPE</td></tr>
+    <tr><td class="name">クリミア・コンゴ出血熱</td><td>ss(−)RNA</td><td>ブニヤウイルス目／分節（3）（＊）</td><td>ダニ媒介、および患者の血液・体液への接触</td></tr>
+    <tr><td class="name">ラッサ</td><td>ss(−)RNA（アンビセンス）</td><td>アレナウイルス科／分節（2）</td><td>ネズミの排泄物媒介、および患者の体液接触</td></tr>
+  </table>
+  <p class="sub" style="margin-top:.6em">＊ 現在の分類ではブニヤウイルス目（Bunyavirales）ナイロウイルス科に属します。</p>
+</div></section>
+
+<!-- 10 経路別 -->
+<section class="slide" data-title="感染経路別まとめ"><div class="inner">
+  <span class="kicker">整理</span>
+  <h2>感染経路別予防策から見たウイルス</h2>
+  <div class="grid3">
+    <div class="card danger">
+      <h3><span class="tag danger">空気</span>空気予防策</h3>
+      <ul><li><b>麻疹</b></li><li><b>水痘</b>・播種性帯状疱疹</li><li>（結核は細菌）</li></ul>
+      <p class="sub">陰圧室、N95マスク、免疫のある職員が対応</p>
+    </div>
+    <div class="card env">
+      <h3><span class="tag env">飛沫</span>飛沫予防策</h3>
+      <ul><li>インフルエンザ</li><li>ムンプス</li><li>風疹</li><li>コロナ（＋換気・エアロゾル配慮）</li></ul>
+      <p class="sub">サージカルマスク、個室または間隔の確保</p>
+    </div>
+    <div class="card non">
+      <h3><span class="tag non">接触</span>接触予防策</h3>
+      <ul><li>ノロ、ロタ</li><li>アデノ</li><li>エンテロ</li><li>（A型・E型肝炎は糞口感染）</li></ul>
+      <p class="sub">手袋・ガウン、石けんと流水、次亜塩素酸ナトリウム</p>
+    </div>
+  </div>
+  <div class="note">血液・体液曝露（HBV・HCV・HIV）は<b>標準予防策＋安全器材</b>、一類は<b>全身防護</b>で別枠として覚える。</div>
+</div></section>
+
+<!-- 11 マトリックス -->
+<section class="slide" data-title="最終確認表"><div class="inner">
+  <span class="kicker">まとめ</span>
+  <h2>最終確認表（エンベロープ × 核酸）</h2>
+  <div class="matrix">
+    <div class="h"></div><div class="h">DNA</div><div class="h">RNA</div>
+    <div class="rowh non">なし<br>（親水性）</div>
+    <div class="c non">アデノウイルス</div>
+    <div class="c non">ノロ、ロタ、ピコルナ（A型肝炎、エンテロ等）、E型肝炎</div>
+    <div class="rule non">流水と石けん（手指）／次亜塩素酸ナトリウム（環境）</div>
+    <div class="rowh env">あり<br>（親油性）</div>
+    <div class="c env">水痘、HBV、HSV（ヘルペス）</div>
+    <div class="c env">インフル、コロナ、麻疹、ムンプス、風疹、HCV、HIV、エボラ</div>
+    <div class="rule env">速乾性手指消毒薬（アルコール）／通常の環境消毒（界面活性剤等）</div>
+  </div>
+  <div class="note">日々の環境整備や隔離指示の根拠として使えるよう、<b>まず左の行（エンベロープ）で消毒薬を決める</b>。</div>
+</div></section>
+
+<!-- 12 職員 -->
+<section class="slide" data-title="職員の免疫管理"><div class="inner">
+  <span class="kicker">職業感染管理</span>
+  <h2>職員の免疫管理（ワクチンプログラム）</h2>
+  <table>
+    <tr><th>対象</th><th>管理のポイント</th></tr>
+    <tr><td class="name">麻疹・風疹・ムンプス・水痘</td><td>抗体価の確認とワクチン接種歴（<b>2回接種歴</b>）を記録。陰性・低値は接種。曝露時は就業制限や対応の判断材料に</td></tr>
+    <tr><td class="name">B型肝炎</td><td>ワクチン接種と抗体獲得の確認。針刺し後は曝露後対応（HBIG、ワクチン）</td></tr>
+    <tr><td class="name">インフルエンザ</td><td>シーズン前の職員・患者へのワクチン推奨。抗ウイルス薬の予防投与も検討</td></tr>
+    <tr><td class="name">HCV・HIV</td><td>ワクチンなし。<b>曝露防止</b>（標準予防策・安全器材）と曝露後フォロー体制が中心</td></tr>
+  </table>
+  <div class="note">空気感染する麻疹・水痘の隔離室には、<b>免疫のある職員</b>が入る。抗体価台帳をあらかじめ整えておく。</div>
+</div></section>
+
+<!-- 13 クイズ -->
+<section class="slide" data-title="確認問題"><div class="inner">
+  <span class="kicker">確認問題</span>
+  <h2>確認問題（クリックで答え合わせ）</h2>
+
+  <div class="q" data-ans="1">
+    <div class="qt">Q1　ノロウイルスの吐物処理で、環境消毒の中心となる薬剤はどれか。</div>
+    <div class="opts"><button>アルコール</button><button>次亜塩素酸ナトリウム</button><button>逆性石けん</button></div>
+    <div class="exp">正解は次亜塩素酸ナトリウム。ノロはエンベロープがなく、アルコールや逆性石けんは無効または不十分。PPEも併用する。</div>
+  </div>
+
+  <div class="q" data-ans="2">
+    <div class="qt">Q2　アデノウイルスによる流行性角結膜炎で、院内感染リスクが特に高いのはどれか。</div>
+    <div class="opts"><button>人工呼吸器の回路</button><button>尿道カテーテル</button><button>眼科の診察器具（スリットランプ等）</button></div>
+    <div class="exp">正解は眼科の診察器具。環境抵抗性が高く、器具を介した伝播が問題になる。</div>
+  </div>
+
+  <div class="q" data-ans="0">
+    <div class="qt">Q3　空気感染対策（陰圧室）が必要で、職員の抗体価管理が必須とされるウイルスはどれか。</div>
+    <div class="opts"><button>麻疹ウイルス</button><button>ロタウイルス</button><button>A型肝炎ウイルス</button></div>
+    <div class="exp">正解は麻疹ウイルス。水痘も空気感染対策が必要。</div>
+  </div>
+
+  <div class="q" data-ans="2">
+    <div class="qt">Q4　遺伝子再構成により不連続変異を起こしやすいのはどれか。</div>
+    <div class="opts"><button>HIV</button><button>HBV</button><button>インフルエンザウイルス（分節型RNA）</button></div>
+    <div class="exp">正解はインフルエンザウイルス。8分節のRNAをもち、再集合により新型が出現し得る。</div>
+  </div>
+
+  <div class="q" data-ans="1">
+    <div class="qt">Q5　手指衛生で「速乾性アルコール製剤が極めて有効」といえる群はどれか。</div>
+    <div class="opts"><button>エンベロープなし群</button><button>エンベロープあり群</button><button>群に関係なく同じ</button></div>
+    <div class="exp">正解はエンベロープあり群。ノンエンベロープ群は流水と石けんによる物理的除去が原則。</div>
+  </div>
+</div></section>
+
+<!-- 14 まとめ -->
+<section class="slide" data-title="まとめ"><div class="inner">
+  <h2>まとめ</h2>
+  <div class="grid2">
+    <div class="card accent">
+      <h3>押さえる3点</h3>
+      <ul>
+        <li><b>エンベロープなし</b>＝石けんと流水＋次亜塩素酸ナトリウム</li>
+        <li><b>エンベロープあり</b>＝アルコールが有効。ただし血液媒介は曝露対策が主役</li>
+        <li><b>RNA・分節</b>＝変異と流行監視、ワクチン戦略に直結</li>
+      </ul>
+    </div>
+    <div class="card warn" style="border-top:8px solid var(--danger);background:var(--danger-bg)">
+      <h3>資料作成上の注意</h3>
+      <ul>
+        <li>消毒薬の濃度・隔離期間・届出区分は<b>最新のガイドライン・法令で必ず確認</b></li>
+        <li>科の分類は更新されることがある（風疹、ブニヤウイルス目など）</li>
+        <li>施設ごとの手順書が優先される場面もある</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">さらに掘り下げる題材：アデノウイルスによる結膜炎アウトブレイク対策、麻疹発生時の職員スクリーニング基準、濃厚接触者の定義と就業制限、など。</div>
+</div></section>
+
+</div></div>
+
+<footer>
+  <small>本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</small>
+</footer>
+
+<script>
+(function(){
+  var track=document.getElementById('track');
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var n=slides.length, i=0;
+  var bar=document.getElementById('bar'), counter=document.getElementById('counter');
+  var prev=document.getElementById('prev'), next=document.getElementById('next');
+  var toc=document.getElementById('toc'), panel=document.getElementById('tocpanel');
+  slides.forEach(function(s,k){
+    var b=document.createElement('button');
+    b.textContent=(k+1)+'. '+s.getAttribute('data-title');
+    b.onclick=function(){go(k);panel.style.display='none'};
+    panel.appendChild(b);
+  });
+  function go(k){
+    i=Math.max(0,Math.min(n-1,k));
+    track.style.transform='translateX(-'+(i*100)+'vw)';
+    bar.style.width=((i+1)/n*100)+'%';
+    counter.textContent=(i+1)+' / '+n;
+    prev.disabled=(i===0); next.disabled=(i===n-1);
+    slides[i].scrollTop=0;
+    [].forEach.call(panel.children,function(c,j){c.classList.toggle('cur',j===i)});
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}
+  }
+  prev.onclick=function(){go(i-1)}; next.onclick=function(){go(i+1)};
+  toc.onclick=function(e){e.stopPropagation();panel.style.display=panel.style.display==='block'?'none':'block'};
+  document.addEventListener('click',function(e){if(!panel.contains(e.target))panel.style.display='none'});
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||(e.key===' '&&!e.shiftKey)){e.preventDefault();go(i+1)}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'||(e.key===' '&&e.shiftKey)){e.preventDefault();go(i-1)}
+    else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(n-1)}
+  });
+  var sx=0,sy=0;
+  document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchend',function(e){
+    var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){go(dx<0?i+1:i-1)}
+  },{passive:true});
+  // quiz
+  [].forEach.call(document.querySelectorAll('.q'),function(q){
+    var ans=parseInt(q.getAttribute('data-ans'),10);
+    [].forEach.call(q.querySelectorAll('button'),function(b,k){
+      b.onclick=function(){
+        b.classList.add(k===ans?'ok':'ng');
+        q.querySelectorAll('button')[ans].classList.add('ok');
+        q.classList.add('done');
+      };
+    });
+  });
+  var h=parseInt((location.hash||'').replace('#',''),10);
+  go(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
