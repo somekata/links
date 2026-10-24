@@ -131,8 +131,25 @@
 `本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。
 二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。`;
 
+  // 日本語の直前直後で ** や * が効かない問題への対処
+  // （コードブロック・インラインコードの中は変換しない）
+  function fixCjkEmphasis(md) {
+    return md
+      .split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`)/g)
+      .map((part, i) => {
+        if (i % 2) return part;
+        return part
+          // 太字：**...**
+          .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>')
+          // 斜体：*...*（箇条書きの「* 」は開始直後が空白なので対象外）
+          .replace(/(^|[^*\w])\*([^*\s][^*\n]*?)\*(?!\*)/g, '$1<em>$2</em>');
+      })
+      .join('');
+  }
+
   function render() {
-    const raw = marked.parse(src.value || '*Markdown を入力するとここに表示されます*', { breaks: true, gfm: true });
+    const md = fixCjkEmphasis(src.value) || '*Markdown を入力するとここに表示されます*';
+    const raw = marked.parse(md, { breaks: true, gfm: true });
     doc.innerHTML = DOMPurify.sanitize(raw) + NOTICE_HTML;
     document.title = docTitle();
   }
