@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Markdown → PDF 変換</title>
+<title>Markdown 変換ツール</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
 <style>
@@ -37,30 +37,32 @@
   button.sub { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
   select { padding: 6px; font-family: inherit; }
 
-  /* ===== 文書本体（プレビュー兼印刷対象） ===== */
-  #doc {
+  /* ===== 文書本体（プレビュー・HTML書き出し・印刷で共通） ===== */
+  /*DOCCSS-START*/
+  .doc {
     background: #fff; color: #000; padding: 24px; border-radius: 6px;
-    font-size: 11pt; overflow-wrap: anywhere;
+    font-family: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+    font-size: 11pt; line-height: 1.7; overflow-wrap: anywhere;
   }
-  #doc h1, #doc h2, #doc h3, #doc h4 { line-height: 1.4; margin: 1.4em 0 .5em; page-break-after: avoid; }
-  #doc h1 { font-size: 1.8em; border-bottom: 2px solid var(--accent); padding-bottom: .2em; }
-  #doc h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: .15em; }
-  #doc h3 { font-size: 1.2em; }
-  #doc p, #doc ul, #doc ol, #doc blockquote, #doc pre, #doc table { margin: .6em 0; }
-  #doc blockquote { border-left: 4px solid var(--accent); margin-left: 0; padding: .2em 1em; background: #f6f8fa; }
-  #doc code { font-family: Consolas, monospace; background: #f1f1f1; padding: .1em .3em; border-radius: 3px; font-size: .92em; }
-  #doc pre { background: #f6f8fa; border: 1px solid var(--border); padding: 10px; border-radius: 6px; white-space: pre-wrap; page-break-inside: avoid; }
-  #doc pre code { background: none; padding: 0; }
-  #doc table { border-collapse: collapse; width: 100%; page-break-inside: avoid; }
-  #doc th, #doc td { border: 1px solid #888; padding: 6px 10px; text-align: left; }
-  #doc th { background: #eef2f7; }
-  #doc img { max-width: 100%; }
-  #doc hr { border: 0; border-top: 1px solid var(--border); margin: 1.5em 0; }
-
-  footer.notice {
+  .doc h1, .doc h2, .doc h3, .doc h4 { line-height: 1.4; margin: 1.4em 0 .5em; page-break-after: avoid; }
+  .doc h1 { font-size: 1.8em; border-bottom: 2px solid #1a56a0; padding-bottom: .2em; }
+  .doc h2 { font-size: 1.45em; border-bottom: 1px solid #ccc; padding-bottom: .15em; }
+  .doc h3 { font-size: 1.2em; }
+  .doc p, .doc ul, .doc ol, .doc blockquote, .doc pre, .doc table { margin: .6em 0; }
+  .doc blockquote { border-left: 4px solid #1a56a0; margin-left: 0; padding: .2em 1em; background: #f6f8fa; }
+  .doc code { font-family: Consolas, monospace; background: #f1f1f1; padding: .1em .3em; border-radius: 3px; font-size: .92em; }
+  .doc pre { background: #f6f8fa; border: 1px solid #ccc; padding: 10px; border-radius: 6px; white-space: pre-wrap; page-break-inside: avoid; }
+  .doc pre code { background: none; padding: 0; }
+  .doc table { border-collapse: collapse; width: 100%; page-break-inside: avoid; }
+  .doc th, .doc td { border: 1px solid #888; padding: 6px 10px; text-align: left; }
+  .doc th { background: #eef2f7; }
+  .doc img { max-width: 100%; }
+  .doc hr { border: 0; border-top: 1px solid #ccc; margin: 1.5em 0; }
+  .doc footer.notice {
     margin: 2em 0 0; padding-top: .8em; border-top: 1px solid #888;
     font-size: 9pt; color: #000; line-height: 1.6;
   }
+  /*DOCCSS-END*/
 
   /* ===== 印刷（PDF保存）設定 ===== */
   @page { size: A4; margin: 18mm 16mm; }
@@ -70,13 +72,13 @@
     main { display: block; padding: 0; }
     section.pane { border: 0; padding: 0; }
     #previewTitle { display: none; }
-    #doc { padding: 0; }
+    .doc { padding: 0; }
   }
 </style>
 </head>
 <body>
 
-<header class="app"><h1>Markdown → PDF 変換</h1></header>
+<header class="app"><h1>Markdown 変換ツール（PDF / HTML / Word互換 / テキスト）</h1></header>
 
 <main>
   <section class="pane" id="inputPane">
@@ -99,10 +101,16 @@
 
   <section class="pane">
     <h2 id="previewTitle">プレビュー</h2>
-    <div id="doc"></div>
+    <div id="doc" class="doc"></div>
     <div class="toolbar no-print">
-      <button id="print" type="button">PDFとして保存</button>
-      <span>※ 印刷ダイアログで「PDFに保存」を選択してください</span>
+      <button id="btnPdf" type="button">PDFとして保存</button>
+      <button id="btnHtml" type="button">HTMLとして保存</button>
+      <button id="btnDoc" type="button" class="sub">Word互換(.doc)</button>
+      <button id="btnMd" type="button" class="sub">Markdown(.md)</button>
+      <button id="btnTxt" type="button" class="sub">テキスト(.txt)</button>
+    </div>
+    <div class="no-print" style="font-size:13px;margin-top:6px;">
+      ※ PDFは印刷ダイアログで「PDFに保存」を選択してください
     </div>
   </section>
 </main>
@@ -119,12 +127,98 @@
       二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
     </footer>`;
 
+  const NOTICE_TEXT =
+`本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。
+二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。`;
+
   function render() {
     const raw = marked.parse(src.value || '*Markdown を入力するとここに表示されます*', { breaks: true, gfm: true });
     doc.innerHTML = DOMPurify.sanitize(raw) + NOTICE_HTML;
-    // ファイル名（タイトル）をPDFの既定名に反映
+    document.title = docTitle();
+  }
+
+  function docTitle() {
     const h1 = doc.querySelector('h1');
-    document.title = h1 ? h1.textContent : 'Markdown → PDF 変換';
+    return h1 ? h1.textContent.trim() : 'document';
+  }
+
+  function safeName() {
+    return docTitle().replace(/[\\/:*?"<>|]/g, '_').slice(0, 80) || 'document';
+  }
+
+  // 画面側の <style> から文書用CSSだけを取り出す
+  function docCss() {
+    const css = document.querySelector('style').textContent;
+    const m = css.match(/\/\*DOCCSS-START\*\/([\s\S]*?)\/\*DOCCSS-END\*\//);
+    return m ? m[1] : '';
+  }
+
+  function download(filename, text, mime) {
+    const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function exportHtml() {
+    const fs = doc.style.fontSize || '11pt';
+    const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${docTitle().replace(/</g, '&lt;')}</title>
+<style>
+body { margin: 0; background: #f4f5f7; }
+${docCss()}
+.doc { max-width: 900px; margin: 0 auto; font-size: ${fs}; }
+@page { size: A4; margin: 18mm 16mm; }
+@media print { body { background: #fff; } .doc { padding: 0; max-width: none; } }
+</style>
+</head>
+<body>
+<article class="doc">
+${doc.innerHTML}
+</article>
+</body>
+</html>`;
+    download(safeName() + '.html', html, 'text/html');
+  }
+
+  function exportDoc() {
+    const fs = doc.style.fontSize || '11pt';
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<title>${docTitle().replace(/</g, '&lt;')}</title>
+<style>
+${docCss()}
+.doc { font-size: ${fs}; }
+</style>
+</head>
+<body>
+<div class="doc">
+${doc.innerHTML}
+</div>
+</body>
+</html>`;
+    download(safeName() + '.doc', '\ufeff' + html, 'application/msword');
+  }
+
+  function exportMd() {
+    const text = src.value.replace(/\s+$/, '') + '\n\n---\n\n' + NOTICE_TEXT + '\n';
+    download(safeName() + '.md', text, 'text/markdown');
+  }
+
+  function exportTxt() {
+    const clone = doc.cloneNode(true);
+    clone.querySelector('footer.notice')?.remove();
+    const body = clone.innerText || clone.textContent;
+    download(safeName() + '.txt', body.trim() + '\n\n' + NOTICE_TEXT + '\n', 'text/plain');
   }
 
   function loadFile(f) {
@@ -143,7 +237,11 @@
 
   document.getElementById('fs').addEventListener('change', e => { doc.style.fontSize = e.target.value; });
   document.getElementById('clear').addEventListener('click', () => { src.value = ''; render(); });
-  document.getElementById('print').addEventListener('click', () => window.print());
+  document.getElementById('btnPdf').addEventListener('click', () => window.print());
+  document.getElementById('btnHtml').addEventListener('click', exportHtml);
+  document.getElementById('btnDoc').addEventListener('click', exportDoc);
+  document.getElementById('btnMd').addEventListener('click', exportMd);
+  document.getElementById('btnTxt').addEventListener('click', exportTxt);
 
   render();
 </script>
