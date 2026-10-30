@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>細菌学の入り口 ― 適材適所で考える感染症</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#000;
+  --accent:#4b2e83;      /* 肺炎球菌パート：皇族の紫 */
+  --accent-soft:#f1ecfa;
+  --mold:#1f6b4a;        /* アスペルギルスパート：カビの緑 */
+  --mold-soft:#e8f4ee;
+  --warn:#b4441f;
+  --warn-soft:#fdeee8;
+  --gray:#e9e9ee;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"BIZ UDPGothic","BIZ UDPGothic",system-ui,-apple-system,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+  color:var(--ink);background:var(--gray);
+  display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;
+}
+#viewport{flex:1;min-height:0;position:relative;overflow:hidden}
+#stage{
+  position:absolute;left:50%;top:50%;width:1280px;height:720px;
+  transform-origin:center center;background:#fff;
+  box-shadow:0 4px 24px rgba(0,0,0,.18);overflow:hidden;
+}
+#bar{position:absolute;left:0;top:0;height:6px;background:var(--accent);width:0;transition:width .25s;z-index:5}
+
+.slide{position:absolute;inset:0;padding:54px 72px 40px;display:none;flex-direction:column}
+.slide.active{display:flex}
+.slide h1{font-size:68px;line-height:1.25;font-weight:700}
+.slide h2{font-size:48px;line-height:1.3;font-weight:700;margin-bottom:26px}
+.slide p,.slide li{font-size:34px;line-height:1.65}
+.slide ul{list-style:none}
+.center{justify-content:center;align-items:center;text-align:center}
+.mute{color:#000;opacity:.7}
+i.sp{font-style:italic}
+
+.tag{display:inline-block;font-size:24px;font-weight:700;padding:4px 18px;border-radius:999px;color:#fff;background:var(--accent);margin-bottom:14px;align-self:flex-start}
+.tag.mold{background:var(--mold)}
+.tag.warn{background:var(--warn)}
+.tag.gray{background:#444}
+
+.frag{opacity:0;transform:translateY(12px);transition:opacity .35s,transform .35s}
+.frag.show{opacity:1;transform:none}
+
+.chips{display:flex;flex-wrap:wrap;gap:18px;margin-top:20px}
+.chip{font-size:36px;font-weight:700;padding:12px 28px;border-radius:16px;background:var(--accent-soft);border:3px solid var(--accent)}
+.card{border-radius:22px;padding:26px 32px;border:4px solid var(--accent);background:var(--accent-soft)}
+.card.mold{border-color:var(--mold);background:var(--mold-soft)}
+.card.warn{border-color:var(--warn);background:var(--warn-soft)}
+.card h3{font-size:38px;margin-bottom:8px}
+.card p,.card li{font-size:30px;line-height:1.55}
+.ok{color:var(--mold);font-weight:700}
+.ng{color:var(--warn);font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px}
+.grid3 .card p{font-size:27px}
+.big{font-size:44px!important;font-weight:700}
+.arrow{font-size:44px;font-weight:700;align-self:center}
+.flow{display:flex;align-items:center;gap:14px;margin-top:18px}
+.flow .node{flex:1;text-align:center;font-size:32px;font-weight:700;padding:20px 12px;border-radius:18px;border:4px solid var(--accent);background:var(--accent-soft);line-height:1.4}
+.flow.mold .node{border-color:var(--mold);background:var(--mold-soft)}
+.flow .arrow{flex:none}
+.q{font-size:44px;font-weight:700;line-height:1.5}
+.ibox{margin-top:20px;padding:16px 26px;border-left:10px solid var(--warn);background:var(--warn-soft);font-size:30px;line-height:1.55}
+
+/* table */
+table{border-collapse:collapse;width:100%;font-size:28px}
+th,td{border:3px solid #000;padding:12px 16px;text-align:left;vertical-align:top;line-height:1.5}
+th{background:var(--gray);font-size:28px}
+
+/* quiz */
+.opts{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.quiz .q{font-size:40px;line-height:1.4}
+.s9 .card p{font-size:27px}
+.s6 .chips{gap:12px;margin-top:10px}
+.s6 .chip{font-size:30px;padding:8px 20px}
+.s6 p{font-size:30px;line-height:1.55}
+.s9 .ibox{font-size:28px;margin-top:16px}
+.opt{font:inherit;font-size:30px;text-align:left;padding:10px 22px;border-radius:14px;border:3px solid #000;background:#fff;color:#000;cursor:pointer;line-height:1.45}
+.opt:hover{background:var(--accent-soft)}
+.quiz.answered .opt{cursor:default}
+.quiz.answered .opt.ok{background:#d9f2e2;border-color:var(--mold)}
+.quiz.answered .opt.ng{opacity:.55}
+.quiz.answered .opt.picked.ng{background:var(--warn-soft);border-color:var(--warn);opacity:1}
+.explain{display:none;margin-top:18px;padding:14px 24px;border-left:10px solid var(--mold);background:var(--mold-soft);font-size:28px;line-height:1.55}
+.quiz.answered .explain{display:block}
+
+/* nav */
+#nav{display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 12px;background:#fff;border-top:1px solid #ccc}
+#nav button{font:inherit;font-size:20px;min-width:56px;padding:6px 16px;border:2px solid #000;border-radius:10px;background:#fff;color:#000;cursor:pointer}
+#nav button:hover{background:var(--accent-soft)}
+#count{font-size:18px;min-width:90px;text-align:center}
+footer{background:#fff;color:#000;font-size:12px;line-height:1.5;padding:6px 16px 8px;text-align:center;border-top:1px solid #ddd}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="stage">
+<div id="bar"></div>
+
+<!-- 1 タイトル -->
+<section class="slide center">
+  <p class="mute" style="font-size:28px">感染管理認定看護師教育 ｜ 微生物学 導入</p>
+  <h1 style="margin:22px 0">細菌学の入り口</h1>
+  <p class="big" style="color:var(--accent)">菌にも「性格」がある<br>― 適材適所で考える感染症 ―</p>
+  <p class="mute" style="font-size:26px;margin-top:40px">→ キー or ボタンで進みます（問いかけは1つずつ表示されます）</p>
+</section>
+
+<!-- 2 自己紹介の問い -->
+<section class="slide">
+  <span class="tag">ウォームアップ</span>
+  <h2>皆さんは、どんな方ですか？</h2>
+  <p>自分の性格や性質を表すなら？</p>
+  <div class="chips">
+    <span class="chip frag">元気がある</span>
+    <span class="chip frag">たくましい</span>
+    <span class="chip frag">運動が苦手</span>
+    <span class="chip frag">贅沢な暮らしをしている</span>
+    <span class="chip frag">好き嫌いが激しい</span>
+    <span class="chip frag">……ほかには？</span>
+  </div>
+</section>
+
+<!-- 3 適材適所 -->
+<section class="slide">
+  <span class="tag">たとえ話</span>
+  <h2>同じ人でも、居場所しだいで輝きが変わる</h2>
+  <div class="grid2">
+    <div class="card frag">
+      <h3>贅沢だけど、上品な人</h3>
+      <p><span class="ng">✕ 無人島</span> → サバイバルは厳しい</p>
+      <p><span class="ok">○ 社交界</span> → 本領を発揮できる</p>
+    </div>
+    <div class="card frag">
+      <h3>粗野だけど、たくましい人</h3>
+      <p><span class="ng">✕ 社交界</span> → うまくやるのは難しい</p>
+      <p><span class="ok">○ 無人島</span> → たくましく生き抜ける</p>
+    </div>
+  </div>
+  <p class="big frag" style="text-align:center;margin-top:34px;color:var(--accent)">ぴったりの場所に置く ＝ 「適材適所」</p>
+</section>
+
+<!-- 4 今日の問い -->
+<section class="slide">
+  <span class="tag">本日の問い</span>
+  <h2>菌にも「適所」がある</h2>
+  <p>肺炎球菌（<i class="sp">Streptococcus pneumoniae</i>）は、なぜ……</p>
+  <ul style="margin-top:20px">
+    <li class="frag big">① 尿路感染症を起こさないのか？</li>
+    <li class="frag big">② 腸炎を起こさないのか？</li>
+    <li class="frag big">③ 院内感染も起こしにくいのか？</li>
+  </ul>
+  <p class="frag mute" style="margin-top:28px">まず、肺炎球菌が「何をする菌か」から確認しましょう。</p>
+</section>
+
+<!-- 5 肺炎球菌：どんな感染症 -->
+<section class="slide">
+  <span class="tag">肺炎球菌 ①</span>
+  <h2>どんな感染症を起こすと思いますか？</h2>
+  <p class="q frag" style="margin-top:20px">そう、名前の通り <span style="color:var(--accent)">肺炎</span> の原因。わかりやすい。</p>
+  <p class="q frag" style="margin-top:40px">では、他には？</p>
+</section>
+
+<!-- 6 気道感染症 -->
+<section class="slide s6">
+  <span class="tag">肺炎球菌 ②</span>
+  <h2>気道とその周辺の感染症</h2>
+  <div class="chips">
+    <span class="chip frag">肺炎</span>
+    <span class="chip frag">気管支炎</span>
+    <span class="chip frag">COPDの急性増悪</span>
+    <span class="chip frag">副鼻腔炎</span>
+    <span class="chip frag">中耳炎</span>
+  </div>
+  <p class="frag" style="margin-top:30px">呼吸器系が中心。<b>耳</b>も、上気道（鼻・のど）からつながっています。</p>
+  <p class="frag" style="margin-top:12px"><b>COPD</b>（慢性閉塞性肺疾患）は、もともと気道・肺に慢性の障害がある病気。感染をきっかけに悪化することを<b>急性増悪</b>と呼びます。</p>
+</section>
+
+<!-- 7 侵襲性 -->
+<section class="slide">
+  <span class="tag">肺炎球菌 ③</span>
+  <h2>「侵襲性」感染症とは？</h2>
+  <p><b>侵襲性</b> ＝ 本来、菌が入り込まない<b>無菌的な場所</b>に侵入して襲うこと</p>
+  <div class="flow">
+    <div class="node frag">上気道に<br>定着</div>
+    <div class="arrow frag">→</div>
+    <div class="node frag">血液<br><span style="color:var(--warn)">菌血症</span></div>
+    <div class="arrow frag">→</div>
+    <div class="node frag">髄液<br><span style="color:var(--warn)">髄膜炎</span></div>
+  </div>
+  <p class="frag mute" style="margin-top:26px;font-size:30px">これらをまとめて侵襲性肺炎球菌感染症（IPD）と呼びます。</p>
+</section>
+
+<!-- 8 腸炎・尿路感染 hook -->
+<section class="slide">
+  <span class="tag warn">問いに戻る</span>
+  <h2>では、腸炎や尿路感染症は？</h2>
+  <p class="q">起こしません。なぜでしょう？</p>
+  <div class="card frag" style="margin-top:34px">
+    <span class="tag" style="background:#444">比喩（覚えのフック）</span>
+    <p class="big">それは、とてもお上品だから。</p>
+    <p>うんちやおしっこなんて……ねぇ。</p>
+  </div>
+  <p class="frag mute" style="margin-top:24px;font-size:30px">ただし、これは「覚えるための入り口」。理由の説明はこの先で。</p>
+</section>
+
+<!-- 9 正確な軸 -->
+<section class="slide s9">
+  <span class="tag">正確な軸（試験でも使える説明）</span>
+  <h2>本当の理由は「足場」と「得意技」</h2>
+  <div class="grid2">
+    <div class="card frag">
+      <h3>肺炎球菌の適所＝上気道</h3>
+      <p>鼻咽頭の粘膜に付着・定着する性質（付着因子、莢膜など）をもつ。腸管・尿路に定着する足場はもたない。</p>
+    </div>
+    <div class="card warn frag">
+      <h3>他の臓器は別の主役</h3>
+      <p>尿路感染 → 大腸菌（<i class="sp">Escherichia coli</i>）など腸内細菌目<br>腸炎 → <i class="sp">Salmonella</i>、<i class="sp">Campylobacter</i> など専用の毒素・付着因子をもつ菌</p>
+    </div>
+  </div>
+  <p class="ibox frag">補足：尿中抗原検査は肺炎の診断用で、尿路感染の検査ではありません。</p>
+</section>
+
+<!-- 10 院内感染 -->
+<section class="slide">
+  <span class="tag">肺炎球菌 ④</span>
+  <h2>院内感染も、起こしにくい</h2>
+  <div class="grid2">
+    <div class="card frag">
+      <h3>肺炎球菌：贅沢でか弱い</h3>
+      <p>環境中では干からびやすい。増やすには血液寒天培地など栄養豊富な培地が必要。</p>
+    </div>
+    <div class="card warn frag">
+      <h3>環境で生きのびる菌</h3>
+      <p>乾燥・手指・器具の表面で長く生きて広がる。院内感染対策で問題になりやすい。</p>
+    </div>
+  </div>
+  <p class="ibox frag">「ゼロ」ではありません。高齢者施設などでの集団発生の報告はあります。基本は<b>標準予防策</b>とワクチンによる予防です。</p>
+</section>
+
+<!-- 11 覚え方の型 -->
+<section class="slide">
+  <span class="tag gray">学び方のコツ</span>
+  <h2>比喩は入口、理由は正確に</h2>
+  <div class="flow">
+    <div class="node frag">① 比喩<br>（フック）<br><span style="font-size:26px;font-weight:400">お上品だから</span></div>
+    <div class="arrow frag">→</div>
+    <div class="node frag">② 正確な軸<br>（1行の理由）<br><span style="font-size:26px;font-weight:400">上気道に足場がある</span></div>
+    <div class="arrow frag">→</div>
+    <div class="node frag">③ 現場の行動<br><span style="font-size:26px;font-weight:400">標準予防策・ワクチン</span></div>
+  </div>
+  <p class="frag" style="margin-top:36px">比喩は<b>思い出すきっかけ</b>であって、<b>理由の証明ではありません</b>。試験では②を答えます。</p>
+</section>
+
+<!-- 12 アスペルギルス導入 -->
+<section class="slide">
+  <span class="tag mold">アスペルギルス ①</span>
+  <h2>アスペルギルスって聞いたことがありますか？</h2>
+  <p class="q frag" style="margin-top:12px">怪獣みたいな名前？　確かにね。</p>
+  <div class="card mold frag" style="margin-top:30px">
+    <h3>空中を漂うカビの代表</h3>
+    <p>胞子（＝カビの<b>卵</b>のようなもの）になって空気中を漂っています。</p>
+  </div>
+</section>
+
+<!-- 13 酵母と糸状菌 -->
+<section class="slide">
+  <span class="tag mold">アスペルギルス ②</span>
+  <h2>カビ（真菌）には2タイプある</h2>
+  <div class="grid2">
+    <div class="card mold frag">
+      <h3>酵母</h3>
+      <p>丸い単細胞。<br>ビール作りが得意（<i class="sp">Saccharomyces</i>）</p>
+    </div>
+    <div class="card mold frag">
+      <h3>糸状菌</h3>
+      <p>モジャモジャした菌糸。<br>チーズ（<i class="sp">Penicillium</i>）、日本酒の麹（<i class="sp">Aspergillus oryzae</i>）</p>
+    </div>
+  </div>
+  <p class="frag" style="margin-top:30px">アスペルギルスは<b>糸状菌</b>。病原性が高い代表は <i class="sp">Aspergillus fumigatus</i>。</p>
+</section>
+
+<!-- 14 感染経路 -->
+<section class="slide">
+  <span class="tag mold">アスペルギルス ③</span>
+  <h2>どんな病気を起こすと思いますか？</h2>
+  <p class="q">感染経路を考えてみてください。</p>
+  <div class="flow mold" style="margin-top:34px">
+    <div class="node frag">空気中の<br>胞子</div>
+    <div class="arrow frag">→</div>
+    <div class="node frag">吸い込む</div>
+    <div class="arrow frag">→</div>
+    <div class="node frag">肺に<br>入り込む</div>
+  </div>
+  <p class="big frag" style="margin-top:36px;color:var(--mold)">つまり、肺の病気です。</p>
+</section>
+
+<!-- 15 3病型 -->
+<section class="slide">
+  <span class="tag mold">アスペルギルス ④</span>
+  <h2>肺アスペルギルス症の3つの顔</h2>
+  <div class="grid3">
+    <div class="card mold frag">
+      <h3>侵襲性</h3>
+      <p><b>生体の防御が弱まった時</b><br>好中球減少、移植後、高用量ステロイドなど</p>
+    </div>
+    <div class="card mold frag">
+      <h3>慢性</h3>
+      <p><b>肺が廃墟のようになった時</b><br>陳旧性結核、COPD、気管支拡張症などの空洞</p>
+    </div>
+    <div class="card mold frag">
+      <h3>アレルギー性</h3>
+      <p><b>菌への過剰な免疫反応</b><br>ABPA（アレルギー性気管支肺アスペルギルス症）</p>
+    </div>
+  </div>
+  <p class="ibox frag" style="border-color:var(--mold);background:var(--mold-soft)">病型は「<b>免疫状態</b>」と「<b>肺の構造異常</b>」で決まります。</p>
+</section>
+
+<!-- 16 まとめ -->
+<section class="slide">
+  <span class="tag gray">まとめ</span>
+  <h2>菌の「性格」× 居場所 ＝ 病気</h2>
+  <table>
+    <tr><th style="width:21%">菌</th><th style="width:27%">性格・適所</th><th>起こす病気</th></tr>
+    <tr class="frag">
+      <td><b>肺炎球菌</b></td>
+      <td>上気道に定着。環境には弱い</td>
+      <td>肺炎、中耳炎、副鼻腔炎、COPD増悪、侵襲性（菌血症・髄膜炎）。腸炎・尿路感染は主役ではない</td>
+    </tr>
+    <tr class="frag">
+      <td><b>アスペルギルス</b></td>
+      <td>空中の胞子を吸入 → 肺</td>
+      <td>侵襲性／慢性／アレルギー性の3病型</td>
+    </tr>
+  </table>
+  <p class="big frag" style="margin-top:30px;text-align:center;color:var(--accent)">「この菌は、どこが得意で、何が苦手か？」</p>
+</section>
+
+<!-- 17-19 クイズ -->
+<section class="slide">
+  <span class="tag gray">確認クイズ 1 / 3</span>
+  <div class="quiz">
+    <p class="q">肺炎球菌が腸炎や尿路感染症の主な原因にならない理由は？</p>
+    <div class="opts">
+      <button class="opt ng">A. お上品な菌だから</button>
+      <button class="opt ok">B. 上気道に定着する性質をもち、腸管・尿路には足場がないから</button>
+      <button class="opt ng">C. グラム陰性桿菌だから</button>
+      <button class="opt ng">D. すべての抗菌薬が効くから</button>
+    </div>
+    <div class="explain">正解は B。A は覚えのフックで、理由ではありません。C は誤り（グラム陽性の双球菌）。</div>
+  </div>
+</section>
+
+<section class="slide">
+  <span class="tag gray">確認クイズ 2 / 3</span>
+  <div class="quiz">
+    <p class="q">アスペルギルス症の臨床病型の組合せとして正しいものは？</p>
+    <div class="opts">
+      <button class="opt ng">A. 急性・亜急性・慢性</button>
+      <button class="opt ok">B. 侵襲性・慢性・アレルギー性</button>
+      <button class="opt ng">C. 皮膚・粘膜・全身性</button>
+      <button class="opt ng">D. 市中型・院内型・輸入型</button>
+    </div>
+    <div class="explain">正解は B。アレルギー性（ABPA）を忘れがちなので要注意です。</div>
+  </div>
+</section>
+
+<section class="slide">
+  <span class="tag gray">確認クイズ 3 / 3</span>
+  <div class="quiz">
+    <p class="q">慢性肺アスペルギルス症の基礎疾患として、最も典型的なものは？</p>
+    <div class="opts">
+      <button class="opt ng">A. 好中球減少を伴う急性白血病の治療中</button>
+      <button class="opt ng">B. 造血幹細胞移植直後</button>
+      <button class="opt ok">C. 陳旧性結核による肺の空洞</button>
+      <button class="opt ng">D. 高用量ステロイドの投与中</button>
+    </div>
+    <div class="explain">正解は C。A・B・D は免疫低下が背景で、主に侵襲性です。</div>
+  </div>
+</section>
+
+<!-- 20 おわり -->
+<section class="slide center">
+  <h1 style="font-size:60px">菌を「適材適所」で見よう</h1>
+  <p class="big" style="margin-top:34px;color:var(--accent)">性質 → 居場所 → 病気 → 現場の対策</p>
+  <p class="mute" style="margin-top:36px;font-size:28px">次回：細菌の分類と「金子の分類」へ</p>
+</section>
+
+</div><!-- /stage -->
+</div><!-- /viewport -->
+
+<div id="nav">
+  <button id="prev" aria-label="前へ">‹</button>
+  <span id="count">1 / 1</span>
+  <button id="next" aria-label="次へ">›</button>
+  <button id="fs" aria-label="全画面">⛶</button>
+</div>
+
+<footer>
+本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+</footer>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var stage=document.getElementById('stage'), vp=document.getElementById('viewport');
+  var bar=document.getElementById('bar'), count=document.getElementById('count');
+  var cur=0;
+
+  function fit(){
+    var s=Math.min(vp.clientWidth/1280, vp.clientHeight/720);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')';
+  }
+  function ui(){
+    count.textContent=(cur+1)+' / '+slides.length;
+    bar.style.width=((cur+1)/slides.length*100)+'%';
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  function show(i,all){
+    cur=Math.max(0,Math.min(slides.length-1,i));
+    slides.forEach(function(s,k){s.classList.toggle('active',k===cur);});
+    [].forEach.call(slides[cur].querySelectorAll('.frag'),function(f){f.classList.toggle('show',!!all);});
+    ui();
+  }
+  function next(){
+    var h=slides[cur].querySelector('.frag:not(.show)');
+    if(h){h.classList.add('show');}
+    else if(cur<slides.length-1){show(cur+1,false);}
+  }
+  function prev(){
+    var shown=slides[cur].querySelectorAll('.frag.show');
+    if(shown.length){shown[shown.length-1].classList.remove('show');}
+    else if(cur>0){show(cur-1,true);}
+  }
+
+  document.getElementById('next').onclick=next;
+  document.getElementById('prev').onclick=prev;
+  document.getElementById('fs').onclick=function(){
+    if(document.fullscreenElement){document.exitFullscreen();}
+    else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen();}
+  };
+  document.addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '||k==='Enter'){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){show(0,false);}
+    else if(k==='End'){show(slides.length-1,true);}
+    else if(k==='f'||k==='F'){document.getElementById('fs').onclick();}
+  });
+
+  var tx=0,ty=0;
+  vp.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+  vp.addEventListener('touchend',function(e){
+    var dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){dx<0?next():prev();}
+  },{passive:true});
+
+  [].forEach.call(document.querySelectorAll('.quiz'),function(q){
+    [].forEach.call(q.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        if(q.classList.contains('answered'))return;
+        b.classList.add('picked');
+        q.classList.add('answered');
+      });
+    });
+  });
+
+  window.addEventListener('resize',fit);
+  fit();
+  var n=parseInt((location.hash||'').replace('#',''),10);
+  show(isNaN(n)?0:n-1,false);
+})();
+</script>
+</body>
+</html>
