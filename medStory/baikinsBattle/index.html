@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="ja">
 <head>
@@ -290,6 +289,40 @@ nav button span{font-size:1.15rem}
   .act .sec>h3{display:none}
   .dbtn,.tbtn{min-height:34px}
 }
+
+/* ---- 13剤対応：薬ボタンに感受性(S/R)を統合 ---- */
+.dgrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
+.dbtn{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"dn dn" "srv cnt";align-items:center;row-gap:1px;column-gap:3px;min-height:clamp(36px,5.6dvh,54px);padding:2px 4px 2px 5px;border-left-width:5px;min-width:0}
+.dbtn .dn{grid-area:dn;font-weight:800;font-size:.76rem;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.dbtn .lock{font-size:.62rem;margin-left:2px}
+.dbtn .srv{grid-area:srv;font-weight:900;font-size:.74rem;line-height:1.3;min-width:1.5em;text-align:center;border-radius:4px;padding:0 3px;background:var(--uBg);color:var(--sub)}
+.dbtn .fn{grid-area:fn;display:none;font-size:.62rem;line-height:1.2;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbtn .cnt{grid-area:cnt;justify-self:end;font-size:.76rem}
+.dbtn.stS{background:var(--sBg);border-top-color:#9cd0ae;border-right-color:#9cd0ae;border-bottom-color:#9cd0ae}
+.dbtn.stR{background:var(--rBg);border-top-color:#e6a69f;border-right-color:#e6a69f;border-bottom-color:#e6a69f}
+.dbtn.stS .srv{background:#2e7d4f;color:#fff}
+.dbtn.stR .srv{background:#b3261e;color:#fff}
+.dbtn.perm{background-image:repeating-linear-gradient(135deg,transparent 0 6px,rgba(179,38,30,.07) 6px 12px)}
+@media (min-width:700px){
+  .dgrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+  .dbtn{grid-template-areas:"dn dn" "fn fn" "srv cnt"}
+  .dbtn .fn{display:block}
+  .dbtn .dn{font-size:.95rem}
+  .dbtn .srv{font-size:.8rem}
+}
+@media (max-height:520px){.dbtn .fn{display:none}.dbtn .dn{font-size:.85rem}}
+@media (max-width:699px) and (max-height:740px){.dbtn{min-height:34px}}
+
+/* 戦闘演出レイヤ */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.fxe{position:fixed;left:0;top:0;pointer-events:none;will-change:transform,opacity}
+.fxe svg{display:block}
+/* レベル5以上の未同定：ただの黒い丸／グラム染色後は形と色だけ */
+.spr-blob .blob{width:74%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#4a4640,#0e0d0c 62%)}
+.spr-blob .qm{font-size:1.6rem}
+.spr-blob.boss .blob{box-shadow:0 0 14px 3px rgba(179,38,30,.6)}
+.spr-blob svg{width:100%;height:auto;display:block;opacity:.95}
+.spr-bshape.boss svg{filter:drop-shadow(0 0 8px rgba(179,38,30,.6))}
 </style>
 </head>
 <body>
@@ -329,6 +362,7 @@ nav button span{font-size:1.15rem}
   </nav>
 </div>
 <div class="ov" id="ov" hidden><div class="ovbox" id="ovBox" role="dialog" aria-modal="true"></div></div>
+<div id="fx" aria-hidden="true"></div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -343,11 +377,16 @@ const DRUGS=[
  {id:'ABPC',    name:'アンピシリン',            ab:'ABPC',    aware:'A',price:50, dasc:5, set:true },
  {id:'SBT_ABPC',name:'スルバクタム/アンピシリン',ab:'SBT/ABPC',aware:'A',price:80, dasc:8, set:false},
  {id:'CEZ',     name:'セファゾリン',            ab:'CEZ',     aware:'A',price:30, dasc:3, set:true },
+ {id:'CAZ',     name:'セフタジジム',            ab:'CAZ',     aware:'W',price:70, dasc:6, set:false},
  {id:'MEPM',    name:'メロペネム',              ab:'MEPM',    aware:'W',price:120,dasc:12,set:true },
  {id:'VCM',     name:'バンコマイシン',          ab:'VCM',     aware:'W',price:50, dasc:5, set:true },
+ {id:'LZD',     name:'リネゾリド',              ab:'LZD',     aware:'R',price:150,dasc:6, set:false},
  {id:'AZM',     name:'アジスロマイシン',        ab:'AZM',     aware:'W',price:60, dasc:6, set:true },
  {id:'CPFX',    name:'シプロフロキサシン',      ab:'CPFX',    aware:'W',price:90, dasc:9, set:true },
- {id:'ABK',     name:'アルベカシン',            ab:'ABK',     aware:'W',price:50, dasc:6, set:false}
+ {id:'ABK',     name:'アルベカシン',            ab:'ABK',     aware:'W',price:50, dasc:6, set:false},
+ {id:'TOB',     name:'トブラマイシン',          ab:'TOB',     aware:'W',price:50, dasc:5, set:false},
+ {id:'CFDC',    name:'セフィデロコル',          ab:'CFDC',    aware:'R',price:300,pack:3,dasc:9,set:false,perm:true},
+ {id:'COL',     name:'コリスチン',              ab:'COL',     aware:'R',price:150,pack:5,dasc:6,set:false,perm:true}
 ];
 const AWARE={A:'Access',W:'Watch',R:'Reserve'};
 const SET_PRICE=250;
@@ -360,7 +399,7 @@ const ITEMS=[
  {id:'antigen',  grp:'test',name:'尿中抗原',  price:500, pack:1,desc:'肺炎球菌・レジオネラを迅速判定（ターン消費なし）'},
  {id:'gene',     grp:'test',name:'geneCheck', price:1000,pack:1,desc:'主な耐性遺伝子を調べ、β-ラクタム系の効き目が分かる'},
  {id:'geneQuick',grp:'test',name:'geneQuick', price:1500,pack:1,desc:'菌名＋耐性遺伝子を一気に判定（培養不要）'},
- {id:'tdm',      grp:'test',name:'TDM',       price:500, pack:1,desc:'この敵との戦いでVCM/ABKの腎障害を防ぐ'},
+ {id:'tdm',      grp:'test',name:'TDM',       price:500, pack:1,desc:'この敵との戦いでVCM/ABK/TOBの腎障害を防ぐ'},
  {id:'pcv',      grp:'vax', name:'PCV',       price:100, pack:1,desc:'肺炎球菌ワクチン。含まれる血清型にのみ有効'},
  {id:'hib',      grp:'vax', name:'Hibワクチン',price:100,pack:1,desc:'b型莢膜のインフルエンザ菌にのみ有効'},
  {id:'heal1',    grp:'heal',name:'小治の薬',  price:20,  pack:1,desc:'HP +25（1ターン消費）',heal:25},
@@ -370,118 +409,120 @@ const ITEMS=[
 const ITM=Object.fromEntries(ITEMS.map(x=>[x.id,x]));
 const TITLES=[[0,'研修医'],[300,'専攻医'],[800,'感染症専門医'],[1600,'指導医'],[3000,'抗菌薬マスター']];
 
-// 感受性は DRUGS の並び順：ABPC, SBT/ABPC, CEZ, MEPM, VCM, AZM, CPFX, ABK
+// 感受性は DRUGS の並び順：ABPC, SBT/ABPC, CEZ, CAZ, MEPM, VCM, LZD, AZM, CPFX, ABK, TOB, CFDC, COL
 const D=s=>{const a=s.split(',');const o={};DRUGS.forEach((d,i)=>o[d.id]=a[i]);return o;};
-const BL=['ABPC','SBT_ABPC','CEZ','MEPM'];
+const BL=['ABPC','SBT_ABPC','CEZ','CAZ','MEPM'];
 const SP={
  spn:{jp:'肺炎球菌',la:I('Streptococcus pneumoniae'),shape:'diplo',col:'#e8a33d',gram:'+',morph:'グラム陽性双球菌（ランセット状）',site:'肺炎',
   scn:'高齢者の市中肺炎。喀痰は膿性で鉄さび色。',vax:'pcv',anti:'spn',geneNeg:'PBPの変異は検出されず',
   v:[
-   {id:'PSSP',lab:'PSSP',w:75,min:1,res:false,vc:.6,risk:'最近の抗菌薬使用歴なし',drugs:D('S,S,S,S,S,R,R,R'),gene:null,gd:BL,best:['ABPC'],
+   {id:'PSSP',lab:'PSSP',w:75,min:1,res:false,vc:.6,risk:'最近の抗菌薬使用歴なし',drugs:D('S,S,S,R,S,S,S,R,R,R,R,R,R'),gene:null,gd:BL,best:['ABPC'],
     teach:'ペニシリン感性肺炎球菌（PSSP）。ペニシリン系（ABPC）が第一選択で、MEPMのような広域は不要です。AZM（マクロライド系）は耐性が多く、頼りになりません。'},
-   {id:'PRSP',lab:'PRSP',w:25,min:1,res:true,vc:.6,risk:'最近のβ-ラクタム系使用歴あり',drugs:D('R,R,R,S,S,R,R,R'),gene:'PBP遺伝子の変異（pbp2x/pbp1a/pbp2b）を検出',gd:BL,best:['MEPM','VCM'],
+   {id:'PRSP',lab:'PRSP',w:25,min:1,res:true,vc:.6,risk:'最近のβ-ラクタム系使用歴あり',drugs:D('R,R,R,R,S,S,S,R,R,R,R,R,R'),gene:'PBP遺伝子の変異（pbp2x/pbp1a/pbp2b）を検出',gd:BL,best:['MEPM','VCM'],
     teach:'ペニシリン耐性肺炎球菌（PRSP）はPBPの変異が原因です。ゲームでは単純化していますが、実際は病型（髄膜炎か否か）で選ぶ薬が変わります。'}
   ]},
  sau:{jp:'黄色ブドウ球菌',la:I('Staphylococcus aureus'),shape:'cluster',col:'#f2c94c',gram:'+',morph:'グラム陽性球菌（ブドウ状）',site:'皮膚軟部組織・血流',
   scn:'糖尿病患者の蜂窩織炎。血液培養も採取。',vax:null,anti:null,geneNeg:'mecAは検出されず',
   v:[
-   {id:'MSSA',lab:'MSSA',w:60,min:1,res:false,risk:'MRSA保菌歴なし',drugs:D('R,S,S,S,S,S,S,S'),gene:null,gd:BL,best:['CEZ'],
+   {id:'MSSA',lab:'MSSA',w:60,min:1,res:false,risk:'MRSA保菌歴なし',drugs:D('R,S,S,R,S,S,S,S,S,S,R,R,R'),gene:null,gd:BL,best:['CEZ'],
     teach:'MSSAにはセファゾリン（CEZ）が第一選択です。ペニシリナーゼのためABPCは効きません。MSSAにはVCMよりβ-ラクタム系のほうが優れています。'},
-   {id:'MRSA',lab:'MRSA',w:25,min:2,res:true,aura:true,risk:'MRSA保菌歴・長期入院歴あり',drugs:D('R,R,R,R,S,R,R,S'),gene:'mecA を検出（PBP2aによりβ-ラクタム系全般が無効）',gd:BL,best:['VCM','ABK'],
+   {id:'MRSA',lab:'MRSA',w:25,min:2,res:true,aura:true,risk:'MRSA保菌歴・長期入院歴あり',drugs:D('R,R,R,R,R,S,S,R,R,S,R,R,R'),gene:'mecA を検出（PBP2aによりβ-ラクタム系全般が無効）',gd:BL,best:['VCM','ABK'],
     teach:'MRSAはmecAがコードするPBP2aによりβ-ラクタム系全般が効きません。VCMなどのMRSA用の抗菌薬を使い、TDMで腎障害を防ぎましょう。'}
   ]},
  eco:{jp:'大腸菌',la:I('Escherichia coli'),shape:'rod',col:'#c97b63',gram:'-',morph:'グラム陰性桿菌',site:'尿路',
   scn:'発熱・排尿時痛・背部叩打痛。腎盂腎炎を疑う。',vax:null,anti:null,geneNeg:'β-ラクタマーゼ遺伝子は検出されず',
   v:[
-   {id:'ABPCS',lab:'ABPC感性',w:40,min:1,res:false,risk:'ESBL保菌歴なし',drugs:D('S,S,S,S,R,R,S,S'),gene:null,gd:BL,best:['ABPC','CEZ'],
+   {id:'ABPCS',lab:'ABPC感性',w:40,min:1,res:false,risk:'ESBL保菌歴なし',drugs:D('S,S,S,S,S,R,R,R,S,R,S,S,S'),gene:null,gd:BL,best:['ABPC','CEZ'],
     teach:'ABPCが効く大腸菌です。感受性が確認できれば狭域薬で十分です。'},
-   {id:'ABPCR',lab:'ABPC耐性',w:50,min:1,res:false,risk:'ESBL保菌歴なし',drugs:D('R,S,S,S,R,R,S,S'),gene:'β-ラクタマーゼ遺伝子（blaTEM型など）を検出',gd:BL,best:['CEZ','SBT_ABPC'],
+   {id:'ABPCR',lab:'ABPC耐性',w:50,min:1,res:false,risk:'ESBL保菌歴なし',drugs:D('R,S,S,S,S,R,R,R,S,R,S,S,S'),gene:'β-ラクタマーゼ遺伝子（blaTEM型など）を検出',gd:BL,best:['CEZ','SBT_ABPC'],
     teach:'β-ラクタマーゼ産生でABPCは分解されます。阻害薬配合のSBT/ABPCや、CEZが有効です（実際は施設のアンチバイオグラムも確認）。'},
-   {id:'ESBL',lab:'ESBL産生',w:20,min:3,res:true,risk:'ESBL保菌歴・海外渡航歴・最近の抗菌薬使用歴あり',drugs:D('R,R,R,S,R,R,R,S'),gene:'ESBL遺伝子（CTX-M型など）を検出',gd:BL,best:['MEPM'],
+   {id:'ESBL',lab:'ESBL産生',w:20,min:3,res:true,risk:'ESBL保菌歴・海外渡航歴・最近の抗菌薬使用歴あり',drugs:D('R,R,R,R,S,R,R,R,R,R,R,S,S'),gene:'ESBL遺伝子（CTX-M型など）を検出',gd:BL,best:['MEPM'],
     teach:'ESBL産生菌はセフェム系やペニシリン系を分解します。重症例ではカルバペネム系（MEPM）が選択肢です。リスク因子（保菌歴・渡航歴・抗菌薬使用歴）が経験的治療のヒントになります。'}
   ]},
  kpn:{jp:'肺炎桿菌',la:I('Klebsiella pneumoniae'),shape:'rod',col:'#5fa8a3',gram:'-',morph:'グラム陰性桿菌（厚い莢膜）',site:'肺炎・尿路',
   scn:'糖尿病・アルコール多飲歴のある患者の肺炎。',vax:null,anti:null,geneNeg:'この菌種で対象となる主要な耐性遺伝子は検出されず',
   v:[
-   {id:'KPN',lab:'',w:30,min:2,res:false,risk:null,drugs:D('R,S,S,S,R,R,S,S'),gene:null,gd:[],best:['CEZ','SBT_ABPC'],
-    teach:'肺炎桿菌はABPCに自然耐性（染色体性β-ラクタマーゼ）です。CEZやSBT/ABPCが有効です。'}
+   {id:'KPN',lab:'',w:30,min:2,res:false,risk:null,drugs:D('R,S,S,S,S,R,R,R,S,R,S,S,S'),gene:null,gd:[],best:['CEZ','SBT_ABPC'],
+    teach:'肺炎桿菌はABPCに自然耐性（染色体性β-ラクタマーゼ）です。CEZやSBT/ABPCが有効です。'},
+   {id:'CRE',lab:'CRE（カルバペネム耐性）',w:3,min:6,res:true,risk:'ICUに長期入院中・最近のカルバペネム系使用歴あり・カルバペネマーゼ産生菌の検出歴',drugs:D('R,R,R,R,R,R,R,R,R,R,R,S,S'),gene:'カルバペネマーゼ遺伝子（KPC型・NDM型など）を検出',gd:['MEPM'],best:['CFDC','COL'],
+    teach:'カルバペネム耐性腸内細菌目細菌（CRE）は、ほぼすべての抗菌薬が効きません。有効なのは許可制のCFDC（セフィデロコル）とCOL（コリスチン）などです。承認が必要で、COLは毒性が強いため、実際は感染症専門医・ICTへの相談が必須です。'}
   ]},
  hin:{jp:'インフルエンザ菌',la:I('Haemophilus influenzae'),shape:'cocco',col:'#5b8fd9',gram:'-',morph:'グラム陰性球桿菌',site:'呼吸器',
   scn:'COPDの急性増悪。膿性痰が増えた。',vax:'hib',anti:null,geneNeg:'bla遺伝子・ftsI変異ともに検出されず',
   v:[
-   {id:'BLNAS',lab:'BLNAS',w:40,min:2,res:false,vc:.4,risk:null,drugs:D('S,S,R,S,R,S,S,R'),gene:null,gd:BL,best:['ABPC'],
+   {id:'BLNAS',lab:'BLNAS',w:40,min:2,res:false,vc:.4,risk:null,drugs:D('S,S,R,S,S,R,R,S,S,R,R,S,R'),gene:null,gd:BL,best:['ABPC'],
     teach:'BLNAS（β-ラクタマーゼ非産生アンピシリン感性）はABPCで十分です。CEZはインフルエンザ菌には効きにくい薬です。Hibワクチンはb型莢膜株にだけ有効で、大人の気道感染で多い無莢膜型には効きません。'},
-   {id:'BLPAR',lab:'BLPAR',w:30,min:2,res:false,vc:.4,risk:null,drugs:D('R,S,R,S,R,S,S,R'),gene:'β-ラクタマーゼ遺伝子（bla）を検出',gd:BL,best:['SBT_ABPC'],
+   {id:'BLPAR',lab:'BLPAR',w:30,min:2,res:false,vc:.4,risk:null,drugs:D('R,S,R,S,S,R,R,S,S,R,R,S,R'),gene:'β-ラクタマーゼ遺伝子（bla）を検出',gd:BL,best:['SBT_ABPC'],
     teach:'BLPAR（β-ラクタマーゼ産生ABPC耐性）。ABPCは分解されますが、阻害薬配合のSBT/ABPCは有効です。'},
-   {id:'BLNAR',lab:'BLNAR',w:25,min:2,res:true,vc:.1,risk:null,drugs:D('R,R,R,S,R,S,S,R'),gene:'ftsI（PBP3）の変異を検出',gd:BL,best:['CPFX','AZM','MEPM'],
-    teach:'BLNARはPBP3（ftsI）の変異でβ-ラクタム系が効きにくくなります。ゲームに未収録の第3世代セフェム系なども、実際には選択肢です。'},
-   {id:'BLPACR',lab:'BLPACR',w:10,min:3,res:true,vc:.1,risk:null,drugs:D('R,R,R,S,R,S,S,R'),gene:'bla遺伝子＋ftsI変異を検出',gd:BL,best:['CPFX','AZM','MEPM'],
+   {id:'BLNAR',lab:'BLNAR',w:25,min:2,res:true,vc:.1,risk:null,drugs:D('R,R,R,S,S,R,R,S,S,R,R,S,R'),gene:'ftsI（PBP3）の変異を検出',gd:BL,best:['CPFX','AZM','MEPM','CAZ'],
+    teach:'BLNARはPBP3（ftsI）の変異でβ-ラクタム系が効きにくくなります。実際は第3世代セフェム系（CTRXなど）が選択肢になることも多いです。'},
+   {id:'BLPACR',lab:'BLPACR',w:10,min:3,res:true,vc:.1,risk:null,drugs:D('R,R,R,S,S,R,R,S,S,R,R,S,R'),gene:'bla遺伝子＋ftsI変異を検出',gd:BL,best:['CPFX','AZM','MEPM','CAZ'],
     teach:'BLPACRはβ-ラクタマーゼ産生とPBP3変異を併せ持ち、クラブラン酸配合薬も効きにくい最も手ごわいタイプです。'}
   ]},
  leg:{jp:'レジオネラ',la:I('Legionella pneumophila'),shape:'rod',col:'#6dae6a',gram:'-',morph:'グラム染色で染まりにくい（グラム陰性桿菌）',site:'肺炎',
   scn:'温泉旅行後の重症肺炎。下痢と意識障害を伴う。',vax:null,anti:'leg',geneNeg:'この菌種で対象となる主要な耐性遺伝子は検出されず',
   v:[
-   {id:'LEG',lab:'',w:20,min:3,res:false,risk:null,drugs:D('R,R,R,R,R,S,S,R'),gene:null,gd:[],best:['AZM','CPFX'],
+   {id:'LEG',lab:'',w:20,min:3,res:false,risk:null,drugs:D('R,R,R,R,R,R,R,S,S,R,R,R,R'),gene:null,gd:[],best:['AZM','CPFX'],
     teach:'レジオネラは細胞内に寄生するため、β-ラクタム系が効きません。AZM（マクロライド系）やCPFX（キノロン系）を使います。尿中抗原が診断の手がかりになります。'}
   ]},
  efa:{jp:'腸球菌',la:I('Enterococcus faecalis'),shape:'chain',col:'#8e6bbf',gram:'+',morph:'グラム陽性球菌（連鎖状）',site:'尿路・腹腔',
   scn:'尿道カテーテル留置中の患者の尿路感染症。',vax:null,anti:null,geneNeg:'この菌種で対象となる主要な耐性遺伝子は検出されず',
   v:[
-   {id:'EFA',lab:'',w:25,min:3,res:false,risk:null,drugs:D('S,S,R,R,S,R,R,R'),gene:null,gd:[],best:['ABPC'],
+   {id:'EFA',lab:'',w:25,min:3,res:false,risk:null,drugs:D('S,S,R,R,R,S,S,R,R,R,R,R,R'),gene:null,gd:[],best:['ABPC'],
     teach:'腸球菌はセフェム系に自然耐性です。ABPCが第一選択です。'}
   ]},
  pae:{jp:'緑膿菌',la:I('Pseudomonas aeruginosa'),shape:'rod',col:'#3fb58a',gram:'-',morph:'グラム陰性桿菌',site:'院内肺炎',
   scn:'ICUで人工呼吸管理中の患者に発熱。',vax:null,anti:null,geneNeg:'カルバペネマーゼ遺伝子は検出されず',
   v:[
-   {id:'PA',lab:'感性株',w:25,min:3,res:false,risk:'ICUに長期入院中',drugs:D('R,R,R,S,R,R,S,S'),gene:null,gd:[],best:['CPFX'],
-    teach:'緑膿菌は多くの抗菌薬に自然耐性です。この3つの選択肢ではCPFX・MEPM・ABKが有効で、感受性が許せば狭いほうを選びます。実際は抗緑膿菌ペニシリン系やセフェム系（ゲーム未収録）も選択肢です。'},
-   {id:'CRPA',lab:'CRPA',w:15,min:4,res:true,risk:'ICUに長期入院中・最近のカルバペネム系使用歴あり',drugs:D('R,R,R,R,R,R,S,S'),gene:'カルバペネム耐性機構を検出',gd:['MEPM'],best:['CPFX'],
-    teach:'カルバペネム耐性緑膿菌（CRPA）はMEPMが効きません。カルバペネム系の乱用が耐性の背景にあります。感受性を確認して選びましょう。'},
-   {id:'MDRP',lab:'MDRP（多剤耐性）',w:8,min:4,res:true,risk:'ICUに長期入院中・広域抗菌薬を長期に使用',drugs:D('R,R,R,R,R,R,R,S'),gene:'カルバペネム耐性機構を検出',gd:['MEPM'],best:['ABK'],
-    teach:'多剤耐性緑膿菌（MDRP）は選択肢が極めて限られます。ゲーム上はABKだけが有効ですが、実際は感染症専門医・ICTへ相談が必須です。'}
+   {id:'PA',lab:'感性株',w:25,min:3,res:false,risk:'ICUに長期入院中',drugs:D('R,R,R,S,S,R,R,R,S,R,S,S,S'),gene:null,gd:[],best:['CAZ'],
+    teach:'緑膿菌は多くの抗菌薬に自然耐性です。有効なのはCAZ（抗緑膿菌活性のあるセフェム系）・MEPM・CPFX・TOBで、感受性が許せば狭いものを選びます。TOB（アミノグリコシド）は単独では肺への移行が悪く、実際は併用で使うことが多い薬です。ABKはMRSA用で、グラム陰性菌には使いません。'},
+   {id:'CRPA',lab:'CRPA',w:15,min:4,res:true,risk:'ICUに長期入院中・最近のカルバペネム系使用歴あり',drugs:D('R,R,R,R,R,R,R,R,S,R,S,S,S'),gene:'カルバペネム耐性機構を検出',gd:['MEPM'],best:['CPFX','TOB'],
+    teach:'カルバペネム耐性緑膿菌（CRPA）はMEPMが効きません。カルバペネム系の乱用が耐性の背景にあります。感受性を確認し、CPFXやTOBなどから選びます。'},
+   {id:'MDRP',lab:'MDRP（多剤耐性）',w:3,min:6,res:true,risk:'ICUに長期入院中・広域抗菌薬を長期に使用',drugs:D('R,R,R,R,R,R,R,R,R,R,R,S,S'),gene:'カルバペネム耐性機構を検出',gd:['MEPM'],best:['CFDC','COL'],
+    teach:'多剤耐性緑膿菌（MDRP）で有効なのは、許可制のCFDC（セフィデロコル）とCOL（コリスチン）だけです。許可制の薬はICT・感染症専門医の承認が必要で、COLは腎毒性・神経毒性が強く、使うと自分もダメージを受けます。'}
   ]},
  mpn:{jp:'マイコプラズマ',la:I('Mycoplasma pneumoniae'),shape:'cocco',col:'#d98ab8',gram:'0',morph:'グラム染色では染まらない（細胞壁を持たない）',site:'市中肺炎（非定型）',
   scn:'若年者の市中肺炎。乾いた咳が長引くが、全身状態は比較的よい。',vax:null,anti:null,geneNeg:'23S rRNA遺伝子のマクロライド耐性変異は検出されず',
   v:[
-   {id:'MSMP',lab:'MSMP',w:70,min:2,res:false,risk:'同じ学校・職場で咳が流行している',drugs:D('R,R,R,R,R,S,S,R'),gene:null,gd:['AZM'],best:['AZM'],
+   {id:'MSMP',lab:'MSMP',w:70,min:2,res:false,risk:'同じ学校・職場で咳が流行している',drugs:D('R,R,R,R,R,R,R,S,S,R,R,R,R'),gene:null,gd:['AZM'],best:['AZM'],
     teach:'マクロライド感性マイコプラズマ（MSMP）。細胞壁がないため、β-ラクタム系（ABPC・CEZ・MEPMなど）はすべて無効です。マクロライド系（AZM）が第一選択になります。'},
-   {id:'MRMP',lab:'MRMP',w:30,min:3,res:true,aura:true,risk:'マクロライド系を使っても熱が下がらなかった',drugs:D('R,R,R,R,R,R,S,R'),gene:'23S rRNA遺伝子のマクロライド耐性変異（A2063Gなど）を検出',gd:['AZM'],best:['CPFX'],
+   {id:'MRMP',lab:'MRMP',w:30,min:3,res:true,aura:true,risk:'マクロライド系を使っても熱が下がらなかった',drugs:D('R,R,R,R,R,R,R,R,S,R,R,R,R'),gene:'23S rRNA遺伝子のマクロライド耐性変異（A2063Gなど）を検出',gd:['AZM'],best:['CPFX'],
     teach:'マクロライド耐性マイコプラズマ（MRMP）は23S rRNAの変異が原因です。マクロライド系が効かない場合はテトラサイクリン系やキノロン系が選択肢になります（ゲームではCPFXのみ）。'}
   ]},
  aba:{jp:'アシネトバクター',la:I('Acinetobacter baumannii'),shape:'cocco',col:'#7b8fa6',gram:'-',morph:'グラム陰性球桿菌',site:'院内肺炎・血流感染',
   scn:'ICUで長期に人工呼吸管理中。気管吸引痰から菌が検出された。',vax:null,anti:null,geneNeg:'カルバペネマーゼ遺伝子は検出されず',
   v:[
-   {id:'ABA',lab:'感性株',w:25,min:3,res:false,risk:'ICUに長期入院中',drugs:D('R,S,R,S,R,R,S,S'),gene:null,gd:[],best:['SBT_ABPC'],
+   {id:'ABA',lab:'感性株',w:25,min:3,res:false,risk:'ICUに長期入院中',drugs:D('R,S,R,S,S,R,R,R,S,R,S,S,S'),gene:null,gd:[],best:['SBT_ABPC'],
     teach:'アシネトバクターは環境に強く、ICUでの院内感染の原因になります。スルバクタム自体にこの菌への活性があるため、SBT/ABPCが選べる場合はMEPMよりも狭域で済みます。'},
-   {id:'CRAB',lab:'CRAB',w:15,min:5,res:true,risk:'ICUに長期入院中・最近のカルバペネム系使用歴あり',drugs:D('R,R,R,R,R,R,R,S'),gene:'カルバペネマーゼ遺伝子（OXA-23型など）を検出',gd:['MEPM'],best:['ABK'],
-    teach:'カルバペネム耐性アシネトバクター（CRAB）は選択肢が極めて限られます。ゲーム上はABKのみ有効ですが、実際はコリスチンなど（ゲーム未収録）を含め感染症専門医・ICTへの相談が必須です。'}
+   {id:'CRAB',lab:'CRAB',w:4,min:6,res:true,risk:'ICUに長期入院中・最近のカルバペネム系使用歴あり',drugs:D('R,R,R,R,R,R,R,R,R,R,R,S,S'),gene:'カルバペネマーゼ遺伝子（OXA-23型など）を検出',gd:['MEPM'],best:['CFDC','COL'],
+    teach:'カルバペネム耐性アシネトバクター（CRAB）で有効なのは、許可制のCFDC（セフィデロコル）とCOL（コリスチン）です。許可制の薬はICT・感染症専門医の承認が必要で、COLは腎毒性・神経毒性が強い薬です。'}
   ]},
  bfr:{jp:'バクテロイデス',la:I('Bacteroides fragilis'),shape:'rod',col:'#b08a5a',gram:'-',morph:'グラム陰性桿菌（嫌気性）',site:'腹腔内感染',
   scn:'大腸憩室炎のあとに発熱と腹痛。CTで腹腔内膿瘍を認める。',vax:null,anti:null,geneNeg:'この菌種で対象となる主要な耐性遺伝子は検出されず',
   v:[
-   {id:'BFR',lab:'',w:20,min:4,res:false,risk:null,drugs:D('R,S,R,S,R,R,R,R'),gene:null,gd:[],best:['SBT_ABPC'],
+   {id:'BFR',lab:'',w:20,min:4,res:false,risk:null,drugs:D('R,S,R,R,S,R,S,R,R,R,R,R,R'),gene:null,gd:[],best:['SBT_ABPC'],
     teach:'バクテロイデスは嫌気性菌で、β-ラクタマーゼを産生するためABPCは無効です。SBT/ABPCやMEPMが有効で、VCMなどグラム陽性菌用の薬は効きません。実際は膿瘍のドレナージ（ソースコントロール）も重要です。'}
   ]},
  mca:{jp:'モラクセラ',la:I('Moraxella catarrhalis'),shape:'diplo',col:'#9a7fd0',gram:'-',morph:'グラム陰性双球菌',site:'呼吸器',
   scn:'COPDの急性増悪。膿性痰が増え、グラム染色でグラム陰性双球菌を認める。',vax:null,anti:null,geneNeg:'β-ラクタマーゼ遺伝子は検出されず',
   v:[
-   {id:'MCABL',lab:'BL産生',w:80,min:2,res:false,risk:null,drugs:D('R,S,R,S,R,S,S,R'),gene:'β-ラクタマーゼ遺伝子（bro）を検出',gd:BL,best:['SBT_ABPC'],
+   {id:'MCABL',lab:'BL産生',w:80,min:2,res:false,risk:null,drugs:D('R,S,R,S,S,R,R,S,S,R,R,S,R'),gene:'β-ラクタマーゼ遺伝子（bro）を検出',gd:BL,best:['SBT_ABPC'],
     teach:'モラクセラの大半はβ-ラクタマーゼを産生し、ABPCは無効です。阻害薬配合のSBT/ABPCが有効です。インフルエンザ菌と並ぶ、COPD急性増悪・中耳炎・副鼻腔炎の原因菌です。'},
-   {id:'MCANB',lab:'BL非産生',w:20,min:2,res:false,risk:null,drugs:D('S,S,R,S,R,S,S,R'),gene:null,gd:BL,best:['ABPC'],
+   {id:'MCANB',lab:'BL非産生',w:20,min:2,res:false,risk:null,drugs:D('S,S,R,S,S,R,R,S,S,R,R,S,R'),gene:null,gd:BL,best:['ABPC'],
     teach:'β-ラクタマーゼを産生しない株ならABPCが効きます。まず感受性を確認し、効くなら狭域薬を選びましょう。'}
   ]}
 };
 const BOSS={
  1:{sp:'spn',name:'ハイエンキューキン王',w:{PSSP:60,PRSP:40},intro:'肺炎球菌の王国を治めるハイエンキューキン王。ペニシリンが効く一族（PSSP）と、鎧をまとった一族（PRSP）がいる…。'},
  2:{sp:'hin',name:'インフルエンザキンXV世女王',w:{BLNAS:20,BLPAR:25,BLNAR:30,BLPACR:25},intro:'気道を支配するインフルエンザキンXV世女王。β-ラクタマーゼ（BLPAR）やPBP3変異（BLNAR）を持つ家臣団を従えている…。'},
- 3:{sp:'pae',name:'リョクノウキン大公',w:{PA:40,CRPA:40,MDRP:20},intro:'ICUの闇に潜むリョクノウキン大公。多くの抗菌薬を寄せつけない最強クラスの敵だ…。'},
+ 3:{sp:'pae',name:'リョクノウキン大公',w:{PA:50,CRPA:45,MDRP:5},intro:'ICUの闇に潜むリョクノウキン大公。多くの抗菌薬を寄せつけない最強クラスの敵だ…。'},
  4:{sp:'sau',name:'エムアールエスエー将軍',w:{MRSA:100},intro:'β-ラクタム系を跳ね返す鎧、mecAをまとったエムアールエスエー将軍。VCMを使いこなせ！'}
 };
 const LEVEL_HINT={
  1:'レベル1：敵の名前と感受性がすべて見えます。まずは「効く薬のなかで一番狭いもの」を選ぶ練習から。',
  2:'レベル2：菌名は分かりますが、感受性は検査しないと分かりません。耐性株が混ざります。',
  3:'レベル3：正体不明の敵が出現！グラム染色・培養などで見極めるか、背景情報から経験的治療を選びます。',
- 4:'レベル4以降：耐性菌（MRMP・CRPA・CRAB・MDRPなど）が登場。広域薬を使いすぎると耐性菌圧が上がります。'
+ 4:'レベル4以降：耐性菌（MRMP・CRPAなど）が登場。広域薬を使いすぎると耐性菌圧が上がります。レベル6以降は、ごくまれにMDRP・CRE・CRABが出現し、許可制の薬（🔒CFDC・COL）が必要になることも。'
 };
 
 /* =====================================================================
@@ -497,7 +538,7 @@ try{const f=localStorage.getItem('baikins_fs'); if(f==='l')document.documentElem
 
 function newGame(){
   G={level:1,round:1,hpMax:100,hp:100,lives:3,score:0,exp:0,bacs:200,press:10,
-    drugs:{ABPC:8,SBT_ABPC:2,CEZ:5,MEPM:2,VCM:2,AZM:3,CPFX:2,ABK:1},
+    drugs:{ABPC:8,SBT_ABPC:2,CEZ:5,CAZ:2,MEPM:2,VCM:2,LZD:1,AZM:3,CPFX:2,ABK:1,TOB:1,CFDC:0,COL:0},permReq:0,permDeny:0,
     items:{gram:3,culture:3,ident:3,ast:3,antigen:1,gene:1,geneQuick:0,tdm:1,pcv:0,hib:0,heal1:1,heal2:0,heal3:0},
     dose:{},hist:[],buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null};
   DRUGS.forEach(d=>G.dose[d.id]=0);
@@ -568,12 +609,33 @@ function eLabel(e){return e.known.vlabel&&e.v.lab?e.v.lab:'';}
 function trueName(e){return e.s.jp+(e.v.lab?' '+e.v.lab:'');}
 
 function hit(){G.fx='hit';}
-function enemyTurn(){
+function seq(fx,cont){
+  if(fxOn()){
+    G.lock=true;let p=null;
+    try{p=fx();}catch(err){p=null;}
+    if(p&&p.then){p.then(cont,cont);return;}
+  }
+  cont();
+}
+function enemyPhase(done){
   const e=G.enemy;
   const dmg=Math.max(1,rnd(e.atk-3,e.atk+3));
   G.hp=Math.max(0,G.hp-dmg);
   say((e.known.ident?e.s.jp:'敵')+'の攻撃！ HP -'+dmg,'bad');
-  if(G.hp<=0)lifeLost();
+  seq(()=>fxEnemyAttack(e,dmg),()=>{
+    if(G.hp<=0)lifeLost();
+    render();
+    if(!G.over)G.lock=false;
+    if(done)done();
+  });
+}
+function permCheck(e){
+  const k=e.known;
+  if(!k.ident)return '菌種が同定されていません（同定・尿中抗原・geneQuickなどが必要）。';
+  if(!k.ast)return '感受性結果が提出されていません（感受性検査が必要）。';
+  const alt=DRUGS.filter(x=>!x.perm&&e.v.drugs[x.id]==='S').map(x=>x.ab);
+  if(alt.length)return '許可不要の有効な抗菌薬があります（'+alt.join('・')+'）。まずそちらを使いましょう。';
+  return null;
 }
 function lifeLost(){
   G.lives--;
@@ -586,8 +648,18 @@ function attack(id){
   const e=G.enemy;if(!e||G.lock||G.over)return;
   const d=dById(id);
   if(G.drugs[id]<=0){toast(d.name+'の在庫がありません。ITEMで購入できます');return;}
+  if(d.perm){
+    G.permReq++;
+    const why=permCheck(e);
+    if(why){
+      G.permDeny++;const pen=Math.min(30,G.score);G.score-=pen;
+      say('📝 '+d.ab+'の使用許可申請：却下。'+why+(pen?'（評価 -'+pen+'点）':''),'ng');
+      toast('🔒 '+d.ab+'は許可されませんでした');render();return;
+    }
+    say('📝 '+d.ab+'の使用許可申請：感染症専門医・ICTが承認しました。','ok');
+  }
   G.drugs[id]--;G.dose[id]++;e.used.push(id);
-  G.press=clamp(G.press+(d.aware==='A'?1:(id==='MEPM'?7:5)),0,100);
+  G.press=clamp(G.press+(d.aware==='A'?1:(id==='MEPM'?7:(d.aware==='R'?4:5))),0,100);
   const eff=e.v.drugs[id]==='S';
   e.known.drugs[id]=eff?'S':'R';
   const dmg=eff?rnd(28,44):rnd(0,3);
@@ -595,15 +667,29 @@ function attack(id){
   if(!eff){e.miss++;G.misses++;}
   G.hist.push({lv:G.level,rd:G.round,eid:e.id,name:eName(e),drug:d.ab,dmg:eff?dmg:0,eff});
   say(d.name+'で攻撃！ '+(eff?dmg+'のダメージ！':'効かない…（耐性）'),eff?'ok':'ng');
-  hit();
-  if(eff&&(id==='VCM'||id==='ABK')&&!e.tdm&&Math.random()<.35){
+  if(!fxOn())hit();
+  let dead=false;
+  if(id==='COL'){
+    const sd=rnd(18,28);G.hp=Math.max(0,G.hp-sd);
+    say('コリスチンの腎毒性・神経毒性… HP -'+sd,'ng');
+    if(G.hp<=0)dead=true;
+  }
+  if(eff&&(id==='VCM'||id==='ABK'||id==='TOB')&&!e.tdm&&Math.random()<.35){
     G.hp=Math.max(0,G.hp-8);
     say('腎機能障害の副作用… HP -8（TDMで防げます）','ng');
-    if(G.hp<=0){lifeLost();render();return;}
+    if(G.hp<=0)dead=true;
   }
-  if(e.hp<=0){win(id);render();return;}
-  enemyTurn();
-  render();
+  G.lock=true;
+  seq(()=>fxThrow(d,eff,dmg),()=>{
+    if(dead){lifeLost();if(G.over){render();return;}}
+    render();
+    if(e.hp<=0){
+      G.lock=true;
+      seq(()=>fxDefeat(),()=>{win(id);render();});
+      return;
+    }
+    enemyPhase();
+  });
 }
 function useTest(id){
   const e=G.enemy;if(!e||G.lock||G.over)return;
@@ -641,12 +727,12 @@ function useTest(id){
     say('遺伝子検査：'+k.geneTxt+'。'+(e.v.gd.length?'β-ラクタム系の効き目が分かりました。':''),'info');
   }else if(id==='tdm'){
     if(e.tdm)return done();
-    e.tdm=true;used=true;say('TDM実施：この戦いではVCM/ABKの腎障害を防げます。','info');
+    e.tdm=true;used=true;say('TDM実施：この戦いではVCM/ABK/TOBの腎障害を防げます。','info');
   }
   if(!used)return;
   G.items[id]--;
-  if(turn)enemyTurn();
   render();
+  if(turn)enemyPhase();
 }
 function useHeal(id){
   const e=G.enemy;if(!e||G.lock||G.over)return;
@@ -656,7 +742,9 @@ function useHeal(id){
   G.items[id]--;
   const before=G.hp;G.hp=Math.min(G.hpMax,G.hp+it.heal);
   say(it.name+'を使用。HP +'+(G.hp-before),'ok');
-  enemyTurn();render();
+  render();
+  const gain=G.hp-before;
+  seq(()=>fxHeal(gain),()=>enemyPhase());
 }
 function win(drugId){
   const e=G.enemy,d=dById(drugId);
@@ -727,7 +815,7 @@ function buy(kind,id){
     name='抗菌薬セット10';price=SET_PRICE;
     apply=()=>DRUGS.filter(d=>d.set).forEach(d=>G.drugs[d.id]+=10);
   }else if(kind==='drug'){
-    const d=dById(id);name=d.name+' ×10';price=d.price;apply=()=>{G.drugs[id]+=10;};
+    const d=dById(id),pk=d.pack||10;name=d.name+' ×'+pk;price=d.price;apply=()=>{G.drugs[id]+=pk;};
   }else{
     const it=ITM[id];name=it.name+(it.pack>1?' ×'+it.pack:'');price=it.price;apply=()=>{G.items[id]+=it.pack;};
   }
@@ -762,7 +850,26 @@ function spriteKey(e){
   for(const x of c){if(SPRITE_MAP[x])return SPRITE_MAP[x];}
   return null;
 }
+function shapeBody(shape,col){
+  const st=shade(col,.62),a='fill="'+col+'" stroke="'+st+'" stroke-width="4"';
+  switch(shape){
+    case 'diplo':return '<circle cx="68" cy="80" r="42" '+a+'/><circle cx="132" cy="80" r="42" '+a+'/>';
+    case 'cluster':return '<circle cx="56" cy="68" r="25" '+a+'/><circle cx="144" cy="68" r="25" '+a+'/><circle cx="70" cy="114" r="23" '+a+'/><circle cx="130" cy="114" r="23" '+a+'/><circle cx="100" cy="78" r="44" '+a+'/>';
+    case 'rod':return '<rect x="20" y="44" width="160" height="72" rx="36" '+a+'/>';
+    case 'chain':return '<circle cx="40" cy="80" r="27" '+a+'/><circle cx="160" cy="80" r="27" '+a+'/><circle cx="100" cy="80" r="42" '+a+'/>';
+    default:return '<ellipse cx="100" cy="80" rx="62" ry="46" '+a+'/>';
+  }
+}
+/* レベル5以上：未同定は「ただの黒い丸」、グラム染色後は形と色だけ（顔や特徴は見えない） */
+function blobArt(e,rev){
+  const s=e.s,bc=e.boss?' boss':'';
+  if(rev==='none')return '<div class="spr spr-blob'+bc+'"><div class="blob"></div><b class="qm">?</b></div>';
+  const col=s.gram==='+'?'#8a5cb0':(s.gram==='-'?'#e07a95':'#6fa0b0');
+  return '<div class="spr spr-blob spr-bshape'+bc+'"><svg viewBox="0 0 200 160" role="img" aria-label="グラム染色像">'+shapeBody(s.shape,col)+'</svg></div>';
+}
 function bugArt(e){
+  { const k0=e.known,rev0=k0.ident?'full':(k0.gram?'gram':'none');
+    if(G.level>=5&&rev0!=='full')return blobArt(e,rev0); }
   const key=spriteKey(e);
   if(!key||!SPRITES[key])return bugSVG(e);
   const k=e.known,s=e.s;
@@ -808,6 +915,135 @@ function bugSVG(e){
 }
 function rank(){let r=TITLES[0][1];TITLES.forEach(t=>{if(G.exp>=t[0])r=t[1];});return r;}
 
+/* =====================================================================
+   戦闘演出（抗菌薬の手榴弾を投げ込む／敵が毒の弾を放つ）
+   Web Animations API を使用。非対応・動きを減らす設定・OFF設定のときは自動でスキップ
+   ===================================================================== */
+let fxPref=true;try{if(localStorage.getItem('baikins_fx')==='off')fxPref=false;}catch(e){}
+function fxOn(){
+  if(!fxPref||window.__baikinsNoFx)return false;
+  if(typeof Element==='undefined'||!Element.prototype.animate)return false;
+  try{if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return false;}catch(e){}
+  return true;
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const fxLayer=()=>document.getElementById('fx');
+function ctr(el){
+  if(!el)return{x:innerWidth/2,y:innerHeight/2,w:0,h:0};
+  const r=el.getBoundingClientRect();
+  return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height};
+}
+function fxMk(html,css){
+  const d=document.createElement('div');d.className='fxe';d.innerHTML=html||'';
+  if(css)Object.assign(d.style,css);
+  fxLayer().appendChild(d);return d;
+}
+function fxAnim(el,kf,opt){
+  const a=el.animate(kf,Object.assign({fill:'forwards'},opt));
+  return a.finished?a.finished.catch(()=>{}):wait(opt.duration||0);
+}
+function fxPop(text,x,y,color,size){
+  const d=fxMk(text,{left:x+'px',top:y+'px',color:color||'#fff',fontSize:(size||1.6)+'rem',fontWeight:'900',whiteSpace:'nowrap',
+    textShadow:'0 2px 0 #2b2622,0 0 6px #2b2622,2px 0 0 #2b2622,-2px 0 0 #2b2622',zIndex:'3'});
+  fxAnim(d,[{transform:'translate(-50%,-50%) scale(.4)',opacity:0},{transform:'translate(-50%,-90%) scale(1.25)',opacity:1,offset:.22},{transform:'translate(-50%,-190%) scale(1)',opacity:0}],{duration:900,easing:'ease-out'}).then(()=>d.remove());
+}
+function fxBurst(x,y,cols,n,dist,ringCol){
+  const ring=fxMk('',{left:(x-14)+'px',top:(y-14)+'px',width:'28px',height:'28px',borderRadius:'50%',border:'5px solid '+ringCol,boxSizing:'border-box'});
+  fxAnim(ring,[{transform:'scale(.3)',opacity:1},{transform:'scale(4.2)',opacity:0}],{duration:420,easing:'ease-out'}).then(()=>ring.remove());
+  const flash=fxMk('',{left:(x-30)+'px',top:(y-30)+'px',width:'60px',height:'60px',borderRadius:'50%',background:'radial-gradient(circle,#fff 0,'+ringCol+'aa 45%,transparent 70%)'});
+  fxAnim(flash,[{transform:'scale(.4)',opacity:1},{transform:'scale(2.2)',opacity:0}],{duration:300,easing:'ease-out'}).then(()=>flash.remove());
+  for(let i=0;i<n;i++){
+    const ang=Math.PI*2*i/n+Math.random()*.5,r=dist*(.6+Math.random()*.6),sz=5+Math.random()*7;
+    const p=fxMk('',{left:(x-sz/2)+'px',top:(y-sz/2)+'px',width:sz+'px',height:sz+'px',borderRadius:i%3?'50%':'2px',background:cols[i%cols.length]});
+    fxAnim(p,[{transform:'translate(0,0) scale(1) rotate(0)',opacity:1},{transform:'translate('+Math.cos(ang)*r+'px,'+(Math.sin(ang)*r+16)+'px) scale(.2) rotate(240deg)',opacity:0}],{duration:520+Math.random()*180,easing:'cubic-bezier(.1,.7,.3,1)'}).then(()=>p.remove());
+  }
+}
+const GR_COL={A:'#2e9d5b',W:'#e0a020',R:'#b3261e'};
+let grUid=0;
+function grenadeSVG(col){
+  const id='gp'+(++grUid);
+  return '<svg viewBox="0 0 44 60" width="42" height="57"><defs><clipPath id="'+id+'"><rect x="7" y="12" width="30" height="46" rx="15"/></clipPath></defs>'+
+    '<rect x="16" y="2" width="12" height="9" rx="2" fill="#6b6b6b" stroke="#2b2622" stroke-width="2"/>'+
+    '<path d="M28 5 q11 -3 11 8" fill="none" stroke="#555" stroke-width="3.5" stroke-linecap="round"/>'+
+    '<circle cx="35" cy="17" r="4.2" fill="none" stroke="#9a9a9a" stroke-width="2.4"/>'+
+    '<g clip-path="url(#'+id+')"><rect x="7" y="12" width="30" height="46" fill="#fff"/><rect x="7" y="12" width="30" height="24" fill="'+col+'"/><rect x="7" y="34" width="30" height="4" fill="#2b2622" opacity=".25"/></g>'+
+    '<rect x="7" y="12" width="30" height="46" rx="15" fill="none" stroke="#2b2622" stroke-width="2.6"/><ellipse cx="15" cy="22" rx="3" ry="6" fill="#fff" opacity=".55"/></svg>';
+}
+/* 自分の攻撃：抗菌薬の手榴弾（カプセル型）を、ボタンから敵に向けて放物線で投げ込む */
+async function fxThrow(d,eff,dmg){
+  const btn=document.querySelector('[data-drug="'+d.id+'"]');
+  const tgt=document.querySelector('.eart')||document.querySelector('.ecard');
+  const a=ctr(btn),b=ctr(tgt);
+  const col=GR_COL[d.aware]||'#2e9d5b';
+  const g=fxMk(grenadeSVG(col),{width:'42px',height:'57px',zIndex:'2'});
+  const N=16,h=Math.max(110,Math.abs(b.y-a.y)*.45+90);
+  const kf=[];
+  for(let i=0;i<=N;i++){
+    const t=i/N,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-4*h*t*(1-t);
+    kf.push({offset:t,transform:'translate('+(x-21)+'px,'+(y-28)+'px) rotate('+(t*600)+'deg) scale('+(.7+.55*Math.sin(Math.PI*t)).toFixed(2)+')'});
+  }
+  await fxAnim(g,kf,{duration:540,easing:'linear'});
+  if(eff){
+    g.remove();
+    fxBurst(b.x,b.y,[col,'#fff6a0','#ffffff','#7fe3a0'],12,Math.max(60,b.w*.55),col);
+    fxPop('−'+dmg,b.x,b.y-b.h*.15,'#ffffff',1.9);
+    fxPop(d.ab,b.x,b.y+b.h*.35,col==='#e0a020'?'#ffe08a':'#b6f2c8',.95);
+    if(tgt)await fxAnim(tgt,[{transform:'translateX(0)',filter:'brightness(1)'},{transform:'translateX(-9px)',filter:'brightness(2.2)',offset:.2},{transform:'translateX(8px)',filter:'brightness(1.4)',offset:.45},{transform:'translateX(-5px)',offset:.7},{transform:'translateX(0)',filter:'brightness(1)'}],{duration:340,fill:'none'});
+  }else{
+    // 不発：カンッと弾かれて転がり落ちる
+    fxPop('カン！',b.x,b.y-b.h*.2,'#d8d4cc',1.5);
+    fxPop('効かない…',b.x,b.y+b.h*.3,'#ff9b93',1.05);
+    fxBurst(b.x,b.y,['#bbb','#999','#ddd'],6,36,'#999999');
+    await fxAnim(g,[{transform:'translate('+(b.x-21)+'px,'+(b.y-28)+'px) rotate(600deg) scale(1.25)',opacity:1},
+      {transform:'translate('+(b.x+46)+'px,'+(b.y-70)+'px) rotate(760deg) scale(1.1)',opacity:1,offset:.35},
+      {transform:'translate('+(b.x+90)+'px,'+(b.y+60)+'px) rotate(1000deg) scale(.9)',opacity:0}],{duration:520,easing:'ease-in'});
+    g.remove();
+  }
+}
+async function fxDefeat(){
+  const tgt=document.querySelector('.eart')||document.querySelector('.ecard');
+  const b=ctr(tgt);
+  fxBurst(b.x,b.y,['#ffd54a','#ffffff','#ff8a65','#7fe3a0'],16,Math.max(80,b.w*.8),'#ffd54a');
+  if(tgt)await fxAnim(tgt,[{transform:'scale(1) rotate(0)',opacity:1},{transform:'scale(1.2) rotate(8deg)',opacity:1,offset:.3},{transform:'scale(0) rotate(-220deg)',opacity:0}],{duration:460,easing:'ease-in',fill:'forwards'});
+}
+/* 敵の攻撃：身をかがめて、毒の飛沫（敵の色）を自分のHPバーに向けて放つ */
+async function fxEnemyAttack(e,dmg){
+  const art=document.querySelector('.eart')||document.querySelector('.ecard');
+  const hpb=document.getElementById('hHpBar');
+  const a=ctr(art),b=ctr(hpb);
+  const col=e.known.ident?e.s.col:'#6a3d8f';
+  if(art)await fxAnim(art,[{transform:'scale(1,1)'},{transform:'scale(1.2,.8) translateY(6px)',offset:.55},{transform:'scale(.92,1.14) translateY(-6px)'}],{duration:260,easing:'ease-out',fill:'none'});
+  const n=e.boss?6:3,sz=e.boss?30:22;
+  const shots=[];
+  for(let i=0;i<n;i++){
+    shots.push((async()=>{
+      await wait(i*70);
+      const p=fxMk('',{width:sz+'px',height:sz+'px',borderRadius:'50%',zIndex:'2',
+        background:'radial-gradient(circle at 35% 30%,#fff 0,'+col+' 38%,'+shade(col.length===7?col:'#6a3d8f',.55)+' 100%)',boxShadow:'0 0 12px '+col});
+      const sx=a.x+(Math.random()-.5)*a.w*.4,sy=a.y+(Math.random()-.5)*a.h*.3;
+      const ex=b.x+(Math.random()-.5)*Math.min(b.w,160)*.5,ey=b.y;
+      const cy=Math.min(sy,ey)-30-Math.random()*40;
+      await fxAnim(p,[{transform:'translate('+(sx-sz/2)+'px,'+(sy-sz/2)+'px) scale(.5)',opacity:.9},
+        {transform:'translate('+((sx+ex)/2-sz/2)+'px,'+(cy-sz/2)+'px) scale(1.2) rotate(120deg)',opacity:1,offset:.5},
+        {transform:'translate('+(ex-sz/2)+'px,'+(ey-sz/2)+'px) scale(.8) rotate(240deg)',opacity:1}],{duration:400,easing:'ease-in'});
+      p.remove();
+      fxBurst(ex,ey,[col,'#ffffff','#ff6b5e'],5,34,'#ff5a4d');
+    })());
+  }
+  await Promise.all(shots);
+  // 被弾：画面端が赤く光り、HPバーが揺れ、ダメージ数が出る
+  const vg=fxMk('',{left:'0',top:'0',width:'100vw',height:'100vh',boxShadow:'inset 0 0 90px 28px rgba(200,30,20,.65)'});
+  fxAnim(vg,[{opacity:0},{opacity:1,offset:.25},{opacity:0}],{duration:420}).then(()=>vg.remove());
+  fxPop('−'+dmg,b.x,b.y+18,'#ff8d83',1.7);
+  if(hpb)await fxAnim(hpb,[{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(7px)'},{transform:'translateX(-4px)'},{transform:'translateX(0)'}],{duration:300,fill:'none'});
+}
+async function fxHeal(n){
+  const hpb=document.getElementById('hHpBar');const b=ctr(hpb);
+  fxBurst(b.x,b.y,['#7fe3a0','#ffffff','#c8ffd8'],8,40,'#2e9d5b');
+  fxPop('+'+n,b.x,b.y+18,'#b6f2c8',1.5);
+  await wait(420);
+}
+
 function renderHeader(){
   $('#hRank').textContent='称号：'+rank();
   $('#hBacs').textContent='💰 '+G.bacs+' Bacs';
@@ -845,12 +1081,15 @@ function renderPlay(){
     '<div class="hpline"><span>敵HP '+e.hp+'/'+e.hpMax+'</span><div class="bar'+(hpP<.3?' low':(hpP<.6?' mid':''))+'" style="flex:1"><i style="width:'+(hpP*100)+'%"></i></div></div>'+
     '</div></div>'+
     '<div class="scn">🩺 '+bg+'</div>'+
-    '<div class="srgrid">'+DRUGS.map(d=>srChip(e,d)).join('')+'</div>'+
     '<div class="pipe">'+pipe+'</div>'+
     '<button class="banner" data-act="log" aria-live="polite" title="タップでメッセージ履歴">'+last+'</button></div>';
   h+='<div class="act">';
-  h+='<div class="sec"><h3>💊 抗菌薬 <small><span class="tag">A</span>Access <span class="tag W">W</span>Watch</small></h3><div class="dgrid">'+
-    DRUGS.map(d=>'<button class="dbtn '+d.aware+(G.drugs[d.id]<=0?' zero':'')+'" data-drug="'+d.id+'" title="'+d.name+'"><span class="dn">'+d.ab+'</span><span class="dm"><span class="fn">'+d.name+'</span><b>×'+G.drugs[d.id]+'</b></span></button>').join('')+'</div></div>';
+  h+='<div class="sec"><h3>💊 抗菌薬 <small>枠の色：<span class="tag">A</span>Access <span class="tag W">W</span>Watch <span class="tag R">R</span>Reserve　🔒許可制　S/R＝感受性</small></h3><div class="dgrid">'+
+    DRUGS.map(d=>{
+      const st=k.ast?e.v.drugs[d.id]:(k.drugs[d.id]||'?');
+      return '<button class="dbtn '+d.aware+' st'+(st==='?'?'U':st)+(d.perm?' perm':'')+(G.drugs[d.id]<=0?' zero':'')+'" data-drug="'+d.id+'" title="'+d.name+(d.perm?'（許可制）':'')+'">'+
+        '<span class="dn">'+d.ab+(d.perm?'<span class="lock">🔒</span>':'')+'</span><span class="srv">'+st+'</span><span class="fn">'+d.name+'</span><b class="cnt">×'+G.drugs[d.id]+'</b></button>';
+    }).join('')+'</div></div>';
   h+='<div class="sec"><h3>🔬 検査・回復 <small>回復は1ターン消費</small></h3><div class="tgrid">'+
     ITEMS.filter(x=>x.grp==='test'||x.grp==='heal').map(x=>{
       if(x.grp==='heal')return '<button class="tbtn heal'+(G.items[x.id]<=0?' zero':'')+'" data-heal="'+x.id+'"><span class="tn">'+x.name+'</span><span class="tm"><span>'+(x.heal>=999?'全回復':'+'+x.heal)+'</span><b>×'+G.items[x.id]+'</b></span></button>';
@@ -874,7 +1113,7 @@ function renderStat(){
     '<p><span class="tag">A</span> Access: <b>'+c.A+'</b> ('+pc(c.A).toFixed(2)+'%) ｜ <span class="tag W">W</span> Watch: <b>'+c.W+'</b> ('+pc(c.W).toFixed(2)+'%) ｜ <span class="tag R">R</span> Reserve: <b>'+c.R+'</b> ('+pc(c.R).toFixed(2)+'%)</p>'+
     '<p>DASC: <b>'+dasc+'</b>（平均DASC: <b>'+avg.toFixed(2)+'</b>）</p>'+
     '<p class="note">DASCは抗菌薬のスペクトラムの広さを数値化した指標です。このゲームでは教育用の概算値を使っています。AccessをできるだけAccessで、狭域を選ぶほど平均DASCは小さくなります。</p></div>'+
-    '<div class="card"><h3>成績</h3><p>称号：<b>'+rank()+'</b>　撃退数：<b>'+G.kills+'</b>　ベストチョイス：<b>'+G.bests+'</b>　効かない薬を使った回数：<b>'+G.misses+'</b></p>'+
+    '<div class="card"><h3>成績</h3><p>称号：<b>'+rank()+'</b>　撃退数：<b>'+G.kills+'</b>　ベストチョイス：<b>'+G.bests+'</b>　許可申請：<b>'+G.permReq+'</b>回（却下 <b>'+G.permDeny+'</b>回）　効かない薬を使った回数：<b>'+G.misses+'</b></p>'+
     '<p>スコア：<b>'+G.score+'</b>　ベスト：<b>'+bestScore+'</b></p>'+
     '<p>耐性菌圧：<b>'+Math.round(G.press)+'</b> / 100</p><div class="bar press"><i style="width:'+G.press+'%"></i></div>'+
     '<p class="note">広域薬（Watch）を使うと上がり、Access薬だけで治療すると下がります。高いほど耐性株が出現しやすくなります。</p></div></div>';
@@ -888,9 +1127,9 @@ function shopRow(label,desc,price,attr,cls){
 }
 function renderItem(){
   let h='<div class="card"><h3>🛒 アイテムを購入　<span class="bacs" style="font-size:.9rem">💰 '+G.bacs+' Bacs</span></h3>'+
-    '<div class="sec" style="margin-top:0"><h3>抗菌薬 <small>（広域ほど高価。1回の購入で ×10）</small></h3><div class="shop">'+
+    '<div class="sec" style="margin-top:0"><h3>抗菌薬 <small>（広域ほど高価。1回の購入で ×10、🔒許可制のCFDC・COLは少量パック）</small></h3><div class="shop">'+
     shopRow('抗菌薬セット10','＊印の6種を各+10：'+DRUGS.filter(d=>d.set).map(d=>d.ab).join('・'),SET_PRICE,'data-buy="set"','full')+
-    DRUGS.map(d=>shopRow('<span class="tag '+d.aware+'">'+d.aware+'</span> '+d.name+(d.set?'＊':''),d.ab+' ×10',d.price,'data-buy="drug:'+d.id+'"')).join('')+'</div></div>'+
+    DRUGS.map(d=>shopRow('<span class="tag '+d.aware+'">'+d.aware+'</span> '+d.name+(d.set?'＊':''),d.ab+' ×'+(d.pack||10)+(d.perm?'　🔒許可制（使用にICT承認が必要）':''),d.price,'data-buy="drug:'+d.id+'"')).join('')+'</div></div>'+
     '<div class="sec"><h3>検査 <small>（4つの基本検査は ×5）</small></h3><div class="shop">'+
     ITEMS.filter(x=>x.grp==='test').map(x=>shopRow(x.name+(x.pack>1?' ×'+x.pack:''),x.desc,x.price,'data-buy="item:'+x.id+'"')).join('')+'</div></div>'+
     '<div class="sec"><h3>ワクチン</h3><div class="shop">'+
@@ -924,7 +1163,10 @@ function renderMisc(){
     '<li><b>耐性菌圧：</b>Watch薬（特にMEPM）を使うと上がり、耐性株が増えます。Access薬だけで倒すと下がります。</li>'+
     '<li><b>検査の順番：</b>グラム染色 → 培養（1ターン消費）→ 同定・感受性。尿中抗原は肺炎球菌とレジオネラの迅速判定です。</li>'+
     '<li><b>geneCheck / geneQuick：</b>遺伝子から、β-ラクタム系の効き目が分かります。geneQuickは培養なしで菌名も判明。</li>'+
-    '<li><b>TDM：</b>VCM・ABKの腎障害を防ぎます（なしだと約35%で副作用）。</li>'+
+    '<li><b>TDM：</b>VCM・ABK・TOBの腎障害を防ぎます（なしだと約35%で副作用）。</li>'+
+    '<li><b>アミノグリコシド：</b>ABKはMRSAなどグラム陽性菌用、TOBはグラム陰性菌（緑膿菌など）用。グラム陰性菌にABKは使いません。</li>'+
+    '<li><b>🔒許可制（CFDC・COL）：</b>使うには感染症専門医・ICTの承認が必要です。①同定済み ②感受性が判明 ③許可不要の有効な抗菌薬が他にない、の3条件を満たすと承認されます。却下されるとスコア−30。まれに出るMDRP・CRE・CRABのための切り札です。</li>'+
+    '<li><b>COL（コリスチン）：</b>腎毒性・神経毒性が強く、使うたびに自分のHPが18〜28減ります。</li>'+
     '<li><b>ワクチン：</b>PCVは含まれる型のみ、Hibはb型莢膜株のみ有効。使うと敵が弱体化することがあります。</li>'+
     '<li><b>効かない薬を撃つと減点。</b>ただし結果は敵情報に記録されます。</li></ul></div></div>'+
     '<div class="card prose sec"><h3>AWaRe分類とDASC</h3>'+
@@ -932,7 +1174,7 @@ function renderMisc(){
     '<p>DASCは、抗菌薬が「どれだけ広い範囲の細菌をカバーするか」を数値化した指標です。ゲーム内のDASCは教育用の概算値で、実際の値とは異なります。ABK（アルベカシン）はWHOのAWaRe分類には未収載のため、ゲーム内ではWatch扱いにしています。</p>'+
     '<details><summary>📋 Antibiogram（ゲーム内の感受性表）を開く</summary>'+antibiogramHTML()+'</details></div>'+
     '<div class="card sec"><h3>設定</h3><div class="btn-row">'+
-    '<button class="btn" data-fs="'+(fs?'m':'l')+'">文字サイズ：'+(fs?'大 → 標準にする':'標準 → 大きくする')+'</button>'+
+    '<button class="btn" data-fs="'+(fs?'m':'l')+'">文字サイズ：'+(fs?'大 → 標準にする':'標準 → 大きくする')+'</button> '+'<button class="btn" data-fx="'+(fxPref?'off':'on')+'">戦闘演出：'+(fxPref?'ON → OFFにする':'OFF → ONにする')+'</button>'+
     '<button class="btn" data-act="restart">最初からやり直す</button></div>'+
     '<p class="note">ベストスコア：'+bestScore+'（この端末に保存）</p></div>';
 }
@@ -985,6 +1227,7 @@ document.addEventListener('click',ev=>{
     try{localStorage.setItem('baikins_fs',d.fs);}catch(e){}
     renderMisc();return;
   }
+  if(d.fx){fxPref=(d.fx==='on');try{localStorage.setItem('baikins_fx',fxPref?'on':'off');}catch(e){}renderMisc();return;}
   if(d.act==='log'){
     ov('<h2>メッセージ履歴</h2><div class="log" style="height:auto;max-height:55dvh">'+G.log.slice(-40).map(l=>'<p class="'+l.c+'">'+l.t+'</p>').join('')+'</div>',[{t:'閉じる',c:'pri',f:()=>closeOv()}]);
     const lb=document.querySelector('#ovBox .log');if(lb)lb.scrollTop=lb.scrollHeight;return;
