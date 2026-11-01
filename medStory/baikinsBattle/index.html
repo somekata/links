@@ -146,6 +146,11 @@ body.on-play footer{display:none}
 .tag.W{background:var(--warn)} .tag.R{background:var(--bad)}
 
 /* stat / shop / misc */
+.evx{display:flex;flex-wrap:wrap;gap:3px;margin:0 0 3px}
+.vp{font-size:.68rem;font-weight:700;border-radius:999px;padding:0 7px;line-height:1.5;background:var(--uBg)}
+.vp.sero{background:#e8e0f4;color:#4b2f7a}.vp.ok{background:#d7f0df;color:#14683a}.vp.ng{background:#f9dcd9;color:#a3261c}.vp.none{background:#ece8dc;color:#6a6450}
+.dtbl td,.dtbl th{padding:4px 4px;font-size:.76rem;white-space:nowrap}.dtbl td.l,.dtbl th.l{white-space:normal}.dtbl small{font-size:.68rem;color:var(--sub)}.dtbl small.nt{color:#a3261c}
+.srow.halt{background:#fdf0ee}.ds.blk{color:#a3261c;font-weight:700}
 .pill{display:inline-block;font-size:.8rem;border-radius:999px;padding:1px 10px;background:var(--uBg);font-weight:700}
 .awbar{display:flex;height:22px;border-radius:11px;overflow:hidden;border:1px solid var(--line);background:#e6dfcd;margin:6px 0}
 .awbar i{display:block;height:100%}
@@ -378,8 +383,8 @@ const DRUGS=[
  {id:'SBT_ABPC',name:'スルバクタム/アンピシリン',ab:'SBT/ABPC',aware:'A',price:80, dasc:8, set:false},
  {id:'PIPC_TAZ', name:'ピペラシリン/タゾバクタム',ab:'PIPC/TAZ',aware:'W',price:90, dasc:9, set:false},
  {id:'CEZ',     name:'セファゾリン',            ab:'CEZ',     aware:'A',price:30, dasc:3, set:true },
- {id:'CFPM',    name:'セフェピム',              ab:'CFPM',    aware:'W',price:80, dasc:7, set:false},
  {id:'CAZ',     name:'セフタジジム',            ab:'CAZ',     aware:'W',price:70, dasc:6, set:false},
+ {id:'CFPM',    name:'セフェピム',              ab:'CFPM',    aware:'W',price:80, dasc:7, set:false},
  {id:'MEPM',    name:'メロペネム',              ab:'MEPM',    aware:'W',price:120,dasc:12,set:true },
  {id:'VCM',     name:'バンコマイシン',          ab:'VCM',     aware:'W',price:50, dasc:5, set:true },
  {id:'LZD',     name:'リネゾリド',              ab:'LZD',     aware:'R',price:150,dasc:6, set:false},
@@ -402,8 +407,8 @@ const ITEMS=[
  {id:'gene',     grp:'test',name:'geneCheck', price:1000,pack:1,desc:'主な耐性遺伝子を調べ、β-ラクタム系の効き目が分かる'},
  {id:'geneQuick',grp:'test',name:'geneQuick', price:1500,pack:1,desc:'菌名＋耐性遺伝子を一気に判定（培養不要）'},
  {id:'tdm',      grp:'test',name:'TDM',       price:500, pack:1,desc:'この敵との戦いでVCM/ABK/TOBの腎障害を防ぐ'},
- {id:'pcv',      grp:'vax', name:'PCV',       price:100, pack:1,desc:'肺炎球菌ワクチン。含まれる血清型にのみ有効'},
- {id:'hib',      grp:'vax', name:'Hibワクチン',price:100,pack:1,desc:'b型莢膜のインフルエンザ菌にのみ有効'},
+ {id:'pcv',      grp:'vax', name:'PCV20',     price:100, pack:1,desc:'肺炎球菌ワクチン。肺炎球菌の敵が出現すると自動で使用。PCV20に含まれる血清型（3, 19A, 19F, 14, 6B, 23F, 22F, 33F, 11A, 9V など）にだけ有効'},
+ {id:'hib',      grp:'vax', name:'Hibワクチン',price:100,pack:1,desc:'インフルエンザ菌の敵が出現すると自動で使用。b型莢膜株（Hib）にだけ有効。無莢膜型（NTHi）には効かない'},
  {id:'heal1',    grp:'heal',name:'小治の薬',  price:20,  pack:1,desc:'HP +25（1ターン消費）',heal:25},
  {id:'heal2',    grp:'heal',name:'中治の薬',  price:30,  pack:1,desc:'HP +50（1ターン消費）',heal:50},
  {id:'heal3',    grp:'heal',name:'完治の薬',  price:50,  pack:1,desc:'HP全回復（1ターン消費）',heal:999}
@@ -411,22 +416,32 @@ const ITEMS=[
 const ITM=Object.fromEntries(ITEMS.map(x=>[x.id,x]));
 const TITLES=[[0,'研修医'],[300,'専攻医'],[800,'感染症専門医'],[1600,'指導医'],[3000,'抗菌薬マスター']];
 
-// 感受性は DRUGS の並び順：ABPC, SBT/ABPC, PIPC/TAZ, CEZ, CFPM, CAZ, MEPM, VCM, LZD, AZM, CPFX, ABK, TOB, CFDC, COL
+// 感受性は DRUGS の並び順：ABPC, SBT/ABPC, PIPC/TAZ, CEZ, CAZ, CFPM, MEPM, VCM, LZD, AZM, CPFX, ABK, TOB, CFDC, COL
 const D=s=>{const a=s.split(',');const o={};DRUGS.forEach((d,i)=>o[d.id]=a[i]);return o;};
-const BL=['ABPC','SBT_ABPC','PIPC_TAZ','CEZ','CFPM','CAZ','MEPM'];
+const BL=['ABPC','SBT_ABPC','PIPC_TAZ','CEZ','CAZ','CFPM','MEPM'];
+const STOCK_MAX=50;   // 各アイテムの在庫上限
+const HALT_TARGETS=['SBT_ABPC','CEZ','CAZ','CFPM','MEPM'];  // ときどき出荷停止になる薬
+/* 血清型（ワクチン対象かどうか）。w=感性株での出現重み、wr=耐性株での重み。cov=1：ワクチン（PCV20／Hib）に含まれる型 */
+const SERO_SPN=[
+ {t:'3',cov:1,w:10,wr:6},{t:'19A',cov:1,w:8,wr:25},{t:'19F',cov:1,w:6,wr:8},{t:'14',cov:1,w:4,wr:6},{t:'6B',cov:1,w:4,wr:4},
+ {t:'23F',cov:1,w:4,wr:5},{t:'22F',cov:1,w:6,wr:2},{t:'33F',cov:1,w:4,wr:2},{t:'11A',cov:1,w:4,wr:3},{t:'9V',cov:1,w:3,wr:3},
+ {t:'35B',cov:0,w:6,wr:14},{t:'15A',cov:0,w:4,wr:10},{t:'23A',cov:0,w:6,wr:4},{t:'23B',cov:0,w:3,wr:2},{t:'35F',cov:0,w:4,wr:1},
+ {t:'34',cov:0,w:3,wr:1},{t:'6C',cov:0,w:4,wr:1}];
+const SERO_HIN=[
+ {t:'無莢膜（NTHi）',cov:0,w:90,wr:90},{t:'b（Hib）',cov:1,w:6,wr:6},{t:'f',cov:0,w:3,wr:3},{t:'e',cov:0,w:1,wr:1}];
 const SP={
  spn:{jp:'肺炎球菌',la:I('Streptococcus pneumoniae'),shape:'diplo',col:'#e8a33d',gram:'+',morph:'グラム陽性双球菌（ランセット状）',site:'肺炎',
-  scn:'高齢者の市中肺炎。喀痰は膿性で鉄さび色。',vax:'pcv',anti:'spn',geneNeg:'PBPの変異は検出されず',
+  scn:'高齢者の市中肺炎。喀痰は膿性で鉄さび色。',vax:'pcv',sero:SERO_SPN,serLab:'血清型',anti:'spn',geneNeg:'PBPの変異は検出されず',
   v:[
-   {id:'PSSP',lab:'PSSP',w:75,min:1,res:false,vc:.6,risk:'最近の抗菌薬使用歴なし',drugs:D('S,S,S,S,S,R,S,S,S,R,R,R,R,R,R'),gene:null,gd:BL,best:['ABPC'],
+   {id:'PSSP',lab:'PSSP',w:75,min:1,res:false,vc:.6,risk:'最近の抗菌薬使用歴なし',drugs:D('S,S,S,S,R,S,S,S,S,R,R,R,R,R,R'),gene:null,gd:BL,best:['ABPC'],
     teach:'ペニシリン感性肺炎球菌（PSSP）。ペニシリン系（ABPC）が第一選択で、MEPMのような広域は不要です。AZM（マクロライド系）は耐性が多く、頼りになりません。'},
-   {id:'PRSP',lab:'PRSP',w:25,min:3,res:true,vc:.6,risk:'最近のβ-ラクタム系使用歴あり',drugs:D('R,R,R,R,S,R,S,S,S,R,R,R,R,R,R'),gene:'PBP遺伝子の変異（pbp2x/pbp1a/pbp2b）を検出',gd:BL,best:['MEPM','VCM'],
+   {id:'PRSP',lab:'PRSP',w:25,min:3,res:true,vc:.6,risk:'最近のβ-ラクタム系使用歴あり',drugs:D('R,R,R,R,R,S,S,S,S,R,R,R,R,R,R'),gene:'PBP遺伝子の変異（pbp2x/pbp1a/pbp2b）を検出',gd:BL,best:['MEPM','VCM'],
     teach:'ペニシリン耐性肺炎球菌（PRSP）はPBPの変異が原因です。ゲームでは単純化していますが、実際は病型（髄膜炎か否か）で選ぶ薬が変わります。'}
   ]},
  sau:{jp:'黄色ブドウ球菌',la:I('Staphylococcus aureus'),shape:'cluster',col:'#f2c94c',gram:'+',morph:'グラム陽性球菌（ブドウ状）',site:'皮膚軟部組織・血流',
   scn:'糖尿病患者の蜂窩織炎。血液培養も採取。',vax:null,anti:null,geneNeg:'mecAは検出されず',
   v:[
-   {id:'MSSA',lab:'MSSA',w:60,min:1,res:false,risk:'MRSA保菌歴なし',drugs:D('R,S,S,S,S,R,S,S,S,S,S,S,R,R,R'),gene:null,gd:BL,best:['CEZ'],
+   {id:'MSSA',lab:'MSSA',w:60,min:1,res:false,risk:'MRSA保菌歴なし',drugs:D('R,S,S,S,R,S,S,S,S,S,S,S,R,R,R'),gene:null,gd:BL,best:['CEZ'],
     teach:'MSSAにはセファゾリン（CEZ）が第一選択です。ペニシリナーゼのためABPCは効きません。MSSAにはVCMよりβ-ラクタム系のほうが優れています。'},
    {id:'MRSA',lab:'MRSA',w:25,min:4,res:true,aura:true,risk:'MRSA保菌歴・長期入院歴あり',drugs:D('R,R,R,R,R,R,R,S,S,R,R,S,R,R,R'),gene:'mecA を検出（PBP2aによりβ-ラクタム系全般が無効）',gd:BL,best:['VCM','ABK'],
     teach:'MRSAはmecAがコードするPBP2aによりβ-ラクタム系全般が効きません。VCMなどのMRSA用の抗菌薬を使い、TDMで腎障害を防ぎましょう。'}
@@ -452,7 +467,7 @@ const SP={
     teach:'カルバペネム耐性腸内細菌目細菌（CRE）は、ほぼすべての抗菌薬が効きません。有効なのは許可制のCFDC（セフィデロコル）とCOL（コリスチン）などです。承認が必要で、COLは毒性が強いため、実際は感染症専門医・ICTへの相談が必須です。'}
   ]},
  hin:{jp:'インフルエンザ菌',la:I('Haemophilus influenzae'),shape:'cocco',col:'#5b8fd9',gram:'-',morph:'グラム陰性球桿菌',site:'呼吸器',
-  scn:'COPDの急性増悪。膿性痰が増えた。',vax:'hib',anti:null,geneNeg:'bla遺伝子・ftsI変異ともに検出されず',
+  scn:'COPDの急性増悪。膿性痰が増えた。',vax:'hib',sero:SERO_HIN,serLab:'莢膜型',anti:null,geneNeg:'bla遺伝子・ftsI変異ともに検出されず',
   v:[
    {id:'BLNAS',lab:'BLNAS',w:40,min:1,res:false,vc:.4,risk:null,drugs:D('S,S,S,R,S,S,S,R,R,S,S,R,R,S,R'),gene:null,gd:BL,best:['ABPC'],
     teach:'BLNAS（β-ラクタマーゼ非産生アンピシリン感性）はABPCで十分です。CEZはインフルエンザ菌には効きにくい薬です。Hibワクチンはb型莢膜株にだけ有効で、大人の気道感染で多い無莢膜型には効きません。'},
@@ -548,9 +563,9 @@ try{const f=localStorage.getItem('baikins_fs'); if(f==='l')document.documentElem
 
 function newGame(){
   G={level:1,round:1,hpMax:100,hp:100,lives:3,score:0,exp:0,bacs:200,press:10,
-    drugs:{ABPC:8,SBT_ABPC:2,PIPC_TAZ:1,CEZ:5,CFPM:1,CAZ:2,MEPM:2,VCM:2,LZD:1,AZM:3,CPFX:2,ABK:1,TOB:1,CFDC:0,COL:0},permReq:0,permDeny:0,
+    drugs:{ABPC:8,SBT_ABPC:2,PIPC_TAZ:1,CEZ:5,CAZ:2,CFPM:1,MEPM:2,VCM:2,LZD:1,AZM:3,CPFX:2,ABK:1,TOB:1,CFDC:0,COL:0},permReq:0,permDeny:0,
     items:{gram:3,culture:3,ident:3,ast:3,antigen:1,gene:1,geneQuick:0,tdm:1,pcv:0,hib:0,heal1:1,heal2:0,heal3:0},
-    dose:{},hist:[],buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null};
+    dose:{},halt:{},hist:[],buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null};
   DRUGS.forEach(d=>G.dose[d.id]=0);
 }
 function say(t,c){G.log.push({t,c:c||''});if(G.log.length>80)G.log.shift();}
@@ -574,7 +589,8 @@ function makeEnemy(s,v,bossDef){
   const hpMax=boss?130+(L-1)*12:rnd(50,70)+(L-1)*5;
   const e={id:++eid,s,v,boss,bossName:boss?bossDef.name:null,hpMax,hp:hpMax,atk:boss?11+L:7+L,
     known:{gram:false,culture:false,ident:false,ast:false,vlabel:false,gene:false,geneTxt:null,antigen:null,drugs:{}},
-    tdm:false,used:[],miss:0,vax:null};
+    tdm:false,used:[],miss:0,vax:null,ser:null};
+  if(s.sero){e.ser=pickWeighted(s.sero.map(o=>({o,w:v.res?o.wr:o.w}))).o;}
   if(L<UNKNOWN_LEVEL){e.known.gram=e.known.ident=e.known.culture=true;}
   if(L<AST_HIDDEN_LEVEL){e.known.ast=e.known.vlabel=true;}
   return e;
@@ -593,15 +609,18 @@ function spawn(){
   }
   G.enemy=e;
   const s=e.s;
-  if(s.vax&&G.items[s.vax]>0){
-    G.items[s.vax]--;
-    if(Math.random()<(e.v.vc||0)){
-      e.hpMax=Math.round(e.hpMax*.5);e.hp=e.hpMax;e.atk=Math.round(e.atk*.6);e.vax='ok';
-      say('💉 '+ITM[s.vax].name+'が有効！ 敵が弱体化している！','ok');
-    }else{
-      e.vax='ng';
-      say('💉 '+ITM[s.vax].name+'は、この株の型には効かなかった…','ng');
-    }
+  if(s.vax){
+    const vn=e.known.ident?ITM[s.vax].name:'ワクチン';
+    if(G.items[s.vax]>0){
+      G.items[s.vax]--;
+      if(e.ser&&e.ser.cov){
+        e.hpMax=Math.round(e.hpMax*.5);e.hp=e.hpMax;e.atk=Math.round(e.atk*.6);e.vax='ok';
+        say('💉 '+vn+'が有効！ 敵が弱体化している！','ok');
+      }else{
+        e.vax='ng';
+        say('💉 '+vn+'を接種済みだが、この菌の型は対象外で効かなかった…','ng');
+      }
+    }else e.vax='none';
   }
   say(e.boss?'⚠️ ボス '+eName(e)+' が現れた！':eName(e)+'が現れた！','info');
   say('攻撃を選択してください。');
@@ -758,6 +777,15 @@ function useHeal(id){
   const gain=G.hp-before;
   seq(()=>fxHeal(gain),()=>enemyPhase());
 }
+function tickHalt(){
+  const news=[];
+  for(const id in G.halt){if(--G.halt[id]<=0){delete G.halt[id];news.push(dById(id).ab+'の出荷が再開しました。');}}
+  if(Object.keys(G.halt).length<2){
+    const c=HALT_TARGETS.filter(id=>!G.halt[id]&&Math.random()<.10);
+    if(c.length){const id=c[rnd(0,c.length-1)];G.halt[id]=rnd(2,4);news.push(dById(id).ab+'が出荷停止になりました。しばらく購入できません（手持ちは使えます）。');}
+  }
+  return news;
+}
 function win(drugId){
   const e=G.enemy,d=dById(drugId);
   G.lock=true;
@@ -777,6 +805,7 @@ function win(drugId){
   const bac=(e.boss?150:60)+Math.max(0,Math.round((pts-100)/5));
   const xp=Math.round(pts/2);
   G.score+=pts;G.exp+=xp;G.bacs+=bac;G.kills++;
+  const news=tickHalt();news.forEach(n=>say('📦 '+n,'info'));
   G.hist.forEach(h=>{if(h.eid===e.id)h.name=trueName(e);});
   say(trueName(e)+'を撃退！ +'+pts+'点','ok');
   if(G.score>bestScore){bestScore=G.score;try{localStorage.setItem('baikins_best',String(bestScore));}catch(x){}}
@@ -786,8 +815,12 @@ function win(drugId){
     '<div class="bd">'+lines.map(l=>'<div><span>'+l[0]+'</span><span>'+l[1]+'</span></div>').join('')+
     '<div class="tot"><span>合計</span><span>+'+pts+' 点 / +'+bac+' Bacs / EXP +'+xp+'</span></div></div>';
   if(adv)html+='<div class="warnbox">⚠️ '+adv+'</div>';
+  if(news.length)html+='<div class="warnbox" style="background:#eef3fb;border-color:#9db6e0">📦 '+news.join('<br>📦 ')+'</div>';
   html+='<div class="teach">📘 <b>ポイント</b><br>'+e.v.teach+'<br><span class="note">この菌で有効だった抗菌薬：'+eff+'</span></div>';
-  if(e.vax==='ok')html+='<p class="note">💉 ワクチンで予防できたケースでした。</p>';
+  if(e.ser){const vn=ITM[e.s.vax].name,t=e.s.serLab+' '+e.ser.t;
+    html+='<p class="note">💉 '+t+'：'+(e.ser.cov
+      ?(e.vax==='ok'?vn+'に含まれる型。接種していたので弱体化できました。':vn+'に含まれる型でした。接種していれば弱体化できたケースです。')
+      :vn+'に含まれない型です。'+(e.vax==='ng'?'接種しても効きませんでした（型の置き換え）。':'ワクチンでは防げません。'))+'</p>';}
   let btn='次の敵へ';
   if(e.boss){
     const nl=G.level+1,hint=levelHint(nl);
@@ -821,8 +854,26 @@ function retry(){
 }
 
 /* shop */
+function buyBlock(kind,id){
+  if(kind==='set'){
+    const ds=DRUGS.filter(d=>d.set);
+    if(ds.some(d=>G.halt[d.id]))return '出荷停止中の薬を含む';
+    if(ds.some(d=>G.drugs[d.id]+10>STOCK_MAX))return '在庫上限（'+STOCK_MAX+'）';
+    return null;
+  }
+  if(kind==='drug'){
+    const d=dById(id);
+    if(G.halt[id])return '出荷停止中（あと約'+G.halt[id]+'戦）';
+    if(G.drugs[id]+(d.pack||10)>STOCK_MAX)return '在庫上限（'+STOCK_MAX+'）';
+    return null;
+  }
+  if(G.items[id]+ITM[id].pack>STOCK_MAX)return '在庫上限（'+STOCK_MAX+'）';
+  return null;
+}
 function buy(kind,id){
   let name,price,apply;
+  const blk=buyBlock(kind,id);
+  if(blk){toast('購入できません：'+blk);return;}
   if(kind==='set'){
     name='抗菌薬セット10';price=SET_PRICE;
     apply=()=>DRUGS.filter(d=>d.set).forEach(d=>G.drugs[d.id]+=10);
@@ -1073,6 +1124,15 @@ function srChip(e,d){
   const st=k.ast?e.v.drugs[d.id]:(k.drugs[d.id]||'?');
   return '<div class="sr '+(st==='?'?'':st)+'"><b>'+d.ab+'</b><span>'+st+'</span></div>';
 }
+function vaxRow(e){
+  if(!e.ser||!e.known.ident)return '';
+  const s=e.s,vn=ITM[s.vax].name,cov=!!e.ser.cov;
+  let v;
+  if(e.vax==='ok')v='<span class="vp ok">💉 '+vn+'が有効！ 弱体化</span>';
+  else if(e.vax==='ng')v='<span class="vp ng">💉 '+vn+'接種済みだが型が対象外で無効</span>';
+  else v='<span class="vp none">💉 '+(cov?vn+'の対象型（未接種）':vn+'の対象外の型')+'</span>';
+  return '<div class="evx"><span class="vp sero">'+s.serLab+' <b>'+e.ser.t+'</b></span>'+v+'</div>';
+}
 function renderPlay(){
   const root=$('#playRoot'),e=G.enemy;
   if(!e){root.innerHTML='<p class="empty">ゲームを開始してください。</p>';return;}
@@ -1089,14 +1149,14 @@ function renderPlay(){
   let h='<div class="play-grid"><div class="card ecard'+(G.fx==='hit'?' hit':'')+'">'+
     '<div class="ehead"><div class="eart'+(spriteKey(e)==='vre'?' wide':'')+'">'+bugArt(e)+'</div><div class="einfo">'+
     '<div class="ename">'+nm+la+'</div>'+
-    '<div class="esub">'+e.s.site+(e.boss?'　👑ボス':'')+'</div>'+
+    '<div class="esub">'+e.s.site+(e.boss?'　👑ボス':'')+'</div>'+vaxRow(e)+
     '<div class="hpline"><span>敵HP '+e.hp+'/'+e.hpMax+'</span><div class="bar'+(hpP<.3?' low':(hpP<.6?' mid':''))+'" style="flex:1"><i style="width:'+(hpP*100)+'%"></i></div></div>'+
     '</div></div>'+
     '<div class="scn">🩺 '+bg+'</div>'+
     '<div class="pipe">'+pipe+'</div>'+
     '<button class="banner" data-act="log" aria-live="polite" title="タップでメッセージ履歴">'+last+'</button></div>';
   h+='<div class="act">';
-  h+='<div class="sec"><h3>💊 抗菌薬 <small>枠の色：<span class="tag">A</span>Access <span class="tag W">W</span>Watch <span class="tag R">R</span>Reserve　🔒許可制　S/R＝感受性</small></h3><div class="dgrid">'+
+  h+='<div class="sec"><h3>💊 抗菌薬 <small>枠の色：<span class="tag">A</span>Access <span class="tag W">Wa</span>Watch <span class="tag R">Re</span>Reserve　🔒許可制　S/R＝感受性</small></h3><div class="dgrid">'+
     DRUGS.map(d=>{
       const st=k.ast?e.v.drugs[d.id]:(k.drugs[d.id]||'?');
       return '<button class="dbtn '+d.aware+' st'+(st==='?'?'U':st)+(d.perm?' perm':'')+(G.drugs[d.id]<=0?' zero':'')+'" data-drug="'+d.id+'" title="'+d.name+(d.perm?'（許可制）':'')+'">'+
@@ -1122,7 +1182,7 @@ function renderStat(){
   const hist=G.hist.slice().reverse().slice(0,60);
   let h='<div class="two"><div class="card"><h3>AWaRe比率とDASC</h3>'+
     '<div class="awbar"><i class="A" style="width:'+pc(c.A)+'%"></i><i class="W" style="width:'+pc(c.W)+'%"></i><i class="R" style="width:'+pc(c.R)+'%"></i></div>'+
-    '<p><span class="tag">A</span> Access: <b>'+c.A+'</b> ('+pc(c.A).toFixed(2)+'%) ｜ <span class="tag W">W</span> Watch: <b>'+c.W+'</b> ('+pc(c.W).toFixed(2)+'%) ｜ <span class="tag R">R</span> Reserve: <b>'+c.R+'</b> ('+pc(c.R).toFixed(2)+'%)</p>'+
+    '<p><span class="tag">A</span> Access: <b>'+c.A+'</b> ('+pc(c.A).toFixed(2)+'%) ｜ <span class="tag W">Wa</span> Watch: <b>'+c.W+'</b> ('+pc(c.W).toFixed(2)+'%) ｜ <span class="tag R">Re</span> Reserve: <b>'+c.R+'</b> ('+pc(c.R).toFixed(2)+'%)</p>'+
     '<p>DASC: <b>'+dasc+'</b>（平均DASC: <b>'+avg.toFixed(2)+'</b>）</p>'+
     '<p class="note">DASCは抗菌薬のスペクトラムの広さを数値化した指標です。このゲームでは教育用の概算値を使っています。AccessをできるだけAccessで、狭域を選ぶほど平均DASCは小さくなります。</p></div>'+
     '<div class="card"><h3>成績</h3><p>称号：<b>'+rank()+'</b>　撃退数：<b>'+G.kills+'</b>　ベストチョイス：<b>'+G.bests+'</b>　許可申請：<b>'+G.permReq+'</b>回（却下 <b>'+G.permDeny+'</b>回）　効かない薬を使った回数：<b>'+G.misses+'</b></p>'+
@@ -1134,20 +1194,20 @@ function renderStat(){
     hist.map(x=>'<tr><td>'+x.lv+'</td><td>'+x.rd+'</td><td class="l">'+x.name+'</td><td>'+x.drug+'</td><td'+(x.eff?'':' style="color:var(--rFg)"')+'>'+(x.eff?x.dmg:'効果なし')+'</td></tr>').join('')+'</tbody></table></div>':'<p class="note">まだ履歴がありません。</p>')+'</div>';
   $('#statRoot').innerHTML=h;
 }
-function shopRow(label,desc,price,attr,cls){
-  return '<div class="srow '+(cls||'')+'"><div class="nm">'+label+(desc?'<span class="ds">'+desc+'</span>':'')+'</div><div class="pr">'+price+' B</div><button class="buy" '+attr+(G.bacs<price?' disabled':'')+'>購入</button></div>';
+function shopRow(label,desc,price,attr,cls,blk,stock){
+  return '<div class="srow '+(cls||'')+(blk&&/出荷停止/.test(blk)?' halt':'')+'"><div class="nm">'+label+(desc?'<span class="ds">'+desc+(stock!=null?'　在庫 '+stock+'/'+STOCK_MAX:'')+'</span>':'')+(blk?'<span class="ds blk">⛔ '+blk+'</span>':'')+'</div><div class="pr">'+price+' B</div><button class="buy" '+attr+((G.bacs<price||blk)?' disabled':'')+'>購入</button></div>';
 }
 function renderItem(){
   let h='<div class="card"><h3>🛒 アイテムを購入　<span class="bacs" style="font-size:.9rem">💰 '+G.bacs+' Bacs</span></h3>'+
-    '<div class="sec" style="margin-top:0"><h3>抗菌薬 <small>（広域ほど高価。1回の購入で ×10、🔒許可制のCFDC・COLは少量パック）</small></h3><div class="shop">'+
-    shopRow('抗菌薬セット10','＊印の6種を各+10：'+DRUGS.filter(d=>d.set).map(d=>d.ab).join('・'),SET_PRICE,'data-buy="set"','full')+
-    DRUGS.map(d=>shopRow('<span class="tag '+d.aware+'">'+d.aware+'</span> '+d.name+(d.set?'＊':''),d.ab+' ×'+(d.pack||10)+(d.perm?'　🔒許可制（使用にICT承認が必要）':''),d.price,'data-buy="drug:'+d.id+'"')).join('')+'</div></div>'+
+    '<div class="sec" style="margin-top:0"><h3>抗菌薬</h3><p class="note">広域ほど高価。在庫は各'+STOCK_MAX+'まで（超える購入は不可）。SBT/ABPC・CEZ・CAZ・CFPM・MEPMはときどき📦出荷停止になります。1回の購入で ×10、🔒許可制のCFDC・COLは少量パック。</p><div class="shop">'+
+    shopRow('抗菌薬セット10','＊印の6種を各+10：'+DRUGS.filter(d=>d.set).map(d=>d.ab).join('・'),SET_PRICE,'data-buy="set"','full',buyBlock('set'))+
+    DRUGS.map(d=>shopRow('<span class="tag '+d.aware+'">'+({A:'A',W:'Wa',R:'Re'})[d.aware]+'</span> '+d.name+(d.set?'＊':''),d.ab+' ×'+(d.pack||10)+(d.perm?'　🔒許可制（使用にICT承認が必要）':''),d.price,'data-buy="drug:'+d.id+'"','',buyBlock('drug',d.id),G.drugs[d.id])).join('')+'</div></div>'+
     '<div class="sec"><h3>検査 <small>（4つの基本検査は ×5）</small></h3><div class="shop">'+
-    ITEMS.filter(x=>x.grp==='test').map(x=>shopRow(x.name+(x.pack>1?' ×'+x.pack:''),x.desc,x.price,'data-buy="item:'+x.id+'"')).join('')+'</div></div>'+
+    ITEMS.filter(x=>x.grp==='test').map(x=>shopRow(x.name+(x.pack>1?' ×'+x.pack:''),x.desc,x.price,'data-buy="item:'+x.id+'"','',buyBlock('item',x.id),G.items[x.id])).join('')+'</div></div>'+
     '<div class="sec"><h3>ワクチン</h3><div class="shop">'+
-    ITEMS.filter(x=>x.grp==='vax').map(x=>shopRow(x.name,x.desc,x.price,'data-buy="item:'+x.id+'"')).join('')+'</div></div>'+
+    ITEMS.filter(x=>x.grp==='vax').map(x=>shopRow(x.name,x.desc,x.price,'data-buy="item:'+x.id+'"','',buyBlock('item',x.id),G.items[x.id])).join('')+'</div></div>'+
     '<div class="sec"><h3>回復薬</h3><div class="shop">'+
-    ITEMS.filter(x=>x.grp==='heal').map(x=>shopRow(x.name,x.desc,x.price,'data-buy="item:'+x.id+'"')).join('')+'</div></div></div>';
+    ITEMS.filter(x=>x.grp==='heal').map(x=>shopRow(x.name,x.desc,x.price,'data-buy="item:'+x.id+'"','',buyBlock('item',x.id),G.items[x.id])).join('')+'</div></div></div>';
   h+='<div class="two sec"><div class="card"><h3>🎒 持ち物</h3>'+
     '<p><b>抗菌薬の残り：</b>'+DRUGS.map(d=>d.name+(d.set?'＊':'')+'('+G.drugs[d.id]+')').join('、')+'</p>'+
     '<p class="note">＊は抗菌薬セットに含まれる抗菌薬</p>'+
@@ -1169,6 +1229,14 @@ function antibiogramHTML(){
   });}
   return h+'</tbody></table></div><p class="note">ゲーム内の想定値（二値化・単純化）です。実際の感受性は地域・施設・患者背景で異なるため、必ず自施設のアンチバイオグラムと最新のガイドラインを確認してください。</p>';
 }
+function drugTableHTML(){
+  let h='<div class="twrap dtbl" style="max-height:58dvh"><table><thead><tr><th class="l">抗菌薬</th><th>AWaRe</th><th>ASC</th><th>価格(B)</th><th>在庫</th></tr></thead><tbody>';
+  DRUGS.forEach(d=>{
+    const nt=[];if(d.set)nt.push('＊セット対象');if(d.perm)nt.push('🔒許可制');if(HALT_TARGETS.includes(d.id))nt.push(G.halt[d.id]?'📦出荷停止中':'📦出荷停止あり');
+    h+='<tr><td class="l"><b>'+d.ab+'</b> <small>'+d.name+'</small>'+(nt.length?'<br><small class="nt">'+nt.join('　')+'</small>':'')+'</td><td><span class="tag '+d.aware+'">'+({A:'A',W:'Wa',R:'Re'})[d.aware]+'</span></td><td><b>'+d.dasc+'</b></td><td>'+d.price+'</td><td>'+G.drugs[d.id]+'<small>/'+STOCK_MAX+'</small></td></tr>';
+  });
+  return h+'</tbody></table></div><p class="note">ASC（抗菌スペクトラムのスコア）は広域なほど大きい値で、DASC（STAT画面）の計算に使います。教育用の概算値で、ABK・TOB・CFDC・PIPC/TAZ・CFPMの値は仮設定です。A＝Access、Wa＝Watch、Re＝Reserve。</p>';
+}
 function renderMisc(){
   const fs=document.documentElement.getAttribute('data-fs')==='l';
   $('#miscRoot').innerHTML='<div class="two"><div class="card prose"><h3>ゲームの解説</h3>'+
@@ -1186,11 +1254,12 @@ function renderMisc(){
     '<li><b>アミノグリコシド：</b>ABKはMRSAなどグラム陽性菌用、TOBはグラム陰性菌（緑膿菌など）用。グラム陰性菌にABKは使いません。</li>'+
     '<li><b>🔒許可制（CFDC・COL）：</b>使うには感染症専門医・ICTの承認が必要です。①同定済み ②感受性が判明 ③許可不要の有効な抗菌薬が他にない、の3条件を満たすと承認されます。却下されるとスコア−30。まれに出るMDRP・CRE・CRABのための切り札です。</li>'+
     '<li><b>COL（コリスチン）：</b>腎毒性・神経毒性が強く、使うたびに自分のHPが18〜28減ります。</li>'+
-    '<li><b>ワクチン：</b>PCVは含まれる型のみ、Hibはb型莢膜株のみ有効。使うと敵が弱体化することがあります。</li>'+
+    '<li><b>ワクチン：</b>PCV20は含まれる血清型の肺炎球菌にだけ、Hibワクチンはb型莢膜のインフルエンザ菌にだけ有効です（敵カードに型とワクチン状況を表示）。所持していれば対象菌の出現時に自動で使われ、型が合うと敵が弱体化します。</li>'+
     '<li><b>効かない薬を撃つと減点。</b>ただし結果は敵情報に記録されます。</li></ul></div></div>'+
     '<div class="card prose sec"><h3>AWaRe分類とDASC</h3>'+
-    '<p>WHOのAWaRe分類は、抗菌薬を<span class="tag">A</span>Access（第一・第二選択で耐性リスクが低い）、<span class="tag W">W</span>Watch（耐性リスクが高く管理が必要）、<span class="tag R">R</span>Reserve（多剤耐性菌への最後の砦）に分けたものです。Access薬の割合を高く保つことが適正使用の目標です。</p>'+
+    '<p>WHOのAWaRe分類は、抗菌薬を<span class="tag">A</span>Access（第一・第二選択で耐性リスクが低い）、<span class="tag W">Wa</span>Watch（耐性リスクが高く管理が必要）、<span class="tag R">Re</span>Reserve（多剤耐性菌への最後の砦）に分けたものです。Access薬の割合を高く保つことが適正使用の目標です。</p>'+
     '<p>DASCは、抗菌薬が「どれだけ広い範囲の細菌をカバーするか」を数値化した指標です。ゲーム内のDASCは教育用の概算値で、実際の値とは異なります。ABK（アルベカシン）はWHOのAWaRe分類には未収載のため、ゲーム内ではWatch扱いにしています。</p>'+
+    '<p><button class="btn" data-act="drugs">💊 抗菌薬一覧表（AWaRe・ASC）を開く</button></p>'+
     '<details><summary>📋 レベル別 出現菌</summary>'+levelTableHTML()+'<p class="note">レベル1〜4は菌名・耐性型・感受性がすべて表示。レベル5〜9は菌名のみ判明で、感受性は検査するか経験的治療で。レベル10以上は正体不明（培養にはグラム染色が必要）です。</p></details>'+
     '<details><summary>📋 Antibiogram（ゲーム内の感受性表）を開く</summary>'+antibiogramHTML()+'</details></div>'+
     '<div class="card sec"><h3>設定</h3><div class="btn-row">'+
@@ -1252,6 +1321,7 @@ document.addEventListener('click',ev=>{
     ov('<h2>メッセージ履歴</h2><div class="log" style="height:auto;max-height:55dvh">'+G.log.slice(-40).map(l=>'<p class="'+l.c+'">'+l.t+'</p>').join('')+'</div>',[{t:'閉じる',c:'pri',f:()=>closeOv()}]);
     const lb=document.querySelector('#ovBox .log');if(lb)lb.scrollTop=lb.scrollHeight;return;
   }
+  if(d.act==='drugs'){ov('<h2>💊 抗菌薬一覧表</h2>'+drugTableHTML(),[{t:'閉じる',c:'pri',f:()=>closeOv()}]);return;}
   if(d.act==='restart'){
     ov('<h2>最初からやり直しますか？</h2><p>現在の進行状況は失われます（ベストスコアは残ります）。</p>',
       [{t:'やり直す',c:'pri',f:()=>{closeOv();startGame();}},{t:'キャンセル',c:'',f:()=>closeOv()}]);
@@ -1259,7 +1329,7 @@ document.addEventListener('click',ev=>{
 });
 newGame();render();renderMisc();showTitle();
 // テスト用フック
-window.__baikins={render,get G(){return G;},attack,useTest,useHeal,buy,setTab,advance,retry,startGame,DRUGS,SP,BOSS,closeOv};
+window.__baikins={render,get G(){return G;},attack,useTest,useHeal,buy,setTab,advance,retry,startGame,DRUGS,SP,BOSS,closeOv,buyBlock,tickHalt};
 })();
 </script>
 </body>
