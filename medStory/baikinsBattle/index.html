@@ -589,6 +589,28 @@ const SP={
     teach:'モラクセラはほぼ100%がβ-ラクタマーゼ（ペニシリナーゼ）を産生するため、ABPCは常に無効です。阻害薬配合のSBT/ABPCが有効です。インフルエンザ菌と並ぶ、COPD急性増悪・中耳炎・副鼻腔炎の原因菌です。'}
   ]}
 };
+/* ---- ボス復活（覚醒）で進化する先の株（通常敵としては出現しない） ---- */
+function deriveVar(spId,base,id,lab,mod,extra){
+  const b=SP[spId].v.find(v=>v.id===base);
+  SP[spId].v.push(Object.assign({},b,{id,lab,w:0,min:99,awk:true,res:true,risk:null},extra,{drugs:Object.assign({},b.drugs,mod)}));
+}
+deriveVar('spn','PRSP','PRSP2','PRSP（高度耐性）',{CTRX:'R',CFPM:'R'},{gene:'PBP遺伝子の多重変異を検出',gd:BL,best:['MEPM','VCM'],
+  teach:'高度耐性PRSPです。CTRX・CFPMにも耐性になり、MEPM・VCM・LZDが選択肢です。髄膜炎では特に薬の選択が重要です。'});
+deriveVar('hin','BLPACR','BLPACRQ','BLPACR・キノロン耐性',{CPFX:'R'},{gene:'bla遺伝子＋ftsI変異＋gyrA変異を検出',gd:BL,best:['AZM','MEPM','CTRX','CAZ','CFPM'],
+  teach:'β-ラクタマーゼ産生・PBP3変異に加えて、キノロン耐性（gyrA変異）も獲得した株です。CPFXは使えず、AZMやセフェム系・MEPMが選択肢です。'});
+deriveVar('sau','MRSA','VISA','VISA（VCM低感受性）',{VCM:'R'},{gene:'mecA を検出（VCM低感受性は遺伝子検査では判定できません）',gd:BL,best:['ABK','LZD'],
+  teach:'細胞壁が厚くなりVCMが効きにくくなったMRSA（VISA）です。LZDやABKが選択肢です。VCM使用中に治療が長引く場合は、感受性の再検査が重要です。'});
+const EVO={spn:{PSSP:'PRSP',PRSP:'PRSP2'},hin:{BLNAS:'BLPAR',BLPAR:'BLPACR',BLNAR:'BLPACR',BLPACR:'BLPACRQ'},pae:{PA:'CRPA',CRPA:'MDRP'},sau:{MRSA:'VISA'}};
+const EVO_TXT={
+ PRSP:'PBP遺伝子の変異（pbp2x/pbp1a/pbp2b）を獲得し、PRSPに進化しました。ABPCやCEZなどβ-ラクタム系の多くが効かなくなります。',
+ PRSP2:'変異がさらに進み、CTRX・CFPMにも耐性になりました。MEPM・VCM・LZDが残ります。',
+ BLPAR:'β-ラクタマーゼ遺伝子（プラスミド）を獲得し、BLPARに進化しました。ABPCは無効になり、SBT/ABPCなど阻害薬配合が有効です。',
+ BLPACR:'β-ラクタマーゼ産生に加えてPBP3（ftsI）の変異も獲得し、BLPACRに進化しました。',
+ BLPACRQ:'さらにキノロン耐性（gyrA変異）を獲得しました。CPFXが効かなくなります。',
+ CRPA:'OprDの欠損やカルバペネマーゼなどによりカルバペネム耐性に進化しました。MEPMが効かなくなります。',
+ MDRP:'多剤耐性化しました。残る有効薬はCFDCとCOL（どちらも許可制）だけです。',
+ VISA:'細胞壁の肥厚などでVCM低感受性（VISA）に進化しました。VCMが効きにくく、LZD・ABKが選択肢です。',
+ none:'バイオフィルムや持続感染菌（パーシスター）により、いったん効いたように見えても再燃しました。感受性は変わりません。'};
 const BOSS={
  1:{sp:'spn',name:'ハイエンキューキン王',w:{PSSP:60,PRSP:40},intro:'肺炎球菌の王国を治めるハイエンキューキン王。ペニシリンが効く一族（PSSP）と、鎧をまとった一族（PRSP）がいる…。'},
  2:{sp:'hin',name:'インフルエンザキンXV世女王',w:{BLNAS:20,BLPAR:25,BLNAR:30,BLPACR:25},intro:'気道を支配するインフルエンザキンXV世女王。β-ラクタマーゼ（BLPAR）やPBP3変異（BLNAR）を持つ家臣団を従えている…。'},
@@ -649,7 +671,7 @@ function makeEnemy(s,v,bossDef){
   const hpMax=boss?130+(L-1)*12:rnd(50,70)+(L-1)*5;
   const e={id:++eid,s,v,boss,bossName:boss?bossDef.name:null,hpMax,hp:hpMax,atk:boss?11+L:7+L,
     known:{gram:false,culture:false,ident:false,ast:false,vlabel:false,gene:false,geneTxt:null,antigen:null,drugs:{}},
-    tdm:false,used:[],miss:0,bestHits:0,revived:false,revRolled:false,lostDrug:null,vax:null,ser:null};
+    tdm:false,used:[],miss:0,bestHits:0,revived:false,revRolled:false,evo:null,vax:null,ser:null};
   if(s.sero){e.ser=pickWeighted(s.sero.map(o=>({o,w:v.res?o.wr:o.w}))).o;}
   if(L<UNKNOWN_LEVEL){e.known.gram=e.known.ident=e.known.culture=true;}
   if(L<AST_HIDDEN_LEVEL){e.known.ast=e.known.vlabel=true;}
@@ -878,16 +900,24 @@ function reviveChance(e){
   let p=.15+.25*G.press/100+Math.min(.25,.0625*e.miss)-.15*(e.bestHits/n)-(allAcc?.10:0)+.02*(G.level-1);
   return clamp(p,.05,.70);
 }
+function spKey(e){return Object.keys(SP).find(x=>SP[x]===e.s);}
 function applyRevive(e,id){
   e.revived=true;e.hp=e.hpMax;e.atk=Math.round(e.atk*1.2);
-  const rest=Object.keys(e.v.drugs).filter(k=>e.v.drugs[k]==='S'&&k!==id).length;
-  if(rest>0){e.v=Object.assign({},e.v,{drugs:Object.assign({},e.v.drugs,{[id]:'R'})});e.known.drugs[id]='R';e.lostDrug=id;}
-  say('🔥 '+eName(e)+'が復活した！ HP全回復・攻撃力UP'+(e.lostDrug?'　'+dById(id).ab+'への耐性を獲得！':''),'bad');
+  const to=(EVO[spKey(e)]||{})[e.v.id],nv=to&&e.s.v.find(v=>v.id===to);
+  const from=e.v;
+  if(nv){
+    e.v=nv;e.evo={from:from.lab||from.id,to:nv.lab||nv.id,txt:EVO_TXT[nv.id]||''};
+    const k=e.known;
+    if(G.level>=AST_HIDDEN_LEVEL){k.ast=false;k.vlabel=false;k.gene=false;k.geneTxt=null;k.drugs={};}
+  }else e.evo={from:null,to:null,txt:EVO_TXT.none};
+  say('🔥 '+eName(e)+'が復活した！ HP全回復・攻撃力UP'+(nv?'　'+e.evo.from+' → '+e.evo.to+' に進化！':''),'bad');
 }
 function reviveSeq(e,id,done){
   applyRevive(e,id);
   if(!fxOn()){done();return;}
-  const lost=e.lostDrug?dById(e.lostDrug).ab:null;
+  const evo=e.evo,hid=G.level>=AST_HIDDEN_LEVEL;
+  const warn=evo.to?(hid?'⚠ 耐性進化 ⚠':'⚠ 進化：'+evo.from+' → '+evo.to+' ⚠'):'⚠ 再燃 ⚠';
+  const sub=evo.to?(hid?'感受性が変化した！ 再検査するか、経験的に薬を選べ！':'感受性が変化した！ 新しい薬の表を確認せよ！'):'バイオフィルムで再燃！ 感受性は変わらない！';
   const box=document.createElement('div');box.className='revfx';
   box.innerHTML='<div class="rf-beat"></div>'+
     '<svg class="rf-crack" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="50,0 46,18 54,30 44,46 52,58 47,74 53,100"/><polyline points="0,38 18,42 28,36 40,48"/><polyline points="100,62 82,58 72,66 60,54"/></svg>'+
@@ -895,9 +925,9 @@ function reviveSeq(e,id,done){
     '<div class="rf-quote">まだ…終わらん…！</div>'+
     '<div class="rf-art">'+bugArt(e)+'</div>'+
     '<div class="rf-hp"><i></i></div>'+
-    (lost?'<div class="rf-warn">⚠ 耐性獲得：'+lost+' ⚠</div>':'')+
+    '<div class="rf-warn">'+warn+'</div>'+
     '<div class="rf-nm">'+eName(e)+'</div>'+
-    (lost?'<div class="rf-sub">'+lost+'はこの戦闘では効かない！ 別の薬を選べ！</div>':'')+
+    '<div class="rf-sub">'+sub+'</div>'+
     '<div class="rf-skip">タップでスキップ</div>';
   document.body.appendChild(box);
   let fin=false,tm=null;
@@ -906,7 +936,7 @@ function reviveSeq(e,id,done){
 }
 function riskRow(e){
   if(!e.boss||G.level<2)return '';
-  if(e.revived)return '<div class="evx"><span class="vp rev">🔥 覚醒体（'+(e.lostDrug?dById(e.lostDrug).ab+'無効・':'')+'攻撃力UP）</span></div>';
+  if(e.revived){const l=eLabel(e);return '<div class="evx"><span class="vp rev">🔥 覚醒体'+(l?'（'+l+'）':'')+'・攻撃力UP'+(G.level>=AST_HIDDEN_LEVEL&&!e.known.ast?'・感受性要再検査':'')+'</span></div>';}
   if(e.revRolled||e.hp>e.hpMax*.3)return '';
   return '<div class="evx"><span class="vp ng">⚠ 再燃リスク '+Math.round(reviveChance(e)*100)+'%（HP10%で判定）</span></div>';
 }
@@ -943,7 +973,7 @@ function win(drugId){
     '<div class="bd">'+lines.map(l=>'<div><span>'+l[0]+'</span><span>'+l[1]+'</span></div>').join('')+
     '<div class="tot"><span>合計</span><span>+'+pts+' 点 / +'+bac+' Bacs / EXP +'+xp+'</span></div></div>';
   if(adv)html+='<div class="warnbox">⚠️ '+adv+'</div>';
-  if(e.revived)html+='<div class="warnbox" style="background:#f3ecfb;border-color:#b79be0">🔥 このボスは一度復活しました。不適切な抗菌薬の使用や耐性菌圧の高さは、治療失敗や再燃（耐性変異株の選択）のリスクを高めます。</div>';
+  if(e.revived)html+='<div class="warnbox" style="background:#f3ecfb;border-color:#b79be0">🔥 <b>覚醒（再燃）</b>'+(e.evo&&e.evo.from?'：'+e.evo.from+' → '+e.evo.to:'')+'<br>'+(e.evo?e.evo.txt:'')+'<br><span class="note">不適切な抗菌薬の使用や耐性菌圧の高さは、治療失敗・再燃（耐性変異株の選択）のリスクを高めます。</span></div>';
   if(news.length)html+='<div class="warnbox" style="background:#eef3fb;border-color:#9db6e0">📦 '+news.join('<br>📦 ')+'</div>';
   html+='<div class="teach">📘 <b>ポイント</b><br>'+e.v.teach+'<br><span class="note">この菌で有効だった抗菌薬：'+eff+'</span></div>';
   if(e.ser){const vn=ITM[e.s.vax].name,t=e.s.serLab+' '+e.ser.t;
@@ -1353,7 +1383,7 @@ function levelTableHTML(){
 function antibiogramHTML(){
   let h='<div class="twrap"><table class="abt"><thead><tr><th class="l">菌（耐性型）</th>'+DRUGS.map(d=>'<th>'+d.ab+'</th>').join('')+'</tr></thead><tbody>';
   for(const sid in SP){const s=SP[sid];s.v.forEach(v=>{
-    h+='<tr><td class="l">'+s.jp+(v.lab?' '+v.lab:'')+'<br><span class="note">'+s.la+'</span></td>'+DRUGS.map(d=>'<td class="'+v.drugs[d.id]+'">'+v.drugs[d.id]+'</td>').join('')+'</tr>';
+    h+='<tr><td class="l">'+s.jp+(v.lab?' '+v.lab:'')+(v.awk?' <span class="note">※覚醒体のみ</span>':'')+'<br><span class="note">'+s.la+'</span></td>'+DRUGS.map(d=>'<td class="'+v.drugs[d.id]+'">'+v.drugs[d.id]+'</td>').join('')+'</tr>';
   });}
   return h+'</tbody></table></div><p class="note">ゲーム内の想定値（二値化・単純化）です。実際の感受性は地域・施設・患者背景で異なるため、必ず自施設のアンチバイオグラムと最新のガイドラインを確認してください。</p>';
 }
