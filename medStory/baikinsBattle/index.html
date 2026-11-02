@@ -39,6 +39,15 @@ header{grid-area:hd;background:var(--card);border-bottom:2px solid var(--line);p
 .bar{flex:1;height:14px;border-radius:7px;background:#e6dfcd;overflow:hidden;border:1px solid var(--line)}
 .bar>i{display:block;height:100%;background:var(--good);transition:width .25s}
 .bar.mid>i{background:var(--warn)} .bar.low>i{background:var(--bad)}
+.tmrow{display:flex;align-items:center;gap:8px;margin:8px 0 2px;font-size:.78rem}
+.tmrow .tmt{font-weight:700;white-space:nowrap;min-width:8.6em;font-variant-numeric:tabular-nums}
+.tmrow .tmgl{white-space:nowrap;color:var(--sub)}
+.tmt.ok{color:#2e7d32}.tmt.mid{color:#b8860b}.tmt.over{color:#888}
+.tmg{flex:1;height:10px;border-radius:999px;background:#e6dfcd;border:1px solid var(--line);overflow:hidden}
+.tmg>i{display:block;height:100%;width:0;background:#e0a040}
+.tmg.hot>i{background:#d9534f;animation:tmblink .35s infinite alternate}
+@keyframes tmblink{to{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.tmg.hot>i{animation:none}}
 .bar.press>i{background:linear-gradient(90deg,#8bb87a,#e6b84a,#c9463a)}
 .pressw{display:flex;align-items:center;gap:6px;flex:0 1 190px;min-width:130px}
 .pressw small{font-size:.75rem;color:var(--sub);white-space:nowrap}
@@ -640,14 +649,44 @@ const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const dById=id=>DRUGS.find(d=>d.id===id);
 let G=null, eid=0, bestScore=0, tab='play';
-try{bestScore=+localStorage.getItem('baikins_best')||0;}catch(e){}
+
 try{const f=localStorage.getItem('baikins_fs'); if(f==='l')document.documentElement.setAttribute('data-fs','l');}catch(e){}
 
+
+/* ===== タイムモード ===== */
+let timeOn=true,timeSpd='normal';
+try{if(localStorage.getItem('baikins_time')==='off')timeOn=false;const _sp=localStorage.getItem('baikins_tspeed');if(_sp==='slow'||_sp==='fast')timeSpd=_sp;}catch(e){}
+const TSPD={slow:1.5,normal:1,fast:.75},TSPD_LBL={slow:'ゆっくり',normal:'ふつう',fast:'はやい'};
+const TM_AUTO=.6,TM_AUTO_BOSS=.8,TM_COST=2000;
+function bestKey(){return timeOn?'baikins_best_t_'+timeSpd:'baikins_best';}
+function loadBest(){try{bestScore=+localStorage.getItem(bestKey())||0;}catch(e){bestScore=0;}}
+function tmInterval(e){const L=G.level;let s=L<=3?10:L<=6?8:L<=9?7:6;if(e.boss)s-=1;return Math.round(s*1000*TSPD[timeSpd]);}
+function tmTarget(e){const L=G.level;let s=L<=3?25:L<=6?35:L<=9?45:60;if(e.boss)s=Math.round(s*1.3);return Math.round(s*1000*TSPD[timeSpd]);}
+function tmReset(e){e.cd=tmInterval(e);e._w=0;}
+function tmRunning(){return !!(timeOn&&G&&G.enemy&&!G.over&&!G.lock&&G.enemy.hp>0&&$('#ov').hidden&&tab==='play');}
+function tmSpend(ms){const e=G&&G.enemy;if(!timeOn||!e||G.over||G.lock||e.hp<=0)return;e.t+=ms;G.tmTotal+=ms;e.cd=Math.max(300,e.cd-ms);tmPaint();}
+function tickTime(ms){
+  if(!tmRunning())return false;
+  const e=G.enemy;e.t+=ms;G.tmTotal+=ms;e.cd-=ms;
+  if(e.cd<1000&&!e._w){e._w=1;sfx('tick');}
+  if(e.cd<=0){tmPaint();enemyPhase(null,true);return true;}
+  tmPaint();return true;
+}
+function tmPaint(){
+  const e=G&&G.enemy,t=document.getElementById('tmT');if(!e||!t)return;
+  const g=document.getElementById('tmG'),gb=document.getElementById('tmGb');
+  const tg=tmTarget(e),sec=Math.floor(e.t/100)/10;
+  t.textContent='⏱ '+sec.toFixed(1)+' / '+Math.round(tg/1000)+'秒';
+  t.className='tmt '+(e.t<=tg?'ok':(e.t<=tg*1.5?'mid':'over'));
+  if(g){g.style.width=clamp((1-e.cd/tmInterval(e))*100,0,100)+'%';}
+  if(gb)gb.classList.toggle('hot',e.cd<1500);
+}
+function fmtT(ms){const s=Math.round(ms/1000);return s>=60?Math.floor(s/60)+'分'+(s%60)+'秒':s+'秒';}
 function newGame(){
   G={level:1,round:1,hpMax:100,hp:100,lives:3,score:0,exp:0,bacs:200,press:10,
     drugs:{ABPC:8,SBT_ABPC:2,PIPC_TAZ:1,CEZ:5,CTRX:2,CAZ:2,CFPM:1,MEPM:2,VCM:2,LZD:1,AZM:3,CPFX:2,ABK:1,TOB:1,CFDC:0,COL:0},permReq:0,permDeny:0,
     items:{gram:3,culture:3,ident:3,ast:3,antigen:1,gene:1,geneQuick:0,tdm:1,pcv:0,hib:0,heal1:1,heal2:0,heal3:0},
-    dose:{},halt:{},hist:[],buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null};
+    dose:{},halt:{},hist:[],tmTotal:0,tmKillSum:0,buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null};
   DRUGS.forEach(d=>G.dose[d.id]=0);
 }
 function say(t,c){G.log.push({t,c:c||''});if(G.log.length>80)G.log.shift();}
@@ -671,7 +710,7 @@ function makeEnemy(s,v,bossDef){
   const hpMax=boss?130+(L-1)*12:rnd(50,70)+(L-1)*5;
   const e={id:++eid,s,v,boss,bossName:boss?bossDef.name:null,hpMax,hp:hpMax,atk:boss?11+L:7+L,
     known:{gram:false,culture:false,ident:false,ast:false,vlabel:false,gene:false,geneTxt:null,antigen:null,drugs:{}},
-    tdm:false,used:[],miss:0,bestHits:0,revived:false,revRolled:false,evo:null,vax:null,ser:null};
+    tdm:false,t:0,cd:0,_w:0,used:[],miss:0,bestHits:0,revived:false,revRolled:false,evo:null,vax:null,ser:null};
   if(s.sero){e.ser=pickWeighted(s.sero.map(o=>({o,w:v.res?o.wr:o.w}))).o;}
   if(L<UNKNOWN_LEVEL){e.known.gram=e.known.ident=e.known.culture=true;}
   if(L<AST_HIDDEN_LEVEL){e.known.ast=e.known.vlabel=true;}
@@ -709,7 +748,7 @@ function spawn(){
   }else{
     const p=pickEnemy();e=makeEnemy(p.s,p.v,null);
   }
-  G.enemy=e;
+  G.enemy=e;tmReset(e);
   const s=e.s;
   if(s.vax){
     const vn=e.known.ident?ITM[s.vax].name:'ワクチン';
@@ -749,11 +788,13 @@ function seq(fx,cont){
   }
   cont();
 }
-function enemyPhase(done){
+function enemyPhase(done,auto){
   const e=G.enemy;
-  const dmg=Math.max(1,rnd(e.atk-3,e.atk+3));
+  let dmg=Math.max(1,rnd(e.atk-3,e.atk+3));
+  if(auto)dmg=Math.max(1,Math.round(dmg*(e.boss?TM_AUTO_BOSS:TM_AUTO)));
   G.hp=Math.max(0,G.hp-dmg);
-  say((e.known.ident?e.s.jp:'敵')+'の攻撃！ HP -'+dmg,'bad');
+  tmReset(e);
+  say((auto?'⏱ 時間切れ！ ':'')+(e.known.ident?e.s.jp:'敵')+'の攻撃！ HP -'+dmg,'bad');
   if(!fxOn()){sfx('enemyAtk');sfx('hurt',.25);}
   seq(()=>fxEnemyAttack(e,dmg),()=>{
     if(G.hp<=0)lifeLost();
@@ -875,6 +916,7 @@ function useTest(id){
   if(!used)return;
   sfx('test');
   G.items[id]--;
+  if(!turn)tmSpend(TM_COST);
   render();
   if(turn)enemyPhase();
 }
@@ -968,6 +1010,14 @@ function win(drugId){
     if(e.revived){pts+=150;lines.push(['覚醒体を撃破！（二度倒した）','+150']);}
     else{pts+=50;lines.push(['完全撃破ボーナス（再燃させなかった）','+50']);}
   }
+  if(timeOn){
+    const tg=tmTarget(e),sec=(e.t/1000).toFixed(1);
+    if(e.t<=tg){pts+=30;lines.push(['⏱ タイムボーナス '+sec+'秒（目標 '+Math.round(tg/1000)+'秒以内）','+30']);
+      if(e.v.best.includes(drugId)){pts+=20;lines.push(['迅速な適正選択','+20']);}}
+    else if(e.t<=tg*1.5){pts+=15;lines.push(['⏱ タイムボーナス '+sec+'秒（目標の1.5倍以内）','+15']);}
+    else lines.push(['⏱ 所要時間 '+sec+'秒（目標 '+Math.round(tg/1000)+'秒）','+0']);
+    G.tmKillSum+=e.t;
+  }
   const allAcc=e.used.length>0&&e.used.every(x=>dById(x).aware==='A');
   if(allAcc){G.press=clamp(G.press-6,0,100);lines.push(['Access薬のみで治療：耐性菌圧','-6']);}
   const bac=(e.boss?150:60)+Math.max(0,Math.round((pts-100)/5));
@@ -977,7 +1027,7 @@ function win(drugId){
   const news=tickHalt();news.forEach(n=>say('📦 '+n,'info'));
   G.hist.forEach(h=>{if(h.eid===e.id)h.name=trueName(e);});
   say(trueName(e)+'を撃退！ +'+pts+'点','ok');
-  if(G.score>bestScore){bestScore=G.score;try{localStorage.setItem('baikins_best',String(bestScore));}catch(x){}}
+  if(G.score>bestScore){bestScore=G.score;try{localStorage.setItem(bestKey(),String(bestScore));}catch(x){}}
   const eff=DRUGS.filter(x=>e.v.drugs[x.id]==='S').map(x=>x.ab).join(', ');
   let html='<div class="big">🎉</div><h2>'+(e.boss?'ボス撃退！':'撃退！')+'</h2>'+
     '<p><b>'+trueName(e)+'</b>　'+e.s.la+'</p>'+
@@ -1013,7 +1063,7 @@ function gameOver(){
   const eff=DRUGS.filter(x=>e.v.drugs[x.id]==='S').map(x=>x.ab).join(', ');
   const bst=e.v.best.map(x=>dById(x).ab).join(' / ');
   say('治療失敗…','bad');
-  ov('<div class="big">💔</div><h2>治療失敗…</h2><p>到達：レベル '+G.level+'・ラウンド '+G.round+'　スコア '+G.score+'（ベスト '+bestScore+'）</p>'+
+  ov('<div class="big">💔</div><h2>治療失敗…</h2><p>到達：レベル '+G.level+'・ラウンド '+G.round+'　スコア '+G.score+'（ベスト '+bestScore+'）'+(timeOn?'<br>⏱ 合計プレイ時間 '+fmtT(G.tmTotal):'')+'</p>'+
      '<div class="teach">📘 <b>敵の正体：'+trueName(e)+'</b>　'+e.s.la+'<br>'+e.v.teach+
      '<br><span class="note">有効だった抗菌薬：'+eff+'／おすすめ：'+bst+'</span></div>'+
      '<p class="note">リトライするとスコアが半分になります。検査や背景情報を活用しましょう。</p>',
@@ -1056,7 +1106,8 @@ function buy(kind,id){
   if(G.bacs<price){toast('Bacsが足りません');sfx('err');return;}
   G.bacs-=price;apply();sfx('coin');
   G.buys.push({name,price});
-  toast(name+'を購入（-'+price+' Bacs）');
+  toast(name+'を購入（-'+price+' Bacs）'+(timeOn?'　⏱ -'+(TM_COST/1000)+'秒':''));
+  tmSpend(TM_COST);
   render();
 }
 
@@ -1195,6 +1246,7 @@ const SFX=(()=>{
     levelup:(o,t,b)=>{[N.C5,N.E5,N.G5,N.C6,N.E6,N.G6].forEach((f,i)=>tone(o,t+i*.08,f,f,.2,'triangle',.14,b));},
     lifeLost:(o,t,b)=>{[N.A4,N.G4,N.E4,N.C4].forEach((f,i)=>tone(o,t+i*.16,f,f*.97,.24,'sawtooth',.13,b));},
     gameover:(o,t,b)=>{[N.G4,N.E4,N.C4,196,130.8].forEach((f,i)=>tone(o,t+i*.28,f,f*.95,.45,'sawtooth',.14,b));noise(t+1.2,.8,.15,'lowpass',600,80,b);},
+    tick:(o,t,b)=>{tone(o,t,880,880,.05,'square',.09,b);tone(o,t+.13,880,880,.05,'square',.09,b);},
     test:(o,t,b)=>{tone(o,t,1000,1000,.07,'sine',.14,b);tone(o,t+.08,1500,1500,.1,'sine',.14,b);},
     heal:(o,t,b)=>{[600,800,1000,1300,1600].forEach((f,i)=>tone(o,t+i*.07,f,f,.25,'sine',.12,b));},
     coin:(o,t,b)=>{tone(o,t,N.E6,N.E6,.08,'square',.1,b);tone(o,t+.08,N.G6*1.12,N.G6*1.12,.3,'square',.1,b);},
@@ -1397,6 +1449,7 @@ function renderPlay(){
     '<div class="esub">'+e.s.site+(e.boss?'　👑ボス':'')+'</div>'+vaxRow(e)+riskRow(e)+
     '<div class="hpline"><span>敵HP '+e.hp+'/'+e.hpMax+'</span><div class="bar'+(hpP<.3?' low':(hpP<.6?' mid':''))+'" style="flex:1"><i style="width:'+(hpP*100)+'%"></i></div></div>'+
     '</div></div>'+
+    (timeOn?'<div class="tmrow"><span class="tmt" id="tmT"></span><span class="tmgl">敵の攻撃</span><div class="tmg" id="tmGb"><i id="tmG"></i></div></div>':'')+
     '<div class="scn">🩺 '+bg+'</div>'+
     '<div class="pipe">'+pipe+'</div>'+
     '<button class="banner" data-act="log" aria-live="polite" title="タップでメッセージ履歴">'+last+'</button></div>';
@@ -1407,7 +1460,7 @@ function renderPlay(){
       return '<button class="dbtn '+d.aware+' st'+(st==='?'?'U':st)+(d.perm?' perm':'')+(G.drugs[d.id]<=0?' zero':'')+'" data-drug="'+d.id+'" title="'+d.name+(d.perm?'（許可制）':'')+'">'+
         '<span class="dn">'+d.ab+(d.perm?'<span class="lock">🔒</span>':'')+'</span><span class="srv">'+st+'</span><span class="fn">'+d.name+'</span><b class="cnt">×'+G.drugs[d.id]+'</b></button>';
     }).join('')+'</div></div>';
-  h+='<div class="sec"><h3>🔬 検査・回復 <small>回復は1ターン消費</small></h3><div class="tgrid">'+
+  h+='<div class="sec"><h3>🔬 検査・回復 <small>回復は1ターン消費'+(timeOn?'・検査は約2秒消費':'')+'</small></h3><div class="tgrid">'+
     ITEMS.filter(x=>x.grp==='test'||x.grp==='heal').map(x=>{
       if(x.grp==='heal')return '<button class="tbtn heal'+(G.items[x.id]<=0?' zero':'')+'" data-heal="'+x.id+'"><span class="tn">'+x.name+'</span><span class="tm"><span>'+(x.heal>=999?'全回復':'+'+x.heal)+'</span><b>×'+G.items[x.id]+'</b></span></button>';
       const done=(x.id==='gram'&&k.gram)||(x.id==='culture'&&(k.culture||G.level<UNKNOWN_LEVEL))||(x.id==='ident'&&k.ident)||(x.id==='ast'&&k.ast)||(x.id==='antigen'&&k.antigen)||((x.id==='gene'||x.id==='geneQuick')&&k.gene)||(x.id==='tdm'&&e.tdm);
@@ -1416,7 +1469,7 @@ function renderPlay(){
     }).join('')+'</div></div>';
   h+='</div></div>';
   root.innerHTML=h;
-  G.fx=null;
+  G.fx=null;tmPaint();
 }
 function renderStat(){
   const tot=Object.values(G.dose).reduce((a,b)=>a+b,0);
@@ -1431,7 +1484,7 @@ function renderStat(){
     '<p>DASC: <b>'+dasc+'</b>（平均DASC: <b>'+avg.toFixed(2)+'</b>）</p>'+
     '<p class="note">DASCは抗菌薬のスペクトラムの広さを数値化した指標です。このゲームでは教育用の概算値を使っています。AccessをできるだけAccessで、狭域を選ぶほど平均DASCは小さくなります。</p></div>'+
     '<div class="card"><h3>成績</h3><p>称号：<b>'+rank()+'</b>　撃退数：<b>'+G.kills+'</b>　ベストチョイス：<b>'+G.bests+'</b>　許可申請：<b>'+G.permReq+'</b>回（却下 <b>'+G.permDeny+'</b>回）　効かない薬を使った回数：<b>'+G.misses+'</b></p>'+
-    '<p>スコア：<b>'+G.score+'</b>　ベスト：<b>'+bestScore+'</b></p>'+
+    '<p>スコア：<b>'+G.score+'</b>　ベスト：<b>'+bestScore+'</b>'+(timeOn?'<span class="note">（タイムモード・'+TSPD_LBL[timeSpd]+'）</span>':'')+'</p>'+(timeOn?'<p>⏱ 合計プレイ時間：<b>'+fmtT(G.tmTotal)+'</b>　平均撃退時間：<b>'+(G.kills?(G.tmKillSum/G.kills/1000).toFixed(1):'-')+'</b>秒</p>':'')+
     '<p>耐性菌圧：<b>'+Math.round(G.press)+'</b> / 100</p><div class="bar press"><i style="width:'+G.press+'%"></i></div>'+
     '<p class="note">広域薬（Watch）を使うと上がり、Access薬だけで治療すると下がります。高いほど耐性株が出現しやすくなります。</p></div></div>';
   h+='<div class="sec"><h3>⚔️ バトル履歴 <small>（最新60件）</small></h3>'+(hist.length?
@@ -1500,6 +1553,7 @@ function renderMisc(){
     '<li><b>🔒許可制（CFDC・COL）：</b>使うには感染症専門医・ICTの承認が必要です。①同定済み ②感受性が判明 ③許可不要の有効な抗菌薬が他にない、の3条件を満たすと承認されます。却下されるとスコア−30。まれに出るMDRP・CRE・CRABのための切り札です。</li>'+
     '<li><b>COL（コリスチン）：</b>腎毒性・神経毒性が強く、使うたびに自分のHPが18〜28減ります。</li>'+
     '<li><b>ワクチン：</b>PCV20は含まれる血清型の肺炎球菌にだけ、Hibワクチンはb型莢膜のインフルエンザ菌にだけ有効です（敵カードに型とワクチン状況を表示）。所持していれば対象菌の出現時に自動で使われ、型が合うと敵が弱体化します。</li>'+
+    '<li><b>⏱ タイムモード：</b>敵は一定時間ごとに自動で攻撃してきます（ダメージは通常の約60%、ボスは80%）。目標時間内に倒すとタイムボーナス、適正な薬を素早く選ぶと追加加点。検査・購入には約2秒かかります。演出・メニュー表示中は時間が止まります。設定でON/OFFと速さを変更できます。</li>'+
     '<li><b>効かない薬を撃つと減点。</b>ただし結果は敵情報に記録されます。</li></ul></div></div>'+
     '<div class="card prose sec"><h3>AWaRe分類とDASC</h3>'+
     '<p>WHOのAWaRe分類は、抗菌薬を<span class="tag">A</span>Access（第一・第二選択で耐性リスクが低い）、<span class="tag W">Wa</span>Watch（耐性リスクが高く管理が必要）、<span class="tag R">Re</span>Reserve（多剤耐性菌への最後の砦）に分けたものです。Access薬の割合を高く保つことが適正使用の目標です。</p>'+
@@ -1509,8 +1563,9 @@ function renderMisc(){
     '<details><summary>📋 Antibiogram（ゲーム内の感受性表）を開く</summary>'+antibiogramHTML()+'</details></div>'+
     '<div class="card sec"><h3>設定</h3><div class="btn-row">'+
     '<button class="btn" data-fs="'+(fs?'m':'l')+'">文字サイズ：'+(fs?'大 → 標準にする':'標準 → 大きくする')+'</button> '+'<button class="btn" data-se="'+(sePref?'off':'on')+'">効果音：'+(sePref?'ON → OFFにする':'OFF → ONにする')+'</button> '+'<button class="btn" data-fx="'+(fxPref?'off':'on')+'">戦闘演出：'+(fxPref?'ON → OFFにする':'OFF → ONにする')+'</button>'+
+    '<button class="btn" data-tm="'+(timeOn?'off':'on')+'">⏱ タイムモード：'+(timeOn?'ON → OFFにする':'OFF → ONにする')+'</button> '+(timeOn?'<button class="btn" data-tspd="1">速さ：'+TSPD_LBL[timeSpd]+'（タップで変更）</button> ':'')+
     '<button class="btn" data-act="restart">最初からやり直す</button></div>'+
-    '<p class="note">ベストスコア：'+bestScore+'（この端末に保存）</p></div>';
+    '<p class="note">ベストスコア：'+bestScore+'（この端末に保存。タイムモードON/OFF・速さごとに別記録）</p></div>';
 }
 function render(){
   renderHeader();renderPlay();
@@ -1533,7 +1588,7 @@ function showTitle(){
   ov('<div class="big">🦠⚔️💊</div><h2>バイキンズバトル</h2>'+
      '<p>抗菌薬の適正使用を、バトルで楽しく学ぼう。</p>'+
      '<ul style="padding-left:1.2em;margin:.4em 0"><li>敵の感受性（S/R）を見て、<b>効く薬のなかで一番狭いもの</b>を選ぶ</li><li>レベルが上がると新しい菌が登場。<b>レベル5から感受性は不明、レベル10からは正体不明</b>。検査と背景情報で見極める</li><li>広域薬を使いすぎると<b>耐性菌圧</b>が上がる</li></ul>'+
-     '<p class="note">ベストスコア：'+bestScore+'</p><p class="note" style="font-size:.7rem">本ゲームは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>',
+     '<p class="note">⏱ タイムモード：'+(timeOn?'ON（'+TSPD_LBL[timeSpd]+'）。敵が時間で攻撃してきます。':'OFF')+'　設定（MISC）で変更できます</p><p class="note">ベストスコア：'+bestScore+'</p><p class="note" style="font-size:.7rem">本ゲームは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>',
      [{t:'はじめる',c:'pri',f:()=>{closeOv();startGame();}}]);
 }
 function startGame(){newGame();say(levelHint(1),'info');setTab('play');spawn();}
@@ -1564,6 +1619,8 @@ document.addEventListener('click',ev=>{
   }
   if(d.se){sePref=(d.se==='on');try{localStorage.setItem('baikins_se',sePref?'on':'off');}catch(e){}renderMisc();sfx('ok');return;}
   if(d.fx){fxPref=(d.fx==='on');try{localStorage.setItem('baikins_fx',fxPref?'on':'off');}catch(e){}renderMisc();return;}
+  if(d.tm){timeOn=(d.tm==='on');try{localStorage.setItem('baikins_time',timeOn?'on':'off');}catch(x){}loadBest();if(G&&G.enemy)tmReset(G.enemy);render();renderMisc();sfx('ok');return;}
+  if(d.tspd){const o=['slow','normal','fast'];timeSpd=o[(o.indexOf(timeSpd)+1)%3];try{localStorage.setItem('baikins_tspeed',timeSpd);}catch(x){}loadBest();if(G&&G.enemy)tmReset(G.enemy);render();renderMisc();sfx('ok');return;}
   if(d.act==='log'){
     ov('<h2>メッセージ履歴</h2><div class="log" style="height:auto;max-height:55dvh">'+G.log.slice(-40).map(l=>'<p class="'+l.c+'">'+l.t+'</p>').join('')+'</div>',[{t:'閉じる',c:'pri',f:()=>closeOv()}]);
     const lb=document.querySelector('#ovBox .log');if(lb)lb.scrollTop=lb.scrollHeight;return;
@@ -1574,9 +1631,12 @@ document.addEventListener('click',ev=>{
       [{t:'やり直す',c:'pri',f:()=>{closeOv();startGame();}},{t:'キャンセル',c:'',f:()=>closeOv()}]);
   }
 });
+loadBest();
+let tmLast=performance.now();
+if(!window.__baikinsNoTimer)setInterval(()=>{const n=performance.now(),dt=Math.min(250,n-tmLast);tmLast=n;if(document.hidden)return;tickTime(dt);},100);
 newGame();render();renderMisc();showTitle();
 // テスト用フック
-window.__baikins={render,get G(){return G;},attack,useTest,useHeal,buy,setTab,advance,retry,startGame,DRUGS,SP,BOSS,closeOv,buyBlock,tickHalt,reviveChance,sfx,SFX};
+window.__baikins={tickTime,tmInterval,tmTarget,setTime:(on,sp)=>{timeOn=on;if(sp)timeSpd=sp;loadBest();},get timeOn(){return timeOn;},render,get G(){return G;},attack,useTest,useHeal,buy,setTab,advance,retry,startGame,DRUGS,SP,BOSS,closeOv,buyBlock,tickHalt,reviveChance,sfx,SFX};
 })();
 </script>
 </body>
