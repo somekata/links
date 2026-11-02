@@ -212,6 +212,9 @@ body.on-play footer{display:none}
 @media (prefers-reduced-motion:reduce){.revfx *{animation-duration:.01s!important}}
 .nameIn{width:100%;font-size:1.05rem;padding:10px 12px;border:2px solid var(--accent);border-radius:10px;margin-top:4px;font-family:inherit}
 .cardbox{text-align:center;margin-top:8px}.cardbox h3{margin-bottom:6px}
+.pname{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:2px 10px;font-weight:700;font-size:.8rem;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;font-family:inherit;color:var(--ink,inherit)}
+.pname[disabled]{opacity:.75;cursor:default}
+.kanji{background:#eef6ee;border:2px solid #9cd0ae;border-radius:12px;padding:8px 12px;margin:8px 0;line-height:1.6}
 .pill{display:inline-block;font-size:.8rem;border-radius:999px;padding:1px 10px;background:var(--uBg);font-weight:700}
 .awbar{display:flex;height:22px;border-radius:11px;overflow:hidden;border:1px solid var(--line);background:#e6dfcd;margin:6px 0}
 .awbar i{display:block;height:100%}
@@ -315,7 +318,7 @@ footer{margin:18px 0 6px;padding:12px;border-top:1px solid var(--line);font-size
   .pipe span{font-size:.72rem}
   .tgrid{grid-template-columns:repeat(5,1fr)}
 }
-@media (max-width:420px){.logo{font-size:1rem}.rank{display:none}.bacs{padding:1px 8px;font-size:.85rem}}
+@media (max-width:420px){.evtag{display:none}.logo{font-size:.9rem}.pname{max-width:30vw;font-size:.75rem;padding:2px 8px}.hd-top{gap:5px}.bacs{white-space:nowrap;font-size:.8rem;padding:2px 8px}.rank{display:none}.bacs{padding:1px 8px;font-size:.85rem}}
 /* ヘッダ/ナビを低く */
 header{padding:calc(var(--safe-t) + 3px) 10px 4px}
 .hd-stats{margin-top:2px;gap:2px 10px}
@@ -395,8 +398,9 @@ nav button span{font-size:1.15rem}
 <div id="app">
   <header>
     <div class="hd-top">
-      <div class="logo">バイキンズバトル <small style="font-size:.6em;color:var(--sub)">イベント版</small></div>
+      <div class="logo">バイキンズバトル <small class="evtag" style="font-size:.6em;color:var(--sub)">イベント版</small></div>
       <div class="rank" id="hRank"></div>
+      <button class="pname" id="hName" data-act="rename" type="button"></button>
       <div class="bacs" id="hBacs"></div>
     </div>
     <div class="hd-stats">
@@ -998,6 +1002,10 @@ function win(drugId){
     html+='<p class="note">💉 '+t+'：'+(e.ser.cov
       ?(e.vax==='ok'?vn+'に含まれる型。接種していたので弱体化できました。':vn+'に含まれる型でした。接種していれば弱体化できたケースです。')
       :vn+'に含まれない型です。'+(e.vax==='ng'?'接種しても効きませんでした（型の置き換え）。':'ワクチンでは防げません。'))+'</p>';}
+  if(e.boss){
+    const KJ={1:'最初の関門を突破だ。この調子で頼むぞ！',2:'狭い薬を選ぶ目が育ってきたな。',3:'感受性が分からなくても、よく見極めたな。',4:'次はいよいよ最終レベル、正体不明の敵だ。気を引き締めていけ！',5:'復活にも負けず、世界の平和を守ってくれた。ありがとう！'};
+    html+='<div class="kanji">🧑‍💼 <b>幹事</b>：「'+esc(playerName)+'隊員、よくやった！」<br>'+(KJ[G.level]||'')+'</div>';
+  }
   let btn='次の敵へ';
   if(e.boss){
     if(G.level>=MAX_LEVEL){
@@ -1547,6 +1555,7 @@ async function fxHeal(n){
 function renderHeader(){
   $('#hRank').textContent='称号：'+rank();
   $('#hBacs').textContent='💰 '+G.bacs+' Bacs';
+  {const n=$('#hName');if(n){n.textContent='👤 '+playerName+(G.finished?'':' ✏️');n.disabled=!!G.finished;n.title=G.finished?'ゲーム終了後はなまえを変更できません':'タップでなまえを変更';}}
   $('#hLv').innerHTML='<small>Lv</small>'+G.level+' <small style="margin-left:6px">R</small>'+Math.min(G.round,ROUNDS)+'/'+ROUNDS+(G.round>=ROUNDS?' 👑':'');
   $('#hLife').textContent='❤️'.repeat(Math.max(0,G.lives))+'🖤'.repeat(Math.max(0,3-G.lives));
   $('#hHpTxt').textContent='HP '+G.hp+'/'+G.hpMax;
@@ -1701,6 +1710,12 @@ function showTitle(fresh){
      [{t:'はじめる',c:'pri',f:()=>startFromTitle()}]);
   setTimeout(()=>{const i=$('#nameIn');if(i)i.focus();},60);
 }
+function applyRename(){
+  const i=$('#nameEd');const v=((i&&i.value)||'').replace(/\s+/g,' ').trim().slice(0,12);
+  if(!v){toast('なまえを入力してね');sfx('err');return;}
+  if(G.finished){closeOv();return;}
+  playerName=v;lsSet(LS.name,v);closeOv();render();sfx('ok');toast('なまえを「'+v+'」に変更しました');
+}
 function startFromTitle(){
   const i=$('#nameIn');const v=((i&&i.value)||'').replace(/\s+/g,' ').trim().slice(0,12);
   if(!v){toast('なまえを入力してね');sfx('err');if(i)i.focus();return;}
@@ -1740,6 +1755,14 @@ document.addEventListener('click',ev=>{
     const lb=document.querySelector('#ovBox .log');if(lb)lb.scrollTop=lb.scrollHeight;return;
   }
   if(d.act==='drugs'){ov('<h2>💊 抗菌薬一覧表</h2>'+drugTableHTML(),[{t:'閉じる',c:'pri',f:()=>closeOv()}]);return;}
+  if(d.act==='rename'){
+    if(G.finished||G.over){toast('ゲーム終了後は、なまえを変更できません');sfx('err');return;}
+    if(G.lock){toast('少し待ってから変更してね');return;}
+    ov('<h2>なまえを変更</h2><p class="note">ランキングには、ゲーム終了時のなまえで載ります。終了後は変更できません。</p><input id="nameEd" class="nameIn" maxlength="12" autocomplete="off" value="'+esc(playerName)+'">',
+      [{t:'変更する',c:'pri',f:()=>applyRename()},{t:'キャンセル',c:'',f:()=>closeOv()}]);
+    setTimeout(()=>{const i=$('#nameEd');if(i){i.focus();i.select();}},60);
+    return;
+  }
   if(d.rk){rkCat=d.rk;renderRank();return;}
   if(d.act==='next'){
     if(G&&!G.over&&G.kills>0){ov('<h2>新しい人がはじめますか？</h2><p>プレイ中のバトルは、ここで終了します（記録には残りません）。</p>',[{t:'はじめる',c:'pri',f:()=>{closeOv();showTitle(true);}},{t:'キャンセル',c:'',f:()=>closeOv()}]);}
@@ -1758,7 +1781,8 @@ document.addEventListener('click',ev=>{
       [{t:'やり直す',c:'pri',f:()=>{closeOv();startGame();}},{t:'キャンセル',c:'',f:()=>closeOv()}]);
   }
 });
-document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='nameIn'){ev.preventDefault();startFromTitle();}});
+document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='nameIn'){ev.preventDefault();startFromTitle();}
+  if(ev.key==='Enter'&&ev.target&&ev.target.id==='nameEd'){ev.preventDefault();applyRename();}});
 newGame();render();renderMisc();showTitle();
 // テスト用フック
 window.__baikins={render,get G(){return G;},attack,useTest,useHeal,buy,setTab,advance,retry,startGame,DRUGS,SP,BOSS,closeOv,buyBlock,tickHalt,reviveChance,sfx,SFX,finishRun,ranked:rankedList,dayCheck,purgeLocal,LS,lsGet,lsSet,setName(v){playerName=v;},get playerName(){return playerName;},renderRank,rankCats:()=>RK_CATS};
