@@ -483,7 +483,7 @@ const ITEMS=[
  {id:'heal3',    grp:'heal',name:'完治の薬',  price:50,  pack:1,desc:'HP全回復（1ターン消費）',heal:999}
 ];
 const ITM=Object.fromEntries(ITEMS.map(x=>[x.id,x]));
-const TITLES=[[0,'研修医'],[300,'専攻医'],[800,'感染症専門医'],[1600,'指導医'],[3000,'抗菌薬マスター']];
+const TITLES=[[0,'見習い隊員'],[550,'新米隊員'],[1100,'駆け出し隊員'],[1650,'頼れる隊員'],[2200,'一人前の隊員'],[2750,'ベテラン隊員'],[3300,'エース隊員'],[3850,'精鋭隊員'],[4400,'班長'],[4950,'小隊長'],[5500,'中隊長'],[6050,'大隊長'],[6600,'副隊長'],[7150,'隊長'],[7700,'特別隊長'],[8250,'耐性菌ハンター'],[8800,'適正使用の達人'],[9350,'バイキンの天敵'],[9900,'平和の守護者'],[10450,'抗菌薬マスター']];
 
 // 感受性は DRUGS の並び順：ABPC, SBT/ABPC, PIPC/TAZ, CEZ, CTRX, CAZ, CFPM, MEPM, VCM, LZD, AZM, CPFX, ABK, TOB, CFDC, COL
 const D=s=>{const a=s.split(',');const o={};DRUGS.forEach((d,i)=>o[d.id]=a[i]);return o;};
@@ -788,13 +788,14 @@ function seq(fx,cont){
   }
   cont();
 }
-function enemyPhase(done,auto){
+function enemyPhase(done,auto,keep,mult){
   const e=G.enemy;
   let dmg=Math.max(1,rnd(e.atk-3,e.atk+3));
   if(auto)dmg=Math.max(1,Math.round(dmg*(e.boss?TM_AUTO_BOSS:TM_AUTO)));
+  else if(mult&&mult!==1)dmg=Math.max(1,Math.round(dmg*mult));
   G.hp=Math.max(0,G.hp-dmg);
-  tmReset(e);
-  say((auto?'⏱ 時間切れ！ ':'')+(e.known.ident?e.s.jp:'敵')+'の攻撃！ HP -'+dmg,'bad');
+  if(!keep)tmReset(e);
+  say((auto?'⏱ 時間切れ！ ':(mult>1?'💢 効かず、敵が猛反撃！ ':(mult&&mult<1?'敵はひるんで反撃が弱い。 ':'')))+(e.known.ident?e.s.jp:'敵')+'の攻撃！ HP -'+dmg,'bad');
   if(!fxOn()){sfx('enemyAtk');sfx('hurt',.25);}
   seq(()=>fxEnemyAttack(e,dmg),()=>{
     if(G.hp<=0)lifeLost();
@@ -871,7 +872,7 @@ function attack(id){
       seq(()=>fxDefeat(),()=>{win(id);render();});
       return;
     }
-    enemyPhase();
+    enemyPhase(null,false,!eff,eff?.5:1.5);
   });
 }
 function useTest(id){
