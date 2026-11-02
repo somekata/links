@@ -1024,7 +1024,7 @@ function gameOver(){
   say('治療失敗…','bad');
   finishRun(false);
 }
-function retry(){closeOv();showTitle();}
+function retry(){closeOv();showTitle(true);}
 
 
 /* =====================================================================
@@ -1131,7 +1131,7 @@ function showResult(rec,st){
     '<div class="awbar" style="margin-top:6px"><i class="A" style="width:'+pc(st.c.A)+'%"></i><i class="W" style="width:'+pc(st.c.W)+'%"></i><i class="R" style="width:'+pc(st.c.R)+'%"></i></div>'+
     '<p class="note"><span class="tag">A</span> Access '+st.c.A+'　<span class="tag W">Wa</span> Watch '+st.c.W+'　<span class="tag R">Re</span> Reserve '+st.c.R+'</p>'+
     '<p><b>撃退した菌：</b>'+defs+'</p>'+card;
-  ov(html,[{t:'🏆 ランキングを見る',c:'pri',f:()=>{closeOv();setTab('misc');}},{t:'もう一度挑戦',c:'',f:()=>{closeOv();showTitle();}}]);
+  ov(html,[{t:'▶ 次の人がプレイ（なまえを入力）',c:'pri',f:()=>{closeOv();showTitle(true);}},{t:'🏆 ランキングを見る',c:'',f:()=>{closeOv();setTab('misc');}},{t:'同じなまえでもう一度',c:'',f:()=>{closeOv();showTitle(false);}}]);
   if(rec.cleared){
     drawCard($('#cardCv'),{name:rec.name,score:rec.score,access:rec.access,date:ymd(),title:rank(),sp:pickCardSp(rec.name)});
     if(isNew)sfx('levelup',.5);
@@ -1191,7 +1191,8 @@ function renderRank(){
   const rows=rankedList(cat.id).slice(0,30);
   const me=String(playerName).toLowerCase();
   const claimed=lsGet(LS.cards,[]);
-  let h='<div class="card"><h3>🏆 ランキング <small>（この端末・今日のぶん）</small></h3>'+
+  let h='<div class="card" style="text-align:center"><button class="btn pri" data-act="next" style="width:100%;font-size:1.1rem;padding:12px">▶ 次の人がプレイ（新しいなまえ）</button></div>'+
+    '<div class="card sec"><h3>🏆 ランキング <small>（この端末・今日のぶん）</small></h3>'+
     '<div class="btn-row" style="margin-bottom:8px">'+RK_CATS.map(c=>'<button class="btn'+(c.id===cat.id?' pri':'')+'" data-rk="'+c.id+'">'+c.label+'</button>').join(' ')+'</div>'+
     (rows.length?'<div class="twrap" style="max-height:26rem"><table><thead><tr><th>順位</th><th class="l">なまえ</th><th>'+cat.label+'</th>'+(cat.id==='score'?'':'<th>スコア</th>')+'<th>結果</th></tr></thead><tbody>'+
       rows.map((r,i)=>'<tr'+(String(r.name).toLowerCase()===me?' style="background:#fff4d6;font-weight:700"':'')+'><td>'+(i<3?['🥇','🥈','🥉'][i]:(i+1))+'</td><td class="l">'+esc(r.name)+'</td><td><b>'+cat.fmt(r[cat.key])+'</b></td>'+(cat.id==='score'?'':'<td>'+r.score+'</td>')+'<td>'+(r.cleared?'クリア':'Lv'+r.lv)+'</td></tr>').join('')+'</tbody></table></div>':'<p class="note">まだ記録がありません。バトルに挑戦しよう！</p>')+
@@ -1688,13 +1689,13 @@ function ov(html,btns){
 function closeOv(){$('#ov').hidden=true;G.lock=false;}
 let tt=null;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800);}
-function showTitle(){
+function showTitle(fresh){
   dayCheck();
   ov('<div class="big">🦠⚔️💊</div><h2>バイキンズバトル<br><small style="font-size:.6em">イベント版</small></h2>'+
      '<p>感染症の敵（バイキンズ）を、<b>適切な抗菌薬</b>でやっつけよう！ 全5レベル・各3ラウンドの短いバトルです。</p>'+
      '<ul style="padding-left:1.2em;margin:.4em 0"><li>効く薬のなかで<b>一番狭いもの</b>を選ぶと高得点</li><li>効く薬なら<b>2回</b>で撃退。効かない薬は減点</li><li>レベル3から感受性は不明、レベル5は菌種も不明！</li></ul>'+
      '<label style="display:block;font-weight:700;margin-top:10px">なまえ <small class="note">（ランキングに表示されます）</small>'+
-     '<input id="nameIn" class="nameIn" maxlength="12" autocomplete="off" placeholder="なまえを入力（12文字まで）" value="'+esc(lsGet(LS.name,''))+'"></label>'+
+     '<input id="nameIn" class="nameIn" maxlength="12" autocomplete="off" placeholder="なまえを入力（12文字まで）" value="'+(fresh?'':esc(lsGet(LS.name,'')))+'"></label>'+
      '<p class="note" style="font-size:.72rem">記録はこの端末（ブラウザ）にだけ保存され、日付が変わると自動的に消えます。RANK画面から手動で消すこともできます。</p>'+
      '<p class="note" style="font-size:.7rem">本ゲームは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。</p>',
      [{t:'はじめる',c:'pri',f:()=>startFromTitle()}]);
@@ -1740,6 +1741,11 @@ document.addEventListener('click',ev=>{
   }
   if(d.act==='drugs'){ov('<h2>💊 抗菌薬一覧表</h2>'+drugTableHTML(),[{t:'閉じる',c:'pri',f:()=>closeOv()}]);return;}
   if(d.rk){rkCat=d.rk;renderRank();return;}
+  if(d.act==='next'){
+    if(G&&!G.over&&G.kills>0){ov('<h2>新しい人がはじめますか？</h2><p>プレイ中のバトルは、ここで終了します（記録には残りません）。</p>',[{t:'はじめる',c:'pri',f:()=>{closeOv();showTitle(true);}},{t:'キャンセル',c:'',f:()=>closeOv()}]);}
+    else showTitle(true);
+    return;
+  }
   if(d.act==='purge'){
     ov('<h2>ローカルデータを消去</h2><p>この端末に保存されているランキング・カード受け取り記録・なまえをすべて消去します。元に戻せません。</p>',
       [{t:'消去する',c:'pri',f:()=>{purgeLocal();closeOv();renderRank();toast('ローカルデータを消去しました');}},{t:'キャンセル',c:'',f:()=>closeOv()}]);
