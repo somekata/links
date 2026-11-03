@@ -39,6 +39,11 @@ header{grid-area:hd;background:var(--card);border-bottom:2px solid var(--line);p
 .bar{flex:1;height:14px;border-radius:7px;background:#e6dfcd;overflow:hidden;border:1px solid var(--line)}
 .bar>i{display:block;height:100%;background:var(--good);transition:width .25s}
 .bar.mid>i{background:var(--warn)} .bar.low>i{background:var(--bad)}
+.stbar{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 0;font-size:.74rem;font-weight:700}
+.stbar:empty{display:none}
+.stchip{border-radius:999px;padding:1px 8px;border:1.5px solid;white-space:nowrap}
+.stchip.stun{background:#fff4c9;border-color:#e2c36a;color:#7a5a00}
+.dgrid.stunned .dbtn{opacity:.4;filter:grayscale(.5)}
 .tmrow{display:flex;align-items:center;gap:8px;margin:8px 0 2px;font-size:.78rem}
 .tmrow .tmt{font-weight:700;white-space:nowrap;min-width:8.6em;font-variant-numeric:tabular-nums}
 .tmrow .tmgl{white-space:nowrap;color:var(--sub)}
@@ -684,11 +689,16 @@ function tickTime(ms){
   if(!tmRunning())return false;
   const e=G.enemy;e.t+=ms;G.tmTotal+=ms;e.cd-=ms;
   if(e.cd<1000&&!e._w){e._w=1;sfx('tick');}
+  if(G.stun>0){G.stun=Math.max(0,G.stun-ms);if(G.stun===0){say('⚡ 痺れが解けた！','info');sfx('ok');}}
   if(e.cd<=0){tmPaint();enemyPhase(null,true);return true;}
   tmPaint();return true;
 }
 function tmPaint(){
-  const e=G&&G.enemy,t=document.getElementById('tmT');if(!e||!t)return;
+  const e=G&&G.enemy;if(!e)return;
+  const sb=document.getElementById('stBar');
+  if(sb){const h=G.stun>0?'<span class="stchip stun">⚡ 痺れ '+(G.stun/1000).toFixed(1)+'秒</span>':'';if(sb.dataset.h!==h){sb.innerHTML=h;sb.dataset.h=h;}}
+  const dg=document.querySelector('.dgrid');if(dg)dg.classList.toggle('stunned',G.stun>0);
+  const t=document.getElementById('tmT');if(!t)return;
   const g=document.getElementById('tmG'),gb=document.getElementById('tmGb');
   const tg=tmTarget(e),sec=Math.floor(e.t/100)/10;
   t.textContent='⏱ '+sec.toFixed(1)+' / '+Math.round(tg/1000)+'秒';
@@ -702,7 +712,7 @@ function newGame(){
   G={level:1,round:1,hpMax:100,hp:100,lives:3,score:0,exp:0,bacs:300,press:10,
     drugs:dr,permReq:0,permDeny:0,
     items:{gram:5,culture:5,ident:5,ast:5,heal1:2,heal2:0,heal3:0},
-    dose:{},halt:{},hist:[],tmTotal:0,tmKillSum:0,buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null,
+    dose:{},halt:{},hist:[],tmTotal:0,tmKillSum:0,stun:0,buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null,
     finished:false,defeated:{},defNames:{}};
   DRUGS.forEach(d=>G.dose[d.id]=0);
 }
@@ -765,7 +775,7 @@ function spawn(){
   }else{
     const p=pickEnemy();e=makeEnemy(p.s,p.v,null);
   }
-  G.enemy=e;tmReset(e);
+  G.enemy=e;G.stun=0;tmReset(e);
   const s=e.s;
   if(s.vax){
     const vn=e.known.ident?ITM[s.vax].name:'ワクチン';
@@ -840,6 +850,7 @@ function lifeLost(){
 function attack(id){
   const e=G.enemy;if(!e||G.lock||G.over)return;
   const d=dById(id);
+  if(G.stun>0){toast('⚡ 痺れて攻撃できない！ あと'+(G.stun/1000).toFixed(1)+'秒（検査・回復は使えます）');sfx('err');return;}
   if(G.drugs[id]<=0){toast(d.name+'の在庫がありません。ITEMで購入できます');sfx('err');return;}
   if(d.perm){
     G.permReq++;
@@ -857,7 +868,10 @@ function attack(id){
   e.known.drugs[id]=eff?'S':'R';
   const dmg=eff?Math.ceil(e.hpMax/2):rnd(0,2);
   e.hp=Math.max(0,e.hp-dmg);
-  if(!eff){e.miss++;G.misses++;}
+  if(!eff){
+    e.miss++;G.misses++;
+    if(timeOn){G.stun=3000;say('⚡ 痺れて3秒間、攻撃できない！（検査や回復はできるよ）','ng');sfx('zap',.35);}
+  }
   if(eff&&e.v.best.includes(id))e.bestHits++;
   G.hist.push({lv:G.level,rd:G.round,eid:e.id,name:eName(e),drug:d.ab,dmg:eff?dmg:0,eff});
   say(d.name+'で攻撃！ '+(eff?dmg+'のダメージ！':'効かない…（耐性）'),eff?'ok':'ng');
@@ -889,7 +903,7 @@ function attack(id){
       seq(()=>fxDefeat(),()=>{win(id);render();});
       return;
     }
-    enemyPhase(null,false,!eff,eff?.5:1.5);
+    enemyPhase(null,false,!eff,eff?.5:1.25);
   });
 }
 function useTest(id){
@@ -1268,6 +1282,7 @@ function renderRank(){
     '<li>効く薬のなかで<b>一番狭いもの</b>（Access薬など）を選ぶと高得点。広域薬を使うと耐性菌圧が上がります。</li>'+
     '<li>レベル3から感受性（S/R）は不明。レベル5は菌種も不明。グラム染色→培養→同定・感受性で見極めましょう。</li>'+
     '<li>レベル5のボスは必ず復活します。復活後は薬の効き目が変わっているかも？</li>'+
+    '<li>⚡ 効かない薬を撃つと、<b>3秒間しびれて</b>攻撃できなくなります（検査と回復はOK）。反撃も大きくなるので、検査してから選ぼう！</li>'+
     '<li>⏱ 敵は一定時間ごとに自動で攻撃してきます。目標時間内に倒すとボーナス得点！（メニュー表示中は時間が止まります）</li></ul></div>'+
     '<div class="card sec"><h3>設定</h3><div class="btn-row">'+
     '<button class="btn" data-fs="'+(fs?'m':'l')+'">文字サイズ：'+(fs?'大 → 標準にする':'標準 → 大きくする')+'</button> '+
@@ -1450,6 +1465,7 @@ const SFX=(()=>{
     levelup:(o,t,b)=>{[N.C5,N.E5,N.G5,N.C6,N.E6,N.G6].forEach((f,i)=>tone(o,t+i*.08,f,f,.2,'triangle',.14,b));},
     lifeLost:(o,t,b)=>{[N.A4,N.G4,N.E4,N.C4].forEach((f,i)=>tone(o,t+i*.16,f,f*.97,.24,'sawtooth',.13,b));},
     gameover:(o,t,b)=>{[N.G4,N.E4,N.C4,196,130.8].forEach((f,i)=>tone(o,t+i*.28,f,f*.95,.45,'sawtooth',.14,b));noise(t+1.2,.8,.15,'lowpass',600,80,b);},
+    zap:(o,t,b)=>{tone(o,t,1400,180,.28,'sawtooth',.12,b);noise(t,.18,.1,'bandpass',2500,1200,b);},
     tick:(o,t,b)=>{tone(o,t,880,880,.05,'square',.09,b);tone(o,t+.13,880,880,.05,'square',.09,b);},
     test:(o,t,b)=>{tone(o,t,1000,1000,.07,'sine',.14,b);tone(o,t+.08,1500,1500,.1,'sine',.14,b);},
     heal:(o,t,b)=>{[600,800,1000,1300,1600].forEach((f,i)=>tone(o,t+i*.07,f,f,.25,'sine',.12,b));},
@@ -1654,6 +1670,7 @@ function renderPlay(){
     '<div class="hpline"><span>敵HP '+e.hp+'/'+e.hpMax+'</span><div class="bar'+(hpP<.3?' low':(hpP<.6?' mid':''))+'" style="flex:1"><i style="width:'+(hpP*100)+'%"></i></div></div>'+
     '</div></div>'+
     (timeOn?'<div class="tmrow"><span class="tmt" id="tmT"></span><span class="tmgl">敵の攻撃</span><div class="tmg" id="tmGb"><i id="tmG"></i></div></div>':'')+
+    '<div class="stbar" id="stBar"></div>'+
     '<div class="scn">🩺 '+bg+'</div>'+
     '<div class="pipe">'+pipe+'</div>'+
     '<button class="banner" data-act="log" aria-live="polite" title="タップでメッセージ履歴">'+last+'</button></div>';
