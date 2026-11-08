@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>バイキンズ神経衰弱</title>
+<style>
+:root{
+  --bg:#f5f1e8; --ink:#000; --sub:#4a4439; --card:#fffdf7; --line:#d8cfbb;
+  --accent:#8c4a2f; --ok:#2f9e44;
+  --gram-pos:#6a3d9a; --gram-neg:#d6336c; --acid:#1971c2; --fungus:#2f9e44;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"BIZ UDPGothic","Noto Sans JP","Hiragino Sans",sans-serif;}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+.wrap{max-width:760px;margin:0 auto;padding:12px 12px 24px}
+h1{font-size:22px;margin:4px 0 2px;letter-spacing:.04em}
+.lead{font-size:14px;color:var(--sub);margin:0 0 10px;line-height:1.5}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.lv button,.btn{min-height:44px;padding:0 14px;border:2px solid var(--accent);background:var(--card);
+  color:var(--ink);border-radius:10px;font-size:15px;font-family:inherit;cursor:pointer}
+.lv button.on{background:var(--accent);color:#fff}
+.btn.primary{background:var(--accent);color:#fff}
+.stats{display:flex;gap:14px;font-size:16px;margin:6px 0 8px;font-weight:bold}
+.stats span small{font-weight:normal;color:var(--sub);font-size:13px;margin-right:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:13px;color:var(--sub);margin-bottom:8px}
+.legend i.dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.note{min-height:64px;background:var(--card);border:2px solid var(--line);border-radius:10px;
+  padding:8px 10px;font-size:15px;line-height:1.5;margin-bottom:10px}
+.note b{color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(var(--cols,3),1fr);gap:8px}
+@media(min-width:560px){.grid{--cols:4!important}}
+.card{perspective:700px;aspect-ratio:1/1.1;min-height:104px;cursor:pointer;border:0;background:none;padding:0;font-family:inherit}
+.inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .38s}
+.card.open .inner,.card.matched .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:6px;text-align:center;overflow:hidden}
+.back{background:repeating-linear-gradient(45deg,#8c4a2f,#8c4a2f 8px,#a2603f 8px,#a2603f 16px);
+  color:#fff;font-size:34px;border:2px solid #6e3820}
+.front{transform:rotateY(180deg);background:var(--card);border:2px solid var(--line);color:var(--ink)}
+.card.matched .front{border-color:var(--ok);background:#eef8f0}
+.front.nm{border-top:8px solid var(--tc)}
+.front .tag{font-size:12px;font-weight:bold;color:#fff;background:var(--tc);border-radius:5px;padding:1px 6px;margin-bottom:4px}
+.front .sci{font-style:italic;font-size:clamp(14px,3.6vw,17px);font-weight:bold;line-height:1.25;word-break:break-word}
+.front .ja{font-size:13px;margin-top:3px;color:var(--sub)}
+.front .ft{font-size:clamp(13px,3.4vw,15px);line-height:1.4}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:14px;z-index:10}
+.overlay.show{display:flex}
+.modal{background:var(--bg);border-radius:14px;max-width:560px;width:100%;max-height:88dvh;overflow:auto;padding:16px}
+.modal h2{margin:0 0 6px;font-size:20px}
+.modal ul{padding-left:18px;margin:8px 0;font-size:14px;line-height:1.6}
+.modal .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+footer{margin-top:22px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--sub);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🦠 バイキンズ神経衰弱</h1>
+  <p class="lead">菌の名前と、その菌の特徴を表すカードをそろえよう。そろうたびに解説が出ます。</p>
+
+  <div class="bar">
+    <div class="lv" id="lv">
+      <button data-n="6">やさしい 6組</button>
+      <button data-n="8" class="on">ふつう 8組</button>
+      <button data-n="10">むずかしい 10組</button>
+    </div>
+    <button class="btn primary" id="restart">もう一度配る</button>
+  </div>
+
+  <div class="stats">
+    <span><small>手数</small><b id="moves">0</b></span>
+    <span><small>時間</small><b id="time">0:00</b></span>
+    <span><small>自己ベスト</small><b id="best">-</b></span>
+  </div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--gram-pos)"></i>グラム陽性菌</span>
+    <span><i class="dot" style="background:var(--gram-neg)"></i>グラム陰性菌</span>
+    <span><i class="dot" style="background:var(--acid)"></i>抗酸菌</span>
+    <span><i class="dot" style="background:var(--fungus)"></i>真菌</span>
+  </div>
+
+  <div class="note" id="note">カードをめくってスタート。</div>
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+    二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。
+  </footer>
+</div>
+
+<div class="overlay" id="ov">
+  <div class="modal">
+    <h2>🎉 クリア！</h2>
+    <div id="res"></div>
+    <div class="row">
+      <button class="btn primary" id="again">もう一度遊ぶ</button>
+      <button class="btn" id="close">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var COL={pos:'#6a3d9a',neg:'#d6336c',acid:'#1971c2',fun:'#2f9e44'};
+  var TAG={pos:'グラム陽性',neg:'グラム陰性',acid:'抗酸菌',fun:'真菌'};
+  var DATA=[
+    {sci:'Staphylococcus aureus',ja:'黄色ブドウ球菌',t:'pos',feat:'コアグラーゼ陽性・ブドウの房状に配列',note:'メチシリン耐性株（MRSA）は mecA 遺伝子（SCCmec 上）がコードする PBP2\' により、β-ラクタム系薬に耐性を示します。'},
+    {sci:'Streptococcus pyogenes',ja:'化膿レンサ球菌（A群）',t:'pos',feat:'A群β溶血・咽頭炎や丹毒の原因',note:'血液寒天培地で完全溶血（β溶血）を示します。A群溶血性レンサ球菌咽頭炎の原因菌です。'},
+    {sci:'Streptococcus pneumoniae',ja:'肺炎球菌',t:'pos',feat:'莢膜をもつ双球菌・ワクチンの標的',note:'莢膜多糖体が病原性に関わり、肺炎球菌ワクチンは莢膜の血清型を標的にしています。'},
+    {sci:'Escherichia coli',ja:'大腸菌',t:'neg',feat:'尿路感染症の最多原因菌',note:'単純性尿路感染症の原因菌として最も多く、ESBL 産生株の増加が問題になっています。'},
+    {sci:'Klebsiella pneumoniae',ja:'肺炎桿菌',t:'neg',feat:'ムコイド状の莢膜・粘稠なコロニー',note:'厚い莢膜のため、コロニーが粘稠（ムコイド状）になります。ESBL やカルバペネマーゼ産生株が問題です。'},
+    {sci:'Pseudomonas aeruginosa',ja:'緑膿菌',t:'neg',feat:'青緑色のピオシアニン産生・ブドウ糖非発酵',note:'ブドウ糖非発酵のグラム陰性桿菌で、オキシダーゼ陽性です。もともと多くの抗菌薬に自然耐性を示します。'},
+    {sci:'Haemophilus influenzae',ja:'インフルエンザ菌',t:'neg',feat:'発育に X 因子と V 因子が必要',note:'チョコレート寒天培地で発育します。b型（Hib）はワクチンで予防できます。'},
+    {sci:'Mycobacterium tuberculosis',ja:'結核菌',t:'acid',feat:'抗酸菌・チール・ネールゼン染色で赤く染まる',note:'細胞壁のミコール酸が抗酸性の理由です。増殖が遅く、治療には複数の抗菌薬を長期間併用します。'},
+    {sci:'Clostridioides difficile',ja:'クロストリディオイデス・ディフィシル',t:'pos',feat:'芽胞形成・抗菌薬関連の偽膜性腸炎',note:'抗菌薬で腸内細菌叢が乱れたときに増え、毒素で腸炎を起こします。芽胞はアルコールで死滅しにくい菌です。'},
+    {sci:'Helicobacter pylori',ja:'ピロリ菌',t:'neg',feat:'ウレアーゼ産生・胃に定着するらせん菌',note:'ウレアーゼでアンモニアを作り、胃酸を中和して定着します。尿素呼気試験はこの性質を利用しています。'},
+    {sci:'Vibrio cholerae',ja:'コレラ菌',t:'neg',feat:'コレラ毒素・米のとぎ汁様の下痢',note:'コンマ状のグラム陰性桿菌で、コレラ毒素により大量の水様性下痢を起こします。'},
+    {sci:'Legionella pneumophila',ja:'レジオネラ',t:'neg',feat:'循環式浴槽などの水系・尿中抗原で診断',note:'水系の環境から感染し、尿中抗原検査が診断に広く使われます。血清型1型が中心です。'},
+    {sci:'Corynebacterium diphtheriae',ja:'ジフテリア菌',t:'pos',feat:'ジフテリア毒素・咽頭の偽膜',note:'毒素はバクテリオファージ由来の遺伝子にコードされます。予防は DPT 系のワクチンです。'},
+    {sci:'Neisseria gonorrhoeae',ja:'淋菌',t:'neg',feat:'腎臓形の双球菌・好中球に貪食された像',note:'グラム陰性双球菌で、尿道分泌物のグラム染色では好中球に貪食された像が見られます。'},
+    {sci:'Candida albicans',ja:'カンジダ・アルビカンス',t:'fun',feat:'発芽管形成・酵母様真菌',note:'血清中で発芽管（germ tube）をつくることが同定の目安です。血流感染（カンジダ血症）の主要な原因菌です。'},
+    {sci:'Acinetobacter baumannii',ja:'アシネトバクター・バウマニ',t:'neg',feat:'乾燥に強く院内で長く生存・多剤耐性',note:'環境表面で長期間生存でき、院内アウトブレイクの原因になります。多剤耐性株が問題です。'}
+  ];
+
+  var $=function(i){return document.getElementById(i)};
+  var grid=$('grid'),note=$('note');
+  var level=8,deck=[],open=[],lock=false,matched=0,moves=0,t0=0,timer=null,sec=0;
+
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x}return a}
+  function fmt(s){return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
+  function key(){return 'baikinsMemoryBest_'+level}
+  function loadBest(){
+    try{var v=JSON.parse(localStorage.getItem(key())||'null');
+      $('best').textContent=v?(v.moves+'手 / '+fmt(v.sec)):'-';return v}catch(e){$('best').textContent='-';return null}
+  }
+  function saveBest(m,s){
+    try{var v=JSON.parse(localStorage.getItem(key())||'null');
+      if(!v||m<v.moves||(m===v.moves&&s<v.sec)){localStorage.setItem(key(),JSON.stringify({moves:m,sec:s}));return true}}catch(e){}
+    return false;
+  }
+  function stopTimer(){if(timer){clearInterval(timer);timer=null}}
+  function startTimer(){
+    if(timer)return;t0=Date.now();
+    timer=setInterval(function(){sec=Math.floor((Date.now()-t0)/1000);$('time').textContent=fmt(sec)},500);
+  }
+  function cardHTML(c){
+    var d=DATA[c.pid];
+    if(c.kind==='name'){
+      return '<div class="face front nm" style="--tc:'+COL[d.t]+'"><span class="tag">'+TAG[d.t]+'</span>'
+        +'<span class="sci">'+d.sci+'</span><span class="ja">'+d.ja+'</span></div>';
+    }
+    return '<div class="face front"><span class="ft">'+d.feat+'</span></div>';
+  }
+  function newGame(){
+    stopTimer();sec=0;moves=0;matched=0;open=[];lock=false;
+    $('moves').textContent='0';$('time').textContent='0:00';
+    note.innerHTML='カードをめくってスタート。';
+    loadBest();
+    var idx=shuffle(DATA.map(function(_,i){return i})).slice(0,level);
+    deck=[];
+    idx.forEach(function(p){deck.push({pid:p,kind:'name'});deck.push({pid:p,kind:'feat'})});
+    shuffle(deck);
+    grid.innerHTML='';
+    grid.style.setProperty('--cols',3);
+    deck.forEach(function(c,i){
+      var b=document.createElement('button');
+      b.className='card';b.type='button';b.setAttribute('aria-label','カード'+(i+1));
+      b.innerHTML='<div class="inner"><div class="face back">🦠</div>'+cardHTML(c)+'</div>';
+      b.addEventListener('click',function(){flip(i,b)});
+      c.el=b;grid.appendChild(b);
+    });
+  }
+  function flip(i,el){
+    if(lock||el.classList.contains('open')||el.classList.contains('matched'))return;
+    startTimer();
+    el.classList.add('open');open.push(i);
+    if(open.length===2){
+      moves++;$('moves').textContent=moves;
+      var a=deck[open[0]],b=deck[open[1]];
+      if(a.pid===b.pid&&a.kind!==b.kind){
+        var d=DATA[a.pid];
+        deck[open[0]].el.classList.add('matched');deck[open[1]].el.classList.add('matched');
+        deck[open[0]].el.classList.remove('open');deck[open[1]].el.classList.remove('open');
+        note.innerHTML='<b>⭕ 正解！</b> <i>'+d.sci+'</i>（'+d.ja+'）<br>'+d.note;
+        open=[];matched++;
+        if(matched===level)setTimeout(win,700);
+      }else{
+        lock=true;
+        note.innerHTML='<b>✖ ちがうよ。</b> もう一度考えてみよう。';
+        setTimeout(function(){
+          deck[open[0]].el.classList.remove('open');deck[open[1]].el.classList.remove('open');
+          open=[];lock=false;
+        },900);
+      }
+    }
+  }
+  function win(){
+    stopTimer();
+    var rec=saveBest(moves,sec);loadBest();
+    var h='<p><b>'+moves+'手 / '+fmt(sec)+'</b>'+(rec?'　🏅 自己ベスト更新！':'')+'</p><p>今回そろえた組み合わせ：</p><ul>';
+    deck.filter(function(c){return c.kind==='name'}).forEach(function(c){
+      var d=DATA[c.pid];h+='<li><i>'+d.sci+'</i>：'+d.feat+'</li>';
+    });
+    h+='</ul>';
+    $('res').innerHTML=h;$('ov').classList.add('show');
+  }
+  $('lv').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    level=parseInt(b.getAttribute('data-n'),10);
+    Array.prototype.forEach.call($('lv').children,function(x){x.classList.toggle('on',x===b)});
+    newGame();
+  });
+  $('restart').addEventListener('click',newGame);
+  $('again').addEventListener('click',function(){$('ov').classList.remove('show');newGame()});
+  $('close').addEventListener('click',function(){$('ov').classList.remove('show')});
+  newGame();
+})();
+</script>
+</body>
+</html>
