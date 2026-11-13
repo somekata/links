@@ -27,7 +27,7 @@
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.65;
   padding-block:28px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
 h1{font-size:26px;font-weight:600;line-height:1.25;margin:0;text-wrap:balance}
 h2{font-size:17px;margin:0;text-wrap:balance}
 p{margin:0}
@@ -73,19 +73,36 @@ pre.q{background:var(--heat0);color:var(--fg);padding:12px;border-radius:4px;mar
 .person b{font-weight:600}
 .build{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:28px 0}
 .build .tag{font:500 12px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);padding:3px 10px;border-radius:3px}
+/* TABLE tab */
+table.stbl{table-layout:auto;font-size:13px;line-height:1.55}
+.stbl th,.stbl td{text-align:left;white-space:normal;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+.stbl th{position:sticky;top:0;background:var(--surface);font-size:12px}
+.stbl td.dis{font-weight:700;min-width:120px}
+.stbl td.wide{min-width:300px}
+.stbl td.wide2{min-width:240px}
+.stbl p{margin:0 0 6px}
+.stbl td.stu{min-width:170px}
+.stbl ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:5px}
+.stbl tr.sep td{background:var(--heat0);color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.04em;padding:6px 10px}
+.stbl i{font-style:italic}
+.stbl .src,.stbl .src a{font-size:12px;color:var(--muted)}
+.chip{display:inline-block;margin:0 4px 4px 0;padding:1px 7px;border:1px solid var(--line);border-radius:10px;font-size:12px;background:var(--heat0);white-space:nowrap}
+input[type=search]{font:inherit;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:6px 8px;min-width:200px}
+.scroll.tall{max-height:70vh;overflow:auto}
 footer{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;max-width:80ch}
 </style>
 
 <div class="wrap">
   <header style="display:flex;flex-direction:column;gap:8px">
     <h1>Mycobiome Literature Mapper</h1>
-    <p class="lead">Load a PubMed export in MEDLINE format. The page classifies each record with fixed, rule-based regular expressions (no AI) and draws year-by-study-type, disease-by-specimen, method, country, journal, author, MeSH, keyword, fungal-genus, gap-map, cumulative-growth, Sankey and alluvial summaries. Files are processed only in this browser and are never uploaded.</p>
+    <p class="lead">Load a PubMed export in MEDLINE format. The page classifies each record with fixed, rule-based regular expressions (no AI) and draws year-by-study-type, disease-by-specimen, method, country, journal, author, MeSH, keyword, fungal-genus, gap-map, cumulative-growth, Sankey and alluvial summaries, and on the TABLE tab a disease-by-disease summary table (specimens, methods, main fungi, key findings, limitations) with a study list. Files are processed only in this browser and are never uploaded.</p>
   </header>
 
   <div class="alert" role="note">Created with generative AI. Use at your own risk. Do not use this tool or its output in publications. Specifications may change without prior notice.</div>
 
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab-btn" role="tab" id="btn-main" data-tab="main" aria-selected="true" type="button">MAIN</button>
+    <button class="tab-btn" role="tab" id="btn-table" data-tab="table" aria-selected="false" type="button">TABLE</button>
     <button class="tab-btn" role="tab" id="btn-info" data-tab="info" aria-selected="false" type="button">INFO</button>
     <button class="tab-btn" role="tab" id="btn-link" data-tab="link" aria-selected="false" type="button">LINK</button>
   </nav>
@@ -156,13 +173,52 @@ footer{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mut
   </section>
   </div>
 
+  <div id="tab-table" class="tab" role="tabpanel" aria-labelledby="btn-table" hidden>
+    <section class="panel" aria-label="Summary table">
+      <h2>Summary of Lung Mycobiome Studies in Respiratory Diseases</h2>
+      <p class="note">One row per article, grouped by the disease that is mentioned most in the title, keywords and abstract. Every cell is produced by fixed rules from the loaded PubMed file; no AI is used and nothing is paraphrased. Specimens, methods and fungi are matched words. Key findings and limitations are sentences <b>quoted</b> from the abstract, shown in quotation marks: cite the original paper and rewrite them in your own words. "Not mentioned" means only that the abstract does not say so. Load the PubMed file on the MAIN tab first.</p>
+      <div class="row">
+        <label for="ttier">Records</label>
+        <select id="ttier"><option value="core">Core only (fungal and lung/airway term in title, keywords or MeSH)</option><option value="all">All records</option></select>
+        <label for="ttype">Study types</label>
+        <select id="ttype"><option value="clinical">Clinical studies and case reports (human)</option><option value="clinbasic">Clinical, case reports and basic research</option><option value="all">All types, including reviews</option></select>
+      </div>
+      <div class="row">
+        <label for="tdis">Disease</label><select id="tdis"><option value="">All diseases</option></select>
+        <label for="tsec">Review section</label><select id="tsec"><option value="">All</option><option value="1">1 Healthy vs disease</option><option value="2">2 Disease-specific</option><option value="3">3 Host&ndash;fungus interaction</option><option value="4">4 Bacteria / virus</option><option value="5">5 Methods and challenges</option></select>
+        <label for="tq">Search</label><input type="search" id="tq" placeholder="author, journal, title, genus, PMID">
+      </div>
+      <div class="stats" id="tstats"></div>
+      <div class="scroll tall" id="tblT"></div>
+      <div class="tools">
+        <button class="btn" data-rich="T" type="button">Copy table (rich text, italics kept)</button>
+        <button class="btn ghost" data-copy="tsvT" type="button">Copy table (tab-separated)</button>
+        <button class="btn ghost" data-copy="csvT" type="button">Copy table (CSV)</button>
+        <button class="btn ghost" data-dl="csvT" type="button">Save table (CSV)</button>
+      </div>
+      <p class="note" id="tblNote">Review sections (&sect;): 1 healthy vs disease, 2 disease-specific findings (asthma, COPD, bronchiectasis, ILD, sarcoidosis), 3 host&ndash;fungus interaction, 4 bacteria and virus, 5 methods and challenges. One article can carry several. Rich-text copy pastes into Word or Google Docs with scientific names in italics.</p>
+      <textarea id="fb2" hidden aria-label="Text to copy"></textarea>
+    </section>
+    <section class="panel" aria-label="Counts by disease">
+      <h2>Counts by disease</h2>
+      <p class="note">Overview of the same records by disease (a study covering several diseases counts in each row). Genus counts are the number of studies that mention the genus in their findings text. Key findings here are shortened quotations of the highest-scoring abstracts; the table above holds the full sentences.</p>
+      <div class="scroll tall" id="tblS"></div>
+      <div class="tools">
+        <button class="btn ghost" data-rich="S" type="button">Copy (rich text)</button>
+        <button class="btn ghost" data-copy="tsvS" type="button">Copy (tab-separated)</button>
+        <button class="btn ghost" data-copy="csvS" type="button">Copy (CSV)</button>
+        <button class="btn ghost" data-dl="csvS" type="button">Save (CSV)</button>
+      </div>
+    </section>
+  </div>
+
   <div id="tab-info" class="tab" role="tabpanel" aria-labelledby="btn-info" hidden>
     <section class="panel">
       <h2>How to use</h2>
       <ol class="steps">
         <li>Open <a href="https://pubmed.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubMed</a> and paste the search query below into the search box, then search.</li>
         <li>Click <b>Save</b> under the search box. Set <b>Selection</b> to <b>All results</b> and <b>Format</b> to <b>PubMed</b>, then click <b>Create file</b>. A .txt file is downloaded.</li>
-        <li>Open the <b>MAIN</b> tab and click <b>Choose .txt file</b> (or drop the file on the box). Figures A to M and the tables appear at once.</li>
+        <li>Open the <b>MAIN</b> tab and click <b>Choose .txt file</b> (or drop the file on the box). Figures A to M and the tables appear at once; the TABLE tab holds the summary table for the review (one row per article; findings and limitations are quoted from the abstracts, not paraphrased).</li>
         <li>Use <b>Copy</b> to paste a figure (SVG) or table (CSV) elsewhere. <b>Save</b> works only when this page is opened as a local .html file.</li>
       </ol>
       <div>
@@ -206,7 +262,7 @@ footer{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mut
   <footer>
     <p>本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>
     <p lang="en">This page and its text were created with the assistance of AI (Claude, Anthropic). It may contain errors. Do not base medical decisions on it; consult official textbooks, the primary literature and qualified experts. Reuse and redistribution are permitted at your own risk, and keeping this notice is recommended.</p>
-    <p lang="en">Version 1.2 (2026-11-13). Classification is rule-based and approximate; verify any figure against the source records before publication.</p>
+    <p lang="en">Version 1.4 (2026-11-13). Classification is rule-based and approximate; verify any figure against the source records before publication.</p>
   </footer>
 </div>
 
@@ -591,6 +647,278 @@ function panelHtml(id,title,note,fig){
   return `<section class="panel" aria-label="${esc(title.replace(/&times;/g,'x'))}"><h2>${id}. ${title}</h2>${note?`<p class="note">${note}</p>`:''}<div class="scroll">${fig.svg}</div><div class="tools"><button class="btn ghost" data-copy="svg${id}" type="button">Copy figure (SVG)</button><button class="btn ghost" data-dl="svg${id}" type="button">Save figure (SVG)</button><button class="btn ghost" data-copy="csv${id}" type="button">Copy table (CSV)</button></div></section>`;
 }
 
+/* ---------- TABLE tab: Summary of Lung Mycobiome Studies in Respiratory Diseases ---------- */
+/* Rule-based extraction from titles and abstracts only. No AI at run time. Output is a screening scaffold to be checked against the full texts. */
+const T_PAT = {
+  healthy: "\\bhealthy\\b|\\bnon-?(?:asthmatic|COPD|smokers?|diseased|CF)\\b|never[- ]smokers?|normal (?:lung|controls?|subjects)",
+  control: "\\bcontrols?\\b|control (?:group|subjects|participants)|comparison group|reference group",
+  contam: "negative control|blank|contaminat|decontam|low[- ]biomass|reagent|kitome|background noise|extraction control",
+  viab: "propidium monoazide|\\bPMA\\b|\\bcultur|metatranscript|\\bcDNA\\b|RNA-based|\\bviable\\b|\\bliving\\b|live (?:fungi|cells)",
+  quant: "qPCR|quantitative PCR|real-time PCR|ddPCR|droplet digital|fungal burden|fungal load|absolute abundance|\\bcultur",
+  longi: "longitudinal|follow-?up|\\bserial|time ?points?|over time|prospective|repeated|baseline|\\bvisit",
+  pilot: "\\bpilot\\b|exploratory|preliminary|proof[- ]of[- ]concept",
+  host: "cytokine|interleukin|\\bIL-?\\d+|\\bTh\\d+|neutrophil|eosinophil|macrophage|inflammat|fibro|\\bTLR|dectin|host[- ](?:response|gene|transcript|immune)|transcriptom|proteom|metabolom|granuloma|\\bIgE\\b|sensiti[sz]ation|epithelial|immune response|exacerbation|lung function|\\bFEV1",
+  interk: "bacteri|virome|\\bvirus|viral|kingdom|co-?occurrence|co-?abundance|network|co-?infection|polymicrobial|\\b16S\\b|Pseudomonas|Staphylococcus|Streptococcus|Prevotella|Veillonella|Haemophilus",
+  meth: "low[- ]biomass|contaminat|negative control|decontam|\\bviab|propidium|\\bPMA\\b|extraction|primer|reference database|\\bUNITE\\b|mock communit|bioinformatic|pipeline|standardi[sz]|\\bbias|reproducib|sequencing depth|\\bprotocol",
+  platform: "MiSeq|NovaSeq|HiSeq|NextSeq|Ion (?:Torrent|S5|PGM)|Nanopore|MinION|PacBio|\\b454\\b|Illumina"
+};
+const TRX = {}; for (const k in T_PAT) TRX[k] = new RegExp(T_PAT[k], 'i');
+const tdet = (s,k) => TRX[k].test(s || '');
+const TGEN = GENERA.concat([
+  ['Pichia','\\bPichia\\b|\\bKomagataella\\b'],['Debaryomyces','\\bDebaryomyces\\b'],['Naganishia','\\bNaganishia\\b'],['Sporobolomyces','\\bSporobolomyces\\b'],
+  ['Epicoccum','\\bEpicoccum\\b'],['Aureobasidium','\\bAureobasidium\\b'],['Trichoderma','\\bTrichoderma\\b'],['Mortierella','\\bMortierella\\b'],
+  ['Ascomycota','\\bAscomycota\\b'],['Basidiomycota','\\bBasidiomycota\\b']
+].map(([name,p]) => ({name, pat:p, rx:new RegExp(p,'i'), italic:!/mycota$/.test(name)})));
+const SPECIES = 'albicans|auris|glabrata|tropicalis|parapsilosis|krusei|dubliniensis|fumigatus|flavus|niger|terreus|nidulans|jirovecii|neoformans|gattii|furfur|globosa|restricta|sympodialis|cerevisiae|marneffei|capsulatum|immitis|apiospermum|prolificans';
+const SPECIES_RX = new RegExp('\\b(' + TGEN.filter(g=>g.italic).map(g=>g.name).join('|') + '|[CAPM])\\.?\\s+(' + SPECIES + ')\\b', 'g');
+const GENUS_RX = new RegExp('\\b(' + TGEN.filter(g=>g.italic).map(g=>g.name).join('|') + ')\\b', 'g');
+function italicize(raw){
+  // raw is plain text; returns escaped HTML with scientific names in <i>. Marks are used so that a genus inside a species name is not tagged twice.
+  let h = esc(raw);
+  h = h.replace(SPECIES_RX, m => '\u0002' + m + '\u0003');
+  h = h.split(/(\u0002[^\u0003]*\u0003)/).map(p => p.startsWith('\u0002') ? p : p.replace(GENUS_RX, '\u0002$1\u0003')).join('');
+  return h.replace(/\u0002/g,'<i>').replace(/\u0003/g,'</i>');
+}
+
+const SEC_NAMES = 'BACKGROUND|INTRODUCTION|OBJECTIVES?|AIMS?|PURPOSE|RATIONALE|CONTEXT|METHODS?|MATERIALS? AND METHODS|PATIENTS AND METHODS|DESIGN|SETTING|STUDY DESIGN|PARTICIPANTS|MEASUREMENTS AND MAIN RESULTS|MAIN RESULTS?|RESULTS?|FINDINGS|KEY FINDINGS|CONCLUSIONS?|INTERPRETATION|DISCUSSION|IMPORTANCE|SIGNIFICANCE|HYPOTHESIS|SUMMARY|CLINICAL RELEVANCE|TRIAL REGISTRATION';
+const SEC_RX = new RegExp('(?:^|\\s)(' + SEC_NAMES + '):\\s', 'g');
+function splitSections(ab){
+  const out = {}; if (!ab) return out;
+  const idx = []; let m; SEC_RX.lastIndex = 0;
+  while ((m = SEC_RX.exec(ab))) idx.push({name:m[1], start:m.index + m[0].length, hdr:m.index});
+  if (!idx.length) return out;
+  idx.forEach((s,i) => { const end = i+1<idx.length ? idx[i+1].hdr : ab.length; const k = /RESULT|FINDING/.test(s.name) ? 'RESULTS' : /CONCLU|INTERPRET|SUMMARY/.test(s.name) ? 'CONCLUSION' : /METHOD|DESIGN|SETTING|PARTICIPANTS/.test(s.name) ? 'METHODS' : /OBJECT|AIM|PURPOSE|HYPOTH/.test(s.name) ? 'AIM' : 'OTHER';
+    out[k] = ((out[k] ? out[k]+' ' : '') + ab.slice(s.start, end)).trim(); });
+  return out;
+}
+function sentences(t){
+  if (!t) return [];
+  const p = t.replace(/\b([A-Z])\.\s+(?=[a-z])/g, '$1.\u0001').replace(/\b(vs|et al|Fig|spp|sp|approx|cf|no|e\.g|i\.e)\.\s+/gi, m => m.trim()+'\u0001');
+  return p.split(/(?<=[.!?])\s+(?=[A-Z(\[])/).map(s => s.replace(/\u0001/g,' ').trim()).filter(s => s.length > 25);
+}
+function scoreSent(s){
+  let v = 0;
+  if (/\b(higher|lower|increas|decreas|enrich|reduc|elevat|greater|less abundant|more abundant|abundan|dominat|predominan|differ|associated|correlat|diversity|richness|dysbiosis|predict|exacerbat|worse|poor|mortality|detected|identified)/i.test(s)) v += 2;
+  if (/\bp\s*[<=≤]\s*0?\.\d|\bP\s*[<=]|\bOR\b|\bHR\b|95% CI|\bFDR\b|\bq\s*[<=]/.test(s)) v += 1;
+  if (TGEN.some(g => g.rx.test(s))) v += 1;
+  if (/\b(we (?:aimed|sought|investigated|evaluated|examined|aim|performed|collected|enrolled)|aim of|this study (?:aimed|was|investigat)|objective|to (?:investigate|evaluate|assess|characteri[sz]e|determine|explore))\b/i.test(s)) v -= 4;
+  if (/\b(?:were|was) (?:collected|recruited|enrolled|included|performed|obtained|extracted|sequenced|analy[sz]ed)\b/i.test(s)) v -= 2;
+  if (/\bsignificant/i.test(s)) v += 1;
+  if (/\b(?:is|are) (?:a |an )?(?:serious|common|major|important|emerging|characteri[sz]ed|defined)\b|\b(?:was|were|has been|have been) (?:reported|described|shown)\b|\bremains? (?:unclear|unknown|poorly)|\blittle is known|\bhowever\b/i.test(s)) v -= 3;
+  return v;
+}
+function trimTo(s, n){ if (s.length <= n) return s; const c = s.slice(0, n-1); const i = c.lastIndexOf(' '); return (i > n*0.6 ? c.slice(0,i) : c) + '…'; }
+function findingsOf(x){
+  const sec = splitSections(x.abstract);
+  let pool = sentences(sec.RESULTS || '');
+  if (!pool.length) pool = sentences(sec.CONCLUSION || '');
+  if (!pool.length && !sec.RESULTS) pool = sentences(x.abstract);
+  const sc = pool.map((s,i) => ({s, i, v:scoreSent(s)})).filter(o => o.v > 0 || pool.length <= 2).sort((a,b) => b.v-a.v || a.i-b.i);
+  const pick = []; let len = 0;
+  for (const o of sc){ if (pick.length >= 3) break; if (pick.length && len + o.s.length > 700) continue; pick.push(o); len += o.s.length; }
+  pick.sort((a,b) => a.i-b.i);
+  const rc = ((sec.RESULTS||'') + ' ' + (sec.CONCLUSION||'')).trim();
+  return {sents: pick.map(o=>o.s), text: pick.map(o=>o.s).join(' '), best: sc.length ? sc[0].v : -9, text_src: rc || x.abstract};
+}
+/* limitations: sentences quoted from the abstract, never composed */
+const L_STATED = /\blimitation|\blimited (?:by|to|in)\b|small (?:sample|cohort|number|size)|\bpilot\b|cross-sectional|retrospective|single[- ]cent(?:er|re)|confound|\bbias|underpowered|lack of|did not (?:include|account)/i;
+const L_FUTURE = /\b(?:further|larger|future|longitudinal|prospective) (?:studies|research|investigations?|work|trials?|cohorts?)\b|\bwarrant|\b(?:is|are) (?:needed|required|imperative)\b|needs? to be (?:addressed|investigated)/i;
+const L_DESIGN = /pilot|exploratory|preliminary|cross-sectional|retrospective|single[- ]cent(?:er|re)|case-control|prospective|longitudinal|randomi[sz]ed|multi-?cent(?:er|re)/gi;
+function limitationsOf(x){
+  const ss = sentences(x.abstract);
+  const stated = ss.filter(s => L_STATED.test(s)).slice(0,2);
+  const future = ss.filter(s => L_FUTURE.test(s) && !stated.includes(s)).slice(0,1);
+  const design = [...new Set(((x.title + ' ' + x.abstract).match(L_DESIGN) || []).map(s => s.toLowerCase()))];
+  return {stated, future, design};
+}
+/* group sizes: phrases such as "93 participants with COPD" or "cohort (n = 194)" quoted from the text */
+function groupsN(x){
+  const t = (x.title + ' ' + x.abstract).replace(/(\d),(\d{3})/g, '$1$2');
+  const nouns = 'patients|participants|subjects|individuals|adults|children|infants|volunteers|controls|cases|people|women|men|samples|specimens';
+  const a = new RegExp('\\b(\\d{1,5})\\s+((?:[\\w\\-\\/]+\\s+){0,3}?(?:' + nouns + ')(?:\\s+(?:with|without|from|in|of)\\s+[\\w\\-]+(?:\\s+(?!and\\b|or\\b|vs\\b|who\\b|were\\b|was\\b|had\\b|at\\b)[\\w\\-]+)?)?)', 'gi');
+  const b = /((?:[\w\-\/]+\s+){1,4})\(n\s*=\s*(\d{1,5})\)/gi;
+  const out = []; let m;
+  while ((m = a.exec(t))) if (+m[1] >= 3) out.push(m[0].trim());
+  while ((m = b.exec(t))) if (+m[2] >= 3) out.push(('n = ' + m[2] + ' ' + m[1].trim()));
+  return [...new Set(out)].slice(0,5);
+}
+function cohortN(x){
+  const t = (x.title + ' ' + x.abstract).replace(/(\d),(\d{3})/g, '$1$2');
+  const subj = /\b(\d{1,5})\s+(?:\w+[- ]){0,2}?(patients|participants|subjects|individuals|adults|children|infants|volunteers|cases|controls|people|women|men)\b/gi;
+  const eq = /\bn\s*=\s*(\d{1,5})\b/gi;
+  let ns = [], m;
+  while ((m = subj.exec(t))) ns.push(+m[1]);
+  while ((m = eq.exec(t))) ns.push(+m[1]);
+  ns = ns.filter(n => n >= 3 && n < 20000);
+  return ns.length ? Math.max(...ns) : null;
+}
+const T_DIS_FOCUS = ['d_asthma','d_copd','d_bronchiectasis','d_ild','d_sarcoid'];
+function methodsOf(x){
+  const out = [];
+  if (x.m_its2) out.push('ITS2'); else if (x.m_its1) out.push('ITS1'); else if (x.m_its) out.push('ITS (region n.s.)');
+  if (x.m_18s) out.push('18S'); if (x.m_shotgun) out.push('Shotgun / metagenomics'); if (x.m_qpcr) out.push('qPCR'); if (x.m_culture) out.push('Culture'); if (x.m_pma) out.push('PMA');
+  return out;
+}
+const T_PRIORITY = ['d_asthma','d_copd','d_bronchiectasis','d_ild','d_sarcoid','d_cf','d_cancer','d_covid','d_tb','d_pneumonia','d_transplant','d_hiv','d_aspergillosis'];
+function enrich(x){
+  if (x._t) return x._t;
+  const all = x.title + ' ' + x.abstract, kwAll = [all, x.keywords, x.mesh].join(' ');
+  const sec = splitSections(x.abstract);
+  const f = findingsOf(x);
+  let gl = TGEN.filter(g => g.rx.test(f.text_src + ' ' + x.title)); if (!gl.length) gl = TGEN.filter(g => g.rx.test(all));
+  gl = gl.slice().sort((a,b) => (b.italic?1:0)-(a.italic?1:0));
+  const head = [x.title, x.keywords, x.mesh].join(' ');
+  const dprim = new Set(Object.keys(DIS).filter(k => RX[k].test(head)));
+  const cnt = k => (x.abstract.match(new RegExp(PAT[k],'gi')) || []).length;
+  const dset = new Set(Object.keys(DIS).filter(k => dprim.has(k) || cnt(k) >= 2));
+  const healthy = tdet(x.title + ' ' + x.keywords + ' ' + x.mesh + ' ' + f.text_src, 'healthy'), control = tdet(all,'control');
+  const N = cohortN(x), pilot = tdet(all,'pilot');
+  const lx = limitationsOf(x);
+  const flags = {contam:tdet(all,'contam'), viab:!!(x.m_pma || tdet(all,'viab')), quant:tdet(all,'quant'), longi:tdet(all,'longi'), control, healthy, seq:!!(x.m_its || x.m_18s)};
+  const notm = [];
+  if (!flags.contam) notm.push('contamination control');
+  if (!flags.viab) notm.push('viability assessment');
+  if (flags.seq && !flags.quant) notm.push('qPCR or culture alongside sequencing');
+  if (!flags.longi) notm.push('longitudinal sampling');
+  if (!control) notm.push('control group'); else if (!healthy) notm.push('healthy comparison');
+  if (N === null) notm.push('sample size');
+  const sc = {};
+  dset.forEach(k => { let v = cnt(k) + 3*((x.title.match(new RegExp(PAT[k],'gi')) || []).length) + (RX[k].test(x.keywords + ' ' + x.mesh) ? 2 : 0); if (k === 'd_aspergillosis') v *= 0.5; sc[k] = v; });
+  const titleHealthy = tdet(x.title,'healthy') && ![...dprim].some(k => k !== 'd_aspergillosis');
+  const primary = titleHealthy ? 'healthy' : [...dset].sort((a,b) => sc[b]-sc[a] || T_PRIORITY.indexOf(a)-T_PRIORITY.indexOf(b))[0] || (healthy ? 'healthy' : 'none');
+  const sec2 = [];
+  if (healthy) sec2.push(1);
+  if (T_DIS_FOCUS.some(k => dset.has(k))) sec2.push(2);
+  if (tdet(all,'host')) sec2.push(3);
+  if (tdet(all,'interk')) sec2.push(4);
+  if (tdet(all,'meth')) sec2.push(5);
+  const spText = x.title + ' ' + (sec.METHODS || x.abstract);
+  const t = {
+    healthy, N, flags, lx, notm, sec: sec2, dset, dprim, primary, nphr: groupsN(x),
+    diseases: Object.keys(DIS).filter(k => dset.has(k)).map(k => DIS[k]),
+    others: [...dset].filter(k => k !== primary).map(k => DIS[k]),
+    specimens: Object.keys(SP).filter(k => RX[k].test(spText) && (k !== 'sp_env' || x.study_type === TYPES[1])).map(k => SP[k]),
+    methods: methodsOf(x),
+    platform: [...new Set((all.match(new RegExp(T_PAT.platform,'gi')) || []).map(s => /^454$/.test(s) ? '454' : s.replace(/^./, c => c.toUpperCase())))],
+    fungi: gl, finding: f.text, fsents: f.sents, fscore: f.best + (healthy?1:0) + (N!==null && N>=50?1:0) + (gl.length?1:0) + ((x.year||0)>=2022?0.5:0)
+  };
+  return (x._t = t);
+}
+const SEC_LABEL = {1:'1 Healthy vs disease', 2:'2 Disease-specific', 3:'3 Host–fungus interaction', 4:'4 Bacteria / virus', 5:'5 Methods and challenges'};
+const T_ROWS = [
+  {label:'Healthy / non-diseased subjects', healthy:true},
+  {label:'Asthma', key:'d_asthma'}, {label:'COPD', key:'d_copd'}, {label:'Bronchiectasis', key:'d_bronchiectasis'},
+  {label:'ILD / pulmonary fibrosis', key:'d_ild'}, {label:'Sarcoidosis', key:'d_sarcoid'},
+  {sep:'Other respiratory conditions'},
+  {label:'Cystic fibrosis', key:'d_cf'}, {label:'Lung cancer', key:'d_cancer'}, {label:'COVID-19', key:'d_covid'},
+  {label:'Tuberculosis', key:'d_tb'}, {label:'Pneumonia / ICU / sepsis', key:'d_pneumonia'},
+  {label:'Aspergillosis / Aspergillus (term match)', key:'d_aspergillosis'}, {label:'Transplant', key:'d_transplant'}, {label:'HIV', key:'d_hiv'}
+];
+const tallyArr = (arr, fn) => { const m = new Map(); arr.forEach(x => new Set(fn(x)).forEach(k => m.set(k,(m.get(k)||0)+1))); return [...m].map(([k,n])=>({k,n})).sort((a,b)=>b.n-a.n||String(a.k).localeCompare(String(b.k))); };
+const median = a => { if (!a.length) return null; const s = a.slice().sort((x,y)=>x-y), h = s.length>>1; return s.length%2 ? s[h] : Math.round((s[h-1]+s[h])/2); };
+const srcLink = x => `<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(x.pmid)}/" target="_blank" rel="noopener">${esc((x.first_author||'').split(',')[0] || 'PMID')} ${x.year||''}</a>`;
+const txtOf = h => h.replace(/<li>/g,'- ').replace(/<\/li>/g,'\n').replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/\n+$/,'').trim();
+
+function tSubset(){
+  let rows = ALL;
+  if ($('ttier').value === 'core') rows = rows.filter(r => r.topic_tier === 'core');
+  const v = $('ttype').value;
+  const ok = v === 'clinical' ? [TYPES[0],TYPES[2]] : v === 'clinbasic' ? [TYPES[0],TYPES[2],TYPES[1]] : TYPES;
+  return rows.filter(r => ok.includes(r.study_type));
+}
+function diseaseTable(rows){
+  const header = ['Disease','Specimens','Analytical methods','Main fungi','Key findings (extracted from abstracts)','Limitations (as stated or not stated in abstracts)'];
+  const cells = [], csv = [header.concat('n_studies').map(h=>`"${h}"`).join(',')];
+  let html = '<table class="stbl"><thead><tr>' + header.map(h=>`<th>${esc(h)}</th>`).join('') + '</tr></thead><tbody>';
+  T_ROWS.forEach(R => {
+    if (R.sep){ html += `<tr class="sep"><td colspan="${header.length}">${esc(R.sep)}</td></tr>`; return; }
+    const sub = rows.filter(x => R.healthy ? enrich(x).healthy : enrich(x).dset.has(R.key)), n = sub.length;
+    if (!n){ html += `<tr><td class="dis">${esc(R.label)}<div class="note">n = 0</div></td><td colspan="${header.length-1}" class="note">No study in the current selection.</td></tr>`; cells.push([R.label,'','','','','',0]); csv.push(`"${R.label}",,,,,,0`); return; }
+    const sp = tallyArr(sub, x=>enrich(x).specimens).slice(0,4), me = tallyArr(sub, x=>enrich(x).methods).slice(0,4);
+    const fu = tallyArr(sub, x=>enrich(x).fungi.map(g=>g.name)).slice(0,5), gi = {}; TGEN.forEach(g=>gi[g.name]=g.italic);
+    const li = a => a.length ? '<ul>'+a.map(o=>`<li>${o.html}</li>`).join('')+'</ul>' : '<span class="note">–</span>';
+    const spH = li(sp.map(o=>({html:`${esc(o.k)} <span class="mono">${o.n}</span>`})));
+    const meH = li(me.map(o=>({html:`${esc(o.k)} <span class="mono">${o.n}</span>`})));
+    const fuH = li(fu.map(o=>({html:`${gi[o.k]?'<i>'+esc(o.k)+'</i>':esc(o.k)} <span class="mono">${o.n}</span>`})));
+    const bonus = x => R.healthy ? 0 : (enrich(x).dprim.has(R.key) ? 2 : 0);
+    const top = sub.filter(x=>enrich(x).finding).sort((a,b)=>(enrich(b).fscore+bonus(b))-(enrich(a).fscore+bonus(a)) || (b.year||0)-(a.year||0)).slice(0,3);
+    const fiH = li(top.map(x=>({html:`${italicize(trimTo(enrich(x).finding,190))} <span class="src">[${srcLink(x)}]</span>`})));
+    const Ns = sub.map(x=>enrich(x).N).filter(v=>v!==null), seqN = sub.filter(x=>enrich(x).flags.seq).length;
+    const c = k => sub.filter(x=>enrich(x).flags[k]).length;
+    const lines = [
+      Ns.length ? `Largest cohort stated: median n≈${median(Ns)} (${Ns.length}/${n} abstracts give n)` : 'n not stated in abstracts',
+      `Contamination control mentioned: ${c('contam')}/${n}`,
+      `Viability assessment mentioned: ${c('viab')}/${n}`,
+      seqN ? `qPCR or culture alongside sequencing: ${sub.filter(x=>enrich(x).flags.seq && enrich(x).flags.quant).length}/${seqN}` : null,
+      `Longitudinal sampling mentioned: ${c('longi')}/${n}`,
+      `Healthy comparison mentioned: ${c('healthy')}/${n}`
+    ].filter(Boolean);
+    const liH = '<ul>' + lines.map(s=>`<li>${esc(s)}</li>`).join('') + '</ul>';
+    html += `<tr><td class="dis">${esc(R.label)}<div class="note">n = ${n}</div></td><td>${spH}</td><td>${meH}</td><td>${fuH}</td><td class="wide">${fiH}</td><td>${liH}</td></tr>`;
+    const row = [R.label, txtOf(spH), txtOf(meH), txtOf(fuH), txtOf(fiH), txtOf(liH), n];
+    cells.push(row);
+    csv.push(row.map((v,i)=> i===6 ? v : '"'+String(v).replace(/"/g,'""')+'"').join(','));
+  });
+  html += '</tbody></table>';
+  const tsv = [header.concat('n_studies').join('\t')].concat(cells.map(r => r.map(v => String(v).replace(/\t/g,' ').replace(/\n/g,' / ')).join('\t'))).join('\n');
+  return {html, csv: csv.join('\n'), tsv};
+}
+const T_GROUPS = [['healthy','Healthy individuals'],['d_asthma','Asthma'],['d_copd','COPD'],['d_bronchiectasis','Bronchiectasis'],['d_ild','ILD / pulmonary fibrosis'],['d_sarcoid','Sarcoidosis'],['d_cf','Cystic fibrosis'],['d_cancer','Lung cancer'],['d_covid','COVID-19'],['d_tb','Tuberculosis'],['d_pneumonia','Pneumonia / ICU / sepsis'],['d_aspergillosis','Aspergillosis / Aspergillus (term match)'],['d_transplant','Transplant'],['d_hiv','HIV'],['none','No disease term found']];
+function studyRows(rows){
+  const q = ($('tq').value || '').trim().toLowerCase(), dv = $('tdis').value, sv = $('tsec').value;
+  let out = rows.slice();
+  if (dv) out = out.filter(x => enrich(x).diseases.includes(dv));
+  if (sv) out = out.filter(x => enrich(x).sec.includes(+sv));
+  if (q) out = out.filter(x => (x.title+' '+x.first_author+' '+x.journal+' '+enrich(x).fungi.map(g=>g.name).join(' ')+' '+x.pmid).toLowerCase().includes(q));
+  return out.sort((a,b) => (b.year||0)-(a.year||0) || String(b.pmid).localeCompare(String(a.pmid)));
+}
+function studyTable(rows){
+  const sel = studyRows(rows);
+  const cols = ['Disease / population','Study','Specimens (n)','Analytical methods','Main fungi','Key findings (sentences quoted from the abstract)','Limitations'];
+  const csv = ['group,pmid,year,first_author,journal,doi,title,study_type,other_diseases,specimens,group_sizes,methods,platform,main_fungi,key_findings_quoted,limitations_stated,future_work_stated,design_terms,not_mentioned,review_sections'];
+  const q = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
+  const tsv = [['Group'].concat(cols).join('\t')];
+  let html = '<table class="stbl"><thead><tr>' + cols.map(h=>`<th>${esc(h)}</th>`).join('') + '</tr></thead><tbody>';
+  const dash = '<span class="note">–</span>';
+  T_GROUPS.forEach(([key,label]) => {
+    const g = sel.filter(x => enrich(x).primary === key); if (!g.length) return;
+    html += `<tr class="sep"><td colspan="${cols.length}">${esc(label)} (n = ${g.length})</td></tr>`;
+    g.forEach(x => { const t = enrich(x), lx = t.lx;
+      const c0 = [t.others.length ? 'also: ' + t.others.join('; ') : '', t.healthy ? 'healthy comparison mentioned' : ''].filter(Boolean);
+      const spH = [t.specimens.length ? esc(t.specimens.join('; ')) : '', t.nphr.length ? '<div class="note">' + t.nphr.map(esc).join('; ') + '</div>' : ''].join('') || dash;
+      const meth = t.methods.concat(t.platform);
+      const fu = t.fungi.slice(0,6).map(g2 => g2.italic ? '<i>' + esc(g2.name) + '</i>' : esc(g2.name)).join('; ');
+      const fiH = t.fsents.length ? t.fsents.map(s => `<p>“${italicize(s)}”</p>`).join('') : '<span class="note">No abstract</span>';
+      const liH = (lx.stated.length ? lx.stated.map(s => `<p><b>Stated:</b> “${italicize(s)}”</p>`).join('') : '<p class="note"><b>Stated:</b> none found in the abstract</p>')
+        + (lx.future.length ? lx.future.map(s => `<p><b>Future work:</b> “${italicize(s)}”</p>`).join('') : '')
+        + (lx.design.length ? `<p><b>Design terms:</b> ${esc(lx.design.join('; '))}</p>` : '')
+        + (t.notm.length ? `<p class="note"><b>Not mentioned:</b> ${esc(t.notm.join('; '))}</p>` : '');
+      html += `<tr><td class="dis">${c0.length ? c0.map(esc).join('<br>') : dash}</td>`
+        + `<td class="stu"><b>${srcLink(x)}</b><div class="note">${esc(STYPE_SHORT[TYPES.indexOf(x.study_type)])} &middot; ${esc(x.journal)}<br>PMID ${esc(x.pmid)}${t.sec.length ? '<br>&sect; ' + t.sec.join(', ') : ''}</div></td>`
+        + `<td>${spH}</td><td>${meth.length ? esc(meth.join('; ')) : dash}</td><td>${fu || dash}</td><td class="wide">${fiH}</td><td class="wide2">${liH}</td></tr>`;
+      const limTxt = [lx.stated.map(s=>'Stated: "'+s+'"').join(' | '), lx.future.map(s=>'Future work: "'+s+'"').join(' | '), lx.design.length ? 'Design terms: '+lx.design.join('; ') : '', t.notm.length ? 'Not mentioned: '+t.notm.join('; ') : ''].filter(Boolean).join(' / ');
+      const cellsTxt = [c0.join('; '), (x.first_author||'').split(',')[0] + ' ' + x.year + ' (PMID ' + x.pmid + ')', t.specimens.join('; ') + (t.nphr.length ? ' [' + t.nphr.join('; ') + ']' : ''), meth.join('; '), t.fungi.slice(0,6).map(g2=>g2.name).join('; '), t.fsents.map(s=>'"'+s+'"').join(' '), limTxt];
+      tsv.push([label].concat(cellsTxt).map(v => String(v).replace(/\t/g,' ').replace(/\n/g,' ')).join('\t'));
+      csv.push([q(label),x.pmid,x.year,q(x.first_author),q(x.journal),q(x.doi),q(x.title),q(x.study_type),q(t.others.join('; ')),q(t.specimens.join('; ')),q(t.nphr.join('; ')),q(t.methods.join('; ')),q(t.platform.join('; ')),q(t.fungi.map(g2=>g2.name).join('; ')),q(t.fsents.join(' ')),q(lx.stated.join(' | ')),q(lx.future.join(' | ')),q(lx.design.join('; ')),q(t.notm.join('; ')),q(t.sec.join('; '))].join(','));
+    });
+  });
+  html += '</tbody></table>';
+  return {html, csv: csv.join('\n'), tsv: tsv.join('\n'), n: sel.length};
+}
+let T_LASTSEL = '';
+function renderTable(){
+  const rows = tSubset();
+  const D = diseaseTable(rows);
+  $('tblS').innerHTML = D.html;
+  OUT.csvS = D.csv; OUT.tsvS = D.tsv; OUT.htmlS = D.html;
+  const dis = [...new Set(rows.flatMap(x => enrich(x).diseases))].sort(), cur = $('tdis').value;
+  $('tdis').innerHTML = '<option value="">All diseases</option>' + dis.map(d => `<option value="${esc(d)}"${d===cur?' selected':''}>${esc(d)}</option>`).join('');
+  const T = studyTable(rows);
+  $('tblT').innerHTML = T.html; OUT.csvT = T.csv; OUT.tsvT = T.tsv; OUT.htmlT = T.html;
+  const sc = k => rows.filter(x => enrich(x).sec.includes(k)).length;
+  $('tstats').innerHTML = `<span>Studies in table <b>${rows.length}</b></span><span>Shown <b>${T.n}</b></span>` + [1,2,3,4,5].map(k => `<span>&sect;${k} <b>${sc(k)}</b></span>`).join('');
+}
+
 /* ---------- records CSV ---------- */
 function csvAll(rows){
   const cols = ['pmid','year','date','journal','title','first_author','doi','pub_types','mesh','keywords','study_type','topic_tier',...Object.keys(SP),...Object.keys(MT),...Object.keys(DIS),'genera','countries'];
@@ -610,6 +938,7 @@ function render(){
   let html = '';
   EXTRA.forEach(([id,title,note,fn]) => { const f = fn(rows); OUT['svg'+id] = f.svg; OUT['csv'+id] = f.csv; html += panelHtml(id,title,note,f); });
   $('extra').innerHTML = html;
+  renderTable();
 }
 
 /* ---------- export helpers ---------- */
@@ -620,15 +949,20 @@ function resolved(svg){
 function payload(key){ return key.startsWith('svg') ? resolved(OUT[key]) : OUT[key]; }
 async function copyText(text){
   try { await navigator.clipboard.writeText(text); flash('Copied to clipboard'); }
-  catch(e){ const t=$('fb'); t.hidden=false; t.value=text; t.focus(); t.select(); flash('Automatic copy was blocked. Select the text in the box below and copy it manually.'); }
+  catch(e){ const t=$('tab-table').hidden ? $('fb') : $('fb2'); t.hidden=false; t.value=text; t.focus(); t.select(); flash('Automatic copy was blocked. Select the text in the box below and copy it manually.'); }
 }
-function flash(msg){ $('exportNote').textContent = msg; }
+function flash(msg){ $('exportNote').textContent = msg; $('tblNote').textContent = msg; }
+async function copyRich(html, text){
+  try { await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); flash('Copied as rich text (scientific names in italics). Paste into Word or Google Docs.'); }
+  catch(e){ copyText(text); }
+}
 function download(name, mime, text){
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime})); a.download=name; document.body.appendChild(a); a.click(); a.remove();
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.copy) copyText(payload(b.dataset.copy));
+  if (b.dataset.rich) copyRich(OUT['html'+b.dataset.rich].replace('<table class="stbl">','<table border="1" cellpadding="4" style="border-collapse:collapse">'), OUT['tsv'+b.dataset.rich]);
   if (b.dataset.dl){ const k=b.dataset.dl; download(k.startsWith('svg')?`mapper_${k}.svg`:`mapper_${k}.csv`, k.startsWith('svg')?'image/svg+xml':'text/csv', payload(k)); }
 });
 
@@ -638,6 +972,8 @@ $('pick').addEventListener('click', () => $('file').click());
 $('file').addEventListener('change', e => { if (e.target.files[0]) readFile(e.target.files[0]); });
 $('sample').addEventListener('click', () => load(SAMPLE, 'sample-40.txt', true));
 $('tier').addEventListener('change', render);
+['ttier','ttype','tdis','tsec'].forEach(id => $(id).addEventListener('change', renderTable));
+$('tq').addEventListener('input', renderTable);
 const dz = $('drop');
 ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('over'); }));
 ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('over'); }));
@@ -648,7 +984,7 @@ new MutationObserver(render).observe(document.documentElement,{attributes:true,a
 $('rules').textContent = Object.keys(PAT).map(k => k.padEnd(16)+PAT[k]).join('\n') + '\n\n# Fungal genus dictionary (figure I; HTML tool only)\n' + GENERA.map(g => g.name.padEnd(16)+g.pat).join('\n') + '\n\n# Main-label priority for figures L and M (first match wins)\ndisease   ' + D_ORDER.map(k=>DIS[k]).join(' > ') + ' > Other / unspecified\nspecimen  ' + S_ORDER.map(k=>SP[k]).join(' > ') + ' > Not specified\nmethod    ' + M_ORDER.map(m=>m[1]).join(' > ') + ' > Not stated' + '\n\n# MeSH terms omitted from figure G\n' + [...MESH_SKIP].join(', ');
 
 /* ---------- tabs ---------- */
-const TABS = ['main','info','link'];
+const TABS = ['main','table','info','link'];
 function showTab(name){
   if (!TABS.includes(name)) name = 'main';
   TABS.forEach(t => { $('tab-'+t).hidden = t !== name; $('btn-'+t).setAttribute('aria-selected', String(t === name)); });
