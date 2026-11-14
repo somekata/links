@@ -881,19 +881,37 @@ function attack(id){
     if(Math.random()<e.revP){rev=true;e.hp=Math.max(1,e.hp);}
   }
   if(!fxOn()){hit();sfx('throw');sfx(eff?'hit':'miss',.25);}
-  let dead=false;
+  let dead=false,selfFx=null;
   if(id==='COL'){
     const sd=rnd(18,28);G.hp=Math.max(0,G.hp-sd);
+    selfFx={dmg:sd,label:'☠ 腎毒性・神経毒性'};
     say('コリスチンの腎毒性・神経毒性… HP -'+sd,'ng');
     if(G.hp<=0)dead=true;
   }
-  if(false){
-    G.hp=Math.max(0,G.hp-8);
-    say('腎機能障害の副作用… HP -8（TDMで防げます）','ng');
-    if(G.hp<=0)dead=true;
+  if(eff&&BACKLASH_P[id]&&Math.random()<BACKLASH_P[id]){
+    if(e.tdm){
+      selfFx={blocked:true};
+      say('🛡 TDMで血中濃度を管理していたため、'+d.ab+'の腎障害を防げた。','info');
+    }else{
+      G.hp=Math.max(0,G.hp-8);e.renal=true;
+      selfFx={dmg:8,label:id==='VCM'?'💣 爆風が自分にも！':'🩸 腎障害'};
+      say((id==='VCM'?'💣 バンコマイシンの爆風が自分にも！ ':'')+'腎機能障害の副作用… HP -8。'+'（TDMで防げます）','ng');
+      if(G.hp<=0)dead=true;
+    }
+  }
+  let deInfo=null;
+  if(eff&&d.aware!=='A'){ // 広域薬で倒せる相手に、より狭域（またはAccess）の薬も効くときは通知
+    const nar=DRUGS.filter(x=>x.id!==id&&!x.perm&&e.v.drugs[x.id]==='S'&&(x.dasc<d.dasc||(x.aware==='A'&&d.aware!=='A')));
+    if(nar.length){
+      const kn=nar.filter(x=>e.known.ast||e.known.drugs[x.id]==='S').map(x=>x.ab);
+      const sub=kn.length?'感受性が分かっている狭域の抗菌薬：'+kn.join('・'):'感受性を確認して、より狭域の抗菌薬へ切り替えましょう';
+      deInfo={sub:sub};
+      say('⬇ デ・エスカレーションしてください：'+d.ab+'は広域すぎます。'+sub+'。','ng');
+      if(!fxOn())toast('⬇ デ・エスカレーションしてください（'+d.ab+'は広域すぎます）');
+    }
   }
   G.lock=true;
-  seq(()=>fxThrow(d,eff,dmg),()=>{
+  seq(()=>fxThrow(d,eff,dmg,{self:selfFx,de:deInfo}),()=>{
     if(dead){lifeLost();if(G.over){render();return;}}
     render();
     if(rev){reviveSeq(e,id,()=>{render();enemyPhase();});return;}
@@ -1535,35 +1553,120 @@ function fxBurst(x,y,cols,n,dist,ringCol){
   }
 }
 const GR_COL={A:'#2e9d5b',W:'#e0a020',R:'#b3261e'};
-let grUid=0;
-function grenadeSVG(col){
-  const id='gp'+(++grUid);
-  return '<svg viewBox="0 0 44 60" width="42" height="57"><defs><clipPath id="'+id+'"><rect x="7" y="12" width="30" height="46" rx="15"/></clipPath></defs>'+
-    '<rect x="16" y="2" width="12" height="9" rx="2" fill="#6b6b6b" stroke="#2b2622" stroke-width="2"/>'+
-    '<path d="M28 5 q11 -3 11 8" fill="none" stroke="#555" stroke-width="3.5" stroke-linecap="round"/>'+
-    '<circle cx="35" cy="17" r="4.2" fill="none" stroke="#9a9a9a" stroke-width="2.4"/>'+
-    '<g clip-path="url(#'+id+')"><rect x="7" y="12" width="30" height="46" fill="#fff"/><rect x="7" y="12" width="30" height="24" fill="'+col+'"/><rect x="7" y="34" width="30" height="4" fill="#2b2622" opacity=".25"/></g>'+
-    '<rect x="7" y="12" width="30" height="46" rx="15" fill="none" stroke="#2b2622" stroke-width="2.6"/><ellipse cx="15" cy="22" rx="3" ry="6" fill="#fff" opacity=".55"/></svg>';
+/* ---- 抗菌薬ごとの「弾」の形（系統で描き分け） ----
+   ペニシリン系＝錠剤 / セフェム系＝カプセル / カルバペネム＝ロケット / VCM＝爆弾（自分にも爆風）
+   LZD＝注射器 / マクロライド＝六角錠 / キノロン＝手裏剣 / アミノグリコシド＝矢 / COL＝毒薬ビン */
+const DRUG_SHAPE={ABPC:'tablet',SBT_ABPC:'tablet',PIPC_TAZ:'tablet',CEZ:'capsule',CTRX:'capsule',CAZ:'capsule',CFPM:'capsule',CFDC:'capsule',
+  MEPM:'rocket',VCM:'bomb',LZD:'syringe',AZM:'hex',CPFX:'star',ABK:'arrow',TOB:'arrow',COL:'flask'};
+const DIR_SHAPES={rocket:1,syringe:1,arrow:1};   // 進行方向に向く形（それ以外は回転しながら飛ぶ）
+/* 自己ダメージが出る確率（TDMなしのとき）。VCM・ABK・TOBの腎障害 */
+const BACKLASH_P={VCM:.35,ABK:.35,TOB:.35};
+function drugSVG(sh,col,d){
+  const K='#2b2622',o='stroke="'+K+'" stroke-width="2.6" stroke-linejoin="round"';
+  let s='';
+  if(sh==='tablet'){
+    s='<defs><clipPath id="tbc"><circle cx="24" cy="24" r="18"/></clipPath></defs>'+
+      '<g clip-path="url(#tbc)"><rect x="0" y="0" width="48" height="48" fill="#fff"/><rect x="0" y="0" width="48" height="24" fill="'+col+'"/></g>'+
+      '<circle cx="24" cy="24" r="18" fill="none" '+o+'/><line x1="6" y1="24" x2="42" y2="24" stroke="'+K+'" stroke-width="2.2"/><ellipse cx="17" cy="14" rx="4" ry="2.4" fill="#fff" opacity=".6"/>';
+  }else if(sh==='capsule'){
+    s='<defs><clipPath id="cpc"><rect x="3" y="14" width="42" height="20" rx="10"/></clipPath></defs>'+
+      '<g clip-path="url(#cpc)"><rect x="0" y="0" width="48" height="48" fill="#fff"/><rect x="0" y="0" width="24" height="48" fill="'+col+'"/></g>'+
+      '<rect x="3" y="14" width="42" height="20" rx="10" fill="none" '+o+'/><line x1="24" y1="14" x2="24" y2="34" stroke="'+K+'" stroke-width="2.2"/><ellipse cx="13" cy="20" rx="5" ry="2" fill="#fff" opacity=".55"/>';
+  }else if(sh==='rocket'){
+    s='<path d="M3 24 L10 18 L10 30 Z" fill="#ff9d2e" '+o+'/><polygon points="12,14 6,5 20,14" fill="#7a7a7a" '+o+'/><polygon points="12,34 6,43 20,34" fill="#7a7a7a" '+o+'/>'+
+      '<path d="M10 14 L24 14 Q38 14 46 24 Q38 34 24 34 L10 34 Z" fill="'+col+'" '+o+'/><rect x="10" y="14" width="6" height="20" fill="#fff" opacity=".35"/><circle cx="28" cy="24" r="4.5" fill="#dff1ff" '+o+'/>';
+  }else if(sh==='bomb'){
+    s='<circle cx="22" cy="29" r="16.5" fill="#34302c" '+o+'/><ellipse cx="15" cy="21" rx="5" ry="3.2" fill="#fff" opacity=".35"/>'+
+      '<rect x="16" y="8" width="12" height="7" rx="2" fill="#6b6b6b" '+o+'/>'+
+      '<path d="M26 9 q8 -7 13 -3" fill="none" stroke="#a67c52" stroke-width="3.2" stroke-linecap="round"/>'+
+      '<polygon points="41,1 43,5 47,4 44,8 47,12 42,10 39,14 39,9 35,7 39,5" fill="#ffd54a" stroke="#ff6b2e" stroke-width="1.4" stroke-linejoin="round"/>'+
+      '<rect x="8" y="26" width="28" height="9" fill="'+col+'" opacity=".95"/><text x="22" y="34" font-size="9" font-weight="900" text-anchor="middle" fill="#fff" font-family="sans-serif">VCM</text>';
+  }else if(sh==='syringe'){
+    s='<line x1="31" y1="24" x2="46" y2="24" stroke="#666" stroke-width="3" stroke-linecap="round"/><rect x="9" y="17" width="23" height="14" rx="2" fill="#fff" '+o+'/>'+
+      '<rect x="9" y="17" width="15" height="14" fill="'+col+'" opacity=".9"/><rect x="30" y="12" width="4" height="24" rx="1" fill="#bbb" '+o+'/>'+
+      '<line x1="4" y1="24" x2="9" y2="24" stroke="'+K+'" stroke-width="3"/><rect x="1" y="14" width="4" height="20" rx="1" fill="#888" '+o+'/>';
+  }else if(sh==='hex'){
+    s='<polygon points="24,4 42,14 42,34 24,44 6,34 6,14" fill="'+col+'" '+o+'/><polygon points="24,12 35,18 35,30 24,36 13,30 13,18" fill="#fff" opacity=".85" stroke="'+K+'" stroke-width="2"/><line x1="13" y1="24" x2="35" y2="24" stroke="'+K+'" stroke-width="2"/>';
+  }else if(sh==='star'){
+    s='<path d="M24 2 L29 19 L46 24 L29 29 L24 46 L19 29 L2 24 L19 19 Z" fill="#d6dae0" '+o+'/><circle cx="24" cy="24" r="6" fill="'+col+'" '+o+'/><circle cx="24" cy="24" r="2" fill="#fff"/>';
+  }else if(sh==='arrow'){
+    s='<line x1="6" y1="24" x2="38" y2="24" stroke="#7a5230" stroke-width="4.5" stroke-linecap="round"/><polygon points="47,24 33,14 33,34" fill="'+col+'" '+o+'/>'+
+      '<polygon points="2,14 13,14 19,24 13,34 2,34 8,24" fill="'+col+'" '+o+'/>';
+  }else{ /* flask */
+    s='<defs><clipPath id="fkc"><path d="M19 14 L9 36 Q7 45 16 45 L32 45 Q41 45 39 36 L29 14 Z"/></clipPath></defs>'+
+      '<g clip-path="url(#fkc)"><rect x="0" y="0" width="48" height="48" fill="#fff"/><rect x="0" y="28" width="48" height="20" fill="'+col+'"/></g>'+
+      '<path d="M19 14 L9 36 Q7 45 16 45 L32 45 Q41 45 39 36 L29 14 Z" fill="none" '+o+'/><rect x="18" y="3" width="12" height="11" rx="2" fill="#a67c52" '+o+'/>'+
+      '<circle cx="24" cy="34" r="5" fill="#fff" stroke="'+K+'" stroke-width="1.8"/><circle cx="22" cy="33" r="1.2" fill="'+K+'"/><circle cx="26" cy="33" r="1.2" fill="'+K+'"/><rect x="22" y="37" width="4" height="3" fill="#fff" stroke="'+K+'" stroke-width="1.2"/>';
+  }
+  return '<svg viewBox="0 0 48 48" width="44" height="44">'+s+'</svg>';
 }
-/* 自分の攻撃：抗菌薬の手榴弾（カプセル型）を、ボタンから敵に向けて放物線で投げ込む */
-async function fxThrow(d,eff,dmg){
+/* 画面上部に出すメッセージ帯（デ・エスカレーションの通知など） */
+function fxBanner(title,sub){
+  const b=fxMk('<div style="font-size:1.05rem;font-weight:900">'+title+'</div>'+(sub?'<div style="font-size:.78rem;font-weight:700;margin-top:2px">'+sub+'</div>':''),
+    {left:'50%',top:'12%',zIndex:'4',background:'#fff3cd',border:'3px solid #e0a020',color:'#7a4b00',padding:'8px 14px',borderRadius:'12px',textAlign:'center',
+     width:'max-content',maxWidth:'88vw',boxShadow:'0 4px 14px rgba(0,0,0,.28)'});
+  fxAnim(b,[{transform:'translate(-50%,-14px) scale(.8)',opacity:0},{transform:'translate(-50%,0) scale(1.05)',opacity:1,offset:.14},{transform:'translate(-50%,0) scale(1)',opacity:1,offset:.8},{transform:'translate(-50%,-8px) scale(1)',opacity:0}],{duration:2300,easing:'ease-out'}).then(()=>b.remove());
+}
+/* 自己ダメージ：爆風（や毒）が敵から自分のHPバーに跳ね返る。TDM済みなら防御表示 */
+async function fxBacklash(s,from){
+  const hpb=document.getElementById('hHpBar');const b=ctr(hpb);
+  if(s.blocked){
+    fxBurst(b.x,b.y,['#7fe3a0','#ffffff','#9fd0ff'],8,40,'#2e9d5b');
+    fxPop('🛡 TDMで防御！',b.x,b.y+18,'#b6f2c8',1.2);
+    await wait(500);return;
+  }
+  sfx('boom');
+  const sz=36;
+  const p=fxMk('',{width:sz+'px',height:sz+'px',borderRadius:'50%',zIndex:'3',
+    background:'radial-gradient(circle at 40% 35%,#fff 0,#ffd54a 30%,#ff7a2e 62%,#b3261e 100%)',boxShadow:'0 0 18px #ff7a2e'});
+  const sx=from.x,sy=from.y,ex=b.x,ey=b.y,cy=Math.min(sy,ey)-50;
+  await fxAnim(p,[{transform:'translate('+(sx-sz/2)+'px,'+(sy-sz/2)+'px) scale(.6)',opacity:.95},
+    {transform:'translate('+((sx+ex)/2-sz/2)+'px,'+(cy-sz/2)+'px) scale(1.3)',opacity:1,offset:.5},
+    {transform:'translate('+(ex-sz/2)+'px,'+(ey-sz/2)+'px) scale(.9)',opacity:1}],{duration:420,easing:'ease-in'});
+  p.remove();
+  fxBurst(ex,ey,['#ff9d2e','#ffd54a','#ffffff','#ff5a4d'],12,60,'#ff5a4d');
+  const vg=fxMk('',{left:'0',top:'0',width:'100vw',height:'100vh',boxShadow:'inset 0 0 90px 28px rgba(200,30,20,.65)'});
+  fxAnim(vg,[{opacity:0},{opacity:1,offset:.25},{opacity:0}],{duration:460}).then(()=>vg.remove());
+  fxPop('−'+s.dmg,b.x,b.y+18,'#ff8d83',1.8);
+  fxPop(s.label,b.x,b.y+48,'#ffd0c9',.9);
+  if(hpb)await fxAnim(hpb,[{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(-4px)'},{transform:'translateX(0)'}],{duration:320,fill:'none'});
+}
+/* 自分の攻撃：抗菌薬の系統ごとの形の弾を、ボタンから敵に向けて放物線で投げ込む */
+async function fxThrow(d,eff,dmg,opt){
+  opt=opt||{};
   sfx('throw');
   const btn=document.querySelector('[data-drug="'+d.id+'"]');
   const tgt=document.querySelector('.eart')||document.querySelector('.ecard');
   const a=ctr(btn),b=ctr(tgt);
   const col=GR_COL[d.aware]||'#2e9d5b';
-  const g=fxMk(grenadeSVG(col),{width:'42px',height:'57px',zIndex:'2'});
+  const sh=DRUG_SHAPE[d.id]||'tablet',spin=!DIR_SHAPES[sh];
+  const g=fxMk(drugSVG(sh,col,d),{width:'44px',height:'44px',zIndex:'2'});
   const N=16,h=Math.max(110,Math.abs(b.y-a.y)*.45+90);
   const kf=[];
+  let rot=0,prev=null;
+  const turns=sh==='bomb'?360:(sh==='flask'?540:600);
   for(let i=0;i<=N;i++){
     const t=i/N,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-4*h*t*(1-t);
-    kf.push({offset:t,transform:'translate('+(x-21)+'px,'+(y-28)+'px) rotate('+(t*600)+'deg) scale('+(.7+.55*Math.sin(Math.PI*t)).toFixed(2)+')'});
+    if(spin)rot=t*turns;
+    else{ // 進行方向（放物線の接線）に向ける
+      rot=Math.atan2((b.y-a.y)-4*h*(1-2*t),(b.x-a.x))*180/Math.PI;
+      if(prev!==null){while(rot-prev>180)rot-=360;while(rot-prev<-180)rot+=360;}
+      prev=rot;
+    }
+    kf.push({offset:t,transform:'translate('+(x-22)+'px,'+(y-22)+'px) rotate('+rot.toFixed(1)+'deg) scale('+(.7+.55*Math.sin(Math.PI*t)).toFixed(2)+')'});
   }
-  await fxAnim(g,kf,{duration:540,easing:'linear'});
+  await fxAnim(g,kf,{duration:sh==='bomb'?640:540,easing:'linear'});
   sfx(eff?'hit':'miss');
   if(eff){
     g.remove();
     fxBurst(b.x,b.y,[col,'#fff6a0','#ffffff','#7fe3a0'],12,Math.max(60,b.w*.55),col);
+    if(sh==='bomb'){ // 爆弾：大爆発（炎・煙・閃光）
+      sfx('boom');
+      fxBurst(b.x,b.y,['#ff9d2e','#ffd54a','#555555','#ff5a4d'],18,Math.max(90,b.w*.85),'#ff6b2e');
+      const fl=fxMk('',{left:'0',top:'0',width:'100vw',height:'100vh',background:'rgba(255,240,200,.75)'});
+      fxAnim(fl,[{opacity:1},{opacity:0}],{duration:260}).then(()=>fl.remove());
+    }
+    if(opt.de)fxBanner('⬇ デ・エスカレーションしてください',opt.de.sub);
     fxPop('−'+dmg,b.x,b.y-b.h*.15,'#ffffff',1.9);
     fxPop(d.ab,b.x,b.y+b.h*.35,col==='#e0a020'?'#ffe08a':'#b6f2c8',.95);
     if(tgt)await fxAnim(tgt,[{transform:'translateX(0)',filter:'brightness(1)'},{transform:'translateX(-9px)',filter:'brightness(2.2)',offset:.2},{transform:'translateX(8px)',filter:'brightness(1.4)',offset:.45},{transform:'translateX(-5px)',offset:.7},{transform:'translateX(0)',filter:'brightness(1)'}],{duration:340,fill:'none'});
@@ -1572,11 +1675,12 @@ async function fxThrow(d,eff,dmg){
     fxPop('カン！',b.x,b.y-b.h*.2,'#d8d4cc',1.5);
     fxPop('効かない…',b.x,b.y+b.h*.3,'#ff9b93',1.05);
     fxBurst(b.x,b.y,['#bbb','#999','#ddd'],6,36,'#999999');
-    await fxAnim(g,[{transform:'translate('+(b.x-21)+'px,'+(b.y-28)+'px) rotate(600deg) scale(1.25)',opacity:1},
-      {transform:'translate('+(b.x+46)+'px,'+(b.y-70)+'px) rotate(760deg) scale(1.1)',opacity:1,offset:.35},
-      {transform:'translate('+(b.x+90)+'px,'+(b.y+60)+'px) rotate(1000deg) scale(.9)',opacity:0}],{duration:520,easing:'ease-in'});
+    await fxAnim(g,[{transform:'translate('+(b.x-22)+'px,'+(b.y-22)+'px) rotate('+rot.toFixed(1)+'deg) scale(1.25)',opacity:1},
+      {transform:'translate('+(b.x+46)+'px,'+(b.y-70)+'px) rotate('+(rot+160).toFixed(1)+'deg) scale(1.1)',opacity:1,offset:.35},
+      {transform:'translate('+(b.x+90)+'px,'+(b.y+60)+'px) rotate('+(rot+400).toFixed(1)+'deg) scale(.9)',opacity:0}],{duration:520,easing:'ease-in'});
     g.remove();
   }
+  if(opt.self)await fxBacklash(opt.self,b);
 }
 async function fxDefeat(){
   sfx('defeat');
