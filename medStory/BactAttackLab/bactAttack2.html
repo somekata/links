@@ -86,6 +86,16 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 .drug.sel{border-color:var(--c);transform:translateY(-3px);box-shadow:0 0 0 1px var(--c),0 6px 18px -2px var(--c);background:var(--surface)}
 .drug.stopped{opacity:.55;text-decoration:line-through;filter:grayscale(.8)}
 .drug.stopped .sub{text-decoration:none;color:var(--bad);font-weight:800}
+.drug.renal,.drug.gas{opacity:.6;filter:grayscale(.85)}
+.drug.renal .sub,.drug.gas .sub{color:var(--bad);font-weight:800}
+.drug.warn{border-color:var(--bad);animation:blinkWarn .7s steps(2,end) infinite}
+.drug.warn .sub{color:var(--bad);font-weight:800}
+.drug.fuel{background:linear-gradient(to top,rgba(245,158,11,.42) var(--fuel,100%),transparent var(--fuel,100%)),var(--surface2)}
+.drug.fuel.low{animation:blinkWarn .7s steps(2,end) infinite;border-color:var(--wt)}
+.drug.revive{animation:revive .7s ease-out 1}
+@keyframes blinkWarn{50%{filter:brightness(1.5)}}
+@keyframes revive{0%{box-shadow:0 0 0 0 var(--c)}60%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.drug.warn,.drug.fuel.low{animation:none}}
 
 /* tab bar */
 #tabbar{flex:0 0 auto;display:flex;align-items:stretch;gap:4px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);position:relative;z-index:70}
@@ -364,6 +374,10 @@ table.rk{min-width:0}
           <li>ウェーブが進むと、敵の<b>正体が隠れます</b>。効く薬を2発当てると正体がわかります。</li>
           <li>ウイルスには抗菌薬は効きません。<b>「安静にする」</b>で対処します。</li>
           <li>CEZ・VCM・MEPMは、ときどき<b>出荷停止</b>になります（2ウェーブ）。</li>
+          <li><b>eGFR（腎機能）</b>は100からスタート。<b>VCM・COL</b>を撃っている間は下がり、撃っていない間は回復します。<b>50未満</b>になるとVCM・COLが使えなくなり、<b>80以上</b>に回復するまで使えません。画面右はしのゲージで確認できます。</li>
+          <li><b>血小板（PLT）</b>は25（万/μL）からスタート。<b>LZD</b>を撃っている間はゆっくり下がり、撃っていない間はもっとゆっくり回復します。<b>10未満</b>でLZDが使えなくなり、<b>15以上</b>に回復するまで使えません。eGFRが低いと、減り方が速くなります。</li>
+          <li><b>MEPM</b>は撃ち続けると約10秒で<b>ガス欠</b>になり、2秒間使えません（再開時は残り25%）。ボタンのメーターで残量が分かります。</li>
+          <li>eGFRや血小板が危ないときは、その薬（VCM・COL・LZD）しか効かない敵は出にくくなります。</li>
           <li>敵を倒すと<b>コイン</b>がもらえます。<b>ショップ</b>で<b>威力</b>と<b>速射</b>を5段階まで強化できます（威力が上がると弾が大きく、強く光ります）。</li>
           <li>画面上のメーターで、使った抗菌薬の<b>AWaRe分類の比率</b>と<b>DASC</b>がプレイ中にわかります。</li>
         </ul>
@@ -434,6 +448,15 @@ const C = {
   HIDE_SIL: 20, HIDE_SPHERE: 30, HIDE_BLACK: 40,
   REVEAL_HITS: 2, HIDDEN_MIN_HP: 3,
   LIVES: 5, FIRE_INT: 0.22, BULLET_V: 560,
+  // eGFR（腎機能）：VCM・COLを撃っている間は下がり、撃っていない間は回復
+  EGFR_START: 100, EGFR_LOCK: 50, EGFR_UNLOCK: 80, EGFR_WARN: 65, EGFR_DANGER: 55,
+  EGFR_DRAIN: { VCM: 2.5, COL: 3.5 },   // 撃っている間の減り方（/秒）
+  EGFR_REC: 1.5, EGFR_WAVE_BONUS: 5,    // 回復（/秒）、ウェーブが変わるときのボーナス
+  // 血小板（LZD）：ゆっくり減り、もっとゆっくり回復。eGFRが低いと減り方が速い
+  PLT_START: 25, PLT_LOCK: 10, PLT_UNLOCK: 15, PLT_WARN: 18, PLT_ALERT: 14, PLT_DANGER: 11,
+  PLT_DRAIN: 0.35, PLT_REC: 0.1, PLT_WAVE_BONUS: 0.5, PLT_RENAL_MULT: 1.5,
+  // MEPMのタンク（ガス欠）
+  TANK_DRAIN: 10, TANK_REC: 10, TANK_LOW: 20, GAS_LOCK: 2, GAS_RESTART: 25,
   ACCESS_TARGET: 70,
   // ショップ（威力・速射は各5段階。Lv1が初期値、Lv2〜Lv5を購入）
   SHOP_COST: [30, 60, 100, 160],
@@ -458,14 +481,17 @@ const FONT = getComputedStyle(document.documentElement).getPropertyValue('--font
 const DRUGS = [
   { id: 'PCG',  name: 'ベンジルペニシリン', aware: 'Access',  asc: 3,  dmg: 1,   rate: 1,   atk: '直線弾' },
   { id: 'CEZ',  name: 'セファゾリン',       aware: 'Access',  asc: 3,  dmg: 1,   rate: 1,   atk: '長い直線弾（PCGの2倍の長さ・2倍の速さ）' },
-  { id: 'VCM',  name: 'バンコマイシン',     aware: 'Watch',   asc: 5,  dmg: 2,   rate: 2.0, atk: 'ボム（溜めて爆発）' },
+  { id: 'VCM',  name: 'バンコマイシン',     aware: 'Watch',   asc: 5,  dmg: 2,   rate: 2.0, atk: 'ボム（溜めて爆発）', note: '⚠腎毒性：撃つとeGFRが下がります' },
   { id: 'CAZ',  name: 'セフタジジム',       aware: 'Watch',   asc: 6,  dmg: 1,   rate: 1.5, atk: '広角の電波（左右15°）' },
-  { id: 'MEPM', name: 'メロペネム',         aware: 'Watch',   asc: 12, dmg: 1,   rate: 1.8, atk: '広角の電波（左右30°）' },
-  { id: 'COL',  name: 'コリスチン',         aware: 'Reserve', asc: 6,  dmg: 1.5, rate: 1.1, atk: 'レーザー（細長く・PCGの3倍の速さ・貫通）' },
-  { id: 'LZD',  name: 'リネゾリド',         aware: 'Reserve', asc: 6,  dmg: 0.5, rate: 1.6, atk: '散弾（左右15°・画面の半分まで）' }
+  { id: 'MEPM', name: 'メロペネム',         aware: 'Watch',   asc: 12, dmg: 1,   rate: 1.8, atk: '広角の電波（左右30°）', note: '⚠使いすぎるとガス欠になります' },
+  { id: 'COL',  name: 'コリスチン',         aware: 'Reserve', asc: 6,  dmg: 1.5, rate: 1.1, atk: 'レーザー（細長く・PCGの3倍の速さ・貫通）', note: '⚠腎毒性：撃つとeGFRが下がります' },
+  { id: 'LZD',  name: 'リネゾリド',         aware: 'Reserve', asc: 6,  dmg: 0.5, rate: 1.6, atk: '散弾（左右15°・画面の半分まで）', note: '⚠長く使うと血小板が減ります' }
 ];
 const DRUG = Object.fromEntries(DRUGS.map(d => [d.id, d]));
 const SHIPPABLE = ['CEZ', 'VCM', 'MEPM'];
+const RENAL = { VCM: true, COL: true };
+const TOXIC = { VCM: true, COL: true, LZD: true };   // 腎毒性のある薬
+const REDUCE_MOTION = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
 /* ================= 敵マスター ================= */
 const EN = {
@@ -528,7 +554,7 @@ function noise(dur, vol, freq, q, delay) {
   s.buffer = SND.nb; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
   envG(g, t0, vol, dur); s.connect(f); f.connect(g); g.connect(SND.master); s.start(t0, Math.random() * 0.5); s.stop(t0 + dur + 0.03);
 }
-const SFX_GAP = { hit: 45, no: 130, kill: 60, boom: 90, life: 200 };
+const SFX_GAP = { hit: 45, no: 130, kill: 60, boom: 90, life: 200, warn: 900, lock: 500, lockp: 500, sputter: 300 };
 function sfx(name, arg) {
   if (!SND.on || !ac()) return;
   const now = performance.now(), gap = SFX_GAP[name] || 0;
@@ -538,6 +564,7 @@ function sfx(name, arg) {
     case 'fire':
       if (arg === 'VCM') tone(200, 520, 0.3, 'sine', 0.07);                                   // 溜め
       else if (arg === 'CAZ') { tone(500, 1000, 0.2, 'sine', 0.06); tone(750, 1500, 0.2, 'sine', 0.03); }
+      else if (arg === 'MEPM_LOW') { tone(260, 760, 0.28, 'sine', 0.05); }
       else if (arg === 'MEPM') { tone(380, 1300, 0.28, 'sine', 0.06); tone(600, 1700, 0.28, 'triangle', 0.03); }
       else if (arg === 'COL') tone(1800, 380, 0.13, 'sawtooth', 0.035);                       // レーザー
       else if (arg === 'LZD') { noise(0.1, 0.08, 1800, 0.8); tone(170, 80, 0.09, 'square', 0.05); }
@@ -550,6 +577,10 @@ function sfx(name, arg) {
     case 'wave': [523, 659, 784, 1047].forEach((f, i) => { tone(f, f, 0.18, 'triangle', 0.08, i * 0.09); tone(f * 2, f * 2, 0.12, 'sine', 0.02, i * 0.09); }); break;
     case 'chime': tone(880, 880, 0.14, 'sine', 0.07); tone(1320, 1320, 0.2, 'sine', 0.06, 0.1); break;
     case 'life': tone(320, 80, 0.36, 'sawtooth', 0.07); break;
+    case 'warn': tone(220, 220, 0.12, 'square', 0.04); tone(220, 220, 0.12, 'square', 0.04, 0.2); break;                  // 腎機能の警告
+    case 'lock': tone(440, 110, 0.5, 'sawtooth', 0.08); tone(330, 82, 0.5, 'square', 0.04, 0.05); break;                  // 腎障害ロック
+    case 'lockp': tone(660, 180, 0.45, 'triangle', 0.08); noise(0.12, 0.06, 1200, 0.8, 0.05); tone(400, 120, 0.4, 'sine', 0.06, 0.12); break;   // 血小板減少ロック
+    case 'sputter': noise(0.07, 0.09, 700, 0.5); noise(0.09, 0.07, 500, 0.5, 0.13); tone(140, 60, 0.3, 'sawtooth', 0.05, 0.1); break;   // ガス欠
     case 'over': [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.96, 0.22, 'triangle', 0.08, i * 0.16)); break;
   }
 }
@@ -606,7 +637,8 @@ function newGame() {
     enemies: [], bullets: [], parts: [], floats: [],
     spawned: 0, total: 0, spawnT: 0, waveDelay: 0,
     lx: C.W / 2, tx: C.W / 2, cool: 0, pointerFiring: false, pid: null,
-    sel: 'PCG', stop: null, used: new Set(), dot: {},
+    sel: 'PCG', prev: null, stop: null,
+    egfr: C.EGFR_START, renalLock: false, minEgfr: C.EGFR_START, renalLocks: 0, egfrStage: 0, plt: C.PLT_START, pltLock: false, minPlt: C.PLT_START, pltLocks: 0, pltStage: 0, drips: [], tank: 100, gas: false, gasT: 0, gasOuts: 0, reviveT: 0, said: {}, uiT: 0, used: new Set(), dot: {},
     lastDeesc: -99, toastUntil: 0, flash: 0, kills: 0, shake: 0,
     coins: 0, pl: 1, rl: 1, shotSeq: 0, muzzle: 0, fx: [], mode: gameMode, name: playerName(), introWait: false
   };
@@ -623,11 +655,12 @@ function canStop(d, w) {   // 出荷停止にしても、登場済みのどの�
   return Object.keys(EN).every(k => {
     const e = EN[k];
     if (e.unlock > w || !e.eff.length) return true;
-    return e.eff.some(x => x !== d && !lockedAt(x, w));
+    return e.eff.some(x => x !== d && !lockedAt(x, w) && !isRenal(x) && !isPlt(x));
   });
 }
 function startWave(w) {
   G.wave = w;
+  if (w > 1) { G.egfr = Math.min(100, G.egfr + C.EGFR_WAVE_BONUS); G.plt = Math.min(C.PLT_START, G.plt + C.PLT_WAVE_BONUS); }
   G.used = new Set();
   G.spawned = 0;
   G.total = Math.min(5 + w, 26);
@@ -671,7 +704,7 @@ function openIntro(w, kinds, drugs, cb) {
       '</div><div>' + chipsFor(k) + '</div></div></div>';
   }).join('');
   if (drugs.length) h += '<div class="intro" style="display:block"><div class="nm" style="font-size:14px">' + (w === 1 ? '最初に使える抗菌薬' : '新しく使える抗菌薬') + '</div><div>' +
-    drugs.map(d => '<span class="chip ' + d.aware + '">' + d.id + '</span> <span style="font-size:12px">' + d.name + '</span>').join('<br>') + '</div></div>';
+    drugs.map(d => '<span class="chip ' + d.aware + '">' + d.id + '</span> <span style="font-size:12px">' + d.name + (d.note ? '<br><span style="color:var(--bad);font-weight:700">' + d.note + '</span>' : '') + '</span>').join('<br>') + '</div></div>';
   $('introBody').innerHTML = h;
   show('ovIntro', true); $('ovIntro').querySelector('.scroll').scrollTop = 0;
   sfx('chime');
@@ -690,12 +723,24 @@ function firstAvailable() {
 function isStopped(id) { return !!(G && G.stop && G.stop.drug === id); }
 function lockedAt(id, w) { return !!G && G.mode === 'beginner' && w < DRUG_UNLOCK[id]; }
 function isLocked(id) { return !!G && lockedAt(id, G.wave); }
-function isBlocked(id) { return isStopped(id) || isLocked(id); }
+function isRenal(id) { return !!(G && G.renalLock && RENAL[id]); }
+function isPlt(id) { return !!(G && G.pltLock && id === 'LZD'); }
+function pltVisible() { return !!G && (G.mode !== 'beginner' || G.wave >= DRUG_UNLOCK.LZD); }
+function drugRisky(d) { return (RENAL[d] && (G.renalLock || G.egfr < C.EGFR_WARN)) || (d === 'LZD' && (G.pltLock || G.plt < C.PLT_ALERT)); }
+function isGas(id) { return !!(G && G.gas && id === 'MEPM'); }
+function usableNow(id) { return !isStopped(id) && !isLocked(id) && !isRenal(id) && !isPlt(id); }
+function isBlocked(id) { return isStopped(id) || isLocked(id) || isRenal(id) || isPlt(id) || isGas(id); }
+function fallbackDrug() { return (G.prev && !isBlocked(G.prev)) ? G.prev : firstAvailable(); }
+function renalVisible() { return !!G && (G.mode !== 'beginner' || G.wave >= DRUG_UNLOCK.VCM); }
 
 /* ================= 敵の生成 ================= */
 function pickKind() {
   if (G.wave >= C.VIRUS_FROM && G.enemies.filter(e => e.kind === 'virus').length < 2 && Math.random() < C.VIRUS_RATE) return 'virus';
-  const ks = Object.keys(EN).filter(k => k !== 'virus' && EN[k].unlock <= G.wave);
+  let ks = Object.keys(EN).filter(k => k !== 'virus' && EN[k].unlock <= G.wave);
+  const ok = k => EN[k].eff.some(d => usableNow(d));
+  const safe = k => EN[k].eff.some(d => usableNow(d) && !drugRisky(d));   // 腎機能・血小板が危ないときは、毒性のある薬しか効かない敵を出さない
+  const ks2 = ks.filter(safe);
+  if (ks2.length) ks = ks2; else { const ks3 = ks.filter(safe); ks = ks3.length ? ks3 : ['pneumo']; }
   const ws = ks.map(k => EN[k].unlock === G.wave ? 3 : 1);
   let r = Math.random() * ws.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ks.length; i++) { r -= ws[i]; if (r <= 0) return ks[i]; }
@@ -790,18 +835,35 @@ function buildDrugs() {
   }
   if (!G) return;
   [...box.children].forEach(b => {
-    const id = b.dataset.id, st = isStopped(id), lk = isLocked(id);
-    b.classList.toggle('sel', G.sel === id && !st && !lk);
+    const id = b.dataset.id, st = isStopped(id), lk = isLocked(id), rn = isRenal(id) || isPlt(id), gs = isGas(id);
+    const bad = st || lk || rn || gs;
+    const dang = (RENAL[id] && renalVisible() && G.egfr < C.EGFR_DANGER) || (id === 'LZD' && pltVisible() && G.plt < C.PLT_DANGER);
+    b.classList.toggle('sel', G.sel === id && !bad);
     b.classList.toggle('stopped', st);
     b.classList.toggle('locked', lk && !st);
-    b.classList.toggle('isnew', G.mode === 'beginner' && !st && !lk && G.wave > 1 && DRUG_UNLOCK[id] === G.wave);
-    b.querySelector('.sub').textContent = st ? '出荷停止' : (lk ? '🔒W' + DRUG_UNLOCK[id] : (b.classList.contains('isnew') ? 'NEW' : ''));
+    b.classList.toggle('renal', rn && !st && !lk);
+    b.classList.toggle('gas', gs && !st && !lk);
+    b.classList.toggle('warn', !!dang && !bad);
+    b.classList.toggle('isnew', G.mode === 'beginner' && !bad && G.wave > 1 && DRUG_UNLOCK[id] === G.wave);
+    if (id === 'MEPM') {
+      b.classList.add('fuel'); b.style.setProperty('--fuel', Math.round(G.tank) + '%');
+      b.classList.toggle('low', !bad && G.tank < C.TANK_LOW);
+    }
+    let sub = '';
+    if (st) sub = '出荷停止';
+    else if (lk) sub = '🔒W' + DRUG_UNLOCK[id];
+    else if (rn) sub = isPlt(id) ? '血小板↓' : '腎障害';
+    else if (gs) sub = '⛽ガス欠';
+    else if (dang) sub = id === 'LZD' ? '⚠血小板' : '⚠腎';
+    else if (id === 'MEPM' && G.tank < 99.5) sub = Math.round(G.tank) + '%';
+    else if (b.classList.contains('isnew')) sub = 'NEW';
+    b.querySelector('.sub').textContent = sub;
     b.disabled = false;
-    b.setAttribute('aria-disabled', st ? 'true' : 'false');
+    b.setAttribute('aria-disabled', bad ? 'true' : 'false');
   });
   updateSelInfo();
 }
-function selectDrug(id) { if (!G || isBlocked(id)) return; G.sel = id; buildDrugs(); }
+function selectDrug(id) { if (!G || isBlocked(id)) return; if (G.sel !== id) G.prev = G.sel; G.sel = id; buildDrugs(); }
 function updateSelInfo() {
   if (!G) return;
   const d = DRUG[G.sel];
@@ -848,7 +910,7 @@ const awCol = id => AW_COL[DRUG[id].aware];
 
 function fire() {
   const id = G.sel;
-  if (isBlocked(id)) { selectDrug(firstAvailable()); return; }
+  if (isBlocked(id)) { selectDrug(fallbackDrug()); return; }
   const d = DRUG[id], sid = ++G.shotSeq, ox = G.lx, oy = LAUNCH_Y - 44;
   const dmg = d.dmg * C.POWER[G.pl - 1];
   const base = { drug: id, dmg, sid };
@@ -861,7 +923,7 @@ function fire() {
   } else if (id === 'CAZ') {          // 広角の電波
     G.bullets.push({ ...base, type: 'wave', x: ox, y: oy, R: 14, v: 330, half: 0.2618, maxR: 540, hit: new Set() });
   } else if (id === 'MEPM') {         // さらに広角の電波
-    G.bullets.push({ ...base, type: 'wave', x: ox, y: oy, R: 14, v: 300, half: 0.5236, maxR: 520, hit: new Set() });
+    G.bullets.push({ ...base, type: 'wave', x: ox, y: oy, R: 14, v: 300, half: 0.5236, maxR: 520, hit: new Set(), weak: G.tank < C.TANK_LOW });
   } else if (id === 'COL') {          // レーザー：細長く貫通
     G.bullets.push({ ...base, type: 'bolt', x: ox, y: oy - 30, vy: -C.BULLET_V * 3, len: 140 * (1 + 0.15 * (G.pl - 1)), hit: new Set() });
   } else if (id === 'LZD') {          // 散弾：左右15°、画面の半分まで
@@ -870,7 +932,7 @@ function fire() {
       G.bullets.push({ ...base, type: 'pellet', x: ox, y: oy, vx: Math.sin(a) * sp, vy: -Math.cos(a) * sp, life: C.LZD_RANGE / sp });
     }
   }
-  G.muzzle = 0.09; sfx('fire', id);
+  G.muzzle = 0.09; sfx('fire', id === 'MEPM' && G.tank < C.TANK_LOW ? 'MEPM_LOW' : id);
   if (!G.used.has(id)) { G.used.add(id); G.dot[id] = (G.dot[id] || 0) + 1; updateMeter(); }   // 1ウェーブ内で使った薬 = 1 DOT
 }
 
@@ -937,6 +999,66 @@ function doRest() {
 }
 $('restBtn').addEventListener('pointerdown', ev => { ev.preventDefault(); ev.stopPropagation(); doRest(); });
 
+/* ================= eGFR・MEPMタンク ================= */
+function updateBody(dt, firing) {
+  const sel = G.sel, using = firing && !isBlocked(sel);
+  // eGFR：腎毒性の薬を撃っている間は下がる。それ以外は回復
+  if (using && C.EGFR_DRAIN[sel]) G.egfr -= C.EGFR_DRAIN[sel] * dt;
+  else G.egfr += C.EGFR_REC * dt;
+  G.egfr = clamp(G.egfr, 0, 100); G.minEgfr = Math.min(G.minEgfr, G.egfr);
+  const stage = G.renalLock ? 4 : G.egfr < C.EGFR_DANGER ? 3 : G.egfr < C.EGFR_WARN ? 2 : G.egfr < C.EGFR_UNLOCK ? 1 : 0;
+  if (!G.renalLock && G.egfr < C.EGFR_LOCK) {
+    G.renalLock = true; G.renalLocks++; G.flash = 0.45; if (!REDUCE_MOTION) G.shake = 0.3;
+    sfx('lock'); banner('腎障害！', 'VCM・COLは使えません（eGFR ' + C.EGFR_UNLOCK + 'で回復）');
+    if (RENAL[G.sel]) selectDrug(fallbackDrug()); else buildDrugs();
+    if (!G.said.renal) { G.said.renal = 1; showToast('VCM・COLは腎毒性があります。代わりに使える薬があれば、そちらを選びましょう', 'warn', 3.4); }
+  } else if (G.renalLock && G.egfr >= C.EGFR_UNLOCK) {
+    G.renalLock = false; sfx('chime'); banner('腎機能が回復しました', 'VCM・COLが使えます'); buildDrugs();
+  } else if (stage !== G.egfrStage) {
+    if (stage > G.egfrStage && stage === 1) showToast('腎機能が低下しています（eGFR ' + Math.round(G.egfr) + '）', 'warn', 2.2);
+    if (stage > G.egfrStage && stage >= 2 && stage < 4) sfx('warn');
+  }
+  G.egfrStage = stage;
+  // MEPM：撃っている間はタンクが減り、空になるとガス欠。撃っていない間は回復
+  if (G.gas) {
+    G.gasT -= dt; G.tank = C.GAS_RESTART * (1 - Math.max(0, G.gasT) / C.GAS_LOCK);
+    if (G.gasT <= 0) { G.gas = false; G.tank = C.GAS_RESTART; G.reviveT = 0.7; sfx('chime'); const b = document.querySelector('.drug[data-id="MEPM"]'); if (b) { b.classList.remove('revive'); void b.offsetWidth; b.classList.add('revive'); } buildDrugs(); }
+  } else {
+    if (using && sel === 'MEPM') G.tank -= C.TANK_DRAIN * dt; else G.tank += C.TANK_REC * dt;
+    G.tank = clamp(G.tank, 0, 100);
+    if (G.tank <= 0) {
+      G.gas = true; G.gasT = C.GAS_LOCK; G.gasOuts++; sfx('sputter'); G.shake = REDUCE_MOTION ? 0 : 0.12;
+      floatText(G.lx, LAUNCH_Y - 70, 'ガス欠！', '#ffb74d');
+      for (let i = 0; i < 10; i++) G.parts.push({ x: G.lx + rnd(-8, 8), y: LAUNCH_Y - 44, vx: rnd(-30, 30), vy: rnd(-90, -30), life: rnd(0.5, 0.9), t: 0, col: 'rgba(170,175,190,.8)', r: rnd(3, 6) });
+      if (G.sel === 'MEPM') selectDrug(fallbackDrug()); else buildDrugs();
+      if (!G.said.gas) { G.said.gas = 1; showToast('メロペネムなどのカルバペネムは、乱用すると耐性菌や供給不足を招きます', 'warn', 3.4); }
+    }
+  }
+  // 血小板（LZD）：撃っている間はゆっくり減り、撃っていない間はもっとゆっくり回復
+  if (using && sel === 'LZD') {
+    const renalSlow = G.egfr < C.EGFR_UNLOCK;
+    G.plt -= C.PLT_DRAIN * (renalSlow ? C.PLT_RENAL_MULT : 1) * dt;
+    if (renalSlow && !G.said.syn) { G.said.syn = 1; showToast('腎機能が低いと、リネゾリドは血小板減少が出やすくなります', 'warn', 3.2); }
+  } else G.plt += C.PLT_REC * dt;
+  G.plt = clamp(G.plt, 0, C.PLT_START); G.minPlt = Math.min(G.minPlt, G.plt);
+  const ps = G.pltLock ? 4 : G.plt < C.PLT_DANGER ? 3 : G.plt < C.PLT_ALERT ? 2 : G.plt < C.PLT_WARN ? 1 : 0;
+  if (!G.pltLock && G.plt < C.PLT_LOCK) {
+    G.pltLock = true; G.pltLocks++; G.flash = 0.45; if (!REDUCE_MOTION) { G.shake = 0.3; for (let i = 0; i < 5; i++) G.drips.push({ x: rnd(20, C.W - 20), y: -6 - rnd(0, 40), vy: rnd(70, 110), life: rnd(1.3, 2.0), t: 0, r: rnd(3, 5) }); }
+    sfx('lockp'); banner('血小板減少！', 'LZDを休薬します（PLT ' + C.PLT_UNLOCK + 'で回復）');
+    if (G.sel === 'LZD') selectDrug(fallbackDrug()); else buildDrugs();
+    if (!G.said.plt) { G.said.plt = 1; showToast('リネゾリドは長く使うと血小板が減ります。必要最小限の期間にしましょう', 'warn', 3.4); }
+  } else if (G.pltLock && G.plt >= C.PLT_UNLOCK) {
+    G.pltLock = false; sfx('chime'); banner('血小板が回復しました', 'LZDが使えます'); buildDrugs();
+  } else if (ps !== G.pltStage) {
+    if (ps > G.pltStage && ps === 1) showToast('血小板が減っています（PLT ' + G.plt.toFixed(1) + '）', 'warn', 2.2);
+    if (ps > G.pltStage && ps >= 2 && ps < 4) sfx('warn');
+  }
+  G.pltStage = ps;
+  for (let i = G.drips.length - 1; i >= 0; i--) { const d = G.drips[i]; d.t += dt; d.y += d.vy * dt; if (d.t > d.life) G.drips.splice(i, 1); }
+  if (G.reviveT > 0) G.reviveT -= dt;
+  G.uiT -= dt; if (G.uiT <= 0) { G.uiT = 0.1; buildDrugs(); }
+}
+
 /* ================= 更新 ================= */
 function update(dt) {
   G.t += dt;
@@ -944,7 +1066,9 @@ function update(dt) {
   if (k) G.tx = clamp(G.tx + k * 340 * dt, 22, C.W - 22);
   G.lx += (G.tx - G.lx) * Math.min(1, dt * 18);
   G.cool -= dt;
-  if ((G.pointerFiring || keys.space) && G.cool <= 0) { fire(); G.cool = C.FIRE_INT * DRUG[G.sel].rate * C.RATE[G.rl - 1]; }
+  const firingNow = (G.pointerFiring || keys.space);
+  if (firingNow && G.cool <= 0) { fire(); G.cool = C.FIRE_INT * DRUG[G.sel].rate * C.RATE[G.rl - 1]; }
+  updateBody(dt, firingNow);
 
   // 出現
   if (G.waveDelay > 0) G.waveDelay -= dt;
@@ -1097,7 +1221,8 @@ function drawBg() {
 function drawLauncher() {
   const d = DRUG[G.sel], col = AW_COL[d.aware], dk = theme === 'dark', k = cv.width / C.W;
   const firing = G.pointerFiring || keys.space, t = G.t, pulse = 0.5 + 0.5 * Math.sin(t * 3.2);
-  const lit = 0.6 + 0.25 * pulse + (firing ? 0.3 : 0);
+  let lit = 0.6 + 0.25 * pulse + (firing ? 0.3 : 0);
+  if (G.sel === 'MEPM' || G.gas) { if (G.gas) lit = 0.12; else if (G.tank < C.TANK_LOW) lit *= 0.35 + 0.65 * (G.tank / C.TANK_LOW); }
   const metal = dk ? ['#43547f', '#1c2744'] : ['#cfd9ee', '#9fb0d2'];
   const body = dk ? ['#f4f8ff', '#aebcdc', '#66779f'] : ['#ffffff', '#d6e0f2', '#9aabcf'];
   const edge = dk ? 'rgba(0,0,0,.55)' : 'rgba(30,50,100,.40)';
@@ -1186,7 +1311,7 @@ function drawProjectiles() {
       ctx.strokeStyle = '#cfd8dc'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(b.x + r * 0.5, b.y - r * 0.8); ctx.lineTo(b.x + r * 0.95, b.y - r * 1.35); ctx.stroke();
       ctx.fillStyle = Math.sin(b.age * 40) > 0 ? '#ffe27a' : '#ff9a3c'; ctx.beginPath(); ctx.arc(b.x + r * 0.95, b.y - r * 1.4, 2.5 + 2 * a, 0, 6.28); ctx.fill();
     } else if (b.type === 'wave') {
-      const fade = Math.max(0, 1 - Math.max(0, b.R - b.maxR * 0.7) / (b.maxR * 0.3));
+      const fade = Math.max(0, 1 - Math.max(0, b.R - b.maxR * 0.7) / (b.maxR * 0.3)) * (b.weak ? 0.45 + 0.35 * Math.sin(b.R * 0.5) : 1);
       ctx.lineCap = 'round';
       for (let k = 0; k < 3; k++) {
         const R2 = b.R - k * 16; if (R2 < 4) continue;
@@ -1275,7 +1400,79 @@ function draw() {
   });
   ctx.globalAlpha = 1;
   if (G.flash > 0) { ctx.fillStyle = 'rgba(255,60,60,' + (G.flash * 1.2) + ')'; ctx.fillRect(0, 0, C.W, C.H); }
+  drawRenal();
   ctx.restore();
+}
+function kidney(x, y, s, col) {   // 腎臓（そら豆形）
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  ctx.beginPath(); ctx.moveTo(-3, -8); ctx.bezierCurveTo(-11, -9, -12, 6, -5, 9); ctx.bezierCurveTo(-1, 11, 1, 6, -2, 3); ctx.bezierCurveTo(-4, 0, 0, -3, 6, -2);
+  ctx.bezierCurveTo(11, -1, 9, -9, -3, -8); ctx.closePath();
+  ctx.fillStyle = col; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1.3; ctx.fill(); ctx.stroke(); ctx.restore();
+}
+const PETE = (() => { const a = []; let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 44; i++) { const edge = Math.floor(r() * 4), u = r(), v = r() * 46 + 6; a.push({ x: edge === 0 ? v : edge === 1 ? C.W - v : u * C.W, y: edge === 2 ? v : edge === 3 ? C.H - v - 20 : u * C.H, r: 1.4 + r() * 2.4 }); }
+  return a; })();
+function pltIcon(x, y, s, col) {   // 血小板（小さな丸の集まり）
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.fillStyle = col; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1;
+  [[-4, 2, 3.3], [3.5, 3, 3.6], [0, -4, 3.2]].forEach(([a, b, r]) => { ctx.beginPath(); ctx.arc(a, b, r, 0, 6.28); ctx.fill(); ctx.stroke(); }); ctx.restore();
+}
+function gauge(x, y0, h, w, frac, col, ticks, icon, label, sub, shakeX, lockTxt) {
+  ctx.save(); ctx.translate(shakeX, 0);
+  ctx.fillStyle = 'rgba(8,14,30,.55)'; rr(x - 2, y0 - 2, w + 4, h + 4, 5); ctx.fill();
+  const fh = h * clamp(frac, 0, 1); ctx.fillStyle = col; rr(x, y0 + h - fh, w, fh, 4); ctx.fill();
+  ticks.forEach(([f, s]) => {
+    const yy = y0 + h - h * f;
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x - 4, yy); ctx.lineTo(x + w + 1, yy); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = '700 8px ' + FONT; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(s, x - 6, yy);
+  });
+  icon(x + w / 2, y0 - 18);
+  ctx.fillStyle = '#fff'; ctx.font = '800 10px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,14,30,.9)';
+  ctx.strokeText(label, x + w / 2, y0 + h + 14); ctx.fillText(label, x + w / 2, y0 + h + 14);
+  ctx.font = '700 7px ' + FONT; ctx.strokeText(sub, x + w / 2, y0 + h + 23); ctx.fillText(sub, x + w / 2, y0 + h + 23);
+  if (lockTxt) { ctx.font = '800 8px ' + FONT; ctx.fillStyle = '#7dd3fc'; ctx.strokeText('回復中', x + w / 2, y0 + h + 33); ctx.fillText('回復中', x + w / 2, y0 + h + 33); }
+  ctx.restore();
+}
+function drawRenal() {
+  const rv = renalVisible(), pv = pltVisible(), tt = G.t;
+  if (!rv && !pv) return;
+  // ふちの赤い脈動（eGFR）
+  const stage = rv ? G.egfrStage : 0;
+  if (stage >= 2) {
+    const period = stage === 3 ? 0.6 : stage === 4 ? 1.6 : 1.2;
+    const k = REDUCE_MOTION ? 0.5 : 0.5 + 0.5 * Math.sin(tt * Math.PI * 2 / period);
+    const a = (stage === 3 ? 0.16 + 0.26 * k : stage === 4 ? 0.10 + 0.12 * k : 0.07 + 0.17 * k);
+    const g = ctx.createRadialGradient(C.W / 2, C.H / 2, C.W * 0.42, C.W / 2, C.H / 2, C.H * 0.72);
+    g.addColorStop(0, 'rgba(255,40,40,0)'); g.addColorStop(1, 'rgba(255,40,40,' + a + ')');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, C.W, C.H);
+  }
+  // 点状出血（血小板）：画面のふちに赤い斑点
+  const ps = pv ? G.pltStage : 0;
+  if (ps >= 2) {
+    const n = ps === 2 ? 9 : ps === 3 ? 24 : 44, al = ps === 2 ? 0.45 : ps === 3 ? 0.65 : 0.8;
+    for (let i = 0; i < n; i++) {
+      const p = PETE[i];
+      ctx.fillStyle = 'rgba(170,15,35,' + (al * 0.35) + ')'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 1.9, 0, 6.28); ctx.fill();
+      ctx.fillStyle = 'rgba(190,20,40,' + al + ')'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.28); ctx.fill();
+    }
+  }
+  G.drips.forEach(d => {   // ロックの瞬間のしずく
+    ctx.globalAlpha = Math.max(0, 1 - d.t / d.life); ctx.fillStyle = '#c1121f';
+    ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(d.x - d.r * 0.8, d.y - d.r * 0.3); ctx.lineTo(d.x, d.y - d.r * 4.2); ctx.lineTo(d.x + d.r * 0.8, d.y - d.r * 0.3); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+  // 縦ゲージ（右はし）：eGFR と PLT
+  const y0 = 120, h = 230, w = 8;
+  if (rv) {
+    const e = G.egfr, lock = G.renalLock;
+    const col = lock ? '#38bdf8' : e >= C.EGFR_UNLOCK ? '#22c55e' : e >= C.EGFR_LOCK ? '#f59e0b' : '#ef4444';
+    gauge(C.W - 14, y0, h, w, e / 100, col, [[C.EGFR_LOCK / 100, '50'], [C.EGFR_UNLOCK / 100, '80']], (x, y) => kidney(x, y, 1.45, col), String(Math.round(e)), 'eGFR', (stage === 3 && !REDUCE_MOTION) ? rnd(-1, 1) : 0, lock);
+  }
+  if (pv) {
+    const p = G.plt, lock = G.pltLock;
+    const col = lock ? '#38bdf8' : p >= C.PLT_WARN ? '#f472b6' : p >= C.PLT_DANGER ? '#f59e0b' : '#ef4444';
+    gauge(C.W - 42, y0, h, w, p / C.PLT_START, col, [[C.PLT_LOCK / C.PLT_START, '10'], [C.PLT_UNLOCK / C.PLT_START, '15']], (x, y) => pltIcon(x, y, 1.2, col), p.toFixed(1), 'PLT', (ps === 3 && !REDUCE_MOTION) ? rnd(-1, 1) : 0, lock);
+  }
 }
 
 /* ================= ループ・サイズ ================= */
@@ -1331,7 +1528,9 @@ function gameOver() {
   $('rWave').textContent = 'WAVE ' + G.wave + ' まで到達（' + (G.mode === 'beginner' ? 'ビギナー' : '経験者') + '）';
   $('rScore').textContent = 'SCORE ' + G.score + '（撃退 ' + G.kills + '）';
   $('rSummary').innerHTML = '<h2 style="font-size:14px">最終のAWaRe比率とDASC</h2><div class="mbar" style="height:20px">' + barHtml(R) + '</div>' +
-    '<div class="nums"><div><b>' + R.dasc + '</b><span>DASC</span></div><div><b>' + R.total + '</b><span>総DOT</span></div><div><b>' + (R.ratio === null ? '—' : R.ratio.toFixed(1)) + '</b><span>DASC/DOT</span></div></div>';
+    '<div class="nums"><div><b>' + R.dasc + '</b><span>DASC</span></div><div><b>' + R.total + '</b><span>総DOT</span></div><div><b>' + (R.ratio === null ? '—' : R.ratio.toFixed(1)) + '</b><span>DASC/DOT</span></div></div>' +
+    '<div class="nums"><div><b>' + Math.round(G.minEgfr) + '</b><span>最低eGFR</span></div><div><b>' + G.renalLocks + '</b><span>腎障害ロック</span></div><div><b>' + G.gasOuts + '</b><span>MEPMガス欠</span></div></div>' +
+    '<div class="nums"><div><b>' + G.minPlt.toFixed(1) + '</b><span>最低PLT</span></div><div><b>' + G.pltLocks + '</b><span>血小板ロック</span></div></div>';
   recordResult(R);
   show('ovResult', true);
   $('ovResult').querySelector('.scroll').scrollTop = 0;
@@ -1451,7 +1650,7 @@ function applyTheme(t) {
 }
 function buildWeapons() {
   $('weapons').innerHTML = DRUGS.map(d => '<div class="wp"><span class="chip ' + d.aware + '">' + d.id + '</span><div><div class="nm">' + d.name +
-    '</div><div class="meta">' + AWS[d.aware] + '（' + d.aware + '）・ASC ' + d.asc + '<br>' + d.atk + '</div></div></div>').join('');
+    '</div><div class="meta">' + AWS[d.aware] + '（' + d.aware + '）・ASC ' + d.asc + '<br>' + d.atk + (d.note ? '<br><span style="color:var(--bad);font-weight:700">' + d.note + '</span>' : '') + '</div></div></div>').join('');
 }
 function buildLinks() {
   $('links').innerHTML = LINKS.map(l => '<a class="lk" href="' + l.url + '" target="_blank" rel="noopener noreferrer"><div class="nm">' + l.name + ' ↗</div><div class="meta">' + l.desc + '</div><div class="meta">' + l.url + '</div></a>').join('');
