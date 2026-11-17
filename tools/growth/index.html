@@ -56,6 +56,15 @@
   code { background:#eef1f5; padding:0 4px; border-radius:3px; font-size:14px; }
   footer { max-width:1180px; margin:0 auto 30px; padding:0 16px; font-size:13px; color:#222; }
   footer p { border-top:1px solid var(--line); padding-top:10px; margin:0; }
+
+  nav.tabs { background:#fff; border-bottom:1px solid var(--line); padding:0 20px; display:flex; gap:4px; position:sticky; top:0; z-index:5; }
+  nav.tabs button { border:none; border-bottom:4px solid transparent; border-radius:0; background:none; font-size:16px; padding:10px 18px; }
+  nav.tabs button:hover { background:#eef4fa; }
+  nav.tabs button[aria-selected="true"] { border-bottom-color:var(--accent); font-weight:bold; }
+  .tabpanel[hidden] { display:none; }
+  .steps li { margin-bottom:6px; }
+  .links li { margin-bottom:8px; }
+  .links a { color:#0b5394; }
 </style>
 </head>
 <body>
@@ -63,8 +72,14 @@
   <h1>細菌増殖曲線ツール</h1>
   <p>コロニー計数からCFU/mLを計算し、増殖曲線と倍加時間（分・95%信頼区間）を求めます。データはブラウザ内だけで処理され、外部には送信されません。</p>
 </header>
+<nav class="tabs" role="tablist">
+  <button type="button" role="tab" id="tb-input" aria-selected="true" aria-controls="tab-input" data-tab="tab-input">入力・表示</button>
+  <button type="button" role="tab" id="tb-help" aria-selected="false" aria-controls="tab-help" data-tab="tab-help">操作方法・手法解説</button>
+  <button type="button" role="tab" id="tb-links" aria-selected="false" aria-controls="tab-links" data-tab="tab-links">リンク</button>
+</nav>
 
 <main>
+  <div id="tab-input" class="tabpanel" role="tabpanel" aria-labelledby="tb-input">
   <!-- 実験情報 -->
   <section>
     <h2>実験情報（任意）</h2>
@@ -171,7 +186,42 @@
     <h2>倍加時間の推定（分）</h2>
     <div class="bar"><button type="button" id="btn-rescsv">推定結果をCSV保存</button></div>
     <div id="results"></div>
-    <details>
+  </section>
+
+  <section>
+    <h2>集計表（シリーズ × 時間）</h2>
+    <div class="bar"><button type="button" id="btn-aggcsv">集計表をCSV保存</button></div>
+    <div id="agg"></div>
+  </section>
+  </div>
+
+  <div id="tab-help" class="tabpanel" role="tabpanel" aria-labelledby="tb-help" hidden>
+  <section>
+    <h2>操作方法</h2>
+    <ol class="steps">
+      <li><b>「入力・表示」タブ</b>で、必要なら実験情報（実験名・実験日・菌名・培養条件・備考）を入力します。すべて任意です。</li>
+      <li>データを入れます。①表に直接入力（既定10行、「＋」ボタンで増やせます）、②Excelから複数セルをコピーして貼り付け、③CSVを読み込む（ボタンまたはドラッグ&amp;ドロップ）、のいずれかです。列は「シリーズ／採取時間(h)／接種量(µL)／希釈倍率／計数」です。</li>
+      <li>希釈倍率の入力形式（指数 n か倍率そのものか）を選びます。接種量が全行同じなら「接種量の既定値」に入れると、空欄の行に自動適用されます。</li>
+      <li>入力内容は自動で計算され、グラフと表が更新されます。入力に問題がある行は赤く表示され、理由が表の下に出ます。</li>
+      <li>「グラフ・解析の設定」で、X軸の目盛間隔（最小0.5 h、既定2 h）、軸範囲、平均の取り方、増殖モデル、窓法の時点数、誤差棒・個別点の表示を変更できます。</li>
+      <li>グラフはSVG/PNGで、集計表と推定結果はCSVで保存できます。入力内容もCSVで保存でき、次回そのまま読み込めます。</li>
+    </ol>
+    <h3>CSVの書式</h3>
+    <ul>
+      <li>1行目に見出し（<code>シリーズ,採取時間(h),接種量(µL),希釈倍率(10^n),計数</code>）を置きます。見出しがなければ、この順番の列として読みます。</li>
+      <li>見出しの希釈倍率に「10^n」または「指数」と入っていれば指数、「(倍)」と入っていれば倍率として、入力形式を自動設定します。</li>
+      <li><code>#実験名,○○</code> のように行頭を # にすると実験情報を読み込めます（テンプレートCSV参照）。</li>
+      <li>同じシリーズ・同じ時間の行は反復として扱います。シリーズが空欄の行は「(未指定)」になります。</li>
+    </ul>
+  </section>
+  <section>
+    <h2>手法解説</h2>
+    <h3>CFU/mL の計算</h3>
+    <p>CFU/mL = (1000 ÷ 接種量 µL) × 希釈倍率 × 計数。例: 50 µL、10²、35個 → (1000/50) × 100 × 35 = 70,000 CFU/mL。</p>
+    <h3>平均とSD</h3>
+    <p>同一シリーズ・同一時間の反復から、算術平均と標本SD（n−1）を計算します（CFU/mL単位）。幾何平均を選ぶと、log10値の平均とSDを用い、誤差棒は 10^(平均 ± SD) で描きます。対数軸のため、算術平均の誤差棒の下端が0以下になるときは軸の下端まで描きます。</p>
+    
+    <details open>
       <summary>推定方法と注意点</summary>
       <ul>
         <li><b>窓法</b>: 連続するk時点（既定3時点）の範囲で ln(CFU/mL) を時間に対して直線回帰し、傾きが最大の窓を指数増殖期とみなします。lag期と定常期を自動的に除外する方法です。倍加時間 = ln2 ÷ 傾き、95%信頼区間は傾きのt分布（自由度 = 観測数 − 2）から求めます。最大の窓を選ぶため、やや速めに偏る可能性があります。</li>
@@ -182,12 +232,19 @@
       </ul>
     </details>
   </section>
+  </div>
 
+  <div id="tab-links" class="tabpanel" role="tabpanel" aria-labelledby="tb-links" hidden>
   <section>
-    <h2>集計表（シリーズ × 時間）</h2>
-    <div class="bar"><button type="button" id="btn-aggcsv">集計表をCSV保存</button></div>
-    <div id="agg"></div>
+    <h2>参考文献（使用モデル）</h2>
+    <ul class="links" id="reflinks"></ul>
   </section>
+  <section>
+    <h2>関連リンク</h2>
+    <ul class="links" id="mylinks"></ul>
+    <p class="hint">関連リンクは、ファイル内の <code>MY_LINKS</code>（スクリプト冒頭付近）に <code>{ title: '名前', url: 'https://…' }</code> を追加すると、この欄に表示されます。</p>
+  </section>
+  </div>
 </main>
 
 <footer>
@@ -1219,6 +1276,33 @@
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
+<script>
+(function(){
+  var MY_LINKS = [
+    // { title: '関連サイトの名前', url: 'https://example.com/' },
+  ];
+  var REFS = [
+    { title: 'Baranyi J, Roberts TA (1994) A dynamic approach to predicting bacterial growth in food. Int J Food Microbiol 23:277–294', url: 'https://doi.org/10.1016/0168-1605(94)90157-0' },
+    { title: 'Zwietering MH, et al. (1990) Modeling of the bacterial growth curve. Appl Environ Microbiol 56:1875–1881', url: 'https://doi.org/10.1128/aem.56.6.1875-1881.1990' }
+  ];
+  function fill(id, arr, empty){
+    var ul=document.getElementById(id);
+    if(!arr.length){ ul.innerHTML='<li>'+empty+'</li>'; return; }
+    ul.innerHTML=arr.map(function(x){
+      var t=x.title.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      return '<li><a href="'+encodeURI(x.url)+'" target="_blank" rel="noopener noreferrer">'+t+'</a></li>';
+    }).join('');
+  }
+  fill('reflinks', REFS, '（なし）');
+  fill('mylinks', MY_LINKS, '（まだ登録されていません）');
+  var tabs=[].slice.call(document.querySelectorAll('nav.tabs button'));
+  function show(id){
+    tabs.forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.tab===id)); });
+    document.querySelectorAll('.tabpanel').forEach(function(p){ p.hidden = (p.id!==id); });
+    window.scrollTo(0,0);
+  }
+  tabs.forEach(function(b){ b.addEventListener('click', function(){ show(b.dataset.tab); }); });
+})();
+</script>
 </body>
 </html>
-
