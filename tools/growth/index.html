@@ -1,1 +1,1224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>細菌増殖曲線ツール</title>
+<style>
+  :root { --line:#c9ced6; --bg:#f5f7fa; --accent:#0072B2; --bad:#d32f2f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:#000; line-height:1.6;
+    font-family:"BIZ UDPGothic","BIZ UDGothic","Hiragino Sans","Yu Gothic","Meiryo",sans-serif; font-size:16px; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:14px 20px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:2px 0 0; font-size:14px; color:#333; }
+  main { max-width:1180px; margin:0 auto; padding:16px; }
+  section { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px 18px; margin-bottom:16px; }
+  h2 { font-size:18px; margin:0 0 10px; border-left:5px solid var(--accent); padding-left:10px; }
+  h3 { font-size:16px; margin:14px 0 6px; }
+  label { font-size:14px; display:block; }
+  input, select, textarea { font:inherit; font-size:15px; color:#000; border:1px solid #aab2bd; border-radius:5px; padding:4px 7px; background:#fff; }
+  input:focus, select:focus { outline:2px solid #9cc9e6; }
+  .grid { display:grid; gap:10px 14px; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); }
+  .grid label input, .grid label select { width:100%; margin-top:2px; }
+  .wide { grid-column:1/-1; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0; }
+  button, .btn { font:inherit; font-size:14px; border:1px solid #8a94a3; background:#fff; border-radius:6px; padding:5px 12px; cursor:pointer; color:#000; display:inline-block; }
+  button:hover, .btn:hover { background:#eef4fa; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  #drop { border:2px dashed #9aa5b4; border-radius:8px; padding:8px 12px; background:#fafcff; }
+  #drop.over { background:#e3f1fb; border-color:var(--accent); }
+  .hint { font-size:13px; color:#333; margin:2px 0; }
+  .tablewrap { max-height:480px; overflow:auto; border:1px solid var(--line); border-radius:6px; }
+  table.in { border-collapse:collapse; width:100%; }
+  table.in th { position:sticky; top:0; background:#e9eef4; font-size:13px; padding:5px 6px; border-bottom:1px solid var(--line); z-index:1; }
+  table.in td { padding:2px 3px; border-bottom:1px solid #eef0f3; }
+  table.in td.no { width:36px; text-align:right; color:#555; font-size:13px; padding-right:6px; }
+  table.in td.cfu { text-align:right; white-space:nowrap; font-size:14px; padding:0 8px; min-width:120px; }
+  table.in input { width:100%; }
+  table.in input.bad { border-color:var(--bad); background:#fdecea; }
+  button.del { padding:1px 8px; color:#a33; }
+  #msgs ul { margin:6px 0; padding-left:20px; font-size:14px; }
+  #msgs li.err { color:var(--bad); }
+  .chart { margin-top:6px; }
+  .chart svg { max-width:100%; height:auto; border:1px solid #e3e6ea; border-radius:6px; }
+  .empty { color:#444; padding:30px; text-align:center; }
+  table.res { border-collapse:collapse; width:100%; font-size:14.5px; margin-top:6px; }
+  table.res th, table.res td { border:1px solid var(--line); padding:5px 8px; vertical-align:top; }
+  table.res thead th { background:#e9eef4; text-align:center; }
+  table.res tbody th { background:#f4f7fa; text-align:left; white-space:nowrap; }
+  table.res td small { color:#333; }
+  table.res td.na { color:#444; }
+  table.res tr.note td { background:#fff8e1; font-size:13.5px; }
+  details { margin-top:8px; }
+  summary { cursor:pointer; font-weight:bold; }
+  details ul, details ol { margin:6px 0; padding-left:22px; font-size:14.5px; }
+  code { background:#eef1f5; padding:0 4px; border-radius:3px; font-size:14px; }
+  footer { max-width:1180px; margin:0 auto 30px; padding:0 16px; font-size:13px; color:#222; }
+  footer p { border-top:1px solid var(--line); padding-top:10px; margin:0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>細菌増殖曲線ツール</h1>
+  <p>コロニー計数からCFU/mLを計算し、増殖曲線と倍加時間（分・95%信頼区間）を求めます。データはブラウザ内だけで処理され、外部には送信されません。</p>
+</header>
+
+<main>
+  <!-- 実験情報 -->
+  <section>
+    <h2>実験情報（任意）</h2>
+    <div class="grid">
+      <label>実験名<input id="m_name" class="opt" type="text"></label>
+      <label>実験日<input id="m_date" class="opt" type="date"></label>
+      <label>菌名・検体名<input id="m_strain" class="opt" type="text" placeholder="*Pseudomonas aeruginosa* PAO1"></label>
+      <label>培養方法
+        <select id="m_method" class="opt"><option value="">（未指定）</option><option value="静置">静置</option><option value="震盪">震盪</option></select>
+      </label>
+      <label>震盪回転数 (rpm)<input id="m_rpm" class="opt" type="text" inputmode="numeric"></label>
+      <label>温度 (°C)<input id="m_temp" class="opt" type="text" inputmode="decimal"></label>
+      <label>チューブ<input id="m_tube" class="opt" type="text" placeholder="例: 50 mL conical tube"></label>
+      <label>液量 (mL)<input id="m_vol" class="opt" type="text" inputmode="decimal"></label>
+      <label class="wide">備考<input id="m_note" class="opt" type="text"></label>
+    </div>
+    <p class="hint">学名は <code>*Escherichia coli*</code> のように * で囲むと斜体で表示されます（血清型は囲みません。例: <code>*Salmonella* Typhi</code>）。シリーズ名でも同様です。</p>
+  </section>
+
+  <!-- データ入力 -->
+  <section>
+    <h2>データ入力</h2>
+    <div id="drop">
+      <div class="bar" style="margin:0">
+        <label class="btn primary" style="margin:0">CSVを読み込む<input id="file" type="file" accept=".csv,.tsv,.txt,text/csv" hidden></label>
+        <button type="button" id="btn-template">テンプレートCSV</button>
+        <button type="button" id="btn-sample">サンプルデータ（架空）</button>
+        <span class="hint">ここにCSVファイルをドラッグ＆ドロップしてもOKです。UTF-8 / Shift_JIS を自動判別します。</span>
+      </div>
+      <div id="loadmsg" class="hint"></div>
+    </div>
+
+    <div class="bar">
+      <label>希釈倍率の入力形式
+        <select id="dilmode" class="opt">
+          <option value="exp">指数 n（10<sup>n</sup>倍。例: 2 → 100倍）</option>
+          <option value="fold">倍率そのもの（例: 100）</option>
+        </select>
+      </label>
+      <label>接種量の既定値 (µL)
+        <input id="defvol" class="opt" type="text" inputmode="decimal" placeholder="空欄の行に適用" style="width:150px">
+      </label>
+      <span class="hint" style="max-width:520px">CFU/mL = (1000 ÷ 接種量µL) × 希釈倍率 × 計数。例: 50 µL・10²・35個 → (1000/50)×100×35 = 7.0×10⁴ CFU/mL。
+        <code>10^2</code> や <code>10²</code> のような表記は形式にかかわらず100倍として読みます。</span>
+    </div>
+
+    <div class="tablewrap">
+      <table class="in">
+        <thead><tr><th>#</th><th>シリーズ</th><th>採取時間 (h)</th><th>接種量 (µL)</th><th>希釈倍率</th><th>計数 (コロニー数)</th><th>CFU/mL（自動）</th><th></th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <datalist id="serieslist"></datalist>
+    <div class="bar">
+      <button type="button" id="btn-add1">＋ 1行追加</button>
+      <button type="button" id="btn-add10">＋ 10行追加</button>
+      <button type="button" id="btn-clear">全消去</button>
+      <button type="button" id="btn-saveinput">入力をCSV保存</button>
+      <span class="hint">Excelからのコピー＆ペースト（複数セル）にも対応します。同じシリーズ・同じ時間の行は反復として平均とSDを計算します。</span>
+    </div>
+    <div id="msgs"></div>
+  </section>
+
+  <!-- 設定 -->
+  <section>
+    <h2>グラフ・解析の設定</h2>
+    <div class="grid">
+      <label>X軸の目盛間隔 (h)（最小0.5）<input id="xstep" class="opt" type="number" min="0.5" step="0.5" value="2"></label>
+      <label>X軸の最大 (h)（空欄で自動）<input id="xmax" class="opt" type="number" min="0.5" step="0.5"></label>
+      <label>Y軸の下限（10のn乗、空欄で自動）<input id="ymin" class="opt" type="number" step="1"></label>
+      <label>Y軸の上限（10のn乗、空欄で自動）<input id="ymax" class="opt" type="number" step="1"></label>
+      <label>平均の取り方
+        <select id="meantype" class="opt">
+          <option value="arith">算術平均 ± SD（CFU/mL）</option>
+          <option value="geo">幾何平均 ± SD（log10）</option>
+        </select>
+      </label>
+      <label>増殖モデル
+        <select id="model" class="opt">
+          <option value="baranyi">Baranyi–Roberts</option>
+          <option value="gompertz">修正Gompertz (Zwietering)</option>
+        </select>
+      </label>
+      <label>窓法の時点数（3〜8）<input id="wink" class="opt" type="number" min="3" max="8" step="1" value="3"></label>
+      <label style="align-self:end"><input id="showerr" class="opt" type="checkbox" checked style="width:auto"> 誤差棒（SD）を表示</label>
+      <label style="align-self:end"><input id="showpts" class="opt" type="checkbox" checked style="width:auto"> 個別の計数値を薄く表示</label>
+    </div>
+  </section>
+
+  <!-- グラフ -->
+  <section>
+    <h2>① 平均値を直線で結んだ増殖曲線</h2>
+    <div class="bar"><button type="button" id="dl-svg1">SVG保存</button><button type="button" id="dl-png1">PNG保存</button></div>
+    <div id="chart1" class="chart"></div>
+  </section>
+  <section>
+    <h2>② 増殖モデルによる推定曲線（<span id="modelname"></span>）</h2>
+    <div class="bar"><button type="button" id="dl-svg2">SVG保存</button><button type="button" id="dl-png2">PNG保存</button></div>
+    <div id="chart2" class="chart"></div>
+  </section>
+
+  <!-- 結果 -->
+  <section>
+    <h2>倍加時間の推定（分）</h2>
+    <div class="bar"><button type="button" id="btn-rescsv">推定結果をCSV保存</button></div>
+    <div id="results"></div>
+    <details>
+      <summary>推定方法と注意点</summary>
+      <ul>
+        <li><b>窓法</b>: 連続するk時点（既定3時点）の範囲で ln(CFU/mL) を時間に対して直線回帰し、傾きが最大の窓を指数増殖期とみなします。lag期と定常期を自動的に除外する方法です。倍加時間 = ln2 ÷ 傾き、95%信頼区間は傾きのt分布（自由度 = 観測数 − 2）から求めます。最大の窓を選ぶため、やや速めに偏る可能性があります。</li>
+        <li><b>モデルフィット</b>: ln(CFU/mL) に対して、lag（λ）・最大比増殖速度（μ<sub>max</sub>）・定常期（N<sub>max</sub>）を持つモデルを非線形最小二乗法（Levenberg–Marquardt、複数初期値）で当てはめます。倍加時間 = ln2 ÷ μ<sub>max</sub>。95%信頼区間はヤコビアンによる漸近共分散とt分布（自由度 = 観測数 − 4）から求め、倍加時間は逆数変換で区間を得ています。</li>
+        <li>各観測（反復を含む）を独立な観測として当てはめます。反復が同一の試料由来の場合、信頼区間はやや狭く出ます。</li>
+        <li>4時点以上・5観測以上が必要です。定常期や指数増殖期のデータが少ないと、信頼区間が非常に広くなったり算出できなかったりします。指数増殖期に3点以上が入るよう、サンプリング間隔を設計してください。</li>
+        <li>計数0の行は対数に変換できないため、図と推定から除外します。算術平均の誤差棒の下端が0以下になる場合は、軸の下端まで描画します。</li>
+      </ul>
+    </details>
+  </section>
+
+  <section>
+    <h2>集計表（シリーズ × 時間）</h2>
+    <div class="bar"><button type="button" id="btn-aggcsv">集計表をCSV保存</button></div>
+    <div id="agg"></div>
+  </section>
+</main>
+
+<footer>
+  <p>本テキストは AI（Claude, Anthropic）を用いて作成されました。内容には誤りが含まれる可能性があります。医療上の判断には必ず公式の教科書・文献・専門家の指導を参照してください。<br>
+  二次利用・再配布は自己責任のもとで可能です。その際、本注記の保持を推奨します。</p>
+</footer>
+
+<script>
+/* =====================================================================
+ * 細菌増殖曲線ツール  growth.js
+ * 本テキストは AI（Claude, Anthropic）を用いて作成されました。
+ * 内容には誤りが含まれる可能性があります。
+ * ===================================================================== */
+(function (root) {
+  'use strict';
+
+  /* ------------------------------------------------------------------
+   * 1. 数学ユーティリティ
+   * ------------------------------------------------------------------ */
+  function lgamma(x) {
+    const c = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+      -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    let y = x, tmp = x + 5.5;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    let ser = 1.000000000190015;
+    for (let j = 0; j < 6; j++) { y += 1; ser += c[j] / y; }
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+  function betacf(a, b, x) {
+    const MAXIT = 300, EPS = 3e-12, FPMIN = 1e-300;
+    const qab = a + b, qap = a + 1, qam = a - 1;
+    let c = 1, d = 1 - qab * x / qap;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    d = 1 / d;
+    let h = d;
+    for (let m = 1; m <= MAXIT; m++) {
+      const m2 = 2 * m;
+      let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d;
+      const del = d * c;
+      h *= del;
+      if (Math.abs(del - 1) < EPS) break;
+    }
+    return h;
+  }
+  function betai(a, b, x) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    const bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    if (x < (a + 1) / (a + b + 2)) return bt * betacf(a, b, x) / a;
+    return 1 - bt * betacf(b, a, 1 - x) / b;
+  }
+  function tCdf(t, df) {
+    const x = df / (df + t * t);
+    const p = 0.5 * betai(df / 2, 0.5, x);
+    return t > 0 ? 1 - p : p;
+  }
+  /** 両側95%なら p=0.975 */
+  function tQuantile(p, df) {
+    let lo = 0, hi = 2000;
+    for (let i = 0; i < 200; i++) {
+      const mid = (lo + hi) / 2;
+      if (tCdf(mid, df) < p) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  function mean(a) { let s = 0; for (const v of a) s += v; return s / a.length; }
+  function sdSample(a) {
+    if (a.length < 2) return NaN;
+    const m = mean(a);
+    let s = 0;
+    for (const v of a) s += (v - m) * (v - m);
+    return Math.sqrt(s / (a.length - 1));
+  }
+
+  function linreg(xs, ys) {
+    const n = xs.length;
+    const mx = mean(xs), my = mean(ys);
+    let sxx = 0, sxy = 0, syy = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = xs[i] - mx, dy = ys[i] - my;
+      sxx += dx * dx; sxy += dx * dy; syy += dy * dy;
+    }
+    const b = sxy / sxx;
+    const sse = Math.max(syy - b * sxy, 0);
+    const df = n - 2;
+    const s2 = df > 0 ? sse / df : NaN;
+    return { n, mx, my, b, a: my - b * mx, se: Math.sqrt(s2 / sxx), df, sse, r2: syy > 0 ? 1 - sse / syy : NaN };
+  }
+
+  function solve(A, b) {
+    const n = b.length;
+    const M = A.map((r, i) => r.concat([b[i]]));
+    for (let c = 0; c < n; c++) {
+      let piv = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
+      if (!(Math.abs(M[piv][c]) > 1e-300)) return null;
+      const tmp = M[c]; M[c] = M[piv]; M[piv] = tmp;
+      for (let r = c + 1; r < n; r++) {
+        const f = M[r][c] / M[c][c];
+        for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
+      }
+    }
+    const x = new Array(n);
+    for (let i = n - 1; i >= 0; i--) {
+      let s = M[i][n];
+      for (let k = i + 1; k < n; k++) s -= M[i][k] * x[k];
+      x[i] = s / M[i][i];
+    }
+    return x;
+  }
+  function invert(A) {
+    const n = A.length, cols = [];
+    for (let j = 0; j < n; j++) {
+      const e = new Array(n).fill(0); e[j] = 1;
+      const x = solve(A, e);
+      if (!x) return null;
+      cols.push(x);
+    }
+    return A.map((_, i) => cols.map(c => c[i]));
+  }
+
+  /** Levenberg–Marquardt（数値ヤコビアン） */
+  function levmar(resid, q0, maxIter) {
+    maxIter = maxIter || 300;
+    let q = q0.slice(), r = resid(q), sse = r.reduce((s, v) => s + v * v, 0), lambda = 1e-3;
+    const m = q.length;
+    for (let it = 0; it < maxIter; it++) {
+      const J = r.map(() => new Array(m));
+      for (let j = 0; j < m; j++) {
+        const h = 1e-6 * Math.max(Math.abs(q[j]), 1);
+        const qh = q.slice(); qh[j] += h;
+        const rh = resid(qh);
+        for (let i = 0; i < r.length; i++) J[i][j] = (rh[i] - r[i]) / h;
+      }
+      const JTJ = Array.from({ length: m }, () => new Array(m).fill(0));
+      const JTr = new Array(m).fill(0);
+      for (let i = 0; i < r.length; i++) {
+        for (let a = 0; a < m; a++) {
+          JTr[a] += J[i][a] * r[i];
+          for (let b = 0; b < m; b++) JTJ[a][b] += J[i][a] * J[i][b];
+        }
+      }
+      let improved = false, converged = false;
+      for (let tries = 0; tries < 25; tries++) {
+        const A = JTJ.map((row, i) => row.map((v, j) => i === j ? v * (1 + lambda) + 1e-12 : v));
+        const d = solve(A, JTr.map(v => -v));
+        if (d) {
+          const qn = q.map((v, i) => v + d[i]);
+          const rn = resid(qn);
+          const sn = rn.reduce((s, v) => s + v * v, 0);
+          if (isFinite(sn) && sn < sse) {
+            converged = (sse - sn) < 1e-13 * (sse + 1e-300);
+            q = qn; r = rn; sse = sn;
+            lambda = Math.max(lambda / 4, 1e-12);
+            improved = true;
+            break;
+          }
+        }
+        lambda *= 5;
+      }
+      if (!improved || converged) break;
+    }
+    return { q, sse };
+  }
+
+  /* ------------------------------------------------------------------
+   * 2. 増殖モデル（y = ln CFU/mL, t = 時間 h）
+   *    p = [y0, A, mu, lam]   A = ln(Nmax/N0) 相当, mu: 最大比増殖速度(ln/h), lam: lag(h)
+   * ------------------------------------------------------------------ */
+  function baranyi(t, p) {
+    const y0 = p[0], A = p[1], mu = p[2], lam = p[3];
+    const h0 = mu * lam;
+    const e1 = Math.exp(-mu * t), e2 = Math.exp(-h0);
+    const At = t + Math.log(e1 + e2 - e1 * e2) / mu;
+    const x = mu * At;
+    return y0 + x - Math.log(1 + Math.expm1(Math.min(x, 600)) * Math.exp(-A));
+  }
+  function gompertz(t, p) {
+    const y0 = p[0], A = p[1], mu = p[2], lam = p[3];
+    return y0 + A * Math.exp(-Math.exp(mu * Math.E / A * (lam - t) + 1));
+  }
+  const MODELS = { baranyi: baranyi, gompertz: gompertz };
+  const MODEL_LABEL = { baranyi: 'Baranyi–Roberts', gompertz: '修正Gompertz (Zwietering)' };
+
+  function groupMeans(obs) {
+    const m = new Map();
+    obs.forEach(o => {
+      const k = Math.round(o.t * 1e6) / 1e6;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(o.y);
+    });
+    return [...m.entries()].map(([t, ys]) => ({ t, y: mean(ys) })).sort((a, b) => a.t - b.t);
+  }
+
+  /** 連続するk時点の窓で線形回帰し、傾き最大の窓を採用（lag/定常期を除外した指数増殖期の推定） */
+  function windowFit(obs, k) {
+    const times = groupMeans(obs).map(d => d.t);
+    if (times.length < 3) return null;
+    k = Math.max(3, Math.min(k, times.length));
+    let best = null;
+    for (let i = 0; i + k <= times.length; i++) {
+      const t0 = times[i], t1 = times[i + k - 1];
+      const sub = obs.filter(o => o.t >= t0 - 1e-9 && o.t <= t1 + 1e-9);
+      if (sub.length < 3) continue;
+      const r = linreg(sub.map(o => o.t), sub.map(o => o.y));
+      if (!(r.b > 0)) continue;
+      if (!best || r.b > best.b) { best = r; best.t0 = t0; best.t1 = t1; }
+    }
+    if (!best) return null;
+    const mu = best.b;
+    const out = { t0: best.t0, t1: best.t1, n: best.n, r2: best.r2, mu: mu, df: best.df, Td: 60 * Math.LN2 / mu, TdLo: NaN, TdHi: NaN };
+    if (best.df >= 1 && isFinite(best.se)) {
+      const tc = tQuantile(0.975, best.df);
+      const bl = mu - tc * best.se, bu = mu + tc * best.se;
+      out.TdLo = 60 * Math.LN2 / bu;
+      out.TdHi = bl > 0 ? 60 * Math.LN2 / bl : Infinity;
+    }
+    out.intercept = best.a; // ln CFU at t=0 (直線外挿)
+    return out;
+  }
+
+  function fitModel(obs, kind) {
+    const f = MODELS[kind] || baranyi;
+    const n = obs.length;
+    const byT = groupMeans(obs);
+    if (n < 5 || byT.length < 4) return { error: 'モデルフィットには4時点以上・5観測以上が必要です。' };
+    const T = byT[byT.length - 1].t;
+    const y0g = byT[0].y;
+    const ymax = Math.max.apply(null, byT.map(d => d.y));
+    const A0 = Math.max(ymax - y0g, 0.5);
+    const w = windowFit(obs, 3);
+    const mu0 = w ? w.mu : A0 / Math.max(T, 1);
+    let lam0 = 0.1 * T;
+    if (w) {
+      const sub = obs.filter(o => o.t >= w.t0 - 1e-9 && o.t <= w.t1 + 1e-9);
+      const mx = mean(sub.map(o => o.t)), my = mean(sub.map(o => o.y));
+      lam0 = Math.min(Math.max(mx - (my - y0g) / w.mu, 0), 0.8 * T);
+    }
+    const toP = q => [q[0], Math.exp(Math.min(q[1], Math.log(40))), Math.exp(Math.min(Math.max(q[2], -8), 3)), q[3] * q[3]];
+    const resid = q => {
+      const p = toP(q);
+      return obs.map(o => { const v = f(o.t, p) - o.y; return isFinite(v) ? v : 1e3; });
+    };
+    let best = null;
+    for (const A of [A0, A0 * 1.3]) {
+      for (const mu of [mu0, mu0 * 0.6, mu0 * 1.6]) {
+        for (const lam of [lam0, Math.max(lam0 * 0.5, 0.05 * T), 0.25 * T]) {
+          const q0 = [y0g, Math.log(A), Math.log(mu), Math.sqrt(Math.max(lam, 0.01))];
+          let res;
+          try { res = levmar(resid, q0); } catch (e) { continue; }
+          if (isFinite(res.sse) && (!best || res.sse < best.sse)) best = res;
+        }
+      }
+    }
+    if (!best) return { error: 'モデルフィットが収束しませんでした。' };
+    const p = toP(best.q);
+    const df = n - 4;
+    const ys = obs.map(o => o.y), ym = mean(ys);
+    const sst = ys.reduce((s, v) => s + (v - ym) * (v - ym), 0);
+    const out = {
+      kind: kind, label: MODEL_LABEL[kind], p: p, n: n, df: df, sse: best.sse,
+      r2: sst > 0 ? 1 - best.sse / sst : NaN,
+      rmse10: Math.sqrt(best.sse / n) / Math.LN10,
+      y0: p[0], A: p[1], mu: p[2], lam: p[3],
+      Td: 60 * Math.LN2 / p[2], Nmax: Math.exp(p[0] + p[1]),
+      TdLo: NaN, TdHi: NaN, lamLo: NaN, lamHi: NaN, NmaxLo: NaN, NmaxHi: NaN,
+      curve: t => f(t, p), notes: []
+    };
+    // 漸近共分散（元パラメータ空間のヤコビアン）
+    const J = obs.map(() => new Array(4));
+    for (let j = 0; j < 4; j++) {
+      const h = 1e-5 * Math.max(Math.abs(p[j]), 0.01);
+      const pp = p.slice(), pm = p.slice();
+      pp[j] += h; pm[j] -= h;
+      obs.forEach((o, i) => { J[i][j] = (f(o.t, pp) - f(o.t, pm)) / (2 * h); });
+    }
+    const JTJ = Array.from({ length: 4 }, () => new Array(4).fill(0));
+    for (let i = 0; i < n; i++) for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) JTJ[a][b] += J[i][a] * J[i][b];
+    const inv = invert(JTJ);
+    const ok = inv && inv.every((r, i) => r.every(isFinite) && inv[i][i] >= 0);
+    if (df >= 1 && ok) {
+      const s2 = best.sse / df;
+      const tc = tQuantile(0.975, df);
+      const se = j => Math.sqrt(inv[j][j] * s2);
+      const seMu = se(2);
+      const ml = p[2] - tc * seMu, mu_ = p[2] + tc * seMu;
+      out.TdLo = 60 * Math.LN2 / mu_;
+      out.TdHi = ml > 0 ? 60 * Math.LN2 / ml : Infinity;
+      const seL = se(3);
+      out.lamLo = Math.max(0, p[3] - tc * seL);
+      out.lamHi = p[3] + tc * seL;
+      const vN = (inv[0][0] + inv[1][1] + 2 * inv[0][1]) * s2;
+      if (vN > 0) {
+        const sN = Math.sqrt(vN);
+        out.NmaxLo = Math.exp(p[0] + p[1] - tc * sN);
+        out.NmaxHi = Math.exp(p[0] + p[1] + tc * sN);
+        if (sN > 2.3) out.notes.push('定常期の菌数が観測範囲で十分に決まっていません（定常期に未到達の可能性）。');
+      }
+    } else {
+      out.notes.push('信頼区間を算出できませんでした（自由度不足、またはパラメータが識別できません）。');
+    }
+    const ymaxObs = Math.max.apply(null, ys);
+    if (p[0] + p[1] > ymaxObs + 2.3) out.notes.push('推定された定常期の菌数が実測最大値を大きく上回っています。定常期のデータが不足している可能性があります。');
+    return out;
+  }
+
+  /* ------------------------------------------------------------------
+   * 3. 入力の解釈・集計
+   * ------------------------------------------------------------------ */
+  const SUP = { '⁰': 0, '¹': 1, '²': 2, '³': 3, '⁴': 4, '⁵': 5, '⁶': 6, '⁷': 7, '⁸': 8, '⁹': 9 };
+  /** 希釈倍率の解釈。mode: 'exp'（数値は10の指数n）/ 'fold'（数値は倍率そのもの）。
+   *  "10^2" "10²" は常に100。"10^-2" は100倍希釈（=100）として扱う。 */
+  function parseDilution(s, mode) {
+    s = String(s == null ? '' : s).trim().replace(/[×x]/g, m => m).replace(/\s+/g, '');
+    if (s === '') return NaN;
+    let m = s.match(/^10\^(-?\d+(?:\.\d+)?)$/);
+    if (m) return Math.pow(10, Math.abs(+m[1]));
+    m = s.match(/^10([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$/);
+    if (m) return Math.pow(10, +[...m[1]].map(c => SUP[c]).join(''));
+    const v = Number(s.replace(/,/g, ''));
+    if (!isFinite(v)) return NaN;
+    if (mode === 'exp') return Math.pow(10, Math.abs(v));
+    return v > 0 ? v : NaN;
+  }
+  /** CFU/mL = (1000/接種量µL) × 希釈倍率 × 計数 */
+  function cfuPerMl(volUl, dilFactor, count) { return (1000 / volUl) * dilFactor * count; }
+
+  const numOrNaN = s => (String(s).trim() === '' ? NaN : Number(String(s).replace(/,/g, '')));
+
+  /** raw: [[series,time,vol,dil,count], ...]  */
+  function parseRows(raw, dilMode, defVol) {
+    const rows = [], errors = [], cells = [];
+    let zeros = 0;
+    raw.forEach((r, idx) => {
+      const bad = [];
+      const [sName, sT, sV, sD, sC] = r.map(x => String(x == null ? '' : x).trim());
+      const blank = !sName && !sT && !sV && !sD && !sC;
+      if (blank) { cells.push({ idx, blank: true, bad }); return; }
+      const t = numOrNaN(sT);
+      let vol = numOrNaN(sV);
+      if (!isFinite(vol) && sV === '' && isFinite(defVol) && defVol > 0) vol = defVol;
+      const dil = parseDilution(sD, dilMode);
+      const cnt = numOrNaN(sC);
+      const msgs = [];
+      if (!(isFinite(t) && t >= 0)) { bad.push(1); msgs.push('採取時間'); }
+      if (!(isFinite(vol) && vol > 0)) { bad.push(2); msgs.push('接種量'); }
+      if (!(isFinite(dil) && dil > 0)) { bad.push(3); msgs.push('希釈倍率'); }
+      if (!(isFinite(cnt) && cnt >= 0)) { bad.push(4); msgs.push('計数'); }
+      if (msgs.length) {
+        errors.push({ idx, msg: '行' + (idx + 1) + ': ' + msgs.join('・') + ' が未入力または不正です' });
+        cells.push({ idx, blank: false, bad });
+        return;
+      }
+      const cfu = cfuPerMl(vol, dil, cnt);
+      if (cfu === 0) zeros++;
+      rows.push({ idx, series: sName || '(未指定)', t, vol, dil, count: cnt, cfu });
+      cells.push({ idx, blank: false, bad, cfu });
+    });
+    return { rows, errors, cells, zeros };
+  }
+
+  /** 同一シリーズ・同一時間をまとめて平均とSDを出す。geo=true なら log10 の平均（幾何平均）。 */
+  function aggregate(rows, geo) {
+    const order = [], map = new Map();
+    rows.forEach(r => {
+      if (!map.has(r.series)) { map.set(r.series, new Map()); order.push(r.series); }
+      const tm = map.get(r.series);
+      const k = Math.round(r.t * 1e6) / 1e6;
+      if (!tm.has(k)) tm.set(k, []);
+      tm.get(k).push(r.cfu);
+    });
+    return order.map(name => {
+      const points = [...map.get(name).entries()].sort((a, b) => a[0] - b[0]).map(([t, vals]) => {
+        const n = vals.length;
+        let m, sd, lo, hi, logMean, sdLog;
+        const pos = vals.filter(v => v > 0);
+        if (geo) {
+          if (pos.length === 0) { m = 0; sd = NaN; lo = NaN; hi = NaN; logMean = NaN; sdLog = NaN; }
+          else {
+            const l = pos.map(Math.log10);
+            logMean = mean(l); sdLog = sdSample(l);
+            m = Math.pow(10, logMean);
+            sd = isFinite(sdLog) ? sdLog : NaN; // 幾何平均のときSDはlog10単位
+            lo = isFinite(sdLog) ? Math.pow(10, logMean - sdLog) : NaN;
+            hi = isFinite(sdLog) ? Math.pow(10, logMean + sdLog) : NaN;
+          }
+        } else {
+          m = mean(vals); sd = sdSample(vals);
+          lo = isFinite(sd) ? m - sd : NaN;
+          hi = isFinite(sd) ? m + sd : NaN;
+          logMean = m > 0 ? Math.log10(m) : NaN;
+        }
+        return { t, vals, n, mean: m, sd, lo, hi, logMean };
+      });
+      return { name, points };
+    });
+  }
+
+  function analyzeSeries(name, rows, winK, modelKind) {
+    const obs = rows.filter(r => r.series === name && r.cfu > 0).map(r => ({ t: r.t, y: Math.log(r.cfu) }));
+    const nTimes = groupMeans(obs).length;
+    return {
+      name, nObs: obs.length, nTimes,
+      win: windowFit(obs, winK),
+      model: fitModel(obs, modelKind)
+    };
+  }
+
+  /* ------------------------------------------------------------------
+   * 4. 表示用ユーティリティ
+   * ------------------------------------------------------------------ */
+  function escapeXml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  /** *…* を斜体に（学名用。血清型は * で囲まない） */
+  function richSvg(s) { return escapeXml(s).replace(/\*([^*]+)\*/g, '<tspan font-style="italic">$1</tspan>'); }
+  function richHtml(s) { return escapeXml(s).replace(/\*([^*]+)\*/g, '<i>$1</i>'); }
+  function truncRich(s, n) {
+    if (s.length <= n) return s;
+    let r = s.slice(0, n - 1);
+    if ((r.match(/\*/g) || []).length % 2) r += '*';
+    return r + '…';
+  }
+  function fmtNum(t) { return String(Number(t.toFixed(2))); }
+  function sciParts(x) {
+    if (!(x > 0)) return { m: '0', e: null };
+    let e = Math.floor(Math.log10(x));
+    let m = x / Math.pow(10, e);
+    if (Number(m.toFixed(2)) >= 10) { m /= 10; e += 1; }
+    return { m: m.toFixed(2), e };
+  }
+  function fmtSciHtml(x) {
+    if (!isFinite(x)) return '–';
+    const s = sciParts(x);
+    return s.e === null ? '0' : s.m + '×10<sup>' + s.e + '</sup>';
+  }
+  function fmtSciText(x) { return isFinite(x) ? x.toExponential(3).replace('e+', 'E+').replace('e-', 'E-') : ''; }
+  function fmtMin(x) {
+    if (x === Infinity) return '∞';
+    if (!isFinite(x)) return '–';
+    return x >= 100 ? x.toFixed(0) : x.toFixed(1);
+  }
+
+  /* ------------------------------------------------------------------
+   * 5. SVG描画
+   * ------------------------------------------------------------------ */
+  const COLORS = ['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#E69F00', '#56B4E9', '#6B6B6B', '#B2182B'];
+  const FONT = "'BIZ UDPGothic','BIZ UDGothic','Hiragino Sans','Yu Gothic','Meiryo',sans-serif";
+
+  function marker(shape, x, y, r, color, fill) {
+    const st = 'fill="' + fill + '" stroke="' + color + '" stroke-width="1.8"';
+    switch (shape % 6) {
+      case 0: return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" ' + st + '/>';
+      case 1: return '<rect x="' + (x - r) + '" y="' + (y - r) + '" width="' + 2 * r + '" height="' + 2 * r + '" ' + st + '/>';
+      case 2: return '<polygon points="' + x + ',' + (y - r - 1) + ' ' + (x - r - 1) + ',' + (y + r) + ' ' + (x + r + 1) + ',' + (y + r) + '" ' + st + '/>';
+      case 3: return '<polygon points="' + x + ',' + (y - r - 2) + ' ' + (x + r + 2) + ',' + y + ' ' + x + ',' + (y + r + 2) + ' ' + (x - r - 2) + ',' + y + '" ' + st + '/>';
+      case 4: return '<polygon points="' + x + ',' + (y + r + 1) + ' ' + (x - r - 1) + ',' + (y - r) + ' ' + (x + r + 1) + ',' + (y - r) + '" ' + st + '/>';
+      default: {
+        const pts = [];
+        for (let i = 0; i < 6; i++) { const a = Math.PI / 3 * i; pts.push((x + (r + 1) * Math.cos(a)).toFixed(1) + ',' + (y + (r + 1) * Math.sin(a)).toFixed(1)); }
+        return '<polygon points="' + pts.join(' ') + '" ' + st + '/>';
+      }
+    }
+  }
+
+  /**
+   * cfg: { series, mode:'line'|'fit', step, xMax, yMinE, yMaxE, showErr, showPts,
+   *        title, lines:[...], fits: Map(name -> analysis), uid }
+   */
+  function renderChart(cfg) {
+    const W = 920, H = 590, ml = 92, mr = 215, mt = 104, mb = 72;
+    const pw = W - ml - mr, ph = H - mt - mb;
+    const series = cfg.series;
+    let maxT = 0, lo = Infinity, hi = 0;
+    series.forEach(s => s.points.forEach(p => {
+      maxT = Math.max(maxT, p.t);
+      if (p.mean > 0) { lo = Math.min(lo, p.mean); hi = Math.max(hi, p.mean); }
+      if (cfg.showErr) {
+        if (p.lo > 0) lo = Math.min(lo, p.lo);
+        if (p.hi > 0) hi = Math.max(hi, p.hi);
+      }
+      p.vals.forEach(v => { if (v > 0) { lo = Math.min(lo, v); hi = Math.max(hi, v); } });
+    }));
+    if (!isFinite(lo)) { lo = 1; hi = 10; }
+    let y0e = (cfg.yMinE != null) ? cfg.yMinE : Math.floor(Math.log10(lo) - 0.02);
+    let y1e = (cfg.yMaxE != null) ? cfg.yMaxE : Math.ceil(Math.log10(hi) + 0.02);
+    if (y1e <= y0e) y1e = y0e + 1;
+    const step = cfg.step;
+    const xmax = cfg.xMax > 0 ? cfg.xMax : Math.max(step, Math.ceil(maxT / step - 1e-9) * step);
+    const X = t => ml + t / xmax * pw;
+    const Y = v => mt + (y1e - Math.log10(v)) / (y1e - y0e) * ph;
+    const yc = y => Math.min(Math.max(y, mt), mt + ph);
+    const T = (x, y, txt, extra) => '<text x="' + x + '" y="' + y + '" font-family="' + FONT + '" fill="#000" ' + (extra || '') + '>' + txt + '</text>';
+
+    const out = [];
+    out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" font-family="' + FONT + '">');
+    out.push('<rect width="' + W + '" height="' + H + '" fill="#fff"/>');
+    out.push('<defs><clipPath id="clip' + cfg.uid + '"><rect x="' + ml + '" y="' + mt + '" width="' + pw + '" height="' + ph + '"/></clipPath></defs>');
+    // タイトル
+    out.push(T(ml, 28, richSvg(cfg.title || '増殖曲線'), 'font-size="19" font-weight="bold"'));
+    (cfg.lines || []).slice(0, 3).forEach((ln, i) => out.push(T(ml, 50 + i * 18, richSvg(ln), 'font-size="12.5"')));
+
+    // 格子とY軸目盛（対数）
+    for (let e = y0e; e <= y1e; e++) {
+      const y = Y(Math.pow(10, e));
+      out.push('<line x1="' + ml + '" x2="' + (ml + pw) + '" y1="' + y + '" y2="' + y + '" stroke="#d9d9d9" stroke-width="1"/>');
+      out.push(T(ml - 10, y + 5, '10<tspan dy="-7" font-size="11">' + e + '</tspan>', 'font-size="14" text-anchor="end"'));
+      if (e < y1e) {
+        for (let k = 2; k <= 9; k++) {
+          const ym = Y(k * Math.pow(10, e));
+          out.push('<line x1="' + (ml - 4) + '" x2="' + ml + '" y1="' + ym + '" y2="' + ym + '" stroke="#000" stroke-width="0.8"/>');
+        }
+      }
+    }
+    // X軸目盛
+    const nTick = Math.round(xmax / step);
+    const every = Math.ceil((nTick + 1) / 20);
+    for (let i = 0; i <= nTick; i++) {
+      const t = i * step, x = X(t);
+      out.push('<line x1="' + x + '" x2="' + x + '" y1="' + (mt + ph) + '" y2="' + (mt + ph + 5) + '" stroke="#000"/>');
+      out.push('<line x1="' + x + '" x2="' + x + '" y1="' + mt + '" y2="' + (mt + ph) + '" stroke="#efefef"/>');
+      if (i % every === 0) out.push(T(x, mt + ph + 22, fmtNum(t), 'font-size="14" text-anchor="middle"'));
+    }
+    out.push('<rect x="' + ml + '" y="' + mt + '" width="' + pw + '" height="' + ph + '" fill="none" stroke="#000" stroke-width="1.2"/>');
+    out.push(T(ml + pw / 2, H - 16, '時間 (h)', 'font-size="15" text-anchor="middle"'));
+    out.push(T(0, 0, 'CFU/mL', 'font-size="15" text-anchor="middle" transform="translate(26 ' + (mt + ph / 2) + ') rotate(-90)"'));
+
+    // 系列
+    series.forEach((s, si) => {
+      const col = COLORS[si % COLORS.length];
+      const pts = s.points.filter(p => p.mean > 0);
+      // 個別点
+      if (cfg.showPts) {
+        s.points.forEach(p => p.vals.forEach(v => {
+          if (v > 0) out.push('<circle cx="' + X(p.t).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="2.6" fill="' + col + '" fill-opacity="0.35"/>');
+        }));
+      }
+      // 線 / 曲線
+      if (cfg.mode === 'line') {
+        if (pts.length > 1) {
+          out.push('<polyline clip-path="url(#clip' + cfg.uid + ')" fill="none" stroke="' + col + '" stroke-width="2.2" stroke-linejoin="round" points="' +
+            pts.map(p => X(p.t).toFixed(1) + ',' + Y(p.mean).toFixed(1)).join(' ') + '"/>');
+        }
+      } else {
+        const a = cfg.fits && cfg.fits.get(s.name);
+        if (a && a.model && a.model.curve) {
+          const d = [];
+          const N = 240;
+          for (let i = 0; i <= N; i++) {
+            const t = xmax * i / N;
+            const l10 = a.model.curve(t) / Math.LN10;
+            const y = mt + (y1e - l10) / (y1e - y0e) * ph;
+            if (isFinite(y)) d.push((i === 0 || !d.length ? 'M' : 'L') + X(t).toFixed(1) + ' ' + y.toFixed(1));
+          }
+          out.push('<path clip-path="url(#clip' + cfg.uid + ')" d="' + d.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="2.6"/>');
+        }
+      }
+      // 誤差棒（平均±SD）
+      if (cfg.showErr) {
+        pts.forEach(p => {
+          if (!(p.n > 1) || !isFinite(p.hi)) return;
+          const x = X(p.t);
+          const yTop = yc(Y(p.hi));
+          const yBot = p.lo > 0 ? yc(Y(p.lo)) : mt + ph;
+          out.push('<g stroke="' + col + '" stroke-width="1.6"><line x1="' + x + '" x2="' + x + '" y1="' + yTop + '" y2="' + yBot + '"/>' +
+            '<line x1="' + (x - 5) + '" x2="' + (x + 5) + '" y1="' + yTop + '" y2="' + yTop + '"/>' +
+            (p.lo > 0 ? '<line x1="' + (x - 5) + '" x2="' + (x + 5) + '" y1="' + yBot + '" y2="' + yBot + '"/>' : '') + '</g>');
+        });
+      }
+      // 平均マーカー
+      pts.forEach(p => out.push(marker(si, +X(p.t).toFixed(1), +Y(p.mean).toFixed(1), 4.6, col, '#fff')));
+    });
+
+    // 凡例
+    const lx = ml + pw + 24;
+    let ly = mt + 6;
+    out.push(T(lx, ly + 4, cfg.mode === 'line' ? '平均' + (cfg.showErr ? ' ± SD' : '') : '実測平均' + (cfg.showErr ? ' ± SD' : '') + ' と推定曲線', 'font-size="11.5" fill="#444"').replace('fill="#000"', 'fill="#444"'));
+    ly += 24;
+    series.forEach((s, si) => {
+      const col = COLORS[si % COLORS.length];
+      out.push('<line x1="' + lx + '" x2="' + (lx + 26) + '" y1="' + ly + '" y2="' + ly + '" stroke="' + col + '" stroke-width="2.4"/>');
+      out.push(marker(si, lx + 13, ly, 4.4, col, '#fff'));
+      out.push(T(lx + 34, ly + 5, richSvg(truncRich(s.name, 20)), 'font-size="13.5"'));
+      ly += 20;
+      if (cfg.mode === 'fit') {
+        const a = cfg.fits && cfg.fits.get(s.name);
+        let txt = a && a.model && a.model.Td ? 'Td = ' + fmtMin(a.model.Td) + ' 分' : '推定不可';
+        out.push(T(lx + 34, ly + 1, txt, 'font-size="12" fill="#333"'));
+        ly += 20;
+      }
+    });
+    out.push('</svg>');
+    return out.join('');
+  }
+
+  /* ------------------------------------------------------------------
+   * 6. CSV入出力
+   * ------------------------------------------------------------------ */
+  function decodeBuffer(buf) {
+    let text, enc = 'UTF-8';
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+    catch (e) {
+      try { text = new TextDecoder('shift_jis').decode(buf); enc = 'Shift_JIS'; }
+      catch (e2) { text = new TextDecoder().decode(buf); }
+    }
+    return { text: text.replace(/^﻿/, ''), enc };
+  }
+  function parseCSV(text) {
+    const lines = text.split(/\r\n|\r|\n/).filter(l => l.trim() !== '').slice(0, 8);
+    let tabs = 0, commas = 0;
+    lines.forEach(l => { tabs += (l.match(/\t/g) || []).length; commas += (l.match(/,/g) || []).length; });
+    const delim = tabs > commas ? '\t' : ',';
+    const rows = []; let row = [], cell = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+        else cell += c;
+      } else if (c === '"' && cell === '') q = true;
+      else if (c === delim) { row.push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(cell); cell = ''; rows.push(row); row = [];
+      } else cell += c;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows;
+  }
+  const normHead = h => String(h).toLowerCase().replace(/[\s　]/g, '').replace(/[（(].*$/, '').replace(/[・\/／]/g, '');
+  const COL_ALIAS = {
+    0: ['シリーズ', 'series', '株', '群', 'group', 'サンプル', 'sample'],
+    1: ['採取時間', '時間', 'time', 'hour', 'hours', '採取時刻', 'h'],
+    2: ['接種量', '播種量', '接種液量', '塗布量', 'volume', 'vol'],
+    3: ['希釈倍率', '希釈', '希釈倍数', 'dilution', 'dil'],
+    4: ['計数', 'コロニー数', 'カウント', 'count', 'colonies', 'コロニー']
+  };
+  const META_ALIAS = {
+    name: ['実験名', 'experiment', 'title'],
+    date: ['実験日', 'date'],
+    strain: ['菌名検体名', '菌名', '検体名', 'strain', 'organism'],
+    method: ['培養方法', '静置震盪', '静置振盪', 'method'],
+    rpm: ['震盪回転数', '回転数', '震盪速度', 'rpm'],
+    temp: ['温度', 'temp', 'temperature'],
+    tube: ['チューブ', 'tube'],
+    vol: ['液量', '培養液量'],
+    note: ['備考', 'note', 'notes', 'memo']
+  };
+  function importCSVRecords(records) {
+    const meta = {}, data = [];
+    records.forEach(r => {
+      if (r.every(c => String(c).trim() === '')) return;
+      const c0 = String(r[0]).trim();
+      if (c0.startsWith('#')) {
+        const key = normHead(c0.slice(1));
+        for (const k in META_ALIAS) {
+          if (META_ALIAS[k].map(normHead).includes(key)) { meta[k] = String(r[1] == null ? '' : r[1]).trim(); break; }
+        }
+        return;
+      }
+      data.push(r);
+    });
+    let colmap = [0, 1, 2, 3, 4], start = 0, dilMode = null;
+    if (data.length) {
+      const hdr = data[0].map(normHead);
+      const found = [-1, -1, -1, -1, -1];
+      hdr.forEach((h, i) => { for (let k = 0; k < 5; k++) if (found[k] < 0 && COL_ALIAS[k].map(normHead).includes(h)) found[k] = i; });
+      if (found.filter(x => x >= 0).length >= 3) {
+        colmap = found.map((x, k) => x >= 0 ? x : k);
+        start = 1;
+        const dh = String(data[0][found[3] >= 0 ? found[3] : 3] || '');
+        if (/10\^n|指数|exp/i.test(dh)) dilMode = 'exp';
+        else if (/[（(]倍[）)]|fold/i.test(dh)) dilMode = 'fold';
+      }
+    }
+    const rows = data.slice(start).map(r => colmap.map(ci => String(r[ci] == null ? '' : r[ci]).trim()));
+    return { meta, rows, dilMode };
+  }
+  function csvCell(v) {
+    v = String(v == null ? '' : v);
+    return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+
+  /* サンプルデータ（架空・Baranyiモデル + 乱数） */
+  function makeSample() {
+    let seed = 20261117;
+    const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    const defs = [
+      { name: 'WT', Td: 30, lam: 1.5, N0: 1e6, Nmax: 3e9 },
+      { name: 'ΔmutA', Td: 45, lam: 3.0, N0: 1e6, Nmax: 1e9 }
+    ];
+    const times = [0, 1, 2, 3, 4, 5, 6, 8, 10];
+    const rows = [];
+    defs.forEach(d => {
+      const mu = Math.LN2 / (d.Td / 60);
+      const p = [Math.log(d.N0), Math.log(d.Nmax / d.N0), mu, d.lam];
+      times.forEach(t => {
+        for (let rep = 0; rep < 2; rep++) {
+          const cfu = Math.exp(baranyi(t, p) + 0.12 * gauss());
+          let e = Math.round(Math.log10(cfu * 0.05 / 100));
+          e = Math.min(Math.max(e, 0), 9);
+          const cnt = Math.max(1, Math.round(cfu * 0.05 / Math.pow(10, e)));
+          rows.push([d.name, String(t), '50', String(e), String(cnt)]);
+        }
+      });
+    });
+    return rows;
+  }
+
+  /* ------------------------------------------------------------------
+   * 7. 公開（テスト用）
+   * ------------------------------------------------------------------ */
+  const Core = {
+    tQuantile, linreg, windowFit, fitModel, baranyi, gompertz, parseDilution, cfuPerMl,
+    parseRows, aggregate, analyzeSeries, renderChart, parseCSV, importCSVRecords, decodeBuffer,
+    makeSample, MODEL_LABEL, groupMeans
+  };
+  root.GrowthCore = Core;
+  if (typeof module !== 'undefined' && module.exports) module.exports = Core;
+
+  /* ==================================================================
+   * 8. UI
+   * ================================================================== */
+  if (typeof document === 'undefined') return;
+
+  const $ = id => document.getElementById(id);
+  const tbody = $('tbody');
+  const lastSvg = { 1: '', 2: '' };
+  let timer = null;
+  const schedule = () => { clearTimeout(timer); timer = setTimeout(compute, 250); };
+
+  function makeRow(v) {
+    v = v || ['', '', '', '', ''];
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="no"></td>' +
+      '<td><input class="c" data-col="0" list="serieslist" autocomplete="off"></td>' +
+      '<td><input class="c" data-col="1" inputmode="decimal" autocomplete="off"></td>' +
+      '<td><input class="c" data-col="2" inputmode="decimal" autocomplete="off"></td>' +
+      '<td><input class="c" data-col="3" autocomplete="off"></td>' +
+      '<td><input class="c" data-col="4" inputmode="decimal" autocomplete="off"></td>' +
+      '<td class="cfu"></td>' +
+      '<td><button type="button" class="del" title="この行を削除" aria-label="この行を削除">×</button></td>';
+    tr.querySelectorAll('input.c').forEach((inp, i) => { inp.value = v[i] == null ? '' : v[i]; });
+    return tr;
+  }
+  function renumber() { [...tbody.rows].forEach((tr, i) => { tr.cells[0].textContent = i + 1; }); }
+  function addRows(n) { for (let i = 0; i < n; i++) tbody.appendChild(makeRow()); renumber(); }
+  function setTable(rows) {
+    tbody.innerHTML = '';
+    rows.forEach(r => tbody.appendChild(makeRow(r)));
+    if (tbody.rows.length < 10) addRows(10 - tbody.rows.length);
+    renumber();
+  }
+  function readRaw() {
+    return [...tbody.rows].map(tr => [...tr.querySelectorAll('input.c')].map(i => i.value));
+  }
+
+  function readMeta() {
+    return {
+      name: $('m_name').value.trim(), date: $('m_date').value.trim(), strain: $('m_strain').value.trim(),
+      method: $('m_method').value, rpm: $('m_rpm').value.trim(), temp: $('m_temp').value.trim(),
+      tube: $('m_tube').value.trim(), vol: $('m_vol').value.trim(), note: $('m_note').value.trim()
+    };
+  }
+  function condText(m) {
+    const p = [];
+    if (m.method) p.push(m.method + (m.method === '震盪' && m.rpm ? ' (' + m.rpm + ' rpm)' : ''));
+    if (m.temp) p.push(m.temp + ' °C');
+    if (m.tube) p.push(m.tube);
+    if (m.vol) p.push('液量 ' + m.vol + ' mL');
+    return p.length ? '培養条件: ' + p.join(', ') : '';
+  }
+  function setMeta(meta) {
+    const map = { name: 'm_name', date: 'm_date', strain: 'm_strain', rpm: 'm_rpm', temp: 'm_temp', tube: 'm_tube', vol: 'm_vol', note: 'm_note' };
+    for (const k in map) if (meta[k] != null) $(map[k]).value = meta[k];
+    if (meta.method != null) $('m_method').value = /震|振/.test(meta.method) ? '震盪' : /静/.test(meta.method) ? '静置' : '';
+  }
+
+  function download(name, blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  const csvBlob = text => new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
+  const fileStem = () => (readMeta().name || 'growth_curve').replace(/[\\/:*?"<>|\s]+/g, '_');
+
+  function savePng(svg, name) {
+    const img = new Image();
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = 920 * 2; c.height = 590 * 2;
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => download(name, b), 'image/png');
+    };
+    img.src = url;
+  }
+
+  let lastAnalysis = null;
+
+  function compute() {
+    const meta = readMeta();
+    const dilMode = $('dilmode').value;
+    const defVol = parseFloat($('defvol').value);
+    tbody.querySelectorAll('input.bad').forEach(i => i.classList.remove('bad'));
+    const pr = parseRows(readRaw(), dilMode, defVol);
+    pr.cells.forEach(c => {
+      const tr = tbody.rows[c.idx];
+      tr.cells[6].innerHTML = c.cfu !== undefined ? fmtSciHtml(c.cfu) : '';
+      const ins = tr.querySelectorAll('input.c');
+      c.bad.forEach(i => ins[i].classList.add('bad'));
+    });
+    // 系列名候補
+    const names = [...new Set(readRaw().map(r => r[0].trim()).filter(Boolean))];
+    $('serieslist').innerHTML = names.map(n => '<option value="' + escapeXml(n) + '">').join('');
+
+    const geo = $('meantype').value === 'geo';
+    const series = aggregate(pr.rows, geo);
+    const step = Math.max(0.5, Math.round((parseFloat($('xstep').value) || 2) * 2) / 2);
+    const xMax = parseFloat($('xmax').value);
+    const yMin = $('ymin').value.trim() === '' ? null : parseInt($('ymin').value, 10);
+    const yMax = $('ymax').value.trim() === '' ? null : parseInt($('ymax').value, 10);
+    const winK = Math.min(8, Math.max(3, parseInt($('wink').value, 10) || 3));
+    const modelKind = $('model').value;
+    const showErr = $('showerr').checked, showPts = $('showpts').checked;
+
+    // メッセージ
+    const msgs = [];
+    pr.errors.forEach(e => msgs.push('<li class="err">' + escapeXml(e.msg) + '</li>'));
+    if (pr.zeros) msgs.push('<li>計数0の行が ' + pr.zeros + ' 件あります。対数軸に描けないため、図と推定から除外しています。</li>');
+    if (series.length > COLORS.length) msgs.push('<li>シリーズ数が ' + COLORS.length + ' を超えたため、色が繰り返されます（マーカー形状で区別してください）。</li>');
+    $('msgs').innerHTML = msgs.length ? '<ul>' + msgs.join('') + '</ul>' : '';
+
+    if (!series.length) {
+      $('chart1').innerHTML = $('chart2').innerHTML = '<p class="empty">有効なデータがありません。表に入力するか、CSVを読み込んでください。</p>';
+      $('results').innerHTML = ''; $('agg').innerHTML = '';
+      lastSvg[1] = lastSvg[2] = ''; lastAnalysis = null;
+      return;
+    }
+
+    const fits = new Map();
+    series.forEach(s => fits.set(s.name, analyzeSeries(s.name, pr.rows, winK, modelKind)));
+    lastAnalysis = { series, fits, meta, geo, modelKind };
+
+    const title = [meta.name, meta.strain].filter(Boolean).join('  /  ') || '増殖曲線';
+    const l1 = [meta.date ? '実験日: ' + meta.date : '', condText(meta)].filter(Boolean).join('    ');
+    const common = { series, step, xMax: xMax > 0 ? xMax : 0, yMinE: yMin, yMaxE: yMax, showErr, showPts, title, fits };
+    const errLabel = showErr ? (geo ? '誤差棒: 幾何平均 ± SD(log10)' : '誤差棒: 平均 ± SD') : '';
+    const lines1 = [l1, '平均値を直線で結んだ増殖曲線' + (errLabel ? '（' + errLabel + '）' : '')].filter(Boolean);
+    const lines2 = [l1, '増殖モデル（' + MODEL_LABEL[modelKind] + '）による推定曲線' + (errLabel ? '（' + errLabel + '）' : '')].filter(Boolean);
+    lastSvg[1] = renderChart(Object.assign({}, common, { mode: 'line', lines: lines1, uid: 1 }));
+    lastSvg[2] = renderChart(Object.assign({}, common, { mode: 'fit', lines: lines2, uid: 2 }));
+    $('chart1').innerHTML = lastSvg[1];
+    $('chart2').innerHTML = lastSvg[2];
+    $('modelname').textContent = MODEL_LABEL[modelKind];
+
+    renderResults(series, fits, geo, modelKind);
+  }
+
+  function renderResults(series, fits, geo, modelKind) {
+    const ci = (lo, hi, f) => (isFinite(lo) || hi === Infinity) ? ' [' + f(lo) + ' – ' + f(hi) + ']' : '';
+    let h = '<table class="res"><thead><tr><th rowspan="2">シリーズ</th><th rowspan="2">観測数<br>/時点数</th>' +
+      '<th>窓法: 指数増殖期の回帰</th><th colspan="3">モデルフィット（' + escapeXml(MODEL_LABEL[modelKind]) + '）</th></tr>' +
+      '<tr><th>倍加時間 (分) [95%CI]</th><th>倍加時間 (分) [95%CI]</th><th>lag λ (h) [95%CI]</th><th>定常期 N<sub>max</sub> (CFU/mL) [95%CI]</th></tr></thead><tbody>';
+    series.forEach(s => {
+      const a = fits.get(s.name);
+      const w = a.win, m = a.model;
+      h += '<tr><th>' + richHtml(s.name) + '</th><td>' + a.nObs + ' / ' + a.nTimes + '</td>';
+      if (w) {
+        h += '<td><b>' + fmtMin(w.Td) + '</b>' + ci(w.TdLo, w.TdHi, fmtMin) +
+          '<br><small>' + fmtNum(w.t0) + '–' + fmtNum(w.t1) + ' h の窓, n=' + w.n + ', R²=' + (isFinite(w.r2) ? w.r2.toFixed(3) : '–') + '</small></td>';
+      } else h += '<td class="na">算出不可<br><small>3時点以上の増殖が必要</small></td>';
+      if (m && !m.error) {
+        h += '<td><b>' + fmtMin(m.Td) + '</b>' + ci(m.TdLo, m.TdHi, fmtMin) +
+          '<br><small>μ<sub>max</sub>=' + m.mu.toFixed(3) + ' /h (ln), R²=' + (isFinite(m.r2) ? m.r2.toFixed(3) : '–') + ', df=' + m.df + '</small></td>';
+        h += '<td>' + m.lam.toFixed(2) + (isFinite(m.lamLo) ? ' [' + m.lamLo.toFixed(2) + ' – ' + m.lamHi.toFixed(2) + ']' : '') + '</td>';
+        h += '<td>' + fmtSciHtml(m.Nmax) + (isFinite(m.NmaxLo) ? '<br><small>[' + fmtSciHtml(m.NmaxLo) + ' – ' + fmtSciHtml(m.NmaxHi) + ']</small>' : '') + '</td>';
+      } else {
+        h += '<td class="na" colspan="3">' + escapeXml(m ? m.error : '算出不可') + '</td>';
+      }
+      h += '</tr>';
+      if (m && m.notes && m.notes.length) h += '<tr class="note"><td></td><td colspan="5">⚠ ' + m.notes.map(escapeXml).join(' / ') + '</td></tr>';
+    });
+    h += '</tbody></table>';
+    $('results').innerHTML = h;
+
+    let g = '<table class="res"><thead><tr><th>シリーズ</th><th>時間 (h)</th><th>n</th><th>' + (geo ? '幾何平均' : '平均') + ' (CFU/mL)</th><th>' +
+      (geo ? 'SD (log10)' : 'SD (CFU/mL)') + '</th><th>log10(' + (geo ? '幾何平均' : '平均') + ')</th></tr></thead><tbody>';
+    series.forEach(s => s.points.forEach((p, i) => {
+      g += '<tr><td>' + (i === 0 ? richHtml(s.name) : '') + '</td><td>' + fmtNum(p.t) + '</td><td>' + p.n + '</td><td>' + fmtSciHtml(p.mean) + '</td><td>' +
+        (isFinite(p.sd) ? (geo ? p.sd.toFixed(3) : fmtSciHtml(p.sd)) : '–') + '</td><td>' + (isFinite(p.logMean) ? p.logMean.toFixed(3) : '–') + '</td></tr>';
+    }));
+    g += '</tbody></table>';
+    $('agg').innerHTML = g;
+  }
+
+  /* ---- CSV出力 ---- */
+  function inputCsv() {
+    const m = readMeta();
+    const dm = $('dilmode').value;
+    const L = [];
+    L.push(['#実験名', m.name].map(csvCell).join(','));
+    L.push(['#実験日', m.date].map(csvCell).join(','));
+    L.push(['#菌名・検体名', m.strain].map(csvCell).join(','));
+    L.push(['#培養方法(静置/震盪)', m.method].map(csvCell).join(','));
+    L.push(['#震盪回転数(rpm)', m.rpm].map(csvCell).join(','));
+    L.push(['#温度(°C)', m.temp].map(csvCell).join(','));
+    L.push(['#チューブ', m.tube].map(csvCell).join(','));
+    L.push(['#液量(mL)', m.vol].map(csvCell).join(','));
+    L.push(['#備考', m.note].map(csvCell).join(','));
+    L.push(['シリーズ', '採取時間(h)', '接種量(µL)', dm === 'exp' ? '希釈倍率(10^n)' : '希釈倍率(倍)', '計数'].join(','));
+    readRaw().forEach(r => { if (r.some(x => x.trim() !== '')) L.push(r.map(x => csvCell(x.trim())).join(',')); });
+    return L.join('\r\n');
+  }
+  function templateCsv() {
+    const L = ['#実験名,', '#実験日,', '#菌名・検体名,', '#培養方法(静置/震盪),', '#震盪回転数(rpm),', '#温度(°C),', '#チューブ,', '#液量(mL),', '#備考,',
+      'シリーズ,採取時間(h),接種量(µL),希釈倍率(10^n),計数', 'A,0,50,2,35', 'A,0,50,2,41', 'A,2,50,3,28', 'A,2,50,3,31', 'B,0,50,2,22', 'B,2,50,2,45'];
+    return L.join('\r\n');
+  }
+  function aggCsv() {
+    if (!lastAnalysis) return '';
+    const L = ['シリーズ,時間(h),n,' + (lastAnalysis.geo ? '幾何平均' : '平均') + '(CFU/mL),SD' + (lastAnalysis.geo ? '(log10)' : '(CFU/mL)') + ',log10平均'];
+    lastAnalysis.series.forEach(s => s.points.forEach(p => {
+      L.push([csvCell(s.name), fmtNum(p.t), p.n, fmtSciText(p.mean), isFinite(p.sd) ? (lastAnalysis.geo ? p.sd.toFixed(4) : fmtSciText(p.sd)) : '', isFinite(p.logMean) ? p.logMean.toFixed(4) : ''].join(','));
+    }));
+    return L.join('\r\n');
+  }
+  function resCsv() {
+    if (!lastAnalysis) return '';
+    const num = x => (x === Infinity ? 'Inf' : isFinite(x) ? String(Number(x.toPrecision(5))) : '');
+    const L = ['シリーズ,観測数,時点数,窓法_Td(min),窓法_下限,窓法_上限,窓法_開始(h),窓法_終了(h),窓法_R2,モデル,モデル_Td(min),モデル_下限,モデル_上限,mu_max(ln/h),lag(h),lag_下限,lag_上限,Nmax(CFU/mL),Nmax_下限,Nmax_上限,モデルR2,RMSE(log10),備考'];
+    lastAnalysis.series.forEach(s => {
+      const a = lastAnalysis.fits.get(s.name), w = a.win, m = a.model && !a.model.error ? a.model : null;
+      L.push([csvCell(s.name), a.nObs, a.nTimes,
+        w ? num(w.Td) : '', w ? num(w.TdLo) : '', w ? num(w.TdHi) : '', w ? w.t0 : '', w ? w.t1 : '', w ? num(w.r2) : '',
+        csvCell(m ? m.label : ''), m ? num(m.Td) : '', m ? num(m.TdLo) : '', m ? num(m.TdHi) : '', m ? num(m.mu) : '',
+        m ? num(m.lam) : '', m ? num(m.lamLo) : '', m ? num(m.lamHi) : '',
+        m ? fmtSciText(m.Nmax) : '', m ? fmtSciText(m.NmaxLo) : '', m ? fmtSciText(m.NmaxHi) : '', m ? num(m.r2) : '', m ? num(m.rmse10) : '',
+        csvCell(a.model && a.model.error ? a.model.error : (m ? m.notes.join(' / ') : ''))].join(','));
+    });
+    return L.join('\r\n');
+  }
+
+  /* ---- ファイル読込 ---- */
+  function loadFile(file) {
+    const rd = new FileReader();
+    rd.onload = () => {
+      const { text, enc } = decodeBuffer(rd.result);
+      const imp = importCSVRecords(parseCSV(text));
+      if (!imp.rows.length) { $('loadmsg').textContent = '読み込めるデータ行がありませんでした。'; return; }
+      if (imp.dilMode) $('dilmode').value = imp.dilMode;
+      setMeta(imp.meta);
+      setTable(imp.rows);
+      $('loadmsg').textContent = file.name + ' から ' + imp.rows.length + ' 行を読み込みました（文字コード: ' + enc + '）。';
+      compute();
+    };
+    rd.readAsArrayBuffer(file);
+  }
+
+  /* ---- イベント ---- */
+  tbody.addEventListener('input', schedule);
+  tbody.addEventListener('click', e => {
+    if (e.target.classList.contains('del')) {
+      if (tbody.rows.length > 1) e.target.closest('tr').remove();
+      else e.target.closest('tr').querySelectorAll('input').forEach(i => { i.value = ''; });
+      renumber(); compute();
+    }
+  });
+  tbody.addEventListener('paste', e => {
+    const t = e.target;
+    if (!t.classList || !t.classList.contains('c')) return;
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    if (!/[\t\n\r]/.test(text.replace(/[\r\n]+$/, ''))) return;
+    e.preventDefault();
+    const grid = text.replace(/[\r\n]+$/, '').split(/\r\n|\r|\n/).map(l => l.split('\t'));
+    const r0 = t.closest('tr').rowIndex - 1, c0 = +t.dataset.col;
+    while (tbody.rows.length < r0 + grid.length) tbody.appendChild(makeRow());
+    grid.forEach((cells, i) => {
+      const ins = tbody.rows[r0 + i].querySelectorAll('input.c');
+      cells.forEach((v, j) => { if (c0 + j < 5) ins[c0 + j].value = v.trim(); });
+    });
+    renumber(); compute();
+  });
+
+  $('btn-add1').onclick = () => { addRows(1); };
+  $('btn-add10').onclick = () => { addRows(10); };
+  $('btn-clear').onclick = () => { if (confirm('入力表をすべて消去しますか？')) { setTable([]); compute(); } };
+  $('btn-sample').onclick = () => {
+    setTable(makeSample());
+    setMeta({ name: 'サンプル（架空データ）', date: '', strain: '*Escherichia coli* K-12', method: '震盪', rpm: '150', temp: '37', tube: '50 mL conical tube', vol: '10', note: 'Baranyiモデルから乱数で作成した動作確認用の架空データ' });
+    $('dilmode').value = 'exp';
+    compute();
+  };
+  $('btn-template').onclick = () => download('growth_template.csv', csvBlob(templateCsv()));
+  $('btn-saveinput').onclick = () => download(fileStem() + '_input.csv', csvBlob(inputCsv()));
+  $('btn-aggcsv').onclick = () => { if (lastAnalysis) download(fileStem() + '_summary.csv', csvBlob(aggCsv())); };
+  $('btn-rescsv').onclick = () => { if (lastAnalysis) download(fileStem() + '_doubling_time.csv', csvBlob(resCsv())); };
+  $('file').onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]); e.target.value = ''; };
+  const drop = $('drop');
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+  [['dl-svg1', 1, 'svg'], ['dl-png1', 1, 'png'], ['dl-svg2', 2, 'svg'], ['dl-png2', 2, 'png']].forEach(([id, n, kind]) => {
+    $(id).onclick = () => {
+      if (!lastSvg[n]) return;
+      const nm = fileStem() + (n === 1 ? '_line' : '_fit');
+      if (kind === 'svg') download(nm + '.svg', new Blob([lastSvg[n]], { type: 'image/svg+xml' }));
+      else savePng(lastSvg[n], nm + '.png');
+    };
+  });
+  document.querySelectorAll('.opt').forEach(el => { el.addEventListener('input', schedule); el.addEventListener('change', schedule); });
+
+  setTable([]);
+  compute();
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+</body>
+</html>
 
