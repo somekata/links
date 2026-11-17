@@ -37,7 +37,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 #main{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
 
 /* HUD */
-#hud{flex:0 0 44px;display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;font-weight:700;font-size:14px}
+#hud{flex:0 0 40px;display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;font-weight:700;font-size:14px}
 #hud .grow{flex:1;color:var(--muted);letter-spacing:.04em;font-size:13px}
 #hud .wave{font-size:13px;letter-spacing:.08em;padding:5px 11px;border-radius:999px;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 2px 10px rgba(99,102,241,.35)}
 #hud .lives{font-size:15px;letter-spacing:1px;min-width:84px;text-align:right}
@@ -45,7 +45,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 #pauseBtn svg{width:18px;height:18px;fill:currentColor}
 
 /* meter */
-#meter{flex:0 0 52px;display:flex;align-items:center;gap:8px;padding:2px 10px 6px}
+#meter{flex:0 0 48px;display:flex;align-items:center;gap:8px;padding:0 8px 4px}
 #mLeft{flex:1;min-width:0;min-height:44px;background:var(--surface);text-align:left;padding:6px 10px 5px;border-radius:12px;border:1px solid var(--border);touch-action:none}
 .mbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--surface2)}
 .mbar .seg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;overflow:hidden;white-space:nowrap}
@@ -57,9 +57,10 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 #shopBtn.afford{animation:pulse 1s infinite}
 
 /* stage */
-#stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;touch-action:none}
+#stage{flex:1;min-height:0;position:relative;display:flex;align-items:stretch;justify-content:center;touch-action:none}
+#field{align-self:center}
 #field{position:relative;touch-action:none}
-#cv{display:block;touch-action:none;border-radius:16px;box-shadow:var(--shadow)}
+#cv{display:block;touch-action:none;border-radius:0}
 #toast{position:absolute;left:10px;right:10px;top:10px;padding:9px 14px;border-radius:12px;background:rgba(245,158,11,.95);color:#2b1a00;
   font-weight:700;font-size:13px;text-align:center;opacity:0;transform:translateY(-8px);transition:opacity .2s,transform .2s;pointer-events:none;backdrop-filter:blur(8px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
 #toast.show{opacity:1;transform:none}
@@ -445,8 +446,8 @@ const IMG_SRC = {"pneumococcus": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0
 
 /* ================= 定数（調整用） ================= */
 const C = {
-  W: 360, H: 600, CTRL_H: 110,
-  ENEMY_W_RATIO: 0.20,          // 通常の敵の幅 = ゲーム領域の幅の20%
+  W: 360, H: 600, CTRL_H: 110, MIN_W: 300, MAX_W: 620,   // W は resize() で画面に合わせて決まる
+  ENEMY_W_RATIO: 0.22,          // 通常の敵の幅 = ゲーム領域の幅の22%
   LARGE_MULT: 1.6,              // 大型の倍率（約32%）
   LARGE_HP_MULT: 2,             // 大型の必要攻撃数の倍率
   LARGE_RATE: 0.06, LARGE_FROM: 3,
@@ -634,7 +635,7 @@ const cv = $('cv'), ctx = cv.getContext('2d');
 let scale = 1;
 const LAUNCH_Y = C.H - 55;
 const DEF_Y = C.H - C.CTRL_H;
-const ES = C.W * C.ENEMY_W_RATIO;
+let ES = C.W * C.ENEMY_W_RATIO;   // 画面幅に合わせて resize() で更新
 
 const sessionCum = (() => {
   try { const o = JSON.parse(safeLS.get('bactAttack2TA_cum') || 'null'); if (o && o.dot) return o; } catch (e) {}
@@ -1371,9 +1372,10 @@ function drawEnemy(e) {
     ctx.fillStyle = '#7CFC8A'; ctx.fillRect(x, y, w * Math.max(0, e.hp) / e.maxhp, h);
   }
   if (vis) {   // 名前
-    ctx.font = '800 10px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,14,30,.9)'; ctx.fillStyle = '#fff';
-    ctx.strokeText(info.short, e.x, e.y + off + 10); ctx.fillText(info.short, e.x, e.y + off + 10);
+    const fs = Math.round(15 * (e.large ? 1.15 : 1)), ny = e.y + e.box * 0.33 + fs * 0.8;   // キャラの足もとに少し重なる位置
+    ctx.font = '800 ' + fs + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(8,14,30,.9)'; ctx.fillStyle = '#fff';
+    ctx.strokeText(info.short, e.x, ny); ctx.fillText(info.short, e.x, ny);
   }
 }
 function bigText(s, size, col, a) {
@@ -1426,6 +1428,8 @@ function updateSelInfoLazy() { if (++selTick % 30 === 0) { updateSelInfo(); } }
 function resize() {
   const st = $('stage'), w = st.clientWidth, h = st.clientHeight;
   if (!w || !h) return;
+  C.W = Math.round(Math.max(C.MIN_W, Math.min(C.MAX_W, C.H * w / h)));   // 幅を画面に合わせて広げる
+  ES = C.W * C.ENEMY_W_RATIO;
   scale = Math.min(w / C.W, h / C.H);
   const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const fw = Math.floor(C.W * scale), fh = Math.floor(C.H * scale);
@@ -1437,6 +1441,7 @@ function resize() {
   $('restBtn').style.bottom = Math.round(C.CTRL_H * scale + 8) + 'px';
 }
 window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe($('stage'));
 window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 
 /* ================= 画面遷移 ================= */
