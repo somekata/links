@@ -36,14 +36,14 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);touch-action:none}
 #main{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
 /* HUD */
-#hud{flex:0 0 44px;display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;font-weight:700;font-size:14px}
+#hud{flex:0 0 40px;display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;font-weight:700;font-size:14px}
 #hud .grow{flex:1;color:var(--muted);letter-spacing:.04em;font-size:13px}
 #hud .wave{font-size:13px;letter-spacing:.08em;padding:5px 11px;border-radius:999px;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 2px 10px rgba(99,102,241,.35)}
 #hud .lives{font-size:15px;letter-spacing:1px;min-width:84px;text-align:right}
 #pauseBtn{width:40px;height:40px;background:var(--surface);color:var(--text);border-radius:12px;border:1px solid var(--border);display:grid;place-items:center}
 #pauseBtn svg{width:18px;height:18px;fill:currentColor}
 /* meter */
-#meter{flex:0 0 52px;display:flex;align-items:center;gap:8px;padding:2px 10px 6px}
+#meter{flex:0 0 48px;display:flex;align-items:center;gap:8px;padding:0 8px 4px}
 #mLeft{flex:1;min-width:0;min-height:44px;background:var(--surface);text-align:left;padding:6px 10px 5px;border-radius:12px;border:1px solid var(--border);touch-action:none}
 .mbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--surface2)}
 .mbar .seg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;overflow:hidden;white-space:nowrap}
@@ -311,8 +311,8 @@ body.noScroll{ overflow:hidden; }
 .hp-inner{ height:100%; width:100%; transition:width .3s ease, background .3s ease; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff; }
 .mbar .seg{ height:100%; width:0%; transition:width .3s ease; }
 #segAccess{ background:var(--access); } #segWatch{ background:var(--watch); } #segReserve{ background:var(--reserve); }
-#stage{ padding:0 8px 6px; }
-#canvasHolder{ position:relative; width:100%; height:100%; border-radius:16px; overflow:hidden; box-shadow:var(--shadow); background:var(--surface); }
+#stage{ padding:0; }
+#canvasHolder{ position:relative; width:100%; height:100%; border-radius:0; overflow:hidden; background:var(--surface); }
 #gameCanvas{ display:block; width:100%; height:100%; touch-action:none; }
 #banner{ z-index:6; }
 #banner .t{ font-size:30px; }
@@ -1025,16 +1025,16 @@ body.noScroll{ overflow:hidden; }
     let sp = SPRITE_CACHE.get(key);
     if(sp) return sp;
     if(!_measureCtx) _measureCtx = document.createElement('canvas').getContext('2d');
-    _measureCtx.font = '700 9px sans-serif';
-    const w = Math.ceil(_measureCtx.measureText(text).width + 8), h = 11;
+    _measureCtx.font = '800 12px sans-serif';
+    const w = Math.ceil(_measureCtx.measureText(text).width + 10), h = 16;
     const c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(w*DPR)); c.height = Math.max(1, Math.round(h*DPR));
     const cx = c.getContext('2d');
     cx.setTransform(c.width/w, 0, 0, c.height/h, 0, 0);
     cx.fillStyle = 'rgba(255,255,255,0.9)'; cx.fillRect(0,0,w,h);
-    cx.fillStyle = '#0b1220'; cx.font = '700 9px sans-serif';
+    cx.fillStyle = '#0b1220'; cx.font = '800 12px sans-serif';
     cx.textAlign = 'center'; cx.textBaseline = 'middle';
-    cx.fillText(text, w/2, 6);
+    cx.fillText(text, w/2, 9);
     sp = { canvas:c, w, h };
     SPRITE_CACHE.set(key, sp);
     return sp;
@@ -1085,9 +1085,9 @@ body.noScroll{ overflow:hidden; }
       const frames = ANIM_FNS.has(d.drawFn) ? ANIM_FRAMES : 1;
       for(let f=0; f<frames; f++) getSpriteFrame(d.drawFn, d.size, f);
     });
-    getSpriteFrame('drawAsb', 18, 0);
-    getSpriteFrame('drawIv', 18, 0);
-    getSpriteFrame('drawNe', 18, 0);
+    getSpriteFrame('drawAsb', 24, 0);
+    getSpriteFrame('drawIv', 24, 0);
+    getSpriteFrame('drawNe', 24, 0);
     ['access','watch','reserve'].forEach(t=>{ getPlayerSprite(t); getBulletSprite(t); });
   }
   function drawEnemies(){
@@ -1110,7 +1110,7 @@ body.noScroll{ overflow:hidden; }
       const badgeText = e.maxHp>1 ? `${e.def.label} HP${Math.max(1,Math.ceil(e.hp-1e-6))}` : e.def.label;
       const bs = getBadgeSprite(badgeText);
       const bx = Math.max(2, Math.min(W-bs.w-2, e.x-bs.w/2));   // 画面端で切れないように補正
-      ctx.drawImage(bs.canvas, bx, e.y+e.def.size*1.5, bs.w, bs.h);
+      ctx.drawImage(bs.canvas, bx, e.y+sp.half*0.8, bs.w, bs.h);   // 名前はキャラの足もとにわずかに重なる位置
     }
   }
   // 弾丸型：とがった先端＋筒＋底のふち（thin=trueは細長いCEZ用の針）
@@ -1283,13 +1283,13 @@ body.noScroll{ overflow:hidden; }
   const ALL_DRUG_IDS = ['ABPC','CEZ','CTRX','CFPM','MEPM','IPM','CZA','CZAAZT','CFDC','COL'];
   // 有効/無効と第一選択(◎)は、参考資料の評価表（ESBL=MEPM、AmpC=CFPM、IMP-6/NDM-1=CZA+AZT など）に基づく。学習用に単純化
   const ENEMY_DEFS = {
-    EC_WT:    { label:'大腸菌 ABPC感受性',        fullLabel:'大腸菌 ABPC感受性（野生型）',           species:'ec', drawFn:'drawEcWt',   size:24, hp:1, dmg:8,  resistLevel:0,
+    EC_WT:    { label:'大腸菌 ABPC感受性',        fullLabel:'大腸菌 ABPC感受性（野生型）',           species:'ec', drawFn:'drawEcWt',   size:32, hp:1, dmg:8,  resistLevel:0,
                 susceptibleTo:['ABPC','CEZ','CTRX','CFPM','MEPM','IPM','CZA','CZAAZT','CFDC','COL'], bestDrugs:['ABPC'] },
-    KP_PCASE: { label:'肺炎桿菌 ペニシリナーゼ', fullLabel:'肺炎桿菌 ペニシリナーゼ産生（SHV-1／CEZ感受性）', species:'kp', drawFn:'drawKpPcase', size:24, hp:1, dmg:8,  resistLevel:0,
+    KP_PCASE: { label:'肺炎桿菌 ペニシリナーゼ', fullLabel:'肺炎桿菌 ペニシリナーゼ産生（SHV-1／CEZ感受性）', species:'kp', drawFn:'drawKpPcase', size:32, hp:1, dmg:8,  resistLevel:0,
                 susceptibleTo:['CEZ','CTRX','CFPM','MEPM','IPM','CZA','CZAAZT','CFDC','COL'], bestDrugs:['CEZ'] },
-    EC_ESBL:  { label:'大腸菌 ESBL(CTX-M-9)',      fullLabel:'大腸菌 CTX-M-9陽性ESBL',                species:'ec', drawFn:'drawEcEsbl',  size:24, hp:2, dmg:12, resistLevel:1,
+    EC_ESBL:  { label:'大腸菌 ESBL(CTX-M-9)',      fullLabel:'大腸菌 CTX-M-9陽性ESBL',                species:'ec', drawFn:'drawEcEsbl',  size:32, hp:2, dmg:12, resistLevel:1,
                 susceptibleTo:['MEPM','IPM','CZA','CZAAZT','CFDC','COL'], bestDrugs:['MEPM'] },
-    EC_AMPC:  { label:'大腸菌 AmpC過剰発現',       fullLabel:'大腸菌 AmpC過剰発現',                   species:'ec', drawFn:'drawEcAmpc',  size:24, hp:2, dmg:12, resistLevel:1,
+    EC_AMPC:  { label:'大腸菌 AmpC過剰発現',       fullLabel:'大腸菌 AmpC過剰発現',                   species:'ec', drawFn:'drawEcAmpc',  size:32, hp:2, dmg:12, resistLevel:1,
                 susceptibleTo:['CFPM','MEPM','IPM','CZA','CZAAZT','CFDC','COL'], bestDrugs:['CFPM'] },
     EC_IMP6:  { label:'大腸菌 MBL(IMP-6)',         fullLabel:'大腸菌 IMP-6産生（MBL）',               species:'ec', drawFn:'drawEcImp6',  size:25, hp:3, dmg:18, resistLevel:2,
                 susceptibleTo:['IPM','CZAAZT','CFDC','COL'], bestDrugs:['CZAAZT'] },
@@ -1353,7 +1353,7 @@ body.noScroll{ overflow:hidden; }
   };
 
   // ==================== 図鑑（キャラクター詳細）====================
-  const ASB_DEF = { label:'ASB', fullLabel:'無症候性細菌尿（ASB）', drawFn:'drawAsb', size:18, gramTag:'🧪 細菌は検出されたが症状なし',
+  const ASB_DEF = { label:'ASB', fullLabel:'無症候性細菌尿（ASB）', drawFn:'drawAsb', size:24, gramTag:'🧪 細菌は検出されたが症状なし',
     desc:'尿から細菌が検出されても、症状（発熱・排尿時痛・頻尿など）がなければ、原則として抗菌薬では治療しない。治療しても症状は改善せず、副作用と耐性菌のリスクだけが残る。正しい対応は、抗菌薬を使わず経過観察すること。（妊婦や、粘膜に侵襲のある泌尿器科的処置の前などは例外）' };
   const DEX_SIZE = { EC_WT:36, KP_PCASE:36, EC_ESBL:36, EC_AMPC:36, EC_IMP6:36, KP_KPC1:36, KP_GES5:36, KP_NDM1:36, ASB:34 };
   const GROUP_DEFS = {
@@ -1485,21 +1485,21 @@ body.noScroll{ overflow:hidden; }
       });
     } else if(kind==='asb'){
       gameState.enemies.push({
-        kind, type, def:{label:'ASB', drawFn:'drawAsb', size:18},
+        kind, type, def:{label:'ASB', drawFn:'drawAsb', size:24},
         x:x0, y:-30, baseX:x0, speed: computeSpeed(wave)*0.85,
         oscPhase: Math.random()*Math.PI*2, oscSpeed:0.02+Math.random()*0.01, oscAmp:18+Math.random()*10,
         hp:1, maxHp:1, hitFlash:0, judged:false,
       });
     } else if(kind==='iv'){
       gameState.enemies.push({
-        kind, type, def:{label:'輸液', drawFn:'drawIv', size:18},
+        kind, type, def:{label:'輸液', drawFn:'drawIv', size:24},
         x:x0, y:-30, baseX:x0, speed: computeSpeed(wave)*0.9,
         oscPhase: Math.random()*Math.PI*2, oscSpeed:0.02+Math.random()*0.01, oscAmp:16+Math.random()*10,
         hp:1, maxHp:1, hitFlash:0, judged:false,
       });
     } else {
       gameState.enemies.push({
-        kind, type, def:{label:'ノルアドレナリン', drawFn:'drawNe', size:18},
+        kind, type, def:{label:'ノルアドレナリン', drawFn:'drawNe', size:24},
         x:x0, y:-30, baseX:x0, speed: computeSpeed(wave)*0.9,
         oscPhase: Math.random()*Math.PI*2, oscSpeed:0.02+Math.random()*0.01, oscAmp:16+Math.random()*10,
         hp:1, maxHp:1, hitFlash:0, judged:false,
