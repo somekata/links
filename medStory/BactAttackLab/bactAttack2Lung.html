@@ -75,21 +75,22 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 @keyframes pulse{50%{transform:scale(1.06)}}
 
 /* drug panel */
-#panel{flex:0 0 auto;background:var(--surface);padding:8px 8px 8px;border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:0;touch-action:none;box-shadow:0 -6px 24px rgba(0,0,0,.10)}
-#selInfo{min-height:18px;font-size:12px;font-weight:700;text-align:center;margin-bottom:6px;line-height:1.35;color:var(--muted)}
+#panel{flex:0 0 auto;background:var(--surface);padding:5px 8px calc(6px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:0;touch-action:none;box-shadow:0 -6px 24px rgba(0,0,0,.10)}
+#selInfo{height:17px;font-size:12px;font-weight:700;text-align:center;margin-bottom:4px;line-height:17px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #selInfo b{color:var(--text)}
 #drugs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
-.drug{--c:var(--accent);position:relative;height:56px;min-width:0;padding:6px 0 0;border-radius:12px;background:var(--surface2);color:var(--text);border:1.5px solid var(--border);
+.drug{--c:var(--accent);position:relative;height:42px;min-width:0;padding:5px 0 0;border-radius:12px;background:var(--surface2);color:var(--text);border:1.5px solid var(--border);
   overflow:hidden;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .12s,box-shadow .12s,border-color .12s}
 .drug .bar{position:absolute;left:0;right:0;top:0;height:4px;background:var(--c)}
 .drug .nm.long{font-size:clamp(7.5px,2.2vw,9.5px);letter-spacing:-.05em}
 .drug .nm{display:block;font-size:clamp(10px,3.3vw,13px);font-weight:800;letter-spacing:-.03em;white-space:nowrap;line-height:1.1}
-.drug .sub{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-top:2px;min-height:11px;white-space:nowrap}
+.drug .sub{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-top:1px;min-height:10px;line-height:10px;white-space:nowrap}
 .drug.sel{border-color:var(--c);transform:translateY(-3px);box-shadow:0 0 0 1px var(--c),0 6px 18px -2px var(--c);background:var(--surface)}
 .drug.stopped{opacity:.55;text-decoration:line-through;filter:grayscale(.8)}
 .drug.stopped .sub{text-decoration:none;color:var(--bad);font-weight:800}
 
 /* tab bar */
+#app.immersive #tabbar{display:none}
 #tabbar{flex:0 0 auto;display:flex;align-items:stretch;gap:4px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);position:relative;z-index:70}
 .tab{flex:1;min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.03em;border-radius:12px;touch-action:none}
 .tab svg,#themeBtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -985,12 +986,11 @@ function buildDrugs() {
   updateSelInfo();
 }
 function selectDrug(id) { if (!G || isBlocked(id)) return; G.sel = id; buildDrugs(); }
-function updateSelInfo() {
+function updateSelInfo() {   // 選択中の薬の説明（1行）
   if (!G) return;
   const d = DRUG[G.sel];
-  let t = '選択中：<b style="color:' + (d.aware === 'Watch' ? 'var(--wt)' : AW_COL[d.aware]) + '">' + d.label + '（' + d.name + '）</b>　' + AWS[d.aware] + '・ASC ' + d.asc;
-  t += '<br>' + d.atk + '　威力Lv' + G.pl + '　速射Lv' + G.rl;
-  if (G.stop) t += '<br><span style="color:var(--bad)">出荷停止：' + dl(G.stop.drug) + '（残り' + (G.stop.endWave - G.wave + 1) + 'ウェーブ）</span>';
+  let t = '<b style="color:' + (d.aware === 'Watch' ? 'var(--wt)' : AW_COL[d.aware]) + '">' + d.label + '</b> ' + AWS[d.aware] + '・ASC' + d.asc + '｜' + d.atk.split('（')[0] + '｜威力' + G.pl + ' 速射' + G.rl;
+  if (G.stop) t += '｜<span style="color:var(--bad)">停止' + dl(G.stop.drug) + '</span>';
   $('selInfo').innerHTML = t;
 }
 
@@ -1529,6 +1529,7 @@ function updateSelInfoLazy() { if (++selTick % 30 === 0) { updateSelInfo(); } }
 function resize() {
   const st = $('stage'), w = st.clientWidth, h = st.clientHeight;
   if (!w || !h) return;
+  if (G && G.state === 'pause') return;   // 一時停止中にメニューが出ても、ゲーム画面の大きさは変えない
   C.W = Math.round(Math.max(C.MIN_W, Math.min(C.MAX_W, C.H * w / h)));   // 幅を画面に合わせて広げる
   ES = C.W * C.ENEMY_W_RATIO;
   scale = Math.min(w / C.W, h / C.H);
@@ -1546,7 +1547,11 @@ if (window.ResizeObserver) new ResizeObserver(resize).observe($('stage'));
 window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 
 /* ================= 画面遷移 ================= */
-function show(id, on) { $(id).classList.toggle('show', !!on); }
+function show(id, on) { $(id).classList.toggle('show', !!on); updateChrome(); }
+function updateChrome() {   // プレイ中だけメニュー（タブ・音・テーマ）を隠して、画面を最大にする
+  const im = curTab === 'play' && !document.querySelector('.ov.show');
+  $('app').classList.toggle('immersive', im);
+}
 function pause() {
   if (!G || G.state !== 'play') return;
   G.state = 'pause'; endPointer(null); keys.space = keys.left = keys.right = false;
@@ -1673,7 +1678,7 @@ function closeShop() { show('ovShop', false); if (shopInGame && G && G.state ===
 const PAGES = { stat: 'pgStat', info: 'pgInfo', link: 'pgLink' };
 let curTab = 'play';
 function setTab(t) {
-  curTab = t;
+  curTab = t; updateChrome();
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   Object.keys(PAGES).forEach(k => show(PAGES[k], k === t));
   if (t !== 'play') {
