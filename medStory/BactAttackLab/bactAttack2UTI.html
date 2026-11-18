@@ -67,6 +67,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 #selInfo b{color:var(--text)}
 #drugs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 /* tab bar */
+#app.immersive #tabbar{display:none}
 #tabbar{flex:0 0 auto;display:flex;align-items:stretch;gap:4px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);position:relative;z-index:70}
 .tab{flex:1;min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.03em;border-radius:12px;touch-action:none}
 .tab svg,#themeBtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -317,10 +318,11 @@ body.noScroll{ overflow:hidden; }
 #banner{ z-index:6; }
 #banner .t{ font-size:30px; }
 #banner .s{ font-size:13px; }
-#panel{ padding-bottom:6px; }
-#selInfo{ min-height:34px; font-size:11px; line-height:1.4; display:flex; align-items:center; justify-content:center; }
+#panel{ padding:5px 8px calc(6px + env(safe-area-inset-bottom)); }
+#selInfo{ height:17px; font-size:12px; font-weight:700; line-height:17px; text-align:center; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; display:block; min-height:0; }
+#selInfo b{ color:var(--text); }
 .weapons{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; margin:0; }
-.weaponBtn{ --c:var(--accent); position:relative; height:54px; min-width:0; padding:6px 0 0; border-radius:12px; background:var(--surface2); color:var(--text);
+.weaponBtn{ --c:var(--accent); position:relative; height:42px; min-width:0; padding:5px 0 0; border-radius:12px; background:var(--surface2); color:var(--text);
   border:1.5px solid var(--border); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; flex:none;
   transition:transform .12s, box-shadow .12s, border-color .12s; }
 .weaponBtn::before{ content:''; position:absolute; left:0; right:0; top:0; height:4px; background:var(--c); z-index:1; }
@@ -636,6 +638,8 @@ body.noScroll{ overflow:hidden; }
   let W = 0, H = 0, DPR = 1;
   const SPRITE_CACHE = new Map();   // スプライトキャッシュ(オフスクリーンCanvas)
   function resizeCanvas(){
+    let gp = false; try{ gp = !!(gameState && gameState.paused && gameState.running); }catch(e){}
+    if(gp) return;   // 一時停止中にメニューが出ても、ゲーム画面の大きさは変えない
     const holder = document.getElementById('canvasHolder');
     const rect = holder.getBoundingClientRect();
     const newDpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1555,10 +1559,10 @@ body.noScroll{ overflow:hidden; }
     refreshWeaponStates();
     updateSelInfo();
   }
-  function updateSelInfo(){
+  function updateSelInfo(){   // 選択中の薬の説明（1行）
     const w = WMAP[gameState.selectedWeapon]; if(!w) return;
-    const tj = w.tier==='access' ? 'Access' : (w.tier==='watch' ? 'Watch' : 'Reserve');
-    document.getElementById('selInfo').innerHTML = `<span><b>${w.abbr}</b> ${w.full}　${tj}・ASC ${w.asc}${(w.doses||1)>1?'（2剤）':''}<br>弾：${w.atk}</span>`;
+    const tj = w.tier==='access' ? 'A' : (w.tier==='watch' ? 'Wa' : 'Re');
+    document.getElementById('selInfo').innerHTML = `<b>${w.abbr}</b> ${tj}・ASC${w.asc}${(w.doses||1)>1?'（2剤）':''}｜${w.atk.split('（')[0]}`;
   }
   // 体の状態(腎障害・ガス欠・タンク残量)をボタンに反映。ボタンを作り直さず、クラスと文字だけ更新する
   function refreshWeaponStates(){
@@ -2490,7 +2494,11 @@ body.noScroll{ overflow:hidden; }
 
   // ==================== アプリの枠組み（BactAttack2準拠）：タブ・テーマ・音・名前・モード・記録 ====================
   const $ = id => document.getElementById(id);
-  function show(id, on){ $(id).classList.toggle('show', !!on); }
+  function show(id, on){ $(id).classList.toggle('show', !!on); updateChrome(); }
+  function updateChrome(){   // プレイ中だけメニュー（タブ・音・テーマ）を隠して、画面を最大にする
+    let ct = 'play'; try{ ct = curTab; }catch(e){}
+    $('app').classList.toggle('immersive', ct==='play' && !document.querySelector('.ov.show'));
+  }
   const NAME_KEY = LS_PREFIX+'name', SCORES_KEY = LS_PREFIX+'scores', CUM_KEY = LS_PREFIX+'cum';
   const AWS = { access:'A', watch:'Wa', reserve:'Re' }, AW_COL = { access:'#22c55e', watch:'#f59e0b', reserve:'#ef4444' };
   const AW_NAME = { access:'Access', watch:'Watch', reserve:'Reserve' };
@@ -2537,7 +2545,7 @@ body.noScroll{ overflow:hidden; }
   // ---- タブ ----
   const PAGES = { stat:'pgStat', info:'pgInfo', link:'pgLink' };
   function setTab(t){
-    curTab = t;
+    curTab = t; updateChrome();
     document.querySelectorAll('.tab').forEach(b=> b.classList.toggle('on', b.dataset.tab===t));
     Object.keys(PAGES).forEach(k=> show(PAGES[k], k===t));
     if(t!=='play'){
