@@ -1083,7 +1083,7 @@ function killFriend(e) {
 function captureFriend(f) {
   const kind = f.kind;
   G.friends[kind] = (G.friends[kind] || 0) + 1; G.friendTotal++;
-  G.fx.push({ type: 'flag', x: f.x, y: f.y, img: EN[kind].img + '_flag', box: f.box, t: 0, life: 1.1 });
+  G.fx.push({ type: 'flag', x: f.x, y: f.y, img: EN[kind].img + '_flag', box: f.box, t: -0.18 * G.fx.filter(q => q.type === 'flag').length, life: 1.5 });
   pop(f.x, f.y, '#bbf7d0', 16, 140);
   if (kind === 'koubo') { G.coins += 5; floatText(f.x, f.y - f.size / 2, '乾杯！ 🪙+5', '#fde68a'); }
   else {
@@ -1494,11 +1494,7 @@ function drawProjectiles() {
     ctx.restore();
   });
   G.fx.forEach(f => {   // ボムの爆発／投降のようす
-    if (f.type === 'flag') {
-      const k = f.t / f.life, im = IMGS[f.img];
-      if (im) { ctx.save(); ctx.globalAlpha = k < 0.7 ? 1 : Math.max(0, 1 - (k - 0.7) / 0.3); ctx.drawImage(im, f.x - f.box / 2, f.y - f.box / 2 - 40 * k, f.box, f.box); ctx.restore(); }
-      return;
-    }
+    if (f.type === 'flag') return;   // 投降の演出は drawCaptures()（発射台より手前）で描く
     const k = f.t / f.life, R = f.R * (0.35 + 0.65 * k);
     ctx.save();
     ctx.globalAlpha = (1 - k) * 0.35; ctx.fillStyle = f.col; ctx.beginPath(); ctx.arc(f.x, f.y, R, 0, 6.28); ctx.fill();
@@ -1513,6 +1509,36 @@ function sphereColor(e) {
   if (g === 'yeast') return ['#ffc16b', '#c2630a'];
   if (g === 'mold') return ['#5eead4', '#0f766e'];
   return ['#cbd5e1', '#475569'];
+}
+function drawCaptures() {   // 白旗→クローズアップ→発射台の下のポケットへ「スポッ」
+  G.fx.forEach(f => {
+    if (f.type !== 'flag' || f.t < 0) return;
+    const im = IMGS[f.img]; if (!im) return;
+    const T = f.t, px = G.lx, py = C.H - 24;
+    const ease = x => x * x * (3 - 2 * x), lerp = (a, b, k) => a + (b - a) * k;
+    let x = f.x, y = f.y, s = 1, rot = 0;
+    if (T < 0.35) { const k = ease(T / 0.35); s = lerp(1, 1.35, k); y = f.y - 10 * k; }                       // ぐっとアップ
+    else if (T < 0.7) { s = 1.35; y = f.y - 10; rot = Math.sin((T - 0.35) * 22) * 0.07; }                     // 白旗をふる
+    else {                                                                                                      // ポケットへ
+      const k = Math.min(1, (T - 0.7) / 0.55), e = k * k * (3 - 2 * k);
+      x = lerp(f.x, px, e); y = lerp(f.y - 10, py + 14, k * k); s = lerp(1.35, 0.42, e); rot = lerp(0, 0.5, e) * (f.x < px ? 1 : -1);
+    }
+    const pa = Math.min(1, T / 0.25) * (T > 1.3 ? Math.max(0, 1 - (T - 1.3) / 0.2) : 1);   // ポケットの出入り
+    const sq = (T > 1.15 && T < 1.4) ? 1 + 0.18 * Math.sin((T - 1.15) / 0.25 * Math.PI) : 1;   // 入ったときのぷるん
+    ctx.save();   // 友だち（ポケットの口より下は隠れる）
+    ctx.beginPath(); ctx.rect(0, 0, C.W, py); ctx.clip();
+    ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
+    ctx.drawImage(im, -f.box / 2, -f.box / 2, f.box, f.box);
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = pa; ctx.translate(px, py); ctx.scale(1, sq);   // ポケット（手前側）
+    ctx.fillStyle = '#2b4a7a'; ctx.strokeStyle = '#16203a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-40, 0); ctx.lineTo(-34, 24); ctx.quadraticCurveTo(0, 36, 34, 24); ctx.lineTo(40, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#3b64a0'; ctx.beginPath(); ctx.ellipse(0, 0, 40, 7, 0, 0, 6.2832); ctx.fill(); ctx.stroke();
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-31, 10); ctx.quadraticCurveTo(0, 26, 31, 10); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+    if (T >= 1.2 && !f.sp) { f.sp = 1; pop(px, py - 6, '#bbf7d0', 12, 120); floatText(px, py - 30, 'スポッ！', '#bbf7d0'); }
+  });
 }
 function drawEnemy(e) {
   const info = EN[e.kind], vis = e.stage === 0 || e.revealed;
@@ -1565,6 +1591,7 @@ function draw() {
   G.enemies.forEach(drawEnemy);
   drawProjectiles();
   drawLauncher();
+  drawCaptures();
   G.parts.forEach(p => { ctx.globalAlpha = Math.max(0, 1 - p.t / p.life); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.28); ctx.fill(); });
   ctx.globalAlpha = 1;
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = '900 13px ' + FONT;
