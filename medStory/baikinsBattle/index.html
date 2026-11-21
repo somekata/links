@@ -277,6 +277,10 @@ summary{font-weight:700;cursor:pointer;min-height:36px;display:flex;align-items:
 .warnbox{background:#fff0d8;border-left:5px solid var(--warn);border-radius:6px;padding:8px 10px;margin:10px 0;font-size:.92rem}
 .ovbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .ovbtns .btn{flex:1 1 140px}
+.ovbtns .btn.qc{flex:1 1 100%;text-align:left;font-weight:500;line-height:1.45}
+.qz-q{font-size:1.02rem;font-weight:700;margin:8px 0 4px;line-height:1.6}
+.qz-tag{display:inline-block;border-radius:999px;padding:1px 10px;background:#fff0d8;border:1.5px solid #e2c36a;font-size:.8rem;font-weight:700;color:#7a5a00}
+.qz-sc{text-align:center;font-weight:700;margin:6px 0}.qz-sc b{font-size:2.2rem}
 #toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 76px);transform:translateX(-50%);background:#2b2622;color:#fff;padding:9px 16px;border-radius:999px;font-size:.9rem;z-index:60;max-width:92vw;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.show{opacity:.95}
 @media (min-width:900px){#toast{bottom:24px}}
@@ -710,6 +714,7 @@ function tmChips(e){
   if(G.stun>0)c.push('<span class="stchip stun">⚡ 痺れ '+(G.stun/1000).toFixed(1)+'秒</span>');
   if(G.poison>0)c.push('<span class="stchip psn">☠ 毒 '+Math.ceil(G.poison/1000)+'秒</span>');
   if(e.renal)c.push('<span class="stchip rnl">🩸 腎障害（回復半減）</span>');
+  if(e.armor>0)c.push('<span class="stchip tst">🛡 軽減 ×'+e.armor+'</span>');
   if(G.combo>=2)c.push('<span class="stchip cmb">🔥 コンボ ×'+G.combo+'</span>');
   (e.pend||[]).forEach(p=>c.push('<span class="stchip tst">🔬 '+(p.id==='culture'?'培養':'感受性')+' '+(Math.max(0,p.ms)/1000).toFixed(1)+'秒</span>'));
   return c.join('');
@@ -729,11 +734,126 @@ function tmPaint(){
   if(gb)gb.classList.toggle('hot',e.cd<1500);
 }
 function fmtT(ms){const s=Math.round(ms/1000);return s>=60?Math.floor(s/60)+'分'+(s%60)+'秒':s+'秒';}
+
+/* =====================================================================
+   クイズ：ボーナスクイズ（敵撃退後にときどき1問）／理解度テスト（終了時3問・スキップ可）
+   問題は番号が小さいほど易しい。到達レベルに応じて出題範囲の「窓」をずらす。
+   ===================================================================== */
+const QUIZ=[{"n":1,"q":"肺炎球菌に無効な抗菌薬は？","c":["ペニシリンG（PCG）","セファゾリン（CEZ）","セフタジジム（CAZ）"],"a":2,"ex":"CAZは緑膿菌などのグラム陰性桿菌への活性を強めた第3世代セフェム系薬であり、肺炎球菌などのグラム陽性球菌に対する活性が極めて弱いため無効です。PCGやCEZは（感受性株であれば）有効です。"},{"n":2,"q":"メチシリン感受性黄色ブドウ球菌（MSSA）に無効な抗菌薬は？","c":["ペニシリンG（PCG）","セファゾリン（CEZ）","バンコマイシン（VCM）"],"a":0,"ex":"現在のMSSAの約9割以上はペニシリナーゼ（β-ラクタマーゼ）を産生するため、PCGは分解されて無効となります（感受性が確認されたごく一部の株を除く）。治療の第一選択はCEZであり、VCMも有効です。"},{"n":3,"q":"メチシリン耐性黄色ブドウ球菌（MRSA）が持つ耐性遺伝子は？","c":["gyrA","mcr1","mecA"],"a":2,"ex":"MRSAは mecA 遺伝子を獲得することで、β-ラクタム系薬に親和性の低い細胞壁合成酵素（PBP2' / PBP2a）を産生し、ほぼすべてのβ-ラクタム系薬に耐性を示します。gyrA 変異はキノロン耐性、mcr1 はコリスチン耐性に関わる遺伝子です。"},{"n":4,"q":"グラム陽性球菌が持たない構造は？","c":["外膜","莢膜","細胞壁"],"a":0,"ex":"グラム陽性菌は厚いペプチドグリカン層（細胞壁）を持ちますが、その外側に「外膜」は存在しません（外膜はグラム陰性菌特有の構造です）。なお、肺炎球菌のように莢膜を持つグラム陽性球菌は存在します。"},{"n":5,"q":"乳幼児の細菌性髄膜炎や急性喉頭蓋炎の主要な原因菌であった「インフルエンザ菌b型（Hib）」の最も重要な病原因子はどれか？","c":["ポリリボシルリビトールリン酸（PRP）からなる莢膜","外毒素である破傷風毒素（テタノスパスミン）","細胞壁の外側に存在するミコール酸"],"a":0,"ex":"インフルエンザ菌は莢膜の有無で「莢膜株（a〜f型）」と「無莢膜株（NTHi）」に分けられます。その中でb型（Hib）は、PRP（ポリリボシルリビトールリン酸）という特殊な莢膜を持つことで宿主の貪食作用を強力に回避し、血流に侵入して髄膜炎や喉頭蓋炎などの重篤な侵襲性感染症を引き起こします（HibワクチンはこのPRPにキャリアタンパクを結合させたものです）。"},{"n":6,"q":"コリスチンの標的は？","c":["外膜","細胞壁","リボソーム"],"a":0,"ex":"コリスチン（ポリペプチド系）は、グラム陰性菌の「外膜」にあるリポ多糖（LPS）と結合して膜構造を破壊し、殺菌作用を示します。外膜を持たないグラム陽性菌には無効です。"},{"n":7,"q":"基質特異性拡張型βラクタマーゼ（ESBL）により分解される抗菌薬は？","c":["セフタジジム","メロペネム","レボフロキサシン"],"a":0,"ex":"ESBLはペニシリン系だけでなく、第3世代セフェム系（セフタジジム、セフトリアキソンなど）やモノバクタム系（アズトレオナム）を分解します。メロペネム（カルバペネム系）は分解されず、レボフロキサシン（キノロン系）はβ-ラクタム環を持たないため影響を受けません。"},{"n":8,"q":"Hibワクチン（インフルエンザ菌b型ワクチン）の定期接種普及後の疫学変化として、現在日本の臨床現場で分離されるインフルエンザ菌感染症（肺炎、中耳炎、気管支炎など）の大部分を占める菌株はどれか？","c":["無莢膜型インフルエンザ菌（NTHi：non-typeable Haemophilus influenzae）","インフルエンザ菌a型（Hia）","インフルエンザ菌f型（Hif）"],"a":0,"ex":"Hibワクチンの普及によりHibによる髄膜炎などの侵襲性感染症は激減しました。現在、呼吸器感染症や中耳炎などで分離されるインフルエンザ菌のほとんどは莢膜を持たない「無莢膜型（NTHi）」であり、HibワクチンではNTHiによる感染症は予防できません（また、BLNARの多くもNTHiに属します）。"},{"n":9,"q":"インフルエンザ菌（Haemophilus influenzae）の耐性株である「BLNAR（β-ラクタマーゼ非産生アンピシリン耐性菌）」の主な耐性機序はどれか？","c":["TEM-1型β-ラクタマーゼの産生","ペニシリン結合蛋白（PBP3：ftsI遺伝子）の変異","外膜ポーリンの完全欠損"],"a":1,"ex":"BLNARはβ-ラクタマーゼを産生せず、細胞壁合成酵素であるPBP3（ftsI遺伝子産物）が変異してβ-ラクタム系薬との親和性が低下することで耐性を獲得します。一方、TEM-1やROB-1などのβ-ラクタマーゼを産生してアンピシリン耐性となるのがBLPAR（β-ラクタマーゼ産生アンピシリン耐性菌）です。"},{"n":10,"q":"クラスBのカルバペネマーゼは？","c":["IMP-6","KPC1","GES5"],"a":0,"ex":"Ambler分類において、IMP型（IMP-1、IMP-6など）は活性中心に亜鉛イオンを持つクラスB（メタロ-β-ラクタマーゼ）に分類されます。日本で分離されるカルバペネマーゼ産生腸内細菌目細菌（CPE）で最も頻度が高いのがIMP型です。KPC1とGES5はクラスAに分類されます。"},{"n":11,"q":"緑膿菌（Pseudomonas aeruginosa）に無効な抗菌薬は？","c":["セフェピム（CFPM）","セフトリアキソン（CTRX）","ピペラシリン・タゾバクタム（PIPC/TAZ）"],"a":1,"ex":"CTRXは第3世代セフェムですが、抗緑膿菌活性を持ちません。第3世代ならCAZ、第4世代のCFPM、PIPC/TAZは緑膿菌をカバーします。"},{"n":12,"q":"腸球菌（Enterococcus faecalis）に無効な（自然耐性の）抗菌薬は？","c":["アンピシリン（ABPC）","バンコマイシン（VCM）","セファゾリン（CEZ）"],"a":2,"ex":"腸球菌はすべてのセフェム系薬に対して自然耐性を示します（PBPの親和性が低いため）。E. faecalis の第一選択はABPCです。"},{"n":13,"q":"日本の小児・成人呼吸器感染症で分離頻度が高い「BLNAR（β-ラクタマーゼ非産生アンピシリン耐性インフルエンザ菌）」に対して、原則として治療効果が期待できない（無効な）抗菌薬はどれか？","c":["スルバクタム・アンピシリン（SBT/ABPC）","セフトリアキソン（CTRX）","レボフロキサシン（LVFX）"],"a":0,"ex":"BLNARはβ-ラクタマーゼを産生しないため、β-ラクタマーゼ阻害薬（スルバクタムやクラブラン酸）を配合してもアンピシリンの活性は回復せず無効です（BLPARにはSBT/ABPCやCVA/AMPCが有効です）。BLNARにはCTRXなどの第3世代セフェム系薬やキノロン系薬を使用します。"},{"n":14,"q":"バンコマイシン耐性腸球菌（VRE）の多くが持つ、D-Ala-D-Lacへの変異に関わる耐性遺伝子は？","c":["vanA","blaNDM-1","ermB"],"a":0,"ex":"vanA や vanB 遺伝子により、細胞壁前駆体の末端がD-Ala-D-AlaからD-Ala-D-Lacに変化し、バンコマイシンが結合できなくなります。blaNDM-1 はメタロ-β-ラクタマーゼ、ermB はマクロライド耐性遺伝子です。"},{"n":15,"q":"グラム陰性桿菌の「外膜」に存在する、エンドトキシン（内毒素）の本体は？","c":["ペプチドグリカン","リポ多糖（LPS）","タイコ酸"],"a":1,"ex":"グラム陰性菌の外膜にはLPSが存在し、そのリピドA部分がエンドトキシン活性を持ちます。タイコ酸はグラム陽性菌の細胞壁成分です。"},{"n":16,"q":"小児の定期接種に用いられる「肺炎球菌結合型ワクチン（PCV13、PCV15、PCV20など）」が、従来の「23価肺炎球菌莢膜ポリサッカライドワクチン（PPSV23）」と比較して「2歳未満の乳幼児にも高い免疫原性（T細胞依存性免疫応答・免疫記憶）」を誘導できる理由はどれか？","c":["莢膜ポリサッカライドに無毒化したキャリアタンパク（CRM197など）が結合されているため","生きた弱毒化肺炎球菌を使用しているため","アジュバントとして高濃度のリポ多糖（LPS）が含まれているため"],"a":0,"ex":"莢膜多糖体（ポリサッカライド）単独ではT細胞を介さない（T細胞非依存性）免疫応答しか起きず、免疫システムが未熟な2歳未満の乳幼児では十分な抗体産生や免疫記憶（メモリーB細胞）が得られません。キャリアタンパクを結合（コンジュゲート）させることでT細胞依存性応答が誘導され、乳幼児でも高い予防効果と持続的な免疫記憶が得られます。"},{"n":17,"q":"ダプトマイシン（DAP）の主な作用機序（標的）は？","c":["細胞膜の脱分極","タンパク質合成阻害（50Sサブユニット）","DNAジャイレース阻害"],"a":0,"ex":"ダプトマイシンはカルシウムイオン依存的にグラム陽性菌の細胞膜に結合し、急速な脱分極を引き起こして殺菌します（肺サーファクタントで不活化されるため肺炎には無効です）。"},{"n":18,"q":"AmpC型β-ラクタマーゼ産生菌（SPACEなど）に対して、原則として治療に推奨されない（誘導・耐性化リスクが高い）抗菌薬は？","c":["セフォタキシム（CTX）","セフェピム（CFPM）","メロペネム（MEPM）"],"a":0,"ex":"AmpC産生菌は、第3世代セフェム（CTXやCTRXなど）の投与中に耐性変異株が選択されやすいため使用を避けます。第4世代セフェム（CFPM）やカルバペネム系（MEPM）はAmpCに安定です。"},{"n":19,"q":"クラスDのカルバペネマーゼは？","c":["VIM-2","OXA-48","SME-1"],"a":1,"ex":"Ambler分類において、OXA-48はクラスDに分類されます。VIM-2はクラスB（メタロ-β-ラクタマーゼ）、SME-1はクラスAです。"},{"n":20,"q":"マイコプラズマ（Mycoplasma pneumoniae）に無効な（自然耐性の）抗菌薬は？","c":["アジスロマイシン（AZM）","ミノサイクリン（MINO）","アモキシシリン（AMPC）"],"a":2,"ex":"マイコプラズマは「細胞壁」を持たない細菌であるため、細胞壁合成を阻害するβ-ラクタム系薬（AMPCなど）は完全に無効です。"},{"n":21,"q":"小児への肺炎球菌結合型ワクチン（PCV）の普及に伴い、臨床現場や疫学調査で問題となっている現象「セロタイプ・リプレイスメント（血清型置換）」とはどのような現象か？","c":["ワクチンに含まれる血清型の感染症が減少する一方で、ワクチンに含まれない血清型による感染症の割合が増加すること","ワクチン接種によって肺炎球菌がグラム陰性桿菌に形質転換すること","成人用ワクチン（PPSV23）を接種した患者で、小児用ワクチン（PCV）の副反応が強く出ること"],"a":0,"ex":"PCVの導入によりワクチン含有血清型（7価→13価→15価→20価）による侵襲性肺炎球菌感染症（IPD）は激減しましたが、空いたニッチを埋めるように非ワクチン血清型（15A、23A、35Bなど）が相対的に増加する「血清型置換」が起きており、より多くの血清型をカバーする多価ワクチンへの切り替えが進められています。"},{"n":22,"q":"WHOが提唱する抗菌薬の「AWaRe分類」において、一般的な感染症の第一選択薬として推奨され、耐性化リスクが比較的低い「Access」に分類される抗菌薬は？","c":["アモキシシリン（AMPC）","レボフロキサシン（LVFX）","バンコマイシン（VCM）"],"a":0,"ex":"AWaRe分類では、Access（第一選択として積極使用）、Watch（耐性化リスクが高く限定使用）、Reserve（多剤耐性菌への最終手段）に分類されます。AMPCやCEZはAccess、LVFXやVCM、第3世代セフェム、カルバペネムはWatchに分類されます。"},{"n":23,"q":"WHOの「AWaRe分類」において、多剤耐性菌に対する最終手段（最後の切り札）として温存すべき「Reserve」に分類される抗菌薬は？","c":["メロペネム（MEPM）","コリスチン（CL）","セフトリアキソン（CTRX）"],"a":1,"ex":"コリスチン、リネゾリド、ダプトマイシン、セフィデロコルなどは「Reserve」に分類されます。メロペネムやセフトリアキソンは「Watch」に分類されます。"},{"n":24,"q":"日本の「薬剤耐性（AMR）対策アクションプラン（2023-2027）」における成果指標として、2020年比での削減目標が設定されている経口抗菌薬の系統は？","c":["ペニシリン系","マクロライド系","テトラサイクリン系"],"a":1,"ex":"アクションプラン（2023-2027）では、2020年水準と比較して経口第3世代セファロスポリン系、経口フルオロキノロン系、経口マクロライド系の使用量をそれぞれ削減（全体で15%削減）する目標が掲げられています。一方で、狭域のペニシリン系は適正使用の観点から比率を高めることが推奨されています。"},{"n":25,"q":"「抗微生物薬適正使用の手引き（厚生労働省）」において、基礎疾患のない成人・学童期以降の小児の「急性気管支炎（百日咳を除く）」に対する原則的な抗菌薬投与の方針は？","c":["抗菌薬投与は行わないことを推奨する","経口第3世代セフェム系薬を3日間投与する","マクロライド系薬を5日間投与する"],"a":0,"ex":"急性気管支炎の原因の約9割以上はウイルス性であるため、百日咳や肺炎が疑われる場合を除き、抗菌薬の投与は行わないことが推奨されています。"},{"n":26,"q":"抗菌薬適正使用支援（Antimicrobial Stewardship：AS）において、血液培養などの微生物学的検査結果と臨床経過に基づき、広域抗菌薬からより狭域の抗菌薬へ変更することを何と呼ぶか？","c":["スイッチ療法（IV-to-PO switch）","デ・エスカレーション（De-escalation）","サイクリング療法"],"a":1,"ex":"初期治療（エンピリック治療）で広域抗菌薬を開始した後、原因菌と薬剤感受性が判明した段階で、標的を絞った狭域抗菌薬へ切り替える戦略をデ・エスカレーションと呼びます。スイッチ療法は静注薬から経口薬への切り替えを指します。"},{"n":27,"q":"抗菌薬適正使用支援チーム（AST）がモニタリングする、医療機関における抗菌薬使用量の標準的な指標（100ベッド・日あたりの使用量）は？","c":["AUD（Antimicrobial Use Density）と DOT（Days of Therapy）","MIC（最小発育阻止濃度）と MBC（最小殺菌濃度）","SIRS と qSOFA"],"a":0,"ex":"AUD（DDDを基準とした力価ベースの使用密度）とDOT（投与日数ベースの使用密度）の2つを組み合わせて評価することで、減量投与の影響などを補正し、正確な抗菌薬使用状況を把握します。"},{"n":28,"q":"「抗菌薬TDM臨床実践ガイドライン2022」において、MRSA感染症に対するバンコマイシン（VCM）の有効性と安全性を両立する目標PK/PD指標として推奨されているものは？","c":["トラフ値 20〜25 μg/mL","AUC / MIC 400〜600 μg・h/mL","ピーク値（Cmax） 50〜60 μg/mL"],"a":1,"ex":"2022年の改訂ガイドラインでは、従来のトラフ値単独管理から、腎障害リスクを抑えつつ有効性を担保できる「AUC（血中濃度-時間曲線下面積）/ MIC（MIC=1 μg/mLと仮定し、AUC 400〜600）」を指標とする設計が推奨されています。"},{"n":29,"q":"TDM（薬物血中濃度モニタリング）の対象となるグリコペプチド系抗菌薬「テイコプラニン（TEIC）」において、治療域（トラフ値 15〜30 μg/mL以上）へ早期に到達させるために必須となる投与方法は？","c":["治療開始初日〜3日目のローディングドーズ（負荷投与）","24時間持続点滴静注","1日1回の急速静注（ボーラス投与）"],"a":0,"ex":"テイコプラニンは血漿タンパク結合率が約90%と非常に高く、半減期が長いため、通常量で開始すると定常状態に達するまで1週間以上かかります。そのため、初期の負荷投与（ローディングドーズ）が必須です。"},{"n":30,"q":"アミノグリコシド系薬（ゲンタマイシン、アミカシンなど）のTDMにおいて、主に「腎毒性」や「第8脳神経障害（聴力障害）」の副作用リスクと関連する指標は？","c":["ピーク値（Cmax）の上昇","トラフ値（次回投与直前値）の上昇","%Time above MIC の延長"],"a":1,"ex":"アミノグリコシド系薬は「ピーク値（Cmax/MIC）で有効性」を評価し、「トラフ値の低下（十分に排泄されていること）で安全性（腎毒性・聴器毒性回避）」を評価します。"},{"n":31,"q":"感染症法において、診断した医師が「7日以内」に保健所へ届け出る必要がある「五類感染症（全数把握対象）」に該当する薬剤耐性菌感染症は？","c":["カルバペネム耐性腸内細菌目細菌（CRE）感染症","メチシリン耐性黄色ブドウ球菌（MRSA）感染症","ペニシリン耐性肺炎球菌（PRSP）感染症"],"a":0,"ex":"CRE感染症、バンコマイシン耐性腸球菌（VRE）感染症、バンコマイシン耐性黄色ブドウ球菌（VRSA）感染症、薬剤耐性アシネトバクター（MDRA）感染症は五類「全数把握」対象（7日以内届出）です。MRSA、PRSP、は指定届出機関（基幹定点医療機関）による「定点把握」対象です。多剤耐性緑膿菌（MDRP）は2026年4月から「全数把握」対象となりました。"},{"n":32,"q":"感染症法における多剤耐性緑膿菌（MDRP）の耐性基準となっている抗菌薬は？","c":["アンピシリン","コリスチン","メロペネム"],"a":2,"ex":"感染症法上のMDRPの基準となるのは、カルバペネム系薬、フルオロキノロン系薬、アミノグリコシド系薬です。ただし、地域や報告によって基準が異なるので注意が必要です。"},{"n":33,"q":"グラム陽性嫌気性有芽胞桿菌である Clostridioides difficile 感染症（CDI）を誘発しやすい（リスクが高い）抗菌薬として代表的なものは？","c":["クリンダマイシン（CLDM）","バンコマイシン（VCM）経口薬","フィダキソマイシン（FDX）"],"a":0,"ex":"クリンダマイシン、第3世代セフェム系薬、フルオロキノロン系薬などは正常腸内細菌叢を強く乱し、CDI発症のハイリスク抗菌薬として知られています。VCM経口薬とFDXはCDIの治療薬です。"},{"n":34,"q":"腎機能障害患者においても、原則として「投与量の減量（調節）が不要」な抗菌薬は？","c":["レボフロキサシン（LVFX）","メロペネム（MEPM）","セフトリアキソン（CTRX）"],"a":2,"ex":"CTRXは胆汁排泄と腎排泄の両経路（約50%ずつ）で排泄され、片方が低下してももう片方が代償するため、腎機能障害時でも原則として減量が不要です。LVFXやMEPMは腎排泄型であり、腎機能に応じた減量が必要です。"},{"n":35,"q":"ST合剤（スルファメトキサゾール・トリメトプリム）の作用機序は？","c":["葉酸合成の2段階阻害","ミコール酸合成阻害","細胞膜の脱分極"],"a":0,"ex":"スルファメトキサゾールがジヒドロプテロイン酸合成酵素を、トリメトプリムがジヒドロ葉酸還元酵素を阻害し、細菌の葉酸（核酸合成に必須）の産生を2段階で相乗的に遮断します。ミコール酸合成阻害はイソニアジド（抗結核薬）です。"},{"n":36,"q":"多剤耐性緑膿菌（MDRP）やカルバペネム耐性腸内細菌目細菌（CRE）などの治療に用いられる、新規β-ラクタマーゼ阻害薬配合剤「セフタジジム・アビバクタム（CAZ/AVI）」が阻害できない（無効な）酵素は？","c":["CTX-M型のESBL（クラスA）","KPC型カルバペネマーゼ（クラスA）","メタロ-β-ラクタマーゼ（クラスB：IMP、NDMなど）"],"a":2,"ex":"アビバクタムはクラスA（ESBL、KPC）、クラスC（AmpC）、一部のクラスD（OXA-48）を強力に阻害しますが、亜鉛イオンを活性中心に持つクラスB（メタロ-β-ラクタマーゼ）は阻害できません。"}];
+const qById=n=>QUIZ[n-1];
+function qHtml(s){return s.replace(/(Pseudomonas aeruginosa|Haemophilus influenzae|Enterococcus faecalis|Mycoplasma pneumoniae|Clostridioides difficile|E\. faecalis)/g,'<i>$1</i>').replace(/\b(mecA|gyrA|mcr1|vanA|vanB|blaNDM-1|ermB|ftsI)\b/g,'<i>$1</i>');}
+function qWin(L){return L<=2?[1,12]:L<=4?[4,21]:L<=7?[11,26]:L<=9?[17,30]:[22,36];}
+function qBands(L){const w=qWin(L),n=w[1]-w[0]+1,b=[[],[],[]];for(let i=0;i<n;i++)b[Math.min(2,Math.floor(i*3/n))].push(w[0]+i);return b;}
+function qShuf(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function qPick(arr,excl){let c=arr.filter(n=>excl.indexOf(n)<0);if(!c.length)c=arr;return c[Math.floor(Math.random()*c.length)];}
+function qStars(t){return '★'.repeat(t+1)+'☆'.repeat(2-t);}
+/* 1問出題。選択肢はシャッフル。onAns(正誤)を呼ぶ */
+function qAsk(n,head,onAns){
+  const q=qById(n),ord=qShuf([0,1,2]);
+  ov(head+'<div class="qz-q">'+qHtml(q.q)+'</div>',ord.map((ci,i)=>({t:'<b>'+'ABC'[i]+'.</b> '+qHtml(q.c[ci]),c:'qc',f:()=>onAns(ci===q.a,q)})));
+}
+function qFb(ok,q){
+  return '<div class="big">'+(ok?'⭕':'❌')+'</div><h2>'+(ok?'正解！':'残念…')+'</h2>'+(ok?'':'<p>正解：<b>'+qHtml(q.c[q.a])+'</b></p>')+
+    '<div class="teach">📘 <b>解説</b><br>'+qHtml(q.ex)+'</div>';
+}
+/* ---- ボーナスクイズ ---- */
+function qReward(t,L){
+  const A=(id,n)=>{G.items[id]=Math.min(STOCK_MAX,G.items[id]+n);};
+  const c=[];
+  const bacs=[40,80,150][t];c.push({text:'💰 Bacs +'+bacs,apply:()=>{G.bacs+=bacs;}});
+  const hid=['heal1','heal2','heal3'][t];c.push({text:'💊 '+ITM[hid].name+' ×1',apply:()=>A(hid,1)});
+  const pr=[4,8,12][t];c.push({text:'🧫 耐性菌圧 −'+pr,apply:()=>{G.press=clamp(G.press-pr,0,100);}});
+  if(t>=1){const n=t===1?2:3;c.push({text:'🛡 次の敵の最初の'+n+'回の攻撃ダメージが半減',apply:()=>{G.qz.pend.armor=Math.max(G.qz.pend.armor||0,n);}});}
+  if(L>=5){
+    const k=[1,1,2][t];
+    c.push({text:'🔎 次の敵：効かない抗菌薬が'+k+'つ判明',apply:()=>{G.qz.pend.hintR=Math.max(G.qz.pend.hintR||0,k);}});
+    if(t===0)c.push({text:'🔬 グラム染色 ×2',apply:()=>A('gram',2)});
+    else{const m=t===1?1:2;c.push({text:'🔬 培養・同定・感受性 各×'+m,apply:()=>{A('culture',m);A('ident',m);A('ast',m);}});}
+  }
+  if(L>=8&&t>=1)c.push({text:'🧪 TDM ×1',apply:()=>A('tdm',1)});
+  if(L>=10&&t===2)c.push({text:'🧬 geneQuick ×1',apply:()=>A('geneQuick',1)});
+  return c[Math.floor(Math.random()*c.length)];
+}
+function bonusDue(){
+  const z=G.qz;
+  if(G.kills<2)return false;               // 最初の敵では出さない
+  if(z.gap>=3){return true;}                // 3連続で出なければ次は必ず
+  if(Math.random()<.25)return true;
+  z.gap++;return false;
+}
+function bonusOffer(next){
+  const z=G.qz,L=G.level,r=Math.random(),t=r<.45?0:r<.8?1:2;
+  const n=qPick(qBands(L)[t],z.asked),rw=qReward(t,L);
+  z.gap=0;
+  ov('<div class="big">🎁</div><h2>ボーナスクイズ！</h2><p>難易度 <span class="qz-tag">'+qStars(t)+'</span></p>'+
+    '<div class="warnbox">正解すると：<b>'+rw.text+'</b></div>'+
+    '<p class="note">不正解でもペナルティはありません。スキップもできます。</p>',
+    [{t:'挑戦する',c:'pri',f:()=>bonusAsk(n,t,rw,next)},{t:'スキップ',c:'',f:()=>{closeOv();next();}}]);
+}
+function bonusAsk(n,t,rw,next){
+  qAsk(n,'<p><span class="qz-tag">🎁 ボーナスクイズ '+qStars(t)+'</span></p>',(ok,q)=>{
+    const z=G.qz;z.asked.push(n);z.bonusN++;
+    let extra='';
+    if(ok){z.bonusOk++;rw.apply();sfx('levelup');extra='<div class="warnbox">🎁 報酬ゲット：<b>'+rw.text+'</b></div>';say('🎁 ボーナスクイズ正解！ '+rw.text,'ok');}
+    else{if(z.wrong.indexOf(n)<0)z.wrong.push(n);sfx('err');say('ボーナスクイズ：不正解（終了時のテストで復習します）','info');}
+    render();
+    ov(qFb(ok,q)+extra,[{t:'つづける',c:'pri',f:()=>{closeOv();next();}}]);
+  });
+}
+/* 次の敵に報酬の効果を反映（spawnから呼ばれる） */
+function applyQuizBuff(e){
+  const p=G.qz&&G.qz.pend;if(!p)return;
+  if(p.armor){e.armor=p.armor;say('🛡 ボーナス効果：最初の'+p.armor+'回の攻撃ダメージが半減します。','ok');}
+  if(p.hintR){
+    qShuf(DRUGS.filter(d=>!d.perm&&e.v.drugs[d.id]!=='S'&&!e.known.drugs[d.id])).slice(0,p.hintR).forEach(d=>{e.known.drugs[d.id]='R';say('🔎 ボーナス効果：'+d.ab+'は効かないと判明！','ok');});
+  }
+  G.qz.pend={};
+}
+/* ---- 理解度テスト ---- */
+function buildTest(){
+  const bands=qBands(G.level),z=G.qz;
+  const bandOf=n=>n<=bands[0][bands[0].length-1]?0:(n<=bands[1][bands[1].length-1]?1:2);
+  const picks=qShuf(z.wrong).slice(0,2);
+  const taken=picks.map(bandOf);
+  const order=[0,1,2].filter(b=>taken.indexOf(b)<0).concat([0,1,2].filter(b=>taken.indexOf(b)>=0));
+  for(const b of order){if(picks.length>=3)break;picks.push(qPick(bands[b].filter(n=>picks.indexOf(n)<0),z.asked));}
+  return picks.sort((a,b)=>a-b);
+}
+function qTestIntro(){
+  ov('<div class="big">📝</div><h2>理解度テスト</h2>'+
+    '<p>到達レベル <b>'+G.level+'</b> に合わせた3問です（やさしい問題から順に出ます）。</p>'+
+    '<p class="note">ゲームのスコアとは別に採点されます。ボーナスクイズで間違えた問題は優先して出題されます。スキップもできます。</p>',
+    [{t:'テストを受ける',c:'pri',f:()=>qTestRun()},{t:'スキップして最初へ',c:'',f:()=>{closeOv();showTitle();}}]);
+}
+function qTestRun(){
+  const ids=buildTest(),res=[];
+  const step=i=>{
+    if(i>=3){qTestResult(ids,res);return;}
+    qAsk(ids[i],'<p><span class="qz-tag">📝 理解度テスト '+(i+1)+' / 3</span></p>',(ok,q)=>{
+      res.push(ok);sfx(ok?'ok':'err');
+      ov(qFb(ok,q),[{t:i<2?'次の問題へ':'結果を見る',c:'pri',f:()=>step(i+1)}]);
+    });
+  };
+  step(0);
+}
+function qTestResult(ids,res){
+  const sc=res.filter(Boolean).length,z=G.qz;z.tests++;
+  let best=0;try{best=+localStorage.getItem('baikins_qbest')||0;}catch(x){}
+  const nb=sc>best;if(nb){best=sc;try{localStorage.setItem('baikins_qbest',String(sc));}catch(x){}}
+  const msg=['まずは解説を読み返してみましょう。','あと一歩！ 間違えた問題を復習しましょう。','よくできました！','パーフェクト！ 理解度ばつぐんです。'][sc];
+  const rows=ids.map((n,i)=>{const q=qById(n);return '<div><span>'+(i+1)+'. '+qHtml(q.q.length>30?q.q.slice(0,30)+'…':q.q)+'</span><span>'+(res[i]?'⭕':'❌')+'</span></div>';}).join('');
+  ov('<div class="big">📝</div><h2>理解度テスト 結果</h2>'+
+    '<div class="qz-sc"><b>'+sc+'</b> / 3 <span class="note">'+'★'.repeat(sc)+'☆'.repeat(3-sc)+'</span></div>'+
+    '<p style="text-align:center">'+msg+(nb?'<br>🏅 ベスト更新！':'')+'</p>'+
+    '<div class="bd">'+rows+'</div>'+
+    '<p class="note">到達レベル '+G.level+'　ボーナスクイズ：'+z.bonusOk+' / '+z.bonusN+' 正解　理解度テストのベスト：'+best+' / 3<br>（ゲームのスコア '+G.score+' とは別の記録です）</p>',
+    [{t:'タイトルへ',c:'pri',f:()=>{closeOv();showTitle();}}]);
+}
 function newGame(){
   G={level:1,round:1,hpMax:100,hp:100,lives:3,score:0,exp:0,bacs:200,press:10,
     drugs:{ABPC:8,SBT_ABPC:2,PIPC_TAZ:1,CEZ:5,CTRX:2,CAZ:2,CFPM:1,MEPM:2,VCM:2,LZD:1,AZM:3,CPFX:2,ABK:1,TOB:1,CFDC:0,COL:0},permReq:0,permDeny:0,
     items:{gram:3,culture:3,ident:3,ast:3,antigen:1,gene:1,geneQuick:0,tdm:1,pcv:0,hib:0,heal1:1,heal2:0,heal3:0},
-    dose:{},halt:{},hist:[],tmTotal:0,tmKillSum:0,stun:0,poison:0,pAcc:0,combo:0,comboBest:0,grades:{S:0,A:0,B:0,C:0},buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null};
+    dose:{},halt:{},hist:[],tmTotal:0,tmKillSum:0,stun:0,poison:0,pAcc:0,combo:0,comboBest:0,grades:{S:0,A:0,B:0,C:0},buys:[],kills:0,misses:0,bests:0,log:[],enemy:null,lock:false,over:false,fx:null,qz:{asked:[],wrong:[],bonusN:0,bonusOk:0,gap:0,pend:{},tests:0}};
   DRUGS.forEach(d=>G.dose[d.id]=0);
 }
 function say(t,c){G.log.push({t,c:c||''});if(G.log.length>80)G.log.shift();}
@@ -812,6 +932,7 @@ function spawn(){
   }
   say(e.boss?'⚠️ ボス '+eName(e)+' が現れた！':eName(e)+'が現れた！','info');
   say('攻撃を選択してください。');
+  applyQuizBuff(e);
   render();
   if(bd){
     bossCinematic(e,bd,()=>ov('<div class="big">⚔️</div><h2>ボス出現！</h2><p><b>'+(e.known.ident?bd.name:'？？？（正体不明）')+'</b></p><p>'+(e.known.ident?bd.intro:'正体不明の強敵が現れた…！ 検査と背景情報で正体を見極めよう。')+'</p>'+
@@ -840,6 +961,7 @@ function enemyPhase(done,auto,keep,mult){
   let dmg=Math.max(1,rnd(e.atk-3,e.atk+3));
   if(auto)dmg=Math.max(1,Math.round(dmg*(e.boss?TM_AUTO_BOSS:TM_AUTO)*tmTemper(e)[1]));
   else if(mult&&mult!==1)dmg=Math.max(1,Math.round(dmg*mult));
+  if(e.armor>0){e.armor--;dmg=Math.max(1,Math.round(dmg*.5));say('🛡 ボーナス効果でダメージ半減！','ok');}
   G.hp=Math.max(0,G.hp-dmg);
   if(!keep)tmReset(e);
   say((auto?'⏱ 時間切れ！ ':(mult>1?'💢 効かず、敵が猛反撃！ ':(mult&&mult<1?'敵はひるんで反撃が弱い。 ':'')))+(e.known.ident?e.s.jp:'敵')+'の攻撃！ HP -'+dmg,'bad');
@@ -1144,6 +1266,7 @@ function advance(){
   const e=G.enemy;
   if(e.boss){G.level++;G.round=1;G.hpMax+=10;G.hp=G.hpMax;say('レベル '+G.level+' に上がった！ '+levelHint(G.level),'info');}
   else{G.round++;G.hp=Math.min(G.hpMax,G.hp+15);}
+  if(!e.boss&&bonusDue()){bonusOffer(()=>spawn());return;}
   closeOv();spawn();
 }
 function gameOver(){
@@ -1157,8 +1280,8 @@ function gameOver(){
   ov('<div class="big">💔</div><h2>治療失敗…</h2><p>到達：レベル '+G.level+'・ラウンド '+G.round+'　スコア '+G.score+'（ベスト '+bestScore+'）'+(timeOn?'<br>⏱ 合計プレイ時間 '+fmtT(G.tmTotal):'')+'<br>評価 S×'+G.grades.S+' A×'+G.grades.A+' B×'+G.grades.B+' C×'+G.grades.C+'　最大コンボ ×'+G.comboBest+'</p>'+
      '<div class="teach">📘 <b>敵の正体：'+trueName(e)+'</b>　'+e.s.la+'<br>'+e.v.teach+
      '<br><span class="note">有効だった抗菌薬：'+eff+'／おすすめ：'+bst+'</span></div>'+
-     '<p class="note">リトライするとスコアが半分になります。検査や背景情報を活用しましょう。</p>',
-     [{t:'同じレベルからリトライ',c:'pri',f:()=>retry()},{t:'最初から',c:'',f:()=>{closeOv();showTitle();}}]);
+     '<p class="note">リトライするとスコアが半分になります。検査や背景情報を活用しましょう。<br>「終了する」を選ぶと、理解度テスト（3問・スキップ可）に進みます。</p>',
+     [{t:'同じレベルからリトライ',c:'pri',f:()=>retry()},{t:'終了する（理解度テストへ）',c:'',f:()=>qTestIntro()}]);
 }
 function retry(){
   G.score=Math.floor(G.score/2);G.hp=G.hpMax;G.lives=3;G.round=1;G.combo=0;G.stun=0;G.poison=0;
@@ -1666,6 +1789,7 @@ function renderStat(){
     '<div class="card"><h3>成績</h3><p>称号：<b>'+rank()+'</b>　撃退数：<b>'+G.kills+'</b>　ベストチョイス：<b>'+G.bests+'</b>　許可申請：<b>'+G.permReq+'</b>回（却下 <b>'+G.permDeny+'</b>回）　効かない薬を使った回数：<b>'+G.misses+'</b></p>'+
     '<p>スコア：<b>'+G.score+'</b>　ベスト：<b>'+bestScore+'</b>'+(timeOn?'<span class="note">（タイムモード・'+TSPD_LBL[timeSpd]+'）</span>':'')+'</p>'+(timeOn?'<p>⏱ 合計プレイ時間：<b>'+fmtT(G.tmTotal)+'</b>　平均撃退時間：<b>'+(G.kills?(G.tmKillSum/G.kills/1000).toFixed(1):'-')+'</b>秒</p>':'')+
     '<p>評価：<b>S×'+G.grades.S+'　A×'+G.grades.A+'　B×'+G.grades.B+'　C×'+G.grades.C+'</b>　最大コンボ：<b>×'+G.comboBest+'</b></p>'+
+    '<p>🎁 ボーナスクイズ：<b>'+G.qz.bonusOk+' / '+G.qz.bonusN+'</b> 正解</p>'+
     '<p>耐性菌圧：<b>'+Math.round(G.press)+'</b> / 100</p><div class="bar press"><i style="width:'+G.press+'%"></i></div>'+
     '<p class="note">広域薬（Watch）を使うと上がり、Access薬だけで治療すると下がります。高いほど耐性株が出現しやすくなります。</p></div></div>';
   h+='<div class="sec"><h3>⚔️ バトル履歴 <small>（最新60件）</small></h3>'+(hist.length?
@@ -1741,6 +1865,8 @@ function renderMisc(){
     '<li><b>🩸 腎障害：</b>TDMなしのVCM・ABK・TOBで副作用が出ると、その戦いの間は回復薬の効果が半減します。</li>'+
     '<li><b>🔬 検査の待ち時間（タイムモード）：</b>培養と感受性は結果が出るまで約3秒。その間も行動できます。</li>'+
     '<li><b>🔥 コンボ・🔬 確定診断・評価：</b>ノーミスのベストチョイスの連続でコンボ加点（最大+50）。レベル5以降は、同定・感受性を確認して倒すと+20。敵ごとにS〜Cの評価がつきます。</li>'+
+    '<li><b>🎁 ボーナスクイズ：</b>ボス以外の敵を倒したあと、ときどき1問出ます。正解すると、その後のバトルに役立つ報酬（Bacs・回復薬・耐性菌圧の低下・ダメージ軽減・検査券など。レベルに応じて変わります）がもらえます。不正解でもペナルティはなく、スキップもできます。</li>'+
+    '<li><b>📝 理解度テスト：</b>治療失敗のあと「終了する」を選ぶと受けられる3問のテスト（スキップ可）。到達レベルが高いほど難しい問題が出ます。ゲームのスコアとは別に採点・記録されます。</li>'+
     '<li><b>効かない薬を撃つと減点。</b>ただし結果は敵情報に記録されます。</li></ul></div></div>'+
     '<div class="card prose sec"><h3>AWaRe分類とDASC</h3>'+
     '<p>WHOのAWaRe分類は、抗菌薬を<span class="tag">A</span>Access（第一・第二選択で耐性リスクが低い）、<span class="tag W">Wa</span>Watch（耐性リスクが高く管理が必要）、<span class="tag R">Re</span>Reserve（多剤耐性菌への最後の砦）に分けたものです。Access薬の割合を高く保つことが適正使用の目標です。</p>'+
@@ -1823,7 +1949,7 @@ let tmLast=performance.now();
 if(!window.__baikinsNoTimer)setInterval(()=>{const n=performance.now(),dt=Math.min(250,n-tmLast);tmLast=n;if(document.hidden)return;tickTime(dt);},100);
 newGame();render();renderMisc();showTitle();
 // テスト用フック
-window.__baikins={tickTime,tmTemper,tmInterval,tmTarget,setTime:(on,sp)=>{timeOn=on;if(sp)timeSpd=sp;loadBest();},get timeOn(){return timeOn;},render,get G(){return G;},attack,useTest,useHeal,buy,setTab,advance,retry,startGame,DRUGS,SP,BOSS,closeOv,buyBlock,tickHalt,reviveChance,sfx,SFX};
+window.__baikins={QUIZ,qWin,qBands,buildTest,bonusDue,bonusOffer,qTestIntro,qReward,gameOver,tickTime,tmTemper,tmInterval,tmTarget,setTime:(on,sp)=>{timeOn=on;if(sp)timeSpd=sp;loadBest();},get timeOn(){return timeOn;},render,get G(){return G;},attack,useTest,useHeal,buy,setTab,advance,retry,startGame,DRUGS,SP,BOSS,closeOv,buyBlock,tickHalt,reviveChance,sfx,SFX};
 })();
 </script>
 </body>
