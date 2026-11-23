@@ -293,9 +293,10 @@ table.rk{min-width:0}
         <h2>かんたんなあそびかた</h2>
         <ul class="how">
           <li>下の7つの<b>抗菌薬</b>から1つ選ぶ（選んだだけでは撃たない）</li>
-          <li>画面下の<b>発射エリアをタッチしている間だけ</b>発射。スライドで左右に移動</li>
+          <li>画面下の<b>発射エリアをタッチしている間だけ</b>発射。<b>左右にスライド＝発射台が赤い弧に沿って動き、向きも弧の外向き（扇の中心線）に変わります</b>。<b>上下にスライド＝発射台の高さ</b>。赤い点線は扇形の弧で、敵が触れるとライフが減ります</li>
           <li><b>📱傾き</b>ボタンをONにすると、<b>スマホを傾けた角度で発射方向（左右・上下）が変わります</b>（押した時の持ち方が基準。🎯中心で基準をリセット）。PCは J/L＝左右、I/K＝上下、C＝中心。広域・散弾・ボム・レーザーも傾けた方向へ飛びます</li>
           <li>最も迫っている敵に<b>スコープ</b>が付き、照準（黄）とのズレを矢印と角度で案内します。ズレが小さいと<b>緑のLOCK</b>になります</li>
+          <li>発射台視点では、<b>発射台が弧に沿って動くのに合わせて見える景色も左右に動きます</b></li>
           <li>敵は<b>扇状</b>（奥ほど広い範囲）から現れ、手前に向かって狭まりながら迫ります</li>
           <li>敵は<b>奥から手前へ迫ってきます</b>。🔄で「発射台の視点」⇄「俯瞰（真上寄り）」を切替、🔲で小窓（もう一方の視点）をオン/オフ。小窓をタップしても入れ替わります</li>
           <li>敵ごとに<b>効く抗菌薬</b>が違う。効かない薬は弾かれる</li>
@@ -738,6 +739,7 @@ let G = null;
 const cv = $('cv'), ctx = cv.getContext('2d');
 let scale = 1;
 const LAUNCH_Y = C.H - 55;
+function LY() { return (G && G.ly) || LAUNCH_Y; }
 const DEF_Y = C.H - C.CTRL_H;
 let ES = C.W * C.ENEMY_W_RATIO;   // 画面幅に合わせて resize() で更新
 
@@ -751,7 +753,7 @@ function newGame() {
     state: 'play', t: 0, wave: 0, score: 0, lives: C.LIFE_START, tzd: false, lifeBuys: 0, inv: { barrier: 0, freeze: 0, strike: 0 }, freezeT: 0, cult: false, cultNext: false, boost: false, boostNext: false, used: new Set(),
     enemies: [], bullets: [], parts: [], floats: [],
     spawned: 0, total: 0, spawnT: 0, waveDelay: 0,
-    lx: C.W / 2, tx: C.W / 2, lz: 0, tz: 0, pz: 0, cool: 0, pointerFiring: false, pid: null,
+    lx: C.W / 2, tx: C.W / 2, ly: LAUNCH_Y, lz: 0, tz: 0, pz: 0, cool: 0, pointerFiring: false, pid: null,
     sel: 'PCG', prev: null, stop: null,
     egfr: C.EGFR_START, renalLock: false, minEgfr: C.EGFR_START, renalLocks: 0, egfrStage: 0, plt: C.PLT_START, pltLock: false, minPlt: C.PLT_START, pltLocks: 0, pltStage: 0, drips: [], tank: 100, gas: false, gasT: 0, gasOuts: 0, reviveT: 0, said: {}, uiT: 0, used: new Set(), dot: {},
     lastDeesc: -99, toastUntil: 0, flash: 0, kills: 0, shake: 0,
@@ -961,13 +963,13 @@ cv.addEventListener('pointerdown', ev => {
   if (VIEW.pip) { const r = pipRect(); if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) { ev.preventDefault(); swapView(); return; } }
   if (p.y < DEF_Y) return;                    // 発射エリア（発射台のまわり）だけ反応
   ev.preventDefault();
-  G.pid = ev.pointerId; G.pointerFiring = true; G.tx = clamp(p.x, 22, C.W - 22); G.tz = zFromY(p.y);
+  G.pid = ev.pointerId; G.pointerFiring = true; AIM.ty = yawFromX(p.x); G.tz = zFromY(p.y);
   try { cv.setPointerCapture(ev.pointerId); } catch (e) {}
 });
 cv.addEventListener('pointermove', ev => {
   if (!G || G.pid !== ev.pointerId) return;
   ev.preventDefault();
-  { const q = toLogical(ev); G.tx = clamp(q.x, 22, C.W - 22); G.tz = zFromY(q.y); }
+  { const q = toLogical(ev); AIM.ty = yawFromX(q.x); G.tz = zFromY(q.y); }
 });
 function endPointer(ev) {
   if (!G) return;
@@ -1131,10 +1133,10 @@ function floatText(x, y, text, col) { G.floats.push({ x, y, z: G.pz || 0, text, 
 const awCol = id => AW_COL[DRUG[id].aware];
 
 function fire() {
-  { const sk = curSkin(); if (sk && G) pop(G.lx + rnd(-5, 5), LAUNCH_Y - 40, sk.col, 2, 70); }
+  { const sk = curSkin(); if (sk && G) pop(G.lx + rnd(-5, 5), LY() - 40, sk.col, 2, 70); }
   const id = G.sel;
   if (isBlocked(id)) { selectDrug(fallbackDrug()); return; }
-  const d = DRUG[id], sid = ++G.shotSeq, ox = G.lx, oy = LAUNCH_Y - 44;
+  const d = DRUG[id], sid = ++G.shotSeq, ox = G.lx, oy = LY() - 44;
   const dmg = d.dmg * C.POWER[G.pl - 1];
   const A = aimDir(), base = { drug: id, dmg, sid, z: G.lz, ux: A.ux, uz: A.uz, uy: A.uy, psi: AIM.yaw };
   const mv = (v) => ({ vx: A.ux * v, vz: A.uz * v, vy: A.uy * v });
@@ -1171,7 +1173,7 @@ function explode(b) {
   G.shake = Math.max(G.shake, 0.08);
   pop(b.x, b.y, col, 10 + G.pl * 3, 170);
   for (const e of G.enemies.slice()) {
-    const dx = e.x - b.x, dy = e.y - b.y, dz = (e.z || 0) - (b.z || 0), r = R + e.size * 0.4;
+    const dx = e.x - b.x, dy = e.y - b.y, dz = (e.z || 0) - (b.z || 0), r = R + e.size * 0.5;
     if (dx * dx + dy * dy + dz * dz <= r * r) hitEnemy(e, b.drug, b.dmg, b.sid, e.x, e.y);
   }
 }
@@ -1293,8 +1295,8 @@ function updateBody(dt, firing) {
     G.tank = clamp(G.tank, 0, 100);
     if (G.tank <= 0) {
       G.gas = true; G.gasT = C.GAS_LOCK; G.gasOuts++; sfx('sputter'); G.shake = REDUCE_MOTION ? 0 : 0.12;
-      floatText(G.lx, LAUNCH_Y - 70, 'ガス欠！', '#ffb74d');
-      for (let i = 0; i < 10; i++) G.parts.push({ x: G.lx + rnd(-8, 8), y: LAUNCH_Y - 44, vx: rnd(-30, 30), vy: rnd(-90, -30), life: rnd(0.5, 0.9), t: 0, col: 'rgba(170,175,190,.8)', r: rnd(3, 6) });
+      floatText(G.lx, LY() - 70, 'ガス欠！', '#ffb74d');
+      for (let i = 0; i < 10; i++) G.parts.push({ x: G.lx + rnd(-8, 8), y: LY() - 44, vx: rnd(-30, 30), vy: rnd(-90, -30), life: rnd(0.5, 0.9), t: 0, col: 'rgba(170,175,190,.8)', r: rnd(3, 6) });
       if (G.sel === 'MEPM') selectDrug(fallbackDrug()); else buildDrugs();
       if (!G.said.gas) { G.said.gas = 1; showToast('メロペネムなどのカルバペネムは、乱用すると耐性菌や供給不足を招きます', 'warn', 3.4); }
     }
@@ -1328,11 +1330,14 @@ function updateBody(dt, firing) {
 function update(dt) {
   G.t += dt;
   const k = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  if (k) G.tx = clamp(G.tx + k * 340 * dt, 22, C.W - 22);
+  G.tx = C.W / 2;   // 発射台は動かさず、左右は発射方向
+  if (k) AIM.ty = clamp(AIM.ty + k * 0.55 * dt, -AIM.YM, AIM.YM);
   G.lx += (G.tx - G.lx) * Math.min(1, dt * 18);
+  AIM.YM = arcTm();
   { const ky = (keys.aimR ? 1 : 0) - (keys.aimL ? 1 : 0), kp = (keys.aimU ? 1 : 0) - (keys.aimD ? 1 : 0);
-    if (ky) AIM.ty = clamp(AIM.ty + ky * 1.1 * dt, -AIM.YM, AIM.YM); if (kp) AIM.tp = clamp(AIM.tp + kp * 0.9 * dt, -AIM.PM, AIM.PM);
-    AIM.yaw += (AIM.ty - AIM.yaw) * Math.min(1, dt * 16); AIM.pit += (AIM.tp - AIM.pit) * Math.min(1, dt * 16); }
+    if (ky) AIM.ty = clamp(AIM.ty + ky * 0.55 * dt, -AIM.YM, AIM.YM); if (kp) AIM.tp = clamp(AIM.tp + kp * 0.9 * dt, -AIM.PM, AIM.PM);
+    AIM.yaw += (clamp(AIM.ty + (AIM.gy || 0), -AIM.YM, AIM.YM) - AIM.yaw) * Math.min(1, dt * 16); AIM.pit += (clamp(AIM.tp + (AIM.gp || 0), -AIM.PM, AIM.PM) - AIM.pit) * Math.min(1, dt * 16);
+    { const RL = APEX_Y - LAUNCH_Y; G.lx = C.W / 2 + RL * Math.sin(AIM.yaw); G.ly = APEX_Y - RL * Math.cos(AIM.yaw); } }   // 発射台は弧に沿って動き、向きは弧の外向き
   { const kz = (keys.up ? 1 : 0) - (keys.down ? 1 : 0); if (kz) G.tz = clamp(G.tz + kz * ES * 2.2 * dt, 0, ES); G.lz += (G.tz - G.lz) * Math.min(1, dt * 14); }
   if (G.ta) {
     if (G.cd > 0) {   // 開始カウントダウン
@@ -1378,7 +1383,7 @@ function update(dt) {
     e.u = clamp(e.u + Math.sin(G.t * 1.3 + e.phase) * 14 * dt / (C.W / 2), -0.97, 0.97); e.x = C.W / 2 + e.u * fanW(e.y);   // 扇に沿って手前へ
     if (e.flash > 0) e.flash -= dt;
     if (e.pop > 0) e.pop -= dt;
-    if (e.y + e.box * 0.36 >= DEF_Y) {
+    if (Math.hypot(e.x - C.W / 2, APEX_Y - (e.y + e.box * 0.36)) <= R_ARC) {   // 扇形の弧に触れたら
       G.enemies.splice(i, 1);
       if (G.inv.barrier > 0) {   // バリア：1体ぶんのダメージを無効に
         G.inv.barrier--; sfx('hit'); pop(e.x, DEF_Y, '#7dd3fc', 16, 150); floatText(e.x, DEF_Y - 20, 'バリアで防いだ！', '#bae6fd');
@@ -1402,7 +1407,7 @@ function update(dt) {
   const nearest = (bx, by, rad, bz) => {
     let hit = null;
     for (const e of G.enemies) {
-      const r = e.size * 0.4 + rad, dx = e.x - bx, dy = e.y - by, dz = ((e.z || 0) - (bz || 0)) * 1.25;
+      const r = e.size * 0.58 + rad, dx = e.x - bx, dy = e.y - by, dz = ((e.z || 0) - (bz || 0)) * 0.8;
       if (dx * dx + dy * dy + dz * dz < r * r && (!hit || e.y > hit.y)) hit = e;
     }
     return hit;
@@ -1427,9 +1432,9 @@ function update(dt) {
       if (b.R > b.maxR) remove = true;
       else for (const e of G.enemies.slice()) {
         if (b.hit.has(e)) continue;
-        const ex = e.x - b.x, ez = ((e.z || 0) - (b.z || 0)) * 1.25, ey = e.y - b.y;
+        const ex = e.x - b.x, ez = ((e.z || 0) - (b.z || 0)) * 0.8, ey = e.y - b.y;
         const dot = ex * b.ux + ez * b.uz + ey * b.uy; if (dot <= 0) continue;
-        const d = Math.hypot(ex, ez, ey), rr2 = e.size * 0.4;
+        const d = Math.hypot(ex, ez, ey), rr2 = e.size * 0.55;
         if (b.R >= d - rr2 && b.R <= d + rr2 + 10 && Math.acos(clamp(dot / d, -1, 1)) <= b.half + Math.atan2(rr2, d)) {   // 照準軸からの角度（円錐）
           b.hit.add(e); hitEnemy(e, b.drug, b.dmg, b.sid, e.x, e.y);
         }
@@ -1440,10 +1445,10 @@ function update(dt) {
       if (Math.min(b.y, ty) < -10 || Math.max(b.y, ty) > C.H + 60 || Math.abs(b.x) > C.W * 2.2 || b.z < -120 || b.z > ES * 4) remove = true;
       else for (const e of G.enemies.slice()) {
         if (b.hit.has(e)) continue;
-        const px = e.x, pz = (e.z || 0) * 1.25, py = e.y, vx = b.x - tx, vz = (b.z - tz) * 1.25, vy = b.y - ty;
-        const w2 = vx * vx + vz * vz + vy * vy || 1, tt = clamp(((px - tx) * vx + (pz - tz * 1.25) * vz + (py - ty) * vy) / w2, 0, 1);
-        const qx = tx + vx * tt - px, qz = tz * 1.25 + vz * tt - pz, qy = ty + vy * tt - py;
-        if (qx * qx + qz * qz + qy * qy < (e.size * 0.38 + 3 * sm) ** 2) { b.hit.add(e); hitEnemy(e, b.drug, b.dmg, b.sid, b.x, e.y); }
+        const px = e.x, pz = (e.z || 0) * 0.8, py = e.y, vx = b.x - tx, vz = (b.z - tz) * 0.8, vy = b.y - ty;
+        const w2 = vx * vx + vz * vz + vy * vy || 1, tt = clamp(((px - tx) * vx + (pz - tz * 0.8) * vz + (py - ty) * vy) / w2, 0, 1);
+        const qx = tx + vx * tt - px, qz = tz * 0.8 + vz * tt - pz, qy = ty + vy * tt - py;
+        if (qx * qx + qz * qz + qy * qy < (e.size * 0.52 + 3 * sm) ** 2) { b.hit.add(e); hitEnemy(e, b.drug, b.dmg, b.sid, b.x, e.y); }
       }
     }
     if (remove) G.bullets.splice(i, 1);
@@ -1533,7 +1538,7 @@ function drawLauncher() {
   const metal = dk ? ['#43547f', '#1c2744'] : ['#cfd9ee', '#9fb0d2'];
   const body = dk ? ['#f4f8ff', '#aebcdc', '#66779f'] : ['#ffffff', '#d6e0f2', '#9aabcf'];
   const edge = dk ? 'rgba(0,0,0,.55)' : 'rgba(30,50,100,.40)';
-  ctx.save(); ctx.translate(G.lx, LAUNCH_Y);
+  ctx.save(); ctx.translate(G.lx, LY());
   const sk = curSkin();
   if (sk) {   // スキンのオーラ
     const ag = ctx.createRadialGradient(0, 6, 4, 0, 6, 44 + 4 * pulse);
@@ -1599,7 +1604,7 @@ function drawLauncher() {
   ctx.font = '800 12px ' + FONT; ctx.textAlign = right ? 'right' : 'left'; ctx.textBaseline = 'alphabetic';
   ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,14,30,.85)'; ctx.fillStyle = '#fff';
   const lx = G.lx + (right ? -36 : 36);
-  ctx.strokeText(d.id, lx, LAUNCH_Y + 6); ctx.fillText(d.id, lx, LAUNCH_Y + 6);
+  ctx.strokeText(d.id, lx, LY() + 6); ctx.fillText(d.id, lx, LY() + 6);
 }
 function drawBullet(b) {
   const sm = C.SIZE[G.pl - 1], gl = C.GLOW[G.pl - 1] * (cv.width / C.W);
@@ -1710,9 +1715,12 @@ function drawTimeFx() {   // タイムアタック：開始カウントダウン
 // ===== 3D（透視投影）描画 =====
 // ゲームロジックは従来どおり2D（x=横, y=奥行き 0=奥/DEF_Y=防衛ライン）。描画だけ透視投影する。
 const RV = { small: false };
-const FAN = 1.7;   // 敵の出現範囲：奥の幅は防衛ライン上の1.7倍（扇状）
-function fanW(y) { return C.W / 2 * (1 + (FAN - 1) * clamp(1 - y / DEF_Y, 0, 1)); }
-const AIM = { yaw: 0, pit: 0, ty: 0, tp: 0, gyro: false, g0: null, b0: null, YM: 0.7854, PM: 0.5236 };   // 発射角（ラジアン）
+const FAN = 1.35;   // 敵の出現範囲：奥の幅は防衛ライン上の1.7倍（扇状）
+function fanW(y) { return C.W / 2 * (1 + (FAN - 1) * clamp(1 - y / DEF_Y, -0.5, 1)); }
+const AIM = { yaw: 0, pit: 0, ty: 0, tp: 0, gyro: false, g0: null, b0: null, YM: 0.28, PM: 0.5236 };   // 発射角（ラジアン）
+function arcTm() { return Math.asin(Math.min(1, (C.W / 2) / R_ARC)); }   // 弧の端の角度（扇の半角）
+function yawFromX(x) { return clamp((x - C.W / 2) / (C.W / 2 - 22), -1, 1) * AIM.YM; }
+const APEX_Y = DEF_Y * FAN / (FAN - 1), R_ARC = APEX_Y - DEF_Y;   // 扇の要（奥行き方向の頂点）と防衛ラインの弧の半径
 function aimDir() { const cp = Math.cos(AIM.pit); return { ux: Math.sin(AIM.yaw) * cp, uz: Math.sin(AIM.pit), uy: -Math.cos(AIM.yaw) * cp }; }
 const CAM_F = { cx: 0, fol: 1, cy: 127.3, cz: -37.3, pitch: 0.26, f: 156.7, vy: 331.4, zs: 0.92 };   // 発射台視点
 const CAM_T = { cx: 0, fol: 0, cy: 500, cz: 245, pitch: 1.5707963, f: 290, vy: 285, zs: 1 };   // 真上から   // 俯瞰視点
@@ -1724,15 +1732,18 @@ function lerpCam(t) {
   const o = {}; for (const k in CAM_F) o[k] = CAM_F[k] + (CAM_T[k] - CAM_F[k]) * t;
   o.sp = Math.sin(o.pitch); o.cp = Math.cos(o.pitch);
   o.camx = o.cx + (G.lx - C.W / 2) * o.fol; o.t = t; o.cy += (G.lz || 0) * (1 - t);
+  o.yaw = AIM.yaw * (1 - t); o.cY = Math.cos(o.yaw); o.sY = Math.sin(o.yaw); o.dback = (DEF_Y - (LY() - 44)) - o.cz / o.zs;   // 砲口を軸にカメラが首を振る
   return o;
 }
 let CAM = null;
 function P(x, h, y) {   // ワールド(x, 高さh, y) → 画面
-  const c = CAM, rx = x - C.W / 2 - c.camx, ry = h - c.cy, rz = (DEF_Y - y) * c.zs - c.cz;
+  const c = CAM, rx0 = x - C.W / 2 - c.camx, rz0 = (LY() - 44) - y, ry = h - c.cy;
+  const rx = rx0 * c.cY - rz0 * c.sY, rz = (rx0 * c.sY + rz0 * c.cY + c.dback) * c.zs;
   const zc = -ry * c.sp + rz * c.cp; if (zc < 8) return null;
   const yc = ry * c.cp + rz * c.sp, s = c.f / zc;
   return { x: C.W / 2 + rx * s, y: c.vy - yc * s, s };
 }
+function depthOf(x, y) { const c = CAM; return (x - C.W / 2 - c.camx) * c.sY + ((LY() - 44) - y) * c.cY; }
 function withBill(p, wx, wy, fn, k) {   // ワールド座標(wx,wy)を中心に、投影された位置・縮尺で既存2D描画を再利用
   ctx.save(); ctx.translate(p.x, p.y); const q = p.s * (k || 1); ctx.scale(q, q); ctx.translate(-wx, -wy); fn(); ctx.restore();
 }
@@ -1761,9 +1772,10 @@ function sceneFloor() {
   ctx.strokeStyle = dk ? 'rgba(160,190,255,.45)' : 'rgba(40,70,150,.45)'; ctx.lineWidth = 2;   // フィールドの左右の縁
   [-1, 1].forEach(sg => { const a = P(C.W / 2 + sg * fanW(-60), 0, -60), m = P(C.W / 2 + sg * fanW(DEF_Y), 0, DEF_Y), b = P(C.W / 2 + sg * fanW(DEF_Y + 60), 0, DEF_Y + 60); if (a && m && b) { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(m.x, m.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } });   // 扇状のフィールド縁
   // 防衛ライン
-  const T = BGT[theme], a = P(0, 0, DEF_Y), b = P(C.W, 0, DEF_Y);
-  if (a && b) { ctx.save(); ctx.strokeStyle = T.line; ctx.shadowColor = T.line; ctx.shadowBlur = 8 * (cv.width / C.W); ctx.globalAlpha = 0.9;
-    ctx.setLineDash([10, 7]); ctx.lineWidth = 1.5 + 2.2 * a.s; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.restore(); }
+  const T = BGT[theme], c0 = P(C.W / 2, 0, DEF_Y), tm = Math.asin(Math.min(1, (C.W / 2) / R_ARC)), arc = [];
+  for (let i = 0; i <= 28; i++) { const th = -tm + 2 * tm * i / 28, p = P(C.W / 2 + R_ARC * Math.sin(th), 0, APEX_Y - R_ARC * Math.cos(th)); if (p) arc.push(p); }
+  if (c0 && arc.length > 1) { ctx.save(); ctx.strokeStyle = T.line; ctx.shadowColor = T.line; ctx.shadowBlur = 8 * (cv.width / C.W); ctx.globalAlpha = 0.9;
+    ctx.setLineDash([10, 7]); ctx.lineWidth = 1.5 + 2.2 * c0.s; poly(arc); ctx.stroke(); ctx.restore(); }   // 防衛ライン＝扇形の弧
 }
 function groundArc(cx, cy, R, a0, a1, h) { const pts = [], n = 26; for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n, p = P(cx + R * Math.cos(a), h, cy + R * Math.sin(a)); if (p) pts.push(p); } return pts; }
 function rimArc(cx, cy, R, half, h) { const pts = [], n = 28, sr = R * Math.sin(half), cr = R * Math.cos(half); for (let i = 0; i <= n; i++) { const a = 6.2832 * i / n, p = P(cx + sr * Math.cos(a), h + sr * Math.sin(a), cy - cr); if (p) pts.push(p); } return pts; }
@@ -1815,7 +1827,7 @@ function sceneItems() {
   G.enemies.forEach(e => {
     const p = P(e.x, e.box * 0.5 + (e.z || 0), e.y), gp = P(e.x, 0, e.y); if (!p || !gp) return;
     const ek = 1 + 1.6 * (1 - CAM.t) * clamp((p.s - 0.5) / 1.79, 0, 1);   // 発射台視点：近づくほど最大2.6倍に拡大
-    items.push({ y: e.y, f: () => {
+    items.push({ x: e.x, y: e.y, f: () => {
       ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(gp.x, gp.y, e.box * 0.32 * gp.s * ek, e.box * 0.32 * gp.s * ek * flat, 0, 0, 6.28); ctx.fill(); ctx.restore();
       withBill(p, e.x, e.y, () => drawEnemy(e), ek);
       if (!RV.small && CAM.t > 0.4) { const bx = p.x + e.box * 0.46 * p.s, bh2 = 26 * p.s, f = (e.z || 0) / ES; ctx.save(); ctx.globalAlpha = CAM.t; ctx.fillStyle = 'rgba(8,14,30,.6)'; ctx.fillRect(bx - 2.5, p.y - bh2 / 2 - 1, 5, bh2 + 2); ctx.fillStyle = '#ffd36b'; ctx.fillRect(bx - 2, p.y + bh2 / 2 - bh2 * f - 2, 4, 4); ctx.restore(); }   // 俯瞰：高さの目盛り
@@ -1826,7 +1838,7 @@ function sceneItems() {
     if (b.type === 'wave') return;
     if (b.type === 'bolt') {
       const a = P(b.x, 40 + (b.z || 0), b.y), c = P(b.x - b.ux * b.len, 40 + (b.z || 0) - b.uz * b.len, b.y - b.uy * b.len); if (!a || !c) return;
-      items.push({ y: b.y - b.uy * b.len, f: () => {
+      items.push({ x: b.x, y: b.y - b.uy * b.len, f: () => {
         const col = awCol(b.drug), g = ctx.createLinearGradient(a.x, a.y, c.x, c.y);
         g.addColorStop(0, '#fff'); g.addColorStop(0.25, col); g.addColorStop(1, col + '00');
         ctx.save(); ctx.lineCap = 'round'; ctx.shadowColor = col; ctx.shadowBlur = C.GLOW[G.pl - 1] * (cv.width / C.W);
@@ -1835,13 +1847,14 @@ function sceneItems() {
       } }); return;
     }
     const p = P(b.x, 40 + (b.z || 0), b.y); if (!p) return;
-    items.push({ y: b.y, f: () => withBill(p, b.x, b.y, () => drawBullet(b), 1.15) });
+    items.push({ x: b.x, y: b.y, f: () => withBill(p, b.x, b.y, () => drawBullet(b), 1.15) });
   });
   G.parts.forEach(q => { const p = P(q.x, 40 + (q.z || 0), q.y); if (!p) return;
-    items.push({ y: q.y, f: () => { ctx.globalAlpha = Math.max(0, 1 - q.t / q.life); ctx.fillStyle = q.col; ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.8, q.r * p.s * 1.2), 0, 6.28); ctx.fill(); ctx.globalAlpha = 1; } }); });
-  const tt = CAM.t, lp = P(G.lx, 45 * (1 - tt) + 30 * tt + G.lz, 501 * (1 - tt) + LAUNCH_Y * tt);   // 発射台視点では砲口（針の先）だけが画面下に見える
-  if (lp) items.push({ y: 9999, f: () => withBill({ x: lp.x, y: lp.y + 14 * (1 - tt), s: lp.s }, G.lx, LAUNCH_Y - 59 * (1 - tt), drawLauncher, 2.6 - 1.48 * tt) });
-  items.sort((a, b) => a.y - b.y);
+    items.push({ x: q.x, y: q.y, f: () => { ctx.globalAlpha = Math.max(0, 1 - q.t / q.life); ctx.fillStyle = q.col; ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.8, q.r * p.s * 1.2), 0, 6.28); ctx.fill(); ctx.globalAlpha = 1; } }); });
+  const tt = CAM.t, lp = P(G.lx, 45 * (1 - tt) + 30 * tt + G.lz, (LY() - 44) * (1 - tt) + LY() * tt);   // 発射台視点では砲口（針の先）だけが画面下に見える
+  if (lp) items.push({ y: 9999, f: () => withBill({ x: lp.x, y: lp.y + 14 * (1 - tt), s: lp.s }, G.lx, LY() - 59 * (1 - tt), () => { ctx.save(); ctx.translate(G.lx, LY()); ctx.rotate(AIM.yaw * tt); ctx.translate(-G.lx, -LY()); drawLauncher(); ctx.restore(); }, 2.6 - 1.48 * tt) });
+  items.forEach(it => { it.d = it.y === 9999 ? -1e9 : depthOf(it.x, it.y); });
+  items.sort((a, b) => b.d - a.d);   // 奥（カメラから遠い）ほど先に描く
   items.forEach(it => it.f());
 }
 function sceneFloats() {
@@ -1865,13 +1878,13 @@ function drawControlZone() {
   zg.addColorStop(0, hexA(col, 0)); zg.addColorStop(1, hexA(col, theme === 'dark' ? 0.30 : 0.24));
   ctx.fillStyle = zg; ctx.fillRect(0, DEF_Y, C.W, C.CTRL_H);
   // 位置トラック（発射台の左右位置）
-  const yb = C.H - 14, yt = yb - (C.CTRL_H - 28), x0 = 22, x1 = C.W - 22, mx = x0 + (G.lx - 22) / (C.W - 44) * (x1 - x0), ty = yb - (G.lz / ES) * (yb - yt);
+  const yb = C.H - 14, yt = yb - (C.CTRL_H - 28), x0 = 22, x1 = C.W - 22, mx = x0 + (AIM.yaw / AIM.YM * 0.5 + 0.5) * (x1 - x0), ty = yb - (G.lz / ES) * (yb - yt);
   ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 1.2; ctx.setLineDash([4, 5]); ctx.strokeRect(x0, yt, x1 - x0, yb - yt); ctx.setLineDash([]);   // 左右×上下の操作パッド
   ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(mx, yt); ctx.lineTo(mx, yb); ctx.moveTo(x0, ty); ctx.lineTo(x1, ty); ctx.stroke();
   ctx.fillStyle = col; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(mx, ty, 6, 0, 6.28); ctx.fill(); ctx.stroke();
   if (!G.pointerFiring) {
     ctx.fillStyle = T.hint; ctx.font = '700 12px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText('タッチ中だけ発射／左右・上下にスライドで狙う', C.W / 2, DEF_Y + 14);
+    ctx.fillText('タッチ中だけ発射／左右＝発射台が弧を移動・上下＝高さ', C.W / 2, DEF_Y + 14);
   }
 }
 const PIP = { x: 6, y: 6, k: 0.34 };
@@ -1917,14 +1930,14 @@ function pickTarget() {
 }
 function arrowTxt(d, pos, neg) { return d > 0 ? pos : neg; }
 function drawScope() {
-  const e = pickTarget(); const A = aimDir(), ox = G.lx, oy = LAUNCH_Y - 44, oz = G.lz, dk = theme === 'dark';
+  const e = pickTarget(); const A = aimDir(), ox = G.lx, oy = LY() - 44, oz = G.lz, dk = theme === 'dark';
   let dist = 320, aligned = false, dY = 0, dP = 0, tp = null, r = 30;
   if (e) {
     const tx = e.x - ox, tz = (e.z || 0) - oz, d0 = Math.hypot(tx, e.y - oy), lead = (G.freezeT > 0 ? 0 : e.vy) * d0 / C.BULLET_V, ty = e.y + lead - oy;
     dist = Math.hypot(tx, tz, ty);
     const yT = Math.atan2(tx, -ty), pT = Math.atan2(tz, Math.hypot(tx, ty));
     dY = yT - AIM.yaw; dP = pT - AIM.pit;
-    const tol = Math.atan2(e.size * 0.34, dist); aligned = Math.abs(dY) < tol && Math.abs(dP) < tol * 1.15;
+    const tol = Math.atan2(e.size * 0.48, dist); aligned = Math.abs(dY) < tol && Math.abs(dP) < tol * 1.15;
     tp = P(e.x, e.box * 0.5 + (e.z || 0), e.y);
     if (tp) { const ek = 1 + 1.6 * (1 - CAM.t) * clamp((tp.s - 0.5) / 1.79, 0, 1); r = Math.max(18, e.box * 0.58 * tp.s * ek); }
   }
@@ -1973,20 +1986,21 @@ function drawScope() {
 // ---- 傾きセンサー
 function onOri(ev) {
   if (ev.gamma == null || ev.beta == null) return;
-  if (AIM.g0 == null) { AIM.g0 = ev.gamma; AIM.b0 = ev.beta; }
+  AIM.got = true; if (AIM.g0 == null) { AIM.g0 = ev.gamma; AIM.b0 = ev.beta; }
   let dg = ev.gamma - AIM.g0, db = ev.beta - AIM.b0; if (Math.abs(dg) < 1.5) dg = 0; if (Math.abs(db) < 1.5) db = 0;
-  AIM.ty = clamp(dg * 0.0175, -AIM.YM, AIM.YM); AIM.tp = clamp(db * 0.0175, -AIM.PM, AIM.PM);   // 右へ傾ける＝右、上端を手前に倒す＝上
+  AIM.gy = clamp(dg * 0.0175, -AIM.YM, AIM.YM); AIM.gp = clamp(db * 0.0175, -AIM.PM, AIM.PM);   // 右へ傾ける＝右、上端を手前に倒す＝上
 }
 function setGyro(on) {
   AIM.gyro = on; AIM.g0 = null; $('btnGyro').classList.toggle('off', !on); $('btnGyro').textContent = on ? '📱 傾きON' : '📱 傾き'; $('btnCal').style.display = on ? '' : 'none';
-  if (on) window.addEventListener('deviceorientation', onOri); else { window.removeEventListener('deviceorientation', onOri); AIM.ty = AIM.tp = 0; }
+  if (on) { AIM.got = false; window.addEventListener('deviceorientation', onOri); setTimeout(() => { if (AIM.gyro && !AIM.got) showToast('傾きが検出できません。HTTPSのページをSafariで直接開き、モーションの許可を確認してください'); }, 1800); }
+  if (on) void 0; else { window.removeEventListener('deviceorientation', onOri); AIM.gy = AIM.gp = 0; }
 }
 ['btnGyro', 'btnCal'].forEach(id => {
   const b = $(id);
   ['pointerup', 'click'].forEach(n => b.addEventListener(n, ev => ev.stopPropagation()));
-  b.addEventListener('pointerdown', async ev => {
+  b.addEventListener(id === 'btnCal' ? 'pointerdown' : 'click', async ev => {   // iOSは「click」内で許可を求める必要がある
     ev.stopPropagation(); ev.preventDefault();
-    if (id === 'btnCal') { AIM.g0 = null; AIM.ty = AIM.tp = 0; return; }
+    if (id === 'btnCal') { AIM.g0 = null; AIM.ty = AIM.tp = AIM.gy = AIM.gp = 0; return; }
     if (AIM.gyro) { setGyro(false); return; }
     try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') { showToast('傾きセンサーの許可が必要です'); return; } } } catch (e) { showToast('傾きセンサーを使えません'); return; }
     setGyro(true);
